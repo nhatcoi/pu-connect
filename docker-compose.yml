@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: pu_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pu_user
+      POSTGRES_PASSWORD: pu_password
+      POSTGRES_DB: pu_connector_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
