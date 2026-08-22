@@ -12,7 +12,7 @@ import {
 import { AuthService } from './auth.service'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 import { AuthenticatedGuard } from './guards/authenticated.guard'
-import type { RegisterInput } from '@pu/schemas'
+import type { RegisterInput, OnboardingInput } from '@pu/schemas'
 import type { Request, Response } from 'express'
 
 @Controller('auth')
@@ -42,6 +42,14 @@ export class AuthController {
   @UseGuards(AuthenticatedGuard)
   async getProfile(@Req() req: Request) {
     return req.user
+  }
+
+  @Post('onboarding')
+  @UseGuards(AuthenticatedGuard)
+  @HttpCode(HttpStatus.OK)
+  async completeOnboarding(@Req() req: Request, @Body() body: OnboardingInput) {
+    const user = req.user as any
+    return this.authService.completeOnboarding(user.id, body)
   }
 
   @Post('logout')
