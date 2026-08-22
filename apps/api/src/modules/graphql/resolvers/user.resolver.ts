@@ -259,9 +259,10 @@ export class UserResolver {
   @ResolveField(() => [StudyGroupType], { name: 'studyGroups' })
   async getUserStudyGroups(@Parent() user: UserType): Promise<StudyGroupType[]> {
     const res = await this.db.query(
-      `SELECT sg.*
+      `SELECT sg.*, u.display_name as leader_name
        FROM study_groups sg
        JOIN study_group_members sgm ON sg.id = sgm.group_id
+       LEFT JOIN users u ON sg.leader_id = u.id
        WHERE sgm.user_id = $1
        ORDER BY sg.created_at DESC
        LIMIT 5`,
@@ -270,9 +271,10 @@ export class UserResolver {
 
     return res.rows.map((row) => ({
       id: row.id,
-      leaderId: row.leader_id,
-      courseId: row.course_id,
       name: row.name || row.topic,
+      leaderId: row.leader_id,
+      leaderName: row.leader_name || user.displayName,
+      courseId: row.course_id,
       topic: row.topic,
       groupType: row.group_type || 'pbl_project',
       courseCode: row.course_code,

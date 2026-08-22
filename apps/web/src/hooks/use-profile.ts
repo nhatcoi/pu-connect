@@ -95,16 +95,19 @@ const GET_USER_PROFILE_QUERY = `
       }
       studyGroups {
         id
+        name
         leaderId
+        leaderName
         courseId
         topic
         groupType
         courseCode
+        courseName
         description
-        requiredMembers
+        maxMembers
         currentMembersCount
         status
-        skillsNeeded
+        techStack
         createdAt
       }
     }

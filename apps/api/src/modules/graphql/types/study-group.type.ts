@@ -50,4 +50,7 @@ export class StudyGroupType {
 
   @Field(() => UserType, { nullable: true })
   leader?: UserType
+
+  @Field({ nullable: true })
+  leaderName?: string
 }
