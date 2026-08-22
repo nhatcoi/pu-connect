@@ -44,7 +44,10 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
         />
       </head>
-      <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
+      <body
+        suppressHydrationWarning
+        className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-primary-foreground"
+      >
         <Providers>
           <div className="relative flex min-h-screen flex-col">
             <main className="flex-1">{children}</main>

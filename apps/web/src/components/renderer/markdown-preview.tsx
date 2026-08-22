@@ -20,12 +20,10 @@ interface MarkdownPreviewProps {
 }
 
 function CodeBlock({
-  inline,
   className,
   children,
   ...props
 }: {
-  inline?: boolean
   className?: string
   children?: React.ReactNode
 }) {
@@ -34,16 +32,8 @@ function CodeBlock({
   const language = match ? match[1] : ''
   const codeContent = String(children).replace(/\n$/, '')
 
-  if (!inline && language === 'mermaid') {
+  if (language === 'mermaid') {
     return <MermaidBlock content={codeContent} />
-  }
-
-  if (inline) {
-    return (
-      <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground" {...props}>
-        {children}
-      </code>
-    )
   }
 
   const handleCopy = async () => {
@@ -60,7 +50,7 @@ function CodeBlock({
           variant="ghost"
           size="sm"
           onClick={handleCopy}
-          className="h-6 px-2 text-xs hover:bg-background"
+          className="h-6 px-2 text-xs hover:bg-background cursor-pointer"
         >
           {copied ? (
             <>
@@ -86,9 +76,23 @@ function CodeBlock({
 
 export function MarkdownPreview({ content, className, isDark = false }: MarkdownPreviewProps) {
   const components: Components = {
-    code({ node, inline, className, children, ...props }: any) {
+    pre({ children }) {
+      return <>{children}</>
+    },
+    code({ node, className, children, ...props }: any) {
+      const match = /language-(\w+)/.exec(className || '')
+      const isInline = !match && !String(children).includes('\n')
+
+      if (isInline) {
+        return (
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground" {...props}>
+            {children}
+          </code>
+        )
+      }
+
       return (
-        <CodeBlock inline={inline} className={className} {...props}>
+        <CodeBlock className={className} {...props}>
           {children}
         </CodeBlock>
       )
