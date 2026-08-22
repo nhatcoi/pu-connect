@@ -1,24 +1,74 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
+import { graphqlClient } from '@/lib/graphql-client'
+import { FollowButton } from '@/components/profile/follow-button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   GraduationCap,
   TrendingUp,
   Flame,
   Users,
-  Building2,
-  Sparkles,
-  ArrowRight,
-  UserPlus
+  ShieldCheck,
+  Loader2
 } from 'lucide-react'
+import Link from 'next/link'
+
+interface SuggestedUser {
+  id: string
+  displayName: string
+  username: string
+  avatarUrl?: string | null
+  role: string
+  faculty?: string | null
+  reputationPoints: number
+  isFollowedByMe?: boolean
+}
+
+const GET_SUGGESTED_USERS_QUERY = `
+  query GetSuggestedUsers($limit: Int) {
+    suggestedUsers(limit: $limit) {
+      id
+      displayName
+      username
+      avatarUrl
+      role
+      faculty
+      reputationPoints
+      isFollowedByMe
+    }
+  }
+`
 
 export function RightSidebar() {
   const posts = useAppStore((state) => state.posts)
   const documents = useAppStore((state) => state.documents)
-  const studyGroups = useAppStore((state) => state.studyGroups)
+  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
+
+  useEffect(() => {
+    const fetchSuggested = async () => {
+      setIsLoadingUsers(true)
+      try {
+        const data = await graphqlClient<{ suggestedUsers: SuggestedUser[] }>(
+          GET_SUGGESTED_USERS_QUERY,
+          { limit: 4 }
+        )
+        if (data && Array.isArray(data.suggestedUsers)) {
+          setSuggestedUsers(data.suggestedUsers)
+        }
+      } catch {
+        // Fallback static
+      } finally {
+        setIsLoadingUsers(false)
+      }
+    }
+
+    fetchSuggested()
+  }, [])
 
   const trendingTopics = [
     { tag: '#DoAnTotNghiep2026', count: '142 bài viết', category: 'K15 Đồ án' },
@@ -27,16 +77,18 @@ export function RightSidebar() {
     { tag: '#TuyenThanhVienPBL', count: '53 bài viết', category: 'Nhóm đồ án' }
   ]
 
-  const suggestedStudents = [
-    { name: 'TS. Nguyễn Văn Hà', role: 'Giảng viên FIT', avatar: 'GVHa', faculty: 'FIT' },
-    { name: 'Trần Minh Đức', role: 'K16 Fullstack Dev', avatar: 'Duc', faculty: 'FIT' },
-    { name: 'Lê Thị Mai', role: 'CLB Tin học PRO', avatar: 'Mai', faculty: 'FIT' }
+  const fallbackStudents: SuggestedUser[] = [
+    { id: '1', displayName: 'TS. Nguyễn Văn Hà', role: 'lecturer', username: 'gv_ha', faculty: 'FIT', reputationPoints: 100, avatarUrl: null, isFollowedByMe: false },
+    { id: '2', displayName: 'Trần Minh Đức', role: 'student', username: 'duc_k16', faculty: 'FIT', reputationPoints: 100, avatarUrl: null, isFollowedByMe: false },
+    { id: '3', displayName: 'Lê Thị Mai', role: 'student', username: 'mai_pro', faculty: 'FIT', reputationPoints: 100, avatarUrl: null, isFollowedByMe: false }
   ]
+
+  const displayUsers = suggestedUsers.length > 0 ? suggestedUsers : fallbackStudents
 
   return (
     <div className="w-full space-y-5">
       {/* 1. Phenikaa Portal Info Card */}
-      <Card className="rounded-2xl border-border bg-card shadow-sm">
+      <Card className="rounded-2xl border-border bg-card shadow-xs">
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-bold flex items-center gap-2 text-foreground">
             <GraduationCap className="h-4 w-4 text-primary" />
@@ -58,7 +110,7 @@ export function RightSidebar() {
       </Card>
 
       {/* 2. Realtime Activity Counter */}
-      <Card className="rounded-2xl border-border bg-card shadow-sm">
+      <Card className="rounded-2xl border-border bg-card shadow-xs">
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-bold flex items-center gap-2 text-foreground">
             <TrendingUp className="h-4 w-4 text-accent" />
@@ -80,7 +132,7 @@ export function RightSidebar() {
       </Card>
 
       {/* 3. Xu Hướng Phenikaa (X Trending Style) */}
-      <Card className="rounded-2xl border-border bg-card shadow-sm">
+      <Card className="rounded-2xl border-border bg-card shadow-xs">
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-bold flex items-center gap-2 text-foreground">
             <Flame className="h-4 w-4 text-accent" />
@@ -101,8 +153,8 @@ export function RightSidebar() {
         </CardContent>
       </Card>
 
-      {/* 4. Gợi Ý Kết Nối Bạn Bè & Giảng Viên */}
-      <Card className="rounded-2xl border-border bg-card shadow-sm">
+      {/* 4. Gợi Ý Kết Nối Bạn Bè & Giảng Viên (Live GraphQL) */}
+      <Card className="rounded-2xl border-border bg-card shadow-xs">
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-bold flex items-center gap-2 text-foreground">
             <Users className="h-4 w-4 text-primary" />
@@ -110,24 +162,53 @@ export function RightSidebar() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {suggestedStudents.map((item) => (
-            <div key={item.name} className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <img
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.avatar}`}
-                  alt={item.name}
-                  className="h-8 w-8 rounded-full bg-muted shrink-0 border border-border"
-                />
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-semibold text-foreground truncate">{item.name}</span>
-                  <span className="text-[10px] text-muted-foreground truncate">{item.role}</span>
-                </div>
-              </div>
-              <Button size="sm" variant="outline" className="h-7 px-2.5 text-[10px] rounded-full shrink-0">
-                Theo dõi
-              </Button>
+          {isLoadingUsers && suggestedUsers.length === 0 ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
             </div>
-          ))}
+          ) : (
+            displayUsers.map((item) => (
+              <div key={item.id || item.username} className="flex items-center justify-between gap-2">
+                <Link
+                  href={`/${item.username}`}
+                  className="flex items-center gap-2.5 min-w-0 flex-1 group"
+                >
+                  <Avatar className="h-8 w-8 shrink-0 border border-border">
+                    <AvatarImage
+                      src={
+                        item.avatarUrl ||
+                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username}`
+                      }
+                      alt={item.displayName}
+                    />
+                    <AvatarFallback>{item.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="flex items-center gap-1 truncate">
+                      <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                        {item.displayName}
+                      </span>
+                      {item.role === 'lecturer' && (
+                        <ShieldCheck className="h-3 w-3 text-accent shrink-0" />
+                      )}
+                    </div>
+                    <span className="text-[10px] text-muted-foreground truncate">
+                      {item.role === 'lecturer' ? 'Giảng viên' : 'Sinh viên'} {item.faculty ? `• ${item.faculty}` : ''}
+                    </span>
+                  </div>
+                </Link>
+
+                <FollowButton
+                  targetUserId={item.id}
+                  targetUsername={item.username}
+                  initialIsFollowing={item.isFollowedByMe || false}
+                  size="sm"
+                  showIcon={false}
+                  className="h-7 px-2.5 text-[10px] shrink-0"
+                />
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

@@ -31,7 +31,7 @@ import {
 
 export default function HomePage() {
   const [activeFeedTab, setActiveFeedTab] = useState<'for_you' | 'courses' | 'documents'>('for_you')
-  const { posts, isLoading: isPostsLoading } = usePosts()
+  const { posts, isLoading: isPostsLoading, refetch: refetchPosts } = usePosts()
   const { documents, isLoading: isDocsLoading } = useDocuments()
   
   const user = useAppStore((state) => state.user)

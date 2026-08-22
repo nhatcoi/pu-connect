@@ -13,6 +13,9 @@ export class StudyGroupType {
   courseId?: string | null
 
   @Field()
+  name: string
+
+  @Field()
   topic: string
 
   @Field()
@@ -21,11 +24,14 @@ export class StudyGroupType {
   @Field({ nullable: true })
   courseCode?: string
 
+  @Field({ nullable: true })
+  courseName?: string
+
   @Field()
   description: string
 
   @Field(() => Int)
-  requiredMembers: number
+  maxMembers: number
 
   @Field(() => Int)
   currentMembersCount: number
@@ -34,7 +40,10 @@ export class StudyGroupType {
   status: string
 
   @Field(() => [String])
-  skillsNeeded: string[]
+  techStack: string[]
+
+  @Field(() => Boolean, { defaultValue: false })
+  isMember: boolean
 
   @Field()
   createdAt: string

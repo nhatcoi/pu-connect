@@ -29,11 +29,29 @@ export class FeedResolver {
     if (currentUserId) {
       params.push(currentUserId)
       sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $1) as is_liked_by_me`
+      sql += `, (
+        (CASE WHEN p.is_pinned THEN 1000.0 ELSE 0.0 END)
+        + (CASE WHEN u.faculty IS NOT NULL AND cu.faculty IS NOT NULL AND u.faculty = cu.faculty THEN 20.0 ELSE 0.0 END)
+        + (CASE WHEN EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = cu.id AND uf.following_id = p.author_id) THEN 30.0 ELSE 0.0 END)
+        + (CASE WHEN cu.interests IS NOT NULL AND array_length(cu.interests, 1) > 0 AND p.tags && cu.interests THEN 35.0 ELSE 0.0 END)
+        + (CASE WHEN cu.skills IS NOT NULL AND array_length(cu.skills, 1) > 0 AND p.tags && cu.skills THEN 25.0 ELSE 0.0 END)
+        + (p.likes_count * 2.0 + p.comments_count * 5.0)
+        - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 1.5)
+      ) as recommendation_score`
     } else {
       sql += `, FALSE as is_liked_by_me`
+      sql += `, (
+        (CASE WHEN p.is_pinned THEN 1000.0 ELSE 0.0 END)
+        + (p.likes_count * 2.0 + p.comments_count * 5.0)
+        - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 1.5)
+      ) as recommendation_score`
     }
 
     sql += ` FROM posts p JOIN users u ON p.author_id = u.id`
+
+    if (currentUserId) {
+      sql += ` LEFT JOIN users cu ON cu.id = $1`
+    }
 
     if (tag) {
       params.push(tag)
@@ -41,7 +59,7 @@ export class FeedResolver {
     }
 
     params.push(limit, offset)
-    sql += ` ORDER BY p.is_pinned DESC, p.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`
+    sql += ` ORDER BY recommendation_score DESC, p.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`
 
     const res = await this.db.query(sql, params)
     return res.rows.map((row) => this.mapRowToPost(row))
@@ -123,7 +141,7 @@ export class FeedResolver {
     }
 
     const check = await this.db.query(
-      `SELECT id FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1`,
+      `SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1`,
       [postId, user.id]
     )
 
@@ -139,7 +157,7 @@ export class FeedResolver {
       return false
     } else {
       await this.db.query(
-        `INSERT INTO post_reactions (post_id, user_id, reaction_type) VALUES ($1, $2, 'like')`,
+        `INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`,
         [postId, user.id]
       )
       await this.db.query(
