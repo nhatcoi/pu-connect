@@ -3,16 +3,18 @@ import type { UserProfile } from '@pu/schemas'
 
 export interface AuthSlice {
   user: UserProfile | null
-  token: string | null
   isAuthenticated: boolean
-  setAuth: (user: UserProfile, token: string) => void
+  isLoadingAuth: boolean
+  setUser: (user: UserProfile | null) => void
+  setAuth: (user: UserProfile) => void
   logout: () => void
 }
 
 export const createAuthSlice: StateCreator<AuthSlice> = (set) => ({
   user: null,
-  token: null,
   isAuthenticated: false,
-  setAuth: (user, token) => set({ user, token, isAuthenticated: true }),
-  logout: () => set({ user: null, token: null, isAuthenticated: false })
+  isLoadingAuth: true,
+  setUser: (user) => set({ user, isAuthenticated: !!user, isLoadingAuth: false }),
+  setAuth: (user) => set({ user, isAuthenticated: true, isLoadingAuth: false }),
+  logout: () => set({ user: null, isAuthenticated: false, isLoadingAuth: false })
 })

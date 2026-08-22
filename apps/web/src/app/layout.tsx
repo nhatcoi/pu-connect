@@ -1,12 +1,25 @@
 import type { Metadata } from 'next'
+import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-import { Header } from '@/components/social/header'
-import { CreatePostDialog } from '@/components/social/create-post-dialog'
+import { Toaster } from 'sonner'
+
+const inter = Inter({
+  variable: '--font-sans',
+  subsets: ['vietnamese', 'latin'],
+  display: 'swap'
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-mono',
+  subsets: ['vietnamese', 'latin'],
+  display: 'swap'
+})
 
 export const metadata: Metadata = {
-  title: 'PU Connector — Mạng xã hội & Chia sẻ tài liệu kỹ thuật',
-  description: 'Nền tảng mạng xã hội, chia sẻ tri thức và tài liệu kỹ thuật thế hệ mới được xây dựng với Next.js, shadcn/ui và NestJS.'
+  title: 'PU Connector — Mạng xã hội & Trao đổi học thuật sinh viên',
+  description:
+    'Nền tảng mạng xã hội kết nối sinh viên, chia sẻ tài liệu học phần, công thức toán học, và ghép nhóm đồ án Phenikaa.'
 }
 
 export default function RootLayout({
@@ -15,7 +28,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html
+      lang="vi"
+      suppressHydrationWarning
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+    >
       <head>
         <link
           rel="stylesheet"
@@ -27,12 +44,11 @@ export default function RootLayout({
           href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
         />
       </head>
-      <body className="min-h-screen bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
+      <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
         <Providers>
           <div className="relative flex min-h-screen flex-col">
-            <Header />
             <main className="flex-1">{children}</main>
-            <CreatePostDialog />
+            <Toaster richColors position="top-right" />
           </div>
         </Providers>
       </body>

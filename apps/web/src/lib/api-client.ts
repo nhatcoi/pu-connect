@@ -17,6 +17,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    credentials: 'include', // Automatically send and receive session cookies
     headers: defaultHeaders,
     ...rest
   })
