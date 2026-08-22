@@ -28,7 +28,11 @@ export default function LandingPage() {
         const res = await apiClient<{ success: boolean; data: UserProfile }>('/auth/me')
         if (res && res.data) {
           setUser(res.data)
-          router.replace('/home')
+          if (!res.data.isOnboarded) {
+            router.replace('/get-started')
+          } else {
+            router.replace('/home')
+          }
           return
         }
       } catch {
@@ -39,7 +43,11 @@ export default function LandingPage() {
     }
 
     if (user) {
-      router.replace('/home')
+      if (!user.isOnboarded) {
+        router.replace('/get-started')
+      } else {
+        router.replace('/home')
+      }
     } else {
       checkExistingSession()
     }
@@ -59,7 +67,11 @@ export default function LandingPage() {
       if (res.data) {
         setAuth(res.data)
         toast.success(`Chào mừng ${res.data.displayName} đã đăng nhập!`)
-        router.replace('/home')
+        if (!res.data.isOnboarded) {
+          router.replace('/get-started')
+        } else {
+          router.replace('/home')
+        }
       }
     } catch (err: any) {
       toast.error(err.message || 'Đăng nhập thất bại')

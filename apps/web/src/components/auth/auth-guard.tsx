@@ -9,9 +9,10 @@ import { Loader2 } from 'lucide-react'
 
 interface AuthGuardProps {
   children: React.ReactNode
+  requireOnboarded?: boolean
 }
 
-export function AuthGuard({ children }: AuthGuardProps) {
+export function AuthGuard({ children, requireOnboarded = true }: AuthGuardProps) {
   const router = useRouter()
   const user = useAppStore((state) => state.user)
   const isLoadingAuth = useAppStore((state) => state.isLoadingAuth)
@@ -25,6 +26,11 @@ export function AuthGuard({ children }: AuthGuardProps) {
         if (isMounted) {
           if (res && res.data) {
             setUser(res.data)
+            if (requireOnboarded && !res.data.isOnboarded) {
+              router.replace('/get-started')
+            } else if (!requireOnboarded && res.data.isOnboarded) {
+              router.replace('/home')
+            }
           } else {
             setUser(null)
             router.replace('/')
@@ -38,13 +44,17 @@ export function AuthGuard({ children }: AuthGuardProps) {
       }
     }
 
-    if (!user) {
-      verifyAuth()
-    }
+    verifyAuth()
     return () => {
       isMounted = false
     }
-  }, [user, setUser, router])
+  }, [setUser, router, requireOnboarded])
+
+  useEffect(() => {
+    if (!isLoadingAuth && !user) {
+      router.replace('/')
+    }
+  }, [isLoadingAuth, user, router])
 
   if (isLoadingAuth && !user) {
     return (
@@ -63,6 +73,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (!user) {
+    return null
+  }
+
+  // Prevent flash of content if onboarding state does not match requirement
+  if (requireOnboarded && !user.isOnboarded) {
+    return null
+  }
+
+  if (!requireOnboarded && user.isOnboarded) {
     return null
   }
 

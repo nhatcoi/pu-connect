@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Dialog,
   DialogContent,
@@ -23,6 +24,7 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
+  const router = useRouter()
   const setAuth = useAppStore((state) => state.setAuth)
   const [tab, setTab] = useState<'login' | 'register'>('login')
 
@@ -43,7 +45,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!emailOrUsername.trim() || !password.trim()) {
-      toast.error('Vui lòng nhập đầy đủ thông tin')
+      toast.error('Vui lòng điền đầy đủ Email/Username và Mật khẩu')
       return
     }
 
@@ -61,6 +63,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
         setAuth(res.data)
         toast.success(`Chào mừng ${res.data.displayName} quay trở lại!`)
         onOpenChange(false)
+        if (!res.data.isOnboarded) {
+          router.replace('/get-started')
+        } else {
+          router.replace('/home')
+        }
       }
     } catch (err: any) {
       toast.error(err.message || 'Đăng nhập thất bại')
@@ -94,6 +101,11 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
         setAuth(res.data)
         toast.success('Đăng ký tài khoản Phenikaa thành công!')
         onOpenChange(false)
+        if (!res.data.isOnboarded) {
+          router.replace('/get-started')
+        } else {
+          router.replace('/home')
+        }
       }
     } catch (err: any) {
       toast.error(err.message || 'Đăng ký thất bại')

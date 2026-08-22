@@ -122,14 +122,26 @@ export class AuthService {
 
     // Insert follow relationships if provided
     if (data.followUserIds && data.followUserIds.length > 0) {
-      for (const targetId of data.followUserIds) {
-        if (targetId && targetId !== userId) {
-          await this.db.query(
-            `INSERT INTO user_follows (follower_id, following_id)
-             VALUES ($1, $2)
-             ON CONFLICT (follower_id, following_id) DO NOTHING`,
-            [userId, targetId]
+      for (const target of data.followUserIds) {
+        if (!target) continue
+        try {
+          const targetUser = await this.db.query(
+            `SELECT id FROM users WHERE id::text = $1 OR username = $1 LIMIT 1`,
+            [target]
           )
+          if (targetUser.rows.length > 0) {
+            const targetId = targetUser.rows[0].id
+            if (targetId !== userId) {
+              await this.db.query(
+                `INSERT INTO user_follows (follower_id, following_id)
+                 VALUES ($1, $2)
+                 ON CONFLICT (follower_id, following_id) DO NOTHING`,
+                [userId, targetId]
+              )
+            }
+          }
+        } catch {
+          // Ignore invalid target identifier gracefully
         }
       }
     }
