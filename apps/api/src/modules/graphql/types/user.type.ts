@@ -41,6 +41,9 @@ export class UserType {
   @Field(() => Int, { defaultValue: 0, nullable: true })
   followingCount?: number
 
+  @Field(() => Boolean, { defaultValue: false, nullable: true })
+  isFollowedByMe?: boolean
+
   @Field()
   createdAt: string
 }

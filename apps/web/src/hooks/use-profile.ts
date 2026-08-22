@@ -16,6 +16,7 @@ export interface UserProfileData {
   reputationPoints: number
   followersCount: number
   followingCount: number
+  isFollowedByMe?: boolean
   createdAt: string
   posts: PostItem[]
   documents: DocumentItem[]
@@ -38,6 +39,7 @@ const GET_USER_PROFILE_QUERY = `
       reputationPoints
       followersCount
       followingCount
+      isFollowedByMe
       createdAt
       posts {
         id

@@ -10,14 +10,14 @@ import {
   IdCard,
   GraduationCap,
   Sparkles,
-  UserPlus,
-  Check,
   Edit3,
   Mail
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import type { UserProfileData } from '@/hooks/use-profile'
 import { toast } from 'sonner'
+import { FollowButton } from './follow-button'
+import { UserListDialog } from './user-list-dialog'
 
 interface ProfileHeaderProps {
   profile: UserProfileData
@@ -29,20 +29,15 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     currentUser?.username?.toLowerCase() === profile.username?.toLowerCase() ||
     currentUser?.id === profile.id
 
-  const [isFollowing, setIsFollowing] = useState(false)
-  const [followerCount, setFollowerCount] = useState(profile.followersCount || 142)
-
-  const handleToggleFollow = () => {
-    if (isFollowing) {
-      setIsFollowing(false)
-      setFollowerCount((prev) => Math.max(0, prev - 1))
-      toast.success(`Đã hủy theo dõi @${profile.username}`)
-    } else {
-      setIsFollowing(true)
-      setFollowerCount((prev) => prev + 1)
-      toast.success(`Đã theo dõi @${profile.username}`)
-    }
-  }
+  const [followersCount, setFollowersCount] = useState(profile.followersCount || 0)
+  const [followingCount, setFollowingCount] = useState(profile.followingCount || 0)
+  const [listDialog, setListDialog] = useState<{
+    open: boolean
+    type: 'followers' | 'following'
+  }>({
+    open: false,
+    type: 'followers'
+  })
 
   const initials = (profile.displayName || profile.username || 'PU')
     .slice(0, 2)
@@ -56,6 +51,15 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
 
   return (
     <div className="border-b border-border bg-card">
+      {/* User Followers / Following Dialog */}
+      <UserListDialog
+        userId={profile.id}
+        username={profile.username}
+        type={listDialog.type}
+        open={listDialog.open}
+        onOpenChange={(open) => setListDialog((prev) => ({ ...prev, open }))}
+      />
+
       {/* Cover Image Banner */}
       <div className="relative h-36 sm:h-44 w-full bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 overflow-hidden">
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
@@ -97,28 +101,25 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
                 >
                   <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
-                <Button
+                <FollowButton
+                  targetUserId={profile.id}
+                  targetUsername={profile.username}
+                  initialIsFollowing={profile.isFollowedByMe || false}
+                  onFollowChange={(isFollowing, newFollowersCount) => {
+                    if (typeof newFollowersCount === 'number') {
+                      setFollowersCount(newFollowersCount)
+                    } else {
+                      setFollowersCount((prev) => (isFollowing ? prev + 1 : Math.max(0, prev - 1)))
+                    }
+                    toast.success(
+                      isFollowing
+                        ? `Đã bắt đầu theo dõi @${profile.username}`
+                        : `Đã hủy theo dõi @${profile.username}`
+                    )
+                  }}
                   size="sm"
-                  variant={isFollowing ? 'secondary' : 'default'}
-                  className={`font-semibold rounded-full px-4 h-8 text-xs transition-all ${
-                    isFollowing
-                      ? 'bg-muted text-foreground hover:bg-destructive/10 hover:text-destructive'
-                      : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  }`}
-                  onClick={handleToggleFollow}
-                >
-                  {isFollowing ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 mr-1" />
-                      Đang theo dõi
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-3.5 w-3.5 mr-1" />
-                      Theo dõi
-                    </>
-                  )}
-                </Button>
+                  className="h-8 text-xs px-4"
+                />
               </>
             )}
           </div>
@@ -188,20 +189,31 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
           </div>
         </div>
 
-        {/* Follower / Following Stats */}
-        <div className="flex items-center gap-4 mt-3 text-xs sm:text-sm">
-          <div className="flex items-center gap-1">
-            <span className="font-bold text-foreground">
-              {profile.followingCount || 86}
+        {/* Follower / Following Stats (Clickable) */}
+        <div className="flex items-center gap-5 mt-3 text-xs sm:text-sm">
+          <button
+            type="button"
+            onClick={() => setListDialog({ open: true, type: 'following' })}
+            className="flex items-center gap-1.5 hover:underline cursor-pointer group"
+          >
+            <span className="font-bold text-foreground group-hover:text-primary transition-colors">
+              {followingCount}
             </span>
             <span className="text-muted-foreground">Đang theo dõi</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-bold text-foreground">{followerCount}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setListDialog({ open: true, type: 'followers' })}
+            className="flex items-center gap-1.5 hover:underline cursor-pointer group"
+          >
+            <span className="font-bold text-foreground group-hover:text-primary transition-colors">
+              {followersCount}
+            </span>
             <span className="text-muted-foreground">Người theo dõi</span>
-          </div>
+          </button>
         </div>
       </div>
     </div>
   )
 }
+
