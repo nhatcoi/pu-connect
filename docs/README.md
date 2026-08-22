@@ -8,12 +8,14 @@ Chào mừng bạn đến với trung tâm tài liệu kỹ thuật của dự �
 
 | Tài liệu | Nội dung chính |
 | :--- | :--- |
-| [**1. Tổng quan Kiến trúc (Architecture)**](./architecture.md) | Cấu trúc Monorepo, luồng dữ liệu, Pipeline render Markdown/LaTeX/Mermaid, thiết kế hệ thống. |
-| [**2. Đặc tả API (API Specification)**](./api-specification.md) | Danh sách REST endpoints, tham số Request/Response DTOs, WebSocket Events Gateway. |
-| [**3. Thiết kế Cơ sở dữ liệu (Database Schema)**](./database-schema.md) | Sơ đồ ERD, thiết kế bảng PostgreSQL, quan hệ thực thể, chiến lược index và Vector Search. |
-| [**4. Hướng dẫn Frontend & UI (Frontend Guide)**](./frontend-guide.md) | Quy chuẩn shadcn/ui, Tailwind v4 tokens, tích hợp bộ soạn thảo Tiptap và Zustand slices. |
-| [**5. Hướng dẫn Mở rộng Mobile App (Mobile Expansion)**](./mobile-expansion.md) | Hướng dẫn tích hợp React Native (Expo) + `react-native-reusables`, chia sẻ schemas và tokens. |
-| [**6. Triển khai & DevOps (Deployment & DevOps)**](./deployment-and-devops.md) | Hướng dẫn Docker, cấu hình biến môi trường, Cloudflare R2 Presigned URL, Nginx, CI/CD. |
+| [**🚀 1. Hướng Dẫn Bắt Đầu & Bản Đồ Nghiệp Vụ (Get Started)**](./get-started.md) | Cài đặt 3 bước, sơ đồ đa giao thức, phân tích logic nghiệp vụ cốt lõi, danh sách tài khoản mẫu. |
+| [**🎯 2. Danh Mục Tính Năng & Lộ Trình (Features & Roadmap)**](./FEAT.md) | Theo dõi trạng thái các tính năng đã hoàn thành và kế hoạch phát triển (Backlog). |
+| [**🏗️ 3. Tổng quan Kiến trúc (Architecture)**](./architecture.md) | Cấu trúc Monorepo, 5 tầng kỹ thuật, 7 phân hệ nghiệp vụ, Hybrid GraphQL + REST. |
+| [**📡 4. Đặc tả API (API Specification)**](./api-specification.md) | Danh sách REST endpoints, tham số Request/Response DTOs, WebSocket Events Gateway. |
+| [**🗄️ 5. Thiết kế Cơ sở dữ liệu (Database Schema)**](./database-schema.md) | Sơ đồ ERD, thiết kế bảng PostgreSQL 16, quan hệ thực thể, pgvector Search. |
+| [**🎨 6. Hướng dẫn Frontend & UI (Frontend Guide)**](./frontend-guide.md) | Quy chuẩn shadcn/ui, Tailwind CSS tokens, tích hợp bộ soạn thảo Tiptap và Zustand slices. |
+| [**📱 7. Hướng dẫn Mở rộng Mobile App (Mobile Expansion)**](./mobile-expansion.md) | Hướng dẫn tích hợp React Native (Expo) + `react-native-reusables`, chia sẻ schemas. |
+| [**🚢 8. Triển khai & DevOps (Deployment & DevOps)**](./deployment-and-devops.md) | Hướng dẫn Docker, cấu hình biến môi trường, Cloudflare R2 Presigned URL, Nginx, CI/CD. |
 
 ---
 

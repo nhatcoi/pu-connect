@@ -62,7 +62,37 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
     "password": "secure_password_123"
   }
   ```
-* **Response (200 OK):** Trả về `user` profile và JWT `token`.
+* **Response (200 OK):** Trả về `user` profile và cookie `pu_session`.
+
+### 1.3. Khởi tạo hồ sơ tân sinh viên (Onboarding)
+* **Endpoint:** `POST /api/auth/onboarding` (Yêu cầu đăng nhập - Session Cookie)
+* **Request Body:**
+  ```json
+  {
+    "studentId": "22010001",
+    "faculty": "FIT",
+    "academicYear": "K16 (2022-2026)",
+    "courses": ["IT101", "MATH201"],
+    "skills": ["Next.js", "React Native", "Python AI"],
+    "bio": "Sinh viên K16 CNTT - Đam mê AI & Lập trình Web",
+    "followUserIds": ["gv_nguyenvanha", "tranminhduc"]
+  }
+  ```
+* **Response (200 OK):** Cập nhật `is_onboarded = true`, cộng thưởng `+100` Điểm danh vọng và trả về User Profile mới nhất.
+
+### 1.4. Đăng xuất tài khoản (Logout)
+* **Endpoint:** `POST /api/auth/logout` (Yêu cầu đăng nhập - Session Cookie)
+* **Request Body:** Không có (Empty)
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "message": "Đăng xuất thành công"
+    }
+  }
+  ```
+* **Cookie Action:** Xóa `pu_session` và vô hiệu hóa session trên máy chủ.
 
 ---
 

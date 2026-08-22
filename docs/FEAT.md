@@ -11,14 +11,18 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] ⚡ **Quản lý tiến trình tập trung (`procman.yaml`)**: Chạy toàn bộ hệ thống (`db`, `api`, `web`) chỉ với 1 lệnh `procman up`.
 - [x] 🗄️ **Cơ sở dữ liệu chuẩn hóa (`PostgreSQL 16 + pgvector`)**: Thiết kế DDL 11 bảng phân hệ học thuật, môn học, tài liệu, nhóm đồ án, sự kiện và tương tác.
 - [x] 🔐 **Xác thực phiên làm việc an toàn (`Session-based Auth & Passport.js`)**: Đăng ký, đăng nhập với cookie HttpOnly (`pu_session`), mã hóa bcrypt và phân quyền theo vai trò (`student`, `lecturer`, `ta`, `admin`).
+- [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
 - [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau (Feed, Profile, Documents, PBL Groups) và giữ REST API cho Session Auth & Upload File lớn.
 
 ### 🌐 Định Tuyến & Giao Diện Chuẩn X (Routing & Social UI)
 - [x] 🌟 **Landing Page phong cách X (`/` - Happening now)**: Giao diện chào đón khi chưa đăng nhập, tự động chuyển tiếp sang `/home` nếu đã có session, tích hợp hộp đăng nhập nhanh với 100 tài khoản mẫu seed.
-- [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`...), tự động chuyển hướng khách chưa đăng nhập về trang chủ.
+- [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`...), tự động chuyển hướng khách chưa đăng nhập về trang chủ, tự động khóa `/home` và chuyển hướng sang `/get-started` nếu tài khoản chưa hoàn tất khởi tạo hồ sơ.
+- [x] 🚀 **Trang Khởi Tạo Hồ Sơ Tân Sinh Viên Chuyên Biệt (`/get-started` - Standalone No Background)**: Trang toàn màn hình độc lập 100% (không lộ background `/home`), thiết kế giao diện Lucide SVG chuyên nghiệp, 4 bước (Mã SV, Khoa/Viện, Môn học, Kỹ năng, Follows), hiệu ứng Transition nạp bảng tin và thưởng ngay **+100 Điểm danh vọng**.
 - [x] 🏛️ **Bảng tin 3 cột chuẩn X (`/home`)**: Sidebar điều hướng $\rightarrow$ Feed học thuật với Tab dính (*Dành cho bạn / Môn học / Kho tài liệu*) $\rightarrow$ Xu hướng & Gợi ý kết nối.
 - [x] 👤 **Trang cá nhân sinh viên / giảng viên (`/[username]`)**: Banner ảnh bìa, Avatar, Khoa/Viện, Mã SV, Niên khóa, 4 Tabs chuyển đổi (Bài viết, Tài liệu, Nhóm PBL, Huy hiệu thành tích) truy vấn 100% qua GraphQL `userProfile`.
+- [x] 🧠 **Thuật Toán Đề Xuất Bài Viết Cá Nhân Hóa (Hybrid Recommendation Engine)**: Chấm điểm bài viết trên Tab *"Dành cho bạn"* kết hợp Môn học ($+40$), Cùng Khoa ($+20$), Người đang Follow ($+30$), Độ tương tác ($2\times L + 5\times C$) và Hệ số suy giảm thời gian (Time Decay).
+- [x] 🤝 **Hệ thống theo dõi & Kết nối bạn bè (`user_follows`)**: Bảng quan hệ theo dõi sinh viên/giảng viên, tự động ưu tiên phân phối bài viết trên Bảng tin.
 
 ### 📝 Bảng Tin Học Thuật & Soạn Thảo (Academic Feed & Q&A)
 - [x] ✍️ **Trình soạn thảo WYSIWYG (`Tiptap 3 / ProseMirror`)**: Hỗ trợ đầy đủ định dạng văn bản, tiêu đề, danh sách, trích dẫn, code block và bảng biểu.
@@ -47,7 +51,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ### 👤 Hồ Sơ Cá Nhân & Tương Tác (Profile & Social Graph)
 - [x] 👤 **Trang cá nhân sinh viên / giảng viên (`/[username]`)**: Ảnh bìa, Avatar, Khoa/Viện, Niên khóa, Tabs xem bài viết đã đăng, tài liệu đã chia sẻ, nhóm đồ án đã tham gia.
-- [ ] 🤝 **Hệ thống theo dõi & Kết nối bạn bè (`Follow / Following`)**: Theo dõi bạn học cùng lớp, nhận thông báo khi giảng viên đăng bài mới.
+- [x] 🤝 **Hệ thống theo dõi & Kết nối bạn bè (`Follow / Following`)**: Theo dõi bạn học cùng lớp, nhận thông báo khi giảng viên đăng bài mới (Mutation `toggleFollow`, GraphQL social graph, `FollowButton` với Optimistic UI, `UserListDialog` xem danh sách Followers/Following).
 
 ### 💬 Trò Chuyện & Nhóm Đồ Án Thời Gian Thực (PBL Realtime Chat)
 - [ ] 👥 **Phân hệ nhóm đồ án chuyên sâu (`/groups`)**: Xem chi tiết nhóm PBL, gửi yêu cầu xin gia nhập kèm lời nhắn, trưởng nhóm duyệt/từ chối.
