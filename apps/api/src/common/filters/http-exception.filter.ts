@@ -10,9 +10,18 @@ import { Response, Request } from 'express'
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
+    // Only handle HTTP context, let GraphQL handle its own errors
+    if ((host.getType() as string) === 'graphql') {
+      return exception
+    }
+
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
     const request = ctx.getRequest<Request>()
+
+    if (!response || typeof response.status !== 'function') {
+      return exception
+    }
 
     const status =
       exception instanceof HttpException
@@ -27,7 +36,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: request?.url || '',
       ...(typeof message === 'object' ? message : { message })
     })
   }

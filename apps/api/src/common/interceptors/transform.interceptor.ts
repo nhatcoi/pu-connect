@@ -13,13 +13,23 @@ export interface Response<T> {
 }
 
 @Injectable()
-export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> {
-  intercept(context: ExecutionContext, next: CallHandler): Observable<Response<T>> {
+export class TransformInterceptor<T> implements NestInterceptor<T, any> {
+  intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    // Only wrap HTTP REST responses, do not touch GraphQL
+    if ((context.getType() as string) === 'graphql') {
+      return next.handle()
+    }
+
     return next.handle().pipe(
-      map((data) => ({
-        success: true,
-        data
-      }))
+      map((data) => {
+        if (data && typeof data === 'object' && 'success' in data && 'data' in data) {
+          return data
+        }
+        return {
+          success: true,
+          data
+        }
+      })
     )
   }
 }
