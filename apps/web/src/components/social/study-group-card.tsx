@@ -1,0 +1,81 @@
+'use client'
+
+import React from 'react'
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Users, Code, Calendar, CheckCircle2, UserPlus } from 'lucide-react'
+import type { StudyGroup } from '@pu/schemas'
+
+export function StudyGroupCard({ group }: { group: StudyGroup }) {
+  const isFull = group.currentMembersCount >= group.maxMembers
+
+  return (
+    <Card className="hover:border-primary/50 transition-all hover:shadow-md flex flex-col justify-between">
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2">
+              {group.courseCode && (
+                <span className="rounded bg-primary/10 px-1.5 py-0.5 font-bold text-[11px] text-primary font-mono">
+                  {group.courseCode}
+                </span>
+              )}
+              <span className="text-xs font-semibold text-accent">
+                {group.topic}
+              </span>
+            </div>
+            <h3 className="font-bold text-sm mt-1 text-foreground leading-snug">
+              {group.name}
+            </h3>
+          </div>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              isFull
+                ? 'bg-muted text-muted-foreground'
+                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            }`}
+          >
+            {isFull ? 'Đã đủ người' : 'Đang tuyển'}
+          </span>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4 pt-1 pb-3 text-xs text-muted-foreground space-y-2.5">
+        <p className="line-clamp-2">{group.description}</p>
+        
+        {group.techStack && group.techStack.length > 0 && (
+          <div className="flex flex-wrap gap-1 items-center">
+            <Code className="h-3.5 w-3.5 text-muted-foreground mr-0.5" />
+            {group.techStack.map((tech) => (
+              <span
+                key={tech}
+                className="rounded border bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between text-[11px] pt-2 border-t text-muted-foreground">
+          <span>Trưởng nhóm: <strong className="text-foreground">{group.leaderName}</strong></span>
+          <span className="flex items-center gap-1 font-semibold text-foreground">
+            <Users className="h-3.5 w-3.5 text-primary" />
+            {group.currentMembersCount}/{group.maxMembers} thành viên
+          </span>
+        </div>
+      </CardContent>
+
+      <CardFooter className="p-4 pt-0">
+        <Button
+          size="sm"
+          disabled={isFull}
+          className="w-full text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <UserPlus className="h-3.5 w-3.5" />
+          <span>{isFull ? 'Nhóm đã đủ thành viên' : 'Xin tham gia nhóm'}</span>
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
