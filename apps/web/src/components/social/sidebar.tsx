@@ -18,7 +18,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
-import { apiClient } from '@/lib/api-client'
+import { useLogout } from '@/hooks/use-logout'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -33,7 +33,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const user = useAppStore((state) => state.user)
-  const logout = useAppStore((state) => state.logout)
+  const { logout, isLoggingOut } = useLogout()
 
   const navItems = [
     { id: 'feed' as const, path: '/home', label: 'Bảng tin học thuật', icon: Home, badge: 'Mới' },
@@ -64,18 +64,6 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
     'PHY102 - Vật lý đại cương',
     'AI302 - Học máy cơ bản'
   ]
-
-  const handleLogout = async () => {
-    try {
-      await apiClient('/auth/logout', { method: 'POST' })
-      logout()
-      toast.success('Đã đăng xuất tài khoản')
-      router.replace('/')
-    } catch {
-      logout()
-      router.replace('/')
-    }
-  }
 
   return (
     <aside className="w-full space-y-5">
@@ -174,10 +162,11 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
         {user && (
           <Button
             variant="ghost"
-            onClick={handleLogout}
-            className="w-full justify-start gap-3 text-xs text-destructive hover:bg-destructive/10 rounded-xl mt-2"
+            onClick={logout}
+            disabled={isLoggingOut}
+            className="w-full justify-start gap-3 text-xs text-destructive hover:bg-destructive/10 rounded-xl mt-2 cursor-pointer"
           >
-            <LogOut className="h-4 w-4" /> Đăng xuất phiên làm việc
+            <LogOut className="h-4 w-4" /> {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất phiên làm việc'}
           </Button>
         )}
       </div>

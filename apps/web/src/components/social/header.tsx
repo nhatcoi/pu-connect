@@ -17,6 +17,7 @@ import {
   LogOut
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useLogout } from '@/hooks/use-logout'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -38,7 +39,7 @@ export function Header() {
   const { theme, setTheme } = useTheme()
   const user = useAppStore((state) => state.user)
   const setUser = useAppStore((state) => state.setUser)
-  const logout = useAppStore((state) => state.logout)
+  const { logout, isLoggingOut } = useLogout()
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
 
   const [isCommandOpen, setIsCommandOpen] = useState(false)
@@ -58,16 +59,6 @@ export function Header() {
     }
     checkSession()
   }, [setUser])
-
-  const handleLogout = async () => {
-    try {
-      await apiClient('/auth/logout', { method: 'POST' })
-      logout()
-      toast.success('Đã đăng xuất phiên làm việc')
-    } catch {
-      logout()
-    }
-  }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/95 backdrop-blur-md">
@@ -194,8 +185,8 @@ export function Header() {
                   <Sparkles className="mr-2 h-4 w-4 text-accent" /> Điểm danh vọng: {user.reputationPoints ?? (user as any).reputation_points ?? 100} pts
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
+                <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" /> {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
