@@ -201,3 +201,106 @@ socket.emit('join_room', { roomId: 'post_123' }, (response) => {
 * `new_message`: Nhận tin nhắn mới trong phòng chat.
 * `new_comment`: Nhận bình luận mới trên bài viết đang mở.
 * `notification`: Nhận thông báo tương tác (được nhắc tên, nhận reaction, v.v.).
+
+---
+
+## 5. GraphQL API Specification (`/graphql`)
+
+* **Endpoint:** `POST http://localhost:4000/graphql`
+* **Session Context:** Tự động xác thực qua Cookie `pu_session` (`credentials: 'include'`).
+
+### 5.1. Bảng tin học thuật (`feed`)
+```graphql
+query GetFeed($limit: Int, $offset: Int, $tag: String) {
+  feed(limit: $limit, offset: $offset, tag: $tag) {
+    id
+    title
+    content
+    tags
+    likesCount
+    commentsCount
+    isLikedByMe
+    createdAt
+    author {
+      id
+      displayName
+      username
+      avatarUrl
+      faculty
+      reputationPoints
+    }
+  }
+}
+```
+
+### 5.2. Hồ sơ cá nhân lồng quan hệ (`userProfile`)
+```graphql
+query GetUserProfile($username: String!) {
+  userProfile(username: $username) {
+    id
+    displayName
+    username
+    email
+    faculty
+    studentId
+    reputationPoints
+    posts {
+      id
+      title
+      likesCount
+    }
+    documents {
+      id
+      title
+      fileSize
+      downloadCount
+    }
+    studyGroups {
+      id
+      topic
+      status
+    }
+  }
+}
+```
+
+### 5.3. Kho tài liệu & đề thi (`documents`)
+```graphql
+query GetDocuments($faculty: String, $courseCode: String, $type: String) {
+  documents(faculty: $faculty, courseCode: $courseCode, type: $type) {
+    id
+    title
+    type
+    fileSize
+    downloadCount
+    uploader {
+      displayName
+      faculty
+    }
+  }
+}
+```
+
+### 5.4. Nhóm đồ án PBL (`studyGroups`)
+```graphql
+query GetStudyGroups($status: String, $courseCode: String) {
+  studyGroups(status: $status, courseCode: $courseCode) {
+    id
+    topic
+    skillsNeeded
+    requiredMembers
+    currentMembersCount
+    leader {
+      displayName
+    }
+  }
+}
+```
+
+### 5.5. Tương tác bài viết (`toggleLikePost`)
+```graphql
+mutation ToggleLike($postId: String!) {
+  toggleLikePost(postId: $postId)
+}
+```
+

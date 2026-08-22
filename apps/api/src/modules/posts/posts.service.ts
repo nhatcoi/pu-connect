@@ -3,29 +3,7 @@ import type { CreatePostInput, PostItem } from '@pu/schemas'
 
 @Injectable()
 export class PostsService {
-  private posts: PostItem[] = [
-    {
-      id: 'post_1',
-      authorId: 'user_1',
-      author: {
-        id: 'user_1',
-        username: 'techlead',
-        displayName: 'Alex Nguyễn',
-        avatarUrl: null
-      },
-      title: 'Kiến trúc Monorepo hiệu năng cao với Turborepo + Next.js + NestJS',
-      content: 'Nội dung chia sẻ kiến trúc chuẩn monorepo...',
-      tags: ['monorepo', 'nextjs', 'nestjs'],
-      mediaUrls: [],
-      attachedDocumentIds: ['doc_1'],
-      likesCount: 42,
-      commentsCount: 9,
-      sharesCount: 15,
-      isLikedByMe: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ]
+  private posts: PostItem[] = []
 
   async findAll(tag?: string): Promise<PostItem[]> {
     if (tag) {
@@ -48,15 +26,15 @@ export class PostsService {
       authorId,
       author: {
         id: authorId,
-        username: 'vietnhat',
-        displayName: 'Việt Nhật',
+        username: 'student',
+        displayName: 'Sinh viên Phenikaa',
         avatarUrl: null
       },
       title: data.title,
       content: data.content,
-      tags: data.tags,
-      mediaUrls: data.mediaUrls,
-      attachedDocumentIds: data.attachedDocumentIds,
+      tags: data.tags || [],
+      mediaUrls: data.mediaUrls || [],
+      attachedDocumentIds: data.attachedDocumentIds || [],
       likesCount: 0,
       commentsCount: 0,
       sharesCount: 0,
