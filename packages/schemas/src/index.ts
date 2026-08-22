@@ -1,3 +1,6 @@
 export * from './auth.schema'
 export * from './post.schema'
 export * from './document.schema'
+export * from './course.schema'
+export * from './study-group.schema'
+export * from './campus.schema'
