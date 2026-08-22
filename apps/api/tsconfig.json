@@ -1,0 +1,12 @@
+{
+  "extends": "@pu/tsconfig/nestjs.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "outDir": "./dist",
+    "paths": {
+      "@/*": ["src/*"],
+      "@pu/schemas": ["../../packages/schemas/src"]
+    }
+  },
+  "include": ["src/**/*"]
+}

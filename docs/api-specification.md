@@ -1,0 +1,203 @@
+# 📡 Đặc tả API — PU Connector API Specification
+
+Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ thống **PU Connector**.
+
+* **Base URL:** `http://localhost:4000/api` (hoặc `http://<LAN_IP>:4000/api`)
+* **Format Response:** Mọi response thành công đều được chuẩn hóa qua `TransformInterceptor`:
+  ```json
+  {
+    "success": true,
+    "data": { ... }
+  }
+  ```
+* **Format Error:** Được chuẩn hóa qua `AllExceptionsFilter`:
+  ```json
+  {
+    "statusCode": 400,
+    "timestamp": "2026-08-22T08:00:00.000Z",
+    "path": "/api/...",
+    "message": "Chi tiết lỗi"
+  }
+  ```
+
+---
+
+## 1. Xác thực & Tài khoản (`/api/auth`)
+
+### 1.1. Đăng ký tài khoản
+* **Endpoint:** `POST /api/auth/register`
+* **Request Body:**
+  ```json
+  {
+    "email": "alex@example.com",
+    "username": "alex_nguyen",
+    "displayName": "Alex Nguyễn",
+    "password": "secure_password_123"
+  }
+  ```
+* **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "data": {
+      "user": {
+        "id": "user_12345",
+        "email": "alex@example.com",
+        "username": "alex_nguyen",
+        "displayName": "Alex Nguyễn",
+        "avatarUrl": null,
+        "createdAt": "2026-08-22T08:00:00.000Z"
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+  }
+  ```
+
+### 1.2. Đăng nhập
+* **Endpoint:** `POST /api/auth/login`
+* **Request Body:**
+  ```json
+  {
+    "emailOrUsername": "alex_nguyen",
+    "password": "secure_password_123"
+  }
+  ```
+* **Response (200 OK):** Trả về `user` profile và JWT `token`.
+
+---
+
+## 2. Mạng xã hội & Bài viết (`/api/posts`)
+
+### 2.1. Lấy danh sách bài viết (Feed)
+* **Endpoint:** `GET /api/posts`
+* **Query Parameters:**
+  * `tag` *(optional)*: Lọc bài viết theo chủ đề (VD: `?tag=nextjs`).
+  * `limit` *(optional)*: Số bài viết mỗi trang (default: 20).
+  * `cursor` *(optional)*: Con trỏ phân trang vô tận (Infinite scroll).
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "post_1",
+        "authorId": "user_1",
+        "author": {
+          "id": "user_1",
+          "username": "techlead",
+          "displayName": "Alex Nguyễn",
+          "avatarUrl": null
+        },
+        "title": "Kiến trúc Monorepo hiệu năng cao",
+        "content": "Nội dung bài viết hỗ trợ Markdown, LaTeX, Mermaid...",
+        "tags": ["monorepo", "nextjs", "nestjs"],
+        "mediaUrls": [],
+        "attachedDocumentIds": ["doc_1"],
+        "likesCount": 42,
+        "commentsCount": 9,
+        "sharesCount": 15,
+        "isLikedByMe": false,
+        "createdAt": "2026-08-22T08:00:00.000Z"
+      }
+    ]
+  }
+  ```
+
+### 2.2. Tạo bài viết mới
+* **Endpoint:** `POST /api/posts`
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Request Body:**
+  ```json
+  {
+    "title": "Chia sẻ về Mermaid.js và KaTeX trong Next.js",
+    "content": "Đây là nội dung Markdown có chứa $$E=mc^2$$...",
+    "tags": ["nextjs", "markdown"],
+    "attachedDocumentIds": ["doc_1"],
+    "visibility": "public"
+  }
+  ```
+
+### 2.3. Thích / Bỏ thích bài viết
+* **Endpoint:** `POST /api/posts/:id/like`
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Response (200 OK):** Trả về post object sau khi đã cập nhật `likesCount` và `isLikedByMe`.
+
+---
+
+## 3. Kho Tài liệu & Tri thức (`/api/documents`)
+
+### 3.1. Tìm kiếm & Lấy danh sách tài liệu
+* **Endpoint:** `GET /api/documents`
+* **Query Parameters:**
+  * `type` *(optional)*: Lọc theo định dạng (`pdf`, `code`, `sheet`, `markdown`, `all`).
+  * `search` *(optional)*: Từ khóa tìm kiếm theo tiêu đề hoặc tag.
+* **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "doc_1",
+        "ownerId": "user_1",
+        "owner": {
+          "id": "user_1",
+          "username": "techlead",
+          "displayName": "Alex Nguyễn"
+        },
+        "title": "System Architecture Specification v2.4.pdf",
+        "description": "Tài liệu đặc tả kiến trúc phân tán.",
+        "type": "pdf",
+        "fileUrl": "https://r2.puconnector.com/docs/system-spec.pdf",
+        "fileSize": 4850000,
+        "mimeType": "application/pdf",
+        "tags": ["architecture", "spec"],
+        "downloadCount": 312,
+        "viewCount": 1420,
+        "visibility": "public",
+        "createdAt": "2026-08-22T08:00:00.000Z"
+      }
+    ]
+  }
+  ```
+
+### 3.2. Đăng ký tài liệu mới
+* **Endpoint:** `POST /api/documents`
+* **Headers:** `Authorization: Bearer <JWT_TOKEN>`
+* **Request Body:**
+  ```json
+  {
+    "title": "Vector_Search_Notebook.ipynb",
+    "description": "Thực nghiệm thuật toán HNSW với Python.",
+    "type": "code",
+    "fileUrl": "https://r2.puconnector.com/docs/vector.ipynb",
+    "fileSize": 1250000,
+    "mimeType": "application/x-ipynb+json",
+    "tags": ["ai", "python"],
+    "visibility": "public"
+  }
+  ```
+
+### 3.3. Tải xuống tài liệu (Ghi nhận lượt tải)
+* **Endpoint:** `POST /api/documents/:id/download`
+* **Response (200 OK):** `{ "success": true, "data": { "downloadUrl": "https://..." } }`
+
+---
+
+## 4. WebSocket Realtime Gateway (`/socket.io`)
+
+### 4.1. Kết nối & Tham gia phòng (Rooms)
+```javascript
+const socket = io('http://localhost:4000', {
+  auth: { token: 'Bearer <JWT_TOKEN>' }
+});
+
+// Tham gia phòng bài viết hoặc phòng chat
+socket.emit('join_room', { roomId: 'post_123' }, (response) => {
+  console.log('Joined room:', response);
+});
+```
+
+### 4.2. Các sự kiện lắng nghe (Listen Events):
+* `new_message`: Nhận tin nhắn mới trong phòng chat.
+* `new_comment`: Nhận bình luận mới trên bài viết đang mở.
+* `notification`: Nhận thông báo tương tác (được nhắc tên, nhận reaction, v.v.).

@@ -1,0 +1,26 @@
+{
+  "extends": "@pu/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@pu/schemas": [
+        "../../packages/schemas/src"
+      ],
+      "@pu/ui": [
+        "../../packages/ui/src"
+      ]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

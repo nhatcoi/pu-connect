@@ -1,0 +1,4 @@
+{
+  "extends": "@pu/tsconfig/base.json",
+  "include": ["src/**/*"]
+}
