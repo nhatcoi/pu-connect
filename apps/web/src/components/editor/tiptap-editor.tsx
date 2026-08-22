@@ -33,7 +33,7 @@ interface TiptapEditorProps {
 export function TiptapEditor({
   content = '',
   onChange,
-  placeholder = 'Nhập nội dung bài viết hoặc tài liệu...',
+  placeholder = 'Nhập nội dung bài viết...',
   className
 }: TiptapEditorProps) {
   const editor = useEditor({
@@ -60,7 +60,7 @@ export function TiptapEditor({
     editorProps: {
       attributes: {
         class:
-          'min-h-[160px] w-full rounded-b-md px-3 py-2 text-sm focus:outline-none disabled:cursor-not-allowed disabled:opacity-50'
+          'min-h-[140px] w-full rounded-b-md px-3 py-2.5 text-sm text-foreground bg-background focus:outline-none'
       }
     },
     onUpdate({ editor }) {
@@ -73,14 +73,17 @@ export function TiptapEditor({
   }
 
   return (
-    <div className={cn('rounded-md border bg-background shadow-xs', className)}>
-      <div className="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1.5">
+    <div className={cn('rounded-lg border border-border bg-background shadow-xs overflow-hidden', className)}>
+      <div className="flex flex-wrap items-center gap-1 border-b border-border bg-muted/50 p-1.5">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={cn('h-8 w-8 p-0', editor.isActive('bold') && 'bg-accent text-accent-foreground')}
+          className={cn(
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
+            editor.isActive('bold') && 'bg-accent text-accent-foreground font-bold'
+          )}
         >
           <Bold className="h-4 w-4" />
         </Button>
@@ -90,7 +93,7 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={cn(
-            'h-8 w-8 p-0',
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
             editor.isActive('italic') && 'bg-accent text-accent-foreground'
           )}
         >
@@ -103,8 +106,8 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           className={cn(
-            'h-8 w-8 p-0',
-            editor.isActive('heading', { level: 1 }) && 'bg-accent text-accent-foreground'
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
+            editor.isActive('heading', { level: 1 }) && 'bg-accent text-accent-foreground font-bold'
           )}
         >
           <Heading1 className="h-4 w-4" />
@@ -115,8 +118,8 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           className={cn(
-            'h-8 w-8 p-0',
-            editor.isActive('heading', { level: 2 }) && 'bg-accent text-accent-foreground'
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
+            editor.isActive('heading', { level: 2 }) && 'bg-accent text-accent-foreground font-bold'
           )}
         >
           <Heading2 className="h-4 w-4" />
@@ -128,7 +131,7 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={cn(
-            'h-8 w-8 p-0',
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
             editor.isActive('bulletList') && 'bg-accent text-accent-foreground'
           )}
         >
@@ -140,7 +143,7 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={cn(
-            'h-8 w-8 p-0',
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
             editor.isActive('orderedList') && 'bg-accent text-accent-foreground'
           )}
         >
@@ -152,7 +155,7 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           className={cn(
-            'h-8 w-8 p-0',
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
             editor.isActive('blockquote') && 'bg-accent text-accent-foreground'
           )}
         >
@@ -164,8 +167,8 @@ export function TiptapEditor({
           size="sm"
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           className={cn(
-            'h-8 w-8 p-0',
-            editor.isActive('codeBlock') && 'bg-accent text-accent-foreground'
+            'h-8 w-8 p-0 text-foreground hover:bg-muted',
+            editor.isActive('codeBlock') && 'bg-accent text-accent-foreground font-bold'
           )}
         >
           <Code className="h-4 w-4" />
@@ -177,7 +180,7 @@ export function TiptapEditor({
           onClick={() =>
             editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
           }
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 text-foreground hover:bg-muted"
         >
           <TableIcon className="h-4 w-4" />
         </Button>
