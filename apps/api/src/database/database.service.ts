@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common'
-import { Pool, QueryResult, QueryResultRow } from 'pg'
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg'
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
@@ -44,6 +44,32 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn(`Slow Query [${duration}ms]: ${text.slice(0, 80)}...`)
     }
     return res
+  }
+
+  /**
+   * Execute multiple operations within an atomic ACID transaction
+   */
+  async transaction<T>(
+    callback: (client: PoolClient) => Promise<T>
+  ): Promise<T> {
+    const client = await this.pool.connect()
+    const start = Date.now()
+    try {
+      await client.query('BEGIN')
+      const result = await callback(client)
+      await client.query('COMMIT')
+      const duration = Date.now() - start
+      if (duration > 300) {
+        this.logger.warn(`Slow Transaction [${duration}ms]`)
+      }
+      return result
+    } catch (error: any) {
+      await client.query('ROLLBACK')
+      this.logger.error(`Transaction rolled back due to error: ${error.message}`)
+      throw error
+    } finally {
+      client.release()
+    }
   }
 
   getPool(): Pool {
