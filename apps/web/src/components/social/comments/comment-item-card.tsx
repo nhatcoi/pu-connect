@@ -1,0 +1,175 @@
+'use client'
+
+import React, { useState } from 'react'
+import Link from 'next/link'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
+import { PostMediaGallery } from '../post-media-gallery'
+import { CommentComposer } from './comment-composer'
+import { Heart, MessageSquare, CheckCircle2, Trash2, Check } from 'lucide-react'
+import { cn, formatRelativeTime } from '@/lib/utils'
+import type { CommentItem } from '@pu/schemas'
+
+interface CommentItemCardProps {
+  comment: CommentItem
+  isPostAuthor?: boolean
+  isQaPost?: boolean
+  currentUserId?: string
+  onLikeToggle: (commentId: string) => void
+  onAcceptSolution?: (commentId: string) => void
+  onDeleteComment?: (commentId: string) => void
+  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[]) => Promise<any>
+}
+
+export function CommentItemCard({
+  comment,
+  isPostAuthor,
+  isQaPost,
+  currentUserId,
+  onLikeToggle,
+  onAcceptSolution,
+  onDeleteComment,
+  onReplySubmit
+}: CommentItemCardProps) {
+  const [showReplyComposer, setShowReplyComposer] = useState(false)
+
+  const authorInitials = (
+    comment.author?.displayName ||
+    comment.author?.username ||
+    'PU'
+  )
+    .slice(0, 2)
+    .toUpperCase()
+
+  const isMyComment = currentUserId === comment.authorId
+
+  return (
+    <div
+      className={cn(
+        'group relative rounded-xl transition-all duration-150 p-3 space-y-2',
+        comment.isSolution
+          ? 'bg-emerald-500/5 border border-emerald-500/30'
+          : 'hover:bg-muted/30 border border-transparent hover:border-border/50'
+      )}
+    >
+      {/* Solution Banner */}
+      {comment.isSolution && (
+        <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 pb-1">
+          <CheckCircle2 className="h-4 w-4" />
+          <span>Lời giải được tác giả công nhận chính xác</span>
+        </div>
+      )}
+
+      {/* Header: Author info */}
+      <div className="flex items-start justify-between">
+        <Link
+          href={`/${comment.author?.username || 'user'}`}
+          className="flex items-center space-x-2.5 group/author cursor-pointer"
+        >
+          <Avatar className="h-7 w-7 border border-border select-none shadow-xs">
+            <AvatarImage src={comment.author?.avatarUrl || ''} alt={comment.author?.displayName || ''} />
+            <AvatarFallback className="bg-muted text-foreground font-bold text-[10px]">
+              {authorInitials}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-xs text-foreground group-hover/author:underline">
+              {comment.author?.displayName || 'Sinh viên Phenikaa'}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              @{comment.author?.username || 'student'}
+            </span>
+            <span className="text-muted-foreground text-[10px]">•</span>
+            <span className="text-[10px] text-muted-foreground">{formatRelativeTime(comment.createdAt)}</span>
+          </div>
+        </Link>
+
+        {/* Top-right Actions: Solution Toggle or Delete */}
+        <div className="flex items-center gap-1">
+          {isPostAuthor && isQaPost && onAcceptSolution && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onAcceptSolution(comment.id)}
+              className={cn(
+                'h-6 px-2 text-[10px] font-bold rounded-full gap-1 cursor-pointer transition-colors',
+                comment.isSolution
+                  ? 'bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600'
+                  : 'hover:bg-emerald-500/10 hover:text-emerald-600 hover:border-emerald-500/30'
+              )}
+            >
+              <Check className="h-3 w-3" />
+              <span>{comment.isSolution ? 'Đã duyệt' : 'Duyệt lời giải'}</span>
+            </Button>
+          )}
+
+          {isMyComment && onDeleteComment && (
+            <button
+              type="button"
+              onClick={() => onDeleteComment(comment.id)}
+              className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all cursor-pointer rounded-full"
+              title="Xóa bình luận"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Comment Body */}
+      <div className="pl-9 space-y-2">
+        <MarkdownPreview content={comment.content} className="text-xs leading-relaxed" />
+
+        {comment.mediaUrls && comment.mediaUrls.length > 0 && (
+          <PostMediaGallery mediaUrls={comment.mediaUrls} className="mt-1" />
+        )}
+
+        {/* Actions bar: Like, Reply */}
+        <div className="flex items-center gap-4 pt-1 text-xs text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => onLikeToggle(comment.id)}
+            className={cn(
+              'flex items-center gap-1 transition-colors cursor-pointer hover:text-rose-500',
+              comment.isLikedByMe && 'text-rose-500 font-semibold'
+            )}
+          >
+            <Heart
+              className={cn(
+                'h-3.5 w-3.5',
+                comment.isLikedByMe && 'fill-current'
+              )}
+            />
+            <span>{comment.likesCount || 0}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowReplyComposer((prev) => !prev)}
+            className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span>Trả lời</span>
+          </button>
+        </div>
+
+        {/* Nested Reply Composer */}
+        {showReplyComposer && (
+          <div className="pt-2">
+            <CommentComposer
+              parentId={comment.id}
+              autoFocus
+              onSubmit={async (text, media) => {
+                await onReplySubmit(text, comment.id, media)
+                setShowReplyComposer(false)
+              }}
+              onCancel={() => setShowReplyComposer(false)}
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
