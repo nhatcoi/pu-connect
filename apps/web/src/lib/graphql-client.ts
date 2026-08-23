@@ -1,5 +1,5 @@
 const GRAPHQL_ENDPOINT =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:4000/graphql'
+  process.env.NEXT_PUBLIC_GRAPHQL_URL || '/graphql'
 
 interface GraphQLResponse<T> {
   data?: T

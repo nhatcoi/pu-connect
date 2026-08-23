@@ -1,12 +1,24 @@
 import { z } from 'zod'
 
+export const PostTypeEnum = z.enum(['general', 'qa', 'document', 'group_recruit', 'review'])
+export type PostType = z.infer<typeof PostTypeEnum>
+
+export const TargetAudienceEnum = z.enum(['everyone', 'faculty', 'course_members', 'followers'])
+export type TargetAudience = z.infer<typeof TargetAudienceEnum>
+
 export const CreatePostSchema = z.object({
   title: z.string().max(200).optional(),
   content: z.string().min(1, { message: 'Nội dung bài viết không được để trống' }),
+  postType: PostTypeEnum.default('general'),
+  courseId: z.string().optional(),
+  facultyCode: z.string().optional(),
+  targetAudience: TargetAudienceEnum.default('everyone'),
   tags: z.array(z.string()).default([]),
   attachedDocumentIds: z.array(z.string()).default([]),
   mediaUrls: z.array(z.string().url()).default([]),
-  visibility: z.enum(['public', 'followers', 'private']).default('public')
+  visibility: z.enum(['public', 'followers', 'private']).default('public'),
+  recruitSlotsTotal: z.number().int().nonnegative().optional(),
+  recruitSlotsFilled: z.number().int().nonnegative().optional()
 })
 
 export const PostItemSchema = z.object({
@@ -20,6 +32,16 @@ export const PostItemSchema = z.object({
   }),
   title: z.string().optional(),
   content: z.string(),
+  postType: PostTypeEnum.default('general'),
+  courseId: z.string().nullable().optional(),
+  courseCode: z.string().nullable().optional(),
+  courseName: z.string().nullable().optional(),
+  facultyCode: z.string().nullable().optional(),
+  targetAudience: TargetAudienceEnum.default('everyone'),
+  isResolved: z.boolean().default(false),
+  acceptedCommentId: z.string().nullable().optional(),
+  recruitSlotsTotal: z.number().optional(),
+  recruitSlotsFilled: z.number().optional(),
   tags: z.array(z.string()),
   mediaUrls: z.array(z.string()),
   attachedDocumentIds: z.array(z.string()),
@@ -33,3 +55,4 @@ export const PostItemSchema = z.object({
 
 export type CreatePostInput = z.infer<typeof CreatePostSchema>
 export type PostItem = z.infer<typeof PostItemSchema>
+

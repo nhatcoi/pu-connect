@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 interface RequestOptions extends RequestInit {
   token?: string
@@ -35,3 +35,30 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
 
   return response.json() as Promise<T>
 }
+
+export async function uploadFileToR2(
+  file: File,
+  folder: 'posts/images' | 'documents' | 'avatars' = 'posts/images'
+): Promise<{ url: string; key: string; size: number }> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(`${API_BASE_URL}/upload/file?folder=${folder}`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData
+  })
+
+  if (!response.ok) {
+    let errorMessage = 'Không thể tải tệp lên máy chủ'
+    try {
+      const err = await response.json()
+      errorMessage = err.message || errorMessage
+    } catch {}
+    throw new Error(errorMessage)
+  }
+
+  const result = await response.json()
+  return result.data
+}
+
