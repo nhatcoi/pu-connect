@@ -30,6 +30,7 @@ import {
 import { useAppStore } from '@/store'
 import { CommandPalette } from '@/components/navigation/command-palette'
 import { AuthDialog } from '@/components/auth/auth-dialog'
+import { AcademicSearchBar } from '@/components/search/academic-search-bar'
 import { apiClient } from '@/lib/api-client'
 import type { UserProfile } from '@pu/schemas'
 import { toast } from 'sonner'
@@ -81,19 +82,10 @@ export function Header() {
             </div>
           </a>
 
-          {/* Quick Search & Command Palette Trigger */}
-          <button
-            onClick={() => setIsCommandOpen(true)}
-            className="relative hidden md:flex items-center justify-between w-80 rounded-lg border border-input bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground hover:border-border hover:bg-muted/70 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <span>Tìm kiếm nhanh...</span>
-            </div>
-            <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </button>
+          {/* Academic Smart Search Bar */}
+          <div className="hidden md:block w-96">
+            <AcademicSearchBar />
+          </div>
         </div>
 
         <div className="flex items-center gap-2.5">

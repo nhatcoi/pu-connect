@@ -208,9 +208,11 @@
 /* ── Prevent Radix UI / Modal scroll-locking layout shift (Zero Layout Shift) ── */
 html {
   scrollbar-gutter: stable;
+  overflow-y: scroll;
 }
 
-body[data-scroll-locked] {
+body[data-scroll-locked],
+html body {
   margin-right: 0px !important;
   padding-right: 0px !important;
 }
