@@ -11,6 +11,7 @@ import { CoursesModule } from './modules/courses/courses.module'
 import { StudyGroupsModule } from './modules/study-groups/study-groups.module'
 import { CampusModule } from './modules/campus/campus.module'
 import { SocialGraphQLModule } from './modules/graphql/social-graphql.module'
+import { StorageModule } from './modules/storage/storage.module'
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { SocialGraphQLModule } from './modules/graphql/social-graphql.module'
     RealtimeModule,
     CoursesModule,
     StudyGroupsModule,
-    CampusModule
+    CampusModule,
+    StorageModule
   ]
 })
 export class AppModule {}
