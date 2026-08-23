@@ -70,6 +70,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [ ] ☁️ **Tải file trực tiếp lên Cloud (`S3 / Cloudflare R2 Direct Upload`)**: Tạo Presigned URL để client upload trực tiếp file đề thi dung lượng lớn mà không nghẽn server.
 - [ ] 🛡️ **Quét virus & kiểm duyệt tệp tin (`File Quarantine & Antivirus`)**: Tự động kiểm tra an toàn trước khi công khai tài liệu lên kho chung.
 
+### 🏷️ Phân Loại Học Thuật & Trực Quan Hóa Chia Sẻ (Academic Sharing & Visual Taxonomy)
+- [ ] 🎯 **Mô hình phân loại 3 tầng (`Layered Taxonomy`)**: Tầng 1 (Khoa / Mã học phần) $\rightarrow$ Tầng 2 (Mục đích bài viết: Q&A, Đề thi, Tuyển PBL, Review) $\rightarrow$ Tầng 3 (Custom Tags linh hoạt). *(Xem chi tiết tại [`docs/academic-sharing-and-taxonomy-spec.md`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/docs/academic-sharing-and-taxonomy-spec.md))*.
+- [ ] 🎨 **Bộ nhận diện trực quan trên Feed (`Visual Intent Badges`)**: Phù hiệu màu sắc đặc trưng (Vàng: Hỏi đáp, Xanh lục: Đề thi, Tím: Ghép nhóm PBL, Xanh dương: Review), thẻ trạng thái `[Chưa giải quyết]` / `[✅ Đã giải quyết]`.
+- [ ] ✍️ **Trình tạo bài viết thông minh (`Smart Composer`)**: Chọn nhanh loại bài viết, tự động gợi ý tag môn học theo ngữ cảnh tiêu đề.
+- [ ] 🔍 **Thanh lọc nhanh đa chiều (`Smart Filter Bar`)**: Lọc 1-click trên đầu feed (*Môn tôi đang học*, *Câu hỏi chưa có lời giải*, *Chỉ tài liệu & đề thi*, *Tuyển nhóm còn slot*).
+- [ ] ✅ **Cơ chế duyệt câu trả lời đúng (`Accepted Answer`)**: Tác giả bài viết Q&A có quyền chọn câu trả lời chính xác để ghim lên đầu và cộng điểm danh vọng cho người giải đáp.
+
 ### 🏆 Danh Vọng & Động Lực Học Tập (Gamification & Reputation)
 - [ ] 🏅 **Hệ thống điểm danh vọng & Huy hiệu (`Reputation Points & Badges`)**: Tích điểm khi chia sẻ đề thi hay, đạt huy hiệu Top Contributor.
 - [ ] 🥇 **Bảng xếp hạng sinh viên đóng góp (`Top Contributors Leaderboard`)**: Vinh danh các sinh viên tích cực theo từng Khoa/Viện.
+
