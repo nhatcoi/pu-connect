@@ -204,3 +204,13 @@
   background-color: var(--muted);
   color: var(--foreground);
 }
+
+/* ── Prevent Radix UI / Modal scroll-locking layout shift (Zero Layout Shift) ── */
+html {
+  scrollbar-gutter: stable;
+}
+
+body[data-scroll-locked] {
+  margin-right: 0px !important;
+  padding-right: 0px !important;
+}

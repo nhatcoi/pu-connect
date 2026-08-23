@@ -62,3 +62,6 @@ Quy chuẩn viết code sạch, kiến trúc module rõ ràng và ưu tiên hi�
 1. **Không Icon In Text:** Không dùng emoji trong chuỗi text (dùng Lucide SVG components).
 2. **Theme Consistency:** Luôn sử dụng biến CSS semantic (`--background`, `--foreground`, `--card`, `--border`, `--primary`, `--muted`).
 3. **Contrast Compliance:** Đảm bảo tỷ lệ tương phản tối thiểu 4.5:1 cho text trên mọi nền ở cả Light Mode và Dark Mode.
+4. **Zero Layout Shift (Chống Rung Giao Diện Khi Mở Menu/Modal):**
+   * Mặc định các component Dropdown/Popover của Radix UI kích hoạt `modal={true}`, tự động thêm `padding-right` và khóa cuộn body $\rightarrow$ gây rung giật toàn bộ layout trang.
+   * **Quy chuẩn:** Luôn đặt `modal={false}` cho các `DropdownMenu` thông thường trên feed/card, và duy trì `scrollbar-gutter: stable` trong `globals.css` cùng `body[data-scroll-locked] { padding-right: 0px !important }`.
