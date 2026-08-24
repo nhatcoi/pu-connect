@@ -57,14 +57,14 @@ export function ComposerAudienceMenu({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer outline-none"
+          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-foreground/80 hover:bg-muted hover:text-foreground transition-colors cursor-pointer outline-none max-w-[130px] sm:max-w-none"
         >
-          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-          <span>{current.label}</span>
-          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+          <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span className="truncate">{current.label}</span>
+          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72 p-1.5 space-y-1">
+      <DropdownMenuContent align="end" className="w-72 p-1.5 space-y-1 rounded-2xl shadow-xl border border-border">
         <div className="px-2 py-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
           Ai có thể thảo luận và trả lời?
         </div>
@@ -77,7 +77,7 @@ export function ComposerAudienceMenu({
             <DropdownMenuItem
               key={key}
               onClick={() => onChange(key)}
-              className="flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition-colors"
+              className="flex items-start gap-2.5 p-2 rounded-xl cursor-pointer transition-colors"
             >
               <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
                 <ItemIcon className="h-3.5 w-3.5" />

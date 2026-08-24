@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { BookOpen, Search, Check, X, GraduationCap } from 'lucide-react'
+import { Search, Check, X, GraduationCap } from 'lucide-react'
 import { useAppStore } from '@/store'
 
 interface ComposerCoursePickerProps {
@@ -55,23 +55,25 @@ export function ComposerCoursePicker({
   const selectedCourse = courseList.find((c) => c.id === selectedCourseId || c.code === selectedCourseId)
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 max-w-full">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all duration-150 cursor-pointer outline-none ${
+            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all duration-150 cursor-pointer outline-none max-w-[160px] sm:max-w-[220px] ${
               selectedCourse
                 ? 'bg-primary/10 border-primary/40 text-primary'
                 : 'border-dashed border-border text-muted-foreground hover:border-primary/40 hover:text-foreground'
             }`}
           >
-            <GraduationCap className="h-3.5 w-3.5" />
-            <span>{selectedCourse ? `${selectedCourse.code} - ${selectedCourse.name}` : 'Gắn môn học'}</span>
+            <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">
+              {selectedCourse ? `${selectedCourse.code} - ${selectedCourse.name}` : 'Gắn môn học'}
+            </span>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="w-72 p-2 space-y-2">
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/60 border border-border">
+        <DropdownMenuContent align="start" className="w-72 p-2 space-y-2 rounded-2xl shadow-xl border border-border">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-muted/60 border border-border">
             <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
             <input
               type="text"
@@ -91,7 +93,7 @@ export function ComposerCoursePicker({
                   <DropdownMenuItem
                     key={course.id}
                     onClick={() => onChange(course.id)}
-                    className="flex items-center justify-between p-2 rounded-lg cursor-pointer text-xs"
+                    className="flex items-center justify-between p-2 rounded-xl cursor-pointer text-xs"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
                       <span className="font-bold text-foreground truncate">
@@ -118,7 +120,7 @@ export function ComposerCoursePicker({
         <button
           type="button"
           onClick={() => onChange(undefined)}
-          className="p-1 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer"
+          className="p-1 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer shrink-0"
           title="Bỏ chọn môn"
         >
           <X className="h-3.5 w-3.5" />

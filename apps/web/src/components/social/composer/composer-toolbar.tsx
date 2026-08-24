@@ -66,7 +66,7 @@ export function ComposerToolbar({
   }
 
   return (
-    <div className="flex items-center gap-0.5 text-primary">
+    <div className="flex items-center gap-0.5 text-primary overflow-x-auto no-scrollbar py-0.5 max-w-full">
       {/* Hidden File Inputs */}
       <input
         ref={imageInputRef}
@@ -89,7 +89,7 @@ export function ComposerToolbar({
       <button
         type="button"
         onClick={handleImageClick}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+        className="flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer shrink-0"
         title="Đính kèm ảnh bài tập / sơ đồ"
       >
         <ImageIcon className="h-4 w-4" />
@@ -98,7 +98,7 @@ export function ComposerToolbar({
       <button
         type="button"
         onClick={handleDocClick}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+        className="flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer shrink-0"
         title="Tải lên tài liệu, slide, đề thi PDF"
       >
         <FileText className="h-4 w-4" />
@@ -107,7 +107,7 @@ export function ComposerToolbar({
       <button
         type="button"
         onClick={handleInsertMath}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer font-serif font-bold text-xs"
+        className="flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer font-serif font-bold text-xs shrink-0"
         title="Chèn công thức toán học LaTeX ($KaTeX$)"
       >
         <Binary className="h-4 w-4" />
@@ -116,7 +116,7 @@ export function ComposerToolbar({
       <button
         type="button"
         onClick={handleInsertCode}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+        className="flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer shrink-0"
         title="Chèn khối mã nguồn (Code Block)"
       >
         <Code2 className="h-4 w-4" />
@@ -125,7 +125,7 @@ export function ComposerToolbar({
       <button
         type="button"
         onClick={handleInsertMermaid}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+        className="flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer shrink-0"
         title="Chèn sơ đồ thuật toán (Mermaid Diagram)"
       >
         <GitBranch className="h-4 w-4" />
@@ -135,7 +135,7 @@ export function ComposerToolbar({
         type="button"
         onClick={onToggleTagInput}
         className={cn(
-          'flex h-8 w-8 items-center justify-center rounded-full transition-colors cursor-pointer',
+          'flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-colors cursor-pointer shrink-0',
           showTagInput
             ? 'bg-primary/10 text-primary'
             : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
@@ -150,7 +150,7 @@ export function ComposerToolbar({
           type="button"
           onClick={onTogglePoll}
           className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-full transition-colors cursor-pointer',
+            'flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-colors cursor-pointer shrink-0',
             showPoll
               ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
@@ -166,7 +166,7 @@ export function ComposerToolbar({
         type="button"
         onClick={onTogglePreview}
         className={cn(
-          'flex h-8 items-center gap-1 px-2.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ml-1',
+          'flex h-7.5 sm:h-8 items-center gap-1 px-2 rounded-full text-xs font-semibold transition-colors cursor-pointer shrink-0 ml-0.5',
           isPreviewMode
             ? 'bg-primary text-primary-foreground'
             : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'

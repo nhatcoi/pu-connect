@@ -161,9 +161,9 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
     <>
       <Card
         id={`post-${post.id}`}
-        className="overflow-hidden border border-border bg-card text-card-foreground shadow-xs transition-all duration-200 hover:border-border/80"
+        className="overflow-hidden border border-border bg-card text-card-foreground shadow-xs transition-all duration-200 hover:border-border/80 rounded-2xl"
       >
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-2 p-3 sm:p-4 pb-2">
           <Link
             href={`/${post.author?.username || 'user'}`}
             className="flex items-center space-x-3 group cursor-pointer"

@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Header } from '@/components/social/header'
 import { Sidebar } from '@/components/social/sidebar'
+import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
 import { PostCard } from '@/components/social/post-card'
 import { DocumentCard } from '@/components/social/document-card'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
@@ -102,7 +103,7 @@ function SearchContent() {
   const totalCount = searchResult?.counts?.total || 0
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
       <Header />
       <DocumentPreviewModal
         document={previewDocument}
@@ -110,17 +111,14 @@ function SearchContent() {
         onOpenChange={(open) => !open && setPreviewDocument(null)}
       />
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-12 lg:gap-8 pt-4 pb-16">
-          {/* Left Navigation Sidebar */}
-          <aside className="hidden md:block md:col-span-3 lg:col-span-3">
-            <div className="sticky top-20">
-              <Sidebar currentTab="feed" />
-            </div>
-          </aside>
+      <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+        {/* 1. Left Navigation Sidebar (Icon-only on md, full on xl) */}
+        <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+          <Sidebar currentTab="feed" />
+        </div>
 
-          {/* Center Search Results Feed */}
-          <section className="md:col-span-9 lg:col-span-6 space-y-4">
+        {/* 2. Center Search Results Feed (Max 620px) */}
+        <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12 p-3 sm:p-4 space-y-4">
             {/* Search Header Banner */}
             <div className="rounded-2xl border border-border bg-card p-4 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
@@ -419,65 +417,65 @@ function SearchContent() {
                 )}
               </div>
             )}
-          </section>
+        </main>
 
-          {/* Right Filters & Faculties Sidebar */}
-          <aside className="hidden lg:block lg:col-span-3">
-            <div className="sticky top-20 space-y-4">
-              {/* Faculty Filter Card */}
-              <Card className="border-border bg-card shadow-xs">
-                <CardHeader className="pb-3 border-b border-border">
-                  <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                    <Filter className="h-4 w-4 text-primary" />
-                    <span>Lọc theo Khoa / Viện</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-2 space-y-0.5">
-                  {FACULTIES.map((fac) => {
-                    const isSelected = selectedFaculty === fac.code
-                    return (
-                      <button
-                        key={fac.code}
-                        onClick={() => handleFacultyChange(fac.code)}
+        {/* 3. Right Filters & Faculties Sidebar (Desktop lg: only) */}
+        <aside className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 pl-4 xl:pl-6 space-y-4">
+          {/* Faculty Filter Card */}
+          <Card className="border-border bg-card shadow-xs rounded-2xl">
+            <CardHeader className="pb-3 border-b border-border">
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                <Filter className="h-4 w-4 text-primary" />
+                <span>Lọc theo Khoa / Viện</span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-2 space-y-0.5">
+              {FACULTIES.map((fac) => {
+                const isSelected = selectedFaculty === fac.code
+                return (
+                  <button
+                    key={fac.code}
+                    onClick={() => handleFacultyChange(fac.code)}
+                    className={cn(
+                      'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer text-left',
+                      isSelected
+                        ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    )}
+                  >
+                    <span className="truncate">{fac.name}</span>
+                    {fac.code !== 'ALL' && (
+                      <span
                         className={cn(
-                          'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer text-left',
-                          isSelected
-                            ? 'bg-primary text-primary-foreground font-bold shadow-xs'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0',
+                          isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
                         )}
                       >
-                        <span className="truncate">{fac.name}</span>
-                        {fac.code !== 'ALL' && (
-                          <span
-                            className={cn(
-                              'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0',
-                              isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
-                            )}
-                          >
-                            {fac.code}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  })}
-                </CardContent>
-              </Card>
+                        {fac.code}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </CardContent>
+          </Card>
 
-              {/* Search Tips */}
-              <Card className="border-border bg-card shadow-xs p-3.5 space-y-2 text-xs">
-                <span className="font-bold text-foreground flex items-center gap-1.5">
-                  💡 Mẹo tìm kiếm hiệu quả
-                </span>
-                <ul className="text-muted-foreground space-y-1.5 text-[11px] list-disc list-inside">
-                  <li>Tìm mã môn học chính xác: <code className="bg-muted px-1 py-0.5 rounded text-foreground">IT101</code></li>
-                  <li>Tìm đề thi theo từ khóa: <code className="bg-muted px-1 py-0.5 rounded text-foreground">Đề thi Giải tích</code></li>
-                  <li>Tìm bài viết theo thẻ tag: <code className="bg-muted px-1 py-0.5 rounded text-foreground">#DoAnTotNghiep</code></li>
-                </ul>
-              </Card>
-            </div>
-          </aside>
-        </div>
-      </main>
+          {/* Search Tips */}
+          <Card className="border-border bg-card shadow-xs p-3.5 space-y-2 text-xs rounded-2xl">
+            <span className="font-bold text-foreground flex items-center gap-1.5">
+              💡 Mẹo tìm kiếm hiệu quả
+            </span>
+            <ul className="text-muted-foreground space-y-1.5 text-[11px] list-disc list-inside">
+              <li>Tìm mã môn học chính xác: <code className="bg-muted px-1 py-0.5 rounded text-foreground">IT101</code></li>
+              <li>Tìm đề thi theo từ khóa: <code className="bg-muted px-1 py-0.5 rounded text-foreground">Đề thi Giải tích</code></li>
+              <li>Tìm bài viết theo thẻ tag: <code className="bg-muted px-1 py-0.5 rounded text-foreground">#DoAnTotNghiep</code></li>
+            </ul>
+          </Card>
+        </aside>
+      </div>
+
+      {/* Mobile Bottom Navigation Bar & FAB */}
+      <MobileBottomNav />
     </div>
   )
 }

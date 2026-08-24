@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Header } from '@/components/social/header'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
+import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
 import { PostCard } from '@/components/social/post-card'
 import { DocumentCard } from '@/components/social/document-card'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
@@ -111,85 +112,86 @@ function HomeContent() {
           }}
         />
 
-        {/* Main 3-Column Layout (X Social Style) */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        {/* Main 3-Column Layout (X Twitter Architecture) */}
+        <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+          
+          {/* 1. Left Sidebar Navigation (Icon-only on md, full on xl) */}
+          <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+            <Sidebar />
+          </div>
+
+          {/* 2. Center Feed Column (Max 620px, crisp dividing borders, zero horizontal shift) */}
+          <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
-            {/* 1. Left Sidebar Navigation (3 cols) */}
-            <div className="hidden md:block md:col-span-3 sticky top-20">
-              <Sidebar />
+            {/* X-style Feed Header with Sticky Tab Bar */}
+            <div className="sticky top-13 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80">
+              <div className="flex w-full items-center justify-around text-xs sm:text-sm font-bold">
+                <button
+                  onClick={() => setActiveFeedTab('for_you')}
+                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
+                    activeFeedTab === 'for_you'
+                      ? 'text-foreground font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 justify-center truncate">
+                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Dành cho bạn</span>
+                  </span>
+                  {activeFeedTab === 'for_you' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveFeedTab('courses')}
+                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
+                    activeFeedTab === 'courses'
+                      ? 'text-foreground font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className="truncate block">Môn học & Đề thi</span>
+                  {activeFeedTab === 'courses' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveFeedTab('documents')}
+                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
+                    activeFeedTab === 'documents'
+                      ? 'text-foreground font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className="truncate block">Kho tài liệu</span>
+                  {activeFeedTab === 'documents' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setActiveFeedTab('bookmarks')}
+                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
+                    activeFeedTab === 'bookmarks'
+                      ? 'text-foreground font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className="flex items-center gap-1.5 justify-center truncate">
+                    <Bookmark className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Đã lưu</span>
+                  </span>
+                  {activeFeedTab === 'bookmarks' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* 2. Center Feed Column (6 cols) */}
-            <main className="md:col-span-9 lg:col-span-6 space-y-4">
-              
-              {/* X-style Feed Header with Sticky Tab Bar */}
-              <div className="sticky top-16 z-30 -mx-4 sm:mx-0 px-4 sm:px-0 bg-background/95 backdrop-blur-md border-b border-border">
-                <div className="flex w-full items-center justify-around text-xs font-bold">
-                  <button
-                    onClick={() => setActiveFeedTab('for_you')}
-                    className={`relative py-3.5 px-4 text-center cursor-pointer transition-colors ${
-                      activeFeedTab === 'for_you'
-                        ? 'text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 justify-center">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      <span>Dành cho bạn</span>
-                    </span>
-                    {activeFeedTab === 'for_you' && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setActiveFeedTab('courses')}
-                    className={`relative py-3.5 px-4 text-center cursor-pointer transition-colors ${
-                      activeFeedTab === 'courses'
-                        ? 'text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span>Môn học & Đề thi</span>
-                    {activeFeedTab === 'courses' && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setActiveFeedTab('documents')}
-                    className={`relative py-3.5 px-4 text-center cursor-pointer transition-colors ${
-                      activeFeedTab === 'documents'
-                        ? 'text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span>Kho tài liệu</span>
-                    {activeFeedTab === 'documents' && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                    )}
-                  </button>
-
-                  <button
-                    onClick={() => setActiveFeedTab('bookmarks')}
-                    className={`relative py-3.5 px-4 text-center cursor-pointer transition-colors ${
-                      activeFeedTab === 'bookmarks'
-                        ? 'text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 justify-center">
-                      <Bookmark className="h-3.5 w-3.5" />
-                      <span>Đã lưu</span>
-                    </span>
-                    {activeFeedTab === 'bookmarks' && (
-                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
+            {/* Feed items container with responsive padding */}
+            <div className="p-3 sm:p-4 space-y-4">
               {/* Standalone Academic Post Composer (hidden when viewing bookmarks or documents) */}
               {activeFeedTab !== 'bookmarks' && activeFeedTab !== 'documents' && (
                 <AcademicPostComposer />
@@ -227,7 +229,7 @@ function HomeContent() {
                       </div>
                     </>
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
+                    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center">
                       <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                       <h3 className="text-sm font-bold text-foreground">
                         {activeFeedTab === 'bookmarks' ? 'Chưa có bài viết nào được lưu' : 'Chưa có bài viết nào'}
@@ -241,7 +243,7 @@ function HomeContent() {
                         <Button
                           size="sm"
                           onClick={() => setCreatePostOpen(true)}
-                          className="bg-foreground text-background font-bold rounded-full"
+                          className="bg-foreground text-background font-bold rounded-full cursor-pointer"
                         >
                           Tạo bài viết mới
                         </Button>
@@ -278,14 +280,17 @@ function HomeContent() {
                   )}
                 </div>
               )}
-            </main>
-
-            {/* 3. Right Sidebar (3 cols) */}
-            <div className="hidden lg:block lg:col-span-3 sticky top-20">
-              <RightSidebar />
             </div>
+          </main>
+
+          {/* 3. Right Sidebar (Desktop lg: and above) */}
+          <div className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 pl-4 xl:pl-6">
+            <RightSidebar />
           </div>
         </div>
+
+        {/* Mobile Bottom Navigation & Floating Action Button (FAB) */}
+        <MobileBottomNav />
       </div>
     </AuthGuard>
   )
@@ -298,4 +303,3 @@ export default function HomePage() {
     </Suspense>
   )
 }
-

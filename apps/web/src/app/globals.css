@@ -205,6 +205,15 @@
   color: var(--foreground);
 }
 
+/* ── Custom Utilities for Clean X-style Scrollbars & Layout ── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ── Prevent Radix UI / Modal scroll-locking layout shift (Zero Layout Shift) ── */
 html {
   scrollbar-gutter: stable;

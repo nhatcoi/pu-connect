@@ -454,7 +454,7 @@ export function AcademicPostComposer() {
 
           {/* Expanded Bottom Toolbar & Submit Button */}
           {isExpanded && (
-            <div className="flex items-center justify-between pt-2 border-t border-border/40">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pt-2 border-t border-border/40">
               <ComposerToolbar
                 onInsertText={handleInsertText}
                 onAddFiles={handleAddFiles}
@@ -466,7 +466,7 @@ export function AcademicPostComposer() {
                 showTagInput={showTagInput}
               />
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
                 {/* Character Count Progress Ring */}
                 <ComposerProgressRing currentLength={content.length} maxLength={MAX_CHAR_LIMIT} />
 
@@ -478,7 +478,7 @@ export function AcademicPostComposer() {
                   onClick={handleSubmit}
                   disabled={!content.trim() || isSubmitting || content.length > MAX_CHAR_LIMIT}
                   size="sm"
-                  className="gap-1.5 font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+                  className="gap-1.5 font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm rounded-full transition-all cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
