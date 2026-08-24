@@ -221,18 +221,32 @@ export class SearchService {
     `
 
     const res = await this.db.query(sql, params)
-    return res.rows.map((row) => ({
-      id: row.id,
-      authorId: row.author_id,
-      author: {
-        id: row.author_user_id || row.author_id,
-        username: row.author_username || 'user',
-        displayName: row.author_display_name || 'Sinh viên Phenikaa',
-        avatarUrl: row.author_avatar_url || null
-      },
-      title: row.title,
-      content: row.content,
-      postType: row.post_type || 'general',
+    return res.rows.map((row) => {
+      let postType: any = 'general'
+      if (row.post_type === 'question' || row.post_type === 'qa') {
+        postType = 'qa'
+      } else if (row.post_type === 'resource_share' || row.post_type === 'document') {
+        postType = 'document'
+      } else if (row.post_type === 'pbl_recruitment' || row.post_type === 'group_recruit') {
+        postType = 'group_recruit'
+      } else if (row.post_type === 'review') {
+        postType = 'review'
+      } else {
+        postType = 'general'
+      }
+
+      return {
+        id: row.id,
+        authorId: row.author_id,
+        author: {
+          id: row.author_user_id || row.author_id,
+          username: row.author_username || 'user',
+          displayName: row.author_display_name || 'Sinh viên Phenikaa',
+          avatarUrl: row.author_avatar_url || null
+        },
+        title: row.title,
+        content: row.content,
+        postType,
       courseId: row.course_id,
       courseCode: row.course_code || null,
       courseName: row.course_name || null,
@@ -248,8 +262,9 @@ export class SearchService {
       isLikedByMe: row.is_liked_by_me || false,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
-    }))
-  }
+    }
+  })
+}
 
   // ── 4. Search Users (Students & Lecturers) ───────────────────────
   private async searchUsers(

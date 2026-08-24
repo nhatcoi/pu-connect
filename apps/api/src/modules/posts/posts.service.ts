@@ -62,7 +62,7 @@ export class PostsService {
     }
 
     if (feedType === 'courses') {
-      whereClause += ` AND (p.course_id IS NOT NULL OR p.post_type IN ('qa', 'document'))`
+      whereClause += ` AND (p.course_id IS NOT NULL OR p.post_type IN ('question', 'resource_share'))`
     }
 
     // 1. Get total count
@@ -158,7 +158,21 @@ export class PostsService {
         }
       }
 
-      // 3. Insert Post into PostgreSQL
+      // 3. Normalize post_type to valid PostgreSQL post_type_enum
+      let dbPostType = 'general'
+      if (data.postType === 'qa' || (data.postType as any) === 'question') {
+        dbPostType = 'question'
+      } else if (data.postType === 'document' || (data.postType as any) === 'resource_share') {
+        dbPostType = 'resource_share'
+      } else if (data.postType === 'group_recruit' || (data.postType as any) === 'pbl_recruitment') {
+        dbPostType = 'pbl_recruitment'
+      } else if (data.postType === 'review') {
+        dbPostType = 'review'
+      } else if ((data.postType as any) === 'announcement') {
+        dbPostType = 'announcement'
+      }
+
+      // 4. Insert Post into PostgreSQL
       const insertRes = await client.query(
         `INSERT INTO posts (
           author_id, course_id, post_type, title, content, tags, media_urls, attached_document_ids, visibility
@@ -167,7 +181,7 @@ export class PostsService {
         [
           authorId,
           courseUuid,
-          data.postType || 'general',
+          dbPostType,
           data.title || data.content.slice(0, 50),
           data.content,
           data.tags || [],
@@ -265,6 +279,19 @@ export class PostsService {
   }
 
   private mapRowToPostItem(row: any): PostItem {
+    let postType: any = 'general'
+    if (row.post_type === 'question' || row.post_type === 'qa') {
+      postType = 'qa'
+    } else if (row.post_type === 'resource_share' || row.post_type === 'document') {
+      postType = 'document'
+    } else if (row.post_type === 'pbl_recruitment' || row.post_type === 'group_recruit') {
+      postType = 'group_recruit'
+    } else if (row.post_type === 'review') {
+      postType = 'review'
+    } else {
+      postType = 'general'
+    }
+
     return {
       id: row.id,
       authorId: row.author_id,
@@ -276,7 +303,7 @@ export class PostsService {
       },
       title: row.title,
       content: row.content,
-      postType: row.post_type || 'general',
+      postType,
       courseId: row.course_id,
       courseCode: row.course_code || null,
       courseName: row.course_name || null,
