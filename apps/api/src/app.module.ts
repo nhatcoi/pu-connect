@@ -13,6 +13,7 @@ import { CampusModule } from './modules/campus/campus.module'
 import { SocialGraphQLModule } from './modules/graphql/social-graphql.module'
 import { StorageModule } from './modules/storage/storage.module'
 import { SearchModule } from './modules/search/search.module'
+import { NotificationsModule } from './modules/notifications/notifications.module'
 
 @Module({
   imports: [
@@ -36,7 +37,8 @@ import { SearchModule } from './modules/search/search.module'
     StudyGroupsModule,
     CampusModule,
     StorageModule,
-    SearchModule
+    SearchModule,
+    NotificationsModule
   ]
 })
 export class AppModule {}

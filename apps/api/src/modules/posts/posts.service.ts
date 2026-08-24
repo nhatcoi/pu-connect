@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
-import type { CreatePostInput, PostItem } from '@pu/schemas'
+import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData } from '@pu/schemas'
 
 export interface FeedResult {
   data: PostItem[]
@@ -95,7 +95,12 @@ export class PostsService {
     sql += ` ORDER BY recommendation_score DESC, p.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`
 
     const res = await this.db.query(sql, params)
-    const items = res.rows.map((row) => this.mapRowToPostItem(row))
+    
+    // 3. Batch fetch polls for these posts
+    const postIds = res.rows.map((r) => r.id)
+    const pollsMap = await this.fetchPollsForPosts(postIds, currentUserId)
+
+    const items = res.rows.map((row) => this.mapRowToPostItem(row, pollsMap.get(row.id)))
 
     return {
       data: items,
@@ -129,14 +134,16 @@ export class PostsService {
     if (res.rows.length === 0) {
       throw new NotFoundException(`Bài viết không tồn tại (ID: ${id})`)
     }
-    return this.mapRowToPostItem(res.rows[0])
+
+    const pollsMap = await this.fetchPollsForPosts([id], currentUserId)
+    return this.mapRowToPostItem(res.rows[0], pollsMap.get(id))
   }
 
   async create(authorId: string, data: CreatePostInput): Promise<PostItem> {
     return this.db.transaction(async (client) => {
-      // 1. Resolve author details from PostgreSQL
+      // 1. Resolve author details
       const userRes = await client.query(
-        `SELECT id, username, display_name, avatar_url, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`,
+        `SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`,
         [authorId]
       )
 
@@ -145,7 +152,7 @@ export class PostsService {
       }
       const authorUser = userRes.rows[0]
 
-      // 2. Resolve course_id and course_code if string was passed
+      // 2. Resolve course_id
       let courseUuid: string | null = null
       let courseCode: string | null = null
       let courseName: string | null = null
@@ -162,7 +169,7 @@ export class PostsService {
         }
       }
 
-      // 3. Normalize post_type to valid PostgreSQL post_type_enum
+      // 3. Normalize post_type
       let dbPostType = 'general'
       if (data.postType === 'qa' || (data.postType as any) === 'question') {
         dbPostType = 'question'
@@ -172,8 +179,6 @@ export class PostsService {
         dbPostType = 'pbl_recruitment'
       } else if (data.postType === 'review') {
         dbPostType = 'review'
-      } else if ((data.postType as any) === 'announcement') {
-        dbPostType = 'announcement'
       }
 
       // 4. Insert Post into PostgreSQL
@@ -197,23 +202,56 @@ export class PostsService {
 
       const postRow = insertRes.rows[0]
 
-      // 4. Atomically reward +5 reputation points for author
+      // 5. Create Poll if provided
+      let pollData: PollData | null = null
+      if (data.pollQuestion && data.pollOptions && data.pollOptions.length >= 2) {
+        const pollRes = await client.query(
+          `INSERT INTO post_polls (post_id, question, total_votes) VALUES ($1, $2, 0) RETURNING *`,
+          [postRow.id, data.pollQuestion]
+        )
+        const pollRow = pollRes.rows[0]
+        const optionsList: any[] = []
+
+        for (let i = 0; i < data.pollOptions.length; i++) {
+          const optText = data.pollOptions[i].trim()
+          if (!optText) continue
+          const optRes = await client.query(
+            `INSERT INTO post_poll_options (poll_id, option_text, votes_count, display_order)
+             VALUES ($1, $2, 0, $3) RETURNING *`,
+            [pollRow.id, optText, i]
+          )
+          optionsList.push({
+            id: optRes.rows[0].id,
+            pollId: pollRow.id,
+            optionText: optRes.rows[0].option_text,
+            votesCount: 0,
+            displayOrder: i
+          })
+        }
+
+        pollData = {
+          id: pollRow.id,
+          postId: postRow.id,
+          question: pollRow.question,
+          totalVotes: 0,
+          options: optionsList,
+          myVotedOptionId: null
+        }
+      }
+
+      // 6. Reward +5 reputation points for author
       await client.query(
         `UPDATE users SET reputation_points = reputation_points + 5 WHERE id = $1`,
         [authorId]
       )
 
-      // 5. Atomically increment post_count for course if attached
+      // 7. Increment post_count for course
       if (courseUuid) {
         await client.query(
           `UPDATE courses SET post_count = post_count + 1 WHERE id = $1`,
           [courseUuid]
         )
       }
-
-      this.logger.log(
-        `[PostCreatedEvent] Post ${postRow.id} created by user ${authorId} in ACID transaction (+5 rep).`
-      )
 
       return {
         id: postRow.id,
@@ -222,17 +260,20 @@ export class PostsService {
           id: authorUser.id,
           username: authorUser.username,
           displayName: authorUser.display_name,
-          avatarUrl: authorUser.avatar_url
+          avatarUrl: authorUser.avatar_url,
+          role: authorUser.role,
+          faculty: authorUser.faculty,
+          reputationPoints: authorUser.reputation_points
         },
         title: postRow.title,
         content: postRow.content,
-        postType: postRow.post_type || 'general',
+        postType: data.postType || 'general',
         courseId: courseUuid,
         courseCode,
         courseName,
         facultyCode: authorUser.faculty,
         targetAudience: data.targetAudience || 'everyone',
-        isResolved: postRow.is_resolved || false,
+        isResolved: false,
         recruitSlotsTotal: data.recruitSlotsTotal,
         recruitSlotsFilled: data.recruitSlotsFilled,
         tags: postRow.tags || [],
@@ -242,9 +283,73 @@ export class PostsService {
         commentsCount: 0,
         sharesCount: 0,
         isLikedByMe: false,
+        isBookmarkedByMe: false,
+        poll: pollData,
         createdAt: postRow.created_at.toISOString(),
         updatedAt: postRow.updated_at.toISOString()
       }
+    })
+  }
+
+  async update(postId: string, userId: string, data: UpdatePostInput): Promise<PostItem> {
+    return this.db.transaction(async (client) => {
+      const postRes = await client.query(
+        `SELECT p.*, u.role as author_role FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 LIMIT 1`,
+        [postId]
+      )
+      if (postRes.rows.length === 0) {
+        throw new NotFoundException('Bài viết không tồn tại')
+      }
+
+      const post = postRes.rows[0]
+      const userRes = await client.query(`SELECT role FROM users WHERE id = $1 LIMIT 1`, [userId])
+      const userRole = userRes.rows[0]?.role
+
+      if (post.author_id !== userId && userRole !== 'admin') {
+        throw new ForbiddenException('Bạn không có quyền chỉnh sửa bài viết này')
+      }
+
+      const newTitle = data.title !== undefined ? data.title : post.title
+      const newContent = data.content !== undefined ? data.content : post.content
+      const newTags = data.tags !== undefined ? data.tags : post.tags
+
+      await client.query(
+        `UPDATE posts SET title = $1, content = $2, tags = $3, updated_at = NOW() WHERE id = $4`,
+        [newTitle, newContent, newTags, postId]
+      )
+
+      return this.findOne(postId, userId)
+    })
+  }
+
+  async delete(postId: string, userId: string): Promise<{ success: boolean }> {
+    return this.db.transaction(async (client) => {
+      const postRes = await client.query(
+        `SELECT author_id, course_id FROM posts WHERE id = $1 LIMIT 1`,
+        [postId]
+      )
+      if (postRes.rows.length === 0) {
+        throw new NotFoundException('Bài viết không tồn tại')
+      }
+
+      const post = postRes.rows[0]
+      const userRes = await client.query(`SELECT role FROM users WHERE id = $1 LIMIT 1`, [userId])
+      const userRole = userRes.rows[0]?.role
+
+      if (post.author_id !== userId && userRole !== 'admin') {
+        throw new ForbiddenException('Bạn không có quyền xóa bài viết này')
+      }
+
+      await client.query(`DELETE FROM posts WHERE id = $1`, [postId])
+
+      if (post.course_id) {
+        await client.query(
+          `UPDATE courses SET post_count = GREATEST(0, post_count - 1) WHERE id = $1`,
+          [post.course_id]
+        )
+      }
+
+      return { success: true }
     })
   }
 
@@ -305,7 +410,136 @@ export class PostsService {
     })
   }
 
-  private mapRowToPostItem(row: any): PostItem {
+  async votePoll(postId: string, userId: string, optionId: string): Promise<PollData> {
+    return this.db.transaction(async (client) => {
+      const pollRes = await client.query(`SELECT id FROM post_polls WHERE post_id = $1 LIMIT 1`, [postId])
+      if (pollRes.rows.length === 0) {
+        throw new NotFoundException('Khảo sát không tồn tại cho bài viết này')
+      }
+      const pollId = pollRes.rows[0].id
+
+      const optRes = await client.query(
+        `SELECT id FROM post_poll_options WHERE id = $1 AND poll_id = $2 LIMIT 1`,
+        [optionId, pollId]
+      )
+      if (optRes.rows.length === 0) {
+        throw new BadRequestException('Phương án bình chọn không hợp lệ')
+      }
+
+      // Check existing vote
+      const voteCheck = await client.query(
+        `SELECT option_id FROM post_poll_votes WHERE poll_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
+        [pollId, userId]
+      )
+
+      if (voteCheck.rows.length > 0) {
+        const prevOptId = voteCheck.rows[0].option_id
+        if (prevOptId === optionId) {
+          // Already voted this option
+        } else {
+          // Change vote
+          await client.query(
+            `UPDATE post_poll_options SET votes_count = GREATEST(0, votes_count - 1) WHERE id = $1`,
+            [prevOptId]
+          )
+          await client.query(
+            `UPDATE post_poll_options SET votes_count = votes_count + 1 WHERE id = $1`,
+            [optionId]
+          )
+          await client.query(
+            `UPDATE post_poll_votes SET option_id = $1, voted_at = NOW() WHERE poll_id = $2 AND user_id = $3`,
+            [optionId, pollId, userId]
+          )
+        }
+      } else {
+        // New vote
+        await client.query(
+          `INSERT INTO post_poll_votes (poll_id, option_id, user_id) VALUES ($1, $2, $3)`,
+          [pollId, optionId, userId]
+        )
+        await client.query(
+          `UPDATE post_poll_options SET votes_count = votes_count + 1 WHERE id = $1`,
+          [optionId]
+        )
+        await client.query(
+          `UPDATE post_polls SET total_votes = total_votes + 1 WHERE id = $1`,
+          [pollId]
+        )
+      }
+
+      const map = await this.fetchPollsForPosts([postId], userId)
+      const updatedPoll = map.get(postId)
+      if (!updatedPoll) {
+        throw new NotFoundException('Không tìm thấy thông tin khảo sát sau khi bình chọn')
+      }
+      return updatedPoll
+    })
+  }
+
+  async report(postId: string, reporterId: string, data: ReportPostInput): Promise<{ success: boolean }> {
+    await this.db.query(
+      `INSERT INTO post_reports (post_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)`,
+      [postId, reporterId, data.reason, data.details || null]
+    )
+    return { success: true }
+  }
+
+  private async fetchPollsForPosts(postIds: string[], currentUserId?: string): Promise<Map<string, PollData>> {
+    const map = new Map<string, PollData>()
+    if (postIds.length === 0) return map
+
+    const pollsRes = await this.db.query(
+      `SELECT p.id as poll_id, p.post_id, p.question, p.total_votes, p.expires_at, p.created_at,
+              o.id as option_id, o.option_text, o.votes_count, o.display_order
+       FROM post_polls p
+       JOIN post_poll_options o ON p.id = o.poll_id
+       WHERE p.post_id = ANY($1)
+       ORDER BY p.post_id, o.display_order ASC`,
+      [postIds]
+    )
+
+    let myVotesMap = new Map<string, string>()
+    if (currentUserId) {
+      const pollIds = Array.from(new Set(pollsRes.rows.map((r) => r.poll_id)))
+      if (pollIds.length > 0) {
+        const votesRes = await this.db.query(
+          `SELECT poll_id, option_id FROM post_poll_votes WHERE user_id = $1 AND poll_id = ANY($2)`,
+          [currentUserId, pollIds]
+        )
+        for (const row of votesRes.rows) {
+          myVotesMap.set(row.poll_id, row.option_id)
+        }
+      }
+    }
+
+    for (const row of pollsRes.rows) {
+      let poll = map.get(row.post_id)
+      if (!poll) {
+        poll = {
+          id: row.poll_id,
+          postId: row.post_id,
+          question: row.question,
+          totalVotes: row.total_votes || 0,
+          options: [],
+          myVotedOptionId: myVotesMap.get(row.poll_id) || null,
+          expiresAt: row.expires_at ? new Date(row.expires_at).toISOString() : null
+        }
+        map.set(row.post_id, poll)
+      }
+
+      poll.options.push({
+        id: row.option_id,
+        pollId: row.poll_id,
+        optionText: row.option_text,
+        votesCount: row.votes_count || 0,
+        displayOrder: row.display_order || 0
+      })
+    }
+
+    return map
+  }
+
+  private mapRowToPostItem(row: any, poll?: PollData | null): PostItem {
     let postType: any = 'general'
     if (row.post_type === 'question' || row.post_type === 'qa') {
       postType = 'qa'
@@ -326,7 +560,10 @@ export class PostsService {
         id: row.author_user_id || row.author_id,
         username: row.author_username || 'user',
         displayName: row.author_display_name || 'Sinh viên Phenikaa',
-        avatarUrl: row.author_avatar_url || null
+        avatarUrl: row.author_avatar_url || null,
+        role: row.author_role || 'student',
+        faculty: row.author_faculty || null,
+        reputationPoints: row.author_reputation_points || 100
       },
       title: row.title,
       content: row.content,
@@ -345,6 +582,7 @@ export class PostsService {
       sharesCount: row.shares_count || 0,
       isLikedByMe: row.is_liked_by_me || false,
       isBookmarkedByMe: row.is_bookmarked_by_me || false,
+      poll: poll || null,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
     }

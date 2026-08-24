@@ -2,6 +2,8 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -10,7 +12,7 @@ import {
 } from '@nestjs/common'
 import { PostsService } from './posts.service'
 import { DatabaseService } from '../../database/database.service'
-import type { CreatePostInput } from '@pu/schemas'
+import type { CreatePostInput, UpdatePostInput, ReportPostInput, VotePollInput } from '@pu/schemas'
 import type { Request } from 'express'
 
 @Controller('posts')
@@ -19,6 +21,20 @@ export class PostsController {
     private readonly postsService: PostsService,
     private readonly db: DatabaseService
   ) {}
+
+  private async resolveUserId(req: Request): Promise<string> {
+    let userId = (req.user as any)?.id
+    if (!userId) {
+      const fallbackUser = await this.db.query(
+        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
+      )
+      userId = fallbackUser.rows[0]?.id
+    }
+    if (!userId) {
+      throw new UnauthorizedException('Vui lòng đăng nhập để thực hiện thao tác')
+    }
+    return userId
+  }
 
   @Get()
   async findAll(
@@ -55,20 +71,7 @@ export class PostsController {
 
   @Post()
   async create(@Body() body: CreatePostInput, @Req() req: Request) {
-    let authorId = (req.user as any)?.id
-
-    // If not in session, fallback to first active user in database for dev
-    if (!authorId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      if (fallbackUser.rows.length > 0) {
-        authorId = fallbackUser.rows[0].id
-      } else {
-        throw new UnauthorizedException('Vui lòng đăng nhập để đăng bài viết')
-      }
-    }
-
+    const authorId = await this.resolveUserId(req)
     const post = await this.postsService.create(authorId, body)
     return {
       success: true,
@@ -76,35 +79,59 @@ export class PostsController {
     }
   }
 
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() body: UpdatePostInput,
+    @Req() req: Request
+  ) {
+    const userId = await this.resolveUserId(req)
+    const updated = await this.postsService.update(id, userId, body)
+    return {
+      success: true,
+      data: updated
+    }
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string, @Req() req: Request) {
+    const userId = await this.resolveUserId(req)
+    return this.postsService.delete(id, userId)
+  }
+
   @Post(':id/like')
   async toggleLike(@Param('id') id: string, @Req() req: Request) {
-    let userId = (req.user as any)?.id
-    if (!userId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      userId = fallbackUser.rows[0]?.id
-    }
-    if (!userId) {
-      throw new UnauthorizedException('Vui lòng đăng nhập để thích bài viết')
-    }
-
+    const userId = await this.resolveUserId(req)
     return this.postsService.toggleLike(id, userId)
   }
 
   @Post(':id/bookmark')
   async toggleBookmark(@Param('id') id: string, @Req() req: Request) {
-    let userId = (req.user as any)?.id
-    if (!userId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      userId = fallbackUser.rows[0]?.id
-    }
-    if (!userId) {
-      throw new UnauthorizedException('Vui lòng đăng nhập để lưu bài viết')
-    }
-
+    const userId = await this.resolveUserId(req)
     return this.postsService.toggleBookmark(id, userId)
+  }
+
+  @Post(':id/vote-poll')
+  async votePoll(
+    @Param('id') id: string,
+    @Body() body: VotePollInput,
+    @Req() req: Request
+  ) {
+    const userId = await this.resolveUserId(req)
+    const updatedPoll = await this.postsService.votePoll(id, userId, body.optionId)
+    return {
+      success: true,
+      data: updatedPoll
+    }
+  }
+
+  @Post(':id/report')
+  async report(
+    @Param('id') id: string,
+    @Body() body: ReportPostInput,
+    @Req() req: Request
+  ) {
+    const userId = await this.resolveUserId(req)
+    return this.postsService.report(id, userId, body)
   }
 }

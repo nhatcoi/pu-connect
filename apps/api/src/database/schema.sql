@@ -279,3 +279,45 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread ON notifications(recipient_id, is_read, created_at DESC);
 
+-- 9. Post Polls (Khảo sát biểu quyết sinh viên)
+CREATE TABLE IF NOT EXISTS post_polls (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID UNIQUE NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    question VARCHAR(255) NOT NULL,
+    total_votes INT DEFAULT 0,
+    expires_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS post_poll_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    poll_id UUID NOT NULL REFERENCES post_polls(id) ON DELETE CASCADE,
+    option_text VARCHAR(255) NOT NULL,
+    votes_count INT DEFAULT 0,
+    display_order INT DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_poll_options_poll ON post_poll_options(poll_id, display_order ASC);
+
+CREATE TABLE IF NOT EXISTS post_poll_votes (
+    poll_id UUID NOT NULL REFERENCES post_polls(id) ON DELETE CASCADE,
+    option_id UUID NOT NULL REFERENCES post_poll_options(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    voted_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (poll_id, user_id)
+);
+
+-- 10. Post Reports (Báo cáo vi phạm nội dung)
+CREATE TABLE IF NOT EXISTS post_reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+    reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reason VARCHAR(50) NOT NULL,
+    details TEXT,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_post_reports_status ON post_reports(status, created_at DESC);
+
+
