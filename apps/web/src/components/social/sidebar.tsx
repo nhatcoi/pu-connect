@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Home,
+  Search,
   FileText,
   Bookmark,
   Hash,
@@ -31,7 +32,7 @@ import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { cn } from '@/lib/utils'
 
-export type NavTabType = 'feed' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks'
+export type NavTabType = 'feed' | 'search' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -46,14 +47,14 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const { logout, isLoggingOut } = useLogout()
 
   const navItems = [
-    { id: 'feed' as const, path: '/home', label: 'Bảng tin học thuật', icon: Home, badge: 'Mới' },
+    { id: 'feed' as const, path: '/home', label: 'Bảng tin học thuật', icon: Home },
+    { id: 'search' as const, path: '/search', label: 'Tìm kiếm & Khám phá', icon: Search, badge: 'Hot' },
     ...(user?.username
       ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ cá nhân', icon: User }]
       : []),
     { id: 'courses' as const, path: '/home?tab=courses', label: 'Học phần & Môn học', icon: GraduationCap },
     { id: 'documents' as const, path: '/home?tab=documents', label: 'Kho tài liệu & Đề thi', icon: FileText },
     { id: 'groups' as const, path: '/home?tab=groups', label: 'Ghép nhóm đồ án PBL', icon: Users, badge: 'Tuyển' },
-    { id: 'campus' as const, path: '/home?tab=campus', label: 'Nhịp sống & CLB Phenikaa', icon: Building2 },
     { id: 'bookmarks' as const, path: '/home?tab=bookmarks', label: 'Đã lưu & Yêu thích', icon: Bookmark }
   ]
 

@@ -52,10 +52,20 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] ⏰ **Định Dạng Thời Gian Tương Đối Chuẩn Tiếng Việt ([`formatRelativeTime`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/lib/utils.ts))**: Hiển thị "Vừa xong", "X phút trước", "X giờ trước", "X ngày trước" cho toàn bộ bài viết và bình luận.
 - [x] 🏷️ **Hiển Thị Mã Môn Học Chuẩn Xác**: Thay thế toàn bộ mã UUID thô bằng mã môn học người dùng đọc được (ví dụ `📘 IT101`, `🏛️ FIT`).
 
-### 🔍 Hệ Thống Tìm Kiếm Thông Tin & Tài Liệu Học Tập (Academic Search Engine)
-- [x] ⚡ **Thanh Tìm Kiếm Nổi Tức Thời ([`AcademicSearchBar`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/search/academic-search-bar.tsx))**: Tích hợp trên Header, mở Popover nổi ngay tại input với **Zero Layout Shift**, lưu lịch sử tìm kiếm gần đây (Recent Searches) trong LocalStorage và gợi ý chủ đề hot (`#IT101`, `#DoAnTotNghiep`, `#GiaiTich2`).
-- [x] 🔍 **Live Autocomplete Preview**: Tự động gợi ý nhanh top kết quả đa phân hệ (Môn học, Đề thi PDF, Bài viết, Người dùng) ngay khi gõ phím.
-- [x] 📑 **Trang Kết Quả Tìm Kiếm Chuyên Sâu ([`/search`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/search/page.tsx))**: Trang 3 cột hoàn chỉnh với 6 tabs phân loại (*Tất cả, Môn học, Đề thi & Tài liệu, Bài viết Q&A, Mọi người, Nhóm PBL*) kèm bộ lọc theo Khoa/Viện.
+### 🔍 Hệ Thống Tìm Kiếm & Khám Phá Chuẩn X (Search & Explore Engine)
+- [x] 🧭 **Tích Hợp Tìm Kiếm Trực Tiếp Vào Navigation (Nav Search Item)**: Đặt tab Tìm kiếm / Khám phá (`/search`) tại vị trí thứ 2 trên cả **Mobile Bottom Nav** và **Desktop Sidebar**, truy cập 1 chạm tức thì.
+- [x] 🌟 **Trang Khám Phá & Xu Hướng (Explore & Trending Hub - Mode A)**: Giao diện khi chưa nhập từ khóa:
+  - Header với Avatar + Thanh tìm kiếm + Nút cài đặt tìm kiếm ⚙️.
+  - 5 Tabs danh mục (*Khám phá, Xu hướng, Môn học hot, Đề thi & Slide, Nhóm PBL*).
+  - Tin nổi bật Phenikaa (*Today's Academic Highlights*) và Bảng xếp hạng từ khóa thịnh hành (*Trending Topics*) với số lượng bài viết.
+- [x] 📑 **Trang Kết Quả Tìm Kiếm Chuyên Sâu Chuẩn X (Active Search Stream - Mode B)**: Giao diện khi tìm kiếm từ khóa:
+  - Header với Nút Back $\leftarrow$, Input từ khóa (kèm nút xóa $X$), và Menu tùy chọn 3 chấm $\cdots$.
+  - 6 Tabs kết quả (*Hàng đầu, Mới nhất, Môn học, Tài liệu, Mọi người, Nhóm PBL*).
+  - Luồng kết quả kết hợp bài viết, tài liệu, môn học, người dùng và nhóm đồ án.
+- [x] ⚙️ **Cài Đặt & Bộ Lọc Tìm Kiếm Nâng Cao (Search Settings & Advanced Filter)**:
+  - Bottom Action Sheet (`...`) mở Cài đặt tìm kiếm, Bộ lọc và Tìm kiếm nâng cao.
+  - Dialog Cài đặt tìm kiếm ([`SearchSettingsDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/search/search-settings-dialog.tsx)) lưu trạng thái vào LocalStorage: Ẩn nội dung nhạy cảm, Loại bỏ tài khoản đã chặn, Ưu tiên môn học cùng Khoa/Viện.
+  - Dialog Tìm kiếm nâng cao ([`AdvancedSearchDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/search/advanced-search-dialog.tsx)): Tìm theo cụm từ chính xác, hashtag, phân loại và khoa.
 - [x] 🚀 **Backend Full-Text Search Engine ([`SearchService`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/api/src/modules/search/search.service.ts))**: Endpoint `GET /api/search` truy vấn song song 5 bảng PostgreSQL với tốc độ $<10\text{ms}$.
 
 ### 💬 Hệ Thống Bình Luận & Duyệt Lời Giải (Academic Comments & Q&A)

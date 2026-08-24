@@ -4,9 +4,9 @@ import React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   Home,
+  Search,
   GraduationCap,
   FileText,
-  Users,
   Bookmark,
   Plus
 } from 'lucide-react'
@@ -39,6 +39,13 @@ export function MobileBottomNav() {
       isActive: pathname === '/home' && (!currentTabParam || currentTabParam === 'for_you')
     },
     {
+      id: 'search',
+      label: 'Khám phá',
+      icon: Search,
+      path: '/search',
+      isActive: pathname === '/search'
+    },
+    {
       id: 'courses',
       label: 'Môn học',
       icon: GraduationCap,
@@ -51,13 +58,6 @@ export function MobileBottomNav() {
       icon: FileText,
       path: '/home?tab=documents',
       isActive: pathname === '/home' && currentTabParam === 'documents'
-    },
-    {
-      id: 'groups',
-      label: 'Nhóm PBL',
-      icon: Users,
-      path: '/home?tab=groups',
-      isActive: pathname === '/home' && currentTabParam === 'groups'
     },
     {
       id: 'bookmarks',
