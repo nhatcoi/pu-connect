@@ -14,6 +14,7 @@ export const CreateDocumentSchema = z.object({
   title: z.string().min(1, { message: 'Tiêu đề tài liệu không được để trống' }).max(200),
   description: z.string().max(1000).optional(),
   type: DocumentTypeSchema,
+  courseId: z.string().optional(),
   fileUrl: z.string().url({ message: 'URL tệp không hợp lệ' }),
   fileSize: z.number().nonnegative(),
   mimeType: z.string(),
@@ -32,6 +33,8 @@ export const DocumentItemSchema = z.object({
     displayName: z.string(),
     avatarUrl: z.string().nullable().optional()
   }),
+  courseId: z.string().nullable().optional(),
+  courseCode: z.string().nullable().optional(),
   title: z.string(),
   description: z.string().nullable().optional(),
   type: DocumentTypeSchema,

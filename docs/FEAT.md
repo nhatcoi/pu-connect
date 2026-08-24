@@ -16,6 +16,8 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
 - [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau (Feed, Profile, Documents, PBL Groups) và giữ REST API cho Session Auth & Upload File lớn.
+- [x] 🛠️ **Đồng bộ hóa Enum & Truy vấn SQL Bảng tin (`post_type_enum`)**: Chuẩn hóa map hai chiều giữa kiểu bài viết Client (`qa`, `document`, `group_recruit`, `review`) và PostgreSQL Enum (`question`, `resource_share`, `pbl_recruitment`, `review`), khắc phục triệt để lỗi 500 khi lọc tab môn học (`feedType=courses`).
+- [x] 🗄️ **Tích hợp PostgreSQL Client cho Courses & Documents**: Chuyển đổi `CoursesService` và `DocumentsService` sang truy vấn trực tiếp từ bảng cơ sở dữ liệu PostgreSQL.
 
 ### ☁️ Lưu Trữ Đám Mây & Tệp Tin (Cloudflare R2 Storage)
 - [x] ☁️ **Tích hợp Cloudflare R2 Object Storage (`@aws-sdk/client-s3`)**: Lưu trữ media, ảnh đính kèm bài viết và tệp tài liệu học phần bảo mật với Zero Egress Fee.
