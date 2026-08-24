@@ -9,7 +9,8 @@ import {
   GitBranch,
   Eye,
   EyeOff,
-  Hash
+  Hash,
+  BarChart2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +18,8 @@ interface ComposerToolbarProps {
   onInsertText: (text: string) => void
   onAddFiles: (files: FileList) => void
   onToggleTagInput: () => void
+  onTogglePoll?: () => void
+  showPoll?: boolean
   isPreviewMode: boolean
   onTogglePreview: () => void
   showTagInput: boolean
@@ -26,6 +29,8 @@ export function ComposerToolbar({
   onInsertText,
   onAddFiles,
   onToggleTagInput,
+  onTogglePoll,
+  showPoll,
   isPreviewMode,
   onTogglePreview,
   showTagInput
@@ -139,6 +144,22 @@ export function ComposerToolbar({
       >
         <Hash className="h-4 w-4" />
       </button>
+
+      {onTogglePoll && (
+        <button
+          type="button"
+          onClick={onTogglePoll}
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-full transition-colors cursor-pointer',
+            showPoll
+              ? 'bg-primary/10 text-primary'
+              : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+          )}
+          title="Tạo khảo sát bình chọn sinh viên"
+        >
+          <BarChart2 className="h-4 w-4" />
+        </button>
+      )}
 
       {/* Preview Toggle */}
       <button

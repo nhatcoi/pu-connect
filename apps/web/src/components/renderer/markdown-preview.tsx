@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Markdown, { Components } from 'react-markdown'
+import Link from 'next/link'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import remarkBreaks from 'remark-breaks'
@@ -74,7 +75,28 @@ function CodeBlock({
   )
 }
 
+/**
+ * Pre-processes markdown to turn @mentions and #hashtags into markdown links
+ */
+function enhanceMentionsAndTags(text: string): string {
+  if (!text) return ''
+  // Don't modify code blocks (``` ... ```)
+  const parts = text.split(/(```[\s\S]*?```)/g)
+  return parts
+    .map((part) => {
+      if (part.startsWith('```')) return part
+      return part
+        // @username -> [@username](/username)
+        .replace(/(^|[\s(])@([a-zA-Z0-9_]{3,30})/g, '$1[@$2](/$2)')
+        // #tag -> [#tag](/search?q=tag) (exclude Markdown # Headings with space)
+        .replace(/(^|[\s(])#([a-zA-Z0-9_]{2,40})/g, '$1[#$2](/search?q=$2)')
+    })
+    .join('')
+}
+
 export function MarkdownPreview({ content, className, isDark = false }: MarkdownPreviewProps) {
+  const processedContent = useMemo(() => enhanceMentionsAndTags(content || ''), [content])
+
   const components: Components = {
     pre({ children }) {
       return <>{children}</>
@@ -115,6 +137,18 @@ export function MarkdownPreview({ content, className, isDark = false }: Markdown
       return <td className="border px-3 py-2 text-foreground/90">{children}</td>
     },
     a({ href, children }) {
+      const isInternal = href?.startsWith('/') || href?.startsWith('#')
+      if (isInternal && href) {
+        return (
+          <Link
+            href={href}
+            className="font-semibold text-primary hover:underline hover:text-primary/90 transition-colors"
+          >
+            {children}
+          </Link>
+        )
+      }
+
       return (
         <a
           href={href}
@@ -135,7 +169,7 @@ export function MarkdownPreview({ content, className, isDark = false }: Markdown
         rehypePlugins={[rehypeKatex, rehypeHighlight, rehypeSlug]}
         components={components}
       >
-        {content}
+        {processedContent}
       </Markdown>
     </div>
   )

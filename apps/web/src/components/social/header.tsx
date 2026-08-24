@@ -31,6 +31,7 @@ import { useAppStore } from '@/store'
 import { CommandPalette } from '@/components/navigation/command-palette'
 import { AuthDialog } from '@/components/auth/auth-dialog'
 import { AcademicSearchBar } from '@/components/search/academic-search-bar'
+import { NotificationsPopover } from './notifications-popover'
 import { apiClient } from '@/lib/api-client'
 import type { UserProfile } from '@pu/schemas'
 import { toast } from 'sonner'
@@ -104,10 +105,8 @@ export function Header() {
             <span className="hidden sm:inline">Đăng bài / Chia sẻ</span>
           </Button>
 
-          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground relative">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-accent animate-pulse" />
-          </Button>
+          {/* Notifications Popover */}
+          <NotificationsPopover />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

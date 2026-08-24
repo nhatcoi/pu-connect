@@ -7,7 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
-import { Loader2, Sparkles, X, Users, Tag } from 'lucide-react'
+import { Loader2, Sparkles, X, Users, Tag, BarChart2 } from 'lucide-react'
 import { apiClient, uploadFileToR2 } from '@/lib/api-client'
 import type { PostItem, PostType, TargetAudience } from '@pu/schemas'
 
@@ -28,6 +28,7 @@ export function AcademicPostComposer() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [isPreviewMode, setIsPreviewMode] = useState(false)
   const [showTagInput, setShowTagInput] = useState(false)
+  const [showPollCreator, setShowPollCreator] = useState(false)
 
   // Form states
   const [postType, setPostType] = useState<PostType>('general')
@@ -40,6 +41,8 @@ export function AcademicPostComposer() {
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
   const [slotsTotal, setSlotsTotal] = useState<number>(4)
   const [slotsFilled, setSlotsFilled] = useState<number>(1)
+  const [pollQuestion, setPollQuestion] = useState('')
+  const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string>('')
 
@@ -58,7 +61,13 @@ export function AcademicPostComposer() {
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
       if (composerRef.current && !composerRef.current.contains(e.target as Node)) {
-        if (!content.trim() && !title.trim() && attachedFiles.length === 0 && tags.length === 0) {
+        if (
+          !content.trim() &&
+          !title.trim() &&
+          attachedFiles.length === 0 &&
+          tags.length === 0 &&
+          !showPollCreator
+        ) {
           setIsExpanded(false)
           setIsPreviewMode(false)
           setShowTagInput(false)
@@ -67,7 +76,7 @@ export function AcademicPostComposer() {
     }
     document.addEventListener('mousedown', handleDocumentClick)
     return () => document.removeEventListener('mousedown', handleDocumentClick)
-  }, [content, title, attachedFiles.length, tags.length])
+  }, [content, title, attachedFiles.length, tags.length, showPollCreator])
 
   // Handle focus
   const handleFocus = () => {
@@ -88,7 +97,6 @@ export function AcademicPostComposer() {
     const newContent = content.substring(0, start) + snippet + content.substring(end)
     setContent(newContent)
 
-    // Reposition cursor
     setTimeout(() => {
       textarea.focus()
       textarea.setSelectionRange(start + snippet.length, start + snippet.length)
@@ -152,6 +160,14 @@ export function AcademicPostComposer() {
       return
     }
 
+    if (showPollCreator) {
+      const validOptions = pollOptions.filter((o) => o.trim())
+      if (!pollQuestion.trim() || validOptions.length < 2) {
+        toast.error('Vui lòng nhập câu hỏi và ít nhất 2 lựa chọn cho khảo sát')
+        return
+      }
+    }
+
     setIsSubmitting(true)
     try {
       // 1. Upload files to Cloudflare R2
@@ -181,6 +197,8 @@ export function AcademicPostComposer() {
         allTags.unshift(selectedCourseId)
       }
 
+      const validPollOptions = pollOptions.filter((o) => o.trim())
+
       const payload = {
         title: title.trim() || undefined,
         content: content.trim(),
@@ -192,7 +210,9 @@ export function AcademicPostComposer() {
         mediaUrls: uploadedMediaUrls,
         attachedDocumentIds: uploadedDocUrls,
         recruitSlotsTotal: postType === 'group_recruit' ? slotsTotal : undefined,
-        recruitSlotsFilled: postType === 'group_recruit' ? slotsFilled : undefined
+        recruitSlotsFilled: postType === 'group_recruit' ? slotsFilled : undefined,
+        pollQuestion: showPollCreator && pollQuestion.trim() ? pollQuestion.trim() : undefined,
+        pollOptions: showPollCreator && validPollOptions.length >= 2 ? validPollOptions : undefined
       }
 
       const response = await apiClient<{ success: boolean; data: PostItem }>('/posts', {
@@ -202,7 +222,7 @@ export function AcademicPostComposer() {
 
       if (response && response.data) {
         addPost(response.data)
-        toast.success('Đã đăng bài viết và lưu trữ tệp lên Cloudflare R2 thành công!')
+        toast.success('Đã đăng bài viết thành công!')
       }
 
       // Reset form
@@ -211,6 +231,9 @@ export function AcademicPostComposer() {
       setSelectedCourseId(undefined)
       setTags([])
       setAttachedFiles([])
+      setShowPollCreator(false)
+      setPollQuestion('')
+      setPollOptions(['', ''])
       setIsExpanded(false)
       setIsPreviewMode(false)
       setShowTagInput(false)
@@ -320,6 +343,67 @@ export function AcademicPostComposer() {
             </div>
           )}
 
+          {/* Poll Creator Box */}
+          {isExpanded && showPollCreator && (
+            <div className="rounded-xl border border-primary/30 bg-primary/[0.02] p-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                  <BarChart2 className="h-4 w-4" />
+                  <span>Tạo Khảo sát / Bình chọn sinh viên</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPollCreator(false)}
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <Input
+                placeholder="Câu hỏi bình chọn (Ví dụ: Bạn muốn chọn đề tài nào?)..."
+                value={pollQuestion}
+                onChange={(e) => setPollQuestion(e.target.value)}
+                className="h-8 text-xs bg-background"
+              />
+              <div className="space-y-1.5">
+                {pollOptions.map((opt, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Input
+                      placeholder={`Lựa chọn ${idx + 1}...`}
+                      value={opt}
+                      onChange={(e) => {
+                        const next = [...pollOptions]
+                        next[idx] = e.target.value
+                        setPollOptions(next)
+                      }}
+                      className="h-8 text-xs bg-background flex-1"
+                    />
+                    {pollOptions.length > 2 && (
+                      <button
+                        type="button"
+                        onClick={() => setPollOptions(pollOptions.filter((_, i) => i !== idx))}
+                        className="text-muted-foreground hover:text-destructive p-1 cursor-pointer"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 5 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPollOptions([...pollOptions, ''])}
+                    className="h-7 text-[11px] font-semibold text-primary border-primary/30 hover:bg-primary/5 cursor-pointer"
+                  >
+                    + Thêm lựa chọn
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Main Textarea / Live Preview Area */}
           <div className="relative">
             {isPreviewMode ? (
@@ -359,65 +443,58 @@ export function AcademicPostComposer() {
               <Tag className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <input
                 type="text"
-                placeholder="Nhập thẻ tag và nhấn Enter (ví dụ: giua_ky, pbl, thay_phuong)..."
                 value={tagInputValue}
                 onChange={(e) => setTagInputValue(e.target.value)}
                 onKeyDown={handleTagInputKeyDown}
+                placeholder="Nhập thẻ hashtag và nhấn Enter (ví dụ: IT101, PostgreSQL)..."
                 className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
-                autoFocus
               />
             </div>
           )}
 
-          {/* Audience Selector (X-Style: "Everyone can reply") */}
+          {/* Expanded Bottom Toolbar & Submit Button */}
           {isExpanded && (
-            <div className="pt-0.5">
-              <ComposerAudienceMenu
-                value={targetAudience}
-                onChange={setTargetAudience}
-                facultyCode={user?.faculty || undefined}
-                courseCode={selectedCourseId}
+            <div className="flex items-center justify-between pt-2 border-t border-border/40">
+              <ComposerToolbar
+                onInsertText={handleInsertText}
+                onAddFiles={handleAddFiles}
+                onToggleTagInput={() => setShowTagInput((prev) => !prev)}
+                onTogglePoll={() => setShowPollCreator((prev) => !prev)}
+                showPoll={showPollCreator}
+                isPreviewMode={isPreviewMode}
+                onTogglePreview={() => setIsPreviewMode((prev) => !prev)}
+                showTagInput={showTagInput}
               />
+
+              <div className="flex items-center gap-3">
+                {/* Character Count Progress Ring */}
+                <ComposerProgressRing currentLength={content.length} maxLength={MAX_CHAR_LIMIT} />
+
+                {/* Audience Menu */}
+                <ComposerAudienceMenu value={targetAudience} onChange={setTargetAudience} />
+
+                {/* Submit Button */}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!content.trim() || isSubmitting || content.length > MAX_CHAR_LIMIT}
+                  size="sm"
+                  className="gap-1.5 font-bold text-xs bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-all"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>{uploadStatus ? 'Đang lưu...' : 'Đang đăng...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span>Đăng bài</span>
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
-
-          {/* Bottom Action Bar: Toolbar on Left, Progress Ring & Post Button on Right */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/40">
-            {/* Toolbar */}
-            <ComposerToolbar
-              onInsertText={handleInsertText}
-              onAddFiles={handleAddFiles}
-              onToggleTagInput={() => setShowTagInput((prev) => !prev)}
-              showTagInput={showTagInput}
-              isPreviewMode={isPreviewMode}
-              onTogglePreview={() => setIsPreviewMode((prev) => !prev)}
-            />
-
-            {/* Right Controls: Progress Ring + Submit */}
-            <div className="flex items-center gap-3">
-              <ComposerProgressRing
-                currentLength={content.length}
-                maxLength={MAX_CHAR_LIMIT}
-              />
-
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleSubmit}
-                disabled={isSubmitting || !content.trim() || content.length > MAX_CHAR_LIMIT}
-                className="h-8 rounded-full px-5 text-xs font-bold bg-foreground text-background hover:bg-foreground/90 transition-all shadow-xs cursor-pointer disabled:opacity-40"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
-                    <span>{uploadStatus || 'Đang đăng...'}</span>
-                  </>
-                ) : (
-                  <span>Đăng bài</span>
-                )}
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
