@@ -49,6 +49,7 @@ export const PostItemSchema = z.object({
   commentsCount: z.number().default(0),
   sharesCount: z.number().default(0),
   isLikedByMe: z.boolean().default(false),
+  isBookmarkedByMe: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string()
 })

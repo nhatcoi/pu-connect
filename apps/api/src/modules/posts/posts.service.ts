@@ -63,6 +63,8 @@ export class PostsService {
 
     if (feedType === 'courses') {
       whereClause += ` AND (p.course_id IS NOT NULL OR p.post_type IN ('question', 'resource_share'))`
+    } else if (feedType === 'bookmarks' && currentUserId) {
+      whereClause += ` AND EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1)`
     }
 
     // 1. Get total count
@@ -81,9 +83,10 @@ export class PostsService {
     `
 
     if (currentUserId) {
-      sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $1) as is_liked_by_me`
+      sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $1) as is_liked_by_me,
+               EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1) as is_bookmarked_by_me`
     } else {
-      sql += `, FALSE as is_liked_by_me`
+      sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me`
     }
 
     sql += `${joins} ${whereClause}`
@@ -114,9 +117,10 @@ export class PostsService {
 
     if (currentUserId) {
       params.push(currentUserId)
-      sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $2) as is_liked_by_me`
+      sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $2) as is_liked_by_me,
+               EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $2) as is_bookmarked_by_me`
     } else {
-      sql += `, FALSE as is_liked_by_me`
+      sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me`
     }
 
     sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id WHERE p.id = $1 LIMIT 1`
@@ -278,6 +282,29 @@ export class PostsService {
     })
   }
 
+  async toggleBookmark(postId: string, userId: string): Promise<{ isBookmarked: boolean }> {
+    return this.db.transaction(async (client) => {
+      const check = await client.query(
+        `SELECT 1 FROM saved_posts WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
+        [postId, userId]
+      )
+
+      if (check.rows.length > 0) {
+        await client.query(
+          `DELETE FROM saved_posts WHERE post_id = $1 AND user_id = $2`,
+          [postId, userId]
+        )
+        return { isBookmarked: false }
+      } else {
+        await client.query(
+          `INSERT INTO saved_posts (post_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+          [postId, userId]
+        )
+        return { isBookmarked: true }
+      }
+    })
+  }
+
   private mapRowToPostItem(row: any): PostItem {
     let postType: any = 'general'
     if (row.post_type === 'question' || row.post_type === 'qa') {
@@ -317,6 +344,7 @@ export class PostsService {
       commentsCount: row.comments_count || 0,
       sharesCount: row.shares_count || 0,
       isLikedByMe: row.is_liked_by_me || false,
+      isBookmarkedByMe: row.is_bookmarked_by_me || false,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
     }

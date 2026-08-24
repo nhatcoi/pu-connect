@@ -91,4 +91,20 @@ export class PostsController {
 
     return this.postsService.toggleLike(id, userId)
   }
+
+  @Post(':id/bookmark')
+  async toggleBookmark(@Param('id') id: string, @Req() req: Request) {
+    let userId = (req.user as any)?.id
+    if (!userId) {
+      const fallbackUser = await this.db.query(
+        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
+      )
+      userId = fallbackUser.rows[0]?.id
+    }
+    if (!userId) {
+      throw new UnauthorizedException('Vui lòng đăng nhập để lưu bài viết')
+    }
+
+    return this.postsService.toggleBookmark(id, userId)
+  }
 }

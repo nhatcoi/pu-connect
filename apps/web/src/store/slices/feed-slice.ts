@@ -8,6 +8,7 @@ export interface FeedSlice {
   setPosts: (posts: PostItem[]) => void
   addPost: (post: PostItem) => void
   toggleLikePost: (postId: string) => void
+  toggleBookmarkPost: (postId: string) => void
   setSelectedTag: (tag: string | null) => void
   setCreatePostOpen: (open: boolean) => void
 }
@@ -27,6 +28,18 @@ export const createFeedSlice: StateCreator<FeedSlice> = (set) => ({
             ...post,
             isLikedByMe: isLiked,
             likesCount: isLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1)
+          }
+        }
+        return post
+      })
+    })),
+  toggleBookmarkPost: (postId) =>
+    set((state) => ({
+      posts: state.posts.map((post) => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            isBookmarkedByMe: !post.isBookmarkedByMe
           }
         }
         return post

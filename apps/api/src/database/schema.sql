@@ -235,3 +235,47 @@ CREATE TABLE IF NOT EXISTS campus_events (
     tags TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 7. Bookmarks / Saved Posts
+CREATE TABLE IF NOT EXISTS saved_posts (
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    collection_name VARCHAR(100) DEFAULT 'Mặc định',
+    saved_at TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (user_id, post_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_saved_posts_user ON saved_posts(user_id, saved_at DESC);
+
+-- 8. Central Notifications
+DO $$ BEGIN
+    CREATE TYPE notification_type_enum AS ENUM (
+        'post_like',
+        'post_comment',
+        'comment_reply',
+        'accepted_solution',
+        'user_mention',
+        'group_join_request',
+        'group_member_accepted',
+        'course_document_uploaded',
+        'system_announcement'
+    );
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    type notification_type_enum NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    entity_id VARCHAR(100),
+    entity_type VARCHAR(50),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread ON notifications(recipient_id, is_read, created_at DESC);
+

@@ -10,7 +10,7 @@ const PAGE_SIZE = 10
 
 interface UsePostsOptions {
   selectedTag?: string | null
-  feedType?: 'for_you' | 'courses' | 'explore'
+  feedType?: 'for_you' | 'courses' | 'explore' | 'bookmarks'
 }
 
 export function usePosts(options?: string | UsePostsOptions | null) {

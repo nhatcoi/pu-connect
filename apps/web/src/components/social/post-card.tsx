@@ -7,6 +7,7 @@ import {
   Heart,
   MessageCircle,
   Share2,
+  Bookmark,
   FileText,
   MoreHorizontal,
   Copy,
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { useAppStore } from '@/store'
+import { apiClient } from '@/lib/api-client'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -41,6 +43,7 @@ export function PostCard({ post, onLikeToggle }: PostCardProps) {
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const toggleLikePost = useAppStore((state) => state.toggleLikePost)
+  const toggleBookmarkPost = useAppStore((state) => state.toggleBookmarkPost)
 
   const handleLike = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -48,6 +51,19 @@ export function PostCard({ post, onLikeToggle }: PostCardProps) {
       onLikeToggle(post.id)
     } else {
       toggleLikePost(post.id)
+    }
+  }
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const nextState = !post.isBookmarkedByMe
+    toggleBookmarkPost(post.id)
+    try {
+      await apiClient(`/posts/${post.id}/bookmark`, { method: 'POST' })
+      toast.success(nextState ? 'Đã lưu bài viết vào mục yêu thích' : 'Đã bỏ lưu bài viết')
+    } catch {
+      toggleBookmarkPost(post.id) // Revert on failure
+      toast.error('Không thể cập nhật trạng thái lưu bài viết')
     }
   }
 
@@ -187,6 +203,20 @@ export function PostCard({ post, onLikeToggle }: PostCardProps) {
         >
           <MessageCircle className="h-4 w-4" />
           <span>{post.commentsCount}</span>
+        </Button>
+
+        {/* Bookmark Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBookmark}
+          className={cn(
+            'flex items-center space-x-1.5 text-xs font-medium transition-colors cursor-pointer',
+            post.isBookmarkedByMe ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <Bookmark className={cn('h-4 w-4 transition-transform active:scale-125', post.isBookmarkedByMe && 'fill-current')} />
+          <span>{post.isBookmarkedByMe ? 'Đã lưu' : 'Lưu'}</span>
         </Button>
 
         {/* Share Button & Dropdown Menu */}

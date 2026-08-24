@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Header } from '@/components/social/header'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
@@ -21,12 +22,28 @@ import {
   Loader2,
   MessageSquarePlus,
   CheckCircle2,
-  Sparkles
+  Sparkles,
+  Bookmark
 } from 'lucide-react'
 
-export default function HomePage() {
-  const [activeFeedTab, setActiveFeedTab] = useState<'for_you' | 'courses' | 'documents'>('for_you')
+function HomeContent() {
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+
+  const [activeFeedTab, setActiveFeedTab] = useState<'for_you' | 'courses' | 'documents' | 'bookmarks'>('for_you')
   
+  useEffect(() => {
+    if (tabParam === 'bookmarks') {
+      setActiveFeedTab('bookmarks')
+    } else if (tabParam === 'courses') {
+      setActiveFeedTab('courses')
+    } else if (tabParam === 'documents') {
+      setActiveFeedTab('documents')
+    } else if (!tabParam) {
+      setActiveFeedTab('for_you')
+    }
+  }, [tabParam])
+
   const {
     posts,
     isLoading: isPostsLoading,
@@ -153,19 +170,40 @@ export default function HomePage() {
                       <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
                     )}
                   </button>
+
+                  <button
+                    onClick={() => setActiveFeedTab('bookmarks')}
+                    className={`relative py-3.5 px-4 text-center cursor-pointer transition-colors ${
+                      activeFeedTab === 'bookmarks'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 justify-center">
+                      <Bookmark className="h-3.5 w-3.5" />
+                      <span>Đã lưu</span>
+                    </span>
+                    {activeFeedTab === 'bookmarks' && (
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
+                    )}
+                  </button>
                 </div>
               </div>
 
-              {/* Standalone Academic Post Composer */}
-              <AcademicPostComposer />
+              {/* Standalone Academic Post Composer (hidden when viewing bookmarks or documents) */}
+              {activeFeedTab !== 'bookmarks' && activeFeedTab !== 'documents' && (
+                <AcademicPostComposer />
+              )}
 
               {/* Feed Content Rendering */}
-              {(activeFeedTab === 'for_you' || activeFeedTab === 'courses') && (
+              {(activeFeedTab === 'for_you' || activeFeedTab === 'courses' || activeFeedTab === 'bookmarks') && (
                 <div className="space-y-4">
                   {isPostsLoading ? (
                     <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
                       <Loader2 className="h-6 w-6 animate-spin text-foreground" />
-                      <span className="text-xs">Đang tải bảng tin học thuật được gợi ý...</span>
+                      <span className="text-xs">
+                        {activeFeedTab === 'bookmarks' ? 'Đang tải bài viết đã lưu...' : 'Đang tải bảng tin học thuật được gợi ý...'}
+                      </span>
                     </div>
                   ) : posts.length > 0 ? (
                     <>
@@ -183,7 +221,7 @@ export default function HomePage() {
                         ) : !hasMore && posts.length > 5 ? (
                           <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
                             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            <span>Bạn đã xem hết các bài viết mới nhất được gợi ý</span>
+                            <span>Bạn đã xem hết các bài viết mới nhất</span>
                           </div>
                         ) : null}
                       </div>
@@ -191,17 +229,23 @@ export default function HomePage() {
                   ) : (
                     <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
                       <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                      <h3 className="text-sm font-bold text-foreground">Chưa có bài viết nào</h3>
+                      <h3 className="text-sm font-bold text-foreground">
+                        {activeFeedTab === 'bookmarks' ? 'Chưa có bài viết nào được lưu' : 'Chưa có bài viết nào'}
+                      </h3>
                       <p className="text-xs text-muted-foreground mt-1 mb-4">
-                        Hãy là người đầu tiên đặt câu hỏi hoặc chia sẻ tài liệu học phần!
+                        {activeFeedTab === 'bookmarks'
+                          ? 'Bạn có thể bấm biểu tượng Lưu ở bất kỳ bài viết nào trên Bảng tin để lưu lại xem sau.'
+                          : 'Hãy là người đầu tiên đặt câu hỏi hoặc chia sẻ tài liệu học phần!'}
                       </p>
-                      <Button
-                        size="sm"
-                        onClick={() => setCreatePostOpen(true)}
-                        className="bg-foreground text-background font-bold rounded-full"
-                      >
-                        Tạo bài viết mới
-                      </Button>
+                      {activeFeedTab !== 'bookmarks' && (
+                        <Button
+                          size="sm"
+                          onClick={() => setCreatePostOpen(true)}
+                          className="bg-foreground text-background font-bold rounded-full"
+                        >
+                          Tạo bài viết mới
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -246,3 +290,12 @@ export default function HomePage() {
     </AuthGuard>
   )
 }
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <HomeContent />
+    </Suspense>
+  )
+}
+
