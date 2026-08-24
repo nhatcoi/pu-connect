@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLogout } from '@/hooks/use-logout'
+import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -34,6 +35,7 @@ import { AcademicSearchBar } from '@/components/search/academic-search-bar'
 import { NotificationsPopover } from './notifications-popover'
 import { apiClient } from '@/lib/api-client'
 import type { UserProfile } from '@pu/schemas'
+import { cn } from '@/lib/utils'
 
 export function Header() {
   const router = useRouter()
@@ -42,6 +44,7 @@ export function Header() {
   const setUser = useAppStore((state) => state.setUser)
   const { logout, isLoggingOut } = useLogout()
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
+  const { isHeaderVisible } = useScrollDirection(8)
 
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -66,7 +69,12 @@ export function Header() {
     .toUpperCase()
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-md">
+    <header
+      className={cn(
+        'sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-md transition-transform duration-300 ease-in-out',
+        !isHeaderVisible && '-translate-y-full md:translate-y-0'
+      )}
+    >
       <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} onSelectTab={() => {}} />
       <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
 

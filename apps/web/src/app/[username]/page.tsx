@@ -14,6 +14,7 @@ import { DocumentCard } from '@/components/social/document-card'
 import { StudyGroupCard } from '@/components/social/study-group-card'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
 import { useProfile } from '@/hooks/use-profile'
+import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +26,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type TabType = 'posts' | 'documents' | 'groups' | 'badges'
 
@@ -36,6 +38,7 @@ export default function ProfilePage({
   const { username } = use(params)
   const router = useRouter()
   const { profile, isLoading, error } = useProfile(username)
+  const { isHeaderVisible } = useScrollDirection(8)
 
   const [activeTab, setActiveTab] = useState<TabType>('posts')
   const previewDocument = useAppStore((state) => state.previewDocument)
@@ -65,8 +68,15 @@ export default function ProfilePage({
 
           {/* 2. Center Profile Column (Max-w 620px, clean borders, zero horizontal shift) */}
           <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
-            {/* Sticky Topbar with Back Button */}
-            <div className="sticky top-13 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3">
+            {/* Sticky Topbar with Back Button (Smooth Hide on Scroll Down, Show on Scroll Up) */}
+            <div
+              className={cn(
+                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3 transition-all duration-300 ease-in-out',
+                isHeaderVisible
+                  ? 'top-13 md:top-14 translate-y-0'
+                  : '-top-14 md:top-14 -translate-y-full md:translate-y-0'
+              )}
+            >
               <Button
                 variant="ghost"
                 size="icon"
@@ -120,7 +130,14 @@ export default function ProfilePage({
                 <ProfileHeader profile={profile} />
 
                 {/* Sticky Navigation Tabs */}
-                <div className="sticky top-[102px] md:top-[109px] z-20 bg-background/95 backdrop-blur-md border-b border-border flex items-center">
+                <div
+                  className={cn(
+                    'sticky z-20 bg-background/95 backdrop-blur-md border-b border-border flex items-center transition-all duration-300 ease-in-out',
+                    isHeaderVisible
+                      ? 'top-[102px] md:top-[109px]'
+                      : 'top-0 md:top-[109px]'
+                  )}
+                >
                   <button
                     onClick={() => setActiveTab('posts')}
                     className={`flex-1 py-3 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
@@ -179,9 +196,9 @@ export default function ProfilePage({
                   </button>
                 </div>
 
-                {/* Tab 1: Posts */}
+                {/* Tab 1: Posts (Continuous stream on mobile, card on sm:) */}
                 {activeTab === 'posts' && (
-                  <div className="p-3 sm:p-4 space-y-4">
+                  <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
                     {profile.posts && profile.posts.length > 0 ? (
                       profile.posts.map((post) => (
                         <PostCard

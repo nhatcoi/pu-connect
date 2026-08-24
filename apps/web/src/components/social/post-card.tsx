@@ -159,9 +159,9 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
 
   return (
     <>
-      <Card
+      <div
         id={`post-${post.id}`}
-        className="overflow-hidden border border-border bg-card text-card-foreground shadow-xs transition-all duration-200 hover:border-border/80 rounded-2xl"
+        className="overflow-hidden border-b border-border/70 sm:border sm:border-border sm:rounded-2xl bg-card text-card-foreground shadow-none sm:shadow-xs transition-colors hover:bg-muted/[0.08]"
       >
         <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-2 p-3 sm:p-4 pb-2">
           <Link
@@ -435,7 +435,7 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
 
         {/* Expandable Comments & Discussion Section */}
         <PostCommentsSection post={post} isOpen={isCommentsOpen} />
-      </Card>
+      </div>
 
       {/* Edit Post Dialog */}
       {isEditDialogOpen && (

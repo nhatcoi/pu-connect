@@ -214,6 +214,30 @@
   scrollbar-width: none;
 }
 
+/* ── Sleek X-style Subtle Scrollbar ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 140, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 140, 140, 0.6);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(140, 140, 140, 0.3) transparent;
+}
+
 /* ── Prevent Radix UI / Modal scroll-locking layout shift (Zero Layout Shift) ── */
 html {
   scrollbar-gutter: stable;

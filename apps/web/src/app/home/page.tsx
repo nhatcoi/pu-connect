@@ -16,6 +16,7 @@ import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { usePosts } from '@/hooks/use-posts'
 import { useDocuments } from '@/hooks/use-documents'
+import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
 import {
@@ -26,10 +27,12 @@ import {
   Sparkles,
   Bookmark
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 function HomeContent() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
+  const { isHeaderVisible } = useScrollDirection(8)
 
   const [activeFeedTab, setActiveFeedTab] = useState<'for_you' | 'courses' | 'documents' | 'bookmarks'>('for_you')
   
@@ -91,7 +94,7 @@ function HomeContent() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-        {/* Global Navigation Header */}
+        {/* Global Navigation Header with Auto-hide on Mobile Scroll */}
         <Header />
 
         {/* Global Dialogs & Preview Modals */}
@@ -123,8 +126,15 @@ function HomeContent() {
           {/* 2. Center Feed Column (Max 620px, crisp dividing borders, zero horizontal shift) */}
           <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
-            {/* X-style Feed Header with Sticky Tab Bar */}
-            <div className="sticky top-13 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80">
+            {/* X-style Feed Header with Sticky Tab Bar (Smooth Hide on Scroll Down, Show on Scroll Up) */}
+            <div
+              className={cn(
+                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 transition-all duration-300 ease-in-out',
+                isHeaderVisible
+                  ? 'top-13 md:top-14 translate-y-0'
+                  : '-top-14 md:top-14 -translate-y-full md:translate-y-0'
+              )}
+            >
               <div className="flex w-full items-center justify-around text-xs sm:text-sm font-bold">
                 <button
                   onClick={() => setActiveFeedTab('for_you')}
@@ -190,97 +200,96 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Feed items container with responsive padding */}
-            <div className="p-3 sm:p-4 space-y-4">
-              {/* Standalone Academic Post Composer (hidden when viewing bookmarks or documents) */}
-              {activeFeedTab !== 'bookmarks' && activeFeedTab !== 'documents' && (
+            {/* Standalone Academic Post Composer (hidden when viewing bookmarks or documents) */}
+            {activeFeedTab !== 'bookmarks' && activeFeedTab !== 'documents' && (
+              <div className="p-3 sm:p-4 border-b border-border/60 sm:border-b-0">
                 <AcademicPostComposer />
-              )}
+              </div>
+            )}
 
-              {/* Feed Content Rendering */}
-              {(activeFeedTab === 'for_you' || activeFeedTab === 'courses' || activeFeedTab === 'bookmarks') && (
-                <div className="space-y-4">
-                  {isPostsLoading ? (
-                    <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
-                      <Loader2 className="h-6 w-6 animate-spin text-foreground" />
-                      <span className="text-xs">
-                        {activeFeedTab === 'bookmarks' ? 'Đang tải bài viết đã lưu...' : 'Đang tải bảng tin học thuật được gợi ý...'}
-                      </span>
-                    </div>
-                  ) : posts.length > 0 ? (
-                    <>
-                      {posts.map((post) => (
-                        <PostCard key={post.id} post={post} />
-                      ))}
-
-                      {/* Infinite Scroll Bottom Sentinel */}
-                      <div ref={sentinelRef} className="py-4 text-center">
-                        {isLoadingMore ? (
-                          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin text-foreground" />
-                            <span>Đang nạp thêm bài viết phù hợp...</span>
-                          </div>
-                        ) : !hasMore && posts.length > 5 ? (
-                          <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                            <span>Bạn đã xem hết các bài viết mới nhất</span>
-                          </div>
-                        ) : null}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center">
-                      <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                      <h3 className="text-sm font-bold text-foreground">
-                        {activeFeedTab === 'bookmarks' ? 'Chưa có bài viết nào được lưu' : 'Chưa có bài viết nào'}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1 mb-4">
-                        {activeFeedTab === 'bookmarks'
-                          ? 'Bạn có thể bấm biểu tượng Lưu ở bất kỳ bài viết nào trên Bảng tin để lưu lại xem sau.'
-                          : 'Hãy là người đầu tiên đặt câu hỏi hoặc chia sẻ tài liệu học phần!'}
-                      </p>
-                      {activeFeedTab !== 'bookmarks' && (
-                        <Button
-                          size="sm"
-                          onClick={() => setCreatePostOpen(true)}
-                          className="bg-foreground text-background font-bold rounded-full cursor-pointer"
-                        >
-                          Tạo bài viết mới
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeFeedTab === 'documents' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-foreground">Kho Tài Liệu & Đề Thi Mới Nhất</h2>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setCreateDocumentOpen(true)}
-                      className="h-7 text-[11px] gap-1 rounded-full cursor-pointer"
-                    >
-                      <FileText className="h-3 w-3" />
-                      <span>Thêm tài liệu</span>
-                    </Button>
+            {/* Continuous X-style Post Stream */}
+            {(activeFeedTab === 'for_you' || activeFeedTab === 'courses' || activeFeedTab === 'bookmarks') && (
+              <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
+                {isPostsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
+                    <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+                    <span className="text-xs">
+                      {activeFeedTab === 'bookmarks' ? 'Đang tải bài viết đã lưu...' : 'Đang tải bảng tin học thuật được gợi ý...'}
+                    </span>
                   </div>
-                  {isDocsLoading ? (
-                    <div className="flex justify-center py-12">
-                      <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+                ) : posts.length > 0 ? (
+                  <>
+                    {posts.map((post) => (
+                      <PostCard key={post.id} post={post} />
+                    ))}
+
+                    {/* Infinite Scroll Bottom Sentinel */}
+                    <div ref={sentinelRef} className="py-6 text-center">
+                      {isLoadingMore ? (
+                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                          <span>Đang nạp thêm bài viết phù hợp...</span>
+                        </div>
+                      ) : !hasMore && posts.length > 5 ? (
+                        <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                          <span>Bạn đã xem hết các bài viết mới nhất</span>
+                        </div>
+                      ) : null}
                     </div>
-                  ) : documents.length > 0 ? (
-                    documents.map((doc) => <DocumentCard key={doc.id} document={doc} />)
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-                      Chưa có tài liệu nào được tải lên.
-                    </div>
-                  )}
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 m-3 sm:m-0 text-center">
+                    <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="text-sm font-bold text-foreground">
+                      {activeFeedTab === 'bookmarks' ? 'Chưa có bài viết nào được lưu' : 'Chưa có bài viết nào'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 mb-4">
+                      {activeFeedTab === 'bookmarks'
+                        ? 'Bạn có thể bấm biểu tượng Lưu ở bất kỳ bài viết nào trên Bảng tin để lưu lại xem sau.'
+                        : 'Hãy là người đầu tiên đặt câu hỏi hoặc chia sẻ tài liệu học phần!'}
+                    </p>
+                    {activeFeedTab !== 'bookmarks' && (
+                      <Button
+                        size="sm"
+                        onClick={() => setCreatePostOpen(true)}
+                        className="bg-foreground text-background font-bold rounded-full cursor-pointer"
+                      >
+                        Tạo bài viết mới
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeFeedTab === 'documents' && (
+              <div className="p-3 sm:p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-foreground">Kho Tài Liệu & Đề Thi Mới Nhất</h2>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setCreateDocumentOpen(true)}
+                    className="h-7 text-[11px] gap-1 rounded-full cursor-pointer"
+                  >
+                    <FileText className="h-3 w-3" />
+                    <span>Thêm tài liệu</span>
+                  </Button>
                 </div>
-              )}
-            </div>
+                {isDocsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+                  </div>
+                ) : documents.length > 0 ? (
+                  documents.map((doc) => <DocumentCard key={doc.id} document={doc} />)
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
+                    Chưa có tài liệu nào được tải lên.
+                  </div>
+                )}
+              </div>
+            )}
           </main>
 
           {/* 3. Right Sidebar (Desktop lg: and above) */}
