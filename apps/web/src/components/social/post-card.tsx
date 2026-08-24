@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import type { PostItem, PollData } from '@pu/schemas'
+import type { PostItem } from '@pu/schemas'
 import {
   Heart,
   MessageCircle,
@@ -16,7 +16,12 @@ import {
   Check,
   Pencil,
   Trash2,
-  ShieldAlert
+  ShieldAlert,
+  HelpCircle,
+  BookOpen,
+  Users,
+  GraduationCap,
+  Building2
 } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -53,6 +58,12 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
   const [isCopied, setIsCopied] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
+  const [isLiking, setIsLiking] = useState(false)
+
+  // Keep in sync with initialPost when parent updates
+  useEffect(() => {
+    setPost(initialPost)
+  }, [initialPost])
 
   const currentUser = useAppStore((state) => state.user)
   const posts = useAppStore((state) => state.posts)
@@ -66,12 +77,36 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
   const isAdmin = currentUser?.role === 'admin'
   const canManage = isAuthor || isAdmin
 
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (onLikeToggle) {
-      onLikeToggle(post.id)
-    } else {
+    if (isLiking) return
+
+    const nextIsLiked = !post.isLikedByMe
+    const nextCount = nextIsLiked ? post.likesCount + 1 : Math.max(0, post.likesCount - 1)
+
+    // 1. Optimistic UI updates
+    setPost((prev) => ({ ...prev, isLikedByMe: nextIsLiked, likesCount: nextCount }))
+    toggleLikePost(post.id)
+
+    setIsLiking(true)
+    try {
+      if (onLikeToggle) {
+        onLikeToggle(post.id)
+      } else {
+        const res = await apiClient<{ isLiked: boolean; likesCount: number }>(`/posts/${post.id}/like`, {
+          method: 'POST'
+        })
+        if (res && typeof res.likesCount === 'number') {
+          setPost((prev) => ({ ...prev, isLikedByMe: res.isLiked, likesCount: res.likesCount }))
+        }
+      }
+    } catch {
+      // Revert on error
+      setPost((prev) => ({ ...prev, isLikedByMe: !nextIsLiked, likesCount: post.likesCount }))
       toggleLikePost(post.id)
+      toast.error('Không thể thực hiện tương tác')
+    } finally {
+      setIsLiking(false)
     }
   }
 
@@ -120,7 +155,7 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
     .slice(0, 2)
     .toUpperCase()
 
-  const courseBadgeText = getCourseBadgeLabel(post)
+  const courseBadge = getCleanCourseBadge(post)
 
   return (
     <>
@@ -146,7 +181,7 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
                 </span>
                 <span className="text-xs text-muted-foreground">@{post.author?.username || 'student'}</span>
                 
-                {/* Academic Role Badge */}
+                {/* Academic Role Badge with Lucide SVG icons */}
                 <AcademicBadge
                   role={post.author?.role}
                   reputationPoints={post.author?.reputationPoints}
@@ -156,29 +191,39 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
             </div>
           </Link>
 
-          {/* Post Badges & More Options */}
-          <div className="flex items-center space-x-2">
+          {/* Post Badges (SVG Lucide icons only - no text emoji) */}
+          <div className="flex items-center space-x-1.5">
             {post.postType === 'qa' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
-                ❓ Hỏi đáp
-                {post.isResolved ? ' • Đã giải quyết' : ' • Cần giải đáp'}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
+                <HelpCircle className="h-3 w-3 text-amber-500" />
+                <span>Hỏi đáp</span>
+                <span className="text-muted-foreground">{post.isResolved ? '• Đã giải quyết' : '• Cần giải đáp'}</span>
               </span>
             )}
             {post.postType === 'document' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
-                📚 Tài liệu & Đề thi
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
+                <BookOpen className="h-3 w-3 text-sky-500" />
+                <span>Tài liệu & Đề thi</span>
               </span>
             )}
             {post.postType === 'group_recruit' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
-                👥 Tuyển nhóm PBL
-                {post.recruitSlotsTotal ? ` (${post.recruitSlotsFilled || 1}/${post.recruitSlotsTotal})` : ''}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground">
+                <Users className="h-3 w-3 text-emerald-500" />
+                <span>Tuyển nhóm PBL</span>
+                {post.recruitSlotsTotal ? (
+                  <span className="text-muted-foreground">({post.recruitSlotsFilled || 1}/{post.recruitSlotsTotal})</span>
+                ) : null}
               </span>
             )}
 
-            {courseBadgeText && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted/70 border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground max-w-[180px] truncate">
-                {courseBadgeText}
+            {courseBadge && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/70 border border-border px-2.5 py-0.5 text-[10px] font-semibold text-foreground max-w-[180px] truncate">
+                {courseBadge.isFaculty ? (
+                  <Building2 className="h-3 w-3 text-primary shrink-0" />
+                ) : (
+                  <GraduationCap className="h-3 w-3 text-primary shrink-0" />
+                )}
+                <span className="truncate">{courseBadge.label}</span>
               </span>
             )}
 
@@ -302,7 +347,12 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
               post.isLikedByMe ? 'text-rose-500 hover:text-rose-600' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Heart className={cn('h-4 w-4 transition-transform active:scale-125', post.isLikedByMe && 'fill-current')} />
+            <Heart
+              className={cn(
+                'h-4 w-4 transition-transform active:scale-125',
+                post.isLikedByMe && 'fill-current text-rose-500'
+              )}
+            />
             <span>{post.likesCount}</span>
           </Button>
 
@@ -330,7 +380,12 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
               post.isBookmarkedByMe ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Bookmark className={cn('h-4 w-4 transition-transform active:scale-125', post.isBookmarkedByMe && 'fill-current')} />
+            <Bookmark
+              className={cn(
+                'h-4 w-4 transition-transform active:scale-125',
+                post.isBookmarkedByMe && 'fill-current text-amber-500'
+              )}
+            />
             <span>{post.isBookmarkedByMe ? 'Đã lưu' : 'Lưu'}</span>
           </Button>
 
@@ -407,18 +462,18 @@ export function PostCard({ post: initialPost, onLikeToggle }: PostCardProps) {
   )
 }
 
-function getCourseBadgeLabel(post: PostItem): string | null {
+function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolean } | null {
   if (post.courseCode) {
-    return `📘 ${post.courseCode}`
+    return { label: post.courseCode, isFaculty: false }
   }
   if (post.courseName) {
-    return `📘 ${post.courseName}`
+    return { label: post.courseName, isFaculty: false }
   }
   if (post.facultyCode && post.facultyCode !== 'ALL') {
-    return `🏛️ ${post.facultyCode}`
+    return { label: post.facultyCode, isFaculty: true }
   }
   if (post.courseId && !post.courseId.includes('-') && post.courseId.length < 15) {
-    return `📘 ${post.courseId}`
+    return { label: post.courseId, isFaculty: false }
   }
   return null
 }

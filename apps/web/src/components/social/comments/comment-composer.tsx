@@ -13,6 +13,7 @@ interface CommentComposerProps {
   parentId?: string
   placeholder?: string
   autoFocus?: boolean
+  initialContent?: string
   onCancel?: () => void
 }
 
@@ -21,14 +22,21 @@ export function CommentComposer({
   parentId,
   placeholder = 'Viết câu trả lời hoặc thảo luận của bạn...',
   autoFocus = false,
+  initialContent = '',
   onCancel
 }: CommentComposerProps) {
   const user = useAppStore((state) => state.user)
-  const [content, setContent] = useState('')
+  const [content, setContent] = useState(initialContent)
   const [attachedImages, setAttachedImages] = useState<{ id: string; url: string; file?: File }[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (initialContent) {
+      setContent(initialContent)
+    }
+  }, [initialContent])
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -40,6 +48,8 @@ export function CommentComposer({
   useEffect(() => {
     if (autoFocus && textareaRef.current) {
       textareaRef.current.focus()
+      const len = textareaRef.current.value.length
+      textareaRef.current.setSelectionRange(len, len)
     }
   }, [autoFocus])
 
@@ -101,58 +111,54 @@ export function CommentComposer({
         }
       }
 
-      await onSubmit(content, uploadedUrls)
+      await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined)
       setContent('')
       setAttachedImages([])
     } catch (err: any) {
-      toast.error(err.message || 'Không thể gửi phản hồi')
+      toast.error('Không thể gửi bình luận')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault()
+      handleSubmit()
+    }
+  }
+
   return (
-    <div className="flex gap-2.5 items-start pt-2">
-      <Avatar className="h-8 w-8 shrink-0 rounded-full border border-border select-none shadow-xs">
-        <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || ''} />
-        <AvatarFallback className="bg-foreground text-background font-bold text-[11px]">
+    <div className="flex gap-3 items-start">
+      <Avatar className="h-8 w-8 shrink-0 rounded-full border border-border select-none shadow-xs mt-0.5">
+        <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || 'User'} />
+        <AvatarFallback className="bg-foreground text-background font-bold text-[10px]">
           {userInitials}
         </AvatarFallback>
       </Avatar>
 
-      <div className="flex-1 min-w-0 rounded-xl border border-border bg-card p-2.5 space-y-2 shadow-xs focus-within:border-foreground/30 transition-colors">
-        {/* Hidden File input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-        />
-
+      <div className="flex-1 min-w-0 rounded-2xl border border-border/80 bg-card p-2.5 space-y-2 shadow-2xs focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
         <textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder={placeholderText(placeholder, !!parentId)}
+          onKeyDown={handleKeyDown}
+          placeholder={placeholder}
           rows={1}
           className="w-full resize-none bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none leading-relaxed"
         />
 
-        {/* Attached image preview thumbnails */}
+        {/* Attached Images Preview */}
         {attachedImages.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">
             {attachedImages.map((img) => (
-              <div
-                key={img.id}
-                className="group relative h-16 w-16 overflow-hidden rounded-lg border border-border bg-black/5"
-              >
+              <div key={img.id} className="relative group rounded-lg overflow-hidden border border-border h-16 w-16">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.url} alt="Attached" className="h-full w-full object-cover" />
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(img.id)}
-                  className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-black/75 text-white hover:bg-black transition-colors"
+                  className="absolute top-1 right-1 bg-black/60 hover:bg-black text-white p-0.5 rounded-full cursor-pointer transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -161,14 +167,22 @@ export function CommentComposer({
           </div>
         )}
 
-        {/* Bottom Toolbar & Action buttons */}
+        {/* Bottom Toolbar & Submit Button */}
         <div className="flex items-center justify-between pt-1 border-t border-border/40">
-          <div className="flex items-center gap-0.5 text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileChange}
+            />
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-              title="Đính kèm ảnh minh họa"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+              title="Đính kèm ảnh"
             >
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
@@ -176,30 +190,31 @@ export function CommentComposer({
             <button
               type="button"
               onClick={() => handleInsertText(' $f(x) = x^2$ ')}
-              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-              title="Chèn công thức toán ($KaTeX$)"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+              title="Chèn công thức toán LaTeX"
             >
               <Binary className="h-3.5 w-3.5" />
             </button>
 
             <button
               type="button"
-              onClick={() => handleInsertText('\n```python\n# code\n```\n')}
-              className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-muted hover:text-foreground transition-colors cursor-pointer"
-              title="Chèn khối mã nguồn (Code Block)"
+              onClick={() => handleInsertText('\n```cpp\n// Code snippet\n```\n')}
+              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+              title="Chèn khối mã nguồn"
             >
               <Code2 className="h-3.5 w-3.5" />
             </button>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             {onCancel && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={onCancel}
-                className="h-7 px-2.5 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+                disabled={isSubmitting}
+                className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
               >
                 Hủy
               </Button>
@@ -209,14 +224,11 @@ export function CommentComposer({
               type="button"
               size="sm"
               onClick={handleSubmit}
-              disabled={isSubmitting || (!content.trim() && attachedImages.length === 0)}
-              className="h-7 rounded-full px-3.5 text-[11px] font-bold bg-foreground text-background hover:bg-foreground/90 transition-all cursor-pointer disabled:opacity-40"
+              disabled={(!content.trim() && attachedImages.length === 0) || isSubmitting}
+              className="h-7 px-3 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs rounded-full gap-1"
             >
               {isSubmitting ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                  <span>Đang gửi...</span>
-                </>
+                <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
                 <span>{parentId ? 'Trả lời' : 'Bình luận'}</span>
               )}
@@ -226,9 +238,4 @@ export function CommentComposer({
       </div>
     </div>
   )
-}
-
-function placeholderText(defaultPlaceholder: string, isReply: boolean) {
-  if (isReply) return 'Viết câu trả lời trực tiếp...'
-  return defaultPlaceholder
 }

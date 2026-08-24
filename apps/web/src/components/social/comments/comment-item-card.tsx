@@ -138,8 +138,8 @@ export function CommentItemCard({
           >
             <Heart
               className={cn(
-                'h-3.5 w-3.5',
-                comment.isLikedByMe && 'fill-current'
+                'h-3.5 w-3.5 transition-transform active:scale-125',
+                comment.isLikedByMe && 'fill-current text-rose-500'
               )}
             />
             <span>{comment.likesCount || 0}</span>
@@ -155,12 +155,13 @@ export function CommentItemCard({
           </button>
         </div>
 
-        {/* Nested Reply Composer */}
+        {/* Nested Reply Composer with Auto-tag */}
         {showReplyComposer && (
           <div className="pt-2">
             <CommentComposer
               parentId={comment.id}
               autoFocus
+              initialContent={`@${comment.author?.username || 'user'} `}
               onSubmit={async (text, media) => {
                 await onReplySubmit(text, comment.id, media)
                 setShowReplyComposer(false)
