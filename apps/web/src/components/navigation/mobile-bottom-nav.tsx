@@ -11,6 +11,7 @@ import {
   Plus
 } from 'lucide-react'
 import { useAppStore } from '@/store'
+import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { cn } from '@/lib/utils'
 
 export function MobileBottomNav() {
@@ -19,6 +20,10 @@ export function MobileBottomNav() {
   const searchParams = useSearchParams()
   const currentTabParam = searchParams.get('tab')
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
+  
+  // High-performance scroll state for fade/dimming on scroll
+  const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
+  const isDimmed = !isAtTop && (!isHeaderVisible || isScrolling)
 
   // Don't show bottom nav on landing / auth / onboarding pages
   if (pathname === '/' || pathname === '/get-started') {
@@ -65,20 +70,30 @@ export function MobileBottomNav() {
 
   return (
     <>
-      {/* Floating Action Button (FAB) — Inspired by X Compose Tweet FAB */}
+      {/* Floating Action Button (FAB) — Smoothly dims & scales down when scrolling */}
       <button
         type="button"
         onClick={() => setCreatePostOpen(true)}
         aria-label="Tạo bài viết mới"
-        className="fixed bottom-18 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/30 transition-transform active:scale-95 hover:scale-105 md:hidden cursor-pointer"
+        className={cn(
+          'fixed bottom-18 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/30 transition-all duration-300 ease-in-out active:scale-95 md:hidden cursor-pointer',
+          isDimmed
+            ? 'opacity-25 scale-90 translate-y-2 pointer-events-none'
+            : 'opacity-100 scale-100 translate-y-0 pointer-events-auto hover:scale-105'
+        )}
       >
         <Plus className="h-6 w-6 stroke-[2.5]" />
       </button>
 
-      {/* Sticky Bottom Navigation Bar */}
+      {/* Sticky Bottom Navigation Bar — Smoothly fades and dims when scrolling */}
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/95 px-2 backdrop-blur-md md:hidden"
+        className={cn(
+          'fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/90 px-2 backdrop-blur-md md:hidden transition-all duration-300 ease-in-out',
+          isDimmed
+            ? 'opacity-25 blur-[0.5px] translate-y-1 pointer-events-none hover:opacity-100 hover:pointer-events-auto'
+            : 'opacity-100 blur-none translate-y-0 pointer-events-auto'
+        )}
       >
         {navItems.map((item) => {
           const Icon = item.icon
