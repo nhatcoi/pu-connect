@@ -13,6 +13,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { StorageService } from './storage.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import type { Request } from 'express'
+import 'multer'
 
 @Controller('upload')
 export class StorageController {
