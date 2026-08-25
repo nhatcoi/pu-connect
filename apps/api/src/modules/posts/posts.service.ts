@@ -84,9 +84,10 @@ export class PostsService {
 
     if (currentUserId) {
       sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $1) as is_liked_by_me,
-               EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1) as is_bookmarked_by_me`
+               EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1) as is_bookmarked_by_me,
+               EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = p.author_id) as is_author_followed_by_me`
     } else {
-      sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me`
+      sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me, FALSE as is_author_followed_by_me`
     }
 
     sql += `${joins} ${whereClause}`
@@ -123,9 +124,10 @@ export class PostsService {
     if (currentUserId) {
       params.push(currentUserId)
       sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $2) as is_liked_by_me,
-               EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $2) as is_bookmarked_by_me`
+               EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $2) as is_bookmarked_by_me,
+               EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $2 AND uf.following_id = p.author_id) as is_author_followed_by_me`
     } else {
-      sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me`
+      sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me, FALSE as is_author_followed_by_me`
     }
 
     sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id WHERE p.id = $1 LIMIT 1`
@@ -273,6 +275,7 @@ export class PostsService {
         courseName,
         facultyCode: authorUser.faculty,
         targetAudience: data.targetAudience || 'everyone',
+        isPinned: false,
         isResolved: false,
         recruitSlotsTotal: data.recruitSlotsTotal,
         recruitSlotsFilled: data.recruitSlotsFilled,
@@ -284,6 +287,7 @@ export class PostsService {
         sharesCount: 0,
         isLikedByMe: false,
         isBookmarkedByMe: false,
+        isAuthorFollowedByMe: false,
         poll: pollData,
         createdAt: postRow.created_at.toISOString(),
         updatedAt: postRow.updated_at.toISOString()
@@ -476,6 +480,34 @@ export class PostsService {
     })
   }
 
+  async togglePin(postId: string, userId: string): Promise<{ isPinned: boolean }> {
+    return this.db.transaction(async (client) => {
+      const postRes = await client.query(
+        `SELECT author_id, is_pinned FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`,
+        [postId]
+      )
+      if (postRes.rows.length === 0) {
+        throw new NotFoundException('Bài viết không tồn tại')
+      }
+
+      const post = postRes.rows[0]
+      const userRes = await client.query(`SELECT role FROM users WHERE id = $1 LIMIT 1`, [userId])
+      const userRole = userRes.rows[0]?.role
+
+      if (post.author_id !== userId && userRole !== 'admin') {
+        throw new ForbiddenException('Bạn không có quyền ghim bài viết này')
+      }
+
+      const nextIsPinned = !post.is_pinned
+      await client.query(`UPDATE posts SET is_pinned = $1, updated_at = NOW() WHERE id = $2`, [
+        nextIsPinned,
+        postId
+      ])
+
+      return { isPinned: nextIsPinned }
+    })
+  }
+
   async report(postId: string, reporterId: string, data: ReportPostInput): Promise<{ success: boolean }> {
     await this.db.query(
       `INSERT INTO post_reports (post_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)`,
@@ -573,6 +605,7 @@ export class PostsService {
       courseName: row.course_name || null,
       facultyCode: row.faculty_code || row.author_faculty || null,
       targetAudience: 'everyone',
+      isPinned: !!row.is_pinned,
       isResolved: row.is_resolved || false,
       tags: row.tags || [],
       mediaUrls: row.media_urls || [],
@@ -582,6 +615,7 @@ export class PostsService {
       sharesCount: row.shares_count || 0,
       isLikedByMe: row.is_liked_by_me || false,
       isBookmarkedByMe: row.is_bookmarked_by_me || false,
+      isAuthorFollowedByMe: !!row.is_author_followed_by_me,
       poll: poll || null,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()

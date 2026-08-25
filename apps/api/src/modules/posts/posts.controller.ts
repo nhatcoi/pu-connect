@@ -125,6 +125,12 @@ export class PostsController {
     }
   }
 
+  @Post(':id/pin')
+  async togglePin(@Param('id') id: string, @Req() req: Request) {
+    const userId = await this.resolveUserId(req)
+    return this.postsService.togglePin(id, userId)
+  }
+
   @Post(':id/report')
   async report(
     @Param('id') id: string,
