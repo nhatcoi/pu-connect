@@ -271,7 +271,7 @@ function SearchContent() {
             {/* ── A. SEARCH TOP BAR (X Twitter Style) ── */}
             <div
               className={cn(
-                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 transition-all duration-300 ease-in-out px-3 py-2.5',
+                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 transition-transform duration-300 ease-in-out px-3 py-2.5',
                 isHeaderVisible
                   ? 'top-13 md:top-14 translate-y-0'
                   : '-top-14 md:top-14 -translate-y-full md:translate-y-0'

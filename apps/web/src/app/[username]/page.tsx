@@ -71,7 +71,7 @@ export default function ProfilePage({
             {/* Sticky Topbar with Back Button (Smooth Hide on Scroll Down, Show on Scroll Up) */}
             <div
               className={cn(
-                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3 transition-all duration-300 ease-in-out',
+                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3 transition-transform duration-300 ease-in-out',
                 isHeaderVisible
                   ? 'top-13 md:top-14 translate-y-0'
                   : '-top-14 md:top-14 -translate-y-full md:translate-y-0'
