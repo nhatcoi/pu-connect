@@ -34,13 +34,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        'fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-2xl outline-none data-[state=open]:animate-modal-in data-[state=closed]:animate-modal-out sm:max-w-lg',
+        'fixed top-1/2 left-1/2 z-50 flex flex-col w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card text-card-foreground shadow-2xl outline-none data-[state=open]:animate-modal-in data-[state=closed]:animate-modal-out sm:max-w-lg max-h-[90vh]',
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute top-4 right-4 rounded-full p-1 opacity-70 transition-opacity hover:opacity-100 focus:outline-none hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer">
+      <DialogPrimitive.Close className="absolute top-3.5 right-3.5 z-20 rounded-full p-1.5 opacity-70 transition-opacity hover:opacity-100 focus:outline-none hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer">
         <X className="h-4 w-4" />
         <span className="sr-only">Đóng</span>
       </DialogPrimitive.Close>

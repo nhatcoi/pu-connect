@@ -66,7 +66,7 @@ export function EditPostDialog({ post, open, onOpenChange, onSuccess }: EditPost
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="sm:max-w-xl p-6 gap-4">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa bài viết</DialogTitle>
         </DialogHeader>

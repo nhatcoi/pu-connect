@@ -58,7 +58,7 @@ export function ReportPostDialog({ postId, open, onOpenChange }: ReportPostDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md p-6 gap-4">
         <DialogHeader>
           <div className="flex items-center gap-2 text-destructive">
             <ShieldAlert className="h-5 w-5" />

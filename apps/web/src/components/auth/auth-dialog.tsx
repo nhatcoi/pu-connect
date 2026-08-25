@@ -116,7 +116,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-6">
+      <DialogContent className="max-w-md p-6 gap-4">
         <DialogHeader className="text-center sm:text-center pb-2">
           <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black text-lg mb-2">
             PU

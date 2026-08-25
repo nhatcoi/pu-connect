@@ -71,7 +71,7 @@ export function CreatePostDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl p-6 gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
             <Sparkles className="h-4 w-4 text-primary" />

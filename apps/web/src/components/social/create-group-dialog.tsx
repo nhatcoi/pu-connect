@@ -75,7 +75,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md p-6 gap-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
             <Users className="h-4 w-4 text-primary" />
