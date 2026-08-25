@@ -7,6 +7,11 @@ export interface FeedSlice {
   isCreatePostOpen: boolean
   setPosts: (posts: PostItem[]) => void
   addPost: (post: PostItem) => void
+  updatePost: (postId: string, updater: (prev: PostItem) => PostItem) => void
+  hidePost: (postId: string) => void
+  muteAuthor: (authorId: string) => void
+  togglePinPost: (postId: string, isPinned?: boolean) => void
+  setAuthorFollowed: (authorId: string, isFollowed: boolean) => void
   toggleLikePost: (postId: string) => void
   toggleBookmarkPost: (postId: string) => void
   setSelectedTag: (tag: string | null) => void
@@ -19,6 +24,36 @@ export const createFeedSlice: StateCreator<FeedSlice> = (set) => ({
   isCreatePostOpen: false,
   setPosts: (posts) => set({ posts }),
   addPost: (post) => set((state) => ({ posts: [post, ...state.posts] })),
+  updatePost: (postId, updater) =>
+    set((state) => ({
+      posts: state.posts.map((p) => (p.id === postId ? updater(p) : p))
+    })),
+  hidePost: (postId) =>
+    set((state) => ({
+      posts: state.posts.filter((p) => p.id !== postId)
+    })),
+  muteAuthor: (authorId) =>
+    set((state) => ({
+      posts: state.posts.filter(
+        (p) => p.authorId !== authorId && p.author?.id !== authorId
+      )
+    })),
+  togglePinPost: (postId, isPinned) =>
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.id === postId
+          ? { ...p, isPinned: isPinned !== undefined ? isPinned : !p.isPinned }
+          : p
+      )
+    })),
+  setAuthorFollowed: (authorId, isFollowed) =>
+    set((state) => ({
+      posts: state.posts.map((p) =>
+        p.authorId === authorId || p.author?.id === authorId
+          ? { ...p, isAuthorFollowedByMe: isFollowed }
+          : p
+      )
+    })),
   toggleLikePost: (postId) =>
     set((state) => ({
       posts: state.posts.map((post) => {
