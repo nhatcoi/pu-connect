@@ -42,31 +42,18 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 📊 **Khảo Sát Biểu Quyết Sinh Viên (Post Polls & Voting)**: Bảng `post_polls`, `post_poll_options`, `post_poll_votes`, cho phép tạo câu hỏi khảo sát 2-4 lựa chọn ngay trong Composer, hiển thị thanh tiến trình % bình chọn sinh động thời gian thực ([`PostPollCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-poll-card.tsx)), endpoint `POST /api/posts/:id/vote-poll`.
 - [x] 🔔 **Trung Tâm Thông Báo Nổi Realtime (Notification Hub Popover)**: Gắn icon Chuông trên Header ([`NotificationsPopover`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/notifications-popover.tsx)), hiển thị huy hiệu đếm chưa đọc, phân loại 9 loại sự kiện (like, comment, duyệt lời giải đúng, xin vào nhóm), nút "Đã đọc tất cả", endpoint `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
 - [x] 🎖️ **Hệ Thống Huy Hiệu Định Danh Học Thuật Trực Quan ([`AcademicBadge`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/ui/academic-badge.tsx))**: Phân định rõ ràng vai trò người đăng bài/bình luận: 🎓 Giảng viên (Verified Lecturer), 🌟 Trợ giảng (TA), 👑 Ban Quản trị (Admin), 🏆 Top Contributor (Sinh viên có $\ge 300$ điểm danh vọng).
-- [x] 🎛️ **Menu Tùy Chọn 3 Chấm Chuẩn X Tối Ưu Bối Cảnh Học Thuật & PU Connection ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
-  - Tối ưu hóa triệt để menu 3 dots (`...`), loại bỏ các tính năng dư thừa mạng xã hội thông thường (như nhúng iframe, chặn người dùng thô cứng), tập trung 100% vào học thuật, môn học, đồ án PBL và kết nối sinh viên - giảng viên Phenikaa:
-  - **Dành cho Người xem (Sinh viên / Giảng viên)**:
-    - 📚 **Tra cứu Hub Môn học & Kho tài liệu**: Mở ngay kho đề thi, slide và bài giảng môn học liên quan (`/search?q=${courseCode}&tab=courses`).
-    - 🔖 **Lưu vào Sổ tay học tập**: Lưu trữ bài viết/câu hỏi vào bộ sưu tập cá nhân.
-    - 👥 **Mời vào nhóm đồ án PBL ([`InvitePblDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/invite-pbl-dialog.tsx))**: Ghép đôi sinh viên, gửi lời mời tham gia nhóm đồ án môn học hoặc NCKH kèm lời nhắn tùy biến.
-    - 🧑‍🏫 **Nhờ Giảng viên / Trợ giảng (TA) trợ giúp**: Gửi thông báo ưu tiên tới Đội ngũ Trợ giảng & Giảng viên phụ trách môn học khi gặp câu hỏi Q&A khó.
-    - 👤 **Theo dõi học thuật tác giả**: Toggle Follow qua GraphQL mutation `toggleFollow`.
-    - 📊 **Thống kê tương tác & Độ phủ học thuật**: Mở modal phân tích KPI ([`PostAnalyticsDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-analytics-dialog.tsx)).
-    - 📋 **Sao chép liên kết bài viết & Gửi vào nhóm đồ án**.
-    - 🔕 **Không quan tâm chủ đề môn học này**: Ẩn bài viết tức thì kèm nút Hoàn tác (Undo).
-    - 🛡️ **Báo cáo vi phạm học vụ / Lộ đề thi ([`ReportPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/report-post-dialog.tsx))**: Báo cáo lộ đề thi, tài liệu cấm, đạo văn hoặc sai lệch kiến thức.
-  - **Dành cho Tác giả / Giảng viên (Owner / Admin)**:
-    - 📌 **Ghim bài thảo luận lên đầu**: Endpoint `POST /api/posts/:id/pin` trong ACID transaction.
-    - 🎯 **Đổi trạng thái Lời giải Q&A**: Endpoint `POST /api/posts/:id/resolve`, chuyển đổi trạng thái *Đã giải quyết* / *Đang chờ giải đáp* tức thời.
-    - ✏️ **Chỉnh sửa bài viết & môn học**: Cập nhật nội dung, tiêu đề, mã học phần.
-    - 📚 **Mở kho tài liệu môn học liên quan**.
-    - 📊 **Thống kê tương tác & Điểm uy tín Phenikaa tích lũy (+5 Rep)**.
-    - 🗑️ **Xóa bài viết**: Xóa an toàn kèm hoàn trừ post count môn học.
-- [x] 📊 **Hộp Thoại Phân Tích & Thống Kê Số Liệu Bài Viết ([`PostAnalyticsDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-analytics-dialog.tsx))**:
-  - Hiển thị 4 Card chỉ số chính: Lượt hiển thị (Impressions) kèm xu hướng, Tổng lượt tương tác (Total Engagements), Tỷ lệ tương tác (Engagement Rate), Điểm uy tín Phenikaa tích lũy (+5 Rep).
-  - Thanh đo đa phân đoạn phân bổ trực quan giữa Lượt thích, Thảo luận, Chia sẻ nhóm PBL và Lưu trữ.
-  - Phân tích độ lan tỏa học thuật theo Khoa/Viện & Môn học (Academic Reach).
-- [x] 👥 **Hộp Thoại Mời Tham Gia Nhóm Đồ Án PBL ([`InvitePblDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/invite-pbl-dialog.tsx))**:
-  - Kết nối trực tiếp giữa bài viết và phân hệ ghép nhóm đồ án, cho phép chọn nhóm môn học (PBL, Capstone, NCKH, Ôn thi) và gửi lời mời tương tác cá nhân hóa.
+- [x] 🎛️ **Menu Tùy Chọn 3 Chấm Chuẩn X Tinh Gọn ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
+  - Tối ưu hóa menu 3 dots (`...`) tinh gọn, loại bỏ các chức năng phức tạp chưa cần thiết, chỉ tập trung vào các thao tác cốt lõi:
+  - **Dành cho Người xem (Viewer)**:
+    - 👤 **Theo dõi / Bỏ theo dõi tác giả (`Follow / Unfollow @username`)**: Đồng bộ hóa quan hệ follow realtime qua GraphQL mutation `toggleFollow`.
+    - 🔕 **Không quan tâm bài viết này (`Not Interested`)**: Ẩn bài viết tức thì khỏi feed kèm banner Hoàn tác (Undo).
+    - 📋 **Sao chép liên kết (`Copy Link`)**: Sao chép URL bài viết vào clipboard kèm Toast.
+    - 🛡️ **Báo cáo vi phạm (`Report Post`)**: Hộp thoại báo cáo vi phạm nội quy, lộ đề thi, đạo văn ([`ReportPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/report-post-dialog.tsx)).
+  - **Dành cho Tác giả / Quản trị viên (Owner / Admin)**:
+    - 📌 **Ghim lên đầu trang cá nhân / Bỏ ghim (`Pin / Unpin`)**: Endpoint `POST /api/posts/:id/pin` trong ACID transaction.
+    - ✏️ **Chỉnh sửa bài viết (`Edit Post`)**: Cập nhật tiêu đề, nội dung và hashtag ([`EditPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/edit-post-dialog.tsx)).
+    - 📋 **Sao chép liên kết (`Copy Link`)**.
+    - 🗑️ **Xóa bài viết (`Delete Post`)**: Xóa an toàn trong ACID transaction kèm hoàn trừ post count môn học.
 - [x] 🔗 **Phân Tích Cú Pháp Clickable Mentions `@` & Hashtags `#` ([`MarkdownPreview`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/renderer/markdown-preview.tsx))**: Tự động chuyển đổi `@username` thành liên kết đến trang cá nhân `/[username]` và `#tag` thành liên kết tìm kiếm chủ đề `/search?q=tag`.
 - [x] 📐 **Bố Cục Bài Viết Căn Lề Thẳng Hàng Chuẩn X ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
   - Tách bố cục thành 2 cột độc lập (`flex items-start gap-3`): Cột trái là Avatar tác giả (`shrink-0`), Cột phải (`flex-1 min-w-0`) chứa toàn bộ Tên tác giả, Tiêu đề, Nội dung bài viết, Ảnh/Video, Khảo sát, Tài liệu đính kèm và Hàng nút tương tác (*Bình luận, Gửi nhóm, Thích, Lượt xem, Lưu, Chia sẻ*).

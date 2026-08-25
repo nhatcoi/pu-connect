@@ -29,10 +29,7 @@ import {
   UserMinus,
   Pin,
   PinOff,
-  EyeOff,
-  CheckCircle2,
-  Sparkles,
-  Search
+  EyeOff
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -50,7 +47,6 @@ import { PostPollCard } from './post-poll-card'
 import { EditPostDialog } from './edit-post-dialog'
 import { ReportPostDialog } from './report-post-dialog'
 import { PostAnalyticsDialog } from './post-analytics-dialog'
-import { InvitePblDialog } from './invite-pbl-dialog'
 import { PostMediaGallery } from './post-media-gallery'
 import { PostCommentsSection } from './comments/post-comments-section'
 import { useAppStore } from '@/store'
@@ -125,7 +121,6 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
-  const [isInvitePblOpen, setIsInvitePblOpen] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
   const [hiddenReason, setHiddenReason] = useState('')
@@ -135,7 +130,6 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
   const toggleLikePost = useAppStore((state) => state.toggleLikePost)
   const toggleBookmarkPost = useAppStore((state) => state.toggleBookmarkPost)
   const togglePinPost = useAppStore((state) => state.togglePinPost)
-  const toggleResolvePost = useAppStore((state) => state.toggleResolvePost)
   const setAuthorFollowed = useAppStore((state) => state.setAuthorFollowed)
   const setPosts = useAppStore((state) => state.setPosts)
   const storePosts = useAppStore((state) => state.posts)
@@ -149,7 +143,6 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
   // Check if current user is owner or admin
   const isOwner = user?.id && post.author?.id && String(user.id) === String(post.author.id)
   const isAdmin = user?.role === 'admin'
-  const canManage = isOwner || isAdmin
 
   // Optimistic Like Toggle
   const handleLike = async () => {
@@ -196,8 +189,8 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
       await apiClient(`/posts/${post.id}/bookmark`, { method: 'POST' })
       toast.success(
         newIsBookmarked
-          ? 'Đã lưu bài viết vào Sổ tay học tập'
-          : 'Đã bỏ lưu khỏi Sổ tay học tập'
+          ? 'Đã lưu bài viết vào mục Đã lưu'
+          : 'Đã bỏ lưu bài viết'
       )
     } catch {
       setPost((prev) => ({
@@ -205,53 +198,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
         isBookmarkedByMe: !newIsBookmarked
       }))
       toggleBookmarkPost(post.id)
-      toast.error('Không thể cập nhật Sổ tay học tập')
-    }
-  }
-
-  // Navigate to Course Hub / Search
-  const handleNavigateToCourseHub = () => {
-    const query = post.courseCode || post.courseName || (post.tags && post.tags[0]) || ''
-    if (query) {
-      toast.info(`Đang mở kho tài liệu & môn học: ${query}`)
-      router.push(`/search?q=${encodeURIComponent(query)}&tab=courses`)
-    } else {
-      router.push('/home?tab=courses')
-    }
-  }
-
-  // Request TA / Lecturer assistance for Q&A post
-  const handleRequestTaHelp = () => {
-    const faculty = post.facultyCode || post.author?.faculty || 'Khoa CNTT'
-    toast.success(
-      `Đã chuyển tiếp câu hỏi tới Đội ngũ Trợ giảng & Giảng viên ${faculty} để hỗ trợ giải đáp!`
-    )
-  }
-
-  // Toggle Resolve Status (For Q&A Author)
-  const handleToggleResolve = async () => {
-    const newIsResolved = !post.isResolved
-
-    setPost((prev) => ({
-      ...prev,
-      isResolved: newIsResolved
-    }))
-    toggleResolvePost(post.id, newIsResolved)
-
-    try {
-      await apiClient(`/posts/${post.id}/resolve`, { method: 'POST' })
-      toast.success(
-        newIsResolved
-          ? 'Đã đánh dấu câu hỏi: Đã giải quyết thành công'
-          : 'Đã chuyển trạng thái câu hỏi về: Đang chờ giải đáp'
-      )
-    } catch {
-      setPost((prev) => ({
-        ...prev,
-        isResolved: !newIsResolved
-      }))
-      toggleResolvePost(post.id, !newIsResolved)
-      toast.error('Không thể thay đổi trạng thái câu hỏi')
+      toast.error('Không thể cập nhật bài viết đã lưu')
     }
   }
 
@@ -267,7 +214,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
 
     try {
       await apiClient(`/posts/${post.id}/pin`, { method: 'POST' })
-      toast.success(newIsPinned ? 'Đã ghim bài thảo luận lên đầu trang cá nhân' : 'Đã bỏ ghim bài viết')
+      toast.success(newIsPinned ? 'Đã ghim bài viết lên đầu trang cá nhân' : 'Đã bỏ ghim bài viết')
     } catch {
       setPost((prev) => ({
         ...prev,
@@ -281,7 +228,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
   // Handle Toggle Follow Author
   const handleToggleFollowAuthor = async () => {
     if (!user) {
-      toast.error('Vui lòng đăng nhập để theo dõi sinh viên/giảng viên này')
+      toast.error('Vui lòng đăng nhập để theo dõi người dùng này')
       return
     }
 
@@ -306,7 +253,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
       }
       toast.success(
         nextState
-          ? `Đã theo dõi học thuật @${post.author?.username || 'user'}`
+          ? `Đã theo dõi @${post.author?.username || 'user'}`
           : `Đã hủy theo dõi @${post.author?.username || 'user'}`
       )
     } catch {
@@ -316,11 +263,11 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
     }
   }
 
-  // Handle "Not interested in this subject" (Không quan tâm chủ đề môn học này)
+  // Handle "Not interested" (Không quan tâm bài viết này)
   const handleNotInterested = () => {
     setIsHidden(true)
-    setHiddenReason('Đã ẩn bài viết. Hệ thống sẽ giảm tần suất gợi ý chủ đề môn học này.')
-    toast.success('Đã ẩn bài viết khỏi bảng tin học thuật của bạn')
+    setHiddenReason('Đã ẩn bài viết khỏi bảng tin.')
+    toast.success('Đã ẩn bài viết khỏi bảng tin')
   }
 
   // Handle Delete Post
@@ -344,12 +291,12 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
     const postUrl = `${window.location.origin}/home#post-${post.id}`
     navigator.clipboard.writeText(postUrl)
     setIsCopied(true)
-    toast.success('Đã sao chép liên kết bài viết vào clipboard')
+    toast.success('Đã sao chép liên kết bài viết')
     setTimeout(() => setIsCopied(false), 2000)
   }
 
   const handleShareViaChat = () => {
-    toast.success('Đã chia sẻ bài thảo luận vào phòng chat nhóm đồ án PBL')
+    toast.success('Đã chia sẻ bài viết vào phòng chat')
   }
 
   const authorInitials = (post.author?.displayName || post.author?.username || 'PU')
@@ -389,7 +336,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
         {post.isPinned && (
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary mb-1.5 ml-13">
             <Pin className="h-3 w-3 fill-current" />
-            <span>Bài thảo luận được ghim</span>
+            <span>Bài viết được ghim</span>
           </div>
         )}
 
@@ -466,7 +413,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                   </span>
                 )}
 
-                {/* ── Signature 3-Dots Dropdown Menu (Academic & PU Connection Focused) ── */}
+                {/* ── Signature 3-Dots Dropdown Menu (Clean, Simple & Essential) ── */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -479,57 +426,11 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
-                    className="w-68 p-1.5 rounded-2xl shadow-xl border border-border/80 bg-popover/95 backdrop-blur-md"
+                    className="w-56 p-1.5 rounded-2xl shadow-xl border border-border/80 bg-popover/95 backdrop-blur-md"
                   >
-                    {/* OTHER USER'S POST */}
                     {!isOwner ? (
                       <>
-                        {/* 1. Tra cứu Hub Môn học & Tài liệu học phần */}
-                        <DropdownMenuItem
-                          onClick={handleNavigateToCourseHub}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <BookOpen className="h-4 w-4 text-sky-500 shrink-0" />
-                          <span className="truncate">
-                            {post.courseCode ? `Tra cứu tài liệu môn ${post.courseCode}` : 'Khám phá tài liệu học phần'}
-                          </span>
-                        </DropdownMenuItem>
-
-                        {/* 2. Lưu vào Sổ tay học tập */}
-                        <DropdownMenuItem
-                          onClick={handleBookmark}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <Bookmark
-                            className={cn(
-                              'h-4 w-4 shrink-0',
-                              post.isBookmarkedByMe ? 'fill-current text-amber-500' : 'text-muted-foreground'
-                            )}
-                          />
-                          <span>{post.isBookmarkedByMe ? 'Bỏ lưu khỏi Sổ tay' : 'Lưu vào Sổ tay học tập'}</span>
-                        </DropdownMenuItem>
-
-                        {/* 3. Mời vào nhóm đồ án PBL */}
-                        <DropdownMenuItem
-                          onClick={() => setIsInvitePblOpen(true)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <Users className="h-4 w-4 text-emerald-500 shrink-0" />
-                          <span className="truncate">Mời tham gia nhóm đồ án PBL</span>
-                        </DropdownMenuItem>
-
-                        {/* 4. Nhờ Trợ giảng / Giảng viên trợ giúp (khi là bài Q&A) */}
-                        {post.postType === 'qa' && (
-                          <DropdownMenuItem
-                            onClick={handleRequestTaHelp}
-                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                          >
-                            <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
-                            <span>Nhờ Giảng viên / TA trợ giúp</span>
-                          </DropdownMenuItem>
-                        )}
-
-                        {/* 5. Theo dõi học thuật tác giả */}
+                        {/* 1. Follow / Unfollow User */}
                         <DropdownMenuItem
                           onClick={handleToggleFollowAuthor}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
@@ -547,18 +448,16 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           )}
                         </DropdownMenuItem>
 
-                        <DropdownMenuSeparator className="my-1" />
-
-                        {/* 6. Thống kê & Độ lan tỏa học thuật */}
+                        {/* 2. Không quan tâm bài viết này */}
                         <DropdownMenuItem
-                          onClick={() => setIsAnalyticsOpen(true)}
+                          onClick={handleNotInterested}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
                         >
-                          <BarChart2 className="h-4 w-4 text-primary shrink-0" />
-                          <span>Thống kê tương tác học thuật</span>
+                          <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+                          <span>Không quan tâm bài này</span>
                         </DropdownMenuItem>
 
-                        {/* 7. Sao chép liên kết học thuật */}
+                        {/* 3. Sao chép liên kết */}
                         <DropdownMenuItem
                           onClick={handleCopyLink}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
@@ -568,42 +467,23 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           ) : (
                             <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
                           )}
-                          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết bài viết'}</span>
-                        </DropdownMenuItem>
-
-                        {/* 8. Gửi vào nhóm đồ án */}
-                        <DropdownMenuItem
-                          onClick={handleShareViaChat}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <Send className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span>Gửi vào nhóm đồ án</span>
+                          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator className="my-1" />
 
-                        {/* 9. Ẩn chủ đề môn học này */}
-                        <DropdownMenuItem
-                          onClick={handleNotInterested}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-muted-foreground"
-                        >
-                          <EyeOff className="h-4 w-4 shrink-0" />
-                          <span>Không quan tâm chủ đề này</span>
-                        </DropdownMenuItem>
-
-                        {/* 10. Báo cáo vi phạm học vụ & đề thi */}
+                        {/* 4. Báo cáo vi phạm */}
                         <DropdownMenuItem
                           onClick={() => setIsReportDialogOpen(true)}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-destructive/10 cursor-pointer text-destructive"
                         >
                           <ShieldAlert className="h-4 w-4 shrink-0" />
-                          <span>Báo cáo vi phạm học vụ / Lộ đề</span>
+                          <span>Báo cáo bài viết</span>
                         </DropdownMenuItem>
                       </>
                     ) : (
-                      /* POST AUTHOR OR ADMIN */
                       <>
-                        {/* 1. Ghim bài thảo luận */}
+                        {/* 1. Ghim / Bỏ ghim bài viết */}
                         <DropdownMenuItem
                           onClick={handleTogglePin}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
@@ -611,66 +491,26 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           {post.isPinned ? (
                             <>
                               <PinOff className="h-4 w-4 text-amber-500 shrink-0" />
-                              <span>Bỏ ghim khỏi trang cá nhân</span>
+                              <span>Bỏ ghim bài viết</span>
                             </>
                           ) : (
                             <>
                               <Pin className="h-4 w-4 text-primary shrink-0" />
-                              <span>Ghim bài thảo luận lên đầu</span>
+                              <span>Ghim lên đầu trang</span>
                             </>
                           )}
                         </DropdownMenuItem>
 
-                        {/* 2. Đổi trạng thái lời giải Q&A (nếu là bài hỏi đáp) */}
-                        {post.postType === 'qa' && (
-                          <DropdownMenuItem
-                            onClick={handleToggleResolve}
-                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                          >
-                            <CheckCircle2
-                              className={cn(
-                                'h-4 w-4 shrink-0',
-                                post.isResolved ? 'text-amber-500' : 'text-emerald-500'
-                              )}
-                            />
-                            <span>
-                              {post.isResolved ? 'Đổi về: Chưa giải quyết' : 'Đánh dấu: Đã có lời giải đúng'}
-                            </span>
-                          </DropdownMenuItem>
-                        )}
-
-                        {/* 3. Chỉnh sửa bài viết */}
+                        {/* 2. Chỉnh sửa bài viết */}
                         <DropdownMenuItem
                           onClick={() => setIsEditDialogOpen(true)}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
                         >
                           <Pencil className="h-4 w-4 text-blue-500 shrink-0" />
-                          <span>Chỉnh sửa bài viết & môn học</span>
+                          <span>Chỉnh sửa bài viết</span>
                         </DropdownMenuItem>
 
-                        {/* 4. Tra cứu Hub Môn học liên quan */}
-                        <DropdownMenuItem
-                          onClick={handleNavigateToCourseHub}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <BookOpen className="h-4 w-4 text-sky-500 shrink-0" />
-                          <span className="truncate">
-                            {post.courseCode ? `Mở kho tài liệu ${post.courseCode}` : 'Xem tài liệu học phần'}
-                          </span>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator className="my-1" />
-
-                        {/* 5. Xem phân tích tương tác học thuật */}
-                        <DropdownMenuItem
-                          onClick={() => setIsAnalyticsOpen(true)}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <BarChart2 className="h-4 w-4 text-primary shrink-0" />
-                          <span>Thống kê tương tác & Điểm Rep</span>
-                        </DropdownMenuItem>
-
-                        {/* 6. Sao chép liên kết */}
+                        {/* 3. Sao chép liên kết */}
                         <DropdownMenuItem
                           onClick={handleCopyLink}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
@@ -680,21 +520,12 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           ) : (
                             <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
                           )}
-                          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết bài viết'}</span>
-                        </DropdownMenuItem>
-
-                        {/* 7. Gửi vào nhóm đồ án */}
-                        <DropdownMenuItem
-                          onClick={handleShareViaChat}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          <Send className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span>Gửi vào nhóm đồ án</span>
+                          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
                         </DropdownMenuItem>
 
                         <DropdownMenuSeparator className="my-1" />
 
-                        {/* 8. Xóa bài viết */}
+                        {/* 4. Xóa bài viết */}
                         <DropdownMenuItem
                           onClick={handleDeletePost}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-destructive/10 cursor-pointer text-destructive"
@@ -782,7 +613,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 type="button"
                 onClick={handleShareViaChat}
                 className="flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-emerald-500/10 hover:text-emerald-500 text-xs font-medium transition-colors cursor-pointer group"
-                title="Gửi vào nhóm đồ án"
+                title="Chia sẻ bài viết"
               >
                 <Repeat2 className="h-4 w-4 group-hover:text-emerald-500" />
                 <span className="text-xs">{post.recruitSlotsFilled || (post.commentsCount > 2 ? 1 : 0)}</span>
@@ -818,7 +649,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 <span className="text-xs">{viewsCount}</span>
               </button>
 
-              {/* Bookmark Button (Sổ tay học tập) */}
+              {/* Bookmark Button (Mục Đã lưu) */}
               <button
                 type="button"
                 onClick={handleBookmark}
@@ -826,7 +657,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                   'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-amber-500/10 hover:text-amber-500 text-xs font-medium transition-colors cursor-pointer group',
                   post.isBookmarkedByMe && 'text-amber-500'
                 )}
-                title="Lưu vào Sổ tay học tập"
+                title="Lưu bài viết"
               >
                 <Bookmark
                   className={cn(
@@ -861,19 +692,19 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                     className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
                   >
                     <Send className="h-4 w-4 text-muted-foreground" />
-                    <span>Gửi vào nhóm đồ án</span>
+                    <span>Gửi tin nhắn</span>
                   </DropdownMenuItem>
 
                   <DropdownMenuItem
                     onClick={() => {
-                      const text = encodeURIComponent(`Xem bài viết học thuật: ${post.title || post.content.slice(0, 80)}`)
+                      const text = encodeURIComponent(`Xem bài viết: ${post.title || post.content.slice(0, 80)}`)
                       const url = encodeURIComponent(window.location.href)
                       window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
                     }}
                     className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
                   >
                     <MessageSquareShare className="h-4 w-4 text-muted-foreground" />
-                    <span>Chia sẻ lên X (Twitter)</span>
+                    <span>Chia sẻ lên X</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -898,7 +729,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
         />
       )}
 
-      {/* Report Post Dialog (Vi phạm học vụ & đề thi) */}
+      {/* Report Post Dialog */}
       {isReportDialogOpen && (
         <ReportPostDialog
           postId={post.id}
@@ -907,21 +738,12 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
         />
       )}
 
-      {/* Post Analytics Dialog (Thống kê tương tác học thuật) */}
+      {/* Post Analytics Dialog */}
       {isAnalyticsOpen && (
         <PostAnalyticsDialog
           post={post}
           open={isAnalyticsOpen}
           onOpenChange={setIsAnalyticsOpen}
-        />
-      )}
-
-      {/* Invite to PBL Dialog (Mời sinh viên tham gia đồ án PBL) */}
-      {isInvitePblOpen && (
-        <InvitePblDialog
-          post={post}
-          open={isInvitePblOpen}
-          onOpenChange={setIsInvitePblOpen}
         />
       )}
     </>
