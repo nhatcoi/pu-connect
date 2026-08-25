@@ -23,7 +23,6 @@ import {
   Users,
   GraduationCap,
   Building2,
-  Repeat2,
   BarChart2,
   UserPlus,
   UserMinus,
@@ -174,7 +173,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
     }
   }
 
-  // Optimistic Bookmark Toggle (Sổ tay học tập)
+  // Optimistic Bookmark Toggle (Mục Đã lưu)
   const handleBookmark = async () => {
     const newIsBookmarked = !post.isBookmarkedByMe
 
@@ -457,22 +456,9 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           <span>Không quan tâm bài này</span>
                         </DropdownMenuItem>
 
-                        {/* 3. Sao chép liên kết */}
-                        <DropdownMenuItem
-                          onClick={handleCopyLink}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          {isCopied ? (
-                            <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                          ) : (
-                            <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
-                          )}
-                          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
-                        </DropdownMenuItem>
-
                         <DropdownMenuSeparator className="my-1" />
 
-                        {/* 4. Báo cáo vi phạm */}
+                        {/* 3. Báo cáo vi phạm */}
                         <DropdownMenuItem
                           onClick={() => setIsReportDialogOpen(true)}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-destructive/10 cursor-pointer text-destructive"
@@ -510,22 +496,9 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           <span>Chỉnh sửa bài viết</span>
                         </DropdownMenuItem>
 
-                        {/* 3. Sao chép liên kết */}
-                        <DropdownMenuItem
-                          onClick={handleCopyLink}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          {isCopied ? (
-                            <Check className="h-4 w-4 text-emerald-500 shrink-0" />
-                          ) : (
-                            <Copy className="h-4 w-4 text-muted-foreground shrink-0" />
-                          )}
-                          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
-                        </DropdownMenuItem>
-
                         <DropdownMenuSeparator className="my-1" />
 
-                        {/* 4. Xóa bài viết */}
+                        {/* 3. Xóa bài viết */}
                         <DropdownMenuItem
                           onClick={handleDeletePost}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-destructive/10 cursor-pointer text-destructive"
@@ -592,9 +565,29 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               </div>
             )}
 
-            {/* Actions Footer Row (Comments, Reposts, Likes, Views, Bookmark, Share) */}
+            {/* ── Actions Footer Row: Tym -> Bình luận -> Lưu -> Thống kê -> Share ── */}
             <div className="flex items-center justify-between pt-2 -ml-2 text-muted-foreground max-w-xl sm:max-w-2xl">
-              {/* Comments Button */}
+              
+              {/* 1. Tym (Like) */}
+              <button
+                type="button"
+                onClick={handleLike}
+                className={cn(
+                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-xs font-medium transition-colors cursor-pointer group',
+                  post.isLikedByMe && 'text-rose-500'
+                )}
+                title={post.isLikedByMe ? 'Bỏ thích' : 'Thích bài viết'}
+              >
+                <Heart
+                  className={cn(
+                    'h-4 w-4 transition-transform active:scale-125 group-hover:text-rose-500',
+                    post.isLikedByMe && 'fill-current text-rose-500'
+                  )}
+                />
+                <span className="text-xs">{post.likesCount || 0}</span>
+              </button>
+
+              {/* 2. Bình luận (Comments) */}
               <button
                 type="button"
                 onClick={() => setIsCommentsOpen((prev) => !prev)}
@@ -608,37 +601,25 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 <span className="text-xs">{post.commentsCount || 0}</span>
               </button>
 
-              {/* Repost / Study Group Button */}
+              {/* 3. Lưu bài viết (Bookmark) */}
               <button
                 type="button"
-                onClick={handleShareViaChat}
-                className="flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-emerald-500/10 hover:text-emerald-500 text-xs font-medium transition-colors cursor-pointer group"
-                title="Chia sẻ bài viết"
-              >
-                <Repeat2 className="h-4 w-4 group-hover:text-emerald-500" />
-                <span className="text-xs">{post.recruitSlotsFilled || (post.commentsCount > 2 ? 1 : 0)}</span>
-              </button>
-
-              {/* Like Button */}
-              <button
-                type="button"
-                onClick={handleLike}
+                onClick={handleBookmark}
                 className={cn(
-                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-xs font-medium transition-colors cursor-pointer group',
-                  post.isLikedByMe && 'text-rose-500'
+                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-amber-500/10 hover:text-amber-500 text-xs font-medium transition-colors cursor-pointer group',
+                  post.isBookmarkedByMe && 'text-amber-500'
                 )}
-                title="Thích bài viết"
+                title={post.isBookmarkedByMe ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
               >
-                <Heart
+                <Bookmark
                   className={cn(
-                    'h-4 w-4 transition-transform active:scale-125 group-hover:text-rose-500',
-                    post.isLikedByMe && 'fill-current text-rose-500'
+                    'h-4 w-4 transition-transform active:scale-125 group-hover:text-amber-500',
+                    post.isBookmarkedByMe && 'fill-current text-amber-500'
                   )}
                 />
-                <span className="text-xs">{post.likesCount || 0}</span>
               </button>
 
-              {/* Views / Stats Count (Clickable to open analytics) */}
+              {/* 4. Thống kê & Số liệu (Views & Analytics) */}
               <button
                 type="button"
                 onClick={() => setIsAnalyticsOpen(true)}
@@ -649,31 +630,13 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 <span className="text-xs">{viewsCount}</span>
               </button>
 
-              {/* Bookmark Button (Mục Đã lưu) */}
-              <button
-                type="button"
-                onClick={handleBookmark}
-                className={cn(
-                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-amber-500/10 hover:text-amber-500 text-xs font-medium transition-colors cursor-pointer group',
-                  post.isBookmarkedByMe && 'text-amber-500'
-                )}
-                title="Lưu bài viết"
-              >
-                <Bookmark
-                  className={cn(
-                    'h-4 w-4 transition-transform active:scale-125 group-hover:text-amber-500',
-                    post.isBookmarkedByMe && 'fill-current text-amber-500'
-                  )}
-                />
-              </button>
-
-              {/* Share Button & Dropdown */}
+              {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Chia sẻ X) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
                     className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-primary/10 hover:text-primary text-xs font-medium text-muted-foreground transition-colors cursor-pointer group"
-                    title="Chia sẻ"
+                    title="Chia sẻ bài viết"
                   >
                     <Share2 className="h-4 w-4 group-hover:text-primary" />
                   </button>

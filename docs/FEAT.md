@@ -43,17 +43,18 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🔔 **Trung Tâm Thông Báo Nổi Realtime (Notification Hub Popover)**: Gắn icon Chuông trên Header ([`NotificationsPopover`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/notifications-popover.tsx)), hiển thị huy hiệu đếm chưa đọc, phân loại 9 loại sự kiện (like, comment, duyệt lời giải đúng, xin vào nhóm), nút "Đã đọc tất cả", endpoint `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
 - [x] 🎖️ **Hệ Thống Huy Hiệu Định Danh Học Thuật Trực Quan ([`AcademicBadge`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/ui/academic-badge.tsx))**: Phân định rõ ràng vai trò người đăng bài/bình luận: 🎓 Giảng viên (Verified Lecturer), 🌟 Trợ giảng (TA), 👑 Ban Quản trị (Admin), 🏆 Top Contributor (Sinh viên có $\ge 300$ điểm danh vọng).
 - [x] 🎛️ **Menu Tùy Chọn 3 Chấm Chuẩn X Tinh Gọn ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
-  - Tối ưu hóa menu 3 dots (`...`) tinh gọn, loại bỏ các chức năng phức tạp chưa cần thiết, chỉ tập trung vào các thao tác cốt lõi:
+  - Tối ưu hóa menu 3 dots (`...`) tinh gọn tuyệt đối, loại bỏ tính năng trùng lặp "Sao chép liên kết" (đã có ở nút Share bên dưới), chỉ tập trung vào các thao tác cốt lõi:
   - **Dành cho Người xem (Viewer)**:
     - 👤 **Theo dõi / Bỏ theo dõi tác giả (`Follow / Unfollow @username`)**: Đồng bộ hóa quan hệ follow realtime qua GraphQL mutation `toggleFollow`.
     - 🔕 **Không quan tâm bài viết này (`Not Interested`)**: Ẩn bài viết tức thì khỏi feed kèm banner Hoàn tác (Undo).
-    - 📋 **Sao chép liên kết (`Copy Link`)**: Sao chép URL bài viết vào clipboard kèm Toast.
     - 🛡️ **Báo cáo vi phạm (`Report Post`)**: Hộp thoại báo cáo vi phạm nội quy, lộ đề thi, đạo văn ([`ReportPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/report-post-dialog.tsx)).
   - **Dành cho Tác giả / Quản trị viên (Owner / Admin)**:
     - 📌 **Ghim lên đầu trang cá nhân / Bỏ ghim (`Pin / Unpin`)**: Endpoint `POST /api/posts/:id/pin` trong ACID transaction.
     - ✏️ **Chỉnh sửa bài viết (`Edit Post`)**: Cập nhật tiêu đề, nội dung và hashtag ([`EditPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/edit-post-dialog.tsx)).
-    - 📋 **Sao chép liên kết (`Copy Link`)**.
     - 🗑️ **Xóa bài viết (`Delete Post`)**: Xóa an toàn trong ACID transaction kèm hoàn trừ post count môn học.
+- [x] 🎯 **Hàng Nút Tương Tác Chuẩn Hóa Theo Thứ Tự Mới ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
+  - Tái cấu trúc chuỗi 5 nút tương tác theo đúng chuẩn logic: **Tym (Like) → Bình luận (Comment) → Lưu (Bookmark) → Thống kê (Views & Analytics) → Chia sẻ (Share Menu)** (đã gỡ bỏ nút Đăng lại / Repost).
+  - Nút **Chia sẻ (Share)** chứa đầy đủ các tính năng: *Sao chép liên kết* (+ Toast), *Gửi qua tin nhắn*, *Chia sẻ lên X (Twitter)*.
 - [x] 🔗 **Phân Tích Cú Pháp Clickable Mentions `@` & Hashtags `#` ([`MarkdownPreview`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/renderer/markdown-preview.tsx))**: Tự động chuyển đổi `@username` thành liên kết đến trang cá nhân `/[username]` và `#tag` thành liên kết tìm kiếm chủ đề `/search?q=tag`.
 - [x] 📐 **Bố Cục Bài Viết Căn Lề Thẳng Hàng Chuẩn X ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
   - Tách bố cục thành 2 cột độc lập (`flex items-start gap-3`): Cột trái là Avatar tác giả (`shrink-0`), Cột phải (`flex-1 min-w-0`) chứa toàn bộ Tên tác giả, Tiêu đề, Nội dung bài viết, Ảnh/Video, Khảo sát, Tài liệu đính kèm và Hàng nút tương tác (*Bình luận, Gửi nhóm, Thích, Lượt xem, Lưu, Chia sẻ*).
