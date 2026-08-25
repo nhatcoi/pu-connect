@@ -300,6 +300,10 @@
 }
 
 /* ── Prevent Modal Scroll-Locking Layout Shift & Jitter (Zero Layout Shift) ── */
+:root {
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
 html {
   scrollbar-gutter: stable;
   overflow-y: scroll !important;
@@ -307,7 +311,9 @@ html {
 
 html[data-scroll-locked],
 body[data-scroll-locked],
-html body[data-scroll-locked] {
+html body[data-scroll-locked],
+[data-radix-scroll-area-viewport] {
+  --removed-body-scroll-bar-size: 0px !important;
   overflow-y: scroll !important;
   padding-right: 0px !important;
   margin-right: 0px !important;
