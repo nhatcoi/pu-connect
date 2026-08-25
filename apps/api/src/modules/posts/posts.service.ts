@@ -508,6 +508,34 @@ export class PostsService {
     })
   }
 
+  async toggleResolve(postId: string, userId: string): Promise<{ isResolved: boolean }> {
+    return this.db.transaction(async (client) => {
+      const postRes = await client.query(
+        `SELECT author_id, is_resolved FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`,
+        [postId]
+      )
+      if (postRes.rows.length === 0) {
+        throw new NotFoundException('Bài viết không tồn tại')
+      }
+
+      const post = postRes.rows[0]
+      const userRes = await client.query(`SELECT role FROM users WHERE id = $1 LIMIT 1`, [userId])
+      const userRole = userRes.rows[0]?.role
+
+      if (post.author_id !== userId && userRole !== 'admin') {
+        throw new ForbiddenException('Bạn không có quyền thay đổi trạng thái câu hỏi này')
+      }
+
+      const nextIsResolved = !post.is_resolved
+      await client.query(`UPDATE posts SET is_resolved = $1, updated_at = NOW() WHERE id = $2`, [
+        nextIsResolved,
+        postId
+      ])
+
+      return { isResolved: nextIsResolved }
+    })
+  }
+
   async report(postId: string, reporterId: string, data: ReportPostInput): Promise<{ success: boolean }> {
     await this.db.query(
       `INSERT INTO post_reports (post_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)`,
