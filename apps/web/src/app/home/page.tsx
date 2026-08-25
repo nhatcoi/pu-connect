@@ -123,8 +123,8 @@ function HomeContent() {
             <Sidebar />
           </div>
 
-          {/* 2. Center Feed Column (Max 620px, crisp dividing borders, zero horizontal shift) */}
-          <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          {/* 2. Center Feed Column (Wider for academic readability, crisp dividing borders) */}
+          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
             {/* X-style Feed Header with Sticky Tab Bar (Smooth Hide on Scroll Down, Show on Scroll Up) */}
             <div

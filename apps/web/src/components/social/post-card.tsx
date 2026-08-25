@@ -762,7 +762,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
             )}
 
             {/* Actions Footer Row (Comments, Reposts, Likes, Views, Bookmark, Share) */}
-            <div className="flex items-center justify-between pt-2 -ml-2 text-muted-foreground max-w-lg">
+            <div className="flex items-center justify-between pt-2 -ml-2 text-muted-foreground max-w-xl sm:max-w-2xl">
               {/* Comments Button */}
               <button
                 type="button"

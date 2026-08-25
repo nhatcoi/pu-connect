@@ -265,8 +265,8 @@ function SearchContent() {
             <Sidebar currentTab="search" />
           </div>
 
-          {/* 2. Center Column (Max 620px, seamless continuous feed) */}
-          <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          {/* 2. Center Column (Wider for academic content, seamless continuous feed) */}
+          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
             {/* ── A. SEARCH TOP BAR (X Twitter Style) ── */}
             <div

@@ -66,8 +66,8 @@ export default function ProfilePage({
             <Sidebar />
           </div>
 
-          {/* 2. Center Profile Column (Max-w 620px, clean borders, zero horizontal shift) */}
-          <main className="flex-1 max-w-[620px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          {/* 2. Center Profile Column (Wider for academic content, clean borders, zero horizontal shift) */}
+          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             {/* Sticky Topbar with Back Button (Smooth Hide on Scroll Down, Show on Scroll Up) */}
             <div
               className={cn(
