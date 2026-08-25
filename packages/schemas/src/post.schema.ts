@@ -82,6 +82,7 @@ export const PostItemSchema = z.object({
   courseName: z.string().nullable().optional(),
   facultyCode: z.string().nullable().optional(),
   targetAudience: TargetAudienceEnum.default('everyone'),
+  isPinned: z.boolean().default(false),
   isResolved: z.boolean().default(false),
   acceptedCommentId: z.string().nullable().optional(),
   recruitSlotsTotal: z.number().optional(),
@@ -94,6 +95,7 @@ export const PostItemSchema = z.object({
   sharesCount: z.number().default(0),
   isLikedByMe: z.boolean().default(false),
   isBookmarkedByMe: z.boolean().default(false),
+  isAuthorFollowedByMe: z.boolean().default(false),
   poll: PollDataSchema.nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string()
