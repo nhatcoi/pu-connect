@@ -42,7 +42,29 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 📊 **Khảo Sát Biểu Quyết Sinh Viên (Post Polls & Voting)**: Bảng `post_polls`, `post_poll_options`, `post_poll_votes`, cho phép tạo câu hỏi khảo sát 2-4 lựa chọn ngay trong Composer, hiển thị thanh tiến trình % bình chọn sinh động thời gian thực ([`PostPollCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-poll-card.tsx)), endpoint `POST /api/posts/:id/vote-poll`.
 - [x] 🔔 **Trung Tâm Thông Báo Nổi Realtime (Notification Hub Popover)**: Gắn icon Chuông trên Header ([`NotificationsPopover`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/notifications-popover.tsx)), hiển thị huy hiệu đếm chưa đọc, phân loại 9 loại sự kiện (like, comment, duyệt lời giải đúng, xin vào nhóm), nút "Đã đọc tất cả", endpoint `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
 - [x] 🎖️ **Hệ Thống Huy Hiệu Định Danh Học Thuật Trực Quan ([`AcademicBadge`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/ui/academic-badge.tsx))**: Phân định rõ ràng vai trò người đăng bài/bình luận: 🎓 Giảng viên (Verified Lecturer), 🌟 Trợ giảng (TA), 👑 Ban Quản trị (Admin), 🏆 Top Contributor (Sinh viên có $\ge 300$ điểm danh vọng).
-- [x] 🛠️ **Quản Lý Bài Viết Của Tôi & Báo Cáo Vi Phạm (Post Owner Actions & Moderation)**: Menu `...` trên `PostCard` cho phép tác giả chỉnh sửa nội dung/tiêu đề ([`EditPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/edit-post-dialog.tsx)), xóa bài viết kèm hoàn trừ post count môn học trong ACID transaction (`DELETE /api/posts/:id`), và hộp thoại báo cáo vi phạm nội dung ([`ReportPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/report-post-dialog.tsx), `POST /api/posts/:id/report`).
+- [x] 🎛️ **Menu Tùy Chọn 3 Chấm Chuẩn X Tối Ưu Bối Cảnh Học Thuật ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
+  - Tái thiết kế toàn diện menu 3 dots (`...`) theo phong cách X (Twitter) với bo góc mềm mại `rounded-2xl`, hiệu ứng mờ kính `backdrop-blur-md`, shadow nổi khối và icon Lucide SVG sắc nét.
+  - **Phân tách ngữ cảnh thông minh giữa Tác giả (Owner/Admin) và Người xem (Viewer)**:
+    - **Dành cho Người xem (Viewer)**:
+      - 👁️ *Không quan tâm bài viết này*: Ẩn bài viết tức thì khỏi feed, hiển thị banner hoàn tác (Undo Banner) kèm toast điều chỉnh thuật toán gợi ý.
+      - 👤 *Theo dõi / Bỏ theo dõi tác giả*: Đồng bộ hóa trạng thái follow tức thời qua GraphQL mutation `toggleFollow` và update state toàn bộ feed.
+      - 🔖 *Lưu / Bỏ lưu bài viết*: Thao tác nhanh với icon Bookmark đổi màu hổ phách.
+      - 🔕 *Tắt bài viết từ tác giả (`Mute`)*: Tự động ẩn toàn bộ bài viết từ tác giả được chọn trong phiên làm việc.
+      - 🚫 *Chặn người dùng (`Block`)*: Xác nhận hộp thoại bảo vệ an toàn học thuật.
+      - 📊 *Xem phân tích bài viết (`Analytics`)*: Mở modal phân tích tương tác và độ phủ học thuật.
+      - 📋 *Sao chép liên kết*, 🚀 *Gửi vào nhóm đồ án*, 💻 *Nhúng bài viết*, 🛡️ *Báo cáo vi phạm*.
+    - **Dành cho Tác giả / Quản trị viên (Owner / Admin)**:
+      - 📌 *Ghim lên đầu trang cá nhân / Bỏ ghim (`Pin / Unpin`)*: Endpoint `POST /api/posts/:id/pin` với transaction row-level lock, hiển thị nhãn Pinned banner trên đỉnh thẻ bài viết.
+      - ✏️ *Chỉnh sửa bài viết*: Mở hộp thoại sửa tiêu đề, nội dung và hashtag.
+      - 📊 *Xem phân tích & số liệu bài viết*.
+      - 📋 *Sao chép liên kết, Gửi nhóm đồ án, Nhúng bài viết*.
+      - 🗑️ *Xóa bài viết*: Xóa an toàn trong ACID transaction kèm hoàn trừ post count môn học.
+- [x] 📊 **Hộp Thoại Phân Tích & Thống Kê Số Liệu Bài Viết ([`PostAnalyticsDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-analytics-dialog.tsx))**:
+  - Hiển thị 4 Card chỉ số chính: Lượt hiển thị (Impressions) kèm xu hướng, Tổng lượt tương tác (Total Engagements), Tỷ lệ tương tác (Engagement Rate), Điểm uy tín Phenikaa tích lũy (+5 Rep).
+  - Thanh đo đa phân đoạn (Multi-segment progress bar) phân bổ trực quan giữa Lượt thích, Thảo luận, Chia sẻ nhóm PBL và Lưu trữ.
+  - Phân tích độ lan tỏa học thuật theo Khoa/Viện & Môn học (Academic Reach).
+- [x] 💻 **Hộp Thoại Tạo Mã Nhúng Bài Viết ([`EmbedPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/embed-post-dialog.tsx))**:
+  - Hỗ trợ tùy chọn kèm tệp đính kèm/ảnh, lựa chọn Theme (Tự động, Sáng, Tối), xem trước giao diện widget thời gian thực và 1-click sao chép mã HTML iframe.
 - [x] 🔗 **Phân Tích Cú Pháp Clickable Mentions `@` & Hashtags `#` ([`MarkdownPreview`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/renderer/markdown-preview.tsx))**: Tự động chuyển đổi `@username` thành liên kết đến trang cá nhân `/[username]` và `#tag` thành liên kết tìm kiếm chủ đề `/search?q=tag`.
 - [x] 📐 **Bố Cục Bài Viết Căn Lề Thẳng Hàng Chuẩn X ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
   - Tách bố cục thành 2 cột độc lập (`flex items-start gap-3`): Cột trái là Avatar tác giả (`shrink-0`), Cột phải (`flex-1 min-w-0`) chứa toàn bộ Tên tác giả, Tiêu đề, Nội dung bài viết, Ảnh/Video, Khảo sát, Tài liệu đính kèm và Hàng nút tương tác (*Bình luận, Gửi nhóm, Thích, Lượt xem, Lưu, Chia sẻ*).
