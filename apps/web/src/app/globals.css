@@ -35,6 +35,7 @@
 
 /* ── Standard Shadcn Default Theme (Neutral / Zinc) ────────── */
 :root {
+  --removed-body-scroll-bar-size: 0px !important;
   --radius: 0.5rem;
 
   --background: #ffffff;
@@ -108,6 +109,14 @@
     color: var(--foreground);
     font-feature-settings: "rlig" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Zero Layout Shift: Override modal scroll-lock padding injection */
+  html body[data-scroll-locked],
+  html[data-scroll-locked] body {
+    --removed-body-scroll-bar-size: 0px !important;
+    padding-right: 0px !important;
+    margin-right: 0px !important;
   }
 }
 
@@ -236,20 +245,4 @@
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(140, 140, 140, 0.3) transparent;
-}
-
-/* ── Standard Modal Zero Layout Shift ── */
-:root {
-  --removed-body-scroll-bar-size: 0px !important;
-}
-
-html {
-  scrollbar-gutter: stable;
-}
-
-html body[data-scroll-locked],
-html[data-scroll-locked] body {
-  --removed-body-scroll-bar-size: 0px !important;
-  padding-right: 0px !important;
-  margin-right: 0px !important;
 }
