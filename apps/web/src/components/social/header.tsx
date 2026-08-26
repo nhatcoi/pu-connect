@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
+  Search,
+  X,
   Plus,
   Moon,
   Sun,
@@ -14,7 +16,10 @@ import {
   Sparkles,
   LogIn,
   LogOut,
-  Bookmark
+  Bookmark,
+  ArrowLeft,
+  Settings,
+  SlidersHorizontal
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLogout } from '@/hooks/use-logout'
@@ -30,14 +35,19 @@ import {
 import { useAppStore } from '@/store'
 import { CommandPalette } from '@/components/navigation/command-palette'
 import { AuthDialog } from '@/components/auth/auth-dialog'
+import { SearchSettingsDialog } from '@/components/search/search-settings-dialog'
 import { AcademicSearchBar } from '@/components/search/academic-search-bar'
 import { NotificationsPopover } from './notifications-popover'
 import { apiClient } from '@/lib/api-client'
 import type { UserProfile } from '@pu/schemas'
+import { cn } from '@/lib/utils'
 
 export function Header() {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const queryParam = searchParams.get('q') || ''
+  
   const { theme, setTheme } = useTheme()
   const user = useAppStore((state) => state.user)
   const setUser = useAppStore((state) => state.setUser)
@@ -46,6 +56,13 @@ export function Header() {
 
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
+  const [isSearchSettingsOpen, setIsSearchSettingsOpen] = useState(false)
+  const [mobileSearchInput, setMobileSearchInput] = useState(queryParam)
+
+  // Sync mobile search input when queryParam changes
+  useEffect(() => {
+    setMobileSearchInput(queryParam)
+  }, [queryParam])
 
   // Fetch current session profile on mount
   useEffect(() => {
@@ -66,14 +83,23 @@ export function Header() {
     .slice(0, 2)
     .toUpperCase()
 
-  // On mobile /search and /[username], dedicated X-style top headers are rendered
   const isSearchPage = pathname === '/search'
-  const isProfilePage = pathname?.startsWith('/@') || (pathname?.length > 1 && !['/home', '/get-started', '/search'].includes(pathname))
+  const isSearchActive = isSearchPage && !!queryParam.trim()
+
+  const handleMobileSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!mobileSearchInput.trim()) {
+      router.push('/search')
+      return
+    }
+    router.push(`/search?q=${encodeURIComponent(mobileSearchInput.trim())}`)
+  }
 
   return (
     <header className="w-full relative md:sticky md:top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md">
       <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} onSelectTab={() => {}} />
       <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
+      <SearchSettingsDialog open={isSearchSettingsOpen} onOpenChange={setIsSearchSettingsOpen} />
 
       {/* ── 1. Desktop & Tablet Header (md:flex) ── */}
       <div className="hidden md:flex mx-auto h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -202,73 +228,110 @@ export function Header() {
         </div>
       </div>
 
-      {/* ── 2. Signature Mobile Responsive Top Header (X Twitter Exact Architecture) (md:hidden) ── */}
-      {/* Automatically hidden on /search and /[username] since they render dedicated top navigation bars */}
-      {!isSearchPage && !isProfilePage && (
-        <div className="flex md:hidden h-13 items-center justify-between px-4 relative w-full">
-          {/* Left: User Avatar (Tap to open quick menu / profile) */}
-          <div className="shrink-0">
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="relative h-8 w-8 rounded-full p-0 border border-border cursor-pointer select-none overflow-hidden hover:opacity-80 transition-opacity"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatarUrl || ''} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64 p-2 rounded-2xl shadow-2xl border border-border">
-                  <div className="flex items-center gap-2.5 p-1.5">
-                    <Avatar className="h-10 w-10 border border-border">
-                      <AvatarImage src={user.avatarUrl || ''} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col min-w-0">
-                      <p className="font-bold text-xs text-foreground truncate">
-                        {user.displayName || (user as any).display_name || user.username}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
-                    </div>
+      {/* ── 2. Unified Signature Mobile Responsive Top Header (Pixel-Perfect Alignment) (md:hidden) ── */}
+      <div className="flex md:hidden h-13 items-center justify-between px-3.5 relative w-full">
+        
+        {/* ── A. Left Anchor Slot (Fixed w-8 h-8 at exact left: 14px on ALL pages) ── */}
+        <div className="w-8 h-8 shrink-0 flex items-center justify-center">
+          {isSearchActive ? (
+            <button
+              type="button"
+              onClick={() => {
+                setMobileSearchInput('')
+                router.push('/search')
+              }}
+              className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors"
+              title="Quay lại khám phá"
+            >
+              <ArrowLeft className="h-4.5 w-4.5" />
+            </button>
+          ) : user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="h-8 w-8 rounded-full p-0 border border-border cursor-pointer select-none overflow-hidden hover:opacity-80 transition-opacity flex items-center justify-center"
+                >
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.avatarUrl || ''} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64 p-2 rounded-2xl shadow-2xl border border-border">
+                <div className="flex items-center gap-2.5 p-1.5">
+                  <Avatar className="h-10 w-10 border border-border">
+                    <AvatarImage src={user.avatarUrl || ''} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                      {userInitials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col min-w-0">
+                    <p className="font-bold text-xs text-foreground truncate">
+                      {user.displayName || (user as any).display_name || user.username}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
                   </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => router.push(`/${user.username}`)}
-                    className="cursor-pointer font-medium text-xs rounded-xl"
-                  >
-                    <User className="mr-2 h-4 w-4 text-primary" /> Hồ sơ cá nhân
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/home?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
-                    <Bookmark className="mr-2 h-4 w-4 text-amber-500" /> Bài viết đã lưu
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push('/home?tab=courses')} className="text-xs rounded-xl cursor-pointer">
-                    <GraduationCap className="mr-2 h-4 w-4 text-primary" /> Môn học & Đề thi
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl">
-                    <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => router.push(`/${user.username}`)}
+                  className="cursor-pointer font-medium text-xs rounded-xl"
+                >
+                  <User className="mr-2 h-4 w-4 text-primary" /> Hồ sơ cá nhân
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/home?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
+                  <Bookmark className="mr-2 h-4 w-4 text-amber-500" /> Bài viết đã lưu
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/home?tab=courses')} className="text-xs rounded-xl cursor-pointer">
+                  <GraduationCap className="mr-2 h-4 w-4 text-primary" /> Môn học & Đề thi
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl">
+                  <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsAuthOpen(true)}
+              className="h-8 w-8 rounded-full border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <User className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {/* ── B. Center Dynamic Slot ── */}
+        {isSearchPage ? (
+          /* Mode 1: Search Pill Input */
+          <form onSubmit={handleMobileSearchSubmit} className="flex-1 mx-2.5 relative min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              value={mobileSearchInput}
+              onChange={(e) => setMobileSearchInput(e.target.value)}
+              placeholder="Tìm kiếm môn học, tài liệu, bài viết..."
+              className="w-full h-8.5 pl-8.5 pr-7 rounded-full bg-muted/60 hover:bg-muted focus:bg-background border border-transparent focus:border-primary text-xs text-foreground placeholder:text-muted-foreground outline-none transition-all"
+            />
+            {mobileSearchInput && (
               <button
                 type="button"
-                onClick={() => setIsAuthOpen(true)}
-                className="h-8 w-8 rounded-full border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                onClick={() => {
+                  setMobileSearchInput('')
+                  if (isSearchActive) router.push('/search')
+                }}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 text-foreground flex items-center justify-center cursor-pointer text-[10px]"
               >
-                <User className="h-4 w-4" />
+                <X className="h-2.5 w-2.5" />
               </button>
             )}
-          </div>
-
-          {/* Center: Stylized Minimalist Emblem Logo (Perfect Center Alignment like X) */}
+          </form>
+        ) : (
+          /* Mode 2: Signature Centered PU Emblem Logo */
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
             <Link href="/home" className="flex items-center justify-center cursor-pointer group">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background font-black text-sm shadow-xs group-hover:scale-105 transition-transform tracking-tighter">
@@ -276,30 +339,41 @@ export function Header() {
               </div>
             </Link>
           </div>
+        )}
 
-          {/* Right: Signature Pill Action Button (Matches X "Subscribe / Action" Pill Style) */}
-          <div className="shrink-0 flex items-center gap-1.5">
-            {user ? (
-              <Button
-                size="sm"
-                onClick={() => setCreatePostOpen(true)}
-                className="h-8 px-3.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer gap-1"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Đăng bài</span>
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={() => setIsAuthOpen(true)}
-                className="h-8 px-3.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
-              >
-                <span>Đăng nhập</span>
-              </Button>
-            )}
-          </div>
+        {/* ── C. Right Action Slot ── */}
+        <div className="shrink-0 flex items-center gap-1.5">
+          {isSearchPage ? (
+            /* Mode 1 Right: Settings Gear button */
+            <button
+              type="button"
+              onClick={() => setIsSearchSettingsOpen(true)}
+              className="h-8 w-8 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+              title="Cài đặt tìm kiếm"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          ) : user ? (
+            /* Mode 2 Right: Pill Action Post Button */
+            <Button
+              size="sm"
+              onClick={() => setCreatePostOpen(true)}
+              className="h-8 px-3.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              <span>Đăng bài</span>
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => setIsAuthOpen(true)}
+              className="h-8 px-3.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
+            >
+              <span>Đăng nhập</span>
+            </Button>
+          )}
         </div>
-      )}
+      </div>
     </header>
   )
 }

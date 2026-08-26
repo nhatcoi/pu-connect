@@ -268,11 +268,11 @@ function SearchContent() {
           {/* 2. Center Column (Wider for academic content, seamless continuous feed) */}
           <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
-            {/* ── A. SEARCH TOP BAR (X Twitter Style) ── */}
-            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-3 py-2.5">
-              <div className="flex items-center gap-2.5">
-                {/* Left Action: Avatar if Explore mode, Back Arrow if Search Active */}
-                {isSearchActive ? (
+            {/* ── A. SEARCH TOP BAR & CATEGORY TABS ── */}
+            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-3 py-2">
+              {/* Desktop-only Search Input Row (Mobile search input is unified in Header) */}
+              <div className="hidden md:flex items-center gap-2.5 pb-2">
+                {isSearchActive && (
                   <button
                     type="button"
                     onClick={() => {
@@ -284,21 +284,9 @@ function SearchContent() {
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
-                ) : (
-                  <Link
-                    href={user?.username ? `/${user.username}` : '/home'}
-                    className="flex md:hidden shrink-0 cursor-pointer"
-                  >
-                    <Avatar className="h-8 w-8 border border-border">
-                      <AvatarImage src={user?.avatarUrl || ''} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                        {userInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Link>
                 )}
 
-                {/* Center: Search Input Bar (Pill Shape) */}
+                {/* Desktop Search Input */}
                 <form onSubmit={handleSearchSubmit} className="flex-1 relative">
                   <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <input
@@ -322,7 +310,7 @@ function SearchContent() {
                   )}
                 </form>
 
-                {/* Right Action: Settings gear (Explore) OR 3-dots More (Search Results) */}
+                {/* Desktop Right Action: Settings gear or 3-dots */}
                 {isSearchActive ? (
                   <button
                     type="button"
