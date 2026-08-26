@@ -6,10 +6,10 @@
 
 Bảng tin `Home Feed` là trục xương sống tương tác của sinh viên và giảng viên, được thiết kế theo cấu trúc **3 cột chuẩn X** với cơ chế phân phối nội dung thông minh.
 
-### 1.1. Các Tab Phân Loại Bảng Tin
-* **Tab "Dành cho bạn" (`for_you`):** Phân phối bài viết thông qua **Thuật toán đề xuất lai (Hybrid Recommendation Engine)**.
-* **Tab "Đang theo dõi" (`following`):** Dòng thời gian đảo ngược thời gian thực (Reverse Chronological) từ những người dùng mà sinh viên đang bấm theo dõi (`user_follows`).
-* **Tab "Học phần & Hỏi đáp" (`courses`):** Lọc riêng các bài viết có gắn mã học phần (`course_id`), câu hỏi cần giải đáp (`qa`) và tài liệu học tập (`document`).
+### 1.1. Các Luồng Bài Viết Bảng Tin (Feed Streams)
+* **Tab "Dành cho bạn" (`for_you`):** Phân phối bài viết thông qua **Thuật toán đề xuất lai (Hybrid Recommendation Engine)** kết hợp Môn học ($+40$), Cùng Khoa ($+30$), Cùng Khóa ($+15$), Người đang Follow ($+35$) và Tương tác.
+* **Tab "Đang theo dõi" (`following`):** Dòng thời gian đảo ngược thời gian thực (Reverse Chronological - `created_at DESC`) từ Giảng viên, Trợ giảng và bạn bè mà sinh viên đang bấm theo dõi (`user_follows`).
+* **Tab "Hỏi đáp" (`qa`):** Lọc riêng các câu hỏi bài tập và thắc mắc học thuật (`post_type = 'question'`), hỗ trợ duyệt lời giải chính xác (`Accepted Solution` +15 Rep).
 
 ### 1.2. Thuật Toán Xếp Hạng Bài Viết (Hybrid Recommendation Formula)
 Hệ thống chấm điểm bài viết động dựa trên ma trận ngữ cảnh người dùng:

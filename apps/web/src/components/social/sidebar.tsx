@@ -52,10 +52,9 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
     ...(user?.username
       ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ cá nhân', icon: User }]
       : []),
-    { id: 'courses' as const, path: '/home?tab=courses', label: 'Học phần & Môn học', icon: GraduationCap },
-    { id: 'documents' as const, path: '/home?tab=documents', label: 'Kho tài liệu & Đề thi', icon: FileText },
-    { id: 'groups' as const, path: '/home?tab=groups', label: 'Ghép nhóm đồ án PBL', icon: Users, badge: 'Tuyển' },
-    { id: 'bookmarks' as const, path: '/home?tab=bookmarks', label: 'Đã lưu & Yêu thích', icon: Bookmark }
+    { id: 'courses' as const, path: '/search?type=courses', label: 'Học phần & Môn học', icon: GraduationCap },
+    { id: 'documents' as const, path: '/search?type=documents', label: 'Kho tài liệu & Đề thi', icon: FileText },
+    { id: 'groups' as const, path: '/search?type=groups', label: 'Ghép nhóm đồ án PBL', icon: Users, badge: 'Tuyển' }
   ]
 
   const facultyTags = [

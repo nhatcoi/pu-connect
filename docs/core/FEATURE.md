@@ -13,7 +13,7 @@ Tài liệu ghi nhận ngắn gọn, súc tích toàn bộ các tính năng **Đ
     - *Chính giữa*: Logo biểu trưng PU tối giản căn giữa tuyệt đối (`absolute left-1/2 -translate-x-1/2`).
     - *Bên phải*: Nút hành động dạng con nhộng (**Pill Action Button**) `+ Đăng bài` hoặc `Đăng nhập`.
   - **Cơ chế cuộn tự nhiên (Non-fixed Natural Scroll)**: Trên Mobile, Top Header nằm trong luồng cuộn tự nhiên (`relative md:sticky md:top-0`), cuộn trượt mượt mà ra khỏi màn hình khi lướt feed, giải phóng 100% chiều cao màn hình cho việc đọc bài viết học thuật.
-  - **Gắn dính thanh Tab thông minh (Smart Tab Pinning)**: Khi Top Header cuộn đi, thanh 4 Tab phân loại (*Dành cho bạn, Môn học, Tài liệu, Đã lưu*) tự động dính ở vị trí `top-0` trên Mobile (và `md:top-14` trên Desktop).
+  - **Gắn dính thanh 3 Luồng Feed thông minh (Smart 3-Stream Tab Pinning)**: Khi Top Header cuộn đi, thanh 3 Tab phân luồng (*Dành cho bạn, Đang theo dõi, Hỏi đáp*) tự động dính ở vị trí `top-0` trên Mobile (và `md:top-14` trên Desktop).
 - [x] **Top Header Tìm Kiếm Tinh Gọn Cho Mobile ([`SearchPage`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/search/page.tsx))**:
   - Tự động ẩn Header chung trên mobile `/search`, thay bằng thanh tìm kiếm Pill Shape dạng `[ Avatar ] [ 🔍 Tìm kiếm... ] [ ⚙️ Cài đặt ]`, tái hiện 100% giao diện X Explore.
 - [x] **Thanh Điều Hướng Đáy Màn Hình ([`MobileBottomNav`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/navigation/mobile-bottom-nav.tsx))**:

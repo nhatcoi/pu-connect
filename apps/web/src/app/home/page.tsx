@@ -2,48 +2,45 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import {
+  Sparkles,
+  Users,
+  HelpCircle,
+  Loader2,
+  CheckCircle2,
+  MessageSquarePlus,
+  UserPlus
+} from 'lucide-react'
 import { Header } from '@/components/social/header'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
-import { PostCard } from '@/components/social/post-card'
-import { DocumentCard } from '@/components/social/document-card'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
+import { PostCard } from '@/components/social/post-card'
 import { CreatePostDialog } from '@/components/social/create-post-dialog'
 import { CreateDocumentDialog } from '@/components/social/create-document-dialog'
 import { CreateGroupDialog } from '@/components/social/create-group-dialog'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
 import { AuthGuard } from '@/components/auth/auth-guard'
-import { usePosts } from '@/hooks/use-posts'
-import { useDocuments } from '@/hooks/use-documents'
-import { useScrollDirection } from '@/hooks/use-scroll-direction'
-import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
-import {
-  FileText,
-  Loader2,
-  MessageSquarePlus,
-  CheckCircle2,
-  Sparkles,
-  Bookmark
-} from 'lucide-react'
+import { usePosts } from '@/hooks/use-posts'
+import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+
+type HomeFeedTab = 'for_you' | 'following' | 'qa'
 
 function HomeContent() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
-  const { isHeaderVisible } = useScrollDirection(8)
 
-  const [activeFeedTab, setActiveFeedTab] = useState<'for_you' | 'courses' | 'documents' | 'bookmarks'>('for_you')
+  const [activeFeedTab, setActiveFeedTab] = useState<HomeFeedTab>('for_you')
   
   useEffect(() => {
-    if (tabParam === 'bookmarks') {
-      setActiveFeedTab('bookmarks')
-    } else if (tabParam === 'courses') {
-      setActiveFeedTab('courses')
-    } else if (tabParam === 'documents') {
-      setActiveFeedTab('documents')
-    } else if (!tabParam) {
+    if (tabParam === 'following') {
+      setActiveFeedTab('following')
+    } else if (tabParam === 'qa') {
+      setActiveFeedTab('qa')
+    } else if (!tabParam || tabParam === 'for_you') {
       setActiveFeedTab('for_you')
     }
   }, [tabParam])
@@ -55,11 +52,10 @@ function HomeContent() {
     hasMore,
     fetchMore
   } = usePosts({
-    feedType: activeFeedTab === 'documents' ? 'for_you' : activeFeedTab
+    feedType: activeFeedTab
   })
-
-  const { documents, isLoading: isDocsLoading } = useDocuments()
   
+  const user = useAppStore((state) => state.user)
   const isCreatePostOpen = useAppStore((state) => state.isCreatePostOpen)
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   const isCreateDocumentOpen = useAppStore((state) => state.isCreateDocumentOpen)
@@ -73,8 +69,6 @@ function HomeContent() {
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (activeFeedTab === 'documents') return
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isPostsLoading) {
@@ -89,12 +83,12 @@ function HomeContent() {
     }
 
     return () => observer.disconnect()
-  }, [hasMore, isLoadingMore, isPostsLoading, fetchMore, activeFeedTab])
+  }, [hasMore, isLoadingMore, isPostsLoading, fetchMore])
 
   return (
     <AuthGuard>
       <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-        {/* Global Navigation Header with Auto-hide on Mobile Scroll */}
+        {/* Unified Top Header */}
         <Header />
 
         {/* Global Dialogs & Preview Modals */}
@@ -115,7 +109,7 @@ function HomeContent() {
           }}
         />
 
-        {/* Main 3-Column Layout (X Twitter Architecture) */}
+        {/* Main 3-Column Layout (Signature X Twitter Architecture) */}
         <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
           
           {/* 1. Left Sidebar Navigation (Icon-only on md, full on xl) */}
@@ -123,19 +117,22 @@ function HomeContent() {
             <Sidebar />
           </div>
 
-          {/* 2. Center Feed Column (Wider for academic readability, crisp dividing borders) */}
+          {/* 2. Center Feed Column (Academic focus, clean dividing borders) */}
           <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
-            {/* X-style Feed Header with Sticky Tab Bar (Natural Scroll on Mobile, Sticky on Desktop) */}
+            {/* ── X-Style Sticky 3-Tab Feed Filter Bar ── */}
             <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80">
               <div className="flex w-full items-center justify-around text-xs sm:text-sm font-bold">
+                {/* Tab 1: Dành cho bạn (Smart Hybrid Recommendation) */}
                 <button
+                  type="button"
                   onClick={() => setActiveFeedTab('for_you')}
-                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
+                  className={cn(
+                    'relative flex-1 py-3.5 px-3 text-center cursor-pointer transition-colors',
                     activeFeedTab === 'for_you'
                       ? 'text-foreground font-bold'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                  )}
                 >
                   <span className="flex items-center gap-1.5 justify-center truncate">
                     <Sparkles className="h-3.5 w-3.5 shrink-0" />
@@ -146,143 +143,114 @@ function HomeContent() {
                   )}
                 </button>
 
+                {/* Tab 2: Đang theo dõi (Following Timeline) */}
                 <button
-                  onClick={() => setActiveFeedTab('courses')}
-                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
-                    activeFeedTab === 'courses'
+                  type="button"
+                  onClick={() => setActiveFeedTab('following')}
+                  className={cn(
+                    'relative flex-1 py-3.5 px-3 text-center cursor-pointer transition-colors',
+                    activeFeedTab === 'following'
                       ? 'text-foreground font-bold'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <span className="truncate block">Môn học & Đề thi</span>
-                  {activeFeedTab === 'courses' && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
                   )}
-                </button>
-
-                <button
-                  onClick={() => setActiveFeedTab('documents')}
-                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
-                    activeFeedTab === 'documents'
-                      ? 'text-foreground font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  <span className="truncate block">Kho tài liệu</span>
-                  {activeFeedTab === 'documents' && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setActiveFeedTab('bookmarks')}
-                  className={`relative flex-1 py-3.5 px-2 sm:px-4 text-center cursor-pointer transition-colors ${
-                    activeFeedTab === 'bookmarks'
-                      ? 'text-foreground font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
                 >
                   <span className="flex items-center gap-1.5 justify-center truncate">
-                    <Bookmark className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Đã lưu</span>
+                    <Users className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Đang theo dõi</span>
                   </span>
-                  {activeFeedTab === 'bookmarks' && (
+                  {activeFeedTab === 'following' && (
+                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
+                  )}
+                </button>
+
+                {/* Tab 3: Hỏi đáp (Academic Q&A / Accepted Solutions) */}
+                <button
+                  type="button"
+                  onClick={() => setActiveFeedTab('qa')}
+                  className={cn(
+                    'relative flex-1 py-3.5 px-3 text-center cursor-pointer transition-colors',
+                    activeFeedTab === 'qa'
+                      ? 'text-foreground font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <span className="flex items-center gap-1.5 justify-center truncate">
+                    <HelpCircle className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Hỏi đáp</span>
+                  </span>
+                  {activeFeedTab === 'qa' && (
                     <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Standalone Academic Post Composer (hidden when viewing bookmarks or documents) */}
-            {activeFeedTab !== 'bookmarks' && activeFeedTab !== 'documents' && (
-              <div className="p-3 sm:p-4 border-b border-border/60 sm:border-b-0">
-                <AcademicPostComposer />
-              </div>
-            )}
+            {/* Standalone Academic Post Composer */}
+            <div className="p-3 sm:p-4 border-b border-border/60 sm:border-b-0">
+              <AcademicPostComposer />
+            </div>
 
-            {/* Continuous X-style Post Stream */}
-            {(activeFeedTab === 'for_you' || activeFeedTab === 'courses' || activeFeedTab === 'bookmarks') && (
-              <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
-                {isPostsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
-                    <Loader2 className="h-6 w-6 animate-spin text-foreground" />
-                    <span className="text-xs">
-                      {activeFeedTab === 'bookmarks' ? 'Đang tải bài viết đã lưu...' : 'Đang tải bảng tin học thuật được gợi ý...'}
-                    </span>
+            {/* Continuous X-Style Post Stream */}
+            <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
+              {isPostsLoading ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+                  <span className="text-xs">
+                    {activeFeedTab === 'following'
+                      ? 'Đang tải bài viết từ những người bạn theo dõi...'
+                      : activeFeedTab === 'qa'
+                        ? 'Đang tải các câu hỏi thảo luận học thuật...'
+                        : 'Đang tải bảng tin học thuật được gợi ý...'}
+                  </span>
+                </div>
+              ) : posts.length > 0 ? (
+                <>
+                  {posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
+
+                  {/* Infinite Scroll Bottom Sentinel */}
+                  <div ref={sentinelRef} className="py-6 text-center">
+                    {isLoadingMore ? (
+                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                        <span>Đang nạp thêm bài viết phù hợp...</span>
+                      </div>
+                    ) : !hasMore && posts.length > 5 ? (
+                      <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                        <span>Bạn đã xem hết các bài viết mới nhất</span>
+                      </div>
+                    ) : null}
                   </div>
-                ) : posts.length > 0 ? (
-                  <>
-                    {posts.map((post) => (
-                      <PostCard key={post.id} post={post} />
-                    ))}
-
-                    {/* Infinite Scroll Bottom Sentinel */}
-                    <div ref={sentinelRef} className="py-6 text-center">
-                      {isLoadingMore ? (
-                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin text-foreground" />
-                          <span>Đang nạp thêm bài viết phù hợp...</span>
-                        </div>
-                      ) : !hasMore && posts.length > 5 ? (
-                        <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                          <span>Bạn đã xem hết các bài viết mới nhất</span>
-                        </div>
-                      ) : null}
-                    </div>
-                  </>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 m-3 sm:m-0 text-center">
-                    <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                    <h3 className="text-sm font-bold text-foreground">
-                      {activeFeedTab === 'bookmarks' ? 'Chưa có bài viết nào được lưu' : 'Chưa có bài viết nào'}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1 mb-4">
-                      {activeFeedTab === 'bookmarks'
-                        ? 'Bạn có thể bấm biểu tượng Lưu ở bất kỳ bài viết nào trên Bảng tin để lưu lại xem sau.'
-                        : 'Hãy là người đầu tiên đặt câu hỏi hoặc chia sẻ tài liệu học phần!'}
-                    </p>
-                    {activeFeedTab !== 'bookmarks' && (
-                      <Button
-                        size="sm"
-                        onClick={() => setCreatePostOpen(true)}
-                        className="bg-foreground text-background font-bold rounded-full cursor-pointer"
-                      >
-                        Tạo bài viết mới
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeFeedTab === 'documents' && (
-              <div className="p-3 sm:p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold text-foreground">Kho Tài Liệu & Đề Thi Mới Nhất</h2>
+                </>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 m-3 sm:m-0 text-center">
+                  <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                  <h3 className="text-sm font-bold text-foreground">
+                    {activeFeedTab === 'following'
+                      ? 'Chưa có bài viết từ người bạn theo dõi'
+                      : activeFeedTab === 'qa'
+                        ? 'Chưa có câu hỏi học thuật nào'
+                        : 'Chưa có bài viết nào'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 mb-4 max-w-sm mx-auto leading-relaxed">
+                    {activeFeedTab === 'following'
+                      ? 'Hãy bấm theo dõi các Giảng viên, Trợ giảng hoặc bạn bè sinh viên cùng khoa để nhận bài viết mới nhất của họ tại đây!'
+                      : activeFeedTab === 'qa'
+                        ? 'Hãy là người đầu tiên đặt câu hỏi thắc mắc về bài tập, môn học hoặc đồ án để nhận lời giải chuẩn!'
+                        : 'Hãy là người đầu tiên chia sẻ kiến thức, kinh nghiệm học tập hoặc tài liệu học phần!'}
+                  </p>
                   <Button
                     size="sm"
-                    variant="outline"
-                    onClick={() => setCreateDocumentOpen(true)}
-                    className="h-7 text-[11px] gap-1 rounded-full cursor-pointer"
+                    onClick={() => setCreatePostOpen(true)}
+                    className="bg-foreground text-background font-bold rounded-full cursor-pointer"
                   >
-                    <FileText className="h-3 w-3" />
-                    <span>Thêm tài liệu</span>
+                    {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
                   </Button>
                 </div>
-                {isDocsLoading ? (
-                  <div className="flex justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-foreground" />
-                  </div>
-                ) : documents.length > 0 ? (
-                  documents.map((doc) => <DocumentCard key={doc.id} document={doc} />)
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-border p-8 text-center text-xs text-muted-foreground">
-                    Chưa có tài liệu nào được tải lên.
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </main>
 
           {/* 3. Right Sidebar (Desktop lg: and above) */}
@@ -291,7 +259,7 @@ function HomeContent() {
           </div>
         </div>
 
-        {/* Mobile Bottom Navigation & Floating Action Button (FAB) */}
+        {/* Mobile Bottom Navigation */}
         <MobileBottomNav />
       </div>
     </AuthGuard>

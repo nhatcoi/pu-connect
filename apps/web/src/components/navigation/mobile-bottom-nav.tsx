@@ -36,35 +36,35 @@ export function MobileBottomNav() {
       label: 'Bảng tin',
       icon: Home,
       path: '/home',
-      isActive: pathname === '/home' && (!currentTabParam || currentTabParam === 'for_you')
+      isActive: pathname === '/home'
     },
     {
       id: 'search',
       label: 'Khám phá',
       icon: Search,
       path: '/search',
-      isActive: pathname === '/search'
+      isActive: pathname === '/search' && (!searchParams.get('type') || searchParams.get('type') === 'all')
     },
     {
       id: 'courses',
       label: 'Môn học',
       icon: GraduationCap,
-      path: '/home?tab=courses',
-      isActive: pathname === '/home' && currentTabParam === 'courses'
+      path: '/search?type=courses',
+      isActive: pathname === '/search' && searchParams.get('type') === 'courses'
     },
     {
       id: 'documents',
       label: 'Tài liệu',
       icon: FileText,
-      path: '/home?tab=documents',
-      isActive: pathname === '/home' && currentTabParam === 'documents'
+      path: '/search?type=documents',
+      isActive: pathname === '/search' && searchParams.get('type') === 'documents'
     },
     {
-      id: 'bookmarks',
-      label: 'Đã lưu',
+      id: 'groups',
+      label: 'Nhóm PBL',
       icon: Bookmark,
-      path: '/home?tab=bookmarks',
-      isActive: pathname === '/home' && currentTabParam === 'bookmarks'
+      path: '/search?type=groups',
+      isActive: pathname === '/search' && searchParams.get('type') === 'groups'
     }
   ]
 

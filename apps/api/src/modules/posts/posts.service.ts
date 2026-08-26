@@ -59,10 +59,22 @@ export class PostsService {
       whereClause += ` AND $${params.length} = ANY(p.tags)`
     }
 
-    if (feedType === 'courses') {
+    let orderBy = `ORDER BY recommendation_score DESC, p.created_at DESC`
+
+    if (feedType === 'following') {
+      if (currentUserId) {
+        whereClause += ` AND EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = p.author_id)`
+      } else {
+        whereClause += ` AND 1=0`
+      }
+      orderBy = `ORDER BY p.created_at DESC`
+    } else if (feedType === 'qa') {
+      whereClause += ` AND p.post_type = 'question'`
+    } else if (feedType === 'courses') {
       whereClause += ` AND (p.course_id IS NOT NULL OR p.post_type IN ('question', 'resource_share'))`
     } else if (feedType === 'bookmarks' && currentUserId) {
       whereClause += ` AND EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1)`
+      orderBy = `ORDER BY p.created_at DESC`
     }
 
     // 1. Get total count
@@ -91,7 +103,7 @@ export class PostsService {
     sql += `${joins} ${whereClause}`
 
     params.push(safeLimit, safeOffset)
-    sql += ` ORDER BY recommendation_score DESC, p.created_at DESC LIMIT $${params.length - 1} OFFSET $${params.length}`
+    sql += ` ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`
 
     const res = await this.db.query(sql, params)
     
