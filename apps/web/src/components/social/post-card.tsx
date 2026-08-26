@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import type { PostItem } from '@pu/schemas'
 import {
   Heart,
@@ -115,6 +115,7 @@ interface PostCardProps {
 
 export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: PostCardProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [post, setPost] = useState<PostItem>(initialPost)
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -331,8 +332,8 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
         id={`post-${post.id}`}
         className="p-3 sm:p-4 border-b border-border/70 sm:border sm:border-border sm:rounded-2xl bg-card text-card-foreground shadow-none sm:shadow-xs transition-colors hover:bg-muted/[0.08]"
       >
-        {/* Pinned Top Banner */}
-        {post.isPinned && (
+        {/* Pinned Top Banner (Only visible on author profile page) */}
+        {post.isPinned && !!post.author?.username && (pathname === `/${post.author.username}` || pathname.startsWith(`/${post.author.username}?`)) && (
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary mb-1.5 ml-13">
             <Pin className="h-3 w-3 fill-current" />
             <span>Bài viết được ghim</span>
@@ -469,7 +470,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                       </>
                     ) : (
                       <>
-                        {/* 1. Ghim / Bỏ ghim bài viết */}
+                        {/* 1. Ghim / Bỏ ghim bài viết lên trang cá nhân */}
                         <DropdownMenuItem
                           onClick={handleTogglePin}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
@@ -477,12 +478,12 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                           {post.isPinned ? (
                             <>
                               <PinOff className="h-4 w-4 text-amber-500 shrink-0" />
-                              <span>Bỏ ghim bài viết</span>
+                              <span>Bỏ ghim khỏi trang cá nhân</span>
                             </>
                           ) : (
                             <>
                               <Pin className="h-4 w-4 text-primary shrink-0" />
-                              <span>Ghim lên đầu trang</span>
+                              <span>Ghim lên đầu trang cá nhân</span>
                             </>
                           )}
                         </DropdownMenuItem>

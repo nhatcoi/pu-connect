@@ -23,7 +23,7 @@ $$S(u, p) = w_1 \cdot C(u, p) + w_2 \cdot F(u, p) + w_3 \cdot Y(u, p) + w_4 \cdo
 | $Y(u, p)$ | $+15.0$ | Tác giả bài viết thuộc cùng **Niên khóa** (`K15`, `K16`...). |
 | $Follow(u, p)$ | $+35.0$ | Người dùng hiện tại đang bấm theo dõi tác giả bài viết. |
 | $Tag(u, p)$ | $+35.0$ / $+25.0$ | Tags bài viết trùng khớp với `interests` ($+35$) hoặc `skills` ($+25$) của user. |
-| $E(p)$ | $2 \cdot L + 5 \cdot C$ | Điểm tương tác: Mỗi Like $+2.0$, Mỗi Bình luận $+5.0$, Được ghim $+1000.0$. |
+| $E(p)$ | $2 \cdot L + 5 \cdot C$ | Điểm tương tác: Mỗi Like $+2.0$, Mỗi Bình luận $+5.0$, Q&A có lời giải $+10.0$. |
 | $\lambda \cdot \Delta t$ | $-2.0 / 24\text{h}$ | Hệ số suy giảm theo thời gian thực để ưu tiên hiển thị nội dung mới. |
 
 ---

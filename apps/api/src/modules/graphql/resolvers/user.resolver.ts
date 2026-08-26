@@ -197,8 +197,8 @@ export class UserResolver {
        FROM posts p
        JOIN users u ON p.author_id = u.id
        WHERE p.author_id = $1
-       ORDER BY p.created_at DESC
-       LIMIT 20`,
+       ORDER BY p.is_pinned DESC, p.created_at DESC
+       LIMIT 50`,
       [user.id]
     )
 

@@ -35,8 +35,7 @@ export class PostsService {
       joins += ` LEFT JOIN users cu ON cu.id = $1`
 
       scoreCalculation = `(
-        (CASE WHEN p.is_pinned THEN 1000.0 ELSE 0.0 END)
-        + (CASE WHEN u.faculty IS NOT NULL AND cu.faculty IS NOT NULL AND u.faculty = cu.faculty THEN 30.0 ELSE 0.0 END)
+        (CASE WHEN u.faculty IS NOT NULL AND cu.faculty IS NOT NULL AND u.faculty = cu.faculty THEN 30.0 ELSE 0.0 END)
         + (CASE WHEN u.academic_year IS NOT NULL AND cu.academic_year IS NOT NULL AND u.academic_year = cu.academic_year THEN 15.0 ELSE 0.0 END)
         + (CASE WHEN EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = cu.id AND uf.following_id = p.author_id) THEN 35.0 ELSE 0.0 END)
         + (CASE WHEN cu.interests IS NOT NULL AND array_length(cu.interests, 1) > 0 AND p.tags && cu.interests THEN 35.0 ELSE 0.0 END)
@@ -47,8 +46,7 @@ export class PostsService {
       )`
     } else {
       scoreCalculation = `(
-        (CASE WHEN p.is_pinned THEN 1000.0 ELSE 0.0 END)
-        + (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
+        (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
         + (p.likes_count * 2.0 + p.comments_count * 5.0)
         - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
       )`
