@@ -8,6 +8,7 @@
 
 | Tài Liệu | Nội Dung Chi Tiết | Trạng Thái |
 |---|---|:---:|
+| [**`FEATURE.md`**](./FEATURE.md) | **Tổng hợp ngắn gọn các tính năng đã triển khai & Lộ trình phát triển Social Core.** | ✅ Hoàn chỉnh |
 | [**`01-social-feed-and-posts.md`**](./01-social-feed-and-posts.md) | Bảng tin cá nhân hóa, Đa định dạng Post (Text, LaTeX, Code, Ảnh, File, Poll), Like, Share, Bookmark & Thuật toán đề xuất. | ✅ Hoàn chỉnh |
 | [**`02-threaded-comments-and-qa.md`**](./02-threaded-comments-and-qa.md) | Bình luận phân cấp lồng nhau (Nested Replies), Duyệt lời giải Q&A (Accepted Solution), Điểm danh vọng (Gamification). | ✅ Hoàn chỉnh |
 | [**`03-profile-and-social-graph.md`**](./03-profile-and-social-graph.md) | Hồ sơ sinh viên, Cây phân cấp học thuật (Khoa/Viện/Khóa), Mạng lưới theo dõi (`user_follows`), Mention `@username`. | ✅ Hoàn chỉnh |

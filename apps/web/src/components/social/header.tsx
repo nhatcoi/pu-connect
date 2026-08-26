@@ -1,10 +1,9 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Search,
   Plus,
   Moon,
   Sun,
@@ -14,11 +13,11 @@ import {
   User,
   Sparkles,
   LogIn,
-  LogOut
+  LogOut,
+  Bookmark
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLogout } from '@/hooks/use-logout'
-import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -35,16 +34,15 @@ import { AcademicSearchBar } from '@/components/search/academic-search-bar'
 import { NotificationsPopover } from './notifications-popover'
 import { apiClient } from '@/lib/api-client'
 import type { UserProfile } from '@pu/schemas'
-import { cn } from '@/lib/utils'
 
 export function Header() {
   const router = useRouter()
+  const pathname = usePathname()
   const { theme, setTheme } = useTheme()
   const user = useAppStore((state) => state.user)
   const setUser = useAppStore((state) => state.setUser)
   const { logout, isLoggingOut } = useLogout()
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
-  const { isHeaderVisible } = useScrollDirection(8)
 
   const [isCommandOpen, setIsCommandOpen] = useState(false)
   const [isAuthOpen, setIsAuthOpen] = useState(false)
@@ -68,13 +66,12 @@ export function Header() {
     .slice(0, 2)
     .toUpperCase()
 
+  // On mobile /search and /[username], dedicated X-style top headers are rendered
+  const isSearchPage = pathname === '/search'
+  const isProfilePage = pathname?.startsWith('/@') || (pathname?.length > 1 && !['/home', '/get-started', '/search'].includes(pathname))
+
   return (
-    <header
-      className={cn(
-        'sticky top-0 z-40 w-full border-b border-border/80 bg-background/95 backdrop-blur-md transition-transform duration-300 ease-in-out',
-        !isHeaderVisible && '-translate-y-full md:translate-y-0'
-      )}
-    >
+    <header className="w-full relative md:sticky md:top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md">
       <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} onSelectTab={() => {}} />
       <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
 
@@ -82,7 +79,7 @@ export function Header() {
       <div className="hidden md:flex mx-auto h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/home" className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black text-base shadow-sm group-hover:scale-105 transition-transform">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black text-base shadow-xs group-hover:scale-105 transition-transform">
               PU
             </div>
             <div className="flex flex-col">
@@ -111,7 +108,7 @@ export function Header() {
               }
               setCreatePostOpen(true)
             }}
-            className="gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm rounded-full cursor-pointer"
+            className="gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs rounded-full cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span className="hidden lg:inline">Đăng bài / Chia sẻ</span>
@@ -205,111 +202,104 @@ export function Header() {
         </div>
       </div>
 
-      {/* ── 2. Mobile Responsive Top Header (X Twitter Style) (md:hidden) ── */}
-      <div className="flex md:hidden h-13 items-center justify-between px-3">
-        {/* Left: User Avatar (Tap to open quick menu / profile) */}
-        {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      {/* ── 2. Signature Mobile Responsive Top Header (X Twitter Exact Architecture) (md:hidden) ── */}
+      {/* Automatically hidden on /search and /[username] since they render dedicated top navigation bars */}
+      {!isSearchPage && !isProfilePage && (
+        <div className="flex md:hidden h-13 items-center justify-between px-4 relative w-full">
+          {/* Left: User Avatar (Tap to open quick menu / profile) */}
+          <div className="shrink-0">
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative h-8 w-8 rounded-full p-0 border border-border cursor-pointer select-none overflow-hidden hover:opacity-80 transition-opacity"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.avatarUrl || ''} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64 p-2 rounded-2xl shadow-2xl border border-border">
+                  <div className="flex items-center gap-2.5 p-1.5">
+                    <Avatar className="h-10 w-10 border border-border">
+                      <AvatarImage src={user.avatarUrl || ''} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col min-w-0">
+                      <p className="font-bold text-xs text-foreground truncate">
+                        {user.displayName || (user as any).display_name || user.username}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => router.push(`/${user.username}`)}
+                    className="cursor-pointer font-medium text-xs rounded-xl"
+                  >
+                    <User className="mr-2 h-4 w-4 text-primary" /> Hồ sơ cá nhân
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/home?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
+                    <Bookmark className="mr-2 h-4 w-4 text-amber-500" /> Bài viết đã lưu
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/home?tab=courses')} className="text-xs rounded-xl cursor-pointer">
+                    <GraduationCap className="mr-2 h-4 w-4 text-primary" /> Môn học & Đề thi
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl">
+                    <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
               <button
                 type="button"
-                className="relative h-8 w-8 rounded-full p-0 border border-border cursor-pointer select-none overflow-hidden"
+                onClick={() => setIsAuthOpen(true)}
+                className="h-8 w-8 rounded-full border border-dashed border-border flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
               >
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.avatarUrl || ''} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
+                <User className="h-4 w-4" />
               </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-64 p-2 rounded-2xl shadow-2xl border border-border">
-              <div className="flex items-center gap-2.5 p-1.5">
-                <Avatar className="h-10 w-10 border border-border">
-                  <AvatarImage src={user.avatarUrl || ''} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col min-w-0">
-                  <p className="font-bold text-xs text-foreground truncate">
-                    {user.displayName || (user as any).display_name || user.username}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => router.push(`/${user.username}`)}
-                className="cursor-pointer font-medium text-xs rounded-xl"
-              >
-                <User className="mr-2 h-4 w-4 text-primary" /> Hồ sơ cá nhân
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/home?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
-                <Sparkles className="mr-2 h-4 w-4 text-accent" /> Bài viết đã lưu
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl">
-                <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        ) : (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setIsAuthOpen(true)}
-            className="h-8 px-2 text-xs font-semibold"
-          >
-            <LogIn className="h-4 w-4" />
-          </Button>
-        )}
-
-        {/* Center: Stylized Brand Logo (Like X icon centered at top) */}
-        <Link href="/home" className="flex items-center gap-1.5 cursor-pointer">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-black text-xs shadow-xs">
-            PU
+            )}
           </div>
-          <span className="font-black text-sm tracking-tight text-foreground">
-            PU Connector
-          </span>
-        </Link>
 
-        {/* Right: Search, Notifications & Theme */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsCommandOpen(true)}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-full"
-            title="Tìm kiếm"
-          >
-            <Search className="h-4 w-4" />
-          </Button>
+          {/* Center: Stylized Minimalist Emblem Logo (Perfect Center Alignment like X) */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
+            <Link href="/home" className="flex items-center justify-center cursor-pointer group">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background font-black text-sm shadow-xs group-hover:scale-105 transition-transform tracking-tighter">
+                PU
+              </div>
+            </Link>
+          </div>
 
-          <NotificationsPopover />
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground rounded-full cursor-pointer">
-                <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          {/* Right: Signature Pill Action Button (Matches X "Subscribe / Action" Pill Style) */}
+          <div className="shrink-0 flex items-center gap-1.5">
+            {user ? (
+              <Button
+                size="sm"
+                onClick={() => setCreatePostOpen(true)}
+                className="h-8 px-3.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer gap-1"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Đăng bài</span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl">
-              <DropdownMenuItem onClick={() => setTheme('light')}>
-                <Sun className="mr-2 h-4 w-4" /> Sáng
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')}>
-                <Moon className="mr-2 h-4 w-4" /> Tối
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('system')}>
-                <Laptop className="mr-2 h-4 w-4" /> Hệ thống
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setIsAuthOpen(true)}
+                className="h-8 px-3.5 rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs cursor-pointer"
+              >
+                <span>Đăng nhập</span>
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </header>
   )
 }

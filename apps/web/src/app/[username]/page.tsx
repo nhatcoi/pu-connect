@@ -68,15 +68,8 @@ export default function ProfilePage({
 
           {/* 2. Center Profile Column (Wider for academic content, clean borders, zero horizontal shift) */}
           <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
-            {/* Sticky Topbar with Back Button (Smooth Hide on Scroll Down, Show on Scroll Up) */}
-            <div
-              className={cn(
-                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3 transition-transform duration-300 ease-in-out',
-                isHeaderVisible
-                  ? 'top-13 md:top-14 translate-y-0'
-                  : '-top-14 md:top-14 -translate-y-full md:translate-y-0'
-              )}
-            >
+            {/* Sticky Topbar with Back Button (Natural Scroll on Mobile, Sticky on Desktop) */}
+            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"

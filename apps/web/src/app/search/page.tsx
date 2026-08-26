@@ -269,14 +269,7 @@ function SearchContent() {
           <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
             {/* ── A. SEARCH TOP BAR (X Twitter Style) ── */}
-            <div
-              className={cn(
-                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 transition-transform duration-300 ease-in-out px-3 py-2.5',
-                isHeaderVisible
-                  ? 'top-13 md:top-14 translate-y-0'
-                  : '-top-14 md:top-14 -translate-y-full md:translate-y-0'
-              )}
-            >
+            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-3 py-2.5">
               <div className="flex items-center gap-2.5">
                 {/* Left Action: Avatar if Explore mode, Back Arrow if Search Active */}
                 {isSearchActive ? (

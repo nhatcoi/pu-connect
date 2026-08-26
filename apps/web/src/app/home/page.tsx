@@ -126,15 +126,8 @@ function HomeContent() {
           {/* 2. Center Feed Column (Wider for academic readability, crisp dividing borders) */}
           <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
             
-            {/* X-style Feed Header with Sticky Tab Bar (Smooth Hide on Scroll Down, Show on Scroll Up) */}
-            <div
-              className={cn(
-                'sticky z-30 bg-background/95 backdrop-blur-md border-b border-border/80 transition-transform duration-300 ease-in-out',
-                isHeaderVisible
-                  ? 'top-13 md:top-14 translate-y-0'
-                  : '-top-14 md:top-14 -translate-y-full md:translate-y-0'
-              )}
-            >
+            {/* X-style Feed Header with Sticky Tab Bar (Natural Scroll on Mobile, Sticky on Desktop) */}
+            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80">
               <div className="flex w-full items-center justify-around text-xs sm:text-sm font-bold">
                 <button
                   onClick={() => setActiveFeedTab('for_you')}
