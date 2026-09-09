@@ -7,7 +7,7 @@ import {
   Search,
   GraduationCap,
   FileText,
-  Bookmark,
+  Compass,
   Plus
 } from 'lucide-react'
 import { useAppStore } from '@/store'
@@ -60,11 +60,11 @@ export function MobileBottomNav() {
       isActive: pathname === '/search' && searchParams.get('type') === 'documents'
     },
     {
-      id: 'groups',
-      label: 'Nhóm PBL',
-      icon: Bookmark,
-      path: '/search?type=groups',
-      isActive: pathname === '/search' && searchParams.get('type') === 'groups'
+      id: 'communities',
+      label: 'Cộng đồng',
+      icon: Compass,
+      path: '/communities',
+      isActive: pathname.startsWith('/c/') || pathname === '/communities'
     }
   ]
 

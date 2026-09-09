@@ -20,7 +20,17 @@ import { ComposerToolbar } from './composer-toolbar'
 
 const MAX_CHAR_LIMIT = 1000
 
-export function AcademicPostComposer() {
+interface AcademicPostComposerProps {
+  onPostCreated?: (post: PostItem) => void
+  defaultCommunityId?: string
+  defaultCommunitySlug?: string
+}
+
+export function AcademicPostComposer({
+  onPostCreated,
+  defaultCommunityId,
+  defaultCommunitySlug
+}: AcademicPostComposerProps = {}) {
   const user = useAppStore((state) => state.user)
   const addPost = useAppStore((state) => state.addPost)
 
@@ -204,6 +214,8 @@ export function AcademicPostComposer() {
         content: content.trim(),
         postType,
         courseId: selectedCourseId || undefined,
+        communityId: defaultCommunityId,
+        communitySlug: defaultCommunitySlug,
         facultyCode: user?.faculty || undefined,
         targetAudience,
         tags: allTags,
@@ -222,6 +234,9 @@ export function AcademicPostComposer() {
 
       if (response && response.data) {
         addPost(response.data)
+        if (onPostCreated) {
+          onPostCreated(response.data)
+        }
         toast.success('Đã đăng bài viết thành công!')
       }
 
@@ -283,10 +298,17 @@ export function AcademicPostComposer() {
 
         {/* Right Composer Body */}
         <div className="flex-1 min-w-0 space-y-3">
-          {/* Expanded Top: Intent Selector + Course Picker */}
+          {/* Expanded Top: Intent Selector + Course Picker + Community Tag */}
           {isExpanded && (
             <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-border/40">
-              <ComposerIntentSelector value={postType} onChange={setPostType} />
+              <div className="flex items-center gap-2 flex-wrap">
+                <ComposerIntentSelector value={postType} onChange={setPostType} />
+                {defaultCommunitySlug && (
+                  <span className="text-xs font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
+                    c/{defaultCommunitySlug}
+                  </span>
+                )}
+              </div>
               <ComposerCoursePicker
                 selectedCourseId={selectedCourseId}
                 onChange={setSelectedCourseId}

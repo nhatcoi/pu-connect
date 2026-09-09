@@ -109,7 +109,7 @@ export function useComments(postId: string, initialOpen = false) {
           setComments((prev) => [...prev, res.data])
           setTotalCount((prev) => prev + 1)
           offsetRef.current += 1
-          toast.success('Đã gửi phản hồi (+2 điểm danh vọng)')
+          toast.success('Đã gửi phản hồi')
           return res.data
         }
       } catch (err: any) {

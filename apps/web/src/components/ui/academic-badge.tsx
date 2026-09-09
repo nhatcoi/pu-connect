@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import { BadgeCheck, GraduationCap, ShieldAlert, Award, Star } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { BadgeCheck, GraduationCap, ShieldAlert, Star, Users, Award } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AcademicBadgeProps {
@@ -11,9 +10,7 @@ interface AcademicBadgeProps {
   className?: string
 }
 
-export function AcademicBadge({ role, reputationPoints = 0, className }: AcademicBadgeProps) {
-  const isTopContributor = (reputationPoints || 0) >= 300
-
+export function AcademicBadge({ role, className }: AcademicBadgeProps) {
   return (
     <div className={cn('inline-flex items-center gap-1', className)}>
       {/* 1. Lecturer / Giảng viên */}
@@ -41,11 +38,19 @@ export function AcademicBadge({ role, reputationPoints = 0, className }: Academi
         </span>
       )}
 
-      {/* 4. Top Contributor */}
-      {isTopContributor && role === 'student' && (
+      {/* 4. Club Lead / Ban Chủ nhiệm CLB */}
+      {role === 'club_lead' && (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold">
+          <Users className="h-3 w-3" />
+          <span>Chủ nhiệm CLB</span>
+        </span>
+      )}
+
+      {/* 5. Alumni / Cựu sinh viên */}
+      {role === 'alumni' && (
         <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold">
           <Award className="h-3 w-3" />
-          <span>Top Contributor</span>
+          <span>Cựu sinh viên</span>
         </span>
       )}
     </div>

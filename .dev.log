@@ -1,0 +1,17 @@
+
+> @pu/web@0.1.0 dev /Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web
+> next dev -H 0.0.0.0 --port 3000
+
+   ▲ Next.js 15.5.23
+   - Local:        http://localhost:3000
+   - Network:      http://0.0.0.0:3000
+   - Environments: .env
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+ ✓ Ready in 1210ms
+ ○ Compiling /home ...
+ ✓ Compiled / in 5.2s (7362 modules)
+ GET /home 200 in 5716ms
+ HEAD / 200 in 2410ms

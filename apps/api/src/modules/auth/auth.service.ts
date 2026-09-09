@@ -1,12 +1,7 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  Logger
-} from '@nestjs/common'
-import * as bcrypt from 'bcryptjs'
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import type { RegisterInput, OnboardingInput, UserProfile } from '@pu/schemas'
+import * as bcrypt from 'bcryptjs'
 
 @Injectable()
 export class AuthService {
@@ -16,7 +11,10 @@ export class AuthService {
 
   async validateUser(emailOrUsername: string, password: string): Promise<UserProfile | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, password_hash, display_name, student_id, faculty, academic_year, avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at
+      `SELECT id, email, username, password_hash, display_name, student_id, school, faculty, academic_year,
+              major, class_name, is_verified, verified_at, privacy_settings,
+              location, website, birth_date,
+              avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at
        FROM users
        WHERE email = $1 OR username = $1 LIMIT 1`,
       [emailOrUsername.toLowerCase().trim()]
@@ -37,7 +35,10 @@ export class AuthService {
 
   async findById(id: string): Promise<UserProfile | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, display_name, student_id, faculty, academic_year, avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at
+      `SELECT id, email, username, display_name, student_id, school, faculty, academic_year,
+              major, class_name, is_verified, verified_at, privacy_settings,
+              location, website, birth_date,
+              avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at
        FROM users
        WHERE id = $1 LIMIT 1`,
       [id]
@@ -51,9 +52,12 @@ export class AuthService {
   }
 
   async register(data: RegisterInput): Promise<UserProfile> {
+    const emailLower = data.email.toLowerCase().trim()
+    const usernameLower = data.username.toLowerCase().trim()
+
     const existing = await this.db.query(
       `SELECT id FROM users WHERE email = $1 OR username = $2 LIMIT 1`,
-      [data.email.toLowerCase().trim(), data.username.toLowerCase().trim()]
+      [emailLower, usernameLower]
     )
 
     if (existing.rows.length > 0) {
@@ -63,14 +67,19 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10)
     const passwordHash = await bcrypt.hash(data.password, salt)
 
+    // Tự động cấp tích xanh cho email chính quy của trường Phenikaa
+    const isPhenikaa = emailLower.endsWith('@phenikaa-uni.edu.vn') || emailLower.endsWith('@st.phenikaa-uni.edu.vn')
+
     const insertRes = await this.db.query(
       `INSERT INTO users (
-        email, username, password_hash, display_name, student_id, faculty, academic_year, avatar_url, role, reputation_points, is_onboarded
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, FALSE)
-       RETURNING id, email, username, display_name, student_id, faculty, academic_year, avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at`,
+        email, username, password_hash, display_name, student_id, faculty, academic_year, avatar_url, role, reputation_points, is_onboarded, is_verified, verified_at
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, FALSE, $10, $11)
+       RETURNING id, email, username, display_name, student_id, faculty, academic_year,
+                 major, class_name, is_verified, verified_at, privacy_settings,
+                 avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at`,
       [
-        data.email.toLowerCase().trim(),
-        data.username.toLowerCase().trim(),
+        emailLower,
+        usernameLower,
         passwordHash,
         data.displayName.trim(),
         data.studentId || null,
@@ -78,7 +87,8 @@ export class AuthService {
         data.academicYear || null,
         `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.username)}`,
         'student',
-        100
+        isPhenikaa,
+        isPhenikaa ? new Date() : null
       ]
     )
 
@@ -95,23 +105,31 @@ export class AuthService {
     const interests = Array.from(new Set([...(data.courses || [])]))
     const skills = Array.from(new Set([...(data.skills || [])]))
 
-    // Update user profile and award 100 bonus reputation points
+    // Update user profile (loại bỏ điểm thưởng gamification)
     const updateRes = await this.db.query(
       `UPDATE users
        SET student_id = COALESCE($1, student_id),
-           faculty = COALESCE($2, faculty),
-           academic_year = COALESCE($3, academic_year),
-           bio = COALESCE($4, bio),
-           skills = $5,
-           interests = $6,
+           school = COALESCE($2, school),
+           faculty = COALESCE($3, faculty),
+           major = COALESCE($4, major),
+           class_name = COALESCE($5, class_name),
+           academic_year = COALESCE($6, academic_year),
+           bio = COALESCE($7, bio),
+           skills = $8,
+           interests = $9,
            is_onboarded = TRUE,
-           reputation_points = reputation_points + 100,
            updated_at = NOW()
-       WHERE id = $7
-       RETURNING id, email, username, display_name, student_id, faculty, academic_year, avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at`,
+       WHERE id = $10
+       RETURNING id, email, username, display_name, student_id, school, faculty, academic_year,
+                 major, class_name, is_verified, verified_at, privacy_settings,
+                 location, website, birth_date,
+                 avatar_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at`,
       [
         data.studentId || null,
+        data.school || null,
         data.faculty || null,
+        data.major || null,
+        data.className || null,
         data.academicYear || null,
         data.bio || null,
         skills,
@@ -129,14 +147,16 @@ export class AuthService {
             `SELECT id FROM users WHERE id::text = $1 OR username = $1 LIMIT 1`,
             [target]
           )
-          if (targetUser.rows.length > 0) {
-            const targetId = targetUser.rows[0].id
-            if (targetId !== userId) {
+          if (targetUser.rows.length > 0 && targetUser.rows[0].id !== userId) {
+            const followedId = targetUser.rows[0].id
+            const existingFollow = await this.db.query(
+              `SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2 LIMIT 1`,
+              [userId, followedId]
+            )
+            if (existingFollow.rows.length === 0) {
               await this.db.query(
-                `INSERT INTO user_follows (follower_id, following_id)
-                 VALUES ($1, $2)
-                 ON CONFLICT (follower_id, following_id) DO NOTHING`,
-                [userId, targetId]
+                `INSERT INTO user_follows (follower_id, following_id) VALUES ($1, $2)`,
+                [userId, followedId]
               )
             }
           }
@@ -157,12 +177,26 @@ export class AuthService {
       username: row.username,
       displayName: row.display_name,
       studentId: row.student_id,
+      school: row.school || null,
       faculty: row.faculty,
       academicYear: row.academic_year,
+      major: row.major || null,
+      className: row.class_name || null,
+      isVerified: !!row.is_verified,
+      verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
+      privacySettings: row.privacy_settings || {
+        showEmail: false,
+        showStudentId: true,
+        showClass: true,
+        isPrivateProfile: false
+      },
+      location: row.location || null,
+      website: row.website || null,
+      birthDate: row.birth_date || null,
       avatarUrl: row.avatar_url,
       bio: row.bio,
       role: row.role,
-      reputationPoints: row.reputation_points,
+      reputationPoints: row.reputation_points || 0,
       isOnboarded: !!row.is_onboarded,
       skills: row.skills || [],
       interests: row.interests || [],

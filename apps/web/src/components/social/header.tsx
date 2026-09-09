@@ -202,11 +202,8 @@ export function Header() {
                 <DropdownMenuItem className="text-xs rounded-xl">
                   <GraduationCap className="mr-2 h-4 w-4 text-muted-foreground" /> Mã SV: {user.studentId || (user as any).student_id || 'N/A'}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/home?tab=groups')} className="text-xs rounded-xl cursor-pointer">
-                  <Users className="mr-2 h-4 w-4 text-muted-foreground" /> Nhóm đồ án của tôi
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-xs rounded-xl">
-                  <Sparkles className="mr-2 h-4 w-4 text-accent" /> Điểm danh vọng: {user.reputationPoints ?? (user as any).reputation_points ?? 100} pts
+                <DropdownMenuItem onClick={() => router.push('/communities')} className="text-xs rounded-xl cursor-pointer">
+                  <Users className="mr-2 h-4 w-4 text-muted-foreground" /> Cộng đồng & Diễn đàn
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl hover:bg-destructive/10">

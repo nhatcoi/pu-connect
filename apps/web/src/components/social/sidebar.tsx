@@ -17,7 +17,8 @@ import {
   LogOut,
   Plus,
   MoreHorizontal,
-  Sparkles
+  Sparkles,
+  Compass
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -32,7 +33,7 @@ import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { cn } from '@/lib/utils'
 
-export type NavTabType = 'feed' | 'search' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks'
+export type NavTabType = 'feed' | 'search' | 'communities' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -49,12 +50,13 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const navItems = [
     { id: 'feed' as const, path: '/home', label: 'Bảng tin học thuật', icon: Home },
     { id: 'search' as const, path: '/search', label: 'Tìm kiếm & Khám phá', icon: Search, badge: 'Hot' },
+    { id: 'communities' as const, path: '/communities', label: 'Cộng đồng & Diễn đàn', icon: Compass, badge: 'Mới' },
     ...(user?.username
       ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ cá nhân', icon: User }]
       : []),
     { id: 'courses' as const, path: '/search?type=courses', label: 'Học phần & Môn học', icon: GraduationCap },
     { id: 'documents' as const, path: '/search?type=documents', label: 'Kho tài liệu & Đề thi', icon: FileText },
-    { id: 'groups' as const, path: '/search?type=groups', label: 'Ghép nhóm đồ án PBL', icon: Users, badge: 'Tuyển' }
+    { id: 'qa' as const, path: '/search?type=qa', label: 'Hỏi đáp & Thảo luận', icon: HelpCircle }
   ]
 
   const facultyTags = [

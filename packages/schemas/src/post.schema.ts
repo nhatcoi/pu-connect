@@ -41,7 +41,9 @@ export const CreatePostSchema = z.object({
   recruitSlotsTotal: z.number().int().nonnegative().optional(),
   recruitSlotsFilled: z.number().int().nonnegative().optional(),
   pollQuestion: z.string().optional(),
-  pollOptions: z.array(z.string()).optional()
+  pollOptions: z.array(z.string()).optional(),
+  communityId: z.string().optional(),
+  communitySlug: z.string().optional()
 })
 
 export const UpdatePostSchema = z.object({
@@ -80,6 +82,9 @@ export const PostItemSchema = z.object({
   courseId: z.string().nullable().optional(),
   courseCode: z.string().nullable().optional(),
   courseName: z.string().nullable().optional(),
+  communityId: z.string().nullable().optional(),
+  communitySlug: z.string().nullable().optional(),
+  communityName: z.string().nullable().optional(),
   facultyCode: z.string().nullable().optional(),
   targetAudience: TargetAudienceEnum.default('everyone'),
   isPinned: z.boolean().default(false),

@@ -32,7 +32,7 @@ export const INTENT_TABS: {
   },
   {
     type: 'group_recruit',
-    label: 'Tuyển nhóm PBL',
+    label: 'Học nhóm',
     icon: Users
   }
 ]

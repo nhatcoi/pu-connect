@@ -23,7 +23,7 @@ export class StorageController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
   async uploadSingleFile(
     @UploadedFile() file: Express.Multer.File,
-    @Query('folder') folder?: 'posts/images' | 'documents' | 'avatars',
+    @Query('folder') folder?: 'posts/images' | 'documents' | 'avatars' | 'banners',
     @Req() req?: Request
   ) {
     if (!file) {
@@ -49,7 +49,7 @@ export class StorageController {
   @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 50 * 1024 * 1024 } }))
   async uploadMultipleFiles(
     @UploadedFiles() files: Express.Multer.File[],
-    @Query('folder') folder?: 'posts/images' | 'documents' | 'avatars',
+    @Query('folder') folder?: 'posts/images' | 'documents' | 'avatars' | 'banners',
     @Req() req?: Request
   ) {
     if (!files || files.length === 0) {

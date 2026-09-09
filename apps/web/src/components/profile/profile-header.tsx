@@ -9,21 +9,28 @@ import {
   MapPin,
   IdCard,
   GraduationCap,
-  Sparkles,
   Edit3,
-  Mail
+  Mail,
+  CheckCircle2,
+  Settings,
+  BookOpen,
+  School,
+  Globe
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import type { UserProfileData } from '@/hooks/use-profile'
 import { toast } from 'sonner'
 import { FollowButton } from './follow-button'
 import { UserListDialog } from './user-list-dialog'
+import { EditProfileDialog } from './edit-profile-dialog'
+import { PrivacySettingsDialog } from './privacy-settings-dialog'
 
 interface ProfileHeaderProps {
   profile: UserProfileData
+  onRefetch?: () => void
 }
 
-export function ProfileHeader({ profile }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
   const currentUser = useAppStore((state) => state.user)
   const isOwnProfile =
     currentUser?.username?.toLowerCase() === profile.username?.toLowerCase() ||
@@ -38,6 +45,9 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     open: false,
     type: 'followers'
   })
+
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
 
   const initials = (profile.displayName || profile.username || 'PU')
     .slice(0, 2)
@@ -60,10 +70,51 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         onOpenChange={(open) => setListDialog((prev) => ({ ...prev, open }))}
       />
 
+      {/* Edit Profile Dialog */}
+      <EditProfileDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        initialData={{
+          displayName: profile.displayName,
+          bio: profile.bio,
+          school: profile.school,
+          faculty: profile.faculty,
+          major: profile.major,
+          academicYear: profile.academicYear,
+          className: profile.className,
+          avatarUrl: profile.avatarUrl,
+          bannerUrl: profile.bannerUrl,
+          location: profile.location,
+          website: profile.website,
+          birthDate: profile.birthDate
+        }}
+        onSuccess={() => {
+          if (onRefetch) onRefetch()
+        }}
+      />
+
+      {/* Privacy Settings Dialog */}
+      <PrivacySettingsDialog
+        open={isPrivacyOpen}
+        onOpenChange={setIsPrivacyOpen}
+        isVerified={profile.isVerified}
+        email={profile.email}
+        onSuccess={() => {
+          if (onRefetch) onRefetch()
+        }}
+      />
+
       {/* Cover Image Banner */}
       <div className="relative h-36 sm:h-44 w-full bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 overflow-hidden">
+        {profile.bannerUrl && (
+          <img
+            src={profile.bannerUrl}
+            alt="Cover banner"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
-        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs text-white/90 border border-white/10 font-medium">
+        <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs text-white/90 border border-white/10 font-medium z-10">
           <GraduationCap className="h-3.5 w-3.5 text-primary" />
           <span>Phenikaa University</span>
         </div>
@@ -73,24 +124,45 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
       <div className="px-4 sm:px-5 pb-5">
         {/* Avatar & Action Button Row */}
         <div className="flex justify-between items-end -mt-12 sm:-mt-14 mb-3">
-          <Avatar className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border-4 border-card shadow-lg bg-muted ring-2 ring-primary/20">
-            <AvatarImage src={profile.avatarUrl || ''} alt={profile.displayName} />
-            <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl sm:text-2xl">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border-4 border-card shadow-lg bg-muted ring-2 ring-primary/20">
+              <AvatarImage src={profile.avatarUrl || ''} alt={profile.displayName} />
+              <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl sm:text-2xl">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {profile.isVerified && (
+              <div
+                className="absolute bottom-1 right-1 bg-card rounded-full p-0.5 shadow-md"
+                title="Tài khoản sinh viên chính quy Phenikaa đã xác thực"
+              >
+                <CheckCircle2 className="h-5 w-5 text-blue-500 fill-blue-500/20" />
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             {isOwnProfile ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="font-semibold rounded-full border-border hover:bg-muted text-xs h-8"
-                onClick={() => toast.info('Tính năng chỉnh sửa hồ sơ đang được hoàn thiện!')}
-              >
-                <Edit3 className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
-                Chỉnh sửa hồ sơ
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-semibold rounded-full border-border hover:bg-muted text-xs h-8"
+                  onClick={() => setIsEditOpen(true)}
+                >
+                  <Edit3 className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                  Chỉnh sửa hồ sơ
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsPrivacyOpen(true)}
+                  title="Cài đặt quyền riêng tư"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </>
             ) : (
               <>
                 <Button
@@ -126,11 +198,17 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         </div>
 
         {/* Name & Academic Credentials */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-              {profile.displayName}
+            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-foreground flex items-center gap-1.5">
+              <span>{profile.displayName}</span>
+              {profile.isVerified && (
+                <span title="Tích Xanh sinh viên chính quy Phenikaa">
+                  <CheckCircle2 className="h-4 w-4 text-blue-500 fill-blue-500/20 shrink-0" />
+                </span>
+              )}
             </h1>
+
             {profile.role === 'lecturer' ? (
               <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-[11px] font-medium py-0">
                 Giảng viên
@@ -144,29 +222,48 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
                 Sinh viên
               </Badge>
             )}
-
-            {/* Reputation Points Badge */}
-            <div className="flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded-full text-xs font-semibold">
-              <Sparkles className="h-3 w-3" />
-              <span>{profile.reputationPoints || 100} Điểm danh vọng</span>
-            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
-            <span>@{profile.username}</span>
+          {/* Academic Info Hierarchy: School, Khoa, Major, Class, Year, MSSV */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground/90">@{profile.username}</span>
+
             {profile.studentId && (
               <div className="flex items-center gap-1">
-                <IdCard className="h-3.5 w-3.5" />
-                <span>Mã SV: {profile.studentId}</span>
+                <IdCard className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>MSSV: {profile.studentId}</span>
               </div>
             )}
-            {profile.faculty && (
+
+            {profile.school && (
+              <div className="flex items-center gap-1 font-medium text-foreground/85">
+                <School className="h-3.5 w-3.5 text-primary" />
+                <span>{profile.school}</span>
+              </div>
+            )}
+
+            {profile.faculty && profile.faculty !== profile.school && (
               <div className="flex items-center gap-1 font-medium text-foreground/80">
                 <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                <span>Khoa {profile.faculty}</span>
+                <span>{profile.faculty.startsWith('Khoa') || profile.faculty.startsWith('Viện') || profile.faculty.startsWith('Trung tâm') ? profile.faculty : `Khoa ${profile.faculty}`}</span>
               </div>
             )}
-            {profile.academicYear && <span>• {profile.academicYear}</span>}
+
+            {profile.major && (
+              <div className="flex items-center gap-1 font-medium text-primary">
+                <BookOpen className="h-3.5 w-3.5 text-primary" />
+                <span>{profile.major}</span>
+              </div>
+            )}
+
+            {profile.className && (
+              <div className="flex items-center gap-1">
+                <School className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Lớp {profile.className}</span>
+              </div>
+            )}
+
+            {profile.academicYear && <span>• Khóa {profile.academicYear}</span>}
           </div>
         </div>
 
@@ -181,8 +278,21 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <MapPin className="h-3 w-3" />
-            <span>Trường Đại học Phenikaa</span>
+            <span>{profile.location || 'Trường Đại học Phenikaa'}</span>
           </div>
+          {profile.website && (
+            <div className="flex items-center gap-1">
+              <Globe className="h-3 w-3 text-primary" />
+              <a
+                href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-primary hover:underline truncate max-w-[200px]"
+              >
+                {profile.website.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          )}
           <div className="flex items-center gap-1">
             <Calendar className="h-3 w-3" />
             <span>Tham gia {formattedDate}</span>
@@ -216,4 +326,3 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
     </div>
   )
 }
-

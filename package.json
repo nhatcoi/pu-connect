@@ -5,6 +5,9 @@
   "packageManager": "pnpm@9.15.4",
   "scripts": {
     "build": "turbo run build",
+    "build:fe": "turbo run build --filter=@pu/web",
+    "build:api": "turbo run build --filter=@pu/api",
+    "start": "turbo run start",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

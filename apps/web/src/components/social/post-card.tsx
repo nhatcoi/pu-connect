@@ -377,7 +377,6 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 {/* Academic Role Badge */}
                 <AcademicBadge
                   role={post.author?.role}
-                  reputationPoints={post.author?.reputationPoints}
                 />
               </div>
 
@@ -398,8 +397,18 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 {post.postType === 'group_recruit' && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground">
                     <Users className="h-3 w-3 text-emerald-500" />
-                    <span>Tuyển PBL</span>
+                    <span>Học nhóm</span>
                   </span>
+                )}
+
+                {post.communitySlug && (
+                  <Link
+                    href={`/c/${post.communitySlug}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/25 px-2 py-0.5 text-[10px] font-mono font-bold text-primary transition-colors shrink-0"
+                  >
+                    <span>c/{post.communitySlug}</span>
+                  </Link>
                 )}
 
                 {courseBadge && (

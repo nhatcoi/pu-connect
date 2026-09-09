@@ -74,7 +74,7 @@ export function RightSidebar() {
     { tag: '#DoAnTotNghiep2026', count: '142 bài viết', category: 'K15 Đồ án' },
     { tag: '#OnThiGiaiTich2', count: '89 bài viết', category: 'Toán học' },
     { tag: '#PhenikaaX_Robocon', count: '64 bài viết', category: 'Công nghệ' },
-    { tag: '#TuyenThanhVienPBL', count: '53 bài viết', category: 'Nhóm đồ án' }
+    { tag: '#HocBongKhuyenKhich', count: '53 bài viết', category: 'Học bổng' }
   ]
 
   const fallbackStudents: SuggestedUser[] = [

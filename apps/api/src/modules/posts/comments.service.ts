@@ -109,13 +109,7 @@ export class CommentsService {
         [data.postId]
       )
 
-      // 5. Atomically reward +2 reputation points
-      await client.query(
-        `UPDATE users SET reputation_points = reputation_points + 2 WHERE id = $1`,
-        [authorId]
-      )
-
-      this.logger.log(`[CommentCreated] User ${authorId} commented on post ${data.postId} (+2 rep).`)
+      this.logger.log(`[CommentCreated] User ${authorId} commented on post ${data.postId}.`)
 
       return {
         id: commentRow.id,
@@ -136,7 +130,7 @@ export class CommentsService {
           avatarUrl: author.avatar_url,
           role: author.role,
           faculty: author.faculty,
-          reputationPoints: (author.reputation_points || 100) + 2
+          reputationPoints: author.reputation_points || 0
         }
       }
     })
@@ -187,18 +181,9 @@ export class CommentsService {
         [newStatus, row.post_id]
       )
 
-      // Event: Award +10 reputation points to solution author
-      if (newStatus && row.comment_author_id !== currentUserId) {
-        await client.query(
-          `UPDATE users SET reputation_points = reputation_points + 10 WHERE id = $1`,
-          [row.comment_author_id]
-        )
-        this.logger.log(`Awarded +10 reputation points to solution author ${row.comment_author_id}`)
-      }
-
       return {
         isSolution: newStatus,
-        message: newStatus ? 'Đã duyệt lời giải chính xác (+10 danh vọng)' : 'Đã hủy duyệt lời giải'
+        message: newStatus ? 'Đã duyệt câu trả lời chính xác' : 'Đã hủy duyệt lời giải'
       }
     })
   }

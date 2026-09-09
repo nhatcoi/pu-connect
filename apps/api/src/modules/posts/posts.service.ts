@@ -26,7 +26,7 @@ export class PostsService {
     const safeOffset = Math.max(0, offset)
 
     let scoreCalculation = `0.0`
-    let joins = ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id`
+    let joins = ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id`
 
     const params: any[] = []
 
@@ -89,6 +89,7 @@ export class PostsService {
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
              u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
              c.code as course_code, c.name as course_name,
+             comm.slug as community_slug, comm.name as community_name,
              ${scoreCalculation} as recommendation_score
     `
 
@@ -127,7 +128,8 @@ export class PostsService {
              u.id as author_user_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
              u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
-             c.code as course_code, c.name as course_name
+             c.code as course_code, c.name as course_name,
+             comm.slug as community_slug, comm.name as community_name
     `
     const params: any[] = [id]
 
@@ -140,7 +142,7 @@ export class PostsService {
       sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me, FALSE as is_author_followed_by_me`
     }
 
-    sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id WHERE p.id = $1 LIMIT 1`
+    sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id WHERE p.id = $1 LIMIT 1`
 
     const res = await this.db.query(sql, params)
     if (res.rows.length === 0) {
@@ -181,6 +183,24 @@ export class PostsService {
         }
       }
 
+      // 2.1. Resolve community
+      let communityUuid: string | null = null
+      let communitySlug: string | null = null
+      let communityName: string | null = null
+
+      if (data.communityId || data.communitySlug) {
+        const commTarget = data.communityId || data.communitySlug
+        const commRes = await client.query(
+          `SELECT id, slug, name FROM communities WHERE id::text = $1 OR slug = $1 LIMIT 1`,
+          [commTarget]
+        )
+        if (commRes.rows.length > 0) {
+          communityUuid = commRes.rows[0].id
+          communitySlug = commRes.rows[0].slug
+          communityName = commRes.rows[0].name
+        }
+      }
+
       // 3. Normalize post_type
       let dbPostType = 'general'
       if (data.postType === 'qa' || (data.postType as any) === 'question') {
@@ -196,12 +216,13 @@ export class PostsService {
       // 4. Insert Post into PostgreSQL
       const insertRes = await client.query(
         `INSERT INTO posts (
-          author_id, course_id, post_type, title, content, tags, media_urls, attached_document_ids, visibility
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          author_id, course_id, community_id, post_type, title, content, tags, media_urls, attached_document_ids, visibility
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           authorId,
           courseUuid,
+          communityUuid,
           dbPostType,
           data.title || data.content.slice(0, 50),
           data.content,
@@ -251,17 +272,20 @@ export class PostsService {
         }
       }
 
-      // 6. Reward +5 reputation points for author
-      await client.query(
-        `UPDATE users SET reputation_points = reputation_points + 5 WHERE id = $1`,
-        [authorId]
-      )
 
       // 7. Increment post_count for course
       if (courseUuid) {
         await client.query(
           `UPDATE courses SET post_count = post_count + 1 WHERE id = $1`,
           [courseUuid]
+        )
+      }
+
+      // 8. Increment posts_count for community
+      if (communityUuid) {
+        await client.query(
+          `UPDATE communities SET posts_count = posts_count + 1 WHERE id = $1`,
+          [communityUuid]
         )
       }
 
@@ -283,6 +307,9 @@ export class PostsService {
         courseId: courseUuid,
         courseCode,
         courseName,
+        communityId: communityUuid,
+        communitySlug,
+        communityName,
         facultyCode: authorUser.faculty,
         targetAudience: data.targetAudience || 'everyone',
         isPinned: false,
@@ -641,6 +668,9 @@ export class PostsService {
       courseId: row.course_id,
       courseCode: row.course_code || null,
       courseName: row.course_name || null,
+      communityId: row.community_id || null,
+      communitySlug: row.community_slug || null,
+      communityName: row.community_name || null,
       facultyCode: row.faculty_code || row.author_faculty || null,
       targetAudience: 'everyone',
       isPinned: !!row.is_pinned,

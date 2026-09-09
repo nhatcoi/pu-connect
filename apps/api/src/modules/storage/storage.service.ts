@@ -37,7 +37,7 @@ export class StorageService {
     fileBuffer: Buffer,
     fileName: string,
     mimeType: string,
-    folder: 'posts/images' | 'documents' | 'avatars' = 'posts/images',
+    folder: 'posts/images' | 'documents' | 'avatars' | 'banners' = 'posts/images',
     userId?: string
   ): Promise<{ url: string; key: string; size: number }> {
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')

@@ -84,6 +84,14 @@ pnpm dev
 pnpm build
 ```
 
+### 4. Khởi chạy môi trường Production
+Chạy đồng thời cả **Web Next.js (port 3000)** và **API NestJS (port 4000)** ở chế độ Production qua Turborepo:
+```bash
+pnpm start
+```
+* **Web Client:** [http://localhost:3000](http://localhost:3000)
+* **API Backend:** [http://localhost:4000/api](http://localhost:4000/api)
+
 ---
 
 ## 📱 Hướng dẫn mở rộng Mobile App (React Native) sau này

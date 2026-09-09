@@ -175,7 +175,7 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
 
       if (res && res.data) {
         setUser(res.data)
-        toast.success('Hồ sơ học thuật đã sẵn sàng! Nhận ngay +100 Điểm danh vọng 🎉')
+        toast.success('Hồ sơ học thuật đã sẵn sàng! Chào mừng bạn gia nhập PU Connector 🎉')
         if (onComplete) onComplete()
       }
     } catch (err: any) {
@@ -408,18 +408,17 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
                 </DialogDescription>
               </div>
 
-              {/* Reward Box */}
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-                  <Award className="h-5 w-5" />
+              {/* Welcome Box */}
+              <div className="p-3.5 rounded-2xl bg-primary/10 border border-primary/20 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                  <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                    <span>Thưởng chào mừng Tân sinh viên</span>
-                    <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                    <span>Chào mừng bạn đến với Phenikaa University Network</span>
                   </h4>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Nhận ngay <strong className="text-amber-600 dark:text-amber-400">+100 Điểm danh vọng</strong> sau khi hoàn tất!
+                    Kết nối cùng giảng viên và bạn bè trong khoa để bắt đầu chia sẻ kiến thức học thuật.
                   </p>
                 </div>
               </div>

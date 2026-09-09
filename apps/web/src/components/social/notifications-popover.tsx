@@ -99,7 +99,7 @@ export function NotificationsPopover() {
           },
           type: 'accepted_solution',
           title: 'Lời giải chính xác',
-          message: 'đã chọn câu trả lời của bạn là Lời giải chính xác (+25 điểm danh vọng).',
+          message: 'đã chọn câu trả lời của bạn là Lời giải chính xác.',
           entityId: '05a1f0c4-6324-4fa6-a5e1-d1740ed4bf73',
           entityType: 'post',
           isRead: false,

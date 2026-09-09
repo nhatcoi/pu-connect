@@ -8,11 +8,19 @@ export interface UserProfileData {
   username: string
   email: string
   studentId?: string | null
+  school?: string | null
   faculty?: string | null
   academicYear?: string | null
   avatarUrl?: string | null
+  bannerUrl?: string | null
   bio?: string | null
   role: string
+  major?: string | null
+  className?: string | null
+  location?: string | null
+  website?: string | null
+  birthDate?: string | null
+  isVerified?: boolean
   reputationPoints: number
   followersCount: number
   followingCount: number
@@ -36,6 +44,9 @@ const GET_USER_PROFILE_QUERY = `
       avatarUrl
       bio
       role
+      major
+      className
+      isVerified
       reputationPoints
       followersCount
       followingCount

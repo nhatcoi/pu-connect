@@ -16,7 +16,7 @@ export class UserResolver {
     @Args('username', { type: () => String }) username: string
   ): Promise<UserType | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, display_name, student_id, faculty, academic_year, avatar_url, bio, role, reputation_points, created_at
+      `SELECT id, email, username, display_name, student_id, faculty, academic_year, major, class_name, is_verified, avatar_url, bio, role, reputation_points, created_at
        FROM users
        WHERE username = $1 LIMIT 1`,
       [username.toLowerCase().trim()]
@@ -45,7 +45,7 @@ export class UserResolver {
 
     let sql = `
       SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
-             u.academic_year, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
+             u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
       FROM users u
       WHERE 1=1
     `
@@ -70,7 +70,7 @@ export class UserResolver {
   ): Promise<UserType[]> {
     const res = await this.db.query(
       `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
-              u.academic_year, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
+              u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
        FROM users u
        JOIN user_follows uf ON u.id = uf.follower_id
        WHERE uf.following_id = $1
@@ -87,7 +87,7 @@ export class UserResolver {
   ): Promise<UserType[]> {
     const res = await this.db.query(
       `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
-              u.academic_year, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
+              u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
        FROM users u
        JOIN user_follows uf ON u.id = uf.following_id
        WHERE uf.follower_id = $1
@@ -298,6 +298,9 @@ export class UserResolver {
       studentId: row.student_id,
       faculty: row.faculty,
       academicYear: row.academic_year,
+      major: row.major || null,
+      className: row.class_name || null,
+      isVerified: !!row.is_verified,
       avatarUrl: row.avatar_url,
       bio: row.bio,
       role: row.role,

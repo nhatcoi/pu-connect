@@ -14,6 +14,8 @@ import { SocialGraphQLModule } from './modules/graphql/social-graphql.module'
 import { StorageModule } from './modules/storage/storage.module'
 import { SearchModule } from './modules/search/search.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
+import { CommunitiesModule } from './modules/communities/communities.module'
+import { UsersModule } from './modules/users/users.module'
 
 @Module({
   imports: [
@@ -30,7 +32,9 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     DatabaseModule,
     SocialGraphQLModule,
     AuthModule,
+    UsersModule,
     PostsModule,
+    CommunitiesModule,
     DocumentsModule,
     RealtimeModule,
     CoursesModule,

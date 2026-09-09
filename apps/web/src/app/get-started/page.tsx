@@ -174,7 +174,7 @@ export default function GetStartedPage() {
       if (res && res.data) {
         setUser(res.data)
         setIsTransitioning(true)
-        toast.success('Hồ sơ học thuật đã sẵn sàng! Nhận ngay +100 Điểm danh vọng')
+        toast.success('Hồ sơ học thuật đã sẵn sàng! Chào mừng bạn gia nhập PU Connector')
         setTimeout(() => {
           router.replace('/home')
         }, 800)
@@ -452,17 +452,16 @@ export default function GetStartedPage() {
                   </div>
 
                   {/* Reward Box */}
-                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-3.5">
-                    <div className="h-11 w-11 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 shadow-xs">
-                      <Award className="h-6 w-6" />
+                  <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex items-center gap-3.5">
+                    <div className="h-11 w-11 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-xs">
+                      <Sparkles className="h-6 w-6" />
                     </div>
                     <div>
                       <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <span>Thưởng chào mừng Tân sinh viên</span>
-                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <span>Chào mừng bạn đến với Phenikaa University Network</span>
                       </h4>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Nhận ngay <strong className="text-amber-600 dark:text-amber-400">+100 Điểm danh vọng</strong> sau khi hoàn tất!
+                        Kết nối cùng giảng viên và bạn bè trong khoa để bắt đầu chia sẻ kiến thức học thuật.
                       </p>
                     </div>
                   </div>

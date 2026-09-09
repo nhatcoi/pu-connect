@@ -32,6 +32,15 @@ export class UserType {
   @Field()
   role: string
 
+  @Field(() => String, { nullable: true })
+  major?: string | null
+
+  @Field(() => String, { nullable: true })
+  className?: string | null
+
+  @Field(() => Boolean, { defaultValue: false, nullable: true })
+  isVerified?: boolean
+
   @Field(() => Int)
   reputationPoints: number
 

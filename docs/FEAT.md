@@ -1,121 +1,95 @@
-# PU Connector — Danh Mục Tính Năng & Lộ Trình Phát Triển
+# PU Connector — Danh Mục Tính Năng & Lộ Trình Phát Triển (14 Domains Architecture)
 
-Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế hoạch phát triển (Backlog & Roadmap) của hệ thống PU Connector.
+Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế hoạch phát triển (Roadmap) của hệ thống Mạng xã hội Sinh viên PU Connection.  
+*Hệ thống tập trung 100% vào giá trị học thuật và kết nối sinh viên thực chất, loại bỏ hoàn toàn các yếu tố điểm thưởng/gamification và nhóm đồ án PBL rườm rà.*
 
 ---
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+### 👤 Domain 1: Identity & Profile (Định Danh & Hồ Sơ Sinh Viên — Hoàn Thành 100%)
+- [x] 🪪 **Hồ sơ sinh viên chuẩn hóa**: Mã SV (MSSV), Họ tên hiển thị, Username, Email, Bio, Avatar, Khoa/Viện (`faculty`), Niên khóa (`academic_year`), Trường (`school`), Ngành (`major`), Lớp (`class_name`).
+- [x] 🏛️ **Cây Tổ chức Học thuật Đại học Phenikaa Chuẩn hóa (PU Academic Master Data & Constants)**: 7 Trường thành viên (`School`), các Khoa trực thuộc, Khoa độc lập (`Khoa Luật`, `Khoa Khoa học cơ bản`), 3 Viện nghiên cứu (PIAS, PHENA, PRATI), 4 Trung tâm và toàn bộ các Ngành đào tạo (`Major`), Niên khóa chuẩn hóa K14 - K19.
+- [x] ⚡ **Bộ chọn học thuật thông minh 1 chạm ([`AcademicUnitSelector`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/profile/academic-unit-selector.tsx))**: Tìm kiếm tức thời theo tên/mã viết tắt, tự động suy luận phân cấp (`inferAcademicHierarchy`: chọn Ngành tự động điền Trường & Khoa), hỗ trợ chuyển đổi chế độ nhập tùy chỉnh (Custom Mode).
+- [x] 🎓 **Chuyên ngành (`major`) & Lớp sinh hoạt (`class_name`)**: CSDL PostgreSQL bổ sung các cột chuyên sâu kèm B-Tree Index, hiển thị trực quan trên Header cá nhân.
+- [x] 🔵 **Huy hiệu Tích Xanh chính quy (University Verification)**: Tự động cấp Tích Xanh cho sinh viên sử dụng email trường (`@phenikaa-uni.edu.vn` hoặc `@st.phenikaa-uni.edu.vn`), endpoint `POST /api/users/verify-university`.
+- [x] ⚙️ **Cài đặt quyền riêng tư sinh viên ([`PrivacySettingsDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/profile/privacy-settings-dialog.tsx))**: Cho phép sinh viên chủ động bật/tắt hiển thị Email công khai, hiển thị MSSV, hiển thị Lớp sinh hoạt và Chế độ hồ sơ riêng tư.
+- [x] 🛡️ **Lọc bảo mật dữ liệu phía Server**: Endpoint `GET /api/users/:username` và GraphQL `userProfile` tự động ẩn Email, MSSV, Lớp của sinh viên khi người xem không phải chính chủ và sinh viên đã tắt hiển thị.
+- [x] ✏️ **Hộp thoại chỉnh sửa hồ sơ thích ứng Theme & Quản lý Ảnh Bìa Toàn diện ([`EditProfileDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/profile/edit-profile-dialog.tsx))**: Endpoint `PATCH /api/users/profile`, 100% Theme Adaptive (Light/Dark mode bằng CSS semantic tokens `bg-card`, `border-border`, `bg-foreground text-background`), tải lên ảnh bìa R2 (`/api/upload/file?folder=banners`), bộ sưu tập 4 ảnh bìa campus mẫu (`Palette`), đặt lại ảnh bìa (`RotateCcw`), avatar camera overlay, thẻ *"Edit your photo with Imagine"* sinh avatar AI đa phong cách, tích hợp bộ chọn học thuật và `Birth date`.
+- [x] 🤝 **Mạng lưới kết nối sinh viên & giảng viên (`user_follows`)**: Bảng quan hệ theo dõi, cơ chế `toggleFollow`, modal danh sách Followers & Following.
+- [x] 🚫 **Loại bỏ triệt để Gamification & PBL Clutter**: Xóa bỏ vĩnh viễn việc cộng `reputation_points`, xóa nhãn "Điểm danh vọng" trên Header, PostCard, ProfileHeader, Onboarding và Comments; loại bỏ tab Nhóm PBL và tab Huy hiệu trên trang cá nhân `/[username]`.
+
 ### 🏗️ Kiến Trúc & Nền Tảng (Core & Infrastructure)
-- [x] 📦 **Monorepo Turborepo + pnpm (`apps/web`, `apps/api`, `packages/schemas`, `packages/ui`)**: Tách biệt rõ ràng giữa Client, Server và Shared Library.
+- [x] 📦 **Monorepo Turborepo + pnpm (`apps/web`, `apps/api`, `packages/schemas`)**: Tách biệt rõ ràng giữa Client, Server và Shared Library.
 - [x] ⚡ **Quản lý tiến trình tập trung (`procman.yaml`)**: Chạy toàn bộ hệ thống (`db`, `api`, `web`) chỉ với 1 lệnh `procman up`.
-- [x] 🗄️ **Cơ sở dữ liệu chuẩn hóa (`PostgreSQL 16 + pgvector`)**: Thiết kế DDL 11 bảng phân hệ học thuật, môn học, tài liệu, nhóm đồ án, sự kiện và tương tác.
+- [x] 🗄️ **Cơ sở dữ liệu chuẩn hóa (`PostgreSQL 16 + pgvector`)**: Thiết kế DDL 12 bảng phân hệ học thuật, môn học, tài liệu, diễn đàn cộng đồng và tương tác.
 - [x] 🛡️ **Quản lý ACID Transaction ([`DatabaseService.transaction`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/api/src/database/database.service.ts))**: Bọc mọi luồng ghi dữ liệu quan trọng trong atomic transaction với row-level lock (`FOR UPDATE`), tự động rollback khi có lỗi và cảnh báo `Slow Transaction [>300ms]`.
-- [x] 🚀 **Chỉ mục hiệu năng cao ([`add-indexes.sql`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/api/src/database/add-indexes.sql))**: Đánh chỉ mục **GIN Index** cho `tags`, `interests`, `skills` và Composite B-Tree Index cho `created_at DESC`, `comments`, `reactions`.
+- [x] 🚀 **Chỉ mục hiệu năng cao**: Đánh chỉ mục **GIN Index** cho `tags`, `interests`, `skills` và Composite B-Tree Index cho `created_at DESC`, `major`, `class_name`, `is_verified`.
 - [x] 🔐 **Xác thực phiên làm việc an toàn (`Session-based Auth & Passport.js`)**: Đăng ký, đăng nhập với cookie HttpOnly (`pu_session`), mã hóa bcrypt và phân quyền theo vai trò (`student`, `lecturer`, `ta`, `admin`).
 - [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
-- [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau (Feed, Profile, Documents, PBL Groups) và giữ REST API cho Session Auth & Upload File lớn.
-- [x] 🛠️ **Đồng bộ hóa Enum & Truy vấn SQL Bảng tin (`post_type_enum`)**: Chuẩn hóa map hai chiều giữa kiểu bài viết Client (`qa`, `document`, `group_recruit`, `review`) và PostgreSQL Enum (`question`, `resource_share`, `pbl_recruitment`, `review`), khắc phục triệt để lỗi 500 khi lọc tab môn học (`feedType=courses`).
-- [x] 🗄️ **Tích hợp PostgreSQL Client cho Courses & Documents**: Chuyển đổi `CoursesService` và `DocumentsService` sang truy vấn trực tiếp từ bảng cơ sở dữ liệu PostgreSQL.
+- [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau và REST API cho Session Auth, Profile updates, Upload File lớn.
+
+### 🎨 Chuyển Đổi Toàn Diện Sang Animate UI (Animate UI Migration & Motion Design)
+- [x] 🎭 **Tích Hợp Toàn Diện Bộ Thư Viện Animate UI Chuẩn Hóa (`motion/react` + Radix UI Primitives)**:
+  - Hiệu ứng vật lý lò xo (Spring Physics), tương tác mượt mà và Zero Layout Shift (CLS).
+  - Đầy đủ bộ Primitives: `Button`, `Highlight`, `AutoHeight`, `Dialog`, `DropdownMenu`, `Tabs`, `Tooltip`, `Popover`, `Switch`.
+  - Tái cấu trúc consumer components trong `src/components/ui/` đạt 100% Backward Compatibility.
 
 ### ☁️ Lưu Trữ Đám Mây & Tệp Tin (Cloudflare R2 Storage)
 - [x] ☁️ **Tích hợp Cloudflare R2 Object Storage (`@aws-sdk/client-s3`)**: Lưu trữ media, ảnh đính kèm bài viết và tệp tài liệu học phần bảo mật với Zero Egress Fee.
 - [x] 📤 **Endpoints Tải Lên Đa Năng (`/api/storage/upload` & `/api/storage/presigned-url`)**: Hỗ trợ upload ảnh bài viết, avatar, file slide/đề thi PDF kèm kiểm tra định dạng và kích thước.
 
 ### 🌐 Định Tuyến & Giao Diện Chuẩn X (Routing & Social UI)
-- [x] 🌟 **Landing Page phong cách X (`/` - Happening now)**: Giao diện chào đón khi chưa đăng nhập, tự động chuyển tiếp sang `/home` nếu đã có session, tích hợp hộp đăng nhập nhanh với 100 tài khoản mẫu seed.
+- [x] 🌟 **Landing Page phong cách X (`/` - Happening now)**: Giao diện chào đón khi chưa đăng nhập, tự động chuyển tiếp sang `/home` nếu đã có session.
 - [x] 📱 **Kiến Trúc Responsive Chuẩn X & Điều Hướng Di Động Hoàn Hảo**:
-  - **Giao diện hẹp / Tablet (768px – 1200px)**: Sidebar tự động thu gọn về dạng cột icon tinh gọn (`w-16`), nút đăng bài icon tròn, avatar người dùng ở chân trang, loại bỏ 100% hiện tượng tràn ngang (Horizontal Scrollbar).
-  - **Giao diện Mobile (< 768px)**: Header chuẩn X tinh gọn (Avatar góc trái, Logo biểu trưng PU tối giản căn giữa tuyệt đối, Nút con nhộng Pill Action `Đăng bài` góc phải), luồng cuộn tự nhiên không cố định giúp giải phóng 100% viewport, Tab bar dính chuẩn `top-0`, thanh điều hướng đáy màn hình (**Mobile Bottom Navigation Bar** - 5 phân hệ chính).
-  - **Header Tìm Kiếm Di Động Chuyên Biệt**: Trang `/search` tự động hiển thị thanh tìm kiếm Pill Shape kèm icon Cài đặt bánh răng ⚙️, loại bỏ hoàn toàn header trùng lặp.
-- [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`...), tự động chuyển hướng khách chưa đăng nhập về trang chủ, tự động khóa `/home` và chuyển hướng sang `/get-started` nếu tài khoản chưa hoàn tất khởi tạo hồ sơ.
-- [x] 🚀 **Trang Khởi Tạo Hồ Sơ Tân Sinh Viên Chuyên Biệt (`/get-started` - Standalone No Background)**: Trang toàn màn hình độc lập 100% (không lộ background `/home`), thiết kế giao diện Lucide SVG chuyên nghiệp, 4 bước (Mã SV, Khoa/Viện, Môn học, Kỹ năng, Follows), hiệu ứng Transition nạp bảng tin và thưởng ngay **+100 Điểm danh vọng**.
+  - Tablet: Sidebar tự động thu gọn về dạng cột icon (`w-16`), loại bỏ 100% horizontal scroll.
+  - Mobile (< 768px): Header chuẩn X tinh gọn, Tab bar dính chuẩn, Mobile Bottom Navigation Bar (5 phân hệ chính).
+- [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`, `/communities`...).
 - [x] 🏛️ **Bảng tin 3 cột chuẩn X (`/home`)**: Sidebar điều hướng $\rightarrow$ Feed học thuật với Tab dính (*Dành cho bạn / Môn học / Kho tài liệu*) $\rightarrow$ Xu hướng & Gợi ý kết nối.
-- [x] 👤 **Trang cá nhân sinh viên / giảng viên (`/[username]`)**: Banner ảnh bìa, Avatar, Khoa/Viện, Mã SV, Niên khóa, 4 Tabs chuyển đổi (Bài viết, Tài liệu, Nhóm PBL, Huy hiệu thành tích) truy vấn 100% qua GraphQL `userProfile`.
-- [x] 🧠 **Thuật Toán Đề Xuất Bài Viết Cá Nhân Hóa (Hybrid Recommendation Engine)**: Chấm điểm bài viết trên Tab *"Dành cho bạn"* kết hợp Môn học ($+40$), Cùng Khoa ($+30$), Cùng Niên khóa ($+15$), Người đang Follow ($+35$), Độ tương tác ($2\times L + 5\times C$) và Hệ số suy giảm thời gian (Time Decay $-2.0 / 24\text{h}$).
-- [x] 📜 **Cuộn vô hạn bảng tin (Infinite Scroll Feed)**: Tải dữ liệu phân trang mượt mà qua `IntersectionObserver`, tự động lọc trùng ID (Deduplication) và bảo toàn vị trí cuộn.
-- [x] 🤝 **Hệ thống theo dõi & Kết nối bạn bè (`user_follows`)**: Bảng quan hệ theo dõi sinh viên/giảng viên, tự động ưu tiên phân phối bài viết trên Bảng tin.
+- [x] 👤 **Trang cá nhân sinh viên / giảng viên (`/[username]`)**: Banner ảnh bìa, Avatar kèm Tích Xanh, Chuyên ngành, Lớp sinh hoạt, Khoa/Viện, 3 Tabs học thuật chuẩn mực: **Bài viết**, **Tài liệu**, **Hỏi đáp Q&A**.
+- [x] 🧠 **Thuật Toán Đề Xuất Bài Viết Cá Nhân Hóa (Hybrid Recommendation Engine)**: Chấm điểm bài viết trên Tab *"Dành cho bạn"* kết hợp Môn học ($+40$), Cùng Khoa ($+30$), Cùng Niên khóa ($+15$), Người đang Follow ($+35$), Độ tương tác và Hệ số suy giảm thời gian.
 
 ### 📝 Bảng Tin Học Thuật & Soạn Thảo (Academic Feed & Q&A)
-- [x] ✍️ **Trình Soạn Thảo Độc Lập Chuẩn X ([`AcademicPostComposer`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/composer/academic-post-composer.tsx))**: Soạn thảo trực tiếp trên đỉnh feed (không dùng popup modal thô cứng), tự động mở rộng, vòng đo độ dài ký tự SVG (Progress Ring), bộ chọn phạm vi người xem (Audience Menu) và bộ chọn môn học ([`ComposerCoursePicker`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/composer/composer-course-picker.tsx)).
-- [x] 📊 **Khảo Sát Biểu Quyết Sinh Viên (Post Polls & Voting)**: Bảng `post_polls`, `post_poll_options`, `post_poll_votes`, cho phép tạo câu hỏi khảo sát 2-4 lựa chọn ngay trong Composer, hiển thị thanh tiến trình % bình chọn sinh động thời gian thực ([`PostPollCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-poll-card.tsx)), endpoint `POST /api/posts/:id/vote-poll`.
-- [x] 🔔 **Trung Tâm Thông Báo Nổi Realtime (Notification Hub Popover)**: Gắn icon Chuông trên Header ([`NotificationsPopover`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/notifications-popover.tsx)), hiển thị huy hiệu đếm chưa đọc, phân loại 9 loại sự kiện (like, comment, duyệt lời giải đúng, xin vào nhóm), nút "Đã đọc tất cả", endpoint `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
-- [x] 🎖️ **Hệ Thống Huy Hiệu Định Danh Học Thuật Trực Quan ([`AcademicBadge`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/ui/academic-badge.tsx))**: Phân định rõ ràng vai trò người đăng bài/bình luận: 🎓 Giảng viên (Verified Lecturer), 🌟 Trợ giảng (TA), 👑 Ban Quản trị (Admin), 🏆 Top Contributor (Sinh viên có $\ge 300$ điểm danh vọng).
-- [x] 🎛️ **Menu Tùy Chọn 3 Chấm Chuẩn X Tinh Gọn ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
-  - Tối ưu hóa menu 3 dots (`...`) tinh gọn tuyệt đối, loại bỏ tính năng trùng lặp "Sao chép liên kết" (đã có ở nút Share bên dưới), chỉ tập trung vào các thao tác cốt lõi:
-  - **Dành cho Người xem (Viewer)**:
-    - 👤 **Theo dõi / Bỏ theo dõi tác giả (`Follow / Unfollow @username`)**: Đồng bộ hóa quan hệ follow realtime qua GraphQL mutation `toggleFollow`.
-    - 🔕 **Không quan tâm bài viết này (`Not Interested`)**: Ẩn bài viết tức thì khỏi feed kèm banner Hoàn tác (Undo).
-    - 🛡️ **Báo cáo vi phạm (`Report Post`)**: Hộp thoại báo cáo vi phạm nội quy, lộ đề thi, đạo văn ([`ReportPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/report-post-dialog.tsx)).
-  - **Dành cho Tác giả / Quản trị viên (Owner / Admin)**:
-    - 📌 **Ghim lên đầu trang cá nhân / Bỏ ghim (`Pin / Unpin`)**: Endpoint `POST /api/posts/:id/pin` trong ACID transaction.
-    - ✏️ **Chỉnh sửa bài viết (`Edit Post`)**: Cập nhật tiêu đề, nội dung và hashtag ([`EditPostDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/edit-post-dialog.tsx)).
-    - 🗑️ **Xóa bài viết (`Delete Post`)**: Xóa an toàn trong ACID transaction kèm hoàn trừ post count môn học.
-- [x] 🎯 **Hàng Nút Tương Tác Chuẩn Hóa Theo Thứ Tự Mới ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
-  - Tái cấu trúc chuỗi 5 nút tương tác theo đúng chuẩn logic: **Tym (Like) → Bình luận (Comment) → Lưu (Bookmark) → Thống kê (Views & Analytics) → Chia sẻ (Share Menu)** (đã gỡ bỏ nút Đăng lại / Repost).
-  - Nút **Chia sẻ (Share)** chứa đầy đủ các tính năng: *Sao chép liên kết* (+ Toast), *Gửi qua tin nhắn*, *Chia sẻ lên X (Twitter)*.
-- [x] 🔗 **Phân Tích Cú Pháp Clickable Mentions `@` & Hashtags `#` ([`MarkdownPreview`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/renderer/markdown-preview.tsx))**: Tự động chuyển đổi `@username` thành liên kết đến trang cá nhân `/[username]` và `#tag` thành liên kết tìm kiếm chủ đề `/search?q=tag`.
-- [x] 📐 **Bố Cục Bài Viết Căn Lề Thẳng Hàng Chuẩn X ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**:
-  - Tách bố cục thành 2 cột độc lập (`flex items-start gap-3`): Cột trái là Avatar tác giả (`shrink-0`), Cột phải (`flex-1 min-w-0`) chứa toàn bộ Tên tác giả, Tiêu đề, Nội dung bài viết, Ảnh/Video, Khảo sát, Tài liệu đính kèm và Hàng nút tương tác (*Bình luận, Gửi nhóm, Thích, Lượt xem, Lưu, Chia sẻ*).
-  - Toàn bộ nội dung bài viết và nút chức năng được căn lề thẳng hàng với tên tác giả, tái hiện 100% trải nghiệm trực quan của X (Twitter).
-- [x] 🎨 **Bộ Nhận Diện Mục Đích Học Thuật ([`ComposerIntentSelector`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/composer/composer-intent-selector.tsx))**: Chọn phân loại: Thảo luận chung (`general`), Hỏi đáp (`qa`), Chia sẻ tài liệu (`document`), Tuyển nhóm PBL (`group_recruit`).
-- [x] 🖼️ **Lưới Hiển Thị Ảnh Chuẩn X ([`PostMediaGallery`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-media-gallery.tsx))**: Hiển thị 1, 2, 3 hoặc 4 ảnh dạng mosaic grid với bo góc chuẩn $16\text{px}$, lớp phủ số lượng ảnh thừa `+N` và xem ảnh toàn màn hình.
-- [x] 🔗 **Tính Năng Chia Sẻ Đa Dạng ([`PostCard`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-card.tsx))**: Dropdown menu: Sao chép liên kết (`Copy Link` + Toast), Gửi qua tin nhắn nhóm đồ án (`Via Chat`), Chia sẻ lên X (Twitter).
-- [x] 🔖 **Hệ Thống Lưu Bài Viết & Yêu Thích (Bookmarks & Saved Posts)**: Bảng `saved_posts` trong PostgreSQL, endpoint `POST /api/posts/:id/bookmark`, tab *"Đã lưu"* trên Bảng tin (`feedType=bookmarks`), nút bấm Bookmark trực quan trên `PostCard` với phản hồi Toast tức thời.
-- [x] 🏛️ **Bộ Tài Liệu Chuẩn Hóa Phân Hệ Core ([`/docs/core/`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/docs/core/README.md))**: 5 tài liệu phân tích và đặc tả kỹ thuật chi tiết 13 trụ cột của mạng xã hội học thuật PU Connection.
-- [x] ⏰ **Định Dạng Thời Gian Tương Đối Chuẩn Tiếng Việt ([`formatRelativeTime`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/lib/utils.ts))**: Hiển thị "Vừa xong", "X phút trước", "X giờ trước", "X ngày trước" cho toàn bộ bài viết và bình luận.
-- [x] 🏷️ **Hiển Thị Mã Môn Học Chuẩn Xác**: Thay thế toàn bộ mã UUID thô bằng mã môn học người dùng đọc được (ví dụ `📘 IT101`, `🏛️ FIT`).
+- [x] ✍️ **Trình Soạn Thảo Độc Lập Chuẩn X ([`AcademicPostComposer`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/composer/academic-post-composer.tsx))**: Soạn thảo trực tiếp trên đỉnh feed, vòng đo độ dài ký tự SVG (Progress Ring), bộ chọn phạm vi người xem và bộ chọn môn học.
+- [x] 📊 **Khảo Sát Biểu Quyết Sinh Viên (Post Polls & Voting)**: Tạo câu hỏi khảo sát 2-4 lựa chọn ngay trong Composer, hiển thị thanh tiến trình % bình chọn thời gian thực.
+- [x] 🔔 **Trung Tâm Thông Báo Nổi Realtime (Notification Hub Popover)**: Gắn icon Chuông trên Header, phân loại 9 loại sự kiện học tập, nút "Đã đọc tất cả".
+- [x] 🎖️ **Huy Hiệu Vai Trò Học Thuật Chính Thống ([`AcademicBadge`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/ui/academic-badge.tsx))**: 🎓 Giảng viên, 🌟 Trợ giảng (TA), 👑 Ban Quản trị, 👥 Chủ nhiệm CLB, 🎓 Cựu sinh viên.
+- [x] 🎛️ **Menu Tùy Chọn 3 Chấm Chuẩn X**: Theo dõi tác giả, Ẩn bài viết không quan tâm, Báo cáo vi phạm, Ghim bài, Chỉnh sửa, Xóa an toàn.
+- [x] 🎯 **Hàng Nút Tương Tác Chuẩn Hóa**: Tym (Like) → Bình luận (Comment) → Lưu (Bookmark) → Thống kê (Views) → Chia sẻ (Share).
+- [x] 🔗 **Phân Tích Cú Pháp Mentions `@` & Hashtags `#`**: Tự động chuyển đổi `@username` đến trang cá nhân và `#tag` đến tìm kiếm.
+- [x] 🖼️ **Lưới Hiển Thị Ảnh Chuẩn X ([`PostMediaGallery`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/post-media-gallery.tsx))**: Hiển thị 1-4 ảnh dạng mosaic grid với xem ảnh toàn màn hình.
+- [x] 🔖 **Hệ Thống Lưu Bài Viết (Bookmarks & Saved Posts)**: Tab *"Đã lưu"* trên Bảng tin, lưu trữ PostgreSQL.
 
 ### 🔍 Hệ Thống Tìm Kiếm & Khám Phá Chuẩn X (Search & Explore Engine)
-- [x] 🧭 **Tích Hợp Tìm Kiếm Trực Tiếp Vào Navigation (Nav Search Item)**: Đặt tab Tìm kiếm / Khám phá (`/search`) tại vị trí thứ 2 trên cả **Mobile Bottom Nav** và **Desktop Sidebar**, truy cập 1 chạm tức thì.
-- [x] 🌟 **Trang Khám Phá & Xu Hướng (Explore & Trending Hub - Mode A)**: Giao diện khi chưa nhập từ khóa:
-  - Header với Avatar + Thanh tìm kiếm + Nút cài đặt tìm kiếm ⚙️.
-  - 5 Tabs danh mục (*Khám phá, Xu hướng, Môn học hot, Đề thi & Slide, Nhóm PBL*).
-  - Tin nổi bật Phenikaa (*Today's Academic Highlights*) và Bảng xếp hạng từ khóa thịnh hành (*Trending Topics*) với số lượng bài viết.
-- [x] 📑 **Trang Kết Quả Tìm Kiếm Chuyên Sâu Chuẩn X (Active Search Stream - Mode B)**: Giao diện khi tìm kiếm từ khóa:
-  - Header với Nút Back $\leftarrow$, Input từ khóa (kèm nút xóa $X$), và Menu tùy chọn 3 chấm $\cdots$.
-  - 6 Tabs kết quả (*Hàng đầu, Mới nhất, Môn học, Tài liệu, Mọi người, Nhóm PBL*).
-  - Luồng kết quả kết hợp bài viết, tài liệu, môn học, người dùng và nhóm đồ án.
-- [x] ⚙️ **Cài Đặt & Bộ Lọc Tìm Kiếm Nâng Cao (Search Settings & Advanced Filter)**:
-  - Bottom Action Sheet (`...`) mở Cài đặt tìm kiếm, Bộ lọc và Tìm kiếm nâng cao.
-  - Dialog Cài đặt tìm kiếm ([`SearchSettingsDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/search/search-settings-dialog.tsx)) lưu trạng thái vào LocalStorage: Ẩn nội dung nhạy cảm, Loại bỏ tài khoản đã chặn, Ưu tiên môn học cùng Khoa/Viện.
-  - Dialog Tìm kiếm nâng cao ([`AdvancedSearchDialog`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/search/advanced-search-dialog.tsx)): Tìm theo cụm từ chính xác, hashtag, phân loại và khoa.
-- [x] 🚀 **Backend Full-Text Search Engine ([`SearchService`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/api/src/modules/search/search.service.ts))**: Endpoint `GET /api/search` truy vấn song song 5 bảng PostgreSQL với tốc độ $<10\text{ms}$.
+- [x] 🧭 **Tích Hợp Tìm Kiếm Trực Tiếp Vào Navigation**: Truy cập 1 chạm trên Bottom Nav và Sidebar.
+- [x] 🌟 **Trang Khám Phá & Xu Hướng (Mode A)**: 5 Tabs danh mục, Tin nổi bật Phenikaa và Bảng xếp hạng từ khóa thịnh hành.
+- [x] 📑 **Trang Kết Quả Tìm Kiếm Chuyên Sâu (Mode B)**: Kết hợp bài viết, tài liệu, môn học, người dùng và cộng đồng.
+- [x] 🚀 **Backend Full-Text Search Engine ([`SearchService`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/api/src/modules/search/search.service.ts))**: Truy vấn song song PostgreSQL $<10\text{ms}$.
 
 ### 💬 Hệ Thống Bình Luận & Duyệt Lời Giải (Academic Comments & Q&A)
-- [x] 💬 **Bình luận phân cấp & Phân trang ([`PostCommentsSection`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/comments/post-comments-section.tsx))**: Tải trước 3 bình luận, nút "Xem thêm N bình luận", hỗ trợ trả lời lồng nhau (Nested Replies) và thu gọn phản hồi.
-- [x] 🎯 **Cơ Chế Duyệt Lời Giải Chính Xác (Accepted Solution)**: Tác giả bài viết Q&A có quyền chọn và ghim câu trả lời chính xác lên đầu, hiển thị huy hiệu xanh lá và tự động đánh dấu bài viết `[Đã giải quyết]`.
-- [x] 🏆 **Hệ Thống Thưởng Danh Vọng Tự Động (Gamification)**:
-  - Đăng bài viết: **+5 điểm danh vọng**.
-  - Đóng góp bình luận: **+2 điểm danh vọng**.
-  - Được duyệt câu trả lời đúng (Accepted Solution): **+10 điểm danh vọng**.
+- [x] 💬 **Bình luận phân cấp & Phân trang ([`PostCommentsSection`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/comments/post-comments-section.tsx))**: Tải trước 3 bình luận, trả lời lồng nhau và thu gọn phản hồi.
+- [x] 🎯 **Cơ Chế Duyệt Lời Giải Chính Xác (Accepted Solution)**: Tác giả bài viết Q&A có quyền chọn và ghim câu trả lời chính xác lên đầu, hiển thị huy hiệu xanh lá và đánh dấu bài viết `[Đã giải quyết]`.
 
 ### 📚 Kho Tài Liệu & Đề Thi Học Phần (Knowledge Vault)
 - [x] 📑 **Phân loại tài liệu đa định dạng (`PDF`, `Code`, `Sheet`, `Markdown`)**: Tra cứu theo mã học phần và thẻ tag.
-- [x] 👁️ **Trình xem trước In-App (`PdfViewer` & `DocumentPreviewModal`)**: Xem trực tiếp file PDF với thanh công cụ phóng to/thu nhỏ, mở tab mới và tải về.
-- [x] 📤 **Thêm & chia sẻ tài liệu**: Form tạo tài liệu lưu trữ động trực tiếp vào cơ sở dữ liệu PostgreSQL.
+- [x] 👁️ **Trình xem trước In-App (`PdfViewer` & `DocumentPreviewModal`)**: Xem trực tiếp file PDF với thanh công cụ phóng to/thu nhỏ.
+- [x] 📤 **Thêm & chia sẻ tài liệu**: Upload và lưu trữ Cloudflare R2 + PostgreSQL.
 
-### 🎓 Học Phần & Ghép Nhóm Đồ Án (Courses & PBL Matchmaking)
-- [x] 🏛️ **Danh mục học phần theo Khoa/Viện (`FIT`, `FEE`, `FBA`, `FAE`...)**: Đánh giá môn học, số tín chỉ, tài liệu và bài thảo luận liên quan.
-- [x] 👥 **Ghép nhóm đồ án PBL (`Study Groups`)**: Đăng tin tuyển thành viên theo đề tài, kỹ năng công nghệ (React Native, NestJS, AI...), quản lý số lượng thành viên.
+### 🏛️ Diễn Đàn & Tiểu Cộng Đồng (Reddit-style Sub-Communities)
+- [x] 🏛️ **Cơ sở dữ liệu Sub-Communities (`communities` & `community_members`)**: 5 cộng đồng cốt lõi Phenikaa (`c/phenikaa`, `c/fit`, `c/do-an-tot-nghiep`, `c/tim-phong-tro`, `c/clb-hoat-dong`).
+- [x] ⚡ **Endpoints Backend Sub-Communities**: `GET /api/communities`, `GET /api/communities/:slug`, `POST /api/communities/:slug/join`, `GET /api/communities/:slug/posts` (`hot`, `new`, `top`).
+- [x] 🌐 **Trang Diễn Đàn Sinh Viên Chuyên Sâu ([`/c/[slug]`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/c/[slug]/page.tsx))**: Banner, Avatar, Thống kê, Nút gia nhập đàn hồi, 4 tabs nội dung.
+- [x] 🧭 **Trang Danh Bạ Cộng Đồng Toàn Trường ([`/communities`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/communities/page.tsx))**: Duyệt theo 6 danh mục, tìm kiếm, nút tham gia nhanh.
 
 ---
 
-## 2. Tính Năng Dự Định Làm (Planned Features / Backlog)
+## 2. Kế Hoạch Triển Khai Tiếp Theo Theo 14 Domains (Roadmap)
 
-### 💬 Trò Chuyện & Nhóm Đồ Án Thời Gian Thực (PBL Realtime Chat)
-- [ ] 👥 **Phân hệ nhóm đồ án chuyên sâu (`/groups`)**: Xem chi tiết nhóm PBL, gửi yêu cầu xin gia nhập kèm lời nhắn, trưởng nhóm duyệt/từ chối.
-- [ ] 💬 **Phòng chat nhóm đồ án nội bộ (`WebSocket / Socket.io`)**: Trao đổi tin nhắn, chia sẻ link GitHub/Figma và tài liệu nội bộ trong nhóm đồ án.
-
-### 📱 Ứng Dụng Di Động (Mobile Application)
-- [ ] 📲 **Khởi tạo App Mobile Đa Nền Tảng (`apps/mobile` - Expo / React Native)**: Kết nối NestJS API, chia sẻ `@pu/schemas` và `@pu/ui`.
-- [ ] 🧭 **Hệ thống điều hướng Bottom Tabs (`Feed`, `Courses`, `Vault`, `Groups`, `Profile`)**: Trải nghiệm native mượt mà trên iOS và Android.
-- [ ] 🔔 **Push Notifications qua Expo Push Service**: Nhận thông báo khi có bình luận mới, tài liệu mới theo môn hoặc có người xin vào nhóm đồ án.
-
-### 🤖 Trí Tuệ Nhân Tạo & Tìm Kiếm Thông Minh (AI & Semantic Search)
-- [ ] 🧠 **Tìm kiếm ngữ nghĩa với pgvector (`AI Semantic Search`)**: Trích xuất text từ slide/đề thi PDF và tìm kiếm tài liệu theo ngữ cảnh câu hỏi.
-- [ ] 🤖 **Trợ lý AI giải đáp học phần (PU AI Tutor - RAG)**: Tự động tổng hợp câu trả lời dựa trên kho đề thi và tài liệu học phần của trường.
-
-### 🏆 Bảng Xếp Hạng Đóng Góp (Top Contributors Leaderboard)
-- [ ] 🥇 **Bảng xếp hạng sinh viên đóng góp theo Khoa/Viện**: Vinh danh các sinh viên tích cực chia sẻ tài liệu và giải đáp học tập nhiều nhất tháng.
+1. **Domain 5: Study / Academic (Nâng Cấp Knowledge Vault & GPA Tool)**: Tra cứu lịch thi, đánh giá môn học & giảng viên, công cụ dự báo điểm GPA tốt nghiệp.
+2. **Domain 6: Student Marketplace (`/marketplace`)**: Mua bán giáo trình cũ, đồ dùng ký túc xá/phòng trọ, tìm bạn ở ghép, mục việc làm freelance/gia sư.
+3. **Domain 7: Career & Alumni (`/career`)**: Bảng tin thực tập, CV/Portfolio số sinh viên, Mạng lưới Cựu sinh viên (Alumni Mentorship).
+4. **Domain 8: Events (`/events`)**: Form đăng ký tham gia sự kiện campus, vé mã QR Check-in.
+5. **Domain 9: Clubs & Organizations (`/clubs/[slug]`)**: Hub riêng cho CLB, quản lý thành viên ban/đội, đợt tuyển quân.
+6. **Domain 10: Realtime Messaging (`/messages`)**: Chat 1-1 giữa sinh viên, chat kênh cộng đồng, trạng thái online.
+7. **Domain 13: AI Layer (PU AI Study Assistant - RAG)**: Hỏi đáp dựa trên kho slide và đề thi của trường qua `pgvector`.

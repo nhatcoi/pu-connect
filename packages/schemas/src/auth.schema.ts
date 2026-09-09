@@ -21,12 +21,22 @@ export const LoginSchema = z.object({
 
 export const OnboardingSchema = z.object({
   studentId: z.string().min(2, { message: 'Vui lòng nhập Mã sinh viên hoặc Mã cán bộ' }),
-  faculty: z.string().min(2, { message: 'Vui lòng chọn Khoa / Viện đào tạo' }),
+  school: z.string().optional().nullable(),
+  faculty: z.string().optional().nullable(),
+  major: z.string().optional().nullable(),
+  className: z.string().optional().nullable(),
   academicYear: z.string().min(2, { message: 'Vui lòng chọn Khóa học / Niên khóa' }),
   courses: z.array(z.string()).default([]),
   skills: z.array(z.string()).default([]),
   bio: z.string().max(250).optional(),
   followUserIds: z.array(z.string()).default([])
+})
+
+export const PrivacySettingsSchema = z.object({
+  showEmail: z.boolean().default(false),
+  showStudentId: z.boolean().default(true),
+  showClass: z.boolean().default(true),
+  isPrivateProfile: z.boolean().default(false)
 })
 
 export const UserProfileSchema = z.object({
@@ -35,20 +45,56 @@ export const UserProfileSchema = z.object({
   username: z.string(),
   displayName: z.string(),
   studentId: z.string().optional().nullable(),
+  school: z.string().max(100).optional().nullable(),
   faculty: z.string().optional().nullable(),
   academicYear: z.string().optional().nullable(), // e.g. "K16", "K17"
   major: z.string().optional().nullable(),
+  className: z.string().optional().nullable(),
   avatarUrl: z.string().url().optional().nullable(),
+  bannerUrl: z.string().optional().nullable(),
+  location: z.string().max(100).optional().nullable(),
+  website: z.string().url().or(z.string().max(255)).optional().nullable(),
+  birthDate: z.string().max(50).optional().nullable(),
   bio: z.string().max(250).optional().nullable(),
   role: z.enum(['student', 'lecturer', 'ta', 'club_lead', 'alumni', 'admin']).default('student'),
   reputationPoints: z.number().default(0),
   isOnboarded: z.boolean().default(false),
+  isVerified: z.boolean().default(false),
+  verifiedAt: z.string().optional().nullable(),
+  privacySettings: PrivacySettingsSchema.default({
+    showEmail: false,
+    showStudentId: true,
+    showClass: true,
+    isPrivateProfile: false
+  }),
   skills: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),
   createdAt: z.string()
 })
 
+export const UpdateProfileSchema = z.object({
+  displayName: z.string().min(1, 'Tên không được để trống').max(50).optional(),
+  bio: z.string().max(250).optional().nullable(),
+  avatarUrl: z.string().optional().nullable(),
+  bannerUrl: z.string().optional().nullable(),
+  school: z.string().max(100).optional().nullable(),
+  faculty: z.string().max(100).optional().nullable(),
+  major: z.string().max(100).optional().nullable(),
+  academicYear: z.string().max(20).optional().nullable(),
+  className: z.string().max(50).optional().nullable(),
+  location: z.string().max(100).optional().nullable(),
+  website: z.string().max(255).optional().nullable(),
+  birthDate: z.string().max(50).optional().nullable(),
+  skills: z.array(z.string()).optional(),
+  interests: z.array(z.string()).optional()
+})
+
+export const UpdatePrivacySettingsSchema = PrivacySettingsSchema.partial()
+
 export type RegisterInput = z.infer<typeof RegisterSchema>
 export type LoginInput = z.infer<typeof LoginSchema>
 export type OnboardingInput = z.infer<typeof OnboardingSchema>
+export type PrivacySettings = z.infer<typeof PrivacySettingsSchema>
 export type UserProfile = z.infer<typeof UserProfileSchema>
+export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>
+export type UpdatePrivacySettingsInput = z.infer<typeof UpdatePrivacySettingsSchema>
