@@ -5,10 +5,14 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter'
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'
 import * as session from 'express-session'
 import * as passport from 'passport'
+import type { NestExpressApplication } from '@nestjs/platform-express'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule)
+  const app = await NestFactory.create<NestExpressApplication>(AppModule)
   const logger = new Logger('Bootstrap')
+
+  // Trust first proxy for reverse proxy SSL termination (Nginx)
+  app.set('trust proxy', 1)
 
   // Global prefix
   app.setGlobalPrefix('api')
@@ -30,11 +34,13 @@ async function bootstrap() {
       secret: process.env.SESSION_SECRET || 'pu-connector-secret-session-key-2026',
       resave: false,
       saveUninitialized: false,
+      proxy: true,
       cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
+        sameSite: 'lax',
+        path: '/'
       }
     })
   )
