@@ -129,13 +129,13 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
 
   return (
     <div ref={containerRef} className={cn('relative w-full max-w-md', className)}>
-      {/* Input Box */}
+      {/* Input Box (X / Threads Style Pill) */}
       <div
         className={cn(
-          'flex items-center gap-2.5 rounded-xl border px-3.5 py-2 transition-all duration-200',
+          'flex items-center gap-2.5 rounded-full px-4 py-2 transition-all duration-200',
           isOpen
-            ? 'border-primary/50 bg-background shadow-md ring-2 ring-primary/10'
-            : 'border-border bg-muted/40 hover:border-border/80 hover:bg-muted/60'
+            ? 'border border-primary/50 bg-background shadow-sm ring-2 ring-primary/10'
+            : 'border border-transparent bg-muted/50 hover:bg-muted/70'
         )}
       >
         <Search className={cn('h-4 w-4 shrink-0 transition-colors', isOpen ? 'text-primary' : 'text-muted-foreground')} />
@@ -149,7 +149,7 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           autoFocus={autoFocus}
-          placeholder="Tìm môn học, đề thi, bài viết, sinh viên..."
+          placeholder="Tìm môn học, đề thi, bạn bè..."
           className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground outline-none"
         />
         {isLoading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />}

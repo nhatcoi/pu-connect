@@ -185,13 +185,13 @@ function HomeContent() {
               </div>
             </div>
 
-            {/* Standalone Academic Post Composer */}
-            <div className="p-3 sm:p-4 border-b border-border/60 sm:border-b-0">
+            {/* Standalone Academic Post Composer (Flat Stream Style) */}
+            <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40">
               <AcademicPostComposer />
             </div>
 
             {/* Continuous X-Style Post Stream */}
-            <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
+            <div className="divide-y divide-border/40">
               {isPostsLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
                   <Loader2 className="h-6 w-6 animate-spin text-foreground" />

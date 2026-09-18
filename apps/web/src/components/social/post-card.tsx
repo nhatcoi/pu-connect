@@ -83,7 +83,7 @@ function getCleanCourseBadge(post: PostItem) {
 
     if (FACULTY_MAP[raw.toUpperCase()]) {
       return {
-        label: `${raw.toUpperCase()} • ${FACULTY_MAP[raw.toUpperCase()]}`,
+        label: raw.toUpperCase(),
         isFaculty: true
       }
     }
@@ -309,7 +309,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
   // If Post is Hidden by user (Dismiss Banner with Undo)
   if (isHidden) {
     return (
-      <div className="p-3.5 sm:p-4 border-b border-border/70 sm:border sm:border-border sm:rounded-2xl bg-muted/30 flex items-center justify-between text-xs text-muted-foreground transition-all duration-200">
+      <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-border/40 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground transition-all duration-200">
         <div className="flex items-center gap-2">
           <EyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
           <span>{hiddenReason || 'Đã ẩn bài viết khỏi bảng tin của bạn.'}</span>
@@ -330,7 +330,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
     <>
       <article
         id={`post-${post.id}`}
-        className="p-3 sm:p-4 border-b border-border/70 sm:border sm:border-border sm:rounded-2xl bg-card text-card-foreground shadow-none sm:shadow-xs transition-colors hover:bg-muted/[0.08]"
+        className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background text-foreground transition-colors hover:bg-muted/[0.03]"
       >
         {/* Pinned Top Banner (Only visible on author profile page) */}
         {post.isPinned && !!post.author?.username && (pathname === `/${post.author.username}` || pathname.startsWith(`/${post.author.username}?`)) && (
@@ -349,7 +349,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               href={`/${post.author?.username || 'user'}`}
               className="cursor-pointer group block"
             >
-              <Avatar className="h-10 w-10 border border-border/50 transition-transform group-hover:scale-105">
+              <Avatar className="h-10 w-10 border border-border/40 transition-transform group-hover:scale-105">
                 <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.displayName || ''} />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                   {authorInitials}
@@ -383,20 +383,20 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               {/* Right: Badges & More dropdown */}
               <div className="flex items-center space-x-1.5 shrink-0">
                 {post.postType === 'qa' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    <HelpCircle className="h-3 w-3 text-amber-500" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                    <HelpCircle className="h-3 w-3" />
                     <span>{post.isResolved ? 'Đã giải quyết' : 'Hỏi đáp'}</span>
                   </span>
                 )}
                 {post.postType === 'document' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    <BookOpen className="h-3 w-3 text-sky-500" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-600 dark:text-sky-400">
+                    <BookOpen className="h-3 w-3" />
                     <span>Tài liệu</span>
                   </span>
                 )}
                 {post.postType === 'group_recruit' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground">
-                    <Users className="h-3 w-3 text-emerald-500" />
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    <Users className="h-3 w-3" />
                     <span>Học nhóm</span>
                   </span>
                 )}
@@ -405,14 +405,14 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                   <Link
                     href={`/c/${post.communitySlug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 hover:bg-primary/20 border border-primary/25 px-2 py-0.5 text-[10px] font-mono font-bold text-primary transition-colors shrink-0"
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 hover:bg-primary/20 px-2 py-0.5 text-[11px] font-mono font-semibold text-primary transition-colors shrink-0"
                   >
                     <span>c/{post.communitySlug}</span>
                   </Link>
                 )}
 
                 {courseBadge && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted/70 border border-border px-2 py-0.5 text-[10px] font-semibold text-foreground max-w-[130px] sm:max-w-[160px] truncate">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground max-w-[120px] truncate">
                     {courseBadge.isFaculty ? (
                       <Building2 className="h-3 w-3 text-primary shrink-0" />
                     ) : (
@@ -551,17 +551,16 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               </div>
             )}
 
-            {/* Tags */}
+            {/* Tags (X / Threads Style Inline Hashtags) */}
             {post.tags && post.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
+              <div className="flex flex-wrap gap-x-2 gap-y-1 pt-1">
                 {post.tags.map((tag) => (
-                  <Link key={tag} href={`/search?q=${encodeURIComponent(tag)}`}>
-                    <Badge
-                      variant="secondary"
-                      className="cursor-pointer text-[11px] font-normal bg-muted text-muted-foreground hover:bg-muted/80 hover:text-primary transition-colors"
-                    >
-                      #{tag}
-                    </Badge>
+                  <Link
+                    key={tag}
+                    href={`/search?q=${encodeURIComponent(tag)}`}
+                    className="text-xs font-medium text-primary hover:underline transition-colors"
+                  >
+                    #{tag}
                   </Link>
                 ))}
               </div>
@@ -569,8 +568,8 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
 
             {/* Attached Documents */}
             {post.attachedDocumentIds && post.attachedDocumentIds.length > 0 && (
-              <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
-                <FileText className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <FileText className="h-4 w-4 text-primary shrink-0" />
                 <span>Đính kèm {post.attachedDocumentIds.length} tài liệu học phần</span>
               </div>
             )}

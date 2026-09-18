@@ -276,22 +276,18 @@ export function AcademicPostComposer({
       ? 'Chia sẻ đề cương, tài liệu tham khảo hoặc slide bài giảng...'
       : postType === 'group_recruit'
       ? 'Mô tả đề tài đồ án, các kỹ năng cần thiết và số lượng thành viên...'
-      : 'Chia sẻ thắc mắc học tập, kinh nghiệm học phần hoặc thông tin mới...'
+      : 'Có gì mới? Chia sẻ thắc mắc học tập, kinh nghiệm môn học...'
 
   return (
     <div
       ref={composerRef}
-      className={`rounded-2xl border bg-card transition-all duration-200 shadow-xs ${
-        isExpanded
-          ? 'border-border ring-1 ring-border p-4'
-          : 'border-border hover:border-border/80 p-3.5'
-      }`}
+      className="transition-all duration-200"
     >
       <div className="flex gap-3 items-start">
         {/* Left User Personal Avatar */}
-        <Avatar className="h-10 w-10 shrink-0 rounded-full border border-border select-none shadow-xs">
+        <Avatar className="h-10 w-10 shrink-0 rounded-full border border-border/40 select-none">
           <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || 'User'} />
-          <AvatarFallback className="bg-foreground text-background font-bold text-xs">
+          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
             {userInitials}
           </AvatarFallback>
         </Avatar>
@@ -429,7 +425,7 @@ export function AcademicPostComposer({
           {/* Main Textarea / Live Preview Area */}
           <div className="relative">
             {isPreviewMode ? (
-              <div className="min-h-[90px] max-h-[280px] overflow-y-auto rounded-xl border border-border bg-muted/20 p-3 text-xs">
+              <div className="min-h-[90px] max-h-[280px] overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs">
                 {content ? (
                   <MarkdownPreview content={content} />
                 ) : (
@@ -439,15 +435,27 @@ export function AcademicPostComposer({
                 )}
               </div>
             ) : (
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                onFocus={handleFocus}
-                placeholder={placeholderText}
-                rows={isExpanded ? 3 : 1}
-                className="w-full resize-none bg-transparent text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none leading-relaxed transition-all"
-              />
+              <div className="flex items-center justify-between gap-3">
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  onFocus={handleFocus}
+                  placeholder={placeholderText}
+                  rows={isExpanded ? 3 : 1}
+                  className="w-full resize-none bg-transparent text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none leading-relaxed transition-all py-1"
+                />
+                {!isExpanded && (
+                  <Button
+                    type="button"
+                    onClick={() => setIsExpanded(true)}
+                    size="sm"
+                    className="h-8 px-4 rounded-full font-bold text-xs bg-foreground text-background hover:bg-foreground/90 shrink-0 cursor-pointer shadow-none"
+                  >
+                    Đăng
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 

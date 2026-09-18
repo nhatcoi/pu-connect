@@ -53,6 +53,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - Mobile (< 768px): Header chuẩn X tinh gọn, Tab bar dính chuẩn, Mobile Bottom Navigation Bar (5 phân hệ chính).
 - [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`, `/communities`...).
 - [x] 🏛️ **Bảng tin 3 cột chuẩn X (`/home`)**: Sidebar điều hướng $\rightarrow$ Feed học thuật với Tab dính (*Dành cho bạn / Môn học / Kho tài liệu*) $\rightarrow$ Xu hướng & Gợi ý kết nối.
+- [x] 🎨 **Tối Giản Hóa UI/UX Chuẩn X & Threads (Seamless Minimalist Stream & Widgets)**: Loại bỏ triệt để viền hộp 4 cạnh quanh từng bài viết, chuyển sang luồng liên tục phân cách bằng divider kẻ ngang mảnh (`border-b border-border/40`); hộp tạo bài viết phẳng trên đầu feed stream; thiết kế lại sidebar phải với 2 widget bo cong nhẹ (*Xu hướng cho bạn* và *Gợi ý theo dõi*) loại bỏ các đoạn mô tả dài dòng và ô vuông số liệu thô; search bar dạng viên thuốc (`rounded-full`); hashtags inline xanh tự nhiên; rút gọn nhãn khoa/viện và loại bỏ viền xám dày trên badges.
 - [x] 👤 **Trang cá nhân sinh viên / giảng viên (`/[username]`)**: Banner ảnh bìa, Avatar kèm Tích Xanh, Chuyên ngành, Lớp sinh hoạt, Khoa/Viện, 3 Tabs học thuật chuẩn mực: **Bài viết**, **Tài liệu**, **Hỏi đáp Q&A**.
 - [x] 🧠 **Thuật Toán Đề Xuất Bài Viết Cá Nhân Hóa (Hybrid Recommendation Engine)**: Chấm điểm bài viết trên Tab *"Dành cho bạn"* kết hợp Môn học ($+40$), Cùng Khoa ($+30$), Cùng Niên khóa ($+15$), Người đang Follow ($+35$), Độ tương tác và Hệ số suy giảm thời gian.
 

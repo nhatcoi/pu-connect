@@ -48,7 +48,7 @@ export function PostCommentsSection({ post, isOpen }: PostCommentsSectionProps) 
   }
 
   return (
-    <div className="border-t border-border/60 bg-muted/10 p-4 space-y-4 rounded-b-2xl">
+    <div className="border-t border-border/40 bg-muted/[0.03] pt-3 pb-2 space-y-3">
       {/* Top Comment Input Box */}
       <CommentComposer
         onSubmit={(text, media) => addComment(text, undefined, media)}

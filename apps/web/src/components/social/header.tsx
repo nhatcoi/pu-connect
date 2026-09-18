@@ -96,7 +96,7 @@ export function Header() {
   }
 
   return (
-    <header className="w-full relative md:sticky md:top-0 z-40 border-b border-border/80 bg-background/95 backdrop-blur-md">
+    <header className="w-full relative md:sticky md:top-0 z-40 border-b border-border/40 bg-background/95 backdrop-blur-md">
       <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} onSelectTab={() => {}} />
       <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
       <SearchSettingsDialog open={isSearchSettingsOpen} onOpenChange={setIsSearchSettingsOpen} />
@@ -134,10 +134,10 @@ export function Header() {
               }
               setCreatePostOpen(true)
             }}
-            className="gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs rounded-full cursor-pointer"
+            className="gap-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs rounded-full cursor-pointer px-4"
           >
             <Plus className="h-4 w-4" />
-            <span className="hidden lg:inline">Đăng bài / Chia sẻ</span>
+            <span className="hidden lg:inline">Đăng bài</span>
           </Button>
 
           {/* Notifications Popover */}

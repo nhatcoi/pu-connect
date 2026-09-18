@@ -325,11 +325,13 @@ export default function CommunityDetailPage({
                 ) : (
                   <div>
                     {/* Post Composer scoped to this community */}
-                    <AcademicPostComposer
-                      onPostCreated={(post) => addPost(post)}
-                      defaultCommunityId={community.id}
-                      defaultCommunitySlug={community.slug}
-                    />
+                    <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40">
+                      <AcademicPostComposer
+                        onPostCreated={(post) => addPost(post)}
+                        defaultCommunityId={community.id}
+                        defaultCommunitySlug={community.slug}
+                      />
+                    </div>
 
                     {/* Posts Stream */}
                     {posts.length === 0 ? (
@@ -339,7 +341,7 @@ export default function CommunityDetailPage({
                         <p className="text-xs">Hãy là người đầu tiên chia sẻ bài viết tại c/{community.slug}!</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-border/60">
+                      <div className="divide-y divide-border/40">
                         {posts.map((post) => (
                           <PostCard key={post.id} post={post} />
                         ))}

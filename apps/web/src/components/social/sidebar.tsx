@@ -165,26 +165,26 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
         </div>
 
         {/* 2. Faculty & Departments (Desktop xl: only) */}
-        <div className="hidden xl:block space-y-2 border-t border-border pt-4">
+        <div className="hidden xl:block space-y-2 border-t border-border/40 pt-3">
           <p className="px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-            Khoa và Viện đào tạo
+            Khoa và Viện
           </p>
-          <div className="flex flex-wrap gap-1.5 px-2">
+          <div className="flex flex-wrap gap-1 px-2">
             {facultyTags.map((fac) => (
               <button
                 key={fac.code}
                 onClick={() => router.push(`/search?faculty=${fac.code}`)}
-                className="flex items-center gap-1 rounded-lg border border-border bg-muted/40 px-2 py-1 text-[11px] text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary cursor-pointer"
+                className="flex items-center rounded-full bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary cursor-pointer"
+                title={`${fac.code} - ${fac.name}`}
               >
-                <span className="font-semibold text-foreground">{fac.code}</span>
-                <span className="text-[10px] opacity-70">({fac.name})</span>
+                <span>{fac.code}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* 3. Hot Trending Courses (Desktop xl: only) */}
-        <div className="hidden xl:block space-y-2 border-t border-border pt-4">
+        <div className="hidden xl:block space-y-2 border-t border-border/40 pt-3">
           <p className="px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
             Môn học sôi nổi
           </p>
@@ -193,9 +193,9 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
               <div
                 key={course}
                 onClick={() => router.push(`/home?tab=courses&course=${course.split(' ')[0]}`)}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-muted/50 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-muted/40 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Hash className="h-3.5 w-3.5 text-accent shrink-0" />
+                <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="truncate">{course}</span>
               </div>
             ))}

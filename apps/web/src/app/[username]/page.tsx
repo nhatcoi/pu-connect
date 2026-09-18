@@ -179,7 +179,7 @@ export default function ProfilePage({
 
                 {/* Tab 1: Posts (Continuous stream on mobile, card on sm:) */}
                 {activeTab === 'posts' && (
-                  <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
+                  <div className="divide-y divide-border/40">
                     {profile.posts && profile.posts.length > 0 ? (
                       profile.posts.map((post) => (
                         <PostCard
@@ -226,7 +226,7 @@ export default function ProfilePage({
 
                 {/* Tab 3: Q&A Questions */}
                 {activeTab === 'questions' && (
-                  <div className="divide-y divide-border/60 sm:divide-y-0 sm:space-y-4 sm:p-4">
+                  <div className="divide-y divide-border/40">
                     {questionPosts.length > 0 ? (
                       questionPosts.map((post) => (
                         <PostCard
