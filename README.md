@@ -84,13 +84,22 @@ pnpm dev
 pnpm build
 ```
 
-### 4. Khởi chạy môi trường Production
+### 4. Khởi chạy môi trường Production cục bộ
 Chạy đồng thời cả **Web Next.js (port 3000)** và **API NestJS (port 4000)** ở chế độ Production qua Turborepo:
 ```bash
 pnpm start
 ```
 * **Web Client:** [http://localhost:3000](http://localhost:3000)
 * **API Backend:** [http://localhost:4000/api](http://localhost:4000/api)
+
+### 5. Triển khai tự động lên Production VPS (`puc.vnhat.dev`)
+Triển khai toàn bộ hệ thống (Web, API, Docker PostgreSQL `pgvector`, Nginx Reverse Proxy và SSL Let's Encrypt) lên VPS chỉ với 1 lệnh:
+```bash
+pnpm run deploy:vps
+```
+* **Production URL:** [https://puc.vnhat.dev](https://puc.vnhat.dev)
+* **REST API:** [https://puc.vnhat.dev/api](https://puc.vnhat.dev/api)
+* **GraphQL Endpoint:** [https://puc.vnhat.dev/graphql](https://puc.vnhat.dev/graphql)
 
 ---
 

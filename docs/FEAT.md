@@ -29,6 +29,12 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
 - [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau và REST API cho Session Auth, Profile updates, Upload File lớn.
+- [x] 🌐 **Triển khai Máy chủ Production VPS & Domain Thực ([`https://puc.vnhat.dev`](https://puc.vnhat.dev))**:
+  - Đóng gói toàn bộ hệ sinh thái qua kịch bản [`scripts/deploy.sh`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/scripts/deploy.sh) và lệnh `pnpm run deploy:vps`.
+  - Cấu hình Nginx Reverse Proxy phân tách rõ ràng: `/` cho Next.js 15 SSR (port 3000), `/api/` & `/graphql` cho NestJS (port 4001), `/socket.io/` cho WebSocket và cache tĩnh 1 năm cho `/_next/static/`.
+  - Tự động cấp và gia hạn chứng chỉ SSL Let's Encrypt qua Certbot đạt chuẩn bảo mật tối ưu (TLS 1.3, auto HTTP $\rightarrow$ HTTPS redirect).
+  - Quản trị tiến trình qua Debian Systemd (`pu-web.service` và `pu-api.service`) tự động khởi động cùng hệ thống và tự phục hồi khi gặp sự cố.
+  - Cơ sở dữ liệu Docker PostgreSQL 16 tích hợp extension `pgvector` với persistent volume `postgres_data`.
 
 ### 🎨 Chuyển Đổi Toàn Diện Sang Animate UI (Animate UI Migration & Motion Design)
 - [x] 🎭 **Tích Hợp Toàn Diện Bộ Thư Viện Animate UI Chuẩn Hóa (`motion/react` + Radix UI Primitives)**:

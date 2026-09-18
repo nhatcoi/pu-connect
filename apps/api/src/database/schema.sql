@@ -99,9 +99,29 @@ CREATE TABLE IF NOT EXISTS users (
     is_onboarded BOOLEAN DEFAULT FALSE,
     skills TEXT[] DEFAULT '{}',
     interests TEXT[] DEFAULT '{}',
+    school VARCHAR(100),
+    major VARCHAR(100),
+    class_name VARCHAR(50),
+    is_verified BOOLEAN DEFAULT FALSE,
+    verified_at TIMESTAMPTZ,
+    privacy_settings JSONB DEFAULT '{
+        "show_email": false,
+        "show_student_id": true,
+        "show_class": true,
+        "is_private_profile": false
+    }'::jsonb,
+    location VARCHAR(100),
+    website VARCHAR(255),
+    birth_date DATE,
+    banner_url VARCHAR(500),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_school ON users(school);
+CREATE INDEX IF NOT EXISTS idx_users_major ON users(major);
+CREATE INDEX IF NOT EXISTS idx_users_class ON users(class_name);
+CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
 
 -- 2.1. Follows / Social Connections
 CREATE TABLE IF NOT EXISTS user_follows (
