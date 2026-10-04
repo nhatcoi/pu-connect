@@ -42,6 +42,8 @@ rsync -avz --delete \
   --exclude '.git' \
   --exclude '.env' \
   --exclude '.env.local' \
+  --exclude 'puc-client-secret*.json' \
+  --exclude 'client_secret*.json' \
   --exclude '*.log' \
   --exclude '.DS_Store' \
   ./ "$VPS_HOST:$VPS_DIR/"
@@ -52,22 +54,23 @@ ssh "$VPS_HOST" "bash -s" << 'REMOTE_SETUP'
 set -e
 cd /var/www/pu-connector
 
-# Setup .env if not exists
+# Setup .env if not exists (secret sinh ngẫu nhiên; R2_* điền tay sau — không commit key)
 if [ ! -f .env ]; then
-  cat << 'EOF' > .env
+  cat << EOF > .env
 PORT=4001
 HOST=0.0.0.0
 DATABASE_URL=postgresql://pu_user:pu_password@localhost:5432/pu_connector_db
-SESSION_SECRET=pu_connector_secure_session_secret_2026
+SESSION_SECRET=$(openssl rand -hex 32)
 WEB_PORT=3000
 NEXT_PUBLIC_API_URL=/api
 INTERNAL_API_URL=http://localhost:4001
-R2_ACCOUNT_ID=eb59f9fc900b283bd0ca9b95f52c5424
-R2_ACCESS_KEY_ID=1f0f71bcf52d20b5a53485dd4ab191e8
-R2_SECRET_ACCESS_KEY=86a86954995672a6f30440dad5db7aca278ff60619203a088698c2a63c93934a
-R2_ENDPOINT=https://eb59f9fc900b283bd0ca9b95f52c5424.r2.cloudflarestorage.com
+APP_URL=https://puc.vnhat.dev
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_ENDPOINT=
 R2_BUCKET_NAME=pu-connector
-R2_PUBLIC_URL=https://pub-66e8a07080a74cb697df1ffbf74a4ecb.r2.dev
+R2_PUBLIC_URL=
 EOF
   echo "Đã tạo file .env mới trên VPS."
 fi
@@ -92,6 +95,8 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/domain1-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/add-communities.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/add-indexes.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/auth-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/messaging-upgrade.sql
 
 # Seed initial users if empty
 USER_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d '[:space:]' || echo "0")

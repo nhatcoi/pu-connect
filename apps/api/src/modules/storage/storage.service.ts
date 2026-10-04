@@ -9,14 +9,16 @@ export class StorageService {
   private readonly publicUrl: string
 
   constructor() {
-    const accountId = process.env.R2_ACCOUNT_ID || 'eb59f9fc900b283bd0ca9b95f52c5424'
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID || '1f0f71bcf52d20b5a53485dd4ab191e8'
-    const secretAccessKey =
-      process.env.R2_SECRET_ACCESS_KEY ||
-      '86a86954995672a6f30440dad5db7aca278ff60619203a088698c2a63c93934a'
+    // Credentials R2 chỉ lấy từ env (.env / systemd EnvironmentFile), không hardcode
+    const accountId = process.env.R2_ACCOUNT_ID || ''
+    const accessKeyId = process.env.R2_ACCESS_KEY_ID || ''
+    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || ''
     const endpoint =
       process.env.R2_ENDPOINT ||
       `https://${accountId}.r2.cloudflarestorage.com`
+    if (!accessKeyId || !secretAccessKey) {
+      this.logger.warn('R2 credentials missing (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY) — upload sẽ lỗi')
+    }
 
     this.bucketName = process.env.R2_BUCKET_NAME || 'pu-connector'
     this.publicUrl =
