@@ -52,3 +52,10 @@ SMTP_PASS=...
 MAIL_FROM="PU Connector <no-reply@puc.vnhat.dev>"
 ```
 Không đặt `SMTP_HOST`: API chỉ ghi link xác thực vào log (`[MailService] [DEV] Link xác thực…`), không gửi mail thật.
+
+## Bảo vệ chống lạm dụng
+- Đăng nhập: `LoginRateLimitGuard` (trước `LocalAuthGuard`) — 10 lần / 15 phút cho mỗi IP + tài khoản, 50 lần / 15 phút cho mỗi IP ⇒ `429`.
+- `check-email`: 20 lần/phút/IP · `register`: 10 lần/giờ/IP · `resend-verification`: 1 lần/60 giây.
+- Bộ đếm lưu trong bộ nhớ tiến trình (reset khi restart; đủ cho 1 instance). Nhiều instance ⇒ chuyển sang Redis/Postgres.
+- Mọi thao tác ghi yêu cầu session (`requireUserId`), không có fallback sang tài khoản khác.
+

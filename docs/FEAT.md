@@ -40,7 +40,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - Gộp *"A và N người khác…"* bằng upsert nguyên tử (`group_key`, `actor_ids`, unique index một phần) — bỏ thích rồi thích lại không báo lại.
   - API cursor pagination, `unread-count`, `settings`; socket `notification` + `notification.read` (đồng bộ đã đọc giữa các tab); xóa thông báo đã đọc > 90 ngày.
   - Web: store dùng chung, toast có nút **Xem**, trang **`/notifications`** (Tất cả/Chưa đọc/Nhắc đến, cài đặt theo loại), trang **`/post/[id]`** (mở sẵn bình luận, highlight `?comment=`), mục Thông báo ở sidebar.
-- [x] 🛡️ **Vá lỗ hổng mạo danh**: controller không còn fallback sang user đầu tiên khi chưa đăng nhập (`requireUserId`); tạo học phần/sự kiện giới hạn theo vai trò; study group lấy danh tính từ session.
+- [x] 🛡️ **Vá lỗ hổng mạo danh**: controller không còn fallback sang user đầu tiên khi chưa đăng nhập (`requireUserId`); tạo học phần/sự kiện giới hạn theo vai trò; study group lấy danh tính từ session. Upload (`/api/upload/*`) bắt buộc đăng nhập + chỉ nhận thư mục/MIME cho phép; giới hạn đăng nhập sai (10 lần/15 phút/IP+tài khoản); tắt GraphQL playground/introspection ở production.
 - [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
 - [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau và REST API cho Session Auth, Profile updates, Upload File lớn.
