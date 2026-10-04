@@ -3,13 +3,16 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **23 bảng**, **34 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **24 bảng**, **34 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
 ```mermaid
 erDiagram
   campus_events {
+    string no_fk
+  }
+  search_logs {
     string no_fk
   }
   user_sessions {
@@ -97,6 +100,7 @@ erDiagram
     timestamptz reset_token_expires
     timestamptz reset_sent_at
     timestamptz password_changed_at
+    tsvector search_tsv
   }
   user_follows {
     uuid follower_id PK,FK
@@ -168,6 +172,7 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
     uuid community_id FK
+    tsvector search_tsv
   }
   comments {
     uuid id PK
@@ -294,6 +299,7 @@ erDiagram
     integer post_count
     timestamptz created_at
     timestamptz updated_at
+    tsvector search_tsv
   }
   documents {
     uuid id PK
@@ -314,6 +320,7 @@ erDiagram
     numeric rating_avg
     timestamptz created_at
     timestamptz updated_at
+    tsvector search_tsv
   }
   document_chunks {
     uuid id PK
@@ -341,6 +348,7 @@ erDiagram
     group_status_enum status
     timestamptz created_at
     timestamptz updated_at
+    tsvector search_tsv
   }
   study_group_members {
     uuid group_id PK,FK
@@ -386,6 +394,13 @@ erDiagram
     integer failure_count
     timestamptz created_at
     timestamptz last_used_at
+  }
+  search_logs {
+    bigint id PK
+    varchar q_norm
+    varchar search_type
+    integer result_count
+    timestamptz created_at
   }
 ```
 

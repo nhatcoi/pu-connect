@@ -42,6 +42,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - Web: store dùng chung, toast có nút **Xem**, trang **`/notifications`** (Tất cả/Chưa đọc/Nhắc đến, cài đặt theo loại), trang **`/post/[id]`** (mở sẵn bình luận, highlight `?comment=`), mục Thông báo ở sidebar.
 - [x] 📲 **Web Push + BullMQ/Redis** ([đặc tả mục 7](./core/05-notifications-and-realtime.md#7-triển-khai-v2--web-push--bullmq-đang-chạy)): hàng đợi `notification-push` (delay 30s, retry/backoff, hoãn theo giờ yên tĩnh, ≤ 20 push/giờ, bỏ qua khi đã đọc hoặc tab đang hiển thị), VAPID + `web-push`, bảng `push_subscriptions` (tự xóa đăng ký hết hạn), `public/sw.js`, cài đặt **loại × kênh** + giờ yên tĩnh, nút Bật/Gửi thử trong `/notifications`, hủy push khi đăng xuất. Redis chạy localhost-only trong `docker-compose`.
 - [x] 🔑 **Quên mật khẩu** (`/forgot-password`, `/reset-password`): `POST /auth/forgot-password` luôn trả `{sent:true}` dù email có tồn tại hay không (chống dò tài khoản), gửi email nền; token 256-bit lưu **SHA-256**, hết hạn 30 phút, dùng một lần (UPDATE nguyên tử). Giới hạn 5/15 phút/IP + 3/giờ/email, cách nhau ≥ 60s/tài khoản. `POST /auth/reset-password` đổi mật khẩu, **đăng xuất mọi phiên** (xóa `user_sessions`), gửi email cảnh báo đổi mật khẩu. Tài khoản Google-only có thể đặt mật khẩu qua luồng này. Migration trong `auth-upgrade.sql` (`reset_token_*`, `password_changed_at`). Link "Quên mật khẩu?" ở bước nhập mật khẩu của form đăng nhập.
+- [x] 🔎 **Search chuẩn** ([thiết kế & quy tắc](./core/07-search.md)): full-text Postgres (`unaccent` + `simple`) khớp tiền tố, bỏ dấu tiếng Việt (`giai tich` = `Giải tích`), lọc từ nối, `#tag` / `@username`, **gõ sai** bằng trigram (`overfiting` → Overfitting), xếp hạng (chữ A>B>C + khớp tên + phổ biến + mới). **Sửa lỗi quyền xem**: tài liệu/bài riêng tư không còn lộ qua search; ẩn tài khoản bị khóa và tài khoản hệ thống. Cột `search_tsv` generated + chỉ mục GIN/trigram (`search-upgrade.sql`); bảng `search_logs` (không lưu người dùng, giữ 180 ngày) để biết từ khóa **không có kết quả**. Đo 50.000 bài: ~20 ms.
 - [x] 💾 **Backup & giám sát vận hành** (`scripts/ops/`): backup Postgres hằng ngày (dump → gzip → AES-256 → R2 + local, xoay vòng 30 ngày/7 bản), `restore-db.sh` kiểm tra khôi phục vào DB tạm (đã thử thật: 23 bảng, 108 users), `healthcheck.sh` mỗi 5 phút (web/API/systemd/Docker/Postgres/đĩa/RAM/tuổi backup) chỉ báo khi đổi trạng thái; cảnh báo Telegram tùy chọn. Cài bằng `setup-ops.sh`.
 - [x] 💬 **Bình luận 2 cấp** (fix phản hồi của phản hồi không hiển thị): hiển thị kiểu Facebook/YouTube — bình luận gốc + 1 luồng phản hồi phẳng. Trả lời một phản hồi ⇒ lưu `parent_id` = bình luận gốc (recursive CTE), `@username` tự chèn giữ ngữ cảnh, thông báo `comment_reply` vẫn gửi tác giả phản hồi được trả lời. `GET /posts/:id/comments` phân trang theo **bình luận gốc** và trả kèm toàn bộ phản hồi (`nextOffset`); dữ liệu cũ sâu > 2 cấp được web gom về gốc. Xóa bình luận trừ `comments_count` đúng số dòng bị CASCADE; bộ đếm trên PostCard đồng bộ với danh sách.
 - [x] 🖼️ **Chặn lưu ảnh blob**: upload ảnh đại diện/ảnh bìa lỗi ⇒ giữ ảnh cũ + báo lỗi (bỏ fallback `blob:` chỉ tồn tại trên máy người dùng); API `PATCH /users/profile` chỉ nhận `https://` hoặc đường dẫn nội bộ.
@@ -127,6 +128,18 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🧭 **Trang Danh Bạ Cộng Đồng Toàn Trường ([`/communities`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/communities/page.tsx))**: Duyệt theo 6 danh mục, tìm kiếm, nút tham gia nhanh.
 
 ---
+
+## 2a. Backlog vai trò & quản trị (ghi chú quyết định)
+
+Role trong DB: `student`, `lecturer`, `ta`, `club_lead`, `admin` (prod: 1 admin, ~3 giảng viên, 1 trợ giảng). Hiện role chỉ dùng để giới hạn tạo học phần / sự kiện; người dùng báo cáo bài viết được (`post_reports`) nhưng **chưa có nơi xử lý**.
+
+| Việc | Làm khi | Ghi chú |
+|---|---|---|
+| **Trang admin tối giản**: danh sách báo cáo (ẩn bài / bỏ qua), khóa–mở tài khoản, nhật ký thao tác admin | Có báo cáo vi phạm đầu tiên cần xử lý tay, hoặc ≥ ~200 người dùng thật | Trước đó dùng SQL/script. `status = suspended` đã có, cần chặn đăng nhập khi bị khóa |
+| Xem **từ khóa tìm không có kết quả** ([07-search](./core/07-search.md#6-nhật-ký-truy-vấn-search_logs--riêng-tư)) | Cùng lúc làm trang admin | SQL mẫu có sẵn trong tài liệu |
+| `lecturer` / `ta`: nhãn **"giảng viên xác nhận"** cho lời giải | Khi Kho tài liệu & Hỏi đáp có người dùng | Tăng độ tin cậy câu trả lời |
+| `club_lead`: quản lý CLB / sự kiện | Khi làm Domain Clubs/Events | Chưa cần |
+| Moderator theo từng cộng đồng (duyệt bài, ẩn bình luận) | Khi có cộng đồng đông | Giảm tải cho admin hệ thống |
 
 ## 2. Kế Hoạch Triển Khai Tiếp Theo Theo 14 Domains (Roadmap)
 

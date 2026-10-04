@@ -193,7 +193,33 @@ sequenceDiagram
   end
 ```
 
+## 5.6. Tìm kiếm
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Người dùng
+  participant W as Web (search bar / /search)
+  participant A as SearchController
+  participant S as SearchService
+  participant DB as Postgres
+
+  U->>W: Gõ "giai tich" (không dấu)
+  W->>A: GET /api/search?q=…&limit=3 (typeahead) hoặc limit=30 (trang kết quả)
+  A->>S: search()
+  S->>S: parseQuery(): bỏ dấu, lọc từ nối, tsquery "giai:* & tich:*"
+  par 5 loại song song (học phần, tài liệu, bài, người, nhóm)
+    S->>DB: Pha 1: search_tsv @@ tsquery (GIN) + lọc quyền xem
+  end
+  opt Thiếu kết quả ở trang đầu
+    S->>DB: Pha 2 (transaction): word_similarity ≥ 0.35 (trigram)
+  end
+  S-)DB: INSERT search_logs (chỉ trang kết quả, không user)
+  A-->>W: courses · documents · posts · users · groups
+```
+
 **Changelog:**
+- 2026-10-04 — thêm 5.6 Tìm kiếm.
 - 2026-10-04 — thêm 5.1b Quên mật khẩu.
 - 2026-10-04 — thêm 5.5 Web Push qua BullMQ.
 - 2026-10-04 — 5.3 cập nhật theo Notification v1 (dispatch, ưu tiên, gộp).

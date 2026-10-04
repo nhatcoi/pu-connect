@@ -88,6 +88,7 @@ flowchart TB
 | Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
 
 **Changelog:**
+- 2026-10-04 — Search: unaccent + trigram, `search_logs` (xem [07-search](../core/07-search.md)).
 - 2026-10-04 — Auth: `forgot-password`, `reset-password`.
 - 2026-10-04 — PushModule + QueueModule (BullMQ), endpoint push, event `presence`.
 - 2026-10-04 — Notification v1: `dispatch()` từ Posts/Comments/UserResolver/Auth, endpoint settings/unread-count, event `notification.read`; vá mạo danh (requireUserId).
