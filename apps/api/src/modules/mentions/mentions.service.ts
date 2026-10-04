@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import type { PoolClient } from 'pg'
-import { NotificationsService } from '../notifications/notifications.service'
+import { snippet, type NotifyInput } from '../notifications/notification.types'
 import { extractMentions } from './mention.util'
 
 export type MentionSourceType = 'post' | 'comment' | 'message'
@@ -15,17 +15,13 @@ export interface MentionContext {
   sourceType: MentionSourceType
   sourceId: string
   authorId: string
-  authorName: string
   postId: string // điều hướng thông báo về bài viết
+  commentId?: string
   snippet: string
 }
 
 @Injectable()
 export class MentionsService {
-  private readonly logger = new Logger(MentionsService.name)
-
-  constructor(private readonly notifications: NotificationsService) {}
-
   // Ghi mention trong cùng transaction với post/comment; chỉ trả về mention MỚI
   // (sửa bài không thông báo lại người đã được nhắc)
   async record(
@@ -55,24 +51,21 @@ export class MentionsService {
     return res.rows.map((r) => ({ id: r.id, username: r.username, accountType: r.account_type }))
   }
 
-  // Gửi thông báo sau khi transaction commit; bot (@puai) được xử lý bởi AI layer (P3)
-  async notify(mentioned: MentionedUser[], ctx: MentionContext): Promise<void> {
-    const humans = mentioned.filter((m) => m.accountType === 'human')
+  // Thông báo user_mention cho người thật; bot (@puai) do AI layer xử lý (P3)
+  toNotifications(mentioned: MentionedUser[], ctx: MentionContext): NotifyInput[] {
     const where = ctx.sourceType === 'comment' ? 'một bình luận' : 'một bài viết'
-    await Promise.all(
-      humans.map((m) =>
-        this.notifications
-          .createNotification({
-            recipientId: m.id,
-            actorId: ctx.authorId,
-            type: 'user_mention',
-            title: `${ctx.authorName} đã nhắc đến bạn`,
-            message: `Trong ${where}: "${ctx.snippet.slice(0, 120)}"`,
-            entityId: ctx.postId,
-            entityType: 'post'
-          })
-          .catch((err) => this.logger.error(`Mention notify failed (${m.username}): ${err?.message}`))
-      )
-    )
+    const link = ctx.commentId ? `/post/${ctx.postId}?comment=${ctx.commentId}` : `/post/${ctx.postId}`
+    return mentioned
+      .filter((m) => m.accountType === 'human')
+      .map((m) => ({
+        type: 'user_mention',
+        recipientId: m.id,
+        actorId: ctx.authorId,
+        verb: `đã nhắc đến bạn trong ${where}`,
+        message: snippet(ctx.snippet),
+        entityType: 'post',
+        entityId: ctx.postId,
+        link
+      }))
   }
 }

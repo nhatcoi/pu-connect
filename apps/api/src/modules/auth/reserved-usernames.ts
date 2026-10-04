@@ -4,7 +4,7 @@ const RESERVED = new Set([
   'puai', 'pu_ai', 'ai', 'bot', 'admin', 'administrator', 'root', 'system', 'support', 'help',
   'phenikaa', 'puconnector', 'moderator', 'mod', 'staff', 'official', 'null', 'undefined',
   'home', 'search', 'communities', 'messages', 'notifications', 'settings', 'api', 'graphql',
-  'verify-email', 'get-started', 'c', 'u', 'login', 'logout', 'register', 'signup'
+  'verify-email', 'get-started', 'post', 'p', 'c', 'u', 'login', 'logout', 'register', 'signup'
 ])
 
 export function isReservedUsername(username: string): boolean {

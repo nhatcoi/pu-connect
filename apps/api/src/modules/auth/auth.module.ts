@@ -8,10 +8,11 @@ import { GoogleStrategy } from './google.strategy'
 import { SessionSerializer } from './session.serializer'
 import { MailService } from './mail.service'
 import { GOOGLE_AUTH_ENABLED } from './auth.constants'
+import { NotificationsModule } from '../notifications/notifications.module'
 
 
 @Module({
-  imports: [PassportModule.register({ session: true })],
+  imports: [PassportModule.register({ session: true }), NotificationsModule],
   controllers: [AuthController],
   providers: [
     AuthService,

@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
+import { NotificationsService } from '../notifications/notifications.service'
+import { snippet, type NotifyInput } from '../notifications/notification.types'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
 
 export interface CommentsResult {
@@ -21,7 +23,8 @@ export class CommentsService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly mentions: MentionsService
+    private readonly mentions: MentionsService,
+    private readonly notifications: NotificationsService
   ) {}
 
   async findByPost(
@@ -78,6 +81,8 @@ export class CommentsService {
 
   async create(authorId: string, data: CreateCommentInput): Promise<CommentItem> {
     let mentioned: MentionedUser[] = []
+    let postAuthorId: string | null = null
+    let parentAuthorId: string | null = null
     const created = await this.db.transaction(async (client) => {
       // 1. Check if post exists with row-level lock
       const postRes = await client.query(
@@ -86,6 +91,17 @@ export class CommentsService {
       )
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
+      }
+      postAuthorId = postRes.rows[0].author_id
+
+      // 1.1. Bình luận trả lời: tác giả bình luận cha (phải cùng bài viết)
+      if (data.parentId) {
+        const parentRes = await client.query(
+          `SELECT author_id FROM comments WHERE id = $1 AND post_id = $2 LIMIT 1`,
+          [data.parentId, data.postId]
+        )
+        if (parentRes.rows.length === 0) throw new NotFoundException('Bình luận gốc không tồn tại')
+        parentAuthorId = parentRes.rows[0].author_id
       }
 
       // 2. Fetch author details
@@ -143,15 +159,46 @@ export class CommentsService {
       }
     })
 
-    // Thông báo mention sau khi commit
-    void this.mentions.notify(mentioned, {
-      sourceType: 'comment',
-      sourceId: created.id,
-      authorId,
-      authorName: created.author?.displayName || 'Ai đó',
-      postId: created.postId,
-      snippet: created.content
-    })
+    // Thông báo sau khi commit; mỗi người chỉ nhận 1 loại: reply > mention > post_comment
+    const link = `/post/${created.postId}?comment=${created.id}`
+    const quote = snippet(created.content)
+    const events: NotifyInput[] = []
+    if (parentAuthorId) {
+      events.push({
+        type: 'comment_reply',
+        recipientId: parentAuthorId,
+        actorId: authorId,
+        verb: 'đã trả lời bình luận của bạn',
+        message: quote,
+        entityType: 'post',
+        entityId: created.postId,
+        link
+      })
+    }
+    events.push(
+      ...this.mentions.toNotifications(mentioned, {
+        sourceType: 'comment',
+        sourceId: created.id,
+        authorId,
+        postId: created.postId,
+        commentId: created.id,
+        snippet: created.content
+      })
+    )
+    if (postAuthorId) {
+      events.push({
+        type: 'post_comment',
+        recipientId: postAuthorId,
+        actorId: authorId,
+        verb: 'đã bình luận về bài viết của bạn',
+        message: quote,
+        entityType: 'post',
+        entityId: created.postId,
+        link,
+        groupKey: `post_comment:${created.postId}`
+      })
+    }
+    void this.notifications.dispatch(events)
     return created
   }
 
@@ -159,10 +206,11 @@ export class CommentsService {
     commentId: string,
     currentUserId: string
   ): Promise<{ isSolution: boolean; message: string }> {
-    return this.db.transaction(async (client) => {
+    let accepted: { authorId: string; postId: string; content: string } | null = null
+    const result = await this.db.transaction(async (client) => {
       // Find comment and post with locks
       const commentRes = await client.query(
-        `SELECT c.id, c.post_id, c.author_id as comment_author_id, c.is_solution, p.author_id as post_author_id
+        `SELECT c.id, c.post_id, c.content, c.author_id as comment_author_id, c.is_solution, p.author_id as post_author_id
          FROM comments c
          JOIN posts p ON c.post_id = p.id
          WHERE c.id = $1 LIMIT 1 FOR UPDATE`,
@@ -200,11 +248,32 @@ export class CommentsService {
         [newStatus, row.post_id]
       )
 
+      if (newStatus) {
+        accepted = { authorId: row.comment_author_id, postId: row.post_id, content: row.content }
+      }
+
       return {
         isSolution: newStatus,
         message: newStatus ? 'Đã duyệt câu trả lời chính xác' : 'Đã hủy duyệt lời giải'
       }
     })
+
+    if (accepted) {
+      const { authorId, postId, content } = accepted
+      void this.notifications.dispatch([
+        {
+          type: 'accepted_solution',
+          recipientId: authorId,
+          actorId: currentUserId,
+          verb: 'đã chọn câu trả lời của bạn làm lời giải',
+          message: snippet(content),
+          entityType: 'post',
+          entityId: postId,
+          link: `/post/${postId}?comment=${commentId}`
+        }
+      ])
+    }
+    return result
   }
 
   async toggleLike(commentId: string, userId: string): Promise<{ isLiked: boolean; likesCount: number }> {

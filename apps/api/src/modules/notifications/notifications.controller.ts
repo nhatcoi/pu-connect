@@ -1,49 +1,58 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Param,
-  Query,
-  Req,
-  UnauthorizedException
-} from '@nestjs/common'
-import { NotificationsService } from './notifications.service'
-import { DatabaseService } from '../../database/database.service'
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Query, Req } from '@nestjs/common'
 import type { Request } from 'express'
+import { NotificationsService } from './notifications.service'
 import { requireUserId } from '../../common/http/current-user'
+
+const LOGIN_MESSAGE = 'Vui lòng đăng nhập để xem thông báo'
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(
-    private readonly notificationsService: NotificationsService,
-    private readonly db: DatabaseService
-  ) {}
+  constructor(private readonly notificationsService: NotificationsService) {}
 
-  private async resolveUserId(req: Request): Promise<string> {
-    return requireUserId(req, 'Vui lòng đăng nhập để xem thông báo')
-  }
-
+  // GET /notifications?limit=15&before=<cursor>&unread=1&type=user_mention
   @Get()
-  async findAll(@Query('limit') limit: string | undefined, @Req() req: Request) {
-    const userId = await this.resolveUserId(req)
-    const parsedLimit = limit ? parseInt(limit, 10) : 15
-    const result = await this.notificationsService.findAll(userId, parsedLimit)
-    return {
-      success: true,
-      data: result.data,
-      unreadCount: result.unreadCount
-    }
+  async findAll(
+    @Req() req: Request,
+    @Query('limit') limit?: string,
+    @Query('before') before?: string,
+    @Query('unread') unread?: string,
+    @Query('type') type?: string
+  ) {
+    const userId = requireUserId(req, LOGIN_MESSAGE)
+    const result = await this.notificationsService.findAll(userId, {
+      limit: limit ? parseInt(limit, 10) : 15,
+      before,
+      unreadOnly: unread === '1' || unread === 'true',
+      type
+    })
+    return { success: true, ...result }
   }
 
-  @Patch(':id/read')
-  async markAsRead(@Param('id') id: string, @Req() req: Request) {
-    const userId = await this.resolveUserId(req)
-    return this.notificationsService.markAsRead(id, userId)
+  @Get('unread-count')
+  async unreadCount(@Req() req: Request) {
+    const userId = requireUserId(req, LOGIN_MESSAGE)
+    return { success: true, unreadCount: await this.notificationsService.unreadCount(userId) }
+  }
+
+  @Get('settings')
+  async getSettings(@Req() req: Request) {
+    const userId = requireUserId(req, LOGIN_MESSAGE)
+    return { success: true, data: await this.notificationsService.getSettings(userId) }
+  }
+
+  @Patch('settings')
+  async updateSettings(@Req() req: Request, @Body() body: Record<string, unknown>) {
+    const userId = requireUserId(req, LOGIN_MESSAGE)
+    return { success: true, data: await this.notificationsService.updateSettings(userId, body) }
   }
 
   @Patch('read-all')
   async markAllAsRead(@Req() req: Request) {
-    const userId = await this.resolveUserId(req)
-    return this.notificationsService.markAllAsRead(userId)
+    return this.notificationsService.markAllAsRead(requireUserId(req, LOGIN_MESSAGE))
+  }
+
+  @Patch(':id/read')
+  async markAsRead(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.notificationsService.markAsRead(id, requireUserId(req, LOGIN_MESSAGE))
   }
 }

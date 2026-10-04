@@ -16,6 +16,7 @@ import { ConfigService } from '@nestjs/config'
 import { MailService } from './mail.service'
 import { inferStudentInfoFromEmail, isPhenikaaEmail } from './email-profile.util'
 import { isReservedUsername } from './reserved-usernames'
+import { NotificationsService } from '../notifications/notifications.service'
 
 @Injectable()
 export class AuthService {
@@ -24,7 +25,8 @@ export class AuthService {
   constructor(
     private readonly db: DatabaseService,
     private readonly mail: MailService,
-    private readonly config: ConfigService
+    private readonly config: ConfigService,
+    private readonly notifications: NotificationsService
   ) {}
 
   async validateUser(emailOrUsername: string, password: string): Promise<UserProfile | null> {
@@ -181,16 +183,33 @@ export class AuthService {
     }
     const { id, email } = res.rows[0]
     const isPhenikaa = isPhenikaaEmail(email)
-    await this.db.query(
-      `UPDATE users
+    const upd = await this.db.query(
+      `UPDATE users u
        SET email_verified = TRUE, email_verified_at = NOW(),
            verify_token_hash = NULL, verify_token_expires = NULL,
-           is_verified = is_verified OR $2,
-           verified_at = CASE WHEN $2 AND verified_at IS NULL THEN NOW() ELSE verified_at END,
+           is_verified = u.is_verified OR $2,
+           verified_at = CASE WHEN $2 AND u.verified_at IS NULL THEN NOW() ELSE u.verified_at END,
            updated_at = NOW()
-       WHERE id = $1`,
+       FROM (SELECT is_verified AS was_verified FROM users WHERE id = $1) prev
+       WHERE u.id = $1
+       RETURNING prev.was_verified, u.is_verified, u.username`,
       [id, isPhenikaa]
     )
+    // Vừa được cấp tích xanh ⇒ thông báo hệ thống
+    const after = upd.rows[0]
+    if (after && !after.was_verified && after.is_verified) {
+      void this.notifications.dispatch([
+        {
+          type: 'account_verified',
+          recipientId: id,
+          actorId: null,
+          verb: 'tài khoản của bạn đã được xác thực sinh viên Phenikaa (tích xanh)',
+          entityType: 'user',
+          entityId: id,
+          link: `/${after.username}`
+        }
+      ])
+    }
     return (await this.findById(id)) as UserProfile
   }
 

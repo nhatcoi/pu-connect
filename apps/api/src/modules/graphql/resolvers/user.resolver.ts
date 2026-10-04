@@ -5,11 +5,15 @@ import { DocumentType } from '../types/document.type'
 import { StudyGroupType } from '../types/study-group.type'
 import { FollowResultType } from '../types/follow-result.type'
 import { DatabaseService } from '../../../database/database.service'
+import { NotificationsService } from '../../notifications/notifications.service'
 import { NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common'
 
 @Resolver(() => UserType)
 export class UserResolver {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notifications: NotificationsService
+  ) {}
 
   @Query(() => UserType, { name: 'userProfile', nullable: true })
   async getUserProfile(
@@ -137,6 +141,21 @@ export class UserResolver {
         [currentUserId, targetUserId]
       )
       isFollowing = true
+
+      // Gộp: "A và N người khác đã bắt đầu theo dõi bạn"
+      const actor = await this.db.query(`SELECT username FROM users WHERE id = $1`, [currentUserId])
+      void this.notifications.dispatch([
+        {
+          type: 'user_follow',
+          recipientId: targetUserId,
+          actorId: currentUserId,
+          verb: 'đã bắt đầu theo dõi bạn',
+          entityType: 'user',
+          entityId: currentUserId,
+          link: `/${actor.rows[0]?.username || ''}`,
+          groupKey: 'user_follow'
+        }
+      ])
     }
 
     const followersRes = await this.db.query(

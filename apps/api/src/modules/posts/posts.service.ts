@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
+import { NotificationsService } from '../notifications/notifications.service'
+import { snippet } from '../notifications/notification.types'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData } from '@pu/schemas'
 
 export interface FeedResult {
@@ -16,7 +18,8 @@ export class PostsService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly mentions: MentionsService
+    private readonly mentions: MentionsService,
+    private readonly notifications: NotificationsService
   ) {}
 
   async findAll(
@@ -340,14 +343,15 @@ export class PostsService {
     })
 
     // Thông báo mention sau khi commit
-    void this.mentions.notify(mentioned, {
-      sourceType: 'post',
-      sourceId: created.id,
-      authorId,
-      authorName: created.author?.displayName || 'Ai đó',
-      postId: created.id,
-      snippet: created.title || created.content
-    })
+    void this.notifications.dispatch(
+      this.mentions.toNotifications(mentioned, {
+        sourceType: 'post',
+        sourceId: created.id,
+        authorId,
+        postId: created.id,
+        snippet: created.title || created.content
+      })
+    )
     return created
   }
 
@@ -385,14 +389,15 @@ export class PostsService {
       return this.findOne(postId, userId)
     })
 
-    void this.mentions.notify(mentioned, {
-      sourceType: 'post',
-      sourceId: postId,
-      authorId: userId,
-      authorName: updated.author?.displayName || 'Ai đó',
-      postId,
-      snippet: updated.title || updated.content
-    })
+    void this.notifications.dispatch(
+      this.mentions.toNotifications(mentioned, {
+        sourceType: 'post',
+        sourceId: postId,
+        authorId: userId,
+        postId,
+        snippet: updated.title || updated.content
+      })
+    )
     return updated
   }
 
@@ -428,7 +433,12 @@ export class PostsService {
   }
 
   async toggleLike(postId: string, userId: string): Promise<{ isLiked: boolean; likesCount: number }> {
-    return this.db.transaction(async (client) => {
+    let post: { author_id: string; title: string | null; content: string } | undefined
+    const result = await this.db.transaction(async (client) => {
+      const postRes = await client.query(`SELECT author_id, title, content FROM posts WHERE id = $1`, [postId])
+      post = postRes.rows[0]
+      if (!post) throw new NotFoundException('Bài viết không tồn tại')
+
       const check = await client.query(
         `SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
         [postId, userId]
@@ -459,6 +469,24 @@ export class PostsService {
         return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
       }
     })
+
+    // Gộp: "A và N người khác đã thích bài viết của bạn"
+    if (result.isLiked && post) {
+      void this.notifications.dispatch([
+        {
+          type: 'post_like',
+          recipientId: post.author_id,
+          actorId: userId,
+          verb: 'đã thích bài viết của bạn',
+          message: snippet(post.title || post.content),
+          entityType: 'post',
+          entityId: postId,
+          link: `/post/${postId}`,
+          groupKey: `post_like:${postId}`
+        }
+      ])
+    }
+    return result
   }
 
   async toggleBookmark(postId: string, userId: string): Promise<{ isBookmarked: boolean }> {

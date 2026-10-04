@@ -4,8 +4,10 @@ import { UserResolver } from './resolvers/user.resolver'
 import { DocumentResolver } from './resolvers/document.resolver'
 import { StudyGroupResolver } from './resolvers/study-group.resolver'
 import { CommentResolver } from './resolvers/comment.resolver'
+import { NotificationsModule } from '../notifications/notifications.module'
 
 @Module({
+  imports: [NotificationsModule],
   providers: [
     FeedResolver,
     UserResolver,
