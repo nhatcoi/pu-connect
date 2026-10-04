@@ -40,6 +40,36 @@ sequenceDiagram
   end
 ```
 
+### 5.1b. Quên mật khẩu
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Người dùng
+  participant W as Web (/forgot-password · /reset-password)
+  participant A as API AuthController
+  participant S as AuthService
+  participant DB as Postgres
+  participant M as Gmail SMTP
+
+  U->>W: Nhập email
+  W->>A: POST /api/auth/forgot-password
+  Note over A: giới hạn 5/15 phút/IP, 3/giờ/email
+  A->>S: requestPasswordReset()
+  opt email có tài khoản (human), cách lần trước > 60s
+    S->>DB: lưu SHA-256(token), hết hạn 30 phút
+    S-)M: gửi link /reset-password?token=… (nền)
+  end
+  A-->>W: { sent: true } (luôn giống nhau)
+  U->>W: Bấm link, nhập mật khẩu mới
+  W->>A: POST /api/auth/reset-password
+  A->>S: resetPassword()
+  S->>DB: UPDATE … WHERE token_hash khớp AND chưa hết hạn (nguyên tử, dùng một lần)
+  S->>DB: DELETE user_sessions của tài khoản (đăng xuất mọi nơi)
+  S-)M: email cảnh báo "mật khẩu đã đổi"
+  A-->>W: { success: true } → về đăng nhập
+```
+
 ## 5.2. Đăng nhập Google OAuth
 
 ```mermaid
@@ -164,6 +194,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-04 — thêm 5.1b Quên mật khẩu.
 - 2026-10-04 — thêm 5.5 Web Push qua BullMQ.
 - 2026-10-04 — 5.3 cập nhật theo Notification v1 (dispatch, ưu tiên, gộp).
 - 2026-10-04 — tạo mới: auth email-first, Google OAuth, mention → realtime, feed ranking.

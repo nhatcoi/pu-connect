@@ -8,6 +8,8 @@
 flowchart LR
   landing["<b>/</b><br/>Landing + AuthForm<br/>(đã đăng nhập → /home)"]
   verify["<b>/verify-email</b><br/>?token="]
+  forgot["<b>/forgot-password</b><br/>nhập email"]
+  reset["<b>/reset-password</b><br/>?token="]
   getstarted["/get-started<br/>→ redirect /home"]
 
   subgraph guarded["AuthGuard (cần đăng nhập)"]
@@ -22,6 +24,9 @@ flowchart LR
 
   landing -->|login / register / Google| home
   verify --> home
+  landing -->|Quên mật khẩu?| forgot
+  forgot -.->|email chứa link| reset
+  reset -->|đổi xong| landing
   getstarted --> home
   home --> search & comms & profile & notif
   notif --> post
@@ -29,7 +34,7 @@ flowchart LR
 
   classDef page fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef redirect fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class landing,verify,home,search,comms,comm,profile,notif,post page
+  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post page
   class getstarted redirect
 ```
 
@@ -78,5 +83,6 @@ flowchart TB
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, trang pháp lý, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-04 — thêm `/forgot-password`, `/reset-password`.
 - 2026-10-04 — thêm `/notifications`, `/post/[id]`, store thông báo dùng chung, mục Thông báo ở sidebar.
 - 2026-10-04 — tạo mới; bỏ `/get-started` (redirect), thêm `/verify-email`, realtime notifications.

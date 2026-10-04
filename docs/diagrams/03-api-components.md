@@ -58,7 +58,7 @@ flowchart TB
 
 | Module | Endpoint |
 |---|---|
-| Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/resend-verification` · `POST auth/onboarding` |
+| Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/forgot-password` · `POST auth/reset-password` · `POST auth/resend-verification` · `POST auth/onboarding` |
 | Users | `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `POST users/verify-university` |
 | Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`) · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` |
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `DELETE comments/:id` |
@@ -88,6 +88,7 @@ flowchart TB
 | Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
 
 **Changelog:**
+- 2026-10-04 — Auth: `forgot-password`, `reset-password`.
 - 2026-10-04 — PushModule + QueueModule (BullMQ), endpoint push, event `presence`.
 - 2026-10-04 — Notification v1: `dispatch()` từ Posts/Comments/UserResolver/Auth, endpoint settings/unread-count, event `notification.read`; vá mạo danh (requireUserId).
 - 2026-10-04 — tạo mới; thêm MentionsModule, RealtimeGateway có xác thực, NotificationsModule đẩy realtime.
