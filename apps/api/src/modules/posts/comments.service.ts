@@ -15,6 +15,8 @@ export interface CommentsResult {
   total: number
   hasMore: boolean
   remainingCount: number
+  // Offset kế tiếp tính theo bình luận gốc (top-level)
+  nextOffset: number
 }
 
 @Injectable()
@@ -27,6 +29,7 @@ export class CommentsService {
     private readonly notifications: NotificationsService
   ) {}
 
+  // Phân trang theo bình luận gốc; kèm toàn bộ phản hồi của các gốc trong trang (2 cấp)
   async findByPost(
     postId: string,
     currentUserId?: string,
@@ -36,46 +39,55 @@ export class CommentsService {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
 
-    // 1. Get total count
     const countRes = await this.db.query(
-      `SELECT COUNT(*) as total FROM comments WHERE post_id = $1`,
+      `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE parent_id IS NULL)::int AS roots
+       FROM comments WHERE post_id = $1`,
       [postId]
     )
-    const total = parseInt(countRes.rows[0]?.total || '0', 10)
+    const total = countRes.rows[0]?.total || 0
+    const rootsTotal = countRes.rows[0]?.roots || 0
 
-    let sql = `
-      SELECT c.*,
-             u.id as author_user_id, u.email as author_email, u.username as author_username,
-             u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points
-    `
-    const params: any[] = [postId]
-
+    const params: any[] = [postId, safeLimit, safeOffset]
+    let likedSql = 'FALSE'
     if (currentUserId) {
       params.push(currentUserId)
-      sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = c.id AND pr.user_id = $2) as is_liked_by_me`
-    } else {
-      sql += `, FALSE as is_liked_by_me`
+      likedSql = `EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = c.id AND pr.user_id = $4)`
     }
 
-    params.push(safeLimit, safeOffset)
-    sql += `
-      FROM comments c
-      JOIN users u ON c.author_id = u.id
-      WHERE c.post_id = $1
-      ORDER BY c.is_solution DESC, c.created_at ASC
-      LIMIT $${params.length - 1} OFFSET $${params.length}
-    `
-
-    const res = await this.db.query(sql, params)
+    // Recursive CTE: gốc trong trang + mọi hậu duệ (dữ liệu cũ có thể sâu > 2 cấp)
+    const res = await this.db.query(
+      `WITH RECURSIVE roots AS (
+         SELECT id FROM comments
+         WHERE post_id = $1 AND parent_id IS NULL
+         ORDER BY is_solution DESC, created_at ASC, id ASC
+         LIMIT $2 OFFSET $3
+       ), thread AS (
+         SELECT id FROM roots
+         UNION ALL
+         SELECT c.id FROM comments c JOIN thread t ON c.parent_id = t.id
+       )
+       SELECT c.*,
+              u.id as author_user_id, u.email as author_email, u.username as author_username,
+              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
+              u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+              ${likedSql} as is_liked_by_me
+       FROM comments c
+       JOIN thread t ON t.id = c.id
+       JOIN users u ON c.author_id = u.id
+       ORDER BY c.parent_id IS NOT NULL, c.is_solution DESC, c.created_at ASC, c.id ASC`,
+      params
+    )
     const items = res.rows.map((row) => this.mapRowToCommentItem(row))
-    const remainingCount = Math.max(0, total - (safeOffset + items.length))
+    const rootsLoaded = items.filter((c) => !c.parentId).length
+    const nextOffset = safeOffset + rootsLoaded
+    const remainingCount = Math.max(0, rootsTotal - nextOffset)
 
     return {
       data: items,
       total,
       hasMore: remainingCount > 0,
-      remainingCount
+      remainingCount,
+      nextOffset
     }
   }
 
@@ -94,14 +106,22 @@ export class CommentsService {
       }
       postAuthorId = postRes.rows[0].author_id
 
-      // 1.1. Bình luận trả lời: tác giả bình luận cha (phải cùng bài viết)
+      // 1.1. Trả lời: báo tác giả bình luận được trả lời, nhưng lưu dưới bình luận gốc (tối đa 2 cấp)
+      let rootId: string | null = null
       if (data.parentId) {
         const parentRes = await client.query(
-          `SELECT author_id FROM comments WHERE id = $1 AND post_id = $2 LIMIT 1`,
+          `WITH RECURSIVE up AS (
+             SELECT id, parent_id, author_id, 0 AS depth FROM comments WHERE id = $1 AND post_id = $2
+             UNION ALL
+             SELECT c.id, c.parent_id, c.author_id, up.depth + 1 FROM comments c JOIN up ON c.id = up.parent_id
+           )
+           SELECT (SELECT author_id FROM up WHERE depth = 0) AS author_id,
+                  (SELECT id FROM up WHERE parent_id IS NULL LIMIT 1) AS root_id`,
           [data.parentId, data.postId]
         )
-        if (parentRes.rows.length === 0) throw new NotFoundException('Bình luận gốc không tồn tại')
+        if (!parentRes.rows[0]?.author_id) throw new NotFoundException('Bình luận gốc không tồn tại')
         parentAuthorId = parentRes.rows[0].author_id
+        rootId = parentRes.rows[0].root_id || data.parentId
       }
 
       // 2. Fetch author details
@@ -119,7 +139,7 @@ export class CommentsService {
         `INSERT INTO comments (post_id, author_id, parent_id, content)
          VALUES ($1, $2, $3, $4)
          RETURNING *`,
-        [data.postId, authorId, data.parentId || null, data.content]
+        [data.postId, authorId, rootId, data.content]
       )
 
       const commentRow = insertRes.rows[0]
@@ -326,10 +346,20 @@ export class CommentsService {
         throw new UnauthorizedException('Bạn không có quyền xóa bình luận này')
       }
 
+      // ON DELETE CASCADE xóa cả phản hồi ⇒ trừ đúng số dòng bị xóa
+      const removed = await client.query(
+        `WITH RECURSIVE thread AS (
+           SELECT id FROM comments WHERE id = $1
+           UNION ALL
+           SELECT c.id FROM comments c JOIN thread t ON c.parent_id = t.id
+         )
+         SELECT COUNT(*)::int AS c FROM thread`,
+        [commentId]
+      )
       await client.query(`DELETE FROM comments WHERE id = $1`, [commentId])
       await client.query(
-        `UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = $1`,
-        [comment.post_id]
+        `UPDATE posts SET comments_count = GREATEST(0, comments_count - $2) WHERE id = $1`,
+        [comment.post_id, removed.rows[0]?.c || 1]
       )
 
       return true

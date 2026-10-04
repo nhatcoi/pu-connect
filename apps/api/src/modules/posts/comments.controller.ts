@@ -43,7 +43,8 @@ export class CommentsController {
       data: result.data,
       total: result.total,
       hasMore: result.hasMore,
-      remainingCount: result.remainingCount
+      remainingCount: result.remainingCount,
+      nextOffset: result.nextOffset
     }
   }
 
