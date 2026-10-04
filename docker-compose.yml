@@ -1,5 +1,7 @@
 version: '3.8'
 
+# Chỉ bind 127.0.0.1: Docker tự mở cổng và bỏ qua firewall (ufw/iptables),
+# nên KHÔNG BAO GIỜ publish DB/Redis ra 0.0.0.0. Truy cập từ xa: SSH tunnel.
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -7,12 +9,24 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: pu_user
-      POSTGRES_PASSWORD: pu_password
+      POSTGRES_PASSWORD: pu_password # chỉ dùng khi khởi tạo volume lần đầu (dev)
       POSTGRES_DB: pu_connector_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Hàng đợi BullMQ (push/email). noeviction: BullMQ yêu cầu không được xóa key
+  redis:
+    image: redis:7-alpine
+    container_name: pu_redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_data:
+  redis_data:

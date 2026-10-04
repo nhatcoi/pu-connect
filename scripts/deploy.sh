@@ -77,7 +77,7 @@ fi
 
 # Ensure Docker Compose Postgres is running
 echo "Đang khởi động PostgreSQL pgvector container..."
-docker compose up -d postgres
+docker compose up -d postgres redis
 
 # Wait for Postgres
 echo "Đang chờ PostgreSQL sẵn sàng..."
@@ -123,7 +123,7 @@ echo "Đang chạy pnpm install..."
 pnpm install
 
 echo "Đang build Monorepo (@pu/web & @pu/api)..."
-pnpm run build
+pnpm exec turbo run build --concurrency=1  # tuần tự: VPS 2GB RAM, build song song dễ hết bộ nhớ
 REMOTE_BUILD
 
 # 5. Restart Systemd Services & Reload Nginx
