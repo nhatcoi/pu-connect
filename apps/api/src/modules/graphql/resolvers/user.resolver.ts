@@ -47,7 +47,7 @@ export class UserResolver {
       SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
              u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
       FROM users u
-      WHERE 1=1
+      WHERE u.account_type = 'human'
     `
     const params: any[] = []
 

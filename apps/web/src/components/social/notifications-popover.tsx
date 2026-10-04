@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 import {
   Bell,
   CheckCheck,
@@ -85,64 +86,9 @@ export function NotificationsPopover() {
         setUnreadCount(res.unreadCount || 0)
       }
     } catch {
-      // Mock fallback if user is guest or initial load
-      setNotifications([
-        {
-          id: 'mock-1',
-          recipientId: 'current',
-          actorId: 'mock-u1',
-          actor: {
-            id: 'mock-u1',
-            username: 'gv_nguyenvanha',
-            displayName: 'TS. Nguyễn Văn Hà',
-            avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=GVHa'
-          },
-          type: 'accepted_solution',
-          title: 'Lời giải chính xác',
-          message: 'đã chọn câu trả lời của bạn là Lời giải chính xác.',
-          entityId: '05a1f0c4-6324-4fa6-a5e1-d1740ed4bf73',
-          entityType: 'post',
-          isRead: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString()
-        },
-        {
-          id: 'mock-2',
-          recipientId: 'current',
-          actorId: 'mock-u2',
-          actor: {
-            id: 'mock-u2',
-            username: 'tranthimai',
-            displayName: 'Trần Thị Mai',
-            avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mai'
-          },
-          type: 'post_like',
-          title: 'Lượt thích mới',
-          message: 'và 3 người khác đã thích bài viết giải bài tập Cấu trúc dữ liệu của bạn.',
-          entityId: '28dba253-c0c7-49ef-aff8-1e7c02f58553',
-          entityType: 'post',
-          isRead: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 90).toISOString()
-        },
-        {
-          id: 'mock-3',
-          recipientId: 'current',
-          actorId: 'mock-u3',
-          actor: {
-            id: 'mock-u3',
-            username: 'lequangdung',
-            displayName: 'Lê Quang Dũng',
-            avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dung'
-          },
-          type: 'group_join_request',
-          title: 'Xin gia nhập nhóm',
-          message: 'muốn tham gia nhóm đồ án PBL Smart Campus K16.',
-          entityId: 'groups',
-          entityType: 'study_group',
-          isRead: true,
-          createdAt: new Date(Date.now() - 1000 * 60 * 360).toISOString()
-        }
-      ])
-      setUnreadCount(2)
+      // Lỗi tải: hiển thị rỗng, không dùng dữ liệu giả
+      setNotifications([])
+      setUnreadCount(0)
     } finally {
       setIsLoading(false)
     }
@@ -150,10 +96,13 @@ export function NotificationsPopover() {
 
   useEffect(() => {
     fetchNotifications()
-    // Poll every 45s for fresh notifications
-    const interval = setInterval(fetchNotifications, 45000)
+    // Poll dự phòng khi mất kết nối realtime (fallback polling)
+    const interval = setInterval(fetchNotifications, 120000)
     return () => clearInterval(interval)
   }, [fetchNotifications])
+
+  // Thông báo mới đẩy qua socket ⇒ tải lại danh sách ngay
+  useRealtimeEvent('notification', fetchNotifications)
 
   const handleMarkAllAsRead = async () => {
     try {

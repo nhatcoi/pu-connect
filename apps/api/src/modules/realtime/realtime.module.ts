@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common'
-import { EventsGateway } from './events.gateway'
+import { RealtimeGateway } from './realtime.gateway'
 
 @Module({
-  providers: [EventsGateway],
-  exports: [EventsGateway]
+  providers: [RealtimeGateway],
+  exports: [RealtimeGateway]
 })
 export class RealtimeModule {}

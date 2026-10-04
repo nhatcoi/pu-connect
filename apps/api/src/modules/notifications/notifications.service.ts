@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { RealtimeGateway } from '../realtime/realtime.gateway'
 
 export interface NotificationItem {
   id: string
@@ -24,7 +25,10 @@ export interface NotificationItem {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name)
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly realtime: RealtimeGateway
+  ) {}
 
   async findAll(recipientId: string, limit = 15): Promise<{ data: NotificationItem[]; unreadCount: number }> {
     const safeLimit = Math.min(50, Math.max(1, limit))
@@ -107,9 +111,10 @@ export class NotificationsService {
       return
     }
 
-    await this.db.query(
+    const res = await this.db.query(
       `INSERT INTO notifications (recipient_id, actor_id, type, title, message, entity_id, entity_type)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, created_at`,
       [
         data.recipientId,
         data.actorId || null,
@@ -120,5 +125,16 @@ export class NotificationsService {
         data.entityType || null
       ]
     )
+
+    // Đẩy realtime tới room user:{id}; client tự tải lại danh sách
+    this.realtime.emitToUser(data.recipientId, 'notification', {
+      id: res.rows[0].id,
+      type: data.type,
+      title: data.title,
+      message: data.message,
+      entityId: data.entityId || null,
+      entityType: data.entityType || null,
+      createdAt: new Date(res.rows[0].created_at).toISOString()
+    })
   }
 }

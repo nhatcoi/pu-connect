@@ -5,6 +5,7 @@ import {
   Logger
 } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
 
 export interface CommentsResult {
@@ -18,7 +19,10 @@ export interface CommentsResult {
 export class CommentsService {
   private readonly logger = new Logger(CommentsService.name)
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly mentions: MentionsService
+  ) {}
 
   async findByPost(
     postId: string,
@@ -73,7 +77,8 @@ export class CommentsService {
   }
 
   async create(authorId: string, data: CreateCommentInput): Promise<CommentItem> {
-    return this.db.transaction(async (client) => {
+    let mentioned: MentionedUser[] = []
+    const created = await this.db.transaction(async (client) => {
       // 1. Check if post exists with row-level lock
       const postRes = await client.query(
         `SELECT id, author_id FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`,
@@ -102,6 +107,9 @@ export class CommentsService {
       )
 
       const commentRow = insertRes.rows[0]
+
+      // 3.1. Ghi @mention trong cùng transaction
+      mentioned = await this.mentions.record(client, 'comment', commentRow.id, authorId, data.content)
 
       // 4. Atomically update post comments count
       await client.query(
@@ -134,6 +142,17 @@ export class CommentsService {
         }
       }
     })
+
+    // Thông báo mention sau khi commit
+    void this.mentions.notify(mentioned, {
+      sourceType: 'comment',
+      sourceId: created.id,
+      authorId,
+      authorName: created.author?.displayName || 'Ai đó',
+      postId: created.postId,
+      snippet: created.content
+    })
+    return created
   }
 
   async acceptSolution(

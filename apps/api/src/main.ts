@@ -3,8 +3,10 @@ import { Logger } from '@nestjs/common'
 import { AppModule } from './app.module'
 import { AllExceptionsFilter } from './common/filters/http-exception.filter'
 import { TransformInterceptor } from './common/interceptors/transform.interceptor'
-import * as session from 'express-session'
 import * as passport from 'passport'
+import { DatabaseService } from './database/database.service'
+import { createSessionMiddleware } from './common/http/session'
+import { isAllowedOrigin } from './common/http/origins'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 
 async function bootstrap() {
@@ -17,33 +19,15 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api')
 
-  // Enable CORS with Credentials for Session Cookie
+  // CORS có credentials: chỉ origin của app (APP_URL / CORS_ORIGINS / localhost khi dev)
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow local development and mobile clients
-      callback(null, true)
-    },
+    origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true
   })
 
-  // Session Middleware
-  app.use(
-    session({
-      name: 'pu_session',
-      secret: process.env.SESSION_SECRET || 'pu-connector-secret-session-key-2026',
-      resave: false,
-      saveUninitialized: false,
-      proxy: true,
-      cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/'
-      }
-    })
-  )
+  // Session lưu Postgres, dùng chung với Socket.IO handshake
+  app.use(createSessionMiddleware(app.get(DatabaseService).getPool()))
 
   // Passport Session Initialization
   app.use(passport.initialize())

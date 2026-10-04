@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData } from '@pu/schemas'
 
 export interface FeedResult {
@@ -13,7 +14,10 @@ export interface FeedResult {
 export class PostsService {
   private readonly logger = new Logger(PostsService.name)
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly mentions: MentionsService
+  ) {}
 
   async findAll(
     currentUserId?: string,
@@ -154,7 +158,8 @@ export class PostsService {
   }
 
   async create(authorId: string, data: CreatePostInput): Promise<PostItem> {
-    return this.db.transaction(async (client) => {
+    let mentioned: MentionedUser[] = []
+    const created = await this.db.transaction(async (client) => {
       // 1. Resolve author details
       const userRes = await client.query(
         `SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`,
@@ -234,6 +239,9 @@ export class PostsService {
       )
 
       const postRow = insertRes.rows[0]
+
+      // 4.1. Ghi @mention trong cùng transaction
+      mentioned = await this.mentions.record(client, 'post', postRow.id, authorId, data.title, data.content)
 
       // 5. Create Poll if provided
       let pollData: PollData | null = null
@@ -330,10 +338,22 @@ export class PostsService {
         updatedAt: postRow.updated_at.toISOString()
       }
     })
+
+    // Thông báo mention sau khi commit
+    void this.mentions.notify(mentioned, {
+      sourceType: 'post',
+      sourceId: created.id,
+      authorId,
+      authorName: created.author?.displayName || 'Ai đó',
+      postId: created.id,
+      snippet: created.title || created.content
+    })
+    return created
   }
 
   async update(postId: string, userId: string, data: UpdatePostInput): Promise<PostItem> {
-    return this.db.transaction(async (client) => {
+    let mentioned: MentionedUser[] = []
+    const updated = await this.db.transaction(async (client) => {
       const postRes = await client.query(
         `SELECT p.*, u.role as author_role FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 LIMIT 1`,
         [postId]
@@ -359,8 +379,21 @@ export class PostsService {
         [newTitle, newContent, newTags, postId]
       )
 
+      // Chỉ người mới được nhắc mới nhận thông báo
+      mentioned = await this.mentions.record(client, 'post', postId, userId, newTitle, newContent)
+
       return this.findOne(postId, userId)
     })
+
+    void this.mentions.notify(mentioned, {
+      sourceType: 'post',
+      sourceId: postId,
+      authorId: userId,
+      authorName: updated.author?.displayName || 'Ai đó',
+      postId,
+      snippet: updated.title || updated.content
+    })
+    return updated
   }
 
   async delete(postId: string, userId: string): Promise<{ success: boolean }> {
