@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
+import { FEATURES } from '@/lib/features'
 import { cn } from '@/lib/utils'
 
 export function MobileBottomNav() {
@@ -25,8 +26,8 @@ export function MobileBottomNav() {
   const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
   const isDimmed = !isAtTop && (!isHeaderVisible || isScrolling)
 
-  // Don't show bottom nav on landing / auth / onboarding pages
-  if (pathname === '/' || pathname === '/get-started') {
+  // Don't show bottom nav on landing / auth pages
+  if (pathname === '/') {
     return null
   }
 
@@ -45,7 +46,7 @@ export function MobileBottomNav() {
       path: '/search',
       isActive: pathname === '/search' && (!searchParams.get('type') || searchParams.get('type') === 'all')
     },
-    {
+    ...(FEATURES.categoryShortcuts ? [{
       id: 'courses',
       label: 'Môn học',
       icon: GraduationCap,
@@ -58,7 +59,7 @@ export function MobileBottomNav() {
       icon: FileText,
       path: '/search?type=documents',
       isActive: pathname === '/search' && searchParams.get('type') === 'documents'
-    },
+    }] : []),
     {
       id: 'communities',
       label: 'Cộng đồng',

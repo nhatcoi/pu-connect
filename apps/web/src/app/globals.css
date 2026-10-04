@@ -14,6 +14,9 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-orange: var(--brand-orange);
+  --color-surface: var(--surface);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -47,8 +50,11 @@
   --popover: #ffffff;
   --popover-foreground: #09090b;
 
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
+  --primary: #0b3d91;
+  --primary-foreground: #ffffff;
+  --brand-navy: #0b3d91;
+  --brand-orange: #f7941d;
+  --surface: #f5f6f8;
 
   --secondary: #f4f4f5;
   --secondary-foreground: #18181b;
@@ -64,7 +70,7 @@
 
   --border: #e4e4e7;
   --input: #e4e4e7;
-  --ring: #18181b;
+  --ring: #0b3d91;
 }
 
 .dark {
@@ -77,8 +83,11 @@
   --popover: #09090b;
   --popover-foreground: #fafafa;
 
-  --primary: #fafafa;
-  --primary-foreground: #18181b;
+  --primary: #4f86e8;
+  --primary-foreground: #ffffff;
+  --brand-navy: #4f86e8;
+  --brand-orange: #ffa940;
+  --surface: #050507;
 
   --secondary: #27272a;
   --secondary-foreground: #fafafa;
@@ -94,7 +103,7 @@
 
   --border: #27272a;
   --input: #27272a;
-  --ring: #d4d4d8;
+  --ring: #4f86e8;
 }
 
 @layer base {
@@ -246,3 +255,7 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(140, 140, 140, 0.3) transparent;
 }
+
+/* Brand motion: floating & dash flow (Hiệu ứng nền trang đăng nhập) */
+@keyframes pu-dash { to { stroke-dashoffset: -24; } }
+@keyframes pu-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }

@@ -1,5 +1,6 @@
 'use client'
 
+import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/auth-guard'
@@ -46,7 +47,7 @@ export default function ProfilePage({
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
         {/* Global Navigation Header */}
         <Header />
 
@@ -60,16 +61,16 @@ export default function ProfilePage({
         />
 
         {/* Main 3-Column Layout (X Twitter Style) */}
-        <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
           {/* 1. Left Sidebar Navigation (Icon-only on md, full wide on xl) */}
-          <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
             <Sidebar />
           </div>
 
           {/* 2. Center Profile Column (Wider for academic content, clean borders, zero horizontal shift) */}
-          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
             {/* Sticky Topbar with Back Button (Natural Scroll on Mobile, Sticky on Desktop) */}
-            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center gap-3">
+            <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
@@ -79,7 +80,7 @@ export default function ProfilePage({
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="min-w-0">
-                <h2 className="text-base font-bold tracking-tight text-foreground truncate leading-none">
+                <h2 className="text-[15px] font-semibold tracking-tight text-foreground truncate leading-none">
                   {isLoading
                     ? 'Đang tải...'
                     : profile?.displayName || `@${username}`}
@@ -120,72 +121,40 @@ export default function ProfilePage({
             {!isLoading && profile && (
               <div>
                 {/* Profile Header */}
-                <ProfileHeader profile={profile} onRefetch={refetch} />
+                <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card overflow-hidden">
+                  <ProfileHeader profile={profile} onRefetch={refetch} />
+                </div>
 
                 {/* Sticky Navigation Tabs */}
                 <div
                   className={cn(
-                    'sticky z-20 bg-background/95 backdrop-blur-md border-b border-border flex items-center transition-all duration-300 ease-in-out',
+                    'sticky z-20 mb-2.5 bg-surface/90 backdrop-blur-md px-4 sm:px-1 transition-all duration-300 ease-in-out',
                     isHeaderVisible
                       ? 'top-[102px] md:top-[109px]'
                       : 'top-0 md:top-[109px]'
                   )}
                 >
-                  <button
-                    onClick={() => setActiveTab('posts')}
-                    className={`flex-1 py-3 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
-                      activeTab === 'posts'
-                        ? 'border-primary text-foreground font-bold'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                    }`}
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Bài viết</span>
-                    <span className="text-[11px] px-1.5 py-0.2 bg-muted rounded-full ml-0.5">
-                      {profile.posts?.length || 0}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('documents')}
-                    className={`flex-1 py-3 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
-                      activeTab === 'documents'
-                        ? 'border-primary text-foreground font-bold'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                    }`}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    <span>Tài liệu</span>
-                    <span className="text-[11px] px-1.5 py-0.2 bg-muted rounded-full ml-0.5">
-                      {profile.documents?.length || 0}
-                    </span>
-                  </button>
-
-                  <button
-                    onClick={() => setActiveTab('questions')}
-                    className={`flex-1 py-3 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 border-b-2 transition-colors cursor-pointer ${
-                      activeTab === 'questions'
-                        ? 'border-primary text-foreground font-bold'
-                        : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30'
-                    }`}
-                  >
-                    <HelpCircle className="h-4 w-4" />
-                    <span>Hỏi đáp Q&A</span>
-                    <span className="text-[11px] px-1.5 py-0.2 bg-muted rounded-full ml-0.5">
-                      {questionPosts.length}
-                    </span>
-                  </button>
+                  <SlidingTabs
+                    value={activeTab}
+                    onChange={setActiveTab}
+                    items={[
+                      { id: 'posts', label: 'Bài viết', badge: profile.posts?.length || 0 },
+                      { id: 'documents', label: 'Tài liệu', badge: profile.documents?.length || 0 },
+                      { id: 'questions', label: 'Hỏi đáp Q&A', badge: questionPosts.length }
+                    ]}
+                  />
                 </div>
 
                 {/* Tab 1: Posts (Continuous stream on mobile, card on sm:) */}
                 {activeTab === 'posts' && (
-                  <div className="divide-y divide-border/40">
+                  <div className="space-y-2.5 px-2 sm:px-0">
                     {profile.posts && profile.posts.length > 0 ? (
                       profile.posts.map((post) => (
                         <PostCard
                           key={post.id}
                           post={post}
                           onLikeToggle={() => {}}
+                          variant="card"
                         />
                       ))
                     ) : (
@@ -202,7 +171,7 @@ export default function ProfilePage({
 
                 {/* Tab 2: Documents */}
                 {activeTab === 'documents' && (
-                  <div className="p-3 sm:p-4">
+                  <div className="px-2 sm:px-0">
                     {profile.documents && profile.documents.length > 0 ? (
                       <div className="grid grid-cols-1 gap-3">
                         {profile.documents.map((doc) => (
@@ -226,13 +195,14 @@ export default function ProfilePage({
 
                 {/* Tab 3: Q&A Questions */}
                 {activeTab === 'questions' && (
-                  <div className="divide-y divide-border/40">
+                  <div className="space-y-2.5 px-2 sm:px-0">
                     {questionPosts.length > 0 ? (
                       questionPosts.map((post) => (
                         <PostCard
                           key={post.id}
                           post={post}
                           onLikeToggle={() => {}}
+                          variant="card"
                         />
                       ))
                     ) : (
@@ -251,7 +221,7 @@ export default function ProfilePage({
           </main>
 
           {/* 3. Right Sidebar (Desktop lg: and above) */}
-          <div className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 pl-4 xl:pl-6">
+          <div className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4">
             <RightSidebar />
           </div>
         </div>

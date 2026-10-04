@@ -34,6 +34,7 @@ export function FollowButton({
   initialIsFollowing = false,
   onFollowChange,
   size = 'default',
+  variant = 'default',
   className,
   showIcon = true
 }: FollowButtonProps) {
@@ -142,6 +143,8 @@ export function FollowButton({
       disabled={isLoading}
       className={cn(
         'rounded-full font-semibold transition-all duration-200 min-w-[100px] text-xs shadow-xs hover:shadow-sm',
+        // Outline navy: dùng ở danh sách gợi ý cho nhẹ mắt
+        variant === 'outline' && 'bg-transparent border border-primary text-primary hover:bg-primary/10 shadow-none hover:shadow-none',
         className
       )}
     >

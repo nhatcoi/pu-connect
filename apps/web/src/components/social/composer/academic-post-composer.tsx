@@ -1,5 +1,6 @@
 'use client'
 
+import { FEATURES } from '@/lib/features'
 import React, { useState, useRef, useEffect, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -285,7 +286,7 @@ export function AcademicPostComposer({
     >
       <div className="flex gap-3 items-start">
         {/* Left User Personal Avatar */}
-        <Avatar className="h-10 w-10 shrink-0 rounded-full border border-border/40 select-none">
+        <Avatar className="h-9 w-9 shrink-0 rounded-full border border-border/40 select-none">
           <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || 'User'} />
           <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
             {userInitials}
@@ -450,7 +451,7 @@ export function AcademicPostComposer({
                     type="button"
                     onClick={() => setIsExpanded(true)}
                     size="sm"
-                    className="h-8 px-4 rounded-full font-bold text-xs bg-foreground text-background hover:bg-foreground/90 shrink-0 cursor-pointer shadow-none"
+                    className="h-8 px-4 rounded-full font-semibold text-xs bg-primary text-primary-foreground hover:bg-primary/90 shrink-0 cursor-pointer shadow-none"
                   >
                     Đăng
                   </Button>
@@ -501,7 +502,9 @@ export function AcademicPostComposer({
                 <ComposerProgressRing currentLength={content.length} maxLength={MAX_CHAR_LIMIT} />
 
                 {/* Audience Menu */}
-                <ComposerAudienceMenu value={targetAudience} onChange={setTargetAudience} />
+                {FEATURES.postAudience && (
+                  <ComposerAudienceMenu value={targetAudience} onChange={setTargetAudience} />
+                )}
 
                 {/* Submit Button */}
                 <Button

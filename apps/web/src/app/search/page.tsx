@@ -1,5 +1,7 @@
 'use client'
 
+import { SlidingTabs } from '@/components/navigation/sliding-tabs'
+import { FEATURES } from '@/lib/features'
 import React, { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -231,7 +233,7 @@ function SearchContent() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
         {/* Top Header */}
         <Header />
 
@@ -259,17 +261,17 @@ function SearchContent() {
         />
 
         {/* Main 3-Column Layout (X Twitter Architecture) */}
-        <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
           {/* 1. Left Navigation Sidebar (Icon-only on md, full on xl) */}
-          <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
             <Sidebar currentTab="search" />
           </div>
 
           {/* 2. Center Column (Wider for academic content, seamless continuous feed) */}
-          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
             
             {/* ── A. SEARCH TOP BAR & CATEGORY TABS ── */}
-            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-3 py-2">
+            <div className="sticky top-0 md:top-14 z-30 mb-2.5 bg-surface/90 backdrop-blur-md px-2 sm:px-0 py-2">
               {/* Desktop-only Search Input Row (Mobile search input is unified in Header) */}
               <div className="hidden md:flex items-center gap-2.5 pb-2">
                 {isSearchActive && (
@@ -294,7 +296,7 @@ function SearchContent() {
                     value={inputQuery}
                     onChange={(e) => setInputQuery(e.target.value)}
                     placeholder="Tìm kiếm môn học, tài liệu, bài viết..."
-                    className="w-full h-10 pl-10 pr-9 rounded-full bg-muted/60 hover:bg-muted focus:bg-background border border-transparent focus:border-primary text-xs sm:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all"
+                    className="w-full h-10 pl-10 pr-9 rounded-full bg-card hover:bg-card focus:bg-card border border-transparent focus:border-primary text-xs sm:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all"
                   />
                   {inputQuery && (
                     <button
@@ -334,65 +336,39 @@ function SearchContent() {
 
               {/* ── Category Tabs Bar ── */}
               {isSearchActive ? (
-                /* Results Tabs (Top, Latest, Courses, Documents, People, Groups) */
-                <div className="flex items-center justify-between text-xs font-bold pt-2 overflow-x-auto no-scrollbar -mx-3 px-3">
-                  {[
+                <SlidingTabs
+                  className="overflow-x-auto no-scrollbar px-2 sm:px-1"
+                  value={activeType}
+                  onChange={handleTabChange}
+                  items={[
                     { id: 'all' as SearchType, label: 'Hàng đầu (Top)' },
                     { id: 'posts' as SearchType, label: 'Mới nhất (Latest)' },
                     { id: 'courses' as SearchType, label: 'Môn học' },
                     { id: 'documents' as SearchType, label: 'Tài liệu' },
                     { id: 'users' as SearchType, label: 'Mọi người' },
                     { id: 'groups' as SearchType, label: 'Nhóm PBL' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => handleTabChange(tab.id)}
-                      className={`relative py-2.5 px-3 text-center cursor-pointer whitespace-nowrap transition-colors ${
-                        activeType === tab.id
-                          ? 'text-foreground font-bold'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <span>{tab.label}</span>
-                      {activeType === tab.id && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-primary" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                /* Explore Sub-Tabs (Explore, Trending, Courses, Documents, Groups) */
-                <div className="flex items-center justify-between text-xs font-bold pt-2 overflow-x-auto no-scrollbar -mx-3 px-3">
-                  {[
-                    { id: 'explore', label: 'Khám phá (Explore)' },
-                    { id: 'trending', label: 'Xu hướng (Trending)' },
-                    { id: 'courses', label: 'Môn học hot' },
-                    { id: 'documents', label: 'Đề thi & Slide' },
-                    { id: 'groups', label: 'Nhóm PBL' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setExploreSubTab(tab.id as any)}
-                      className={`relative py-2.5 px-3 text-center cursor-pointer whitespace-nowrap transition-colors ${
-                        exploreSubTab === tab.id
-                          ? 'text-foreground font-bold'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      <span>{tab.label}</span>
-                      {exploreSubTab === tab.id && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-10 rounded-full bg-primary" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              )}
+                  ]}
+                />
+              ) : FEATURES.exploreSubTabs ? (
+                <SlidingTabs
+                  className="overflow-x-auto no-scrollbar px-2 sm:px-1"
+                  value={exploreSubTab}
+                  onChange={setExploreSubTab}
+                  items={[
+                    { id: 'explore' as const, label: 'Khám phá (Explore)' },
+                    { id: 'trending' as const, label: 'Xu hướng (Trending)' },
+                    { id: 'courses' as const, label: 'Môn học hot' },
+                    { id: 'documents' as const, label: 'Đề thi & Slide' },
+                    { id: 'groups' as const, label: 'Nhóm PBL' }
+                  ]}
+                />
+              ) : null}
             </div>
 
             {/* ── B. CONTENT RENDERER ── */}
             {isSearchActive ? (
               /* ── 1. ACTIVE SEARCH RESULTS STREAM (Image 2) ── */
-              <div className="divide-y divide-border/60">
+              <div className="space-y-2.5 px-2 sm:px-0">
                 {isLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
                     <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -423,7 +399,7 @@ function SearchContent() {
                   <>
                     {/* Courses Match List */}
                     {searchResult?.courses && searchResult.courses.length > 0 && (
-                      <div className="p-3 sm:p-4 space-y-2.5">
+                      <div className="rounded-xl bg-card p-4 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                             <GraduationCap className="h-4 w-4 text-primary" />
@@ -440,12 +416,12 @@ function SearchContent() {
 
                     {/* Users / People Match List */}
                     {searchResult?.users && searchResult.users.length > 0 && (
-                      <div className="p-3 sm:p-4 space-y-2.5">
+                      <div className="rounded-xl bg-card p-4 space-y-2.5">
                         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                           <User className="h-4 w-4 text-primary" />
                           <span>Người dùng & Giảng viên ({searchResult.users.length})</span>
                         </h3>
-                        <div className="divide-y divide-border/40 rounded-2xl border border-border bg-card/60 overflow-hidden">
+                        <div className="divide-y divide-border/40 rounded-lg bg-muted/30 overflow-hidden">
                           {searchResult.users.map((u) => (
                             <UserCardItem key={u.id} userItem={u} />
                           ))}
@@ -455,7 +431,7 @@ function SearchContent() {
 
                     {/* Documents Match List */}
                     {searchResult?.documents && searchResult.documents.length > 0 && (
-                      <div className="p-3 sm:p-4 space-y-2.5">
+                      <div className="rounded-xl bg-card p-4 space-y-2.5">
                         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                           <FileText className="h-4 w-4 text-primary" />
                           <span>Đề thi & Tài liệu ({searchResult.documents.length})</span>
@@ -470,7 +446,7 @@ function SearchContent() {
 
                     {/* Study Groups Match List */}
                     {searchResult?.groups && searchResult.groups.length > 0 && (
-                      <div className="p-3 sm:p-4 space-y-2.5">
+                      <div className="rounded-xl bg-card p-4 space-y-2.5">
                         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                           <Users className="h-4 w-4 text-primary" />
                           <span>Nhóm đồ án PBL ({searchResult.groups.length})</span>
@@ -485,21 +461,44 @@ function SearchContent() {
 
                     {/* Academic Posts Stream */}
                     {searchResult?.posts && searchResult.posts.length > 0 && (
-                      <div>
+                      <div className="space-y-2.5">
                         {searchResult.posts.map((post) => (
-                          <PostCard key={post.id} post={post} />
+                          <PostCard key={post.id} post={post} variant="card" />
                         ))}
                       </div>
                     )}
                   </>
                 )}
               </div>
+            ) : !FEATURES.trending ? (
+              /* ── 2a. Khám phá tối giản: gợi ý từ khóa chạy tìm kiếm thật ── */
+              <div className="mx-2 sm:mx-0 rounded-xl bg-card p-6 text-center space-y-4">
+                <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                  <Search className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="text-[15px] font-semibold text-foreground">Tìm kiếm trong cộng đồng Phenikaa</h2>
+                  <p className="text-xs text-muted-foreground">Bài viết, môn học, tài liệu, mọi người và nhóm PBL.</p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {['IT101', 'Giải tích', '#DoAnTotNghiep', 'Đề thi', 'NestJS'].map((kw) => (
+                    <button
+                      key={kw}
+                      type="button"
+                      onClick={() => handleTrendingClick(kw)}
+                      className="px-3 py-1.5 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary text-xs font-medium text-muted-foreground transition-colors cursor-pointer"
+                    >
+                      {kw}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ) : (
               /* ── 2. EXPLORE & TRENDING LANDING STREAM (Image 1) ── */
-              <div className="divide-y divide-border/60">
+              <div className="space-y-2.5 px-2 sm:px-0">
                 {/* Section 1: Today's Academic News (Image 1) */}
-                <div className="p-3 sm:p-4 space-y-3">
-                  <h2 className="text-base sm:text-lg font-black tracking-tight text-foreground">
+                <div className="rounded-xl bg-card p-4 space-y-3">
+                  <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
                     Tin nổi bật Phenikaa (Today&apos;s Highlights)
                   </h2>
                   <div className="space-y-3">
@@ -507,9 +506,9 @@ function SearchContent() {
                       <div
                         key={story.id}
                         onClick={() => handleTrendingClick(story.title.split(' ')[0])}
-                        className="p-3 rounded-2xl border border-border/80 bg-card hover:bg-muted/30 transition-colors cursor-pointer space-y-1.5"
+                        className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer space-y-1.5"
                       >
-                        <h3 className="text-sm font-bold text-foreground leading-snug hover:underline">
+                        <h3 className="text-[13px] font-semibold text-foreground leading-snug hover:underline">
                           {story.title}
                         </h3>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -525,7 +524,7 @@ function SearchContent() {
                 </div>
 
                 {/* Section 2: Trending Topics (Image 1) */}
-                <div className="p-3 sm:p-4 space-y-2">
+                <div className="rounded-xl bg-card p-4 space-y-2">
                   <div className="flex items-center justify-between pb-1">
                     <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                       <Flame className="h-4 w-4 text-amber-500" />
@@ -551,7 +550,7 @@ function SearchContent() {
                       >
                         <div className="space-y-0.5 min-w-0 pr-2">
                           <p className="text-[11px] text-muted-foreground">{topic.category}</p>
-                          <p className="text-sm font-bold text-foreground group-hover:underline truncate">
+                          <p className="text-[13px] font-semibold text-foreground group-hover:underline truncate">
                             {topic.title}
                           </p>
                           <p className="text-xs text-muted-foreground">{topic.postsCount}</p>
@@ -572,7 +571,7 @@ function SearchContent() {
                 </div>
 
                 {/* Section 3: Popular Courses Grid */}
-                <div className="p-3 sm:p-4 space-y-3">
+                <div className="rounded-xl bg-card p-4 space-y-3">
                   <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <GraduationCap className="h-4 w-4 text-primary" />
                     <span>Học phần được quan tâm nhiều nhất</span>
@@ -587,7 +586,7 @@ function SearchContent() {
                       <button
                         key={course.code}
                         onClick={() => handleTrendingClick(course.code)}
-                        className="p-3 rounded-2xl border border-border bg-card hover:border-primary/50 text-left transition-all cursor-pointer space-y-1.5 group"
+                        className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-left transition-all cursor-pointer space-y-1.5 group"
                       >
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
@@ -607,10 +606,10 @@ function SearchContent() {
           </main>
 
           {/* 3. Right Sidebar (Desktop lg: only) */}
-          <div className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 pl-4 xl:pl-6 space-y-4">
+          <div className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 space-y-4">
             {/* Faculty Filter Card */}
-            <Card className="border-border bg-card shadow-xs rounded-2xl">
-              <CardHeader className="pb-3 border-b border-border">
+            <Card className="border-0 bg-card shadow-none rounded-xl">
+              <CardHeader className="pb-1">
                 <div className="flex items-center gap-2 text-xs font-bold text-foreground">
                   <Filter className="h-4 w-4 text-primary" />
                   <span>Lọc theo Khoa / Viện</span>
@@ -626,7 +625,7 @@ function SearchContent() {
                       className={cn(
                         'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer text-left',
                         isSelected
-                          ? 'bg-primary text-primary-foreground font-bold shadow-xs'
+                          ? 'bg-primary/10 text-primary font-semibold'
                           : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                       )}
                     >
@@ -635,7 +634,7 @@ function SearchContent() {
                         <span
                           className={cn(
                             'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0',
-                            isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted text-muted-foreground'
+                            isSelected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
                           )}
                         >
                           {fac.code}
@@ -648,7 +647,7 @@ function SearchContent() {
             </Card>
 
             {/* Search Tips */}
-            <Card className="border-border bg-card shadow-xs p-3.5 space-y-2 text-xs rounded-2xl">
+            <Card className="border-0 bg-card shadow-none p-3.5 space-y-2 text-xs rounded-xl">
               <span className="font-bold text-foreground flex items-center gap-1.5">
                 💡 Mẹo tìm kiếm thông minh
               </span>
@@ -673,7 +672,7 @@ function CourseCardItem({ course }: { course: Course }) {
   return (
     <div
       onClick={() => router.push(`/home?tab=courses`)}
-      className="p-3 rounded-2xl border border-border bg-card hover:border-primary/50 text-card-foreground transition-all cursor-pointer space-y-1.5"
+      className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-card-foreground transition-all cursor-pointer space-y-1.5"
     >
       <div className="flex items-center justify-between">
         <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">

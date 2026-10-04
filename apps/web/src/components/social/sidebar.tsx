@@ -21,6 +21,7 @@ import {
   Compass
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
+import { FEATURES } from '@/lib/features'
 import { cn } from '@/lib/utils'
 
 export type NavTabType = 'feed' | 'search' | 'communities' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa'
@@ -44,37 +46,29 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const user = useAppStore((state) => state.user)
-  const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   const { logout, isLoggingOut } = useLogout()
 
   const navItems = [
-    { id: 'feed' as const, path: '/home', label: 'Bảng tin học thuật', icon: Home },
-    { id: 'search' as const, path: '/search', label: 'Tìm kiếm & Khám phá', icon: Search, badge: 'Hot' },
-    { id: 'communities' as const, path: '/communities', label: 'Cộng đồng & Diễn đàn', icon: Compass, badge: 'Mới' },
+    { id: 'feed' as const, path: '/home', label: 'Bảng tin', icon: Home },
+    { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
+    { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
     ...(user?.username
-      ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ cá nhân', icon: User }]
+      ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ', icon: User }]
       : []),
-    { id: 'courses' as const, path: '/search?type=courses', label: 'Học phần & Môn học', icon: GraduationCap },
-    { id: 'documents' as const, path: '/search?type=documents', label: 'Kho tài liệu & Đề thi', icon: FileText },
-    { id: 'qa' as const, path: '/search?type=qa', label: 'Hỏi đáp & Thảo luận', icon: HelpCircle }
-  ]
-
-  const facultyTags = [
-    { name: 'CNTT', code: 'FIT' },
-    { name: 'Khoa học Máy tính', code: 'FCS' },
-    { name: 'Điện - Điện tử', code: 'FEE' },
-    { name: 'Kinh tế & QTKD', code: 'FBA' },
-    { name: 'Kỹ thuật Ô tô', code: 'FAE' },
-    { name: 'Ngôn ngữ Anh', code: 'FEL' },
-    { name: 'Y Dược', code: 'FMS' },
-    { name: 'Vật liệu', code: 'FAS' }
-  ]
+    // Lối tắt danh mục: ẩn tới khi /search hỗ trợ lọc theo type không cần từ khóa
+    ...(FEATURES.categoryShortcuts
+      ? [
+          { id: 'courses' as const, path: '/search?type=courses', label: 'Học phần', icon: GraduationCap },
+          { id: 'documents' as const, path: '/search?type=documents', label: 'Tài liệu & Đề thi', icon: FileText },
+          { id: 'qa' as const, path: '/search?type=qa', label: 'Hỏi đáp', icon: HelpCircle }
+        ]
+      : [])
+  ] as { id: NavTabType; path: string; label: string; icon: React.ElementType; badge?: string }[]
 
   const hotCourses = [
     'IT101 - Cấu trúc dữ liệu',
     'MATH201 - Giải tích 2',
-    'PHY102 - Vật lý đại cương',
-    'AI302 - Học máy cơ bản'
+    'PHY102 - Vật lý đại cương'
   ]
 
   const userInitials = (user?.displayName || (user as any)?.display_name || user?.username || 'PU')
@@ -83,20 +77,24 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
 
   return (
     <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full">
-      <div className="space-y-4">
-        {/* 1. Main Navigation Links (Responsive icon-only on md, full width on xl) */}
-        <div className="space-y-1.5 flex flex-col items-center xl:items-stretch">
-          <p className="hidden xl:block px-3 pb-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-            Phân hệ chính
-          </p>
+      <div className="space-y-6">
+        {/* 1. Điều hướng chính (icon-only on md, full on xl) */}
+        <div className="space-y-0.5 flex flex-col items-center xl:items-stretch">
 
+          {/* Highlight trượt theo chuột (animate-ui, giống menu dropdown) */}
+          <Highlight
+            hover
+            controlledItems
+            className="inset-0 rounded-full xl:rounded-xl bg-muted/80"
+            transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+          >
           {navItems.map((item) => {
             const Icon = item.icon
             const isActive = currentTab ? currentTab === item.id : pathname === item.path
 
             return (
+              <HighlightItem key={item.id} value={item.id} disabled={isActive} className="xl:w-full">
               <button
-                key={item.id}
                 type="button"
                 onClick={() => {
                   if (onTabChange) {
@@ -106,105 +104,71 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
                   }
                 }}
                 className={cn(
-                  'group flex items-center rounded-full xl:rounded-xl transition-all cursor-pointer select-none',
-                  // Narrow / Tablet: icon button (w-12 h-12 rounded-full)
-                  'w-11 h-11 xl:w-full xl:h-10 justify-center xl:justify-between px-0 xl:px-3 text-xs font-semibold',
+                  'group flex items-center rounded-full xl:rounded-xl transition-colors cursor-pointer select-none',
+                  'w-10 h-10 xl:w-full xl:h-9 justify-center xl:justify-between px-0 xl:px-3 text-[13px] font-medium',
                   isActive
-                    ? 'bg-primary/10 text-primary font-bold'
-                    : 'text-foreground hover:bg-muted/70'
+                    ? 'bg-primary/10 text-primary font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
                 title={item.label}
               >
                 <div className="flex items-center gap-3">
                   <Icon
                     className={cn(
-                      'h-5 w-5 shrink-0 transition-transform group-hover:scale-110',
-                      isActive ? 'text-primary stroke-[2.5]' : 'text-muted-foreground group-hover:text-foreground'
+                      'h-[18px] w-[18px] shrink-0',
+                      isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
                     )}
                   />
-                  <span className="hidden xl:inline truncate text-sm">{item.label}</span>
+                  <span className="hidden xl:inline truncate">{item.label}</span>
                 </div>
 
                 {item.badge && (
                   <span
                     className={cn(
-                      'hidden xl:inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold shrink-0',
-                      item.badge === 'Mới'
-                        ? 'bg-accent/15 text-accent'
-                        : 'bg-primary/15 text-primary'
+                      'hidden xl:inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange'
                     )}
                   >
                     {item.badge}
                   </span>
                 )}
               </button>
+              </HighlightItem>
             )
           })}
+          </Highlight>
 
-          {/* Quick Compose Post Button in Sidebar (Like X Tweet Button) */}
-          <div className="pt-2 w-full flex justify-center xl:block">
-            {/* Tablet Icon Button */}
-            <button
-              type="button"
-              onClick={() => setCreatePostOpen(true)}
-              className="xl:hidden flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-all active:scale-95 cursor-pointer"
-              title="Đăng bài viết mới"
-            >
-              <Plus className="h-5 w-5 stroke-[2.5]" />
-            </button>
-
-            {/* Desktop Full Button */}
-            <Button
-              onClick={() => setCreatePostOpen(true)}
-              className="hidden xl:flex w-full h-10 rounded-full font-bold text-xs gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all active:scale-98 cursor-pointer"
-            >
-              <Plus className="h-4 w-4 stroke-[2.5]" />
-              <span>Đăng bài / Chia sẻ</span>
-            </Button>
-          </div>
         </div>
 
-        {/* 2. Faculty & Departments (Desktop xl: only) */}
-        <div className="hidden xl:block space-y-2 border-t border-border/40 pt-3">
-          <p className="px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-            Khoa và Viện
-          </p>
-          <div className="flex flex-wrap gap-1 px-2">
-            {facultyTags.map((fac) => (
-              <button
-                key={fac.code}
-                onClick={() => router.push(`/search?faculty=${fac.code}`)}
-                className="flex items-center rounded-full bg-muted/50 px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary cursor-pointer"
-                title={`${fac.code} - ${fac.name}`}
-              >
-                <span>{fac.code}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 3. Hot Trending Courses (Desktop xl: only) */}
-        <div className="hidden xl:block space-y-2 border-t border-border/40 pt-3">
-          <p className="px-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+        {/* 2. Môn học sôi nổi (Desktop xl: only) — ẩn: dữ liệu cứng */}
+        {FEATURES.hotCourses && (
+        <div className="hidden xl:block space-y-1">
+          <p className="px-3 pb-1 text-[11px] font-medium text-muted-foreground/80 uppercase tracking-wider">
             Môn học sôi nổi
           </p>
-          <div className="space-y-0.5 px-1">
+          <div className="space-y-0.5">
             {hotCourses.map((course) => (
               <div
                 key={course}
                 onClick={() => router.push(`/home?tab=courses&course=${course.split(' ')[0]}`)}
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-muted/40 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/60 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Hash className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />
                 <span className="truncate">{course}</span>
               </div>
             ))}
+            <Link
+              href="/search?type=courses"
+              className="block px-3 py-1.5 text-xs font-medium text-primary hover:underline"
+            >
+              Xem tất cả ›
+            </Link>
           </div>
         </div>
+        )}
       </div>
 
-      {/* 4. Bottom User Profile Card & Logout (Like X User Capsule) */}
-      <div className="pt-4 border-t border-border/60">
+      {/* 3. Bottom User Profile Card & Logout (Like X User Capsule) */}
+      <div className="pt-4">
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -213,7 +177,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
                 className="w-full flex items-center justify-center xl:justify-between p-1.5 xl:p-2 rounded-full xl:rounded-2xl hover:bg-muted/70 transition-colors cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <Avatar className="h-9 w-9 border border-border shrink-0">
+                  <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={user.avatarUrl || ''} />
                     <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                       {userInitials}

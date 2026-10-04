@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { FEATURES } from '@/lib/features'
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import type { PostItem } from '@pu/schemas'
@@ -111,9 +112,14 @@ interface PostCardProps {
   post: PostItem
   onLikeToggle?: (postId: string, isLiked: boolean) => void
   onDeleteSuccess?: (postId: string) => void
+  // 'card': thẻ bo góc trên nền surface (home) · 'flat': hàng phẳng có viền dưới
+  variant?: 'flat' | 'card'
 }
 
-export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: PostCardProps) {
+// Chiều cao tối đa nội dung khi thu gọn (~5 dòng)
+const COLLAPSED_MAX_HEIGHT = 120
+
+export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess, variant = 'flat' }: PostCardProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [post, setPost] = useState<PostItem>(initialPost)
@@ -124,6 +130,20 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
   const [isCopied, setIsCopied] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
   const [hiddenReason, setHiddenReason] = useState('')
+  // Thu gọn bài dài + "Xem thêm" (Collapse long content)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+
+  useLayoutEffect(() => {
+    const el = contentRef.current
+    if (!el) return
+    const check = () => setIsOverflowing(el.scrollHeight > COLLAPSED_MAX_HEIGHT + 8)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [post.content])
   const [isFollowing, setIsFollowing] = useState(initialPost.isAuthorFollowedByMe || false)
 
   const user = useAppStore((state) => state.user)
@@ -330,7 +350,12 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
     <>
       <article
         id={`post-${post.id}`}
-        className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background text-foreground transition-colors hover:bg-muted/[0.03]"
+        className={cn(
+          'text-foreground transition-colors',
+          variant === 'card'
+            ? 'rounded-xl bg-card px-4 py-3.5 sm:px-5'
+            : 'px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background hover:bg-muted/[0.03]'
+        )}
       >
         {/* Pinned Top Banner (Only visible on author profile page) */}
         {post.isPinned && !!post.author?.username && (pathname === `/${post.author.username}` || pathname.startsWith(`/${post.author.username}?`)) && (
@@ -349,7 +374,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               href={`/${post.author?.username || 'user'}`}
               className="cursor-pointer group block"
             >
-              <Avatar className="h-10 w-10 border border-border/40 transition-transform group-hover:scale-105">
+              <Avatar className="h-9 w-9 transition-transform group-hover:scale-105">
                 <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.displayName || ''} />
                 <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
                   {authorInitials}
@@ -366,7 +391,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               <div className="flex items-center space-x-1.5 flex-wrap min-w-0">
                 <Link
                   href={`/${post.author?.username || 'user'}`}
-                  className="font-bold text-sm text-foreground hover:underline hover:text-primary transition-colors truncate"
+                  className="font-semibold text-[13px] text-foreground hover:underline transition-colors truncate"
                 >
                   {post.author?.displayName || 'Sinh viên Phenikaa'}
                 </Link>
@@ -383,19 +408,19 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
               {/* Right: Badges & More dropdown */}
               <div className="flex items-center space-x-1.5 shrink-0">
                 {post.postType === 'qa' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                  <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium', post.isResolved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-primary/10 text-primary')}>
                     <HelpCircle className="h-3 w-3" />
                     <span>{post.isResolved ? 'Đã giải quyết' : 'Hỏi đáp'}</span>
                   </span>
                 )}
                 {post.postType === 'document' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/10 px-2 py-0.5 text-[11px] font-semibold text-sky-600 dark:text-sky-400">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                     <BookOpen className="h-3 w-3" />
                     <span>Tài liệu</span>
                   </span>
                 )}
                 {post.postType === 'group_recruit' && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                     <Users className="h-3 w-3" />
                     <span>Học nhóm</span>
                   </span>
@@ -405,18 +430,18 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                   <Link
                     href={`/c/${post.communitySlug}`}
                     onClick={(e) => e.stopPropagation()}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 hover:bg-primary/20 px-2 py-0.5 text-[11px] font-mono font-semibold text-primary transition-colors shrink-0"
+                    className="text-[11px] text-muted-foreground hover:text-primary hover:underline transition-colors shrink-0"
                   >
                     <span>c/{post.communitySlug}</span>
                   </Link>
                 )}
 
                 {courseBadge && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] font-medium text-muted-foreground max-w-[120px] truncate">
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground max-w-[120px] truncate">
                     {courseBadge.isFaculty ? (
-                      <Building2 className="h-3 w-3 text-primary shrink-0" />
+                      <Building2 className="h-3 w-3 shrink-0" />
                     ) : (
-                      <GraduationCap className="h-3 w-3 text-primary shrink-0" />
+                      <GraduationCap className="h-3 w-3 shrink-0" />
                     )}
                     <span className="truncate">{courseBadge.label}</span>
                   </span>
@@ -525,15 +550,37 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
 
             {/* Post Title (if any) */}
             {post.title && (
-              <h2 className="text-sm sm:text-base font-bold tracking-tight text-foreground leading-snug">
+              <h2 className="text-[15px] font-semibold tracking-tight text-foreground leading-snug">
                 {post.title}
               </h2>
             )}
 
             {/* Post Content (Markdown Preview) */}
-            <div className="text-xs sm:text-sm text-foreground leading-relaxed break-words">
-              <MarkdownPreview content={post.content} />
+            <div className="relative">
+              <div
+                ref={contentRef}
+                className={cn(
+                  'text-[13px] sm:text-sm text-foreground/90 leading-relaxed break-words',
+                  !isExpanded && 'overflow-hidden'
+                )}
+                style={!isExpanded ? { maxHeight: COLLAPSED_MAX_HEIGHT } : undefined}
+              >
+                <MarkdownPreview content={post.content} />
+              </div>
+              {/* Fade mờ cuối đoạn khi thu gọn */}
+              {isOverflowing && !isExpanded && (
+                <div className={cn('pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t to-transparent', variant === 'card' ? 'from-card' : 'from-background')} />
+              )}
             </div>
+            {isOverflowing && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded((v) => !v)}
+                className="text-xs font-medium text-primary hover:underline cursor-pointer"
+              >
+                {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+              </button>
+            )}
 
             {/* Student Poll */}
             {post.poll && (
@@ -628,7 +675,8 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 />
               </button>
 
-              {/* 4. Thống kê & Số liệu (Views & Analytics) */}
+              {/* 4. Thống kê (ẩn: lượt xem tự tính, chưa tracking) */}
+              {FEATURES.postAnalytics && (
               <button
                 type="button"
                 onClick={() => setIsAnalyticsOpen(true)}
@@ -638,6 +686,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                 <BarChart2 className="h-4 w-4 group-hover:text-sky-500" />
                 <span className="text-xs">{viewsCount}</span>
               </button>
+              )}
 
               {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Chia sẻ X) */}
               <DropdownMenu>
@@ -659,6 +708,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                     <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
                   </DropdownMenuItem>
 
+                  {FEATURES.directMessage && (
                   <DropdownMenuItem
                     onClick={handleShareViaChat}
                     className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
@@ -666,6 +716,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess }: P
                     <Send className="h-4 w-4 text-muted-foreground" />
                     <span>Gửi tin nhắn</span>
                   </DropdownMenuItem>
+                  )}
 
                   <DropdownMenuItem
                     onClick={() => {

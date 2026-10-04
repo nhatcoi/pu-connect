@@ -97,7 +97,7 @@ export default function CommunityDetailPage({
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
         {/* Unified Top Header */}
         <Header />
 
@@ -111,16 +111,16 @@ export default function CommunityDetailPage({
         />
 
         {/* 3-Column Layout */}
-        <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
           {/* 1. Left Sidebar Navigation */}
-          <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
             <Sidebar />
           </div>
 
           {/* 2. Center Feed Column */}
-          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
             {/* Top Navigation Bar */}
-            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center justify-between">
+            <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3 min-w-0">
                 <Button
                   variant="ghost"
@@ -131,7 +131,7 @@ export default function CommunityDetailPage({
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div className="min-w-0">
-                  <h1 className="text-base font-bold tracking-tight text-foreground truncate leading-none">
+                  <h1 className="text-[15px] font-semibold tracking-tight text-foreground truncate leading-none">
                     {community?.name || `c/${slug}`}
                   </h1>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -158,8 +158,9 @@ export default function CommunityDetailPage({
               </div>
             ) : community ? (
               <div>
+                <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card overflow-hidden">
                 {/* Banner Image */}
-                <div className="relative h-40 sm:h-52 w-full bg-muted overflow-hidden">
+                <div className="relative h-36 sm:h-44 w-full bg-muted overflow-hidden">
                   {community.bannerUrl ? (
                     <img
                       src={community.bannerUrl}
@@ -169,13 +170,13 @@ export default function CommunityDetailPage({
                   ) : (
                     <div className="w-full h-full bg-gradient-to-r from-primary/30 via-accent/30 to-background" />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-transparent to-transparent" />
                 </div>
 
                 {/* Community Info Bar */}
-                <div className="px-4 sm:px-6 pb-4 border-b border-border/80">
+                <div className="px-4 sm:px-5 pb-4">
                   <div className="flex items-end justify-between -mt-12 sm:-mt-14 mb-3">
-                    <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border-4 border-background bg-card shadow-xl shrink-0">
+                    <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border-4 border-card bg-card shadow-md shrink-0">
                       {community.avatarUrl ? (
                         <img
                           src={community.avatarUrl}
@@ -218,13 +219,13 @@ export default function CommunityDetailPage({
 
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">
+                      <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight">
                         {community.name}
                       </h2>
-                      <Badge variant="secondary" className="text-xs font-mono font-bold bg-primary/10 text-primary border-primary/20">
+                      <Badge variant="secondary" className="text-[11px] font-medium bg-primary/10 text-primary border-0">
                         c/{community.slug}
                       </Badge>
-                      <Badge variant="outline" className="text-xs capitalize font-medium">
+                      <Badge variant="outline" className="text-[11px] capitalize font-medium border-0 bg-muted/60">
                         {community.communityType === 'campus' && '🏛️ Đại sảnh'}
                         {community.communityType === 'faculty' && '🎓 Khoa / Viện'}
                         {community.communityType === 'academic' && '📚 Học thuật'}
@@ -238,7 +239,7 @@ export default function CommunityDetailPage({
                   </div>
 
                   {/* Filter Tabs */}
-                  <div className="flex items-center gap-1 mt-5 border-t border-border/50 pt-2 overflow-x-auto no-scrollbar">
+                  <div className="flex items-center gap-1 mt-4 overflow-x-auto no-scrollbar">
                     <button
                       onClick={() => handleTabChange('hot')}
                       className={cn(
@@ -289,11 +290,12 @@ export default function CommunityDetailPage({
                     </button>
                   </div>
                 </div>
+                </div>
 
                 {/* Tab Content */}
                 {activeTab === 'rules' ? (
-                  <div className="p-4 sm:p-6 space-y-4">
-                    <div className="flex items-center gap-2 text-primary font-bold text-base">
+                  <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card p-4 sm:p-5 space-y-4">
+                    <div className="flex items-center gap-2 text-primary font-semibold text-[15px]">
                       <ShieldCheck className="h-5 w-5" />
                       Quy tắc & Chuẩn mực cộng đồng c/{community.slug}
                     </div>
@@ -302,7 +304,7 @@ export default function CommunityDetailPage({
                         {community.rules.map((rule, idx) => (
                           <div
                             key={idx}
-                            className="p-4 rounded-xl bg-card border border-border/80 shadow-xs space-y-1"
+                            className="p-3.5 rounded-lg bg-muted/40 space-y-1"
                           >
                             <h4 className="font-bold text-sm text-foreground flex items-center gap-2">
                               <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-mono font-bold">
@@ -325,7 +327,7 @@ export default function CommunityDetailPage({
                 ) : (
                   <div>
                     {/* Post Composer scoped to this community */}
-                    <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40">
+                    <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
                       <AcademicPostComposer
                         onPostCreated={(post) => addPost(post)}
                         defaultCommunityId={community.id}
@@ -341,9 +343,9 @@ export default function CommunityDetailPage({
                         <p className="text-xs">Hãy là người đầu tiên chia sẻ bài viết tại c/{community.slug}!</p>
                       </div>
                     ) : (
-                      <div className="divide-y divide-border/40">
+                      <div className="space-y-2.5 px-2 sm:px-0">
                         {posts.map((post) => (
-                          <PostCard key={post.id} post={post} />
+                          <PostCard key={post.id} post={post} variant="card" />
                         ))}
                       </div>
                     )}
@@ -375,11 +377,11 @@ export default function CommunityDetailPage({
           </main>
 
           {/* 3. Right Sidebar: Community Information & Rules */}
-          <aside className="hidden lg:block shrink-0 w-80 sticky top-14 h-[calc(100vh-3.5rem)] py-3 pl-6 space-y-4 overflow-y-auto no-scrollbar">
+          <aside className="hidden lg:block shrink-0 w-64 xl:w-72 sticky top-14 h-[calc(100vh-3.5rem)] py-4 space-y-4 overflow-y-auto no-scrollbar">
             {community && (
-              <Card className="border border-border/80 bg-card rounded-2xl shadow-xs overflow-hidden">
-                <CardHeader className="p-4 pb-2 bg-muted/40 border-b border-border/60">
-                  <CardTitle className="text-xs uppercase font-extrabold text-muted-foreground tracking-wider flex items-center gap-2">
+              <Card className="border-0 bg-card rounded-xl shadow-none overflow-hidden">
+                <CardHeader className="p-4 pb-1">
+                  <CardTitle className="text-[13px] font-semibold text-foreground flex items-center gap-2">
                     <Compass className="h-3.5 w-3.5 text-primary" />
                     Thông tin diễn đàn
                   </CardTitle>
@@ -388,7 +390,7 @@ export default function CommunityDetailPage({
                   <p className="text-muted-foreground leading-relaxed">
                     {community.description}
                   </p>
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/60 text-center">
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-center">
                     <div className="p-2 rounded-xl bg-muted/40">
                       <div className="font-extrabold text-base text-foreground">
                         {community.membersCount}
@@ -402,7 +404,7 @@ export default function CommunityDetailPage({
                       <div className="text-[11px] text-muted-foreground">Bài thảo luận</div>
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-border/60 space-y-1.5 text-muted-foreground">
+                  <div className="pt-1 space-y-1.5 text-muted-foreground">
                     <div className="flex justify-between">
                       <span>Định danh:</span>
                       <span className="font-mono font-bold text-foreground">c/{community.slug}</span>
@@ -417,7 +419,7 @@ export default function CommunityDetailPage({
             )}
 
             {/* Quick Link to Explore other communities */}
-            <Card className="border border-border/80 bg-card rounded-2xl shadow-xs p-4 space-y-3">
+            <Card className="border-0 bg-card rounded-xl shadow-none p-4 space-y-3">
               <h4 className="font-bold text-xs text-foreground flex items-center gap-2">
                 <Compass className="h-4 w-4 text-primary" />
                 Khám phá các cộng đồng khác

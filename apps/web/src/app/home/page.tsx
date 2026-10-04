@@ -3,9 +3,6 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
-  Sparkles,
-  Users,
-  HelpCircle,
   Loader2,
   CheckCircle2,
   MessageSquarePlus,
@@ -14,6 +11,7 @@ import {
 import { Header } from '@/components/social/header'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
+import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
@@ -87,7 +85,7 @@ function HomeContent() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
         {/* Unified Top Header */}
         <Header />
 
@@ -109,89 +107,38 @@ function HomeContent() {
           }}
         />
 
-        {/* Main 3-Column Layout (Signature X Twitter Architecture) */}
-        <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+        {/* Bố cục 3 cột, phân tách bằng khoảng trống thay vì đường kẻ */}
+        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
           
           {/* 1. Left Sidebar Navigation (Icon-only on md, full on xl) */}
-          <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
             <Sidebar />
           </div>
 
-          {/* 2. Center Feed Column (Academic focus, clean dividing borders) */}
-          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          {/* 2. Cột bảng tin: thẻ trắng trên nền surface */}
+          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
             
             {/* ── X-Style Sticky 3-Tab Feed Filter Bar ── */}
-            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80">
-              <div className="flex w-full items-center justify-around text-xs sm:text-sm font-bold">
-                {/* Tab 1: Dành cho bạn (Smart Hybrid Recommendation) */}
-                <button
-                  type="button"
-                  onClick={() => setActiveFeedTab('for_you')}
-                  className={cn(
-                    'relative flex-1 py-3.5 px-3 text-center cursor-pointer transition-colors',
-                    activeFeedTab === 'for_you'
-                      ? 'text-foreground font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <span className="flex items-center gap-1.5 justify-center truncate">
-                    <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Dành cho bạn</span>
-                  </span>
-                  {activeFeedTab === 'for_you' && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                  )}
-                </button>
-
-                {/* Tab 2: Đang theo dõi (Following Timeline) */}
-                <button
-                  type="button"
-                  onClick={() => setActiveFeedTab('following')}
-                  className={cn(
-                    'relative flex-1 py-3.5 px-3 text-center cursor-pointer transition-colors',
-                    activeFeedTab === 'following'
-                      ? 'text-foreground font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <span className="flex items-center gap-1.5 justify-center truncate">
-                    <Users className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Đang theo dõi</span>
-                  </span>
-                  {activeFeedTab === 'following' && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                  )}
-                </button>
-
-                {/* Tab 3: Hỏi đáp (Academic Q&A / Accepted Solutions) */}
-                <button
-                  type="button"
-                  onClick={() => setActiveFeedTab('qa')}
-                  className={cn(
-                    'relative flex-1 py-3.5 px-3 text-center cursor-pointer transition-colors',
-                    activeFeedTab === 'qa'
-                      ? 'text-foreground font-bold'
-                      : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  <span className="flex items-center gap-1.5 justify-center truncate">
-                    <HelpCircle className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">Hỏi đáp</span>
-                  </span>
-                  {activeFeedTab === 'qa' && (
-                    <span className="absolute bottom-0 left-1/2 -translate-x-1/2 h-1 w-12 rounded-full bg-primary" />
-                  )}
-                </button>
-              </div>
+            <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md">
+              <SlidingTabs
+                className="px-4 sm:px-1"
+                value={activeFeedTab}
+                onChange={setActiveFeedTab}
+                items={[
+                  { id: 'for_you', label: 'Dành cho bạn' },
+                  { id: 'following', label: 'Đang theo dõi' },
+                  { id: 'qa', label: 'Hỏi đáp' }
+                ]}
+              />
             </div>
 
-            {/* Standalone Academic Post Composer (Flat Stream Style) */}
-            <div className="px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40">
+            {/* Ô soạn bài dạng thẻ (Composer card) */}
+            <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
               <AcademicPostComposer />
             </div>
 
-            {/* Continuous X-Style Post Stream */}
-            <div className="divide-y divide-border/40">
+            {/* Danh sách bài viết dạng thẻ, cách nhau bằng khoảng trống */}
+            <div className="space-y-2.5 px-2 sm:px-0">
               {isPostsLoading ? (
                 <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
                   <Loader2 className="h-6 w-6 animate-spin text-foreground" />
@@ -206,7 +153,7 @@ function HomeContent() {
               ) : posts.length > 0 ? (
                 <>
                   {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
+                    <PostCard key={post.id} post={post} variant="card" />
                   ))}
 
                   {/* Infinite Scroll Bottom Sentinel */}
@@ -244,7 +191,7 @@ function HomeContent() {
                   <Button
                     size="sm"
                     onClick={() => setCreatePostOpen(true)}
-                    className="bg-foreground text-background font-bold rounded-full cursor-pointer"
+                    className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
                   >
                     {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
                   </Button>
@@ -254,7 +201,7 @@ function HomeContent() {
           </main>
 
           {/* 3. Right Sidebar (Desktop lg: and above) */}
-          <div className="hidden lg:block w-72 xl:w-80 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 pl-4 xl:pl-6">
+          <div className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4">
             <RightSidebar />
           </div>
         </div>

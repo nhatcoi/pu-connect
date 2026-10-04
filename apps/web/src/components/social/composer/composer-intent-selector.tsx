@@ -52,7 +52,7 @@ export function ComposerIntentSelector({ value, onChange }: ComposerIntentSelect
             className={cn(
               'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 shrink-0 cursor-pointer',
               isSelected
-                ? 'bg-foreground text-background border-foreground font-semibold shadow-xs'
+                ? 'bg-primary text-primary-foreground border-primary font-semibold shadow-xs'
                 : 'border-border/60 bg-transparent text-muted-foreground hover:bg-muted hover:text-foreground'
             )}
           >

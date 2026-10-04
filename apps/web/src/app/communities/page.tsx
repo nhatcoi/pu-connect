@@ -102,19 +102,19 @@ export default function CommunitiesDirectoryPage() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
         <Header />
 
-        <div className="mx-auto flex justify-center max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
           {/* 1. Left Sidebar */}
-          <div className="hidden md:flex shrink-0 w-16 xl:w-64 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
+          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
             <Sidebar />
           </div>
 
           {/* 2. Center Column */}
-          <main className="flex-1 max-w-[700px] xl:max-w-[720px] w-full min-w-0 border-x border-border/80 min-h-screen pb-20 md:pb-12">
+          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
             {/* Header */}
-            <div className="sticky top-0 md:top-14 z-30 bg-background/95 backdrop-blur-md border-b border-border/80 px-4 py-3 flex items-center justify-between">
+            <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <Button
                   variant="ghost"
@@ -125,7 +125,7 @@ export default function CommunitiesDirectoryPage() {
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
                 <div>
-                  <h1 className="text-base font-bold tracking-tight text-foreground leading-none flex items-center gap-2">
+                  <h1 className="text-[15px] font-semibold tracking-tight text-foreground leading-none flex items-center gap-2">
                     <Compass className="h-4 w-4 text-primary" />
                     Cộng Đồng & Diễn Đàn Phenikaa
                   </h1>
@@ -137,7 +137,7 @@ export default function CommunitiesDirectoryPage() {
             </div>
 
             {/* Search and Category Filters */}
-            <div className="p-4 border-b border-border/80 space-y-3 bg-muted/20">
+            <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card p-4 space-y-3">
               <form onSubmit={handleSearchSubmit} className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -145,7 +145,7 @@ export default function CommunitiesDirectoryPage() {
                   placeholder="Tìm kiếm theo tên cộng đồng, mô tả hoặc c/slug..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 rounded-full bg-background border-border/80 text-sm focus-visible:ring-primary"
+                  className="pl-10 h-9 rounded-full bg-muted/60 border-transparent text-[13px] focus-visible:ring-primary"
                 />
               </form>
 
@@ -157,8 +157,8 @@ export default function CommunitiesDirectoryPage() {
                     className={cn(
                       'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer',
                       selectedType === cat.id
-                        ? 'bg-primary text-primary-foreground font-bold shadow-xs'
-                        : 'bg-background text-muted-foreground hover:text-foreground border border-border/80 hover:bg-muted'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
                     )}
                   >
                     {cat.label}
@@ -168,7 +168,7 @@ export default function CommunitiesDirectoryPage() {
             </div>
 
             {/* Communities Grid / List */}
-            <div className="p-4 space-y-4">
+            <div className="px-2 sm:px-0 space-y-2.5">
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -184,7 +184,7 @@ export default function CommunitiesDirectoryPage() {
                 communities.map((comm) => (
                   <Card
                     key={comm.id}
-                    className="border border-border/80 bg-card rounded-2xl shadow-xs overflow-hidden hover:border-primary/40 transition-all duration-200"
+                    className="border-0 bg-card rounded-xl shadow-none overflow-hidden ring-1 ring-transparent hover:ring-primary/25 transition-all duration-200"
                   >
                     <div className="relative h-24 w-full bg-muted overflow-hidden">
                       {comm.bannerUrl ? (
@@ -247,20 +247,20 @@ export default function CommunitiesDirectoryPage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
                             href={`/c/${comm.slug}`}
-                            className="font-bold text-base sm:text-lg text-foreground hover:text-primary transition-colors line-clamp-1"
+                            className="font-semibold text-[15px] text-foreground hover:text-primary transition-colors line-clamp-1"
                           >
                             {comm.name}
                           </Link>
-                          <Badge variant="secondary" className="text-xs font-mono font-bold bg-muted text-muted-foreground">
+                          <Badge variant="secondary" className="text-[11px] font-medium bg-transparent px-0 text-muted-foreground">
                             c/{comm.slug}
                           </Badge>
                         </div>
 
-                        <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                        <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
                           {comm.description}
                         </p>
 
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs text-muted-foreground">
+                        <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
                           <div className="flex items-center gap-4">
                             <span className="flex items-center gap-1">
                               <Users className="h-3.5 w-3.5 text-primary" />
@@ -289,7 +289,7 @@ export default function CommunitiesDirectoryPage() {
           </main>
 
           {/* 3. Right Sidebar */}
-          <div className="hidden lg:block shrink-0 w-80 sticky top-14 h-[calc(100vh-3.5rem)] py-3 pl-6 space-y-4">
+          <div className="hidden lg:block shrink-0 w-64 xl:w-72 sticky top-14 h-[calc(100vh-3.5rem)] py-4 space-y-4">
             <RightSidebar />
           </div>
         </div>

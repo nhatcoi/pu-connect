@@ -132,7 +132,7 @@ export function CommentComposer({
     <div className="flex gap-3 items-start">
       <Avatar className="h-8 w-8 shrink-0 rounded-full border border-border select-none shadow-xs mt-0.5">
         <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || 'User'} />
-        <AvatarFallback className="bg-foreground text-background font-bold text-[10px]">
+        <AvatarFallback className="bg-primary text-primary-foreground font-bold text-[10px]">
           {userInitials}
         </AvatarFallback>
       </Avatar>
