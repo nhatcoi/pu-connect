@@ -55,7 +55,7 @@ export function CreatePostDialog() {
 
       if (response && response.data) {
         addPost(response.data)
-        toast.success('Đã lưu bài viết vào cơ sở dữ liệu thành công!')
+        toast.success('Đã đăng bài viết')
       }
 
       setTitle('')

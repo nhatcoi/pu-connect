@@ -244,7 +244,6 @@ export function PostCard({
 
     try {
       await apiClient(`/posts/${post.id}/pin`, { method: 'POST' })
-      toast.success(newIsPinned ? 'Đã ghim bài viết lên đầu trang cá nhân' : 'Đã bỏ ghim bài viết')
     } catch {
       setPost((prev) => ({
         ...prev,
@@ -306,7 +305,7 @@ export function PostCard({
 
     try {
       await apiClient(`/posts/${post.id}`, { method: 'DELETE' })
-      toast.success('Đã xóa bài viết thành công')
+      toast.success('Đã xóa bài viết')
       setPosts(storePosts.filter((p) => p.id !== post.id))
       if (onDeleteSuccess) {
         onDeleteSuccess(post.id)

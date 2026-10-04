@@ -32,7 +32,6 @@ export function PostPollCard({ postId, poll: initialPoll, onPollUpdated }: PostP
       if (res && res.data) {
         setPoll(res.data)
         onPollUpdated?.(res.data)
-        toast.success('Bình chọn thành công!')
       }
     } catch (err: any) {
       toast.error('Không thể thực hiện bình chọn')

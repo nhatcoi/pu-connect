@@ -56,7 +56,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
       })
 
       if (response && response.data) {
-        toast.success('Đã tạo nhóm đồ án thành công trong cơ sở dữ liệu!')
+        toast.success('Đã tạo nhóm đồ án')
       }
 
       setName('')

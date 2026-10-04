@@ -138,7 +138,6 @@ export function EditProfileDialog({
         const uploadedUrl = data?.data?.url || data?.data?.publicUrl
         if (uploadedUrl) {
           setAvatarUrl(uploadedUrl)
-          toast.success('Đã tải ảnh đại diện lên thành công!')
           return
         }
       }
@@ -146,11 +145,11 @@ export function EditProfileDialog({
       // Preview tạm nếu storage chưa cấu hình
       const localUrl = URL.createObjectURL(file)
       setAvatarUrl(localUrl)
-      toast.success('Đã chọn ảnh đại diện')
+      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
     } catch {
       const localUrl = URL.createObjectURL(file)
       setAvatarUrl(localUrl)
-      toast.info('Đã chọn ảnh đại diện')
+      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -176,7 +175,6 @@ export function EditProfileDialog({
         const uploadedUrl = data?.data?.url || data?.data?.publicUrl
         if (uploadedUrl) {
           setBannerUrl(uploadedUrl)
-          toast.success('Đã tải ảnh bìa lên thành công!')
           return
         }
       }
@@ -184,11 +182,11 @@ export function EditProfileDialog({
       // Preview tạm nếu storage chưa cấu hình
       const localUrl = URL.createObjectURL(file)
       setBannerUrl(localUrl)
-      toast.success('Đã chọn ảnh bìa mới')
+      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
     } catch {
       const localUrl = URL.createObjectURL(file)
       setBannerUrl(localUrl)
-      toast.info('Đã chọn ảnh bìa mới')
+      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
     } finally {
       setIsUploadingBanner(false)
     }
@@ -204,7 +202,6 @@ export function EditProfileDialog({
   const handleSelectPresetBanner = (presetUrl: string) => {
     setBannerUrl(presetUrl)
     setShowBannerPresets(false)
-    toast.success('Đã áp dụng ảnh bìa mẫu')
   }
 
   // Sinh avatar hoạt họa AI Imagine
@@ -213,7 +210,6 @@ export function EditProfileDialog({
     const seed = Math.random().toString(36).substring(2, 9)
     const newAvatar = `https://api.dicebear.com/7.x/${style}/svg?seed=${seed}`
     setAvatarUrl(newAvatar)
-    toast.success('Đã tạo avatar mới từ AI Imagine!')
   }
 
   // Lưu hồ sơ cá nhân
@@ -252,7 +248,7 @@ export function EditProfileDialog({
         throw new Error(errData.message || 'Cập nhật thất bại')
       }
 
-      toast.success('Đã cập nhật hồ sơ cá nhân thành công!')
+      toast.success('Đã cập nhật hồ sơ')
       onOpenChange(false)
       onSuccess()
     } catch (err: any) {

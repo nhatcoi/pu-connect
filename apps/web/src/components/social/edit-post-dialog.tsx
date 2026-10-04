@@ -53,7 +53,7 @@ export function EditPostDialog({ post, open, onOpenChange, onSuccess }: EditPost
       })
 
       if (res && res.data) {
-        toast.success('Chỉnh sửa bài viết thành công')
+        toast.success('Đã lưu chỉnh sửa')
         onSuccess?.(res.data)
         onOpenChange(false)
       }

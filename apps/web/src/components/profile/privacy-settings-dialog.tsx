@@ -64,7 +64,7 @@ export function PrivacySettingsDialog({
         throw new Error('Không thể lưu cài đặt quyền riêng tư')
       }
 
-      toast.success('Đã lưu cấu hình quyền riêng tư thành công!')
+      toast.success('Đã lưu quyền riêng tư')
       onOpenChange(false)
       onSuccess()
     } catch (err: any) {

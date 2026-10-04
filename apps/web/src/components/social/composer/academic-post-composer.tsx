@@ -238,7 +238,7 @@ export function AcademicPostComposer({
         if (onPostCreated) {
           onPostCreated(response.data)
         }
-        toast.success('Đã đăng bài viết thành công!')
+        toast.success('Đã đăng bài viết')
       }
 
       // Reset form

@@ -61,7 +61,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
 
       if (response && response.data) {
         addDocument(response.data)
-        toast.success('Đã lưu tài liệu vào cơ sở dữ liệu thành công!')
+        toast.success('Đã đăng tài liệu')
       }
 
       setTitle('')
