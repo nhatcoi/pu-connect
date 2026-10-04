@@ -24,6 +24,15 @@ import type { RegisterInput, OnboardingInput, UserProfile } from '@pu/schemas'
 import type { Request, Response } from 'express'
 
 const CheckEmailSchema = z.object({ email: z.string().trim().toLowerCase().email({ message: 'Email không hợp lệ' }) })
+const ForgotPasswordSchema = z.object({ email: z.string().trim().toLowerCase().email({ message: 'Email không hợp lệ' }) })
+const ResetPasswordSchema = z.object({
+  token: z.string().min(1, { message: 'Thiếu mã đặt lại mật khẩu' }),
+  // bcrypt chỉ dùng 72 byte đầu
+  password: z
+    .string()
+    .min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
+    .max(72, { message: 'Mật khẩu tối đa 72 ký tự' })
+})
 const VerifyEmailSchema = z.object({ token: z.string().min(1, { message: 'Thiếu mã xác thực' }) })
 
 @Controller('auth')
@@ -31,6 +40,10 @@ export class AuthController {
   // 20 lượt kiểm tra email / phút / IP; 10 lượt đăng ký / giờ / IP
   private readonly checkEmailLimiter = new SimpleRateLimiter(20, 60_000)
   private readonly registerLimiter = new SimpleRateLimiter(10, 3_600_000)
+  // Quên mật khẩu: 5 yêu cầu / 15 phút / IP, 3 / giờ / email; đặt lại: 10 lần / 15 phút / IP
+  private readonly forgotIpLimiter = new SimpleRateLimiter(5, 900_000)
+  private readonly forgotEmailLimiter = new SimpleRateLimiter(3, 3_600_000)
+  private readonly resetLimiter = new SimpleRateLimiter(10, 900_000)
 
   constructor(
     private readonly authService: AuthService,
@@ -55,6 +68,27 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async verifyEmail(@Body(new ZodValidationPipe(VerifyEmailSchema)) body: { token: string }) {
     return this.authService.verifyEmail(body.token)
+  }
+
+  // Luôn trả 200 cùng nội dung: không tiết lộ email có tài khoản hay không
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body(new ZodValidationPipe(ForgotPasswordSchema)) body: { email: string }, @Req() req: Request) {
+    this.forgotIpLimiter.consume(req.ip || 'unknown')
+    this.forgotEmailLimiter.consume(body.email)
+    await this.authService.requestPasswordReset(body.email)
+    return { sent: true }
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body(new ZodValidationPipe(ResetPasswordSchema)) body: { token: string; password: string },
+    @Req() req: Request
+  ) {
+    this.resetLimiter.consume(req.ip || 'unknown')
+    await this.authService.resetPassword(body.token, body.password)
+    return { success: true }
   }
 
   @Post('resend-verification')

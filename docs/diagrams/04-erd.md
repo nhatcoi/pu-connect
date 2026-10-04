@@ -93,6 +93,10 @@ erDiagram
     timestamptz verify_sent_at
     varchar account_type
     jsonb notification_settings
+    varchar reset_token_hash
+    timestamptz reset_token_expires
+    timestamptz reset_sent_at
+    timestamptz password_changed_at
   }
   user_follows {
     uuid follower_id PK,FK

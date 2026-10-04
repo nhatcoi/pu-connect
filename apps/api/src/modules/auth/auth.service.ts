@@ -169,6 +169,57 @@ export class AuthService {
     return { sent: true }
   }
 
+  // Quên mật khẩu: luôn trả cùng kết quả dù email có tồn tại hay không (chống dò tài khoản)
+  async requestPasswordReset(email: string): Promise<void> {
+    const res = await this.db.query(
+      `SELECT id, email, display_name, reset_sent_at FROM users
+       WHERE email = $1 AND account_type = 'human' LIMIT 1`,
+      [email.toLowerCase().trim()]
+    )
+    const row = res.rows[0]
+    if (!row) return
+    // Tối đa 1 email / 60 giây / tài khoản (im lặng bỏ qua, không lộ trạng thái)
+    if (row.reset_sent_at && Date.now() - new Date(row.reset_sent_at).getTime() < 60_000) return
+
+    const token = randomBytes(32).toString('hex')
+    await this.db.query(
+      `UPDATE users SET reset_token_hash = $1, reset_token_expires = NOW() + INTERVAL '30 minutes', reset_sent_at = NOW()
+       WHERE id = $2`,
+      [this.hashToken(token), row.id]
+    )
+    const base = (this.config.get<string>('APP_URL') || 'http://localhost:3000').replace(/\/$/, '')
+    // Gửi nền: thời gian phản hồi không phụ thuộc email có tồn tại
+    void this.mail
+      .sendPasswordResetEmail(row.email, row.display_name, `${base}/reset-password?token=${token}`)
+      .catch((err) => this.logger.error(`Gửi email đặt lại mật khẩu thất bại (${row.email}): ${err?.message}`))
+  }
+
+  // Đặt mật khẩu mới bằng token (dùng một lần) và đăng xuất mọi phiên cũ
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+      throw new BadRequestException('Liên kết đặt lại mật khẩu không hợp lệ')
+    }
+    const passwordHash = await bcrypt.hash(newPassword, await bcrypt.genSalt(12))
+    // UPDATE nguyên tử: token chỉ khớp một lần, nên hai yêu cầu song song không cùng thành công
+    const res = await this.db.query(
+      `UPDATE users
+       SET password_hash = $1, reset_token_hash = NULL, reset_token_expires = NULL,
+           password_changed_at = NOW(), updated_at = NOW()
+       WHERE reset_token_hash = $2 AND reset_token_expires > NOW() AND account_type = 'human'
+       RETURNING id, email, display_name`,
+      [passwordHash, this.hashToken(token)]
+    )
+    const user = res.rows[0]
+    if (!user) throw new BadRequestException('Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn')
+
+    // Hủy mọi phiên đăng nhập của tài khoản (session lưu Postgres, passport.user.id)
+    await this.db.query(`DELETE FROM user_sessions WHERE sess::jsonb #>> '{passport,user,id}' = $1`, [user.id])
+
+    void this.mail
+      .sendPasswordChangedEmail(user.email, user.display_name)
+      .catch((err) => this.logger.error(`Gửi cảnh báo đổi mật khẩu thất bại (${user.email}): ${err?.message}`))
+  }
+
   // Xác thực email bằng token; email trường được cấp tích xanh
   async verifyEmail(token: string): Promise<UserProfile> {
     if (!token || !/^[a-f0-9]{64}$/.test(token)) {

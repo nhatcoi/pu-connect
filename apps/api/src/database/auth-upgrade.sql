@@ -27,3 +27,10 @@ SET is_verified = TRUE, verified_at = COALESCE(verified_at, NOW())
 WHERE email_verified = TRUE
   AND is_verified = FALSE
   AND (email ILIKE '%@phenikaa-uni.edu.vn' OR email ILIKE '%@st.phenikaa-uni.edu.vn');
+
+-- Quên mật khẩu: token một lần (lưu hash), hết hạn 30 phút
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_hash VARCHAR(64);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_sent_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_users_reset_token ON users(reset_token_hash) WHERE reset_token_hash IS NOT NULL;
