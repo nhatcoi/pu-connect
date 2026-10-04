@@ -101,6 +101,12 @@ pnpm run deploy:vps
 * **REST API:** [https://puc.vnhat.dev/api](https://puc.vnhat.dev/api)
 * **GraphQL Endpoint:** [https://puc.vnhat.dev/graphql](https://puc.vnhat.dev/graphql)
 
+### 6. Sơ đồ hệ thống
+Sơ đồ C4, ERD, sequence, deployment ở [`docs/diagrams/`](docs/diagrams/README.md). Sau mỗi migration, sinh lại ERD từ DB local:
+```bash
+pnpm docs:erd
+```
+
 ---
 
 ## 📱 Hướng dẫn mở rộng Mobile App (React Native) sau này

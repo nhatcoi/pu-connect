@@ -1,5 +1,7 @@
 # 🏗️ Kiến trúc Hệ thống — PU Connector Architecture
 
+> 🗺️ Sơ đồ **đúng theo hệ thống đang chạy** (được cập nhật mỗi khi code đổi) nằm ở [`docs/diagrams/`](./diagrams/README.md). Tài liệu này mô tả định hướng kiến trúc tổng thể.
+
 Tài liệu mô tả chi tiết mô hình kiến trúc 5 tầng kỹ thuật, 7 phân hệ nghiệp vụ cốt lõi, và **chiến lược giao thức giao tiếp đa kênh (Communication Protocols Strategy)** của nền tảng mạng xã hội học thuật **PU Connector**.
 
 ---

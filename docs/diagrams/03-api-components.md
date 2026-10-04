@@ -1,0 +1,84 @@
+# 03 · API Components (C4 Level 3 — `apps/api`)
+
+> Module NestJS, phụ thuộc giữa chúng và endpoint. Cập nhật lần cuối: **2026-10-04**.
+
+## Module & phụ thuộc
+
+```mermaid
+flowchart TB
+  mw["<b>main.ts middleware</b><br/>trust proxy → CORS (isAllowedOrigin)<br/>→ session (PgStore) → passport<br/>+ AllExceptionsFilter · TransformInterceptor"]
+
+  subgraph Feature["Feature modules (REST controllers + GraphQL resolvers)"]
+    direction LR
+    auth["<b>Auth</b><br/>Local + Google strategy<br/>MailService · rate limit"]
+    users["<b>Users</b><br/>hồ sơ · privacy"]
+    posts["<b>Posts</b><br/>feed ranking · comments Q&A"]
+    gql["<b>SocialGraphQL</b><br/>user · feed · comment<br/>document · study-group"]
+    others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
+    storage["<b>Storage</b><br/>R2 upload"]
+  end
+
+  subgraph Platform["Platform modules"]
+    direction LR
+    mentions["<b>Mentions</b><br/>@username → bảng mentions"]
+    notif["<b>Notifications</b><br/>lưu + đẩy realtime"]
+    rt["<b>Realtime</b><br/>Gateway /api/socket.io<br/>room user:{id}"]
+  end
+
+  db[("<b>DatabaseModule</b> (global)<br/>pg.Pool · transaction()")]
+  ext["Google OAuth · Gmail SMTP · Cloudflare R2"]
+
+  mw --> Feature
+  posts -->|record + notify| mentions --> notif -->|emitToUser| rt
+  rt -. session + passport ở handshake .-> mw
+  Feature -->|SQL| db
+  Platform -->|SQL| db
+  auth & storage --> ext
+
+  classDef mod fill:#1e3a8a,stroke:#1e3a8a,color:#fff
+  classDef plat fill:#334155,stroke:#334155,color:#fff
+  classDef store fill:#ffedd5,stroke:#f97316,color:#7c2d12
+  classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
+  class auth,users,posts,communities,others,storage,gql mod
+  class mentions,notif,rt plat
+  class db store
+  class ext,mw external
+```
+
+> Quy tắc phụ thuộc: feature module → platform module → `DatabaseModule`. Platform module **không** import feature module (tránh vòng lặp). Token dùng chung đặt trong `*.constants.ts`.
+
+## Endpoint
+
+### REST (`/api`)
+
+| Module | Endpoint |
+|---|---|
+| Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/resend-verification` · `POST auth/onboarding` |
+| Users | `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `POST users/verify-university` |
+| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`) · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` |
+| Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `DELETE comments/:id` |
+| Communities | `GET communities` · `GET communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` |
+| Documents | `GET documents` · `GET documents/:id` · `POST documents` · `POST documents/:id/download` |
+| Courses | `GET courses` · `GET courses/:id` · `POST courses` |
+| Study groups | `GET study-groups` · `GET study-groups/:id` · `POST study-groups` · `POST study-groups/:id/join` |
+| Campus | `GET campus-events` · `POST campus-events` |
+| Search | `GET search` |
+| Notifications | `GET notifications` · `PATCH notifications/:id/read` · `PATCH notifications/read-all` |
+| Storage | `POST upload/file` · `POST upload/multiple` |
+
+### GraphQL (`/graphql`)
+
+| Loại | Field |
+|---|---|
+| Query | `me` · `userProfile` · `suggestedUsers` · `userFollowers` · `userFollowing` · `feed` · `post` · `comments` · `documents` · `studyGroups` |
+| Mutation | `toggleFollow` |
+
+### WebSocket (`/api/socket.io`)
+
+| Hướng | Event | Ghi chú |
+|---|---|---|
+| Server → client | `notification` | Gửi vào room `user:{recipientId}` khi `NotificationsService.createNotification` |
+| Client → server | — | Chưa có event nào; client chỉ nghe (P1 sẽ thêm `conv.open`, `typing`) |
+
+**Changelog:**
+- 2026-10-04 — tạo mới; thêm MentionsModule, RealtimeGateway có xác thực, NotificationsModule đẩy realtime.

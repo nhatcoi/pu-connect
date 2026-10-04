@@ -14,6 +14,9 @@ Tài liệu này định nghĩa các quy tắc bắt buộc mà toàn bộ AI Ag
    - Cập nhật `README.md` nếu có lệnh chạy mới hoặc biến môi trường mới (`.env.example`).
 2. **Khi sửa lỗi (`fix`) hoặc tối ưu hiệu năng (`perf`):**
    - Cập nhật tài liệu kỹ thuật liên quan trong `docs/` hoặc walkthrough để ghi lại giải pháp và lý do thay đổi.
+3. **Khi thay đổi kiến trúc / module / endpoint / migration / luồng nghiệp vụ — cập nhật sơ đồ [`docs/diagrams/`](docs/diagrams/README.md):**
+   - Có migration SQL mới ⇒ chạy migration lên DB local rồi `pnpm docs:erd` (sinh lại `04-erd.md`, không sửa tay).
+   - Thêm/xóa module, endpoint, dịch vụ ngoài, trang, luồng ⇒ sửa sơ đồ Mermaid tương ứng theo bảng "Cập nhật khi" trong `docs/diagrams/README.md` và thêm dòng Changelog.
 
 ---
 

@@ -11,6 +11,7 @@
     "start:fe": "turbo run start --filter=@pu/web",
     "start:api": "turbo run start --filter=@pu/api",
     "deploy:vps": "bash scripts/deploy.sh",
+    "docs:erd": "node scripts/gen-erd.mjs",
     "dev": "turbo run dev",
     "dev:fe": "turbo run dev --filter=@pu/web",
     "dev:api": "turbo run dev --filter=@pu/api",

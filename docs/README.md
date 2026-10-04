@@ -8,6 +8,7 @@ Chào mừng bạn đến với trung tâm tài liệu kỹ thuật của dự �
 
 | Tài liệu | Nội dung chính |
 | :--- | :--- |
+| [**🗺️ Sơ Đồ Hệ Thống (Diagrams — đúng theo code đang chạy)**](./diagrams/README.md) | C4 Context/Container/Component, ERD tự sinh (`pnpm docs:erd`), sequence các luồng chính, deployment, route map web. |
 | [**🎓 0. Kế Hoạch 14 Domains Mạng Xã Hội Sinh Viên (Master Plan)**](./STUDENT_SOCIAL_NETWORK_MASTER_PLAN.md) | Đặc tả 14 phân hệ nghiệp vụ, 8 miền kiến trúc, lộ trình 4 giai đoạn và Product Moat. |
 | [**🚀 1. Hướng Dẫn Bắt Đầu & Bản Đồ Nghiệp Vụ (Get Started)**](./get-started.md) | Cài đặt 3 bước, sơ đồ đa giao thức, phân tích logic nghiệp vụ cốt lõi, danh sách tài khoản mẫu. |
 | [**🎯 2. Danh Mục Tính Năng & Lộ Trình (Features & Roadmap)**](./FEAT.md) | Theo dõi trạng thái các tính năng đã hoàn thành và kế hoạch phát triển (Backlog). |
