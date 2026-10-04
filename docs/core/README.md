@@ -14,6 +14,7 @@
 | [**`03-profile-and-social-graph.md`**](./03-profile-and-social-graph.md) | Hồ sơ sinh viên, Cây phân cấp học thuật (Khoa/Viện/Khóa), Mạng lưới theo dõi (`user_follows`), Mention `@username`. | ✅ Hoàn chỉnh |
 | [**`04-search-and-trending-topics.md`**](./04-search-and-trending-topics.md) | Hashtag `#tag`, Khám phá xu hướng (Trending / Explore), Full-Text Search đa thực thể với Zero Layout Shift. | ✅ Hoàn chỉnh |
 | [**`05-notifications-and-realtime.md`**](./05-notifications-and-realtime.md) | Trung tâm thông báo đa kênh, WebSocket / Event Bus, Cơ chế gộp thông báo (Notification Aggregation). | ✅ Hoàn chỉnh |
+| [**`06-messaging-and-ai.md`**](./06-messaging-and-ai.md) | Nhắn tin 1-1/nhóm, PU AI (`@puai` là bot user), AI drawer theo ngữ cảnh, tác vụ nhanh, RAG pgvector, lộ trình P0–P5. | 📐 Thiết kế |
 
 ---
 

@@ -26,6 +26,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🛡️ **Quản lý ACID Transaction ([`DatabaseService.transaction`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/api/src/database/database.service.ts))**: Bọc mọi luồng ghi dữ liệu quan trọng trong atomic transaction với row-level lock (`FOR UPDATE`), tự động rollback khi có lỗi và cảnh báo `Slow Transaction [>300ms]`.
 - [x] 🚀 **Chỉ mục hiệu năng cao**: Đánh chỉ mục **GIN Index** cho `tags`, `interests`, `skills` và Composite B-Tree Index cho `created_at DESC`, `major`, `class_name`, `is_verified`.
 - [x] 🔐 **Xác thực phiên làm việc an toàn (`Session-based Auth & Passport.js`)**: Đăng ký, đăng nhập với cookie HttpOnly (`pu_session`), mã hóa bcrypt và phân quyền theo vai trò (`student`, `lecturer`, `ta`, `admin`).
+- [x] 🔌 **Messaging & AI — P0 Nền tảng** ([thiết kế](./core/06-messaging-and-ai.md)):
+  - Session lưu PostgreSQL (`connect-pg-simple`, bảng `user_sessions`) dùng chung cho HTTP & Socket.IO ⇒ restart/deploy không còn đăng xuất người dùng. `SESSION_SECRET` bắt buộc ở production.
+  - CORS có credentials chỉ cho `APP_URL` / `CORS_ORIGINS` (+ localhost khi dev) thay vì mọi origin.
+  - `RealtimeGateway` (`/api/socket.io`): xác thực bằng cookie `pu_session`, từ chối socket ẩn danh, chặn Cross-Site WebSocket Hijacking (`allowRequest` kiểm tra Origin), room do server cấp (`user:{id}`). Gỡ `join_room` / `send_message` / broadcast toàn cục cũ (cho phép nghe lén & giả mạo người gửi).
+  - Thông báo đẩy realtime: `NotificationsService.createNotification` emit `notification` vào `user:{id}`; chuông thông báo (`useRealtimeEvent`) tải lại ngay, polling chỉ còn dự phòng 120 s.
+  - `users.account_type` (`human`/`bot`/`system`) + tài khoản bot **`@puai`** (không thể đăng nhập bằng mật khẩu/Google, không xuất hiện trong "Gợi ý theo dõi"). Username dành riêng (`puai`, `pu_*`, `admin`, route…) không thể đăng ký.
+  - `@mention` dùng chung (bảng `mentions`, `MentionsService`): ghi trong cùng transaction tạo/sửa post & comment, chỉ thông báo người **mới** được nhắc, bỏ qua email/URL; mention bot để dành cho AI layer (P3).
+  - Migration `messaging-upgrade.sql` (idempotent, chạy trong `deploy.sh`).
 - [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
 - [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau và REST API cho Session Auth, Profile updates, Upload File lớn.
@@ -41,6 +49,21 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - Hiệu ứng vật lý lò xo (Spring Physics), tương tác mượt mà và Zero Layout Shift (CLS).
   - Đầy đủ bộ Primitives: `Button`, `Highlight`, `AutoHeight`, `Dialog`, `DropdownMenu`, `Tabs`, `Tooltip`, `Popover`, `Switch`.
   - Tái cấu trúc consumer components trong `src/components/ui/` đạt 100% Backward Compatibility.
+
+### 🎨 Brand Phenikaa (Navy + Cam) & Landing Mới
+- [x] Logo `PuMark`/`PuLogo` (`components/brand/pu-logo.tsx`): chữ U + vòm cam kết nối; dùng ở landing, header, favicon (`app/icon.tsx`).
+- [x] Palette chủ đạo: `--primary` navy `#0b3d91`, `--brand-orange` `#f7941d` (dark mode sáng hơn) trong `globals.css`, thay màu đen.
+- [x] Landing (`app/page.tsx`): headline mới, nút dùng animate-ui `Button`, khối tài khoản seed chỉ hiện ở `NODE_ENV=development`.
+- [x] Vector động bên phải (`components/brand/hero-network.tsx`): mạng lưới nút, cạnh nét đứt chạy, gói dữ liệu, sóng lan, chip nổi (motion/react).
+- [x] Home gọn mắt: nền `--surface` + bài viết dạng thẻ (`PostCard variant="card"`), bỏ viền cột/header; chữ nhỏ hơn (13–15px); sidebar 224px chỉ nav + môn sôi nổi (bỏ chip khoa, bỏ CTA trùng); cột phải phẳng, 3 gợi ý, `FollowButton variant="outline"`; bài dài thu gọn ~5 dòng + "Xem thêm".
+- [x] Bố cục surface + thẻ áp đồng bộ cho `/communities`, `/[username]`, `/c/[slug]`, `/search` (bỏ `border-x`, header sticky nền surface, nội dung/section dạng thẻ, PostCard `variant="card"`, banner hồ sơ navy).
+- [x] Feature flags `apps/web/src/lib/features.ts`: tạm ẩn tính năng chưa có backend/dữ liệu thật (SSO, QR app, footer link chết, lối tắt Học phần/Tài liệu/Hỏi đáp, Môn học sôi nổi, Xu hướng/Tin nổi bật, sub-tab Khám phá, lượt xem & phân tích bài, nhắn tin/chia sẻ chat, chọn đối tượng xem). Thông báo bỏ dữ liệu giả khi lỗi. Bật lại = đổi flag sang `true`.
+- [x] Onboarding `/get-started` rút gọn 4 bước → 1 màn hình: vai trò, khóa, mã SV/cán bộ (đều tùy chọn), tự theo dõi gợi ý, nút "Bỏ qua". Bỏ chọn Khoa/Viện, môn học, kỹ năng.
+- [x] Animation nav chính theo animate-ui `Highlight`: sidebar có pill hover trượt (như menu dropdown); `SlidingTabs` (`components/navigation/sliding-tabs.tsx`) gạch chân trượt cho tab Bảng tin, Hồ sơ, Tìm kiếm.
+- [x] Auth thật: đăng nhập/đăng ký Email + mật khẩu (validate zod, bcrypt cost 12, username tự sinh) và Google OAuth (`GET /auth/google`, callback, liên kết theo email đã xác thực). Nút Google tự ẩn khi chưa cấu hình `GOOGLE_*`. Bỏ nút "Tiếp tục với Email sinh viên", khối tài khoản seed và mật khẩu điền sẵn. Xem `docs/auth-google.md`.
+- [x] Đăng nhập nhập-email-trước (animation hiện mật khẩu / họ tên), xác thực email sau đăng ký (`/verify-email`, thanh nhắc, gửi lại), chặn chiếm tài khoản khi liên kết Google, tiêu đề landing "Mạng xã hội học thuật cộng đồng". Cần cấu hình SMTP để gửi mail thật (xem `docs/auth-google.md`).
+- [x] Bỏ bước `/get-started` bắt buộc: vào `/home` ngay sau đăng ký; mã SV/khóa tự suy từ email trường; thẻ "Hoàn thiện hồ sơ" không chặn (`?edit=1` mở hộp chỉnh sửa). Không còn dữ liệu giả điền sẵn trong hộp chỉnh sửa hồ sơ. Đăng ký email + mật khẩu không còn tự cấp tích xanh (chỉ Google).
+- [x] Seed local rút gọn: 12 user, 24 bài, 16 bình luận (backup trước khi xóa). Chỉ ảnh hưởng DB local `pu_postgres`.
 
 ### ☁️ Lưu Trữ Đám Mây & Tệp Tin (Cloudflare R2 Storage)
 - [x] ☁️ **Tích hợp Cloudflare R2 Object Storage (`@aws-sdk/client-s3`)**: Lưu trữ media, ảnh đính kèm bài viết và tệp tài liệu học phần bảo mật với Zero Egress Fee.
@@ -98,5 +121,5 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 3. **Domain 7: Career & Alumni (`/career`)**: Bảng tin thực tập, CV/Portfolio số sinh viên, Mạng lưới Cựu sinh viên (Alumni Mentorship).
 4. **Domain 8: Events (`/events`)**: Form đăng ký tham gia sự kiện campus, vé mã QR Check-in.
 5. **Domain 9: Clubs & Organizations (`/clubs/[slug]`)**: Hub riêng cho CLB, quản lý thành viên ban/đội, đợt tuyển quân.
-6. **Domain 10: Realtime Messaging (`/messages`)**: Chat 1-1 giữa sinh viên, chat kênh cộng đồng, trạng thái online.
-7. **Domain 13: AI Layer (PU AI Study Assistant - RAG)**: Hỏi đáp dựa trên kho slide và đề thi của trường qua `pgvector`.
+6. **Domain 10: Realtime Messaging (`/messages`)**: Chat 1-1 giữa sinh viên, chat kênh cộng đồng, trạng thái online. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
+7. **Domain 13: AI Layer (PU AI Study Assistant - RAG)**: Hỏi đáp dựa trên kho slide và đề thi của trường qua `pgvector`. `@puai` là bot user, dùng chung pipeline nhắn tin — xem [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).

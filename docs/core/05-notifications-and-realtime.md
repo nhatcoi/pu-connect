@@ -55,8 +55,9 @@ ON notifications(recipient_id, is_read, created_at DESC);
 ### 3.1. Kênh Truyền WebSocket (`Socket.io`)
 * Khi có sự kiện phát sinh (ví dụ bạn B bình luận bài của bạn A):
   * Backend lưu bản ghi vào PostgreSQL `notifications`.
-  * Gửi socket event `notification:new` trực tiếp đến room cá nhân `user:{recipient_id}`.
-  * Web & Mobile Client nhận event, phát âm thanh thông báo nhẹ và cập nhật số huy hiệu đỏ (Badge counter) trên Header.
+  * Gửi socket event `notification` trực tiếp đến room cá nhân `user:{recipient_id}` (`RealtimeGateway.emitToUser`).
+  * Web Client (`useRealtimeEvent('notification', …)`) tải lại danh sách và cập nhật badge trên Header; polling 120 s chỉ là dự phòng.
+* **Đã triển khai (P0):** gateway tại `/api/socket.io`, xác thực bằng cookie `pu_session` (session lưu Postgres), từ chối socket ẩn danh và Origin lạ; client **không** tự join room. Chi tiết: [06-messaging-and-ai.md](./06-messaging-and-ai.md).
 
 ### 3.2. Thuật Toán Gộp Thông Báo (Notification Aggregation)
 * Khi một bài viết nhận được nhiều lượt thích trong thời gian ngắn (ví dụ 10 lượt thích trong 1 giờ), hệ thống không gửi 10 thông báo riêng rẽ mà gộp thành:
