@@ -28,7 +28,7 @@ export class SearchController {
       throw new BadRequestException('Từ khóa tìm kiếm (q) không được để trống')
     }
 
-    const currentUserId = (req as any)?.user?.id || (req as any)?.session?.passport?.user
+    const currentUserId = (req as any)?.user?.id as string | undefined
     const parsedLimit = Math.min(50, Math.max(1, parseInt(limit, 10) || 20))
     const parsedOffset = Math.max(0, parseInt(offset, 10) || 0)
 
