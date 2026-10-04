@@ -108,7 +108,14 @@ npx web-push generate-vapid-keys         # điền VAPID_PUBLIC_KEY / VAPID_PRIV
 ```
 Thiếu VAPID ⇒ chỉ có thông báo trong app. Chi tiết: [`docs/core/05`](docs/core/05-notifications-and-realtime.md#7-triển-khai-v2--web-push--bullmq-đang-chạy).
 
-### 7. Sơ đồ hệ thống
+### 7. Vận hành: backup & giám sát (VPS)
+Cài một lần trên VPS (idempotent): `ssh root@<vps> 'bash /var/www/pu-connector/scripts/ops/setup-ops.sh'`
+- **Backup DB** 03:17 hằng ngày (`scripts/ops/backup-db.sh`): `pg_dump` → gzip → mã hóa AES-256 (`BACKUP_PASSPHRASE` trong `.env`, tự sinh) → R2 `backups/db/` (giữ 30 ngày) + `/var/backups/pu-connector` (giữ 7 bản). Bucket R2 là public nên **bắt buộc mã hóa**. **Lưu bản sao `BACKUP_PASSPHRASE` ngoài VPS** — mất khóa = không khôi phục được.
+- **Thử khôi phục** (an toàn, vào DB tạm rồi xóa): `bash scripts/ops/restore-db.sh [file | backups/db/<tên>]`. Ghi đè DB thật: thêm `--into-live` (phải gõ tên DB xác nhận).
+- **Giám sát** mỗi 5 phút (`scripts/ops/healthcheck.sh`): web 200, API 401, systemd, container, Postgres, đĩa < 85%, RAM, backup < 26 giờ. Chỉ cảnh báo khi trạng thái đổi.
+- **Cảnh báo Telegram** (tùy chọn): thêm `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` vào `.env` trên VPS (tạo bot qua @BotFather). Không có thì ghi log `/var/log/pu-monitor.log`, `/var/log/pu-backup.log`.
+
+### 8. Sơ đồ hệ thống
 Sơ đồ C4, ERD, sequence, deployment ở [`docs/diagrams/`](docs/diagrams/README.md). Sau mỗi migration, sinh lại ERD từ DB local:
 ```bash
 pnpm docs:erd

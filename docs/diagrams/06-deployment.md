@@ -20,7 +20,7 @@ flowchart LR
     end
   end
 
-  r2["Cloudflare R2"]
+  r2["Cloudflare R2<br/>uploads + backups/db (mã hóa)"]
   google["Google OAuth"]
   gmail["Gmail SMTP :465"]
 
@@ -32,6 +32,10 @@ flowchart LR
   api -->|SQL| pg
   api -->|BullMQ| redis
   api --> r2 & google & gmail
+  cron["<b>cron</b><br/>03:17 backup-db.sh<br/>*/5 healthcheck.sh"]
+  cron -->|"pg_dump (docker exec)"| pg
+  cron -->|"AES-256 .enc"| r2
+  cron -.->|"cảnh báo (tùy chọn)"| tg["Telegram Bot"]
 
   dev -->|"1. rsync (trừ .env, secret json)"| VPS
   dev -->|"2. ssh: migrations · pnpm build · restart"| VPS
@@ -41,7 +45,7 @@ flowchart LR
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
   class web,api,nginx app
   class pg,redis store
-  class r2,google,gmail external
+  class r2,google,gmail,tg,cron external
 ```
 
 ## Các bước `scripts/deploy.sh`
@@ -53,14 +57,25 @@ flowchart LR
 
 Migration chạy **mỗi lần deploy** theo thứ tự: `schema.sql` → `domain1-upgrade.sql` → `add-communities.sql` → `add-indexes.sql` → `auth-upgrade.sql` → `messaging-upgrade.sql` → `notifications-upgrade.sql` → `push-upgrade.sql`. ⇒ Mọi file phải **idempotent** và **không bao giờ UPDATE hàng loạt dữ liệu người dùng thật**.
 
+## Vận hành: backup & giám sát
+
+| Việc | Lịch | Script | Kết quả |
+|---|---|---|---|
+| Backup Postgres | 03:17 hằng ngày | `scripts/ops/backup-db.sh` | `pu-YYYYmmdd-HHMMSS.sql.gz.enc` → R2 `backups/db/` (30 ngày) + `/var/backups/pu-connector` (7 bản) |
+| Giám sát | mỗi 5 phút | `scripts/ops/healthcheck.sh` | Chỉ báo khi trạng thái đổi; Telegram nếu có `TELEGRAM_*` |
+| Thử khôi phục | thủ công / định kỳ | `scripts/ops/restore-db.sh` | Nạp vào DB tạm, đếm bảng/users, xóa DB tạm |
+
+Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, giữ bản sao ngoài VPS).
+
 ## Secret & cấu hình
 
 | Ở đâu | Chứa | Ghi chú |
 |---|---|---|
-| `/var/www/pu-connector/.env` | `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, `GOOGLE_*`, `SMTP_*`, `R2_*`, `REDIS_URL`, `VAPID_*` | Không bị rsync ghi đè; backup `.env.bak.*` |
+| `/var/www/pu-connector/.env` | `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, `GOOGLE_*`, `SMTP_*`, `R2_*`, `REDIS_URL`, `VAPID_*`, `BACKUP_PASSPHRASE`, `TELEGRAM_*` (tùy chọn) | Không bị rsync ghi đè; backup `.env.bak.*` |
 | `apps/web/.env` (VPS) | `INTERNAL_API_URL=http://localhost:4001` | Port API production là **4001** |
 | `/etc/nginx/sites-available/pu-connector.conf` | Routing + SSL | Backup `/root/pu-connector.conf.bak.*` |
 
 **Changelog:**
+- 2026-10-04 — thêm cron backup DB mã hóa lên R2, healthcheck 5 phút, restore-db.sh.
 - 2026-10-04 — Postgres/Redis chỉ bind localhost (Docker bỏ qua firewall), thêm pu_redis, build tuần tự, migration push.
 - 2026-10-04 — tạo mới; thêm `location /api/socket.io` (websocket), `messaging-upgrade.sql`, session lưu Postgres.
