@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'motion/react'
 import { Eye, EyeOff, Loader2, Pencil } from 'lucide-react'
@@ -313,6 +314,16 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
               </button>
             </div>
           </Field>
+          {step === 'login' && (
+            <div className="-mt-1 text-right">
+              <Link
+                href={`/forgot-password${email.includes('@') ? `?email=${encodeURIComponent(email.trim())}` : ''}`}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Quên mật khẩu?
+              </Link>
+            </div>
+          )}
         </Reveal>
 
         {step !== 'google-only' && (
