@@ -20,10 +20,13 @@ interface CommentItemCardProps {
   onAcceptSolution?: (commentId: string) => void
   onDeleteComment?: (commentId: string) => void
   onReplySubmit: (content: string, parentId: string, mediaUrls?: string[]) => Promise<any>
+  // Bình luận được mở từ thông báo (cuộn tới + viền nổi bật)
+  isHighlighted?: boolean
 }
 
 export function CommentItemCard({
   comment,
+  isHighlighted,
   isPostAuthor,
   isQaPost,
   currentUserId,
@@ -46,8 +49,10 @@ export function CommentItemCard({
 
   return (
     <div
+      id={`comment-${comment.id}`}
       className={cn(
-        'group relative rounded-xl transition-all duration-150 p-3 space-y-2',
+        'group relative rounded-xl transition-all duration-150 p-3 space-y-2 scroll-mt-28',
+        isHighlighted && 'ring-2 ring-brand-orange/60 bg-brand-orange/5',
         comment.isSolution
           ? 'bg-emerald-500/5 border border-emerald-500/30'
           : 'hover:bg-muted/30 border border-transparent hover:border-border/50'

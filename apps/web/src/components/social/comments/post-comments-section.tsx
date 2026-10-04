@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useComments } from '@/hooks/use-comments'
 import { useAppStore } from '@/store'
 import { CommentComposer } from './comment-composer'
@@ -12,9 +12,10 @@ import type { PostItem } from '@pu/schemas'
 interface PostCommentsSectionProps {
   post: PostItem
   isOpen: boolean
+  highlightCommentId?: string | null
 }
 
-export function PostCommentsSection({ post, isOpen }: PostCommentsSectionProps) {
+export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCommentsSectionProps) {
   const user = useAppStore((state) => state.user)
   const {
     comments,
@@ -30,6 +31,27 @@ export function PostCommentsSection({ post, isOpen }: PostCommentsSectionProps) 
   } = useComments(post.id, isOpen)
 
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({})
+  const [highlighted, setHighlighted] = useState<string | null>(null)
+  const handledHighlight = useRef<string | null>(null)
+
+  // Mở từ thông báo: mở phản hồi chứa bình luận đích, cuộn tới và nháy viền 3s
+  useEffect(() => {
+    if (!isOpen || !highlightCommentId || handledHighlight.current === highlightCommentId) return
+    const target = comments.find((c) => c.id === highlightCommentId)
+    if (!target) {
+      // Bình luận đích chưa có trong trang đã tải ⇒ tải thêm (dừng khi hết)
+      if (hasMore && !isLoading && !isLoadingMore) fetchMoreComments()
+      return
+    }
+    handledHighlight.current = target.id
+    if (target.parentId) setExpandedReplies((prev) => ({ ...prev, [target.parentId as string]: true }))
+    setHighlighted(target.id)
+    // Chạy một lần cho mỗi bình luận đích (không hủy khi deps đổi sau đó)
+    setTimeout(() => {
+      document.getElementById(`comment-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 150)
+    setTimeout(() => setHighlighted(null), 3000)
+  }, [isOpen, highlightCommentId, comments, hasMore, isLoading, isLoadingMore, fetchMoreComments])
 
   if (!isOpen) return null
 
@@ -76,6 +98,7 @@ export function PostCommentsSection({ post, isOpen }: PostCommentsSectionProps) 
                 <div key={comment.id} className="space-y-2">
                   <CommentItemCard
                     comment={comment}
+                    isHighlighted={highlighted === comment.id}
                     isPostAuthor={isPostAuthor}
                     isQaPost={isQaPost}
                     currentUserId={user?.id}
@@ -110,6 +133,7 @@ export function PostCommentsSection({ post, isOpen }: PostCommentsSectionProps) 
                             <CommentItemCard
                               key={reply.id}
                               comment={reply}
+                              isHighlighted={highlighted === reply.id}
                               isPostAuthor={isPostAuthor}
                               isQaPost={isQaPost}
                               currentUserId={user?.id}

@@ -18,7 +18,8 @@ import {
   Plus,
   MoreHorizontal,
   Sparkles,
-  Compass
+  Compass,
+  Bell
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
@@ -33,9 +34,10 @@ import {
 import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { FEATURES } from '@/lib/features'
+import { useNotificationsStore } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
 
-export type NavTabType = 'feed' | 'search' | 'communities' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa'
+export type NavTabType = 'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -47,11 +49,19 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const router = useRouter()
   const user = useAppStore((state) => state.user)
   const { logout, isLoggingOut } = useLogout()
+  const unreadCount = useNotificationsStore((s) => s.unreadCount)
 
   const navItems = [
     { id: 'feed' as const, path: '/home', label: 'Bảng tin', icon: Home },
     { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
     { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
+    {
+      id: 'notifications' as const,
+      path: '/notifications',
+      label: 'Thông báo',
+      icon: Bell,
+      badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined
+    },
     ...(user?.username
       ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ', icon: User }]
       : []),

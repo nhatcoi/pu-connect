@@ -1,137 +1,38 @@
 'use client'
 
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useRealtimeEvent } from '@/hooks/use-realtime-event'
-import {
-  Bell,
-  CheckCheck,
-  Heart,
-  MessageSquare,
-  Award,
-  AtSign,
-  Users,
-  FileText,
-  Sparkles,
-  Loader2
-} from 'lucide-react'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover'
+import { Bell, CheckCheck, Loader2 } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { apiClient } from '@/lib/api-client'
-import { formatRelativeTime, cn } from '@/lib/utils'
-
-export interface NotificationItem {
-  id: string
-  recipientId: string
-  actorId: string | null
-  actor?: {
-    id: string
-    username: string
-    displayName: string
-    avatarUrl?: string | null
-  } | null
-  type: string
-  title: string
-  message: string
-  entityId?: string | null
-  entityType?: string | null
-  isRead: boolean
-  createdAt: string
-}
-
-function getNotificationIcon(type: string) {
-  switch (type) {
-    case 'post_like':
-      return <Heart className="h-3.5 w-3.5 text-rose-500 fill-rose-500/20" />
-    case 'post_comment':
-    case 'comment_reply':
-      return <MessageSquare className="h-3.5 w-3.5 text-blue-500" />
-    case 'accepted_solution':
-      return <Award className="h-3.5 w-3.5 text-amber-500 fill-amber-500/20" />
-    case 'user_mention':
-      return <AtSign className="h-3.5 w-3.5 text-purple-500" />
-    case 'group_join_request':
-    case 'group_member_accepted':
-      return <Users className="h-3.5 w-3.5 text-emerald-500" />
-    case 'course_document_uploaded':
-      return <FileText className="h-3.5 w-3.5 text-sky-500" />
-    default:
-      return <Sparkles className="h-3.5 w-3.5 text-primary" />
-  }
-}
+import { NotificationRow } from '@/components/notifications/notification-row'
+import {
+  notificationsApi,
+  openNotification,
+  useNotificationsStore,
+  useNotificationsSync,
+  type NotificationItem
+} from '@/hooks/use-notifications'
 
 export function NotificationsPopover() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [notifications, setNotifications] = useState<NotificationItem[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
+  const items = useNotificationsStore((s) => s.items)
+  const unreadCount = useNotificationsStore((s) => s.unreadCount)
+  const loaded = useNotificationsStore((s) => s.loaded)
 
-  const fetchNotifications = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      const res = await apiClient<{
-        success: boolean
-        data: NotificationItem[]
-        unreadCount: number
-      }>('/notifications?limit=15')
-
-      if (res && res.data) {
-        setNotifications(res.data)
-        setUnreadCount(res.unreadCount || 0)
-      }
-    } catch {
-      // Lỗi tải: hiển thị rỗng, không dùng dữ liệu giả
-      setNotifications([])
-      setUnreadCount(0)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchNotifications()
-    // Poll dự phòng khi mất kết nối realtime (fallback polling)
-    const interval = setInterval(fetchNotifications, 120000)
-    return () => clearInterval(interval)
-  }, [fetchNotifications])
-
-  // Thông báo mới đẩy qua socket ⇒ tải lại danh sách ngay
-  useRealtimeEvent('notification', fetchNotifications)
+  // Tải + realtime + toast (chỉ gắn một lần ở Header)
+  useNotificationsSync((link) => router.push(link))
 
   const handleMarkAllAsRead = async () => {
-    try {
-      await apiClient('/notifications/read-all', { method: 'PATCH' })
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-      setUnreadCount(0)
-    } catch {
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })))
-      setUnreadCount(0)
-    }
+    useNotificationsStore.getState().markRead('all', 0)
+    notificationsApi.markAllRead().catch(() => undefined)
   }
 
-  const handleItemClick = async (notif: NotificationItem) => {
-    if (!notif.isRead) {
-      try {
-        await apiClient(`/notifications/${notif.id}/read`, { method: 'PATCH' })
-      } catch {}
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
-      )
-      setUnreadCount((c) => Math.max(0, c - 1))
-    }
-
+  const handleItemClick = (item: NotificationItem) => {
     setOpen(false)
-    if (notif.entityType === 'study_group') {
-      router.push('/groups')
-    } else if (notif.entityId) {
-      router.push(`/?post=${notif.entityId}`)
-    }
+    openNotification(item, (link) => router.push(link))
   }
 
   return (
@@ -140,89 +41,53 @@ export function NotificationsPopover() {
         <Button
           variant="ghost"
           size="icon"
+          aria-label={unreadCount > 0 ? `Thông báo (${unreadCount} chưa đọc)` : 'Thông báo'}
           className="relative h-9 w-9 text-muted-foreground hover:text-foreground cursor-pointer"
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-accent-foreground shadow-sm animate-pulse">
+            <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-orange px-1 text-[10px] font-bold text-white shadow-sm">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" className="w-80 sm:w-96 p-0 shadow-lg border-border/80">
-        <div className="flex items-center justify-between border-b border-border/70 p-3 bg-muted/20">
-          <div className="flex items-center gap-1.5 font-bold text-sm">
-            <Bell className="h-4 w-4 text-primary" />
-            <span>Thông báo</span>
-            {unreadCount > 0 && (
-              <span className="rounded-full bg-primary/10 px-2 py-0.2 text-[11px] font-semibold text-primary">
-                {unreadCount} mới
-              </span>
-            )}
-          </div>
+      <PopoverContent align="end" className="w-80 sm:w-96 p-0 shadow-lg border-border/80 overflow-hidden">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-border/60">
+          <span className="text-sm font-semibold">Thông báo</span>
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
               className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors cursor-pointer"
             >
               <CheckCheck className="h-3.5 w-3.5" />
-              <span>Đã đọc tất cả</span>
+              <span>Đánh dấu đã đọc</span>
             </button>
           )}
         </div>
 
-        <div className="max-h-[380px] overflow-y-auto divide-y divide-border/40">
-          {isLoading && notifications.length === 0 ? (
+        <div className="max-h-[420px] overflow-y-auto">
+          {!loaded ? (
             <div className="flex items-center justify-center py-8 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
-          ) : notifications.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground">
-              Chưa có thông báo nào
-            </div>
+          ) : items.length === 0 ? (
+            <div className="py-10 text-center text-xs text-muted-foreground">Chưa có thông báo nào</div>
           ) : (
-            notifications.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => handleItemClick(item)}
-                className={cn(
-                  'flex items-start gap-3 p-3 transition-colors hover:bg-muted/40 cursor-pointer text-left',
-                  !item.isRead && 'bg-primary/[0.04]'
-                )}
-              >
-                <div className="relative shrink-0">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={item.actor?.avatarUrl || ''} />
-                    <AvatarFallback className="text-xs font-bold bg-primary/10 text-primary">
-                      {item.actor?.displayName?.slice(0, 2).toUpperCase() || 'PU'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 rounded-full bg-background p-0.5 shadow-sm">
-                    {getNotificationIcon(item.type)}
-                  </div>
-                </div>
-
-                <div className="flex-1 min-w-0 space-y-0.5">
-                  <p className="text-xs leading-snug text-foreground">
-                    <span className="font-semibold text-foreground">
-                      {item.actor?.displayName || 'Thành viên Phenikaa'}{' '}
-                    </span>
-                    <span className="text-muted-foreground">{item.message}</span>
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-medium">
-                    {formatRelativeTime(item.createdAt)}
-                  </p>
-                </div>
-
-                {!item.isRead && (
-                  <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
-                )}
-              </div>
+            items.slice(0, 10).map((item) => (
+              <NotificationRow key={item.id} item={item} onClick={handleItemClick} compact />
             ))
           )}
         </div>
+
+        <Link
+          href="/notifications"
+          onClick={() => setOpen(false)}
+          className="block border-t border-border/60 py-2.5 text-center text-xs font-semibold text-primary hover:bg-muted/40"
+        >
+          Xem tất cả thông báo
+        </Link>
       </PopoverContent>
     </Popover>
   )

@@ -114,16 +114,26 @@ interface PostCardProps {
   onDeleteSuccess?: (postId: string) => void
   // 'card': thẻ bo góc trên nền surface (home) · 'flat': hàng phẳng có viền dưới
   variant?: 'flat' | 'card'
+  // Trang chi tiết bài viết: mở sẵn bình luận và highlight bình luận từ thông báo
+  defaultCommentsOpen?: boolean
+  highlightCommentId?: string | null
 }
 
 // Chiều cao tối đa nội dung khi thu gọn (~5 dòng)
 const COLLAPSED_MAX_HEIGHT = 120
 
-export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess, variant = 'flat' }: PostCardProps) {
+export function PostCard({
+  post: initialPost,
+  onLikeToggle,
+  onDeleteSuccess,
+  variant = 'flat',
+  defaultCommentsOpen = false,
+  highlightCommentId
+}: PostCardProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [post, setPost] = useState<PostItem>(initialPost)
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false)
+  const [isCommentsOpen, setIsCommentsOpen] = useState(defaultCommentsOpen)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
@@ -132,7 +142,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess, var
   const [hiddenReason, setHiddenReason] = useState('')
   // Thu gọn bài dài + "Xem thêm" (Collapse long content)
   const contentRef = useRef<HTMLDivElement>(null)
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(defaultCommentsOpen)
   const [isOverflowing, setIsOverflowing] = useState(false)
 
   useLayoutEffect(() => {
@@ -736,7 +746,7 @@ export function PostCard({ post: initialPost, onLikeToggle, onDeleteSuccess, var
         </div>
 
         {/* Expandable Comments & Discussion Section */}
-        <PostCommentsSection post={post} isOpen={isCommentsOpen} />
+        <PostCommentsSection post={post} isOpen={isCommentsOpen} highlightCommentId={highlightCommentId} />
       </article>
 
       {/* Edit Post Dialog */}
