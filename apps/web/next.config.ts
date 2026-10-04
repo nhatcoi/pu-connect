@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb'
     }
   },
+  async redirects() {
+    // Trang onboarding đã gỡ: link cũ chuyển về bảng tin
+    return [{ source: '/get-started', destination: '/home', permanent: false }]
+  },
   async rewrites() {
     const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:4000'
     return [

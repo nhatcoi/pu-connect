@@ -109,3 +109,8 @@ Khi bạn muốn bổ sung Mobile App:
 1. Tạo thư mục `apps/mobile` sử dụng **Expo** hoặc **React Native** (`react-native-reusables` + `NativeWind`).
 2. Import trực tiếp `@pu/schemas` để dùng chung 100% Zod validation và TypeScript types.
 3. Import `@pu/ui` để đồng bộ toàn bộ bảng màu HSL và design tokens.
+
+---
+
+## 🔐 Xác thực
+Email + mật khẩu và Google OAuth (tùy chọn). Biến môi trường `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (xem `.env.example`) và hướng dẫn cấu hình tại [`docs/auth-google.md`](docs/auth-google.md). Tài khoản seed local dùng mật khẩu `password123`.

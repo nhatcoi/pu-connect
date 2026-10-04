@@ -12,7 +12,9 @@ dist/
 build/
 *.tsbuildinfo
 
-# Environment variables
+# Environment variables & credentials
+puc-client-secret*.json
+client_secret*.json
 .env
 .env.local
 .env.development.local

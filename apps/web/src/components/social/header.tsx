@@ -1,5 +1,7 @@
 'use client'
 
+import { PuMark } from '@/components/brand/pu-logo'
+import { VerifyEmailBanner } from '@/components/auth/verify-email-banner'
 import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -96,7 +98,8 @@ export function Header() {
   }
 
   return (
-    <header className="w-full relative md:sticky md:top-0 z-40 border-b border-border/40 bg-background/95 backdrop-blur-md">
+    <header className="w-full relative md:sticky md:top-0 z-40 bg-background/95 backdrop-blur-md shadow-[0_1px_0_0_rgb(0_0_0/0.04)]">
+      <VerifyEmailBanner />
       <CommandPalette open={isCommandOpen} onOpenChange={setIsCommandOpen} onSelectTab={() => {}} />
       <AuthDialog open={isAuthOpen} onOpenChange={setIsAuthOpen} />
       <SearchSettingsDialog open={isSearchSettingsOpen} onOpenChange={setIsSearchSettingsOpen} />
@@ -105,9 +108,7 @@ export function Header() {
       <div className="hidden md:flex mx-auto h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/home" className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-black text-base shadow-xs group-hover:scale-105 transition-transform">
-              PU
-            </div>
+            <PuMark className="h-9 w-9 group-hover:scale-105 transition-transform" />
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight leading-none text-foreground">
                 PU Connector
@@ -331,9 +332,7 @@ export function Header() {
           /* Mode 2: Signature Centered PU Emblem Logo */
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
             <Link href="/home" className="flex items-center justify-center cursor-pointer group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-foreground text-background font-black text-sm shadow-xs group-hover:scale-105 transition-transform tracking-tighter">
-                PU
-              </div>
+              <PuMark className="h-8 w-8 group-hover:scale-105 transition-transform" />
             </Link>
           </div>
         )}

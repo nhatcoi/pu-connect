@@ -1,14 +1,20 @@
 import { z } from 'zod'
 
 export const RegisterSchema = z.object({
-  email: z.string().email({ message: 'Email không hợp lệ' }),
+  email: z.string().trim().toLowerCase().email({ message: 'Email không hợp lệ' }),
+  // Username tùy chọn: bỏ trống thì server tự sinh từ email
   username: z
     .string()
     .min(3, { message: 'Username phải có ít nhất 3 ký tự' })
     .max(30, { message: 'Username tối đa 30 ký tự' })
-    .regex(/^[a-zA-Z0-9_]+$/, { message: 'Username chỉ chứa chữ cái, số và dấu gạch dưới' }),
-  displayName: z.string().min(1, { message: 'Tên hiển thị không được để trống' }).max(50),
-  password: z.string().min(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' }),
+    .regex(/^[a-zA-Z0-9_]+$/, { message: 'Username chỉ chứa chữ cái, số và dấu gạch dưới' })
+    .optional(),
+  displayName: z.string().trim().min(1, { message: 'Vui lòng nhập họ tên' }).max(50, { message: 'Họ tên tối đa 50 ký tự' }),
+  // bcrypt chỉ dùng 72 byte đầu
+  password: z
+    .string()
+    .min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
+    .max(72, { message: 'Mật khẩu tối đa 72 ký tự' }),
   studentId: z.string().optional(),
   faculty: z.string().optional(),
   academicYear: z.string().optional()
@@ -58,6 +64,7 @@ export const UserProfileSchema = z.object({
   bio: z.string().max(250).optional().nullable(),
   role: z.enum(['student', 'lecturer', 'ta', 'club_lead', 'alumni', 'admin']).default('student'),
   reputationPoints: z.number().default(0),
+  isEmailVerified: z.boolean().optional(), // email đã xác thực
   isOnboarded: z.boolean().default(false),
   isVerified: z.boolean().default(false),
   verifiedAt: z.string().optional().nullable(),
