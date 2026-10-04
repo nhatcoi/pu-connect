@@ -197,11 +197,6 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                     } else {
                       setFollowersCount((prev) => (isFollowing ? prev + 1 : Math.max(0, prev - 1)))
                     }
-                    toast.success(
-                      isFollowing
-                        ? `Đã bắt đầu theo dõi @${profile.username}`
-                        : `Đã hủy theo dõi @${profile.username}`
-                    )
                   }}
                   size="sm"
                   className="h-8 text-xs px-4"

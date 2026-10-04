@@ -6,6 +6,7 @@ import { useAppStore } from '@/store'
 import { graphqlClient } from '@/lib/graphql-client'
 import { UserPlus, UserCheck, UserX, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface FollowButtonProps {
   targetUserId: string
@@ -91,8 +92,9 @@ export function FollowButton({
         }
       }
     } catch {
-      // Rollback nếu có lỗi
+      // Rollback + báo lỗi (thành công không toast: nút tự đổi trạng thái)
       setIsFollowing(previousState)
+      toast.error('Không thể cập nhật trạng thái theo dõi')
       if (onFollowChange) {
         onFollowChange(previousState)
       }
