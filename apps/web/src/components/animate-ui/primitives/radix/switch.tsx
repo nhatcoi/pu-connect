@@ -30,6 +30,8 @@ export type SwitchProps = Omit<
   HTMLMotionProps<'button'>;
 
 export function Switch(props: SwitchProps) {
+  // Props của Radix không được rơi xuống <button> DOM (React cảnh báo onCheckedChange)
+  const { onCheckedChange: _onCheckedChange, checked: _checked, defaultChecked: _defaultChecked, ...buttonProps } = props;
   const [isPressed, setIsPressed] = React.useState(false);
   const [isChecked, setIsChecked] = useControlledState({
     value: props.checked,
@@ -49,7 +51,7 @@ export function Switch(props: SwitchProps) {
           onTapStart={() => setIsPressed(true)}
           onTapCancel={() => setIsPressed(false)}
           onTap={() => setIsPressed(false)}
-          {...props}
+          {...buttonProps}
         />
       </SwitchPrimitives.Root>
     </SwitchProvider>

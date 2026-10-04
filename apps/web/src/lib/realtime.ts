@@ -13,6 +13,10 @@ export function getRealtimeSocket(): Socket {
       autoConnect: false,
       reconnectionDelayMax: 10_000
     })
+    // Báo server tab đang hiện/ẩn ⇒ worker bỏ qua Web Push khi người dùng đang xem app
+    const reportPresence = () => socket?.emit('presence', { visible: document.visibilityState === 'visible' })
+    socket.on('connect', reportPresence)
+    document.addEventListener('visibilitychange', reportPresence)
   }
   return socket
 }

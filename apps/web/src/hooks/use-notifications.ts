@@ -32,6 +32,18 @@ export interface NotificationItem {
   updatedAt: string
 }
 
+export interface NotificationSettings {
+  inApp: Record<string, boolean>
+  push: Record<string, boolean>
+  quietHours: { enabled: boolean; start: string; end: string }
+}
+
+export interface NotificationSettingsPatch {
+  inApp?: Record<string, boolean>
+  push?: Record<string, boolean>
+  quietHours?: Partial<NotificationSettings['quietHours']>
+}
+
 interface ListResponse {
   data: NotificationItem[]
   unreadCount: number
@@ -75,9 +87,9 @@ export const notificationsApi = {
   markRead: (id: string) =>
     apiClient<{ data: { unreadCount: number } }>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllRead: () => apiClient<{ data: { unreadCount: number } }>('/notifications/read-all', { method: 'PATCH' }),
-  getSettings: () => apiClient<{ data: Record<string, boolean> }>('/notifications/settings'),
-  updateSettings: (patch: Record<string, boolean>) =>
-    apiClient<{ data: Record<string, boolean> }>('/notifications/settings', {
+  getSettings: () => apiClient<{ data: NotificationSettings }>('/notifications/settings'),
+  updateSettings: (patch: NotificationSettingsPatch) =>
+    apiClient<{ data: NotificationSettings }>('/notifications/settings', {
       method: 'PATCH',
       body: JSON.stringify(patch)
     })

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/store'
 import { apiClient } from '@/lib/api-client'
 import { toast } from 'sonner'
+import { disablePush } from '@/lib/push'
 
 export function useLogout() {
   const router = useRouter()
@@ -14,6 +15,8 @@ export function useLogout() {
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true)
     try {
+      // 0. Hủy Web Push của trình duyệt này (tránh người sau dùng chung máy nhận thông báo)
+      await disablePush().catch(() => undefined)
       // 1. Gửi request hủy session lên server
       await apiClient('/auth/logout', { method: 'POST' })
     } catch {

@@ -6,7 +6,7 @@ import { BellOff, CheckCheck, Loader2, Settings2 } from 'lucide-react'
 import { AppShell } from '@/components/layout/app-shell'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { NotificationRow } from '@/components/notifications/notification-row'
-import { Switch } from '@/components/ui/switch'
+import { NotificationSettingsPanel } from '@/components/notifications/notification-settings-panel'
 import {
   notificationsApi,
   openNotification,
@@ -17,15 +17,6 @@ import { cn } from '@/lib/utils'
 
 type Filter = 'all' | 'unread' | 'mentions'
 
-const SETTING_LABELS: Record<string, string> = {
-  post_like: 'Lượt thích bài viết',
-  post_comment: 'Bình luận vào bài viết của bạn',
-  comment_reply: 'Trả lời bình luận của bạn',
-  user_mention: 'Nhắc đến bạn (@)',
-  user_follow: 'Người theo dõi mới',
-  accepted_solution: 'Câu trả lời được chọn làm lời giải'
-}
-
 export default function NotificationsPage() {
   const router = useRouter()
   const [filter, setFilter] = useState<Filter>('all')
@@ -34,7 +25,6 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const [settings, setSettings] = useState<Record<string, boolean> | null>(null)
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
   const liveItems = useNotificationsStore((s) => s.items)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -101,20 +91,6 @@ export default function NotificationsPage() {
     return () => observer.disconnect()
   }, [loadMore])
 
-  useEffect(() => {
-    if (showSettings && !settings) notificationsApi.getSettings().then((r) => setSettings(r.data)).catch(() => undefined)
-  }, [showSettings, settings])
-
-  const toggleSetting = async (key: string, value: boolean) => {
-    setSettings((s) => (s ? { ...s, [key]: value } : s))
-    try {
-      const res = await notificationsApi.updateSettings({ [key]: value })
-      setSettings(res.data)
-    } catch {
-      setSettings((s) => (s ? { ...s, [key]: !value } : s))
-    }
-  }
-
   const markAll = () => {
     useNotificationsStore.getState().markRead('all', 0)
     setItems((prev) => prev.map((n) => ({ ...n, isRead: true })))
@@ -155,19 +131,7 @@ export default function NotificationsPage() {
 
         {showSettings && (
           <div className="mx-4 mt-3 rounded-xl border border-border/60 p-3">
-            <p className="mb-2 text-xs font-semibold text-foreground">Nhận thông báo khi có</p>
-            {!settings ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : (
-              <div className="space-y-2.5">
-                {Object.entries(SETTING_LABELS).map(([key, label]) => (
-                  <label key={key} className="flex items-center justify-between gap-3 text-[13px] cursor-pointer">
-                    <span>{label}</span>
-                    <Switch checked={settings[key] !== false} onCheckedChange={(v) => toggleSetting(key, v)} />
-                  </label>
-                ))}
-              </div>
-            )}
+            <NotificationSettingsPanel />
           </div>
         )}
 
