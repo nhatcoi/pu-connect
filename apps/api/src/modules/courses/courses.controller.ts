@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common'
+import type { Request } from 'express'
+import { requireRole } from '../../common/http/current-user'
 import { CoursesService } from './courses.service'
 import type { CreateCourseInput } from '@pu/schemas'
 
@@ -17,7 +19,8 @@ export class CoursesController {
   }
 
   @Post()
-  async create(@Body() data: CreateCourseInput) {
+  async create(@Body() data: CreateCourseInput, @Req() req: Request) {
+    requireRole(req, ['admin', 'lecturer'])
     return this.coursesService.create(data)
   }
 }

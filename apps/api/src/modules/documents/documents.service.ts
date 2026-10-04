@@ -57,15 +57,7 @@ export class DocumentsService {
   }
 
   async create(ownerId: string, data: CreateDocumentInput): Promise<DocumentItem> {
-    let resolvedOwnerId = ownerId
-    if (ownerId === 'user_me') {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      if (fallbackUser.rows.length > 0) {
-        resolvedOwnerId = fallbackUser.rows[0].id
-      }
-    }
+    const resolvedOwnerId = ownerId
 
     const insertRes = await this.db.query(
       `INSERT INTO documents (

@@ -13,6 +13,7 @@ import { CommentsService } from './comments.service'
 import { DatabaseService } from '../../database/database.service'
 import type { CreateCommentInput } from '@pu/schemas'
 import type { Request } from 'express'
+import { requireUserId } from '../../common/http/current-user'
 
 @Controller()
 export class CommentsController {
@@ -52,18 +53,7 @@ export class CommentsController {
     @Body() body: Omit<CreateCommentInput, 'postId'>,
     @Req() req: Request
   ) {
-    let authorId = (req.user as any)?.id
-
-    if (!authorId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      if (fallbackUser.rows.length > 0) {
-        authorId = fallbackUser.rows[0].id
-      } else {
-        throw new UnauthorizedException('Vui lòng đăng nhập để bình luận')
-      }
-    }
+    const authorId = requireUserId(req, 'Vui lòng đăng nhập để bình luận')
 
     const comment = await this.commentsService.create(authorId, {
       ...body,
@@ -78,32 +68,14 @@ export class CommentsController {
 
   @Post('comments/:id/like')
   async toggleLike(@Param('id') id: string, @Req() req: Request) {
-    let userId = (req.user as any)?.id
-    if (!userId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      userId = fallbackUser.rows[0]?.id
-    }
-    if (!userId) {
-      throw new UnauthorizedException('Vui lòng đăng nhập')
-    }
+    const userId = requireUserId(req, 'Vui lòng đăng nhập')
 
     return this.commentsService.toggleLike(id, userId)
   }
 
   @Post('comments/:id/accept-solution')
   async acceptSolution(@Param('id') id: string, @Req() req: Request) {
-    let userId = (req.user as any)?.id
-    if (!userId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      userId = fallbackUser.rows[0]?.id
-    }
-    if (!userId) {
-      throw new UnauthorizedException('Vui lòng đăng nhập')
-    }
+    const userId = requireUserId(req, 'Vui lòng đăng nhập')
 
     return this.commentsService.acceptSolution(id, userId)
   }

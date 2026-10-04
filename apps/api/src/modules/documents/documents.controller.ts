@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common'
+import type { Request } from 'express'
+import { requireUserId } from '../../common/http/current-user'
 import { DocumentsService } from './documents.service'
 import type { CreateDocumentInput } from '@pu/schemas'
 
@@ -17,8 +19,8 @@ export class DocumentsController {
   }
 
   @Post()
-  async create(@Body() body: CreateDocumentInput) {
-    return this.documentsService.create('user_me', body)
+  async create(@Body() body: CreateDocumentInput, @Req() req: Request) {
+    return this.documentsService.create(requireUserId(req), body)
   }
 
   @Post(':id/download')

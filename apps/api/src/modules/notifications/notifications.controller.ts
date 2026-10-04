@@ -10,6 +10,7 @@ import {
 import { NotificationsService } from './notifications.service'
 import { DatabaseService } from '../../database/database.service'
 import type { Request } from 'express'
+import { requireUserId } from '../../common/http/current-user'
 
 @Controller('notifications')
 export class NotificationsController {
@@ -19,17 +20,7 @@ export class NotificationsController {
   ) {}
 
   private async resolveUserId(req: Request): Promise<string> {
-    let userId = (req.user as any)?.id
-    if (!userId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      userId = fallbackUser.rows[0]?.id
-    }
-    if (!userId) {
-      throw new UnauthorizedException('Vui lòng đăng nhập để xem thông báo')
-    }
-    return userId
+    return requireUserId(req, 'Vui lòng đăng nhập để xem thông báo')
   }
 
   @Get()

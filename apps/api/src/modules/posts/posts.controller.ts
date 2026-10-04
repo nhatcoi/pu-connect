@@ -14,6 +14,7 @@ import { PostsService } from './posts.service'
 import { DatabaseService } from '../../database/database.service'
 import type { CreatePostInput, UpdatePostInput, ReportPostInput, VotePollInput } from '@pu/schemas'
 import type { Request } from 'express'
+import { requireUserId } from '../../common/http/current-user'
 
 @Controller('posts')
 export class PostsController {
@@ -23,17 +24,7 @@ export class PostsController {
   ) {}
 
   private async resolveUserId(req: Request): Promise<string> {
-    let userId = (req.user as any)?.id
-    if (!userId) {
-      const fallbackUser = await this.db.query(
-        `SELECT id FROM users WHERE status = 'active' ORDER BY created_at ASC LIMIT 1`
-      )
-      userId = fallbackUser.rows[0]?.id
-    }
-    if (!userId) {
-      throw new UnauthorizedException('Vui lòng đăng nhập để thực hiện thao tác')
-    }
-    return userId
+    return requireUserId(req)
   }
 
   @Get()

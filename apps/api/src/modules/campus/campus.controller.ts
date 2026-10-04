@@ -1,4 +1,6 @@
-import { Controller, Get, Post, Body } from '@nestjs/common'
+import { Controller, Get, Post, Body, Req } from '@nestjs/common'
+import type { Request } from 'express'
+import { requireRole } from '../../common/http/current-user'
 import { CampusService } from './campus.service'
 import type { CampusEvent } from '@pu/schemas'
 
@@ -12,7 +14,8 @@ export class CampusController {
   }
 
   @Post()
-  async createEvent(@Body() data: Omit<CampusEvent, 'id' | 'attendeesCount'>) {
+  async createEvent(@Body() data: Omit<CampusEvent, 'id' | 'attendeesCount'>, @Req() req: Request) {
+    requireRole(req, ['admin', 'lecturer', 'club_lead'])
     return this.campusService.createEvent(data)
   }
 }

@@ -1,4 +1,8 @@
-import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common'
+import type { Request } from 'express'
+import { requireUserId } from '../../common/http/current-user'
+
+const displayNameOf = (req: Request) => (req.user as { displayName?: string } | undefined)?.displayName || 'Sinh viên Phenikaa'
 import { StudyGroupsService } from './study-groups.service'
 import type { CreateStudyGroupInput } from '@pu/schemas'
 
@@ -17,16 +21,14 @@ export class StudyGroupsController {
   }
 
   @Post()
-  async create(@Body() data: CreateStudyGroupInput) {
-    return this.studyGroupsService.create('user_1', 'Sinh viên Phenikaa', data)
+  async create(@Body() data: CreateStudyGroupInput, @Req() req: Request) {
+    const userId = requireUserId(req)
+    return this.studyGroupsService.create(userId, displayNameOf(req), data)
   }
 
   @Post(':id/join')
-  async join(@Param('id') id: string, @Body() body: { userId?: string; displayName?: string }) {
-    return this.studyGroupsService.join(
-      id,
-      body.userId || 'user_1',
-      body.displayName || 'Sinh viên Phenikaa'
-    )
+  async join(@Param('id') id: string, @Req() req: Request) {
+    // Danh tính lấy từ session, không tin userId trong body
+    return this.studyGroupsService.join(id, requireUserId(req), displayNameOf(req))
   }
 }
