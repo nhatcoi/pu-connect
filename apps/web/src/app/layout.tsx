@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-import { Toaster } from 'sonner'
 
 const inter = Inter({
   variable: '--font-sans',
@@ -51,7 +50,6 @@ export default function RootLayout({
         <Providers>
           <div className="relative flex min-h-screen flex-col">
             <main className="flex-1">{children}</main>
-            <Toaster richColors position="top-right" />
           </div>
         </Providers>
       </body>
