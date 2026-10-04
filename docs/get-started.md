@@ -103,16 +103,14 @@ PU Connector sử dụng kết hợp thông minh 3 giao thức theo đúng bản
 
 ---
 
-### 4.2. Trang Khởi Tạo Hồ Sơ Tân Sinh Viên (`/get-started` - Standalone No Background)
-Khi sinh viên đăng ký mới hoặc đăng nhập lần đầu (`user.isOnboarded === false`), hệ thống tự động nhận diện và **chuyển hướng trực tiếp sang trang toàn màn hình riêng biệt `/get-started`** (hoàn toàn không tải trước hay để lộ background `/home` phía sau):
+### 4.2. Vào app ngay sau đăng ký / đăng nhập (không còn `/get-started`)
+Không có bước onboarding bắt buộc: đăng ký (email + mật khẩu hoặc Google) xong vào thẳng `/home`. `/get-started` chỉ còn redirect về `/home`.
 
-* **Bước 1: Danh tính học thuật (Bắt buộc):** Nhập Mã SV/Cán bộ, chọn Khoa/Viện (`FIT`, `FEE`, `FCS`, `FBA`...), Niên khóa (`K15`, `K16`, `K17`, `K18`...).
-* **Bước 2: Môn học kỳ này (Khuyến khích - Có thể Skip):** Chọn các môn học đang học (`IT101`, `MATH201`, `AI302`...) $\rightarrow$ *Giải quyết bài toán Bảng tin bị rỗng (Cold-Start)*.
-* **Bước 3: Kỹ năng & Đồ án PBL (Tùy chọn - Có thể Skip):** Chọn các tags công nghệ sở trường (`React Native`, `Next.js`, `Python AI`, `Matlab`...) $\rightarrow$ *Phục vụ thuật toán AI Ghép nhóm đồ án*.
-* **Bước 4: Kích hoạt mạng xã hội & Nhận thưởng:** Gợi ý theo dõi Giảng viên và bạn học cùng khoa, tặng ngay **+100 Điểm danh vọng** và mở khóa huy hiệu *Tân Binh Phenikaa*.
-* **Chuyển tiếp `/home`:** Chỉ khi người dùng hoàn tất Bước 4, hệ thống mới lưu thông tin vào Database, cập nhật `is_onboarded = true` và chuyển tiếp sang `/home` để hiển thị Bảng tin đã được cá nhân hóa 100%.
-
----
+* **Điền sẵn từ email trường** (`apps/api/src/modules/auth/email-profile.util.ts`): `22010001@phenikaa-uni.edu.vn` → mã SV `22010001`, khóa `K16 (2022-2026)`. Chỉ là dữ liệu hồ sơ, **không** dùng để cấp quyền; vai trò mặc định luôn là `student`.
+* **Tích xanh:** chỉ cấp khi đăng nhập Google (Google đã xác minh email). Đăng ký email + mật khẩu không tự cấp vì chưa xác minh chủ sở hữu email.
+* **Hoàn thiện dần:** thẻ "Hoàn thiện hồ sơ" (`ProfileCompletionCard`, cột phải, ẩn được) gồm ảnh đại diện, tiểu sử, khoa & khóa, môn quan tâm, liên kết; nút dẫn tới `/{username}?edit=1` mở sẵn hộp chỉnh sửa.
+* Bảng tin người mới dựa vào tab "Dành cho bạn" (đề xuất) và "Gợi ý theo dõi", không tự theo dõi hộ người dùng.
+* Cờ `users.is_onboarded` còn trong DB (mặc định `TRUE`) nhưng frontend không còn kiểm tra.
 
 ### 4.3. Thuật Toán Đề Xuất Bài Viết (Hybrid Recommendation Engine)
 Được triển khai trực tiếp bên trong [`FeedResolver`](file:///home/nhatcoi/Documents/personal/pu-connector/apps/api/src/modules/graphql/resolvers/feed.resolver.ts):

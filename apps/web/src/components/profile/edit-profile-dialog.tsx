@@ -83,9 +83,9 @@ export function EditProfileDialog({
   const [className, setClassName] = useState(initialData.className || '')
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl || '')
   const [bannerUrl, setBannerUrl] = useState(initialData.bannerUrl || '')
-  const [location, setLocation] = useState(initialData.location || 'Phenikaa University, Hà Nội')
+  const [location, setLocation] = useState(initialData.location || '')
   const [website, setWebsite] = useState(initialData.website || '')
-  const [birthDate, setBirthDate] = useState(initialData.birthDate || 'June 20, 2004')
+  const [birthDate, setBirthDate] = useState(initialData.birthDate || '')
 
   // Trạng thái UI phụ trợ
   const [isEditingBirthDate, setIsEditingBirthDate] = useState(false)
@@ -110,9 +110,9 @@ export function EditProfileDialog({
       setClassName(initialData.className || '')
       setAvatarUrl(initialData.avatarUrl || '')
       setBannerUrl(initialData.bannerUrl || '')
-      setLocation(initialData.location || 'Phenikaa University, Hà Nội')
+      setLocation(initialData.location || '')
       setWebsite(initialData.website || '')
-      setBirthDate(initialData.birthDate || 'June 20, 2004')
+      setBirthDate(initialData.birthDate || '')
       setIsEditingBirthDate(false)
       setShowBannerPresets(false)
     }
@@ -577,7 +577,7 @@ export function EditProfileDialog({
                     Birth date
                   </span>
                   <span className="text-sm font-medium text-foreground">
-                    {birthDate || 'June 20, 2004'}
+                    {birthDate || 'Chưa cập nhật'}
                   </span>
                 </div>
                 <ChevronRight

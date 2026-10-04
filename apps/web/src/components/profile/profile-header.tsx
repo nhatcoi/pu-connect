@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { FEATURES } from '@/lib/features'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -49,6 +51,15 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
 
+  // Mở sẵn hộp chỉnh sửa khi vào từ thẻ "Hoàn thiện hồ sơ" (?edit=1)
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    if (isOwnProfile && searchParams.get('edit') === '1') {
+      setIsEditOpen(true)
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+  }, [isOwnProfile, searchParams])
+
   const initials = (profile.displayName || profile.username || 'PU')
     .slice(0, 2)
     .toUpperCase()
@@ -60,7 +71,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
     : 'tháng 08/2026'
 
   return (
-    <div className="border-b border-border bg-card">
+    <div className="bg-card">
       {/* User Followers / Following Dialog */}
       <UserListDialog
         userId={profile.id}
@@ -105,7 +116,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
       />
 
       {/* Cover Image Banner */}
-      <div className="relative h-36 sm:h-44 w-full bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 overflow-hidden">
+      <div className="relative h-36 sm:h-44 w-full bg-gradient-to-br from-[#0B3D91] via-[#0A3380] to-[#072A6B] overflow-hidden">
         {profile.bannerUrl && (
           <img
             src={profile.bannerUrl}
@@ -165,14 +176,17 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
               </>
             ) : (
               <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full h-8 w-8 border-border"
-                  onClick={() => toast.info(`Gửi tin nhắn đến ${profile.displayName}`)}
-                >
-                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
+                {/* Nhắn tin — ẩn tới khi có module chat */}
+                {FEATURES.directMessage && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full h-8 w-8 border-border"
+                    onClick={() => toast.info(`Gửi tin nhắn đến ${profile.displayName}`)}
+                  >
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                )}
                 <FollowButton
                   targetUserId={profile.id}
                   targetUsername={profile.username}
@@ -276,10 +290,12 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
 
         {/* Metadata Details */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            <span>{profile.location || 'Trường Đại học Phenikaa'}</span>
-          </div>
+          {profile.location && (
+            <div className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" />
+              <span>{profile.location}</span>
+            </div>
+          )}
           {profile.website && (
             <div className="flex items-center gap-1">
               <Globe className="h-3 w-3 text-primary" />

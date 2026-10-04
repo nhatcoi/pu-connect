@@ -1,8 +1,10 @@
 'use client'
 
+import { FEATURES } from '@/lib/features'
 import React, { useState, useEffect } from 'react'
 import { graphqlClient } from '@/lib/graphql-client'
 import { FollowButton } from '@/components/profile/follow-button'
+import { ProfileCompletionCard } from '@/components/profile/profile-completion-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   ShieldCheck,
@@ -46,7 +48,7 @@ export function RightSidebar() {
       try {
         const data = await graphqlClient<{ suggestedUsers: SuggestedUser[] }>(
           GET_SUGGESTED_USERS_QUERY,
-          { limit: 4 }
+          { limit: 3 }
         )
         if (data && Array.isArray(data.suggestedUsers)) {
           setSuggestedUsers(data.suggestedUsers)
@@ -64,8 +66,7 @@ export function RightSidebar() {
   const trendingTopics = [
     { tag: '#DoAnTotNghiep2026', count: '142 bài viết', category: 'K15 Đồ án' },
     { tag: '#OnThiGiaiTich2', count: '89 bài viết', category: 'Toán học' },
-    { tag: '#PhenikaaX_Robocon', count: '64 bài viết', category: 'Công nghệ' },
-    { tag: '#HocBongKhuyenKhich', count: '53 bài viết', category: 'Học bổng' }
+    { tag: '#PhenikaaX_Robocon', count: '64 bài viết', category: 'Công nghệ' }
   ]
 
   const fallbackStudents: SuggestedUser[] = [
@@ -77,86 +78,75 @@ export function RightSidebar() {
   const displayUsers = suggestedUsers.length > 0 ? suggestedUsers : fallbackStudents
 
   return (
-    <div className="w-full space-y-4">
-      {/* 1. Xu Hướng Phenikaa (X Trending Style Widget) */}
-      <div className="rounded-2xl border border-border/40 bg-muted/20 p-4 space-y-3">
-        <h3 className="text-sm font-black text-foreground tracking-tight">
-          Xu hướng cho bạn
-        </h3>
-        <div className="space-y-3">
-          {trendingTopics.map((topic) => (
-            <div
-              key={topic.tag}
-              className="flex flex-col space-y-0.5 hover:bg-muted/40 p-1.5 -mx-1.5 rounded-xl transition-colors cursor-pointer"
-            >
-              <span className="text-[11px] text-muted-foreground">{topic.category} · Đang thịnh hành</span>
-              <span className="text-xs font-bold text-foreground hover:underline">{topic.tag}</span>
-              <span className="text-[11px] text-muted-foreground">{topic.count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+    <div className="w-full space-y-6">
+      <ProfileCompletionCard />
 
-      {/* 2. Gợi Ý Kết Nối Bạn Bè & Giảng Viên (X Who to Follow Style Widget) */}
-      <div className="rounded-2xl border border-border/40 bg-muted/20 p-4 space-y-3.5">
-        <h3 className="text-sm font-black text-foreground tracking-tight">
-          Gợi ý theo dõi
-        </h3>
-        <div className="space-y-3">
-          {isLoadingUsers && suggestedUsers.length === 0 ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            displayUsers.map((item) => (
-              <div key={item.id || item.username} className="flex items-center justify-between gap-2">
-                <Link
-                  href={`/${item.username}`}
-                  className="flex items-center gap-2.5 min-w-0 flex-1 group"
-                >
-                  <Avatar className="h-9 w-9 shrink-0 border border-border/40">
-                    <AvatarImage
-                      src={
-                        item.avatarUrl ||
-                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username}`
-                      }
-                      alt={item.displayName}
-                    />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {item.displayName.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <div className="flex items-center gap-1 truncate">
-                      <span className="text-xs font-bold text-foreground group-hover:underline truncate">
-                        {item.displayName}
-                      </span>
-                      {item.role === 'lecturer' && (
-                        <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
-                      )}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      @{item.username} {item.faculty ? `• ${item.faculty}` : ''}
+      {/* 1. Xu hướng — ẩn: số liệu cứng, chưa có API */}
+      {FEATURES.trending && (
+      <section className="space-y-1">
+        <h3 className="px-2 pb-1 text-[13px] font-semibold text-foreground">Xu hướng</h3>
+        {trendingTopics.map((topic) => (
+          <Link
+            key={topic.tag}
+            href={`/search?q=${encodeURIComponent(topic.tag)}`}
+            className="flex flex-col rounded-lg px-2 py-1.5 hover:bg-muted/60 transition-colors"
+          >
+            <span className="text-[13px] font-medium text-foreground">{topic.tag}</span>
+            <span className="text-[11px] text-muted-foreground">
+              {topic.category} · {topic.count}
+            </span>
+          </Link>
+        ))}
+      </section>
+      )}
+
+      {/* 2. Gợi ý theo dõi: tối đa 3, nút outline (Who to follow) */}
+      <section className="space-y-1">
+        <h3 className="px-2 pb-1 text-[13px] font-semibold text-foreground">Gợi ý theo dõi</h3>
+        {isLoadingUsers && suggestedUsers.length === 0 ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          displayUsers.slice(0, 3).map((item) => (
+            <div key={item.id || item.username} className="flex items-center justify-between gap-2 px-2 py-1.5">
+              <Link href={`/${item.username}`} className="flex items-center gap-2.5 min-w-0 flex-1 group">
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage
+                    src={item.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username}`}
+                    alt={item.displayName}
+                  />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold text-[11px]">
+                    {item.displayName.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col min-w-0 flex-1">
+                  <div className="flex items-center gap-1 truncate">
+                    <span className="text-[13px] font-medium text-foreground group-hover:underline truncate">
+                      {item.displayName}
                     </span>
+                    {item.role === 'lecturer' && <ShieldCheck className="h-3 w-3 text-primary shrink-0" />}
                   </div>
-                </Link>
+                  <span className="text-[11px] text-muted-foreground truncate">@{item.username}</span>
+                </div>
+              </Link>
 
-                <FollowButton
-                  targetUserId={item.id}
-                  targetUsername={item.username}
-                  initialIsFollowing={item.isFollowedByMe || false}
-                  size="sm"
-                  showIcon={false}
-                  className="h-7 px-3 text-[11px] font-bold rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0 shadow-none cursor-pointer"
-                />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+              <FollowButton
+                targetUserId={item.id}
+                targetUsername={item.username}
+                initialIsFollowing={item.isFollowedByMe || false}
+                size="sm"
+                variant="outline"
+                showIcon={false}
+                className="h-7 min-w-0 px-3 text-[11px] shrink-0 cursor-pointer"
+              />
+            </div>
+          ))
+        )}
+      </section>
 
       {/* 3. Sleek Minimal Footer */}
-      <div className="px-3 text-[11px] text-muted-foreground/70 space-y-1">
+      <div className="px-2 text-[11px] text-muted-foreground/70 space-y-1">
         <div className="flex flex-wrap gap-x-2 gap-y-0.5">
           <Link href="/home" className="hover:underline">Điều khoản</Link>
           <span>·</span>
