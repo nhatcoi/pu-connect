@@ -13,6 +13,7 @@ import {
 import { AuthService } from './auth.service'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 import { AuthenticatedGuard } from './guards/authenticated.guard'
+import { LoginRateLimitGuard } from './guards/login-rate-limit.guard'
 import { GoogleAuthGuard } from './guards/google-auth.guard'
 import { GOOGLE_AUTH_ENABLED } from './auth.constants'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
@@ -92,7 +93,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(LoginRateLimitGuard, LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request) {
     return req.user

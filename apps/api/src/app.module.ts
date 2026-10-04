@@ -26,7 +26,9 @@ import { UsersModule } from './modules/users/users.module'
       driver: ApolloDriver,
       autoSchemaFile: true,
       path: '/graphql',
-      playground: true,
+      // Playground/introspection chỉ bật khi dev
+      playground: process.env.NODE_ENV !== 'production',
+      introspection: process.env.NODE_ENV !== 'production',
       context: ({ req, res }) => ({ req, res })
     }),
     DatabaseModule,
