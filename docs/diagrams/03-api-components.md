@@ -21,7 +21,7 @@ flowchart TB
   subgraph Platform["Platform modules"]
     direction LR
     mentions["<b>Mentions</b><br/>@username → bảng mentions"]
-    notif["<b>Notifications</b><br/>lưu + đẩy realtime"]
+    notif["<b>Notifications</b><br/>lọc · gộp group_key · cài đặt<br/>lưu + đẩy realtime"]
     rt["<b>Realtime</b><br/>Gateway /api/socket.io<br/>room user:{id}"]
   end
 
@@ -29,7 +29,8 @@ flowchart TB
   ext["Google OAuth · Gmail SMTP · Cloudflare R2"]
 
   mw --> Feature
-  posts -->|record + notify| mentions --> notif -->|emitToUser| rt
+  posts -->|record mentions| mentions
+  Feature -->|dispatch sau commit| notif -->|emitToUser| rt
   rt -. session + passport ở handshake .-> mw
   Feature -->|SQL| db
   Platform -->|SQL| db
@@ -63,7 +64,7 @@ flowchart TB
 | Study groups | `GET study-groups` · `GET study-groups/:id` · `POST study-groups` · `POST study-groups/:id/join` |
 | Campus | `GET campus-events` · `POST campus-events` |
 | Search | `GET search` |
-| Notifications | `GET notifications` · `PATCH notifications/:id/read` · `PATCH notifications/read-all` |
+| Notifications | `GET notifications` (cursor `before`, `unread`, `type`) · `GET notifications/unread-count` · `PATCH notifications/:id/read` · `PATCH notifications/read-all` · `GET/PATCH notifications/settings` |
 | Storage | `POST upload/file` · `POST upload/multiple` |
 
 ### GraphQL (`/graphql`)
@@ -77,8 +78,10 @@ flowchart TB
 
 | Hướng | Event | Ghi chú |
 |---|---|---|
-| Server → client | `notification` | Gửi vào room `user:{recipientId}` khi `NotificationsService.createNotification` |
+| Server → client | `notification` | `{ notification, unreadCount }` vào room `user:{recipientId}` (NotificationsService.notify) |
+| Server → client | `notification.read` | `{ ids?, all?, unreadCount }` — đồng bộ đã đọc giữa các tab |
 | Client → server | — | Chưa có event nào; client chỉ nghe (P1 sẽ thêm `conv.open`, `typing`) |
 
 **Changelog:**
+- 2026-10-04 — Notification v1: `dispatch()` từ Posts/Comments/UserResolver/Auth, endpoint settings/unread-count, event `notification.read`; vá mạo danh (requireUserId).
 - 2026-10-04 — tạo mới; thêm MentionsModule, RealtimeGateway có xác thực, NotificationsModule đẩy realtime.

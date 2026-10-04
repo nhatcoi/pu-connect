@@ -16,17 +16,20 @@ flowchart LR
     comms["<b>/communities</b>"]
     comm["<b>/c/[slug]</b>"]
     profile["<b>/[username]</b><br/>?edit=1 mở dialog sửa hồ sơ"]
+    notif["<b>/notifications</b><br/>tab · cài đặt"]
+    post["<b>/post/[id]</b><br/>?comment= highlight"]
   end
 
   landing -->|login / register / Google| home
   verify --> home
   getstarted --> home
-  home --> search & comms & profile
+  home --> search & comms & profile & notif
+  notif --> post
   comms --> comm
 
   classDef page fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef redirect fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class landing,verify,home,search,comms,comm,profile page
+  class landing,verify,home,search,comms,comm,profile,notif,post page
   class getstarted redirect
 ```
 
@@ -67,11 +70,13 @@ flowchart TB
 | RightSidebar | — | `suggestedUsers` | — |
 | `/[username]` | `users/:username`, `users/profile` | `userProfile`, `userFollowers`, `userFollowing` | — |
 | Communities | `communities`, `communities/:slug/*` | — | — |
-| NotificationsPopover | `notifications`, `notifications/*/read*` | — | `notification` |
+| NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
+| `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
 
 ## Feature flags (`lib/features.ts`)
 
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, trang pháp lý, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-04 — thêm `/notifications`, `/post/[id]`, store thông báo dùng chung, mục Thông báo ở sidebar.
 - 2026-10-04 — tạo mới; bỏ `/get-started` (redirect), thêm `/verify-email`, realtime notifications.

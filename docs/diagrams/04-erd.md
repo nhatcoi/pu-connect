@@ -91,6 +91,7 @@ erDiagram
     timestamptz verify_token_expires
     timestamptz verify_sent_at
     varchar account_type
+    jsonb notification_settings
   }
   user_follows {
     uuid follower_id PK,FK
@@ -120,6 +121,11 @@ erDiagram
     varchar entity_type
     boolean is_read
     timestamptz created_at
+    varchar group_key
+    uuid_array actor_ids
+    integer actors_count
+    varchar link
+    timestamptz updated_at
   }
   users ||--o{ mentions : "author_id"
   users ||--o{ mentions : "mentioned_user_id"

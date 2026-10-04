@@ -71,34 +71,39 @@ sequenceDiagram
   A-->>B: 302 /home (lỗi → /?auth_error=google)
 ```
 
-## 5.3. Đăng bài / bình luận có @mention → thông báo realtime
+## 5.3. Bình luận → thông báo (reply · mention · post_comment) realtime
 
 ```mermaid
 sequenceDiagram
   autonumber
-  actor A as Tác giả
-  participant API as PostsService / CommentsService
+  actor C as Người bình luận
+  participant CS as CommentsService
   participant MS as MentionsService
   participant DB as Postgres
   participant NS as NotificationsService
   participant RT as RealtimeGateway
-  actor B as Người được nhắc (đang mở web)
+  actor R as Người nhận (đang mở web)
 
-  Note over B,RT: Web đã kết nối /api/socket.io bằng cookie,<br/>server cho vào room user:{B}
-  A->>API: POST /api/posts (hoặc /posts/:id/comments)
+  Note over R,RT: Web đã kết nối /api/socket.io bằng cookie → room user:{R}
+  C->>CS: POST /api/posts/:id/comments
   rect rgb(240, 245, 255)
-    Note over API,DB: Một transaction
-    API->>DB: INSERT posts / comments
-    API->>MS: record(client, source, content)
-    MS->>DB: INSERT mentions … ON CONFLICT DO NOTHING RETURNING (chỉ người mới)
+    Note over CS,DB: Một transaction
+    CS->>DB: SELECT post.author_id, parent.author_id
+    CS->>DB: INSERT comments · comments_count + 1
+    CS->>MS: record() → INSERT mentions (chỉ người mới)
   end
-  API-->>A: 201
-  API->>MS: notify(mentioned) — sau commit, bỏ qua bot
-  MS->>NS: createNotification(user_mention)
-  NS->>DB: INSERT notifications
-  NS->>RT: emitToUser(B, "notification")
-  RT-->>B: event notification
-  B->>B: Chuông tải lại GET /api/notifications
+  CS-->>C: 201
+  CS->>NS: dispatch([reply, ...mentions, post_comment]) — sau commit
+  loop mỗi người nhận (bỏ trùng theo thứ tự ưu tiên)
+    NS->>DB: bỏ qua nếu tự báo · bot · đã tắt loại
+    alt có group_key (post_comment, post_like, user_follow)
+      NS->>DB: INSERT … ON CONFLICT (recipient, group_key) WHERE unread<br/>DO UPDATE actors_count+1 (bỏ qua nếu actor đã có)
+    else
+      NS->>DB: INSERT notifications
+    end
+    NS->>RT: emitToUser(R, "notification", {notification, unreadCount})
+    RT-->>R: badge + toast "Xem" → /post/:id?comment=
+  end
 ```
 
 ## 5.4. Bảng tin "Dành cho bạn"
@@ -120,4 +125,5 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-04 — 5.3 cập nhật theo Notification v1 (dispatch, ưu tiên, gộp).
 - 2026-10-04 — tạo mới: auth email-first, Google OAuth, mention → realtime, feed ranking.

@@ -34,6 +34,13 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - `users.account_type` (`human`/`bot`/`system`) + tài khoản bot **`@puai`** (không thể đăng nhập bằng mật khẩu/Google, không xuất hiện trong "Gợi ý theo dõi"). Username dành riêng (`puai`, `pu_*`, `admin`, route…) không thể đăng ký.
   - `@mention` dùng chung (bảng `mentions`, `MentionsService`): ghi trong cùng transaction tạo/sửa post & comment, chỉ thông báo người **mới** được nhắc, bỏ qua email/URL; mention bot để dành cho AI layer (P3).
   - Migration `messaging-upgrade.sql` (idempotent, chạy trong `deploy.sh`).
+- [x] 🔔 **Notification v1** ([đặc tả](./core/05-notifications-and-realtime.md#6-triển-khai-v1-đang-chạy)):
+  - `NotificationsService.dispatch()`: lọc (không tự báo, bot, cài đặt người nhận), mỗi người 1 thông báo/sự kiện theo ưu tiên `comment_reply > user_mention > post_comment`, ghi sau commit.
+  - Loại: `post_like`, `post_comment`, `comment_reply`, `user_mention`, `user_follow`, `accepted_solution`, `account_verified` (+ enum `ai_reply` cho P3).
+  - Gộp *"A và N người khác…"* bằng upsert nguyên tử (`group_key`, `actor_ids`, unique index một phần) — bỏ thích rồi thích lại không báo lại.
+  - API cursor pagination, `unread-count`, `settings`; socket `notification` + `notification.read` (đồng bộ đã đọc giữa các tab); xóa thông báo đã đọc > 90 ngày.
+  - Web: store dùng chung, toast có nút **Xem**, trang **`/notifications`** (Tất cả/Chưa đọc/Nhắc đến, cài đặt theo loại), trang **`/post/[id]`** (mở sẵn bình luận, highlight `?comment=`), mục Thông báo ở sidebar.
+- [x] 🛡️ **Vá lỗ hổng mạo danh**: controller không còn fallback sang user đầu tiên khi chưa đăng nhập (`requireUserId`); tạo học phần/sự kiện giới hạn theo vai trò; study group lấy danh tính từ session.
 - [x] 🚪 **Đăng xuất an toàn toàn diện (`Logout Flow & Session Invalidation`)**: Endpoint `POST /api/auth/logout` xóa cookie `pu_session`, hủy session trên server, reset sạch Client State Zustand và điều hướng tức thời về Landing Page (`/`).
 - [x] 👥 **Dữ liệu giả lập thực tế (`Database Seeder - 100 Phenikaa Users`)**: Khởi tạo 100 tài khoản sinh viên và giảng viên phân bổ đủ 8 Khoa/Viện đào tạo.
 - [x] 🚀 **Kiến Trúc Hybrid (GraphQL + REST API)**: Tích hợp Apollo Server `/graphql` cho dữ liệu quan hệ lồng nhau và REST API cho Session Auth, Profile updates, Upload File lớn.
