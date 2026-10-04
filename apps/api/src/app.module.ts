@@ -16,6 +16,7 @@ import { SearchModule } from './modules/search/search.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { CommunitiesModule } from './modules/communities/communities.module'
 import { UsersModule } from './modules/users/users.module'
+import { QueueModule } from './modules/queue/queue.module'
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { UsersModule } from './modules/users/users.module'
       context: ({ req, res }) => ({ req, res })
     }),
     DatabaseModule,
+    QueueModule,
     SocialGraphQLModule,
     AuthModule,
     UsersModule,

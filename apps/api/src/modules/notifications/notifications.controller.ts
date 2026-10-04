@@ -41,7 +41,7 @@ export class NotificationsController {
   }
 
   @Patch('settings')
-  async updateSettings(@Req() req: Request, @Body() body: Record<string, unknown>) {
+  async updateSettings(@Req() req: Request, @Body() body: unknown) {
     const userId = requireUserId(req, LOGIN_MESSAGE)
     return { success: true, data: await this.notificationsService.updateSettings(userId, body) }
   }

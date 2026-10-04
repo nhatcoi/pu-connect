@@ -2,7 +2,10 @@ import {
   WebSocketGateway,
   WebSocketServer,
   OnGatewayInit,
-  OnGatewayConnection
+  OnGatewayConnection,
+  SubscribeMessage,
+  ConnectedSocket,
+  MessageBody
 } from '@nestjs/websockets'
 import { Logger } from '@nestjs/common'
 import type { IncomingMessage, ServerResponse } from 'http'
@@ -62,7 +65,21 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
 
   handleConnection(socket: Socket) {
     const userId = (socket.request as AuthedRequest).user!.id
+    socket.data.visible = true // client gửi 'presence' ngay sau khi kết nối
     socket.join(this.userRoom(userId))
+  }
+
+  // Tab đang hiển thị hay ẩn (document.visibilityState) — quyết định có cần Web Push không
+  @SubscribeMessage('presence')
+  handlePresence(@ConnectedSocket() socket: Socket, @MessageBody() body: { visible?: boolean }) {
+    socket.data.visible = body?.visible === true
+  }
+
+  // User đang nhìn thấy app ở ít nhất một tab ⇒ không cần push
+  async isUserActive(userId: string): Promise<boolean> {
+    if (!this.server) return false
+    const sockets = await this.server.in(this.userRoom(userId)).fetchSockets()
+    return sockets.some((s) => s.data?.visible === true)
   }
 
   // Gửi sự kiện tới mọi tab/thiết bị của một user

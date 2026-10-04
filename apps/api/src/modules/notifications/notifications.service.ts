@@ -1,12 +1,9 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
-import {
-  CONFIGURABLE_TYPES,
-  type NotificationItem,
-  type NotificationType,
-  type NotifyInput
-} from './notification.types'
+import { PushService } from '../push/push.service'
+import { type NotificationItem, type NotificationType, type NotifyInput } from './notification.types'
+import { buildStoragePatch, isInAppEnabled, resolveSettings, type NotificationSettings } from './notification-settings'
 
 const RETENTION_DAYS = 90
 const MAX_ACTORS_TRACKED = 50
@@ -20,7 +17,8 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly realtime: RealtimeGateway
+    private readonly realtime: RealtimeGateway,
+    private readonly push: PushService
   ) {}
 
   onModuleInit() {
@@ -57,7 +55,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     )
     const row = recipient.rows[0]
     if (!row || row.account_type !== 'human') return // bot không nhận thông báo
-    if (row.notification_settings?.[input.type] === false) return // người dùng đã tắt loại này
+    if (!isInAppEnabled(row.notification_settings, input.type)) return // người dùng đã tắt loại này
 
     const actorName = input.actorId ? await this.actorName(input.actorId) : null
     const saved = input.groupKey
@@ -68,6 +66,9 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     const item = await this.findOneItem(saved)
     const unreadCount = await this.unreadCount(input.recipientId)
     this.realtime.emitToUser(input.recipientId, 'notification', { notification: item, unreadCount })
+
+    // Kênh ngoài app: worker quyết định sau 30s (đã đọc / đang xem / giờ yên tĩnh / đã tắt)
+    await this.push.enqueue(saved, input.recipientId)
   }
 
   private buildTitle(actorName: string | null, actorsCount: number, verb: string): string {
@@ -213,22 +214,23 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
 
   // ── Cài đặt ──────────────────────────────────────────────────────
 
-  async getSettings(userId: string): Promise<Record<string, boolean>> {
+  async getSettings(userId: string): Promise<NotificationSettings> {
     const res = await this.db.query(`SELECT notification_settings FROM users WHERE id = $1`, [userId])
-    const stored = res.rows[0]?.notification_settings || {}
-    return Object.fromEntries(CONFIGURABLE_TYPES.map((t) => [t, stored[t] !== false]))
+    return resolveSettings(res.rows[0]?.notification_settings)
   }
 
-  async updateSettings(userId: string, patch: Record<string, unknown>): Promise<Record<string, boolean>> {
-    // Chỉ nhận key hợp lệ với giá trị boolean
-    const clean = Object.fromEntries(
-      Object.entries(patch || {}).filter(
-        ([k, v]) => (CONFIGURABLE_TYPES as string[]).includes(k) && typeof v === 'boolean'
-      )
-    )
+  // Patch dạng { inApp?: {type: bool}, push?: {type: bool}, quietHours?: {...} }
+  async updateSettings(userId: string, patch: unknown): Promise<NotificationSettings> {
+    const clean = buildStoragePatch(patch)
+    const { push, quiet_hours, ...flat } = clean as { push?: object; quiet_hours?: object }
+    // Merge sâu cho object con (push, quiet_hours) để không ghi đè key khác
     await this.db.query(
-      `UPDATE users SET notification_settings = notification_settings || $1::jsonb WHERE id = $2`,
-      [JSON.stringify(clean), userId]
+      `UPDATE users SET notification_settings =
+         notification_settings || $1::jsonb
+         || jsonb_build_object('push', COALESCE(notification_settings->'push', '{}'::jsonb) || $2::jsonb)
+         || jsonb_build_object('quiet_hours', COALESCE(notification_settings->'quiet_hours', '{}'::jsonb) || $3::jsonb)
+       WHERE id = $4`,
+      [JSON.stringify(flat), JSON.stringify(push || {}), JSON.stringify(quiet_hours || {}), userId]
     )
     return this.getSettings(userId)
   }
