@@ -24,30 +24,6 @@ CREATE INDEX IF NOT EXISTS idx_users_major ON users(major);
 CREATE INDEX IF NOT EXISTS idx_users_class ON users(class_name);
 CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
 
--- 3. Tự động cấp tích xanh cho người dùng có email đuôi trường Phenikaa
-UPDATE users 
-SET is_verified = TRUE, 
-    verified_at = NOW() 
-WHERE email ILIKE '%@phenikaa-uni.edu.vn' 
-   OR email ILIKE '%@st.phenikaa-uni.edu.vn';
-
--- 4. Cập nhật dữ liệu mẫu cho sinh viên Phenikaa hiện có
-UPDATE users 
-SET major = 'Kỹ thuật phần mềm', 
-    class_name = 'K16-CNTT1',
-    is_verified = TRUE,
-    verified_at = NOW()
-WHERE username IN ('nhat_k16', 'duc_k16') OR role = 'student';
-
-UPDATE users 
-SET major = 'Khoa học máy tính & Trí tuệ nhân tạo', 
-    class_name = 'K17-AI1',
-    is_verified = TRUE,
-    verified_at = NOW()
-WHERE username = 'mai_pro';
-
-UPDATE users 
-SET major = 'Công nghệ thông tin', 
-    is_verified = TRUE,
-    verified_at = NOW()
-WHERE role = 'lecturer';
+-- Lưu ý: tích xanh KHÔNG cấp ở đây nữa (migration này chạy mỗi lần deploy).
+-- Tích xanh chỉ cấp khi email đã xác thực: xem auth-upgrade.sql và AuthService.verifyEmail.
+-- Đã gỡ các câu UPDATE gán ngành/lớp mẫu: chúng áp cho mọi sinh viên (kể cả tài khoản mới).
