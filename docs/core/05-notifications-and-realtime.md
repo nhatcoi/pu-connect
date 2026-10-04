@@ -2,7 +2,7 @@
 
 > Cập nhật lần cuối: **2026-10-04**. Đặc tả chi tiết phân loại thông báo toàn hệ thống, kiến trúc xử lý ngầm (Async Worker) và quyết định kiến trúc triển khai.
 >
-> ✅ **Trạng thái:** v1 đã triển khai — in-app realtime, gộp thông báo, cài đặt theo loại, trang `/notifications`, trang chi tiết bài viết. Xem **[mục 6 — Triển khai v1](#6-triển-khai-v1-đang-chạy)**. Push/Email và hàng đợi BullMQ vẫn là kiến trúc mục tiêu.
+> ✅ **Trạng thái:** v1 đã triển khai — in-app realtime, gộp thông báo, cài đặt theo loại, trang `/notifications`, trang chi tiết bài viết. Xem **[mục 6 — Triển khai v1](#6-triển-khai-v1-đang-chạy)**. **v2 (Web Push + BullMQ/Redis) đã triển khai** — xem [mục 7](#7-triển-khai-v2--web-push--bullmq-đang-chạy). Email tóm tắt: kế hoạch.
 
 ---
 
@@ -250,4 +250,95 @@ Socket: `notification` `{ notification, unreadCount }` (thông báo gộp giữ 
 | Sidebar | Mục **Thông báo** có badge |
 
 > Mutation GraphQL `toggleLikePost` / `createComment` chưa phát thông báo (web dùng REST). Nếu chuyển client sang GraphQL cần gọi `dispatch()` tương tự.
+
+---
+
+## 7. Triển Khai v2 — Web Push + BullMQ (đang chạy)
+
+### 7.1. Kiến trúc
+
+```mermaid
+flowchart LR
+  hub["NotificationsService.notify()<br/>lưu DB + emit socket"]
+  q[("Redis · BullMQ<br/>queue notification-push<br/>jobId push-{notificationId}, delay 30s")]
+  w["PushProcessor (worker, concurrency 5)"]
+  dec{"Quyết định lúc chạy<br/>• đã đọc → bỏ<br/>• tắt push loại này → bỏ<br/>• tab đang hiển thị → bỏ<br/>• giờ yên tĩnh → hoãn tới sáng<br/>• > 20 push/giờ → bỏ"}
+  svc["PushService.sendToUser()<br/>web-push + VAPID"]
+  ps["Push service của trình duyệt<br/>FCM · Mozilla · Apple"]
+  sw["sw.js (Service Worker)<br/>showNotification → click mở link"]
+
+  hub -->|enqueue| q --> w --> dec --> svc --> ps --> sw
+  svc -->|404/410| del["xóa push_subscriptions"]
+  svc -->|lỗi khác| retry["throw ⇒ retry 5 lần<br/>backoff 1→16 phút"]
+```
+
+| Quyết định | Lý do |
+|---|---|
+| **BullMQ + Redis** (thay vì tự viết hàng đợi Postgres, RabbitMQ hay Kafka) | Có sẵn delay, retry/backoff, hoãn job, concurrency; Redis 1 container nhẹ (~10–30 MB). RabbitMQ/Kafka thừa với 1 hệ thống Node |
+| **Postgres vẫn là nguồn chính** | Job chỉ chứa `notificationId`; worker đọc lại DB lúc chạy ⇒ Redis mất dữ liệu cũng chỉ mất push, in-app vẫn còn |
+| **Delay 30s + jobId theo thông báo** | Người dùng thường thấy ngay trong app; thông báo gộp cập nhật liên tục trong 30s chỉ ra **một** push với nội dung mới nhất |
+| **Bỏ qua khi tab đang hiển thị** | Client gửi `presence {visible}` qua socket (`document.visibilityState`); `RealtimeGateway.isUserActive()` |
+| Enqueue có timeout 3s | Redis lỗi không làm treo luồng in-app |
+
+### 7.2. VAPID
+
+Cặp khóa định danh server với push service (miễn phí, không cần tài khoản Firebase). Tạo: `npx web-push generate-vapid-keys`.
+
+| Biến | Nơi đặt |
+|---|---|
+| `VAPID_PUBLIC_KEY` | API (trả cho trình duyệt qua `GET /api/push/config`) |
+| `VAPID_PRIVATE_KEY` | Chỉ trên server (`.env` VPS) |
+| `VAPID_SUBJECT` | `mailto:` liên hệ |
+| `REDIS_URL` | `redis://127.0.0.1:6379` |
+
+Thiếu VAPID ⇒ push tự tắt (`enabled: false`), in-app vẫn chạy. Đổi khóa ⇒ mọi subscription cũ mất hiệu lực (người dùng phải bật lại).
+
+### 7.3. Dữ liệu & API
+
+Migration [`push-upgrade.sql`](../../apps/api/src/database/push-upgrade.sql): bảng `push_subscriptions` (`endpoint` UNIQUE, `p256dh`, `auth`, `failure_count`, `last_used_at`), cột `notifications.push_sent_at` + index đếm push theo giờ.
+
+Cài đặt người dùng (tương thích ngược v1) — `GET/PATCH /api/notifications/settings`:
+
+```json
+{ "inApp": { "post_like": true, ... },
+  "push":  { "post_like": false, "comment_reply": true, ... },
+  "quietHours": { "enabled": true, "start": "23:00", "end": "07:00" } }
+```
+
+Mặc định push: bật cho `comment_reply`, `user_mention`, `accepted_solution`, `post_comment`; tắt cho `post_like`, `user_follow`. Tắt in-app ⇒ tắt luôn push. Giờ yên tĩnh theo giờ Việt Nam (UTC+7).
+
+| Method | Path | Mô tả |
+|---|---|---|
+| GET | `/api/push/config` | `{ enabled, publicKey }` |
+| POST | `/api/push/subscriptions` | Lưu `PushSubscription.toJSON()` (chỉ endpoint `https://`); cùng endpoint ⇒ chuyển chủ |
+| DELETE | `/api/push/subscriptions` | `{ endpoint }` — gọi khi tắt hoặc đăng xuất |
+| POST | `/api/push/test` | Gửi thử tới mọi trình duyệt của mình (5 lần / 10 phút) |
+
+### 7.4. Web
+
+| Thành phần | Vai trò |
+|---|---|
+| `public/sw.js` | `push` → `showNotification` (icon `/apple-icon`, `tag` ⇒ thông báo gộp thay thế nhau, `setAppBadge`); `notificationclick` → focus tab đang mở & điều hướng; `pushsubscriptionchange` → đăng ký lại |
+| `lib/push.ts` | `getPushStatus` / `enablePush` (xin quyền khi người dùng bấm) / `disablePush` / `sendTestPush`; nhận diện iOS cần "Thêm vào Màn hình chính" |
+| `components/notifications/notification-settings-panel.tsx` | Thẻ "Thông báo trên trình duyệt" (Bật/Tắt/Gửi thử) + ma trận **loại × (Trong app, Trình duyệt)** + giờ yên tĩnh |
+| `lib/realtime.ts` | Gửi `presence` khi kết nối và khi đổi `visibilitychange` |
+| `hooks/use-logout.ts` | Hủy push của trình duyệt trước khi đăng xuất (máy dùng chung) |
+
+### 7.5. Kiểm thử đã chạy
+
+| Trường hợp | Kết quả |
+|---|---|
+| Job xếp hàng | `delayed`, delay 30000 ms |
+| `post_like` (mặc định không push) | Không tạo job |
+| Đã đọc trước khi tới hạn | `skip:read` |
+| Tab đang hiển thị | `skip:active` |
+| Gửi thật tới FCM với token giả | FCM 404/410 ⇒ subscription bị xóa (`expired`) — xác nhận chữ ký VAPID + mã hóa payload |
+| Giờ yên tĩnh bao trùm hiện tại | Job hoãn tới khi kết thúc khung giờ |
+| Endpoint `http://` | 400 |
+
+### 7.6. Còn lại
+
+- Email tóm tắt hằng ngày (BullMQ repeatable job) + quên mật khẩu + cảnh báo đăng nhập mới.
+- PWA đầy đủ (`manifest.webmanifest`, banner cài đặt) để Web Push chạy trên iOS.
+- Bull Board (dashboard hàng đợi) sau trang admin.
 

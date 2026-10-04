@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **22 bảng**, **33 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **23 bảng**, **34 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -40,6 +40,7 @@ erDiagram
   users ||--o{ posts : "author_id"
   communities |o--o{ posts : "community_id"
   courses |o--o{ posts : "course_id"
+  users ||--o{ push_subscriptions : "user_id"
   posts ||--o{ saved_posts : "post_id"
   users ||--o{ saved_posts : "user_id"
   study_groups ||--o{ study_group_members : "group_id"
@@ -126,6 +127,7 @@ erDiagram
     integer actors_count
     varchar link
     timestamptz updated_at
+    timestamptz push_sent_at
   }
   users ||--o{ mentions : "author_id"
   users ||--o{ mentions : "mentioned_user_id"
@@ -135,7 +137,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `comments.author_id → users`, `community_members.user_id → users`, `documents.owner_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `posts.author_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+Liên kết ra ngoài nhóm: `comments.author_id → users`, `community_members.user_id → users`, `documents.owner_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `posts.author_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
 
 ## 3. Feed & Q&A
 
@@ -365,3 +367,22 @@ erDiagram
 ```
 
 Liên kết ra ngoài nhóm: `documents.owner_id → users`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+
+## 6. Chưa phân nhóm (cập nhật DOMAINS trong scripts/gen-erd.mjs)
+
+```mermaid
+erDiagram
+  push_subscriptions {
+    uuid id PK
+    uuid user_id FK
+    text endpoint UK
+    varchar p256dh
+    varchar auth
+    varchar user_agent
+    integer failure_count
+    timestamptz created_at
+    timestamptz last_used_at
+  }
+```
+
+Liên kết ra ngoài nhóm: `push_subscriptions.user_id → users`

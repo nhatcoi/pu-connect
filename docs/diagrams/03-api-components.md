@@ -22,7 +22,9 @@ flowchart TB
     direction LR
     mentions["<b>Mentions</b><br/>@username → bảng mentions"]
     notif["<b>Notifications</b><br/>lọc · gộp group_key · cài đặt<br/>lưu + đẩy realtime"]
-    rt["<b>Realtime</b><br/>Gateway /api/socket.io<br/>room user:{id}"]
+    rt["<b>Realtime</b><br/>Gateway /api/socket.io<br/>room user:{id} · presence"]
+    push["<b>Push</b><br/>PushService · PushProcessor (BullMQ)<br/>web-push VAPID"]
+    queue["<b>Queue</b> (global)<br/>BullModule → Redis"]
   end
 
   db[("<b>DatabaseModule</b> (global)<br/>pg.Pool · transaction()")]
@@ -31,6 +33,8 @@ flowchart TB
   mw --> Feature
   posts -->|record mentions| mentions
   Feature -->|dispatch sau commit| notif -->|emitToUser| rt
+  notif -->|enqueue| push --> queue
+  push -. isUserActive .-> rt
   rt -. session + passport ở handshake .-> mw
   Feature -->|SQL| db
   Platform -->|SQL| db
@@ -41,7 +45,7 @@ flowchart TB
   classDef store fill:#ffedd5,stroke:#f97316,color:#7c2d12
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
   class auth,users,posts,communities,others,storage,gql mod
-  class mentions,notif,rt plat
+  class mentions,notif,rt,push,queue plat
   class db store
   class ext,mw external
 ```
@@ -66,6 +70,7 @@ flowchart TB
 | Search | `GET search` |
 | Notifications | `GET notifications` (cursor `before`, `unread`, `type`) · `GET notifications/unread-count` · `PATCH notifications/:id/read` · `PATCH notifications/read-all` · `GET/PATCH notifications/settings` |
 | Storage | `POST upload/file` · `POST upload/multiple` |
+| Push | `GET push/config` · `POST/DELETE push/subscriptions` · `POST push/test` |
 
 ### GraphQL (`/graphql`)
 
@@ -80,8 +85,9 @@ flowchart TB
 |---|---|---|
 | Server → client | `notification` | `{ notification, unreadCount }` vào room `user:{recipientId}` (NotificationsService.notify) |
 | Server → client | `notification.read` | `{ ids?, all?, unreadCount }` — đồng bộ đã đọc giữa các tab |
-| Client → server | — | Chưa có event nào; client chỉ nghe (P1 sẽ thêm `conv.open`, `typing`) |
+| Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
 
 **Changelog:**
+- 2026-10-04 — PushModule + QueueModule (BullMQ), endpoint push, event `presence`.
 - 2026-10-04 — Notification v1: `dispatch()` từ Posts/Comments/UserResolver/Auth, endpoint settings/unread-count, event `notification.read`; vá mạo danh (requireUserId).
 - 2026-10-04 — tạo mới; thêm MentionsModule, RealtimeGateway có xác thực, NotificationsModule đẩy realtime.

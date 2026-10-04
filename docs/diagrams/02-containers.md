@@ -11,6 +11,8 @@ flowchart LR
     web["<b>apps/web</b><br/>Next.js 15 App Router<br/>React 19 · Tailwind v4 · animate-ui<br/>Zustand store"]
     api["<b>apps/api</b><br/>NestJS 11<br/>REST /api · GraphQL /graphql<br/>Socket.IO /api/socket.io<br/>Passport session"]
     schemas[["<b>packages/schemas</b><br/>zod schemas + TS types<br/>(dùng chung web ↔ api)"]]
+    redis[("<b>Redis 7</b><br/>BullMQ queue notification-push")]
+    sw["<b>public/sw.js</b><br/>Service Worker"]
     db[("<b>PostgreSQL 16 + pgvector</b><br/>dữ liệu nghiệp vụ<br/>user_sessions (session store)")]
     mobile["apps/mobile<br/>Expo (planned)"]
   end
@@ -29,6 +31,10 @@ flowchart LR
   api -->|OAuth 2.0| google
   api -->|SMTP| gmail
   api -->|S3 PutObject| r2
+  api <-->|BullMQ job · worker| redis
+  api -->|Web Push VAPID| pushsvc["Push service<br/>FCM · Mozilla · Apple"]
+  pushsvc --> sw
+  browser -. đăng ký .-> sw
   web -. import type .-> schemas
   api -. import type .-> schemas
   mobile -.->|REST/GraphQL · planned| api
@@ -38,10 +44,10 @@ flowchart LR
   classDef lib fill:#e0e7ff,stroke:#6366f1,color:#312e81
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
   classDef planned fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class web,api app
-  class db store
+  class web,api,sw app
+  class db,redis store
   class schemas lib
-  class google,gmail,r2 external
+  class google,gmail,r2,pushsvc external
   class mobile planned
 ```
 
@@ -52,6 +58,8 @@ flowchart LR
 | REST | `/api/*` | Auth, posts, comments, communities, upload, notifications, search | Cookie `pu_session` (Passport) |
 | GraphQL (Apollo) | `/graphql` | Hồ sơ, follow, gợi ý theo dõi, feed/document lồng nhau | Cookie `pu_session` |
 | WebSocket (Socket.IO) | `/api/socket.io` | Đẩy thông báo realtime (`notification`) | Cookie ở handshake; room `user:{id}` do server cấp |
+| Redis (BullMQ) | `REDIS_URL` | Hàng đợi push: delay, retry, hoãn | localhost-only |
+| Web Push | VAPID | Thông báo khi đã đóng tab (qua `sw.js`) | Chữ ký VAPID |
 | SQL | `pg.Pool` | Toàn bộ dữ liệu, session store `user_sessions` | `DATABASE_URL` |
 
 ## Ghi chú kiến trúc
@@ -61,4 +69,5 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-04 — thêm Redis/BullMQ, Service Worker và Web Push.
 - 2026-10-04 — tạo mới; Socket.IO chuyển sang `/api/socket.io` có xác thực; session store Postgres.

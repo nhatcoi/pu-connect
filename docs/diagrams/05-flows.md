@@ -124,6 +124,46 @@ sequenceDiagram
   Note over W: following: lọc theo user_follows, sort thời gian<br/>qa: post_type = question
 ```
 
+## 5.5. Web Push (BullMQ)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant NS as NotificationsService
+  participant Q as Redis (BullMQ)
+  participant W as PushProcessor
+  participant DB as Postgres
+  participant RT as RealtimeGateway
+  participant PS as Push service (FCM/Mozilla/Apple)
+  participant SW as sw.js (trình duyệt)
+
+  NS->>Q: add("send", {notificationId}, jobId=push-{id}, delay 30s)
+  Note over Q: thông báo gộp trong 30s ⇒ cùng jobId ⇒ 1 push
+  Q->>W: job tới hạn
+  W->>DB: đọc notification + settings người nhận
+  alt đã đọc / tắt push loại này
+    W-->>Q: skip
+  else tab đang hiển thị
+    W->>RT: isUserActive() = true
+    W-->>Q: skip:active
+  else giờ yên tĩnh
+    W->>Q: moveToDelayed(hết khung giờ)
+  else gửi
+    W->>DB: SELECT push_subscriptions
+    W->>PS: POST endpoint (payload mã hóa, JWT VAPID)
+    alt 201
+      PS-->>SW: push
+      SW->>SW: showNotification(title, body, tag)
+      W->>DB: push_sent_at = NOW()
+    else 404 / 410
+      W->>DB: DELETE subscription
+    else lỗi khác
+      W-->>Q: throw ⇒ retry (backoff)
+    end
+  end
+```
+
 **Changelog:**
+- 2026-10-04 — thêm 5.5 Web Push qua BullMQ.
 - 2026-10-04 — 5.3 cập nhật theo Notification v1 (dispatch, ưu tiên, gộp).
 - 2026-10-04 — tạo mới: auth email-first, Google OAuth, mention → realtime, feed ranking.

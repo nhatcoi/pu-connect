@@ -14,6 +14,7 @@ flowchart TB
   gmail["Gmail SMTP<br/>email xác thực tài khoản"]
   r2["Cloudflare R2<br/>lưu ảnh, tài liệu, avatar"]
   dicebear["DiceBear API<br/>avatar mặc định"]
+  pushsvc["Push service trình duyệt<br/>FCM · Mozilla · Apple"]
   llm["LLM provider<br/>PU AI (planned)"]
 
   student -->|HTTPS| puc
@@ -23,6 +24,8 @@ flowchart TB
   puc -->|OAuth redirect + userinfo| google
   puc -->|SMTP 465 TLS| gmail
   puc -->|S3 API upload / public URL| r2
+  puc -->|Web Push + VAPID| pushsvc
+  pushsvc -->|thông báo hệ điều hành| student
   puc -.->|avatar URL| dicebear
   puc -.->|API · planned P2| llm
 
@@ -31,7 +34,7 @@ flowchart TB
   classDef person fill:#fff7ed,stroke:#f97316,color:#7c2d12
   classDef planned fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
   class puc system
-  class google,gmail,r2,dicebear external
+  class google,gmail,r2,dicebear,pushsvc external
   class student,lecturer,admin person
   class llm planned
 ```
@@ -41,7 +44,10 @@ flowchart TB
 | Google OAuth | Đăng nhập Google | `GOOGLE_CLIENT_ID/SECRET/CALLBACK_URL` | Nút Google tự ẩn nếu chưa cấu hình |
 | Gmail SMTP | Email xác thực | `SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM` | Không có `SMTP_HOST` ⇒ chỉ log link |
 | Cloudflare R2 | Upload file | `R2_*` | Upload lỗi, phần còn lại vẫn chạy |
+| Push service (FCM/Mozilla/Apple) | Web Push khi đã đóng tab | `VAPID_*` | Thiếu khóa ⇒ chỉ in-app |
 | DiceBear | Avatar mặc định | — | Ảnh không hiện, fallback chữ cái |
 | LLM (planned) | PU AI | `AI_PROVIDER`, `ANTHROPIC_API_KEY` | — · xem [06-messaging-and-ai](../core/06-messaging-and-ai.md) |
 
-**Changelog:** 2026-10-04 — tạo mới (Google OAuth, Gmail SMTP, R2; LLM planned).
+**Changelog:**
+- 2026-10-04 — thêm push service trình duyệt (Web Push).
+- 2026-10-04 — tạo mới (Google OAuth, Gmail SMTP, R2; LLM planned).

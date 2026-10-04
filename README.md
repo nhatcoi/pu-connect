@@ -101,7 +101,14 @@ pnpm run deploy:vps
 * **REST API:** [https://puc.vnhat.dev/api](https://puc.vnhat.dev/api)
 * **GraphQL Endpoint:** [https://puc.vnhat.dev/graphql](https://puc.vnhat.dev/graphql)
 
-### 6. Sơ đồ hệ thống
+### 6. Redis & Web Push
+```bash
+docker compose up -d postgres redis      # Redis cho hàng đợi BullMQ (chỉ localhost)
+npx web-push generate-vapid-keys         # điền VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY vào apps/api/.env
+```
+Thiếu VAPID ⇒ chỉ có thông báo trong app. Chi tiết: [`docs/core/05`](docs/core/05-notifications-and-realtime.md#7-triển-khai-v2--web-push--bullmq-đang-chạy).
+
+### 7. Sơ đồ hệ thống
 Sơ đồ C4, ERD, sequence, deployment ở [`docs/diagrams/`](docs/diagrams/README.md). Sau mỗi migration, sinh lại ERD từ DB local:
 ```bash
 pnpm docs:erd
