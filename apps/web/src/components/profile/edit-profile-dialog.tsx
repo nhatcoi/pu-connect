@@ -132,24 +132,14 @@ export function EditProfileDialog({
         method: 'POST',
         body: formData
       })
-
-      if (res.ok) {
-        const data = await res.json()
-        const uploadedUrl = data?.data?.url || data?.data?.publicUrl
-        if (uploadedUrl) {
-          setAvatarUrl(uploadedUrl)
-          return
-        }
-      }
-
-      // Preview tạm nếu storage chưa cấu hình
-      const localUrl = URL.createObjectURL(file)
-      setAvatarUrl(localUrl)
-      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
-    } catch {
-      const localUrl = URL.createObjectURL(file)
-      setAvatarUrl(localUrl)
-      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
+      const data = await res.json().catch(() => null)
+      const uploadedUrl = data?.data?.url || data?.data?.publicUrl
+      if (!res.ok || !uploadedUrl) throw new Error(typeof data?.message === 'string' ? data.message : 'upload failed')
+      setAvatarUrl(uploadedUrl)
+    } catch (err: any) {
+      // Không dùng blob: URL tạm (chỉ tồn tại trên máy này) ⇒ giữ ảnh cũ
+      toast.error(`Không tải được ảnh đại diện lên${err?.message && err.message !== 'upload failed' ? `: ${err.message}` : ''}`)
+      e.target.value = ''
     } finally {
       setIsUploadingAvatar(false)
     }
@@ -169,24 +159,14 @@ export function EditProfileDialog({
         method: 'POST',
         body: formData
       })
-
-      if (res.ok) {
-        const data = await res.json()
-        const uploadedUrl = data?.data?.url || data?.data?.publicUrl
-        if (uploadedUrl) {
-          setBannerUrl(uploadedUrl)
-          return
-        }
-      }
-
-      // Preview tạm nếu storage chưa cấu hình
-      const localUrl = URL.createObjectURL(file)
-      setBannerUrl(localUrl)
-      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
-    } catch {
-      const localUrl = URL.createObjectURL(file)
-      setBannerUrl(localUrl)
-      toast.warning('Chưa tải ảnh lên được — đang dùng ảnh xem trước')
+      const data = await res.json().catch(() => null)
+      const uploadedUrl = data?.data?.url || data?.data?.publicUrl
+      if (!res.ok || !uploadedUrl) throw new Error(typeof data?.message === 'string' ? data.message : 'upload failed')
+      setBannerUrl(uploadedUrl)
+    } catch (err: any) {
+      // Không dùng blob: URL tạm (chỉ tồn tại trên máy này) ⇒ giữ ảnh cũ
+      toast.error(`Không tải được ảnh bìa lên${err?.message && err.message !== 'upload failed' ? `: ${err.message}` : ''}`)
+      e.target.value = ''
     } finally {
       setIsUploadingBanner(false)
     }

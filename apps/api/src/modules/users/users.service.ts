@@ -68,6 +68,13 @@ export class UsersService {
    * Cập nhật hồ sơ sinh viên (Display Name, Bio, Major, Class, Skills, Interests, Avatar)
    */
   async updateProfile(userId: string, data: UpdateProfileInput): Promise<UserProfile> {
+    // Chỉ nhận ảnh https hoặc đường dẫn nội bộ (chặn blob:/data:/javascript:)
+    for (const [field, url] of [['avatarUrl', data.avatarUrl], ['bannerUrl', data.bannerUrl]] as const) {
+      if (url && !/^(https:\/\/|\/(?!\/))/i.test(url)) {
+        throw new BadRequestException(`${field} phải là URL https đã tải lên`)
+      }
+    }
+
     const setClauses: string[] = []
     const values: any[] = []
 
