@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useComments } from '@/hooks/use-comments'
 import { useAppStore } from '@/store'
 import { CommentComposer } from './comment-composer'
@@ -13,9 +13,11 @@ interface PostCommentsSectionProps {
   post: PostItem
   isOpen: boolean
   highlightCommentId?: string | null
+  // Báo tổng số bình luận thực tế cho bộ đếm trên PostCard
+  onCountChange?: (count: number) => void
 }
 
-export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCommentsSectionProps) {
+export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountChange }: PostCommentsSectionProps) {
   const user = useAppStore((state) => state.user)
   const {
     comments,
@@ -23,6 +25,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCo
     isLoadingMore,
     hasMore,
     remainingCount,
+    totalCount,
     fetchMoreComments,
     addComment,
     toggleLike,
@@ -31,6 +34,35 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCo
   } = useComments(post.id, isOpen)
 
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({})
+
+  // Hiển thị 2 cấp: mọi phản hồi gom về bình luận gốc (dữ liệu cũ có thể sâu hơn)
+  const { topLevelComments, repliesByRoot, rootOf } = useMemo(() => {
+    const byId = new Map(comments.map((c) => [c.id, c]))
+    const rootOf = (id: string) => {
+      let cur = byId.get(id)
+      for (let i = 0; cur?.parentId && byId.has(cur.parentId) && i < 50; i++) cur = byId.get(cur.parentId)
+      return cur?.id ?? id
+    }
+    const repliesByRoot = new Map<string, typeof comments>()
+    for (const c of comments) {
+      if (!c.parentId) continue
+      const root = rootOf(c.id)
+      repliesByRoot.set(root, [...(repliesByRoot.get(root) ?? []), c])
+    }
+    for (const list of repliesByRoot.values()) list.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    return { topLevelComments: comments.filter((c) => !c.parentId), repliesByRoot, rootOf }
+  }, [comments])
+
+  useEffect(() => {
+    if (isOpen && !isLoading) onCountChange?.(totalCount)
+  }, [isOpen, isLoading, totalCount, onCountChange])
+
+  // Gửi phản hồi ⇒ mở luồng của bình luận gốc để thấy ngay
+  const submitReply = async (text: string, parentId: string, media?: string[]) => {
+    const created = await addComment(text, parentId, media)
+    if (created) setExpandedReplies((prev) => ({ ...prev, [rootOf(parentId)]: true }))
+    return created
+  }
   const [highlighted, setHighlighted] = useState<string | null>(null)
   const handledHighlight = useRef<string | null>(null)
 
@@ -44,23 +76,20 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCo
       return
     }
     handledHighlight.current = target.id
-    if (target.parentId) setExpandedReplies((prev) => ({ ...prev, [target.parentId as string]: true }))
+    if (target.parentId) setExpandedReplies((prev) => ({ ...prev, [rootOf(target.id)]: true }))
     setHighlighted(target.id)
     // Chạy một lần cho mỗi bình luận đích (không hủy khi deps đổi sau đó)
     setTimeout(() => {
       document.getElementById(`comment-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 150)
     setTimeout(() => setHighlighted(null), 3000)
-  }, [isOpen, highlightCommentId, comments, hasMore, isLoading, isLoadingMore, fetchMoreComments])
+  }, [isOpen, highlightCommentId, comments, hasMore, isLoading, isLoadingMore, fetchMoreComments, rootOf])
 
   if (!isOpen) return null
 
   const isPostAuthor = user?.id === post.authorId || user?.id === post.author?.id
   const isQaPost = post.postType === 'qa'
 
-  // Separate top-level comments and child replies
-  const topLevelComments = comments.filter((c) => !c.parentId)
-  const getChildReplies = (parentId: string) => comments.filter((c) => c.parentId === parentId)
 
   const toggleReplies = (commentId: string) => {
     setExpandedReplies((prev) => ({
@@ -91,7 +120,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCo
         ) : topLevelComments.length > 0 ? (
           <>
             {topLevelComments.map((comment) => {
-              const replies = getChildReplies(comment.id)
+              const replies = repliesByRoot.get(comment.id) ?? []
               const areRepliesExpanded = !!expandedReplies[comment.id]
 
               return (
@@ -105,7 +134,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCo
                     onLikeToggle={toggleLike}
                     onAcceptSolution={acceptSolution}
                     onDeleteComment={deleteComment}
-                    onReplySubmit={(text, parentId, media) => addComment(text, parentId, media)}
+                    onReplySubmit={submitReply}
                   />
 
                   {/* Toggle nested replies */}
@@ -140,7 +169,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId }: PostCo
                               onLikeToggle={toggleLike}
                               onAcceptSolution={acceptSolution}
                               onDeleteComment={deleteComment}
-                              onReplySubmit={(text, parentId, media) => addComment(text, parentId, media)}
+                              onReplySubmit={submitReply}
                             />
                           ))}
                         </div>

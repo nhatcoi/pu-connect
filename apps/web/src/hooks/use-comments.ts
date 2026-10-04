@@ -18,6 +18,8 @@ export function useComments(postId: string, initialOpen = false) {
   const [hasMore, setHasMore] = useState(false)
 
   const offsetRef = useRef(0)
+  const commentsRef = useRef<CommentItem[]>([])
+  commentsRef.current = comments
 
   const fetchComments = useCallback(async () => {
     setIsLoading(true)
@@ -29,6 +31,7 @@ export function useComments(postId: string, initialOpen = false) {
         total: number
         hasMore: boolean
         remainingCount: number
+        nextOffset?: number
       }>(`/posts/${postId}/comments?limit=${INITIAL_COMMENT_LIMIT}&offset=0`)
 
       if (res) {
@@ -37,7 +40,8 @@ export function useComments(postId: string, initialOpen = false) {
         setTotalCount(res.total ?? (res.data as any)?.total ?? items.length)
         setHasMore(res.hasMore ?? (res.data as any)?.hasMore ?? false)
         setRemainingCount(res.remainingCount ?? (res.data as any)?.remainingCount ?? 0)
-        offsetRef.current = items.length
+        // Offset tính theo bình luận gốc (API trả kèm phản hồi)
+        offsetRef.current = res.nextOffset ?? items.filter((c: CommentItem) => !c.parentId).length
       }
     } catch (err: any) {
       // Quiet fail
@@ -70,7 +74,7 @@ export function useComments(postId: string, initialOpen = false) {
         setTotalCount(res.total ?? (res.data as any)?.total ?? totalCount)
         setHasMore(res.hasMore ?? (res.data as any)?.hasMore ?? false)
         setRemainingCount(res.remainingCount ?? (res.data as any)?.remainingCount ?? 0)
-        offsetRef.current += newItems.length
+        offsetRef.current = res.nextOffset ?? offsetRef.current + newItems.filter((c) => !c.parentId).length
       } else {
         setHasMore(false)
         setRemainingCount(0)
@@ -108,8 +112,7 @@ export function useComments(postId: string, initialOpen = false) {
         if (res && res.data) {
           setComments((prev) => [...prev, res.data])
           setTotalCount((prev) => prev + 1)
-          offsetRef.current += 1
-          toast.success('Đã gửi phản hồi')
+          if (!res.data.parentId) offsetRef.current += 1
           return res.data
         }
       } catch (err: any) {
@@ -169,8 +172,20 @@ export function useComments(postId: string, initialOpen = false) {
   const deleteComment = useCallback(async (commentId: string) => {
     try {
       await apiClient(`/comments/${commentId}`, { method: 'DELETE' })
-      setComments((prev) => prev.filter((c) => c.id !== commentId))
-      setTotalCount((prev) => Math.max(0, prev - 1))
+      // Xóa cả phản hồi con (server ON DELETE CASCADE)
+      const gone = new Set([commentId])
+      let grew = true
+      while (grew) {
+        grew = false
+        for (const c of commentsRef.current) {
+          if (c.parentId && gone.has(c.parentId) && !gone.has(c.id)) {
+            gone.add(c.id)
+            grew = true
+          }
+        }
+      }
+      setComments((prev) => prev.filter((c) => !gone.has(c.id)))
+      setTotalCount((prev) => Math.max(0, prev - gone.size))
       toast.success('Đã xóa bình luận')
     } catch (err: any) {
       toast.error(err.message || 'Không thể xóa bình luận')

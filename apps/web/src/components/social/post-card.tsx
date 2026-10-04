@@ -1,7 +1,7 @@
 'use client'
 
 import { FEATURES } from '@/lib/features'
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react'
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import type { PostItem } from '@pu/schemas'
@@ -134,6 +134,11 @@ export function PostCard({
   const pathname = usePathname()
   const [post, setPost] = useState<PostItem>(initialPost)
   const [isCommentsOpen, setIsCommentsOpen] = useState(defaultCommentsOpen)
+  // Đồng bộ bộ đếm bình luận với danh sách thực tế
+  const handleCommentsCount = useCallback(
+    (count: number) => setPost((prev) => (prev.commentsCount === count ? prev : { ...prev, commentsCount: count })),
+    []
+  )
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
@@ -745,7 +750,12 @@ export function PostCard({
         </div>
 
         {/* Expandable Comments & Discussion Section */}
-        <PostCommentsSection post={post} isOpen={isCommentsOpen} highlightCommentId={highlightCommentId} />
+        <PostCommentsSection
+          post={post}
+          isOpen={isCommentsOpen}
+          highlightCommentId={highlightCommentId}
+          onCountChange={handleCommentsCount}
+        />
       </article>
 
       {/* Edit Post Dialog */}
