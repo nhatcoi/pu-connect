@@ -42,29 +42,34 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-  subgraph Shell["Layout 3 cột (home, search, communities, profile)"]
+  subgraph Shell["app/(app)/layout.tsx — AppLayout dựng 1 lần cho mọi trang cần đăng nhập"]
     direction LR
     header["Header<br/>search · Đăng bài · NotificationsPopover · avatar<br/>VerifyEmailBanner"]
     sidebar["Sidebar<br/>nav + Highlight trượt (animate-ui)"]
     main["Nội dung trang<br/>SlidingTabs · AcademicPostComposer · PostCard[]"]
-    right["RightSidebar<br/>ProfileCompletionCard · Gợi ý theo dõi"]
+    right["RightSidebar (mặc định)<br/>hoặc PageAside của trang"]
+    dialogs["Hộp thoại toàn cục<br/>soạn bài · tài liệu · nhóm · xem tài liệu"]
     mnav["MobileBottomNav"]
   end
 
-  store[("Zustand store<br/>auth · feed · document · course<br/>study-group · campus slices<br/>+ UI dialogs")]
+  rq[("TanStack Query cache<br/>me · feed · post · comments · profile<br/>community · search · notifications")]
+  store[("Zustand<br/>user (đồng bộ ['me']) · UI dialogs<br/>store thông báo realtime")]
   rest["apiClient → /api/*"]
   gql["graphqlClient → /graphql"]
   rt["useRealtimeEvent → Socket.IO"]
   flags["lib/features.ts<br/>feature flags"]
 
-  main -->|usePosts, useComments| rest
-  right -->|suggestedUsers| gql
+  main -->|useQuery / useInfiniteQuery| rq
+  right -->|useQuery suggestedUsers| rq
+  rq --> rest & gql
   sidebar -.-> flags
   right -.-> flags
   header -->|NotificationsPopover| rest
   header -->|event notification| rt
   Shell --- store
 ```
+
+Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 
 ## Nguồn dữ liệu theo màn hình
 
@@ -83,6 +88,7 @@ flowchart TB
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, trang pháp lý, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-09 — route group `(app)` + `AppLayout` dùng chung; dữ liệu server qua TanStack Query (cache, prefetch, cập nhật lạc quan); bỏ `AppShell`.
 - 2026-10-04 — thêm `/forgot-password`, `/reset-password`.
 - 2026-10-04 — thêm `/notifications`, `/post/[id]`, store thông báo dùng chung, mục Thông báo ở sidebar.
 - 2026-10-04 — tạo mới; bỏ `/get-started` (redirect), thêm `/verify-email`, realtime notifications.
