@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
 import { useRouter } from 'next/navigation'
 import { BellOff, CheckCheck, Loader2, Settings2 } from 'lucide-react'
-import { AppShell } from '@/components/layout/app-shell'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { NotificationRow } from '@/components/notifications/notification-row'
 import { NotificationSettingsPanel } from '@/components/notifications/notification-settings-panel'
@@ -20,68 +21,47 @@ type Filter = 'all' | 'unread' | 'mentions'
 export default function NotificationsPage() {
   const router = useRouter()
   const [filter, setFilter] = useState<Filter>('all')
-  const [items, setItems] = useState<NotificationItem[]>([])
-  const [cursor, setCursor] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const queryClient = useQueryClient()
   const [showSettings, setShowSettings] = useState(false)
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
   const liveItems = useNotificationsStore((s) => s.items)
   const sentinelRef = useRef<HTMLDivElement>(null)
 
-  const query = useCallback(
-    (before?: string | null) =>
+  // Mỗi bộ lọc một cache (cursor-based): quay lại trang / đổi tab hiện ngay
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.notifications(filter),
+    queryFn: ({ pageParam }) =>
       notificationsApi.list({
         limit: 20,
-        before,
+        before: pageParam,
         unread: filter === 'unread',
         type: filter === 'mentions' ? 'user_mention' : undefined
       }),
-    [filter]
-  )
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    staleTime: 30 * 1000
+  })
+  const isLoading = query.isPending
+  const isLoadingMore = query.isFetchingNextPage
 
-  // Tải trang đầu khi đổi bộ lọc
-  useEffect(() => {
-    let cancelled = false
-    setIsLoading(true)
-    query()
-      .then((res) => {
-        if (cancelled) return
-        setItems(res.data)
-        setCursor(res.nextCursor)
-      })
-      .catch(() => !cancelled && setItems([]))
-      .finally(() => !cancelled && setIsLoading(false))
-    return () => {
-      cancelled = true
-    }
-  }, [query])
+  // Trộn realtime từ store chung: thông báo mới/gộp lên đầu + trạng thái đã đọc mới nhất
+  const items = useMemo(() => {
+    const list = query.data?.pages.flatMap((p) => p.data) ?? []
+    const byId = new Map(liveItems.map((n) => [n.id, n]))
+    const seen = new Set(list.map((n) => n.id))
+    const fresh = liveItems.filter(
+      (n) =>
+        !seen.has(n.id) &&
+        (filter === 'all' || (filter === 'unread' && !n.isRead) || (filter === 'mentions' && n.type === 'user_mention')) &&
+        (list.length === 0 || n.updatedAt >= list[0].updatedAt)
+    )
+    return [...fresh, ...list.map((n) => byId.get(n.id) ?? n)]
+  }, [query.data, liveItems, filter])
 
-  // Đồng bộ realtime từ store chung: thông báo mới/gộp + trạng thái đã đọc
-  useEffect(() => {
-    setItems((prev) => {
-      const byId = new Map(liveItems.map((n) => [n.id, n]))
-      const fresh = liveItems.filter(
-        (n) =>
-          !prev.some((p) => p.id === n.id) &&
-          (filter === 'all' || (filter === 'unread' && !n.isRead) || (filter === 'mentions' && n.type === 'user_mention')) &&
-          (prev.length === 0 || n.updatedAt >= prev[0].updatedAt)
-      )
-      return [...fresh, ...prev.map((p) => byId.get(p.id) ?? p)]
-    })
-  }, [liveItems, filter])
-
-  const loadMore = useCallback(async () => {
-    if (!cursor || isLoadingMore) return
-    setIsLoadingMore(true)
-    try {
-      const res = await query(cursor)
-      setItems((prev) => [...prev, ...res.data.filter((n) => !prev.some((p) => p.id === n.id))])
-      setCursor(res.nextCursor)
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }, [cursor, isLoadingMore, query])
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query
+  const loadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   useEffect(() => {
     const el = sentinelRef.current
@@ -91,19 +71,33 @@ export default function NotificationsPage() {
     return () => observer.disconnect()
   }, [loadMore])
 
+  // Đánh dấu đã đọc trong mọi danh sách thông báo đã cache
+  const markReadInCache = (predicate: (n: NotificationItem) => boolean) => {
+    queryClient.setQueriesData<InfiniteData<{ data: NotificationItem[]; nextCursor: string | null }>>(
+      { queryKey: ['notifications'] },
+      (old) =>
+        old
+          ? {
+              ...old,
+              pages: old.pages.map((p) => ({ ...p, data: p.data.map((n) => (predicate(n) ? { ...n, isRead: true } : n)) }))
+            }
+          : old
+    )
+  }
+
   const markAll = () => {
     useNotificationsStore.getState().markRead('all', 0)
-    setItems((prev) => prev.map((n) => ({ ...n, isRead: true })))
+    markReadInCache(() => true)
     notificationsApi.markAllRead().catch(() => undefined)
   }
 
   const handleClick = (item: NotificationItem) => {
-    setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)))
+    markReadInCache((n) => n.id === item.id)
     openNotification(item, (link) => router.push(link))
   }
 
   return (
-    <AppShell>
+    <div className="pt-3">
       <div className="mx-2 sm:mx-0 rounded-xl bg-card">
         <div className="flex items-center justify-between px-4 pt-4">
           <h1 className="text-lg font-bold">Thông báo</h1>
@@ -170,6 +164,6 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
-    </AppShell>
+    </div>
   )
 }

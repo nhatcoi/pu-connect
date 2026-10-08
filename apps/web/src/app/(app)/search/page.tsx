@@ -1,24 +1,21 @@
 'use client'
 
+import { PageAside } from '@/components/layout/page-aside'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { FEATURES } from '@/lib/features'
 import React, { useState, useEffect, Suspense } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Header } from '@/components/social/header'
-import { Sidebar } from '@/components/social/sidebar'
-import { RightSidebar } from '@/components/social/right-sidebar'
-import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
 import { PostCard } from '@/components/social/post-card'
 import { DocumentCard } from '@/components/social/document-card'
 import { StudyGroupCard } from '@/components/social/study-group-card'
-import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
 import { FollowButton } from '@/components/profile/follow-button'
 import { AcademicBadge } from '@/components/ui/academic-badge'
 import { SearchSettingsDialog } from '@/components/search/search-settings-dialog'
 import { SearchOptionsSheet } from '@/components/search/search-options-sheet'
 import { AdvancedSearchDialog } from '@/components/search/advanced-search-dialog'
-import { AuthGuard } from '@/components/auth/auth-guard'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -152,8 +149,6 @@ function SearchContent() {
   const [inputQuery, setInputQuery] = useState(queryParam)
   const [selectedFaculty, setSelectedFaculty] = useState(facultyParam)
   const [exploreSubTab, setExploreSubTab] = useState<'explore' | 'trending' | 'courses' | 'documents' | 'groups'>('explore')
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
 
   // Dialog & Sheet States
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
@@ -161,8 +156,6 @@ function SearchContent() {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
   const user = useAppStore((state) => state.user)
-  const previewDocument = useAppStore((state) => state.previewDocument)
-  const setPreviewDocument = useAppStore((state) => state.setPreviewDocument)
   const { isHeaderVisible } = useScrollDirection(8)
 
   // Sync input query with URL
@@ -170,33 +163,20 @@ function SearchContent() {
     setInputQuery(queryParam)
   }, [queryParam])
 
-  // Perform search when query or type changes
-  useEffect(() => {
-    if (!queryParam.trim()) {
-      setSearchResult(null)
-      setIsLoading(false)
-      return
-    }
-
-    async function performSearch() {
-      setIsLoading(true)
-      try {
-        const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${selectedFaculty}` : ''
-        const res = await apiClient<{ success: boolean; data: SearchResult }>(
-          `/search?q=${encodeURIComponent(queryParam.trim())}&type=${activeType}${facultyQuery}&limit=30`
-        )
-        if (res && res.data) {
-          setSearchResult(res.data)
-        }
-      } catch {
-        setSearchResult(null)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    performSearch()
-  }, [queryParam, activeType, selectedFaculty])
+  // Kết quả cache theo (từ khóa, loại, khoa) 5 phút: quay lại trang search hiện ngay
+  const trimmedQuery = queryParam.trim()
+  const { data: searchResult = null, isLoading } = useQuery({
+    queryKey: queryKeys.search(trimmedQuery, activeType, selectedFaculty),
+    queryFn: async () => {
+      const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${selectedFaculty}` : ''
+      const res = await apiClient<{ success: boolean; data: SearchResult }>(
+        `/search?q=${encodeURIComponent(trimmedQuery)}&type=${activeType}${facultyQuery}&limit=30`
+      )
+      return res.data
+    },
+    enabled: !!trimmedQuery,
+    staleTime: 5 * 60 * 1000
+  })
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -232,381 +212,359 @@ function SearchContent() {
   const isSearchActive = !!queryParam.trim()
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
-        {/* Top Header */}
-        <Header />
+    <>
+      {/* Search Dialogs & Action Sheets */}
+      <SearchSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+      <SearchOptionsSheet
+        open={isOptionsOpen}
+        onOpenChange={setIsOptionsOpen}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenFilters={() => setIsAdvancedOpen(true)}
+        onOpenAdvanced={() => setIsAdvancedOpen(true)}
+      />
+      <AdvancedSearchDialog
+        open={isAdvancedOpen}
+        onOpenChange={setIsAdvancedOpen}
+        initialQuery={inputQuery}
+        initialFaculty={selectedFaculty}
+      />
 
-        {/* In-App Document Preview Modal */}
-        <DocumentPreviewModal
-          document={previewDocument}
-          open={!!previewDocument}
-          onOpenChange={(open) => !open && setPreviewDocument(null)}
-        />
 
-        {/* Search Dialogs & Action Sheets */}
-        <SearchSettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-        <SearchOptionsSheet
-          open={isOptionsOpen}
-          onOpenChange={setIsOptionsOpen}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenFilters={() => setIsAdvancedOpen(true)}
-          onOpenAdvanced={() => setIsAdvancedOpen(true)}
-        />
-        <AdvancedSearchDialog
-          open={isAdvancedOpen}
-          onOpenChange={setIsAdvancedOpen}
-          initialQuery={inputQuery}
-          initialFaculty={selectedFaculty}
-        />
+      
+      {/* ── A. SEARCH TOP BAR & CATEGORY TABS ── */}
+      <div className="sticky top-0 md:top-14 z-30 mb-2.5 bg-surface/90 backdrop-blur-md px-2 sm:px-0 py-2">
+        {/* Desktop-only Search Input Row (Mobile search input is unified in Header) */}
+        <div className="hidden md:flex items-center gap-2.5 pb-2">
+          {isSearchActive && (
+            <button
+              type="button"
+              onClick={() => {
+                setInputQuery('')
+                router.push('/search')
+              }}
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors shrink-0"
+              title="Quay lại khám phá"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          )}
 
-        {/* Main 3-Column Layout (X Twitter Architecture) */}
-        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
-          {/* 1. Left Navigation Sidebar (Icon-only on md, full on xl) */}
-          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
-            <Sidebar currentTab="search" />
-          </div>
+          {/* Desktop Search Input */}
+          <form onSubmit={handleSearchSubmit} className="flex-1 relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="text"
+              value={inputQuery}
+              onChange={(e) => setInputQuery(e.target.value)}
+              placeholder="Tìm kiếm môn học, tài liệu, bài viết..."
+              className="w-full h-10 pl-10 pr-9 rounded-full bg-card hover:bg-card focus:bg-card border border-transparent focus:border-primary text-xs sm:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all"
+            />
+            {inputQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setInputQuery('')
+                  if (isSearchActive) router.push('/search')
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 text-foreground flex items-center justify-center cursor-pointer text-[10px]"
+              >
+                <X className="h-2.5 w-2.5" />
+              </button>
+            )}
+          </form>
 
-          {/* 2. Center Column (Wider for academic content, seamless continuous feed) */}
-          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
-            
-            {/* ── A. SEARCH TOP BAR & CATEGORY TABS ── */}
-            <div className="sticky top-0 md:top-14 z-30 mb-2.5 bg-surface/90 backdrop-blur-md px-2 sm:px-0 py-2">
-              {/* Desktop-only Search Input Row (Mobile search input is unified in Header) */}
-              <div className="hidden md:flex items-center gap-2.5 pb-2">
-                {isSearchActive && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setInputQuery('')
-                      router.push('/search')
-                    }}
-                    className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors shrink-0"
-                    title="Quay lại khám phá"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </button>
-                )}
+          {/* Desktop Right Action: Settings gear or 3-dots */}
+          {isSearchActive ? (
+            <button
+              type="button"
+              onClick={() => setIsOptionsOpen(true)}
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors shrink-0"
+              title="Tùy chọn tìm kiếm"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setIsSettingsOpen(true)}
+              className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors shrink-0"
+              title="Cài đặt tìm kiếm"
+            >
+              <Settings className="h-5 w-5" />
+            </button>
+          )}
+        </div>
 
-                {/* Desktop Search Input */}
-                <form onSubmit={handleSearchSubmit} className="flex-1 relative">
-                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    value={inputQuery}
-                    onChange={(e) => setInputQuery(e.target.value)}
-                    placeholder="Tìm kiếm môn học, tài liệu, bài viết..."
-                    className="w-full h-10 pl-10 pr-9 rounded-full bg-card hover:bg-card focus:bg-card border border-transparent focus:border-primary text-xs sm:text-sm text-foreground placeholder:text-muted-foreground outline-none transition-all"
-                  />
-                  {inputQuery && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setInputQuery('')
-                        if (isSearchActive) router.push('/search')
-                      }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 text-foreground flex items-center justify-center cursor-pointer text-[10px]"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  )}
-                </form>
+        {/* ── Category Tabs Bar ── */}
+        {isSearchActive ? (
+          <SlidingTabs
+            className="overflow-x-auto no-scrollbar px-2 sm:px-1"
+            value={activeType}
+            onChange={handleTabChange}
+            items={[
+              { id: 'all' as SearchType, label: 'Hàng đầu (Top)' },
+              { id: 'posts' as SearchType, label: 'Mới nhất (Latest)' },
+              { id: 'courses' as SearchType, label: 'Môn học' },
+              { id: 'documents' as SearchType, label: 'Tài liệu' },
+              { id: 'users' as SearchType, label: 'Mọi người' },
+              { id: 'groups' as SearchType, label: 'Nhóm PBL' }
+            ]}
+          />
+        ) : FEATURES.exploreSubTabs ? (
+          <SlidingTabs
+            className="overflow-x-auto no-scrollbar px-2 sm:px-1"
+            value={exploreSubTab}
+            onChange={setExploreSubTab}
+            items={[
+              { id: 'explore' as const, label: 'Khám phá (Explore)' },
+              { id: 'trending' as const, label: 'Xu hướng (Trending)' },
+              { id: 'courses' as const, label: 'Môn học hot' },
+              { id: 'documents' as const, label: 'Đề thi & Slide' },
+              { id: 'groups' as const, label: 'Nhóm PBL' }
+            ]}
+          />
+        ) : null}
+      </div>
 
-                {/* Desktop Right Action: Settings gear or 3-dots */}
-                {isSearchActive ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsOptionsOpen(true)}
-                    className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors shrink-0"
-                    title="Tùy chọn tìm kiếm"
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-muted text-foreground cursor-pointer transition-colors shrink-0"
-                    title="Cài đặt tìm kiếm"
-                  >
-                    <Settings className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-
-              {/* ── Category Tabs Bar ── */}
-              {isSearchActive ? (
-                <SlidingTabs
-                  className="overflow-x-auto no-scrollbar px-2 sm:px-1"
-                  value={activeType}
-                  onChange={handleTabChange}
-                  items={[
-                    { id: 'all' as SearchType, label: 'Hàng đầu (Top)' },
-                    { id: 'posts' as SearchType, label: 'Mới nhất (Latest)' },
-                    { id: 'courses' as SearchType, label: 'Môn học' },
-                    { id: 'documents' as SearchType, label: 'Tài liệu' },
-                    { id: 'users' as SearchType, label: 'Mọi người' },
-                    { id: 'groups' as SearchType, label: 'Nhóm PBL' }
-                  ]}
-                />
-              ) : FEATURES.exploreSubTabs ? (
-                <SlidingTabs
-                  className="overflow-x-auto no-scrollbar px-2 sm:px-1"
-                  value={exploreSubTab}
-                  onChange={setExploreSubTab}
-                  items={[
-                    { id: 'explore' as const, label: 'Khám phá (Explore)' },
-                    { id: 'trending' as const, label: 'Xu hướng (Trending)' },
-                    { id: 'courses' as const, label: 'Môn học hot' },
-                    { id: 'documents' as const, label: 'Đề thi & Slide' },
-                    { id: 'groups' as const, label: 'Nhóm PBL' }
-                  ]}
-                />
-              ) : null}
+      {/* ── B. CONTENT RENDERER ── */}
+      {isSearchActive ? (
+        /* ── 1. ACTIVE SEARCH RESULTS STREAM (Image 2) ── */
+        <div className="space-y-2.5 px-2 sm:px-0">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              <p className="text-xs">Đang tìm kiếm dữ liệu học thuật cho &ldquo;{queryParam}&rdquo;...</p>
             </div>
-
-            {/* ── B. CONTENT RENDERER ── */}
-            {isSearchActive ? (
-              /* ── 1. ACTIVE SEARCH RESULTS STREAM (Image 2) ── */
-              <div className="space-y-2.5 px-2 sm:px-0">
-                {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-                    <Loader2 className="h-7 w-7 animate-spin text-primary" />
-                    <p className="text-xs">Đang tìm kiếm dữ liệu học thuật cho &ldquo;{queryParam}&rdquo;...</p>
-                  </div>
-                ) : totalCount === 0 ? (
-                  <div className="py-20 px-6 text-center space-y-3">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto text-muted-foreground">
-                      <Search className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-base font-bold text-foreground">
-                      Không tìm thấy kết quả cho &ldquo;{queryParam}&rdquo;
-                    </h3>
-                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      Hãy thử tìm kiếm với từ khóa khác, mã học phần ngắn gọn (ví dụ: <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono">IT101</code>) hoặc sử dụng tính năng Tìm kiếm nâng cao.
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIsAdvancedOpen(true)}
-                      className="rounded-full text-xs font-semibold mt-2 cursor-pointer"
-                    >
-                      <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
-                      Tìm kiếm nâng cao
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    {/* Courses Match List */}
-                    {searchResult?.courses && searchResult.courses.length > 0 && (
-                      <div className="rounded-xl bg-card p-4 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                            <GraduationCap className="h-4 w-4 text-primary" />
-                            <span>Môn học phù hợp ({searchResult.courses.length})</span>
-                          </h3>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                          {searchResult.courses.map((course) => (
-                            <CourseCardItem key={course.id} course={course} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Users / People Match List */}
-                    {searchResult?.users && searchResult.users.length > 0 && (
-                      <div className="rounded-xl bg-card p-4 space-y-2.5">
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                          <User className="h-4 w-4 text-primary" />
-                          <span>Người dùng & Giảng viên ({searchResult.users.length})</span>
-                        </h3>
-                        <div className="divide-y divide-border/40 rounded-lg bg-muted/30 overflow-hidden">
-                          {searchResult.users.map((u) => (
-                            <UserCardItem key={u.id} userItem={u} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Documents Match List */}
-                    {searchResult?.documents && searchResult.documents.length > 0 && (
-                      <div className="rounded-xl bg-card p-4 space-y-2.5">
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                          <FileText className="h-4 w-4 text-primary" />
-                          <span>Đề thi & Tài liệu ({searchResult.documents.length})</span>
-                        </h3>
-                        <div className="space-y-2">
-                          {searchResult.documents.map((doc) => (
-                            <DocumentCard key={doc.id} document={doc} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Study Groups Match List */}
-                    {searchResult?.groups && searchResult.groups.length > 0 && (
-                      <div className="rounded-xl bg-card p-4 space-y-2.5">
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                          <Users className="h-4 w-4 text-primary" />
-                          <span>Nhóm đồ án PBL ({searchResult.groups.length})</span>
-                        </h3>
-                        <div className="space-y-2">
-                          {searchResult.groups.map((group) => (
-                            <StudyGroupCard key={group.id} group={group} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Academic Posts Stream */}
-                    {searchResult?.posts && searchResult.posts.length > 0 && (
-                      <div className="space-y-2.5">
-                        {searchResult.posts.map((post) => (
-                          <PostCard key={post.id} post={post} variant="card" />
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+          ) : totalCount === 0 ? (
+            <div className="py-20 px-6 text-center space-y-3">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto text-muted-foreground">
+                <Search className="h-6 w-6" />
               </div>
-            ) : !FEATURES.trending ? (
-              /* ── 2a. Khám phá tối giản: gợi ý từ khóa chạy tìm kiếm thật ── */
-              <div className="mx-2 sm:mx-0 rounded-xl bg-card p-6 text-center space-y-4">
-                <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-                  <Search className="h-5 w-5" />
+              <h3 className="text-base font-bold text-foreground">
+                Không tìm thấy kết quả cho &ldquo;{queryParam}&rdquo;
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Hãy thử tìm kiếm với từ khóa khác, mã học phần ngắn gọn (ví dụ: <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono">IT101</code>) hoặc sử dụng tính năng Tìm kiếm nâng cao.
+              </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsAdvancedOpen(true)}
+                className="rounded-full text-xs font-semibold mt-2 cursor-pointer"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
+                Tìm kiếm nâng cao
+              </Button>
+            </div>
+          ) : (
+            <>
+              {/* Courses Match List */}
+              {searchResult?.courses && searchResult.courses.length > 0 && (
+                <div className="rounded-xl bg-card p-4 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <GraduationCap className="h-4 w-4 text-primary" />
+                      <span>Môn học phù hợp ({searchResult.courses.length})</span>
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {searchResult.courses.map((course) => (
+                      <CourseCardItem key={course.id} course={course} />
+                    ))}
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h2 className="text-[15px] font-semibold text-foreground">Tìm kiếm trong cộng đồng Phenikaa</h2>
-                  <p className="text-xs text-muted-foreground">Bài viết, môn học, tài liệu, mọi người và nhóm PBL.</p>
+              )}
+
+              {/* Users / People Match List */}
+              {searchResult?.users && searchResult.users.length > 0 && (
+                <div className="rounded-xl bg-card p-4 space-y-2.5">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <User className="h-4 w-4 text-primary" />
+                    <span>Người dùng & Giảng viên ({searchResult.users.length})</span>
+                  </h3>
+                  <div className="divide-y divide-border/40 rounded-lg bg-muted/30 overflow-hidden">
+                    {searchResult.users.map((u) => (
+                      <UserCardItem key={u.id} userItem={u} />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-wrap justify-center gap-2">
-                  {['IT101', 'Giải tích', '#DoAnTotNghiep', 'Đề thi', 'NestJS'].map((kw) => (
-                    <button
-                      key={kw}
-                      type="button"
-                      onClick={() => handleTrendingClick(kw)}
-                      className="px-3 py-1.5 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary text-xs font-medium text-muted-foreground transition-colors cursor-pointer"
-                    >
-                      {kw}
-                    </button>
+              )}
+
+              {/* Documents Match List */}
+              {searchResult?.documents && searchResult.documents.length > 0 && (
+                <div className="rounded-xl bg-card p-4 space-y-2.5">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span>Đề thi & Tài liệu ({searchResult.documents.length})</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {searchResult.documents.map((doc) => (
+                      <DocumentCard key={doc.id} document={doc} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Study Groups Match List */}
+              {searchResult?.groups && searchResult.groups.length > 0 && (
+                <div className="rounded-xl bg-card p-4 space-y-2.5">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span>Nhóm đồ án PBL ({searchResult.groups.length})</span>
+                  </h3>
+                  <div className="space-y-2">
+                    {searchResult.groups.map((group) => (
+                      <StudyGroupCard key={group.id} group={group} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Academic Posts Stream */}
+              {searchResult?.posts && searchResult.posts.length > 0 && (
+                <div className="space-y-2.5">
+                  {searchResult.posts.map((post) => (
+                    <PostCard key={post.id} post={post} variant="card" />
                   ))}
                 </div>
-              </div>
-            ) : (
-              /* ── 2. EXPLORE & TRENDING LANDING STREAM (Image 1) ── */
-              <div className="space-y-2.5 px-2 sm:px-0">
-                {/* Section 1: Today's Academic News (Image 1) */}
-                <div className="rounded-xl bg-card p-4 space-y-3">
-                  <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
-                    Tin nổi bật Phenikaa (Today&apos;s Highlights)
-                  </h2>
-                  <div className="space-y-3">
-                    {ACADEMIC_STORIES.map((story) => (
-                      <div
-                        key={story.id}
-                        onClick={() => handleTrendingClick(story.title.split(' ')[0])}
-                        className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer space-y-1.5"
-                      >
-                        <h3 className="text-[13px] font-semibold text-foreground leading-snug hover:underline">
-                          {story.title}
-                        </h3>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="font-medium">{story.timeAgo}</span>
-                          <span>•</span>
-                          <span>{story.category}</span>
-                          <span>•</span>
-                          <span className="font-semibold text-primary">{story.postsCount}</span>
-                        </div>
-                      </div>
-                    ))}
+              )}
+            </>
+          )}
+        </div>
+      ) : !FEATURES.trending ? (
+        /* ── 2a. Khám phá tối giản: gợi ý từ khóa chạy tìm kiếm thật ── */
+        <div className="mx-2 sm:mx-0 rounded-xl bg-card p-6 text-center space-y-4">
+          <div className="h-11 w-11 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+            <Search className="h-5 w-5" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-[15px] font-semibold text-foreground">Tìm kiếm trong cộng đồng Phenikaa</h2>
+            <p className="text-xs text-muted-foreground">Bài viết, môn học, tài liệu, mọi người và nhóm PBL.</p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {['IT101', 'Giải tích', '#DoAnTotNghiep', 'Đề thi', 'NestJS'].map((kw) => (
+              <button
+                key={kw}
+                type="button"
+                onClick={() => handleTrendingClick(kw)}
+                className="px-3 py-1.5 rounded-full bg-muted/60 hover:bg-primary/10 hover:text-primary text-xs font-medium text-muted-foreground transition-colors cursor-pointer"
+              >
+                {kw}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* ── 2. EXPLORE & TRENDING LANDING STREAM (Image 1) ── */
+        <div className="space-y-2.5 px-2 sm:px-0">
+          {/* Section 1: Today's Academic News (Image 1) */}
+          <div className="rounded-xl bg-card p-4 space-y-3">
+            <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+              Tin nổi bật Phenikaa (Today&apos;s Highlights)
+            </h2>
+            <div className="space-y-3">
+              {ACADEMIC_STORIES.map((story) => (
+                <div
+                  key={story.id}
+                  onClick={() => handleTrendingClick(story.title.split(' ')[0])}
+                  className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer space-y-1.5"
+                >
+                  <h3 className="text-[13px] font-semibold text-foreground leading-snug hover:underline">
+                    {story.title}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="font-medium">{story.timeAgo}</span>
+                    <span>•</span>
+                    <span>{story.category}</span>
+                    <span>•</span>
+                    <span className="font-semibold text-primary">{story.postsCount}</span>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Section 2: Trending Topics (Image 1) */}
-                <div className="rounded-xl bg-card p-4 space-y-2">
-                  <div className="flex items-center justify-between pb-1">
-                    <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                      <Flame className="h-4 w-4 text-amber-500" />
-                      <span>Xu hướng thảo luận tại Phenikaa</span>
-                    </h2>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSettingsOpen(true)}
-                      className="h-7 text-[11px] rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <Settings className="h-3.5 w-3.5 mr-1" />
-                      Cài đặt
-                    </Button>
-                  </div>
+          {/* Section 2: Trending Topics (Image 1) */}
+          <div className="rounded-xl bg-card p-4 space-y-2">
+            <div className="flex items-center justify-between pb-1">
+              <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <Flame className="h-4 w-4 text-amber-500" />
+                <span>Xu hướng thảo luận tại Phenikaa</span>
+              </h2>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSettingsOpen(true)}
+                className="h-7 text-[11px] rounded-full text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <Settings className="h-3.5 w-3.5 mr-1" />
+                Cài đặt
+              </Button>
+            </div>
 
-                  <div className="divide-y divide-border/40">
-                    {TRENDING_TOPICS.map((topic, idx) => (
-                      <div
-                        key={idx}
-                        onClick={() => handleTrendingClick(topic.tag)}
-                        className="py-3 flex items-start justify-between group cursor-pointer"
-                      >
-                        <div className="space-y-0.5 min-w-0 pr-2">
-                          <p className="text-[11px] text-muted-foreground">{topic.category}</p>
-                          <p className="text-[13px] font-semibold text-foreground group-hover:underline truncate">
-                            {topic.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{topic.postsCount}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setIsOptionsOpen(true)
-                          }}
-                          className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
+            <div className="divide-y divide-border/40">
+              {TRENDING_TOPICS.map((topic, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleTrendingClick(topic.tag)}
+                  className="py-3 flex items-start justify-between group cursor-pointer"
+                >
+                  <div className="space-y-0.5 min-w-0 pr-2">
+                    <p className="text-[11px] text-muted-foreground">{topic.category}</p>
+                    <p className="text-[13px] font-semibold text-foreground group-hover:underline truncate">
+                      {topic.title}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{topic.postsCount}</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setIsOptionsOpen(true)
+                    }}
+                    className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer shrink-0"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Section 3: Popular Courses Grid */}
-                <div className="rounded-xl bg-card p-4 space-y-3">
-                  <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <GraduationCap className="h-4 w-4 text-primary" />
-                    <span>Học phần được quan tâm nhiều nhất</span>
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {[
-                      { code: 'IT101', name: 'Cấu trúc dữ liệu & Giải thuật', credits: 3, faculty: 'FIT' },
-                      { code: 'MATH201', name: 'Giải tích 2', credits: 3, faculty: 'FAS' },
-                      { code: 'AI302', name: 'Học máy & Xử lý ngôn ngữ tự nhiên', credits: 4, faculty: 'FIT' },
-                      { code: 'FEE204', name: 'Kỹ thuật vi xử lý & IoT', credits: 3, faculty: 'FEE' }
-                    ].map((course) => (
-                      <button
-                        key={course.code}
-                        onClick={() => handleTrendingClick(course.code)}
-                        className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-left transition-all cursor-pointer space-y-1.5 group"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-                            {course.code}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground font-medium">{course.credits} tín chỉ</span>
-                        </div>
-                        <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                          {course.name}
-                        </p>
-                      </button>
-                    ))}
+          {/* Section 3: Popular Courses Grid */}
+          <div className="rounded-xl bg-card p-4 space-y-3">
+            <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <span>Học phần được quan tâm nhiều nhất</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {[
+                { code: 'IT101', name: 'Cấu trúc dữ liệu & Giải thuật', credits: 3, faculty: 'FIT' },
+                { code: 'MATH201', name: 'Giải tích 2', credits: 3, faculty: 'FAS' },
+                { code: 'AI302', name: 'Học máy & Xử lý ngôn ngữ tự nhiên', credits: 4, faculty: 'FIT' },
+                { code: 'FEE204', name: 'Kỹ thuật vi xử lý & IoT', credits: 3, faculty: 'FEE' }
+              ].map((course) => (
+                <button
+                  key={course.code}
+                  onClick={() => handleTrendingClick(course.code)}
+                  className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-left transition-all cursor-pointer space-y-1.5 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
+                      {course.code}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-medium">{course.credits} tín chỉ</span>
                   </div>
-                </div>
-              </div>
-            )}
-          </main>
-
-          {/* 3. Right Sidebar (Desktop lg: only) */}
-          <div className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4 space-y-4">
+                  <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                    {course.name}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <PageAside>
             {/* Faculty Filter Card */}
             <Card className="border-0 bg-card shadow-none rounded-xl">
               <CardHeader className="pb-1">
@@ -657,13 +615,8 @@ function SearchContent() {
                 <li>Tìm tài liệu theo khoa: Chọn bộ lọc ở trên.</li>
               </ul>
             </Card>
-          </div>
-        </div>
-
-        {/* Mobile Bottom Navigation Bar */}
-        <MobileBottomNav />
-      </div>
-    </AuthGuard>
+      </PageAside>
+    </>
   )
 }
 

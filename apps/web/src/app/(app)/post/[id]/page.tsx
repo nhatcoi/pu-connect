@@ -1,12 +1,14 @@
 'use client'
 
-import React, { Suspense, useEffect, useState } from 'react'
+import React, { Suspense } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, FileX2, Loader2 } from 'lucide-react'
-import { AppShell } from '@/components/layout/app-shell'
 import { PostCard } from '@/components/social/post-card'
 import { apiClient } from '@/lib/api-client'
+import { queryKeys } from '@/lib/query-keys'
+import { findCachedPost } from '@/lib/post-cache'
 import type { PostItem } from '@pu/schemas'
 
 // Trang chi tiết bài viết: /post/{id}?comment={commentId} (đích điều hướng của thông báo)
@@ -14,26 +16,21 @@ function PostDetail() {
   const router = useRouter()
   const { id } = useParams<{ id: string }>()
   const highlightCommentId = useSearchParams().get('comment')
-  const [post, setPost] = useState<PostItem | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'missing'>('loading')
+  const queryClient = useQueryClient()
 
-  useEffect(() => {
-    let cancelled = false
-    setStatus('loading')
-    apiClient<{ success: boolean; data: PostItem }>(`/posts/${id}`)
-      .then((res) => {
-        if (cancelled) return
-        setPost(res.data)
-        setStatus('ready')
-      })
-      .catch(() => !cancelled && setStatus('missing'))
-    return () => {
-      cancelled = true
-    }
-  }, [id])
+  // Cache ['post', id]; nếu bài đã có trong feed/cộng đồng thì hiện ngay (initialData) rồi làm mới ngầm
+  const { data: post, isPending, isError } = useQuery({
+    queryKey: queryKeys.post(id),
+    queryFn: async () => (await apiClient<{ success: boolean; data: PostItem }>(`/posts/${id}`)).data,
+    initialData: () => findCachedPost(queryClient, id),
+    initialDataUpdatedAt: 0,
+    staleTime: 30 * 1000,
+    enabled: !!id
+  })
+  const status = isPending ? 'loading' : isError || !post ? 'missing' : 'ready'
 
   return (
-    <AppShell>
+    <div className="pt-3">
       <div className="mx-2 sm:mx-0 mb-2 flex items-center gap-2">
         <button
           onClick={() => (window.history.length > 1 ? router.back() : router.push('/home'))}
@@ -69,7 +66,7 @@ function PostDetail() {
           />
         )}
       </div>
-    </AppShell>
+    </div>
   )
 }
 

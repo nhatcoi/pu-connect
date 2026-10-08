@@ -8,20 +8,12 @@ import {
   MessageSquarePlus,
   UserPlus
 } from 'lucide-react'
-import { Header } from '@/components/social/header'
-import { Sidebar } from '@/components/social/sidebar'
-import { RightSidebar } from '@/components/social/right-sidebar'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
-import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
-import { CreatePostDialog } from '@/components/social/create-post-dialog'
-import { CreateDocumentDialog } from '@/components/social/create-document-dialog'
-import { CreateGroupDialog } from '@/components/social/create-group-dialog'
-import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
-import { AuthGuard } from '@/components/auth/auth-guard'
 import { Button } from '@/components/ui/button'
-import { usePosts } from '@/hooks/use-posts'
+import { usePosts, prefetchFeed } from '@/hooks/use-posts'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 
@@ -53,15 +45,9 @@ function HomeContent() {
     feedType: activeFeedTab
   })
   
+  const queryClient = useQueryClient()
   const user = useAppStore((state) => state.user)
-  const isCreatePostOpen = useAppStore((state) => state.isCreatePostOpen)
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
-  const isCreateDocumentOpen = useAppStore((state) => state.isCreateDocumentOpen)
-  const setCreateDocumentOpen = useAppStore((state) => state.setCreateDocumentOpen)
-  const isCreateGroupOpen = useAppStore((state) => state.isCreateGroupOpen)
-  const setCreateGroupOpen = useAppStore((state) => state.setCreateGroupOpen)
-  const previewDocument = useAppStore((state) => state.previewDocument)
-  const setPreviewDocument = useAppStore((state) => state.setPreviewDocument)
 
   // Infinite Scroll Sentinel Observer
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -84,132 +70,89 @@ function HomeContent() {
   }, [hasMore, isLoadingMore, isPostsLoading, fetchMore])
 
   return (
-    <AuthGuard>
-      <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
-        {/* Unified Top Header */}
-        <Header />
-
-        {/* Global Dialogs & Preview Modals */}
-        <CreatePostDialog />
-        <CreateDocumentDialog
-          open={isCreateDocumentOpen}
-          onOpenChange={setCreateDocumentOpen}
+    <>
+      {/* ── X-Style Sticky 3-Tab Feed Filter Bar ── */}
+      <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md">
+        <SlidingTabs
+          className="px-4 sm:px-1"
+          value={activeFeedTab}
+          onChange={setActiveFeedTab}
+          onItemHover={(id) => prefetchFeed(queryClient, id)}
+          items={[
+            { id: 'for_you', label: 'Dành cho bạn' },
+            { id: 'following', label: 'Đang theo dõi' },
+            { id: 'qa', label: 'Hỏi đáp' }
+          ]}
         />
-        <CreateGroupDialog
-          open={isCreateGroupOpen}
-          onOpenChange={setCreateGroupOpen}
-        />
-        <DocumentPreviewModal
-          document={previewDocument}
-          open={!!previewDocument}
-          onOpenChange={(open) => {
-            if (!open) setPreviewDocument(null)
-          }}
-        />
-
-        {/* Bố cục 3 cột, phân tách bằng khoảng trống thay vì đường kẻ */}
-        <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
-          
-          {/* 1. Left Sidebar Navigation (Icon-only on md, full on xl) */}
-          <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
-            <Sidebar />
-          </div>
-
-          {/* 2. Cột bảng tin: thẻ trắng trên nền surface */}
-          <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">
-            
-            {/* ── X-Style Sticky 3-Tab Feed Filter Bar ── */}
-            <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md">
-              <SlidingTabs
-                className="px-4 sm:px-1"
-                value={activeFeedTab}
-                onChange={setActiveFeedTab}
-                items={[
-                  { id: 'for_you', label: 'Dành cho bạn' },
-                  { id: 'following', label: 'Đang theo dõi' },
-                  { id: 'qa', label: 'Hỏi đáp' }
-                ]}
-              />
-            </div>
-
-            {/* Ô soạn bài dạng thẻ (Composer card) */}
-            <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
-              <AcademicPostComposer />
-            </div>
-
-            {/* Danh sách bài viết dạng thẻ, cách nhau bằng khoảng trống */}
-            <div className="space-y-2.5 px-2 sm:px-0">
-              {isPostsLoading ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
-                  <Loader2 className="h-6 w-6 animate-spin text-foreground" />
-                  <span className="text-xs">
-                    {activeFeedTab === 'following'
-                      ? 'Đang tải bài viết từ những người bạn theo dõi...'
-                      : activeFeedTab === 'qa'
-                        ? 'Đang tải các câu hỏi thảo luận học thuật...'
-                        : 'Đang tải bảng tin học thuật được gợi ý...'}
-                  </span>
-                </div>
-              ) : posts.length > 0 ? (
-                <>
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} variant="card" />
-                  ))}
-
-                  {/* Infinite Scroll Bottom Sentinel */}
-                  <div ref={sentinelRef} className="py-6 text-center">
-                    {isLoadingMore ? (
-                      <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                        <Loader2 className="h-4 w-4 animate-spin text-foreground" />
-                        <span>Đang nạp thêm bài viết phù hợp...</span>
-                      </div>
-                    ) : !hasMore && posts.length > 5 ? (
-                      <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        <span>Bạn đã xem hết các bài viết mới nhất</span>
-                      </div>
-                    ) : null}
-                  </div>
-                </>
-              ) : (
-                <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 m-3 sm:m-0 text-center">
-                  <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-                  <h3 className="text-sm font-bold text-foreground">
-                    {activeFeedTab === 'following'
-                      ? 'Chưa có bài viết từ người bạn theo dõi'
-                      : activeFeedTab === 'qa'
-                        ? 'Chưa có câu hỏi học thuật nào'
-                        : 'Chưa có bài viết nào'}
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1 mb-4 max-w-sm mx-auto leading-relaxed">
-                    {activeFeedTab === 'following'
-                      ? 'Hãy bấm theo dõi các Giảng viên, Trợ giảng hoặc bạn bè sinh viên cùng khoa để nhận bài viết mới nhất của họ tại đây!'
-                      : activeFeedTab === 'qa'
-                        ? 'Hãy là người đầu tiên đặt câu hỏi thắc mắc về bài tập, môn học hoặc đồ án để nhận lời giải chuẩn!'
-                        : 'Hãy là người đầu tiên chia sẻ kiến thức, kinh nghiệm học tập hoặc tài liệu học phần!'}
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => setCreatePostOpen(true)}
-                    className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
-                  >
-                    {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </main>
-
-          {/* 3. Right Sidebar (Desktop lg: and above) */}
-          <div className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto py-4">
-            <RightSidebar />
-          </div>
-        </div>
-
-        {/* Mobile Bottom Navigation */}
-        <MobileBottomNav />
       </div>
-    </AuthGuard>
+
+      {/* Ô soạn bài dạng thẻ (Composer card) */}
+      <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
+        <AcademicPostComposer />
+      </div>
+
+      {/* Danh sách bài viết dạng thẻ, cách nhau bằng khoảng trống */}
+      <div className="space-y-2.5 px-2 sm:px-0">
+        {isPostsLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-foreground" />
+            <span className="text-xs">
+              {activeFeedTab === 'following'
+                ? 'Đang tải bài viết từ những người bạn theo dõi...'
+                : activeFeedTab === 'qa'
+                  ? 'Đang tải các câu hỏi thảo luận học thuật...'
+                  : 'Đang tải bảng tin học thuật được gợi ý...'}
+            </span>
+          </div>
+        ) : posts.length > 0 ? (
+          <>
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} variant="card" />
+            ))}
+
+            {/* Infinite Scroll Bottom Sentinel */}
+            <div ref={sentinelRef} className="py-6 text-center">
+              {isLoadingMore ? (
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-foreground" />
+                  <span>Đang nạp thêm bài viết phù hợp...</span>
+                </div>
+              ) : !hasMore && posts.length > 5 ? (
+                <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  <span>Bạn đã xem hết các bài viết mới nhất</span>
+                </div>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 m-3 sm:m-0 text-center">
+            <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <h3 className="text-sm font-bold text-foreground">
+              {activeFeedTab === 'following'
+                ? 'Chưa có bài viết từ người bạn theo dõi'
+                : activeFeedTab === 'qa'
+                  ? 'Chưa có câu hỏi học thuật nào'
+                  : 'Chưa có bài viết nào'}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1 mb-4 max-w-sm mx-auto leading-relaxed">
+              {activeFeedTab === 'following'
+                ? 'Hãy bấm theo dõi các Giảng viên, Trợ giảng hoặc bạn bè sinh viên cùng khoa để nhận bài viết mới nhất của họ tại đây!'
+                : activeFeedTab === 'qa'
+                  ? 'Hãy là người đầu tiên đặt câu hỏi thắc mắc về bài tập, môn học hoặc đồ án để nhận lời giải chuẩn!'
+                  : 'Hãy là người đầu tiên chia sẻ kiến thức, kinh nghiệm học tập hoặc tài liệu học phần!'}
+            </p>
+            <Button
+              size="sm"
+              onClick={() => setCreatePostOpen(true)}
+              className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
+            >
+              {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
   )
 }
 
