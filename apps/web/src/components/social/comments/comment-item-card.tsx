@@ -10,6 +10,8 @@ import { CommentComposer } from './comment-composer'
 import { Heart, MessageSquare, CheckCircle2, Trash2, Check } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { CommentItem } from '@pu/schemas'
+import { useQueryClient } from '@tanstack/react-query'
+import { prefetchProfile } from '@/hooks/use-profile'
 
 interface CommentItemCardProps {
   comment: CommentItem
@@ -36,6 +38,7 @@ export function CommentItemCard({
   onReplySubmit
 }: CommentItemCardProps) {
   const [showReplyComposer, setShowReplyComposer] = useState(false)
+  const queryClient = useQueryClient()
 
   const authorInitials = (
     comment.author?.displayName ||
@@ -70,6 +73,7 @@ export function CommentItemCard({
       <div className="flex items-start justify-between">
         <Link
           href={`/${comment.author?.username || 'user'}`}
+          onMouseEnter={() => prefetchProfile(queryClient, comment.author?.username || '')}
           className="flex items-center space-x-2.5 group/author cursor-pointer"
         >
           <Avatar className="h-7 w-7 border border-border select-none shadow-xs">

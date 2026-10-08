@@ -26,6 +26,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
     hasMore,
     remainingCount,
     totalCount,
+    isLoaded,
     fetchMoreComments,
     addComment,
     toggleLike,
@@ -54,8 +55,8 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   }, [comments])
 
   useEffect(() => {
-    if (isOpen && !isLoading) onCountChange?.(totalCount)
-  }, [isOpen, isLoading, totalCount, onCountChange])
+    if (isOpen && isLoaded) onCountChange?.(totalCount)
+  }, [isOpen, isLoaded, totalCount, onCountChange])
 
   // Gửi phản hồi ⇒ mở luồng của bình luận gốc để thấy ngay
   const submitReply = async (text: string, parentId: string, media?: string[]) => {

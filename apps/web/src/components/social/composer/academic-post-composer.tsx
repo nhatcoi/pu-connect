@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { useAppStore } from '@/store'
+import { useQueryClient } from '@tanstack/react-query'
+import { onPostCreated as notifyPostCreated } from '@/lib/post-cache'
 import { toast } from 'sonner'
 import { Loader2, Sparkles, X, Users, Tag, BarChart2 } from 'lucide-react'
 import { apiClient, uploadFileToR2 } from '@/lib/api-client'
@@ -33,7 +35,7 @@ export function AcademicPostComposer({
   defaultCommunitySlug
 }: AcademicPostComposerProps = {}) {
   const user = useAppStore((state) => state.user)
-  const addPost = useAppStore((state) => state.addPost)
+  const queryClient = useQueryClient()
 
   // Expanded state
   const [isExpanded, setIsExpanded] = useState(false)
@@ -234,7 +236,8 @@ export function AcademicPostComposer({
       })
 
       if (response && response.data) {
-        addPost(response.data)
+        // Chèn vào mọi danh sách liên quan trong cache (feed, cộng đồng, hồ sơ)
+        notifyPostCreated(queryClient, response.data, useAppStore.getState().user?.username)
         if (onPostCreated) {
           onPostCreated(response.data)
         }

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useQuery, type QueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
 import { graphqlClient } from '@/lib/graphql-client'
 import type { PostItem, DocumentItem, StudyGroup } from '@pu/schemas'
 
@@ -125,40 +126,35 @@ const GET_USER_PROFILE_QUERY = `
   }
 `
 
-export function useProfile(username: string) {
-  const [profile, setProfile] = useState<UserProfileData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+async function fetchProfile(username: string): Promise<UserProfileData> {
+  const data = await graphqlClient<{ userProfile: UserProfileData }>(GET_USER_PROFILE_QUERY, { username })
+  if (!data?.userProfile) throw new Error('Không tìm thấy người dùng')
+  return data.userProfile
+}
 
-  const fetchProfile = useCallback(async () => {
-    if (!username) return
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await graphqlClient<{ userProfile: UserProfileData }>(
-        GET_USER_PROFILE_QUERY,
-        { username }
-      )
-      if (data && data.userProfile) {
-        setProfile(data.userProfile)
-      } else {
-        setError('Không tìm thấy người dùng')
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Lỗi khi tải thông tin hồ sơ')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [username])
+const PROFILE_STALE_MS = 5 * 60 * 1000
 
-  useEffect(() => {
-    fetchProfile()
-  }, [fetchProfile])
-
+// Hồ sơ (kèm bài viết, tài liệu, nhóm) cache 5 phút theo username
+export function profileQueryOptions(username: string) {
   return {
-    profile,
-    isLoading,
-    error,
-    refetch: fetchProfile
+    queryKey: queryKeys.profile(username),
+    queryFn: () => fetchProfile(username),
+    staleTime: PROFILE_STALE_MS
+  }
+}
+
+// Tải trước khi rê chuột vào link hồ sơ ⇒ mở trang là có dữ liệu ngay
+export function prefetchProfile(queryClient: QueryClient, username: string) {
+  if (!username) return
+  void queryClient.prefetchQuery(profileQueryOptions(username))
+}
+
+export function useProfile(username: string) {
+  const query = useQuery({ ...profileQueryOptions(username), enabled: !!username })
+  return {
+    profile: query.data ?? null,
+    isLoading: query.isPending,
+    error: query.error ? query.error.message || 'Lỗi khi tải thông tin hồ sơ' : null,
+    refetch: query.refetch
   }
 }

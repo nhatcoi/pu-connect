@@ -54,6 +54,10 @@ import { apiClient } from '@/lib/api-client'
 import { graphqlClient } from '@/lib/graphql-client'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
+import { prefetchProfile } from '@/hooks/use-profile'
+import { prefetchCommunity } from '@/hooks/use-community'
+import { patchPostEverywhere, removePostEverywhere, patchAuthorFollowed, invalidateFollowRelated } from '@/lib/post-cache'
 
 // Helper: Convert UUID / raw faculty code into human-readable label
 function getCleanCourseBadge(post: PostItem) {
@@ -135,9 +139,13 @@ export function PostCard({
   const [post, setPost] = useState<PostItem>(initialPost)
   const [isCommentsOpen, setIsCommentsOpen] = useState(defaultCommentsOpen)
   // Đồng bộ bộ đếm bình luận với danh sách thực tế
+  const queryClient = useQueryClient()
   const handleCommentsCount = useCallback(
-    (count: number) => setPost((prev) => (prev.commentsCount === count ? prev : { ...prev, commentsCount: count })),
-    []
+    (count: number) => {
+      setPost((prev) => (prev.commentsCount === count ? prev : { ...prev, commentsCount: count }))
+      patchPostEverywhere(queryClient, initialPost.id, (p) => (p.commentsCount === count ? p : { ...p, commentsCount: count }))
+    },
+    [queryClient, initialPost.id]
   )
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
@@ -162,12 +170,8 @@ export function PostCard({
   const [isFollowing, setIsFollowing] = useState(initialPost.isAuthorFollowedByMe || false)
 
   const user = useAppStore((state) => state.user)
-  const toggleLikePost = useAppStore((state) => state.toggleLikePost)
-  const toggleBookmarkPost = useAppStore((state) => state.toggleBookmarkPost)
-  const togglePinPost = useAppStore((state) => state.togglePinPost)
-  const setAuthorFollowed = useAppStore((state) => state.setAuthorFollowed)
-  const setPosts = useAppStore((state) => state.setPosts)
-  const storePosts = useAppStore((state) => state.posts)
+  // Cập nhật bài này ở mọi danh sách đang cache (feed, cộng đồng, hồ sơ, search, chi tiết)
+  const patchEverywhere = (updater: (p: PostItem) => PostItem) => patchPostEverywhere(queryClient, post.id, updater)
 
   // Sync state if initialPost changes
   useEffect(() => {
@@ -190,7 +194,7 @@ export function PostCard({
       likesCount: Math.max(0, newCount)
     }))
 
-    toggleLikePost(post.id)
+    patchEverywhere((p) => ({ ...p, isLikedByMe: newIsLiked, likesCount: Math.max(0, newCount) }))
 
     if (onLikeToggle) {
       onLikeToggle(post.id, newIsLiked)
@@ -204,7 +208,11 @@ export function PostCard({
         isLikedByMe: !newIsLiked,
         likesCount: Math.max(0, (prev.likesCount || 0) + (newIsLiked ? -1 : 1))
       }))
-      toggleLikePost(post.id)
+      patchEverywhere((p) => ({
+        ...p,
+        isLikedByMe: !newIsLiked,
+        likesCount: Math.max(0, (p.likesCount || 0) + (newIsLiked ? -1 : 1))
+      }))
       toast.error('Không thể thích bài viết. Vui lòng thử lại!')
     }
   }
@@ -218,10 +226,12 @@ export function PostCard({
       isBookmarkedByMe: newIsBookmarked
     }))
 
-    toggleBookmarkPost(post.id)
+    patchEverywhere((p) => ({ ...p, isBookmarkedByMe: newIsBookmarked }))
 
     try {
       await apiClient(`/posts/${post.id}/bookmark`, { method: 'POST' })
+      // Tab "Đã lưu" tải lại khi mở
+      queryClient.invalidateQueries({ queryKey: ['feed', 'bookmarks'] })
       toast.success(
         newIsBookmarked
           ? 'Đã lưu bài viết vào mục Đã lưu'
@@ -232,7 +242,7 @@ export function PostCard({
         ...prev,
         isBookmarkedByMe: !newIsBookmarked
       }))
-      toggleBookmarkPost(post.id)
+      patchEverywhere((p) => ({ ...p, isBookmarkedByMe: !newIsBookmarked }))
       toast.error('Không thể cập nhật bài viết đã lưu')
     }
   }
@@ -245,7 +255,7 @@ export function PostCard({
       ...prev,
       isPinned: newIsPinned
     }))
-    togglePinPost(post.id, newIsPinned)
+    patchEverywhere((p) => ({ ...p, isPinned: newIsPinned }))
 
     try {
       await apiClient(`/posts/${post.id}/pin`, { method: 'POST' })
@@ -254,7 +264,7 @@ export function PostCard({
         ...prev,
         isPinned: !newIsPinned
       }))
-      togglePinPost(post.id, !newIsPinned)
+      patchEverywhere((p) => ({ ...p, isPinned: !newIsPinned }))
       toast.error('Không thể cập nhật trạng thái ghim bài viết')
     }
   }
@@ -270,7 +280,7 @@ export function PostCard({
     const nextState = !previousState
 
     setIsFollowing(nextState)
-    setAuthorFollowed(post.author.id, nextState)
+    patchAuthorFollowed(queryClient, post.author.id, nextState)
 
     try {
       const data = await graphqlClient<{
@@ -283,7 +293,8 @@ export function PostCard({
 
       if (data?.toggleFollow) {
         setIsFollowing(data.toggleFollow.isFollowing)
-        setAuthorFollowed(post.author.id, data.toggleFollow.isFollowing)
+        patchAuthorFollowed(queryClient, post.author.id, data.toggleFollow.isFollowing)
+        invalidateFollowRelated(queryClient, post.author.username)
       }
       toast.success(
         nextState
@@ -292,7 +303,7 @@ export function PostCard({
       )
     } catch {
       setIsFollowing(previousState)
-      setAuthorFollowed(post.author.id, previousState)
+      patchAuthorFollowed(queryClient, post.author.id, previousState)
       toast.error('Không thể cập nhật trạng thái theo dõi')
     }
   }
@@ -311,7 +322,7 @@ export function PostCard({
     try {
       await apiClient(`/posts/${post.id}`, { method: 'DELETE' })
       toast.success('Đã xóa bài viết')
-      setPosts(storePosts.filter((p) => p.id !== post.id))
+      removePostEverywhere(queryClient, post.id)
       if (onDeleteSuccess) {
         onDeleteSuccess(post.id)
       }
@@ -386,6 +397,7 @@ export function PostCard({
           <div className="shrink-0 pt-0.5">
             <Link
               href={`/${post.author?.username || 'user'}`}
+              onMouseEnter={() => prefetchProfile(queryClient, post.author?.username || '')}
               className="cursor-pointer group block"
             >
               <Avatar className="h-9 w-9 transition-transform group-hover:scale-105">
@@ -405,6 +417,7 @@ export function PostCard({
               <div className="flex items-center space-x-1.5 flex-wrap min-w-0">
                 <Link
                   href={`/${post.author?.username || 'user'}`}
+                  onMouseEnter={() => prefetchProfile(queryClient, post.author?.username || '')}
                   className="font-semibold text-[13px] text-foreground hover:underline transition-colors truncate"
                 >
                   {post.author?.displayName || 'Sinh viên Phenikaa'}
@@ -443,6 +456,7 @@ export function PostCard({
                 {post.communitySlug && (
                   <Link
                     href={`/c/${post.communitySlug}`}
+                    onMouseEnter={() => post.communitySlug && prefetchCommunity(queryClient, post.communitySlug)}
                     onClick={(e) => e.stopPropagation()}
                     className="text-[11px] text-muted-foreground hover:text-primary hover:underline transition-colors shrink-0"
                   >
@@ -766,7 +780,7 @@ export function PostCard({
           onOpenChange={setIsEditDialogOpen}
           onSuccess={(updatedPost) => {
             setPost(updatedPost)
-            setPosts(storePosts.map((p) => (p.id === post.id ? updatedPost : p)))
+            patchPostEverywhere(queryClient, post.id, () => updatedPost)
           }}
         />
       )}

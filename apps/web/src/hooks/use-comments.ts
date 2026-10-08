@@ -1,119 +1,117 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
+import { queryKeys } from '@/lib/query-keys'
+import { flattenPages } from '@/lib/post-cache'
 import type { CommentItem } from '@pu/schemas'
 import { toast } from 'sonner'
 
 const INITIAL_COMMENT_LIMIT = 3
 const BATCH_COMMENT_LIMIT = 10
 
-export function useComments(postId: string, initialOpen = false) {
-  const [comments, setComments] = useState<CommentItem[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [totalCount, setTotalCount] = useState(0)
-  const [remainingCount, setRemainingCount] = useState(0)
-  const [hasMore, setHasMore] = useState(false)
+// Một trang: bình luận gốc + toàn bộ phản hồi của chúng (API phân trang theo bình luận gốc)
+interface CommentPage {
+  items: CommentItem[]
+  hasMore: boolean
+  nextOffset: number
+  remainingCount: number
+  total: number
+}
 
-  const offsetRef = useRef(0)
+type CommentsData = InfiniteData<CommentPage, number>
+
+async function fetchCommentPage(postId: string, offset: number): Promise<CommentPage> {
+  const limit = offset === 0 ? INITIAL_COMMENT_LIMIT : BATCH_COMMENT_LIMIT
+  const res = await apiClient<any>(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`)
+  const items: CommentItem[] = Array.isArray(res?.data) ? res.data : res?.data?.data || []
+  return {
+    items,
+    hasMore: res?.hasMore ?? res?.data?.hasMore ?? false,
+    nextOffset: res?.nextOffset ?? offset + items.filter((c) => !c.parentId).length,
+    remainingCount: res?.remainingCount ?? res?.data?.remainingCount ?? 0,
+    total: res?.total ?? res?.data?.total ?? items.length
+  }
+}
+
+// Bình luận của một bài: cache theo postId (đóng/mở lại hoặc quay lại trang hiện ngay)
+export function useComments(postId: string, initialOpen = false) {
+  const queryClient = useQueryClient()
+  const key = useMemo(() => queryKeys.comments(postId), [postId])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const query = useInfiniteQuery({
+    queryKey: key,
+    queryFn: ({ pageParam }) => fetchCommentPage(postId, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (last) => (last.hasMore ? last.nextOffset : undefined),
+    enabled: initialOpen && !!postId,
+    staleTime: 30 * 1000
+  })
+
+  const comments = flattenPages(query.data)
+  const lastPage = query.data?.pages[query.data.pages.length - 1]
   const commentsRef = useRef<CommentItem[]>([])
   commentsRef.current = comments
 
-  const fetchComments = useCallback(async () => {
-    setIsLoading(true)
-    offsetRef.current = 0
-    try {
-      const res = await apiClient<{
-        success: boolean
-        data: CommentItem[]
-        total: number
-        hasMore: boolean
-        remainingCount: number
-        nextOffset?: number
-      }>(`/posts/${postId}/comments?limit=${INITIAL_COMMENT_LIMIT}&offset=0`)
-
-      if (res) {
-        const items = Array.isArray(res.data) ? res.data : (res.data as any)?.data || []
-        setComments(items)
-        setTotalCount(res.total ?? (res.data as any)?.total ?? items.length)
-        setHasMore(res.hasMore ?? (res.data as any)?.hasMore ?? false)
-        setRemainingCount(res.remainingCount ?? (res.data as any)?.remainingCount ?? 0)
-        // Offset tính theo bình luận gốc (API trả kèm phản hồi)
-        offsetRef.current = res.nextOffset ?? items.filter((c: CommentItem) => !c.parentId).length
-      }
-    } catch (err: any) {
-      // Quiet fail
-    } finally {
-      setIsLoading(false)
-    }
-  }, [postId])
-
-  const fetchMoreComments = useCallback(async () => {
-    if (isLoadingMore || !hasMore) return
-    setIsLoadingMore(true)
-    try {
-      const res = await apiClient<any>(
-        `/posts/${postId}/comments?limit=${BATCH_COMMENT_LIMIT}&offset=${offsetRef.current}`
+  // Sửa dữ liệu cache: áp hàm cho danh sách bình luận của từng trang, chỉnh tổng số
+  const update = useCallback(
+    (fn: (items: CommentItem[]) => CommentItem[], totalDelta = 0) => {
+      queryClient.setQueryData<CommentsData>(key, (old) =>
+        old
+          ? {
+              ...old,
+              pages: old.pages.map((p) => ({ ...p, items: fn(p.items), total: Math.max(0, p.total + totalDelta) }))
+            }
+          : old
       )
+    },
+    [queryClient, key]
+  )
 
-      const newItems: CommentItem[] = res
-        ? Array.isArray(res.data)
-          ? res.data
-          : (res.data as any)?.data || []
-        : []
-
-      if (newItems.length > 0) {
-        // Deduplicate
-        setComments((prev) => {
-          const currentIds = new Set(prev.map((c) => c.id))
-          const filtered = newItems.filter((c) => !currentIds.has(c.id))
-          return [...prev, ...filtered]
-        })
-        setTotalCount(res.total ?? (res.data as any)?.total ?? totalCount)
-        setHasMore(res.hasMore ?? (res.data as any)?.hasMore ?? false)
-        setRemainingCount(res.remainingCount ?? (res.data as any)?.remainingCount ?? 0)
-        offsetRef.current = res.nextOffset ?? offsetRef.current + newItems.filter((c) => !c.parentId).length
-      } else {
-        setHasMore(false)
-        setRemainingCount(0)
-      }
-    } catch (err: any) {
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query
+  const fetchMoreComments = useCallback(async () => {
+    if (!hasNextPage || isFetchingNextPage) return
+    try {
+      await fetchNextPage()
+    } catch {
       toast.error('Không thể tải thêm bình luận')
-    } finally {
-      setIsLoadingMore(false)
     }
-  }, [postId, isLoadingMore, hasMore])
-
-  useEffect(() => {
-    if (initialOpen) {
-      fetchComments()
-    }
-  }, [fetchComments, initialOpen])
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const addComment = useCallback(
     async (content: string, parentId?: string, mediaUrls: string[] = []) => {
       if (!content.trim()) return null
       setIsSubmitting(true)
       try {
-        const res = await apiClient<{ success: boolean; data: CommentItem }>(
-          `/posts/${postId}/comments`,
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              content: content.trim(),
-              parentId,
-              mediaUrls
+        const res = await apiClient<{ success: boolean; data: CommentItem }>(`/posts/${postId}/comments`, {
+          method: 'POST',
+          body: JSON.stringify({ content: content.trim(), parentId, mediaUrls })
+        })
+        if (res?.data) {
+          const created = res.data
+          // Chưa mở bình luận lần nào ⇒ chưa có cache: tạo trang đầu chứa bình luận mới
+          if (!queryClient.getQueryData(key)) {
+            queryClient.setQueryData<CommentsData>(key, {
+              pages: [{ items: [created], hasMore: false, nextOffset: 1, remainingCount: 0, total: 1 }],
+              pageParams: [0]
+            })
+          } else {
+            queryClient.setQueryData<CommentsData>(key, (old) => {
+              if (!old) return old
+              const pages = old.pages.map((p) => ({ ...p, total: p.total + 1 }))
+              const last = pages.length - 1
+              pages[last] = {
+                ...pages[last],
+                items: [...pages[last].items, created],
+                // Bình luận gốc mới làm lệch offset phân trang theo gốc
+                nextOffset: created.parentId ? pages[last].nextOffset : pages[last].nextOffset + 1
+              }
+              return { ...old, pages }
             })
           }
-        )
-
-        if (res && res.data) {
-          setComments((prev) => [...prev, res.data])
-          setTotalCount((prev) => prev + 1)
-          if (!res.data.parentId) offsetRef.current += 1
-          return res.data
+          return created
         }
       } catch (err: any) {
         toast.error(err.message || 'Không thể gửi bình luận')
@@ -122,85 +120,86 @@ export function useComments(postId: string, initialOpen = false) {
       }
       return null
     },
-    [postId]
+    [postId, queryClient, key]
   )
 
-  const toggleLike = useCallback(async (commentId: string) => {
-    // Optimistic toggle
-    setComments((prev) =>
-      prev.map((c) => {
-        if (c.id === commentId) {
-          const newLiked = !c.isLikedByMe
-          return {
-            ...c,
-            isLikedByMe: newLiked,
-            likesCount: newLiked ? c.likesCount + 1 : Math.max(0, c.likesCount - 1)
-          }
-        }
-        return c
-      })
-    )
-
-    try {
-      await apiClient(`/comments/${commentId}/like`, { method: 'POST' })
-    } catch (err: any) {
-      toast.error('Không thể thực hiện tương tác')
-    }
-  }, [])
-
-  const acceptSolution = useCallback(async (commentId: string) => {
-    try {
-      const res = await apiClient<{ isSolution: boolean; message: string }>(
-        `/comments/${commentId}/accept-solution`,
-        { method: 'POST' }
-      )
-
-      if (res) {
-        setComments((prev) =>
-          prev.map((c) => ({
-            ...c,
-            isSolution: c.id === commentId ? res.isSolution : false
-          }))
+  const toggleLike = useCallback(
+    async (commentId: string) => {
+      const flip = (items: CommentItem[]) =>
+        items.map((c) =>
+          c.id === commentId
+            ? {
+                ...c,
+                isLikedByMe: !c.isLikedByMe,
+                likesCount: !c.isLikedByMe ? c.likesCount + 1 : Math.max(0, c.likesCount - 1)
+              }
+            : c
         )
-        toast.success(res.message)
+      update(flip) // lạc quan
+      try {
+        await apiClient(`/comments/${commentId}/like`, { method: 'POST' })
+      } catch {
+        update(flip) // hoàn tác
+        toast.error('Không thể thực hiện tương tác')
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể duyệt câu trả lời')
-    }
-  }, [])
+    },
+    [update]
+  )
 
-  const deleteComment = useCallback(async (commentId: string) => {
-    try {
-      await apiClient(`/comments/${commentId}`, { method: 'DELETE' })
-      // Xóa cả phản hồi con (server ON DELETE CASCADE)
-      const gone = new Set([commentId])
-      let grew = true
-      while (grew) {
-        grew = false
-        for (const c of commentsRef.current) {
-          if (c.parentId && gone.has(c.parentId) && !gone.has(c.id)) {
-            gone.add(c.id)
-            grew = true
+  const acceptSolution = useCallback(
+    async (commentId: string) => {
+      try {
+        const res = await apiClient<{ isSolution: boolean; message: string }>(
+          `/comments/${commentId}/accept-solution`,
+          { method: 'POST' }
+        )
+        if (res) {
+          update((items) => items.map((c) => ({ ...c, isSolution: c.id === commentId ? res.isSolution : false })))
+          toast.success(res.message)
+        }
+      } catch (err: any) {
+        toast.error(err.message || 'Không thể duyệt câu trả lời')
+      }
+    },
+    [update]
+  )
+
+  const deleteComment = useCallback(
+    async (commentId: string) => {
+      try {
+        await apiClient(`/comments/${commentId}`, { method: 'DELETE' })
+        // Xóa cả phản hồi con (server ON DELETE CASCADE)
+        const gone = new Set([commentId])
+        let grew = true
+        while (grew) {
+          grew = false
+          for (const c of commentsRef.current) {
+            if (c.parentId && gone.has(c.parentId) && !gone.has(c.id)) {
+              gone.add(c.id)
+              grew = true
+            }
           }
         }
+        update((items) => items.filter((c) => !gone.has(c.id)), -gone.size)
+        toast.success('Đã xóa bình luận')
+      } catch (err: any) {
+        toast.error(err.message || 'Không thể xóa bình luận')
       }
-      setComments((prev) => prev.filter((c) => !gone.has(c.id)))
-      setTotalCount((prev) => Math.max(0, prev - gone.size))
-      toast.success('Đã xóa bình luận')
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể xóa bình luận')
-    }
-  }, [])
+    },
+    [update]
+  )
 
   return {
     comments,
-    isLoading,
-    isLoadingMore,
+    isLoading: initialOpen && query.isPending,
+    isLoadingMore: isFetchingNextPage,
     isSubmitting,
-    totalCount,
-    hasMore,
-    remainingCount,
-    fetchComments,
+    // Đã có dữ liệu thật từ server (tránh báo tổng = 0 trước khi tải xong)
+    isLoaded: !!query.data,
+    totalCount: lastPage?.total ?? 0,
+    hasMore: !!hasNextPage,
+    remainingCount: lastPage?.remainingCount ?? 0,
+    fetchComments: query.refetch,
     fetchMoreComments,
     addComment,
     toggleLike,

@@ -14,6 +14,8 @@ interface SlidingTabsProps<T extends string> {
   items: SlidingTabItem<T>[]
   value: T
   onChange: (id: T) => void
+  // Rê chuột / focus vào tab (dùng để tải trước dữ liệu tab)
+  onItemHover?: (id: T) => void
   className?: string
   tabClassName?: string
 }
@@ -23,6 +25,7 @@ export function SlidingTabs<T extends string>({
   items,
   value,
   onChange,
+  onItemHover,
   className,
   tabClassName
 }: SlidingTabsProps<T>) {
@@ -42,6 +45,8 @@ export function SlidingTabs<T extends string>({
               role="tab"
               aria-selected={value === item.id}
               onClick={() => onChange(item.id)}
+              onMouseEnter={onItemHover ? () => onItemHover(item.id) : undefined}
+              onFocus={onItemHover ? () => onItemHover(item.id) : undefined}
               className={cn(
                 'relative py-3 whitespace-nowrap cursor-pointer transition-colors',
                 value === item.id ? 'text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground',

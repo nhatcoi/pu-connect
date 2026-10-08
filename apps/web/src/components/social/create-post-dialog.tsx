@@ -14,6 +14,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { TiptapEditor } from '@/components/editor/tiptap-editor'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { useAppStore } from '@/store'
+import { useQueryClient } from '@tanstack/react-query'
+import { onPostCreated as notifyPostCreated } from '@/lib/post-cache'
 import { toast } from 'sonner'
 import { FileUp, Sparkles, Loader2 } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
@@ -22,7 +24,7 @@ import type { PostItem } from '@pu/schemas'
 export function CreatePostDialog() {
   const isOpen = useAppStore((state) => state.isCreatePostOpen)
   const setOpen = useAppStore((state) => state.setCreatePostOpen)
-  const addPost = useAppStore((state) => state.addPost)
+  const queryClient = useQueryClient()
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -54,7 +56,8 @@ export function CreatePostDialog() {
       })
 
       if (response && response.data) {
-        addPost(response.data)
+        // Chèn vào mọi danh sách liên quan trong cache (feed, cộng đồng, hồ sơ)
+        notifyPostCreated(queryClient, response.data, useAppStore.getState().user?.username)
         toast.success('Đã đăng bài viết')
       }
 

@@ -1,7 +1,10 @@
 'use client'
 
 import { FEATURES } from '@/lib/features'
-import React, { useState, useEffect } from 'react'
+import React from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { prefetchProfile } from '@/hooks/use-profile'
+import { queryKeys } from '@/lib/query-keys'
 import { graphqlClient } from '@/lib/graphql-client'
 import { FollowButton } from '@/components/profile/follow-button'
 import { ProfileCompletionCard } from '@/components/profile/profile-completion-card'
@@ -39,29 +42,16 @@ const GET_SUGGESTED_USERS_QUERY = `
 `
 
 export function RightSidebar() {
-  const [suggestedUsers, setSuggestedUsers] = useState<SuggestedUser[]>([])
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false)
-
-  useEffect(() => {
-    const fetchSuggested = async () => {
-      setIsLoadingUsers(true)
-      try {
-        const data = await graphqlClient<{ suggestedUsers: SuggestedUser[] }>(
-          GET_SUGGESTED_USERS_QUERY,
-          { limit: 3 }
-        )
-        if (data && Array.isArray(data.suggestedUsers)) {
-          setSuggestedUsers(data.suggestedUsers)
-        }
-      } catch {
-        // Fallback static
-      } finally {
-        setIsLoadingUsers(false)
-      }
-    }
-
-    fetchSuggested()
-  }, [])
+  const queryClient = useQueryClient()
+  // Gợi ý theo dõi cache 10 phút (không tải lại mỗi lần chuyển trang)
+  const { data: suggestedUsers = [], isPending: isLoadingUsers } = useQuery({
+    queryKey: queryKeys.suggestedUsers(3),
+    queryFn: async () => {
+      const data = await graphqlClient<{ suggestedUsers: SuggestedUser[] }>(GET_SUGGESTED_USERS_QUERY, { limit: 3 })
+      return Array.isArray(data?.suggestedUsers) ? data.suggestedUsers : []
+    },
+    staleTime: 10 * 60 * 1000
+  })
 
   const trendingTopics = [
     { tag: '#DoAnTotNghiep2026', count: '142 bài viết', category: 'K15 Đồ án' },
@@ -110,7 +100,7 @@ export function RightSidebar() {
         ) : (
           displayUsers.slice(0, 3).map((item) => (
             <div key={item.id || item.username} className="flex items-center justify-between gap-2 px-2 py-1.5">
-              <Link href={`/${item.username}`} className="flex items-center gap-2.5 min-w-0 flex-1 group">
+              <Link href={`/${item.username}`} onMouseEnter={() => prefetchProfile(queryClient, item.username)} className="flex items-center gap-2.5 min-w-0 flex-1 group">
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarImage
                     src={item.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username}`}

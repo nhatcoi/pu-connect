@@ -1,66 +1,63 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { useInfiniteQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api-client'
+import { queryKeys, type CommunitySort } from '@/lib/query-keys'
+import { flattenPages, prependPost, type OffsetPage } from '@/lib/post-cache'
 import type { Community, PostItem } from '@pu/schemas'
 import { toast } from 'sonner'
 
-export function useCommunity(slug: string, initialSort: 'hot' | 'new' | 'top' = 'hot') {
-  const [community, setCommunity] = useState<Community | null>(null)
-  const [posts, setPosts] = useState<PostItem[]>([])
-  const [sort, setSort] = useState<'hot' | 'new' | 'top'>(initialSort)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(false)
-  const [nextOffset, setNextOffset] = useState(0)
+type CommunityPage = OffsetPage<PostItem, Community>
+
+async function fetchCommunityPage(slug: string, sort: CommunitySort, offset: number): Promise<CommunityPage> {
+  const res = await apiClient<{ success: boolean; data: PostItem[]; community: Community; hasMore: boolean; nextOffset: number }>(
+    `/communities/${slug}/posts?limit=10&offset=${offset}&sort=${sort}`
+  )
+  return { items: res.data, hasMore: res.hasMore, nextOffset: res.nextOffset, meta: res.community }
+}
+
+export function communityQueryOptions(slug: string, sort: CommunitySort) {
+  return {
+    queryKey: queryKeys.community(slug, sort),
+    queryFn: ({ pageParam }: { pageParam: number }) => fetchCommunityPage(slug, sort, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (last: CommunityPage) => (last.hasMore ? last.nextOffset : undefined),
+    staleTime: 2 * 60 * 1000
+  }
+}
+
+// Tải trước khi rê chuột vào link cộng đồng
+export function prefetchCommunity(queryClient: QueryClient, slug: string) {
+  void queryClient.prefetchInfiniteQuery(communityQueryOptions(slug, 'hot'))
+}
+
+// Cập nhật thông tin cộng đồng ở mọi kiểu sắp xếp đã cache + danh sách cộng đồng
+function patchCommunity(qc: QueryClient, slug: string, patch: (c: Community) => Community) {
+  qc.setQueriesData<InfiniteData<CommunityPage>>({ queryKey: queryKeys.communityAll(slug) }, (old) =>
+    old ? { ...old, pages: old.pages.map((p) => (p.meta ? { ...p, meta: patch(p.meta) } : p)) } : old
+  )
+  qc.setQueriesData<Community[]>({ queryKey: queryKeys.communities }, (old) =>
+    old?.map((c) => (c.slug === slug ? patch(c) : c))
+  )
+}
+
+export function useCommunity(slug: string, initialSort: CommunitySort = 'hot') {
+  const queryClient = useQueryClient()
+  const [sort, setSort] = useState<CommunitySort>(initialSort)
   const [isJoining, setIsJoining] = useState(false)
 
-  // 1. Fetch Community Details & Initial Posts
-  const fetchCommunityData = useCallback(async () => {
-    if (!slug) return
-    setIsLoading(true)
-    try {
-      const res = await apiClient<{ success: boolean; data: PostItem[]; community: Community; hasMore: boolean; nextOffset: number }>(
-        `/communities/${slug}/posts?limit=10&offset=0&sort=${sort}`
-      )
-      setCommunity(res.community)
-      setPosts(res.data)
-      setHasMore(res.hasMore)
-      setNextOffset(res.nextOffset)
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể tải thông tin cộng đồng')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [slug, sort])
+  // Mỗi kiểu sắp xếp một cache riêng ⇒ đổi tab Hot/Mới/Top tức thì khi đã xem
+  const query = useInfiniteQuery({ ...communityQueryOptions(slug, sort), enabled: !!slug })
 
-  useEffect(() => {
-    fetchCommunityData()
-  }, [fetchCommunityData])
+  const community = query.data?.pages[0]?.meta ?? null
+  const posts = flattenPages(query.data)
 
-  // 2. Fetch More Posts (Infinite Scroll)
-  const fetchMore = useCallback(async () => {
-    if (!hasMore || isLoadingMore || isLoading) return
-    setIsLoadingMore(true)
-    try {
-      const res = await apiClient<{ success: boolean; data: PostItem[]; hasMore: boolean; nextOffset: number }>(
-        `/communities/${slug}/posts?limit=10&offset=${nextOffset}&sort=${sort}`
-      )
-      setPosts((prev) => {
-        const existingIds = new Set(prev.map((p) => p.id))
-        const newPosts = res.data.filter((p) => !existingIds.has(p.id))
-        return [...prev, ...newPosts]
-      })
-      setHasMore(res.hasMore)
-      setNextOffset(res.nextOffset)
-    } catch (err: any) {
-      toast.error('Không thể tải thêm bài viết')
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }, [hasMore, isLoadingMore, isLoading, slug, nextOffset, sort])
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query
+  const fetchMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  // 3. Toggle Join Community
   const toggleJoin = useCallback(async () => {
     if (!community || isJoining) return
     setIsJoining(true)
@@ -69,41 +66,42 @@ export function useCommunity(slug: string, initialSort: 'hot' | 'new' | 'top' = 
         `/communities/${slug}/join`,
         { method: 'POST' }
       )
-      setCommunity((prev) =>
-        prev
-          ? {
-              ...prev,
-              isMember: res.isMember,
-              membersCount: res.membersCount
-            }
-          : null
-      )
+      patchCommunity(queryClient, slug, (c) => ({ ...c, isMember: res.isMember, membersCount: res.membersCount }))
       toast.success(res.message)
     } catch (err: any) {
       toast.error(err.message || 'Thao tác không thành công')
     } finally {
       setIsJoining(false)
     }
-  }, [community, isJoining, slug])
+  }, [community, isJoining, slug, queryClient])
 
-  // 4. Add Post Locally
-  const addPost = useCallback((newPost: PostItem) => {
-    setPosts((prev) => [newPost, ...prev])
-    setCommunity((prev) => (prev ? { ...prev, postsCount: prev.postsCount + 1 } : null))
-  }, [])
+  // Bài mới đăng trong cộng đồng: chèn lên đầu mọi kiểu sắp xếp + tăng bộ đếm
+  const addPost = useCallback(
+    (newPost: PostItem) => {
+      prependPost(queryClient, queryKeys.communityAll(slug), newPost)
+      patchCommunity(queryClient, slug, (c) => ({ ...c, postsCount: (c.postsCount || 0) + 1 }))
+    },
+    [queryClient, slug]
+  )
+
+  // Lỗi tải lần đầu: báo một lần
+  const loadError = query.isError && !query.data ? query.error?.message || 'Không thể tải thông tin cộng đồng' : null
+  useEffect(() => {
+    if (loadError) toast.error(loadError, { id: `community-${slug}` })
+  }, [loadError, slug])
 
   return {
     community,
     posts,
     sort,
     setSort,
-    isLoading,
-    isLoadingMore,
-    hasMore,
+    isLoading: query.isPending,
+    isLoadingMore: query.isFetchingNextPage,
+    hasMore: !!query.hasNextPage,
     fetchMore,
     toggleJoin,
     isJoining,
     addPost,
-    refresh: fetchCommunityData
+    refresh: query.refetch
   }
 }

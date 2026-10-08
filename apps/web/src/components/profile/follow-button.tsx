@@ -7,6 +7,8 @@ import { graphqlClient } from '@/lib/graphql-client'
 import { UserPlus, UserCheck, UserX, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
+import { patchAuthorFollowed, invalidateFollowRelated } from '@/lib/post-cache'
 
 interface FollowButtonProps {
   targetUserId: string
@@ -40,6 +42,7 @@ export function FollowButton({
   showIcon = true
 }: FollowButtonProps) {
   const currentUser = useAppStore((state) => state.user)
+  const queryClient = useQueryClient()
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing)
   const [isHovered, setIsHovered] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -87,6 +90,9 @@ export function FollowButton({
 
       if (data && data.toggleFollow) {
         setIsFollowing(data.toggleFollow.isFollowing)
+        // Đồng bộ cờ "đang theo dõi" ở mọi bài của người này + làm mới hồ sơ/gợi ý
+        patchAuthorFollowed(queryClient, targetUserId, data.toggleFollow.isFollowing)
+        invalidateFollowRelated(queryClient, targetUsername)
         if (onFollowChange) {
           onFollowChange(data.toggleFollow.isFollowing, data.toggleFollow.followersCount)
         }
