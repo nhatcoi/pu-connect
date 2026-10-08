@@ -11,6 +11,7 @@ import {
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
+import { VirtualPostList } from '@/components/social/virtual-post-list'
 import { Button } from '@/components/ui/button'
 import { usePosts, prefetchFeed } from '@/hooks/use-posts'
 import { useQueryClient } from '@tanstack/react-query'
@@ -106,9 +107,12 @@ function HomeContent() {
           </div>
         ) : posts.length > 0 ? (
           <>
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} variant="card" />
-            ))}
+            {/* Ảo hóa: chỉ các bài gần màn hình nằm trong DOM */}
+            <VirtualPostList
+              posts={posts}
+              cacheKey={`feed:${activeFeedTab}`}
+              renderPost={(post) => <PostCard post={post} variant="card" />}
+            />
 
             {/* Infinite Scroll Bottom Sentinel */}
             <div ref={sentinelRef} className="py-6 text-center">

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
+import { VirtualPostList } from '@/components/social/virtual-post-list'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PageAside } from '@/components/layout/page-aside'
@@ -315,9 +316,11 @@ export default function CommunityDetailPage({
                 </div>
               ) : (
                 <div className="space-y-2.5 px-2 sm:px-0">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} variant="card" />
-                  ))}
+                  <VirtualPostList
+                    posts={posts}
+                    cacheKey={`community:${slug}:${sort}`}
+                    renderPost={(post) => <PostCard post={post} variant="card" />}
+                  />
                 </div>
               )}
 
