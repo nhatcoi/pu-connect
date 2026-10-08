@@ -65,8 +65,10 @@ Thao tác **lạc quan**: cập nhật cache trước, gọi API, lỗi thì ho�
 ### 3.5. Tải trước (prefetch)
 Rê chuột / focus: tab feed khác (`prefetchFeed`), link hồ sơ (PostCard, bình luận, gợi ý theo dõi — `prefetchProfile`), link cộng đồng (`prefetchCommunity`). Code của trang do `<Link>` của Next tự tải trước.
 
-### 3.6. Vị trí cuộn
-Dữ liệu có sẵn trong cache ngay lần render đầu ⇒ trình duyệt/Next khôi phục vị trí cuộn khi Back.
+### 3.6. Ảo hóa danh sách & vị trí cuộn — `VirtualPostList`
+Feed và trang cộng đồng dùng `useWindowVirtualizer` (`@tanstack/react-virtual`): chỉ các bài gần màn hình (overscan 4) nằm trong DOM, bài xa được gỡ ⇒ feed dài không vượt ngưỡng DOM (~800–1.400 node theo Lighthouse) và không giữ ảnh đã giải mã ngoài màn hình. Kích thước đã đo của từng danh sách được lưu (`takeSnapshot` → `initialMeasurementsCache`, theo khóa `feed:<tab>` / `community:<slug>:<sort>`) nên khi Back, tổng chiều cao đúng và trình duyệt trả về đúng bài đang xem.
+
+Dữ liệu JSON không giới hạn số trang (mỗi bài ~2–5 KB; 500 bài ≈ 1–2,5 MB) — thứ tốn bộ nhớ là DOM và ảnh, đã được ảo hóa giới hạn.
 
 ## 4. Kết quả đo (dev, localhost)
 
@@ -75,6 +77,8 @@ Dữ liệu có sẵn trong cache ngay lần render đầu ⇒ trình duyệt/Ne
 | Lần đầu vào mỗi trang | page data + `/auth/me` ×2 + gợi ý theo dõi | **chỉ 1 request dữ liệu trang** |
 | Quay lại home / search / communities / profile | tải lại, spinner | **0 request, không spinner** (114–431 ms trong dev, chủ yếu là render) |
 | Back từ trang khác về feed đã cuộn 1500 px | về đầu trang | **giữ đúng 1500 px** |
+| Feed ảo hóa: số bài trong DOM khi cuộn hết feed | toàn bộ bài | **8–13 bài**; Back về đúng 2.600 px và đúng bài đang xem |
+| Thích ở feed → trang chi tiết → thích lại ở hồ sơ → về feed | — | trạng thái khớp ở cả 3 nơi (5→4→4→5→5) |
 | Thích bài ở feed rồi xem nơi khác | mỗi nơi một trạng thái | thống nhất qua `patchPostEverywhere` |
 
 ## 5. Quy tắc khi viết code mới
@@ -89,7 +93,6 @@ Dữ liệu có sẵn trong cache ngay lần render đầu ⇒ trình duyệt/Ne
 
 | Việc | Khi nào |
 |---|---|
-| Virtualize feed dài (`@tanstack/react-virtual` đã cài) | Khi feed thường > ~200 bài/phiên |
 | Nút "Có N bài mới" (socket báo bài mới) thay vì tự làm mới | Khi có lượng đăng bài đều |
 | `useDocuments`, study groups, campus → TanStack Query | Khi các tính năng này được dùng thật |
 | Prefetch dữ liệu ở server (RSC + `HydrationBoundary`) | Khi cần SEO / tối ưu lần tải đầu |
