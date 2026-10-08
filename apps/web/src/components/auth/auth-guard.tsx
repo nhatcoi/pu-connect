@@ -3,53 +3,24 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/store'
-import { apiClient } from '@/lib/api-client'
-import type { UserProfile } from '@pu/schemas'
+import { useSession } from '@/hooks/use-session'
 import { Loader2 } from 'lucide-react'
 
 interface AuthGuardProps {
   children: React.ReactNode
 }
 
-// Chỉ yêu cầu đã đăng nhập (không còn bước onboarding bắt buộc)
+// Chỉ yêu cầu đã đăng nhập. Phiên lấy từ cache ['me'] ⇒ chuyển trang không gọi lại /auth/me
 export function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter()
-  const user = useAppStore((state) => state.user)
-  const isLoadingAuth = useAppStore((state) => state.isLoadingAuth)
-  const setUser = useAppStore((state) => state.setUser)
+  const { user: sessionUser, isLoading } = useSession()
+  const storeUser = useAppStore((state) => state.user)
+  const user = storeUser ?? sessionUser
+  const isLoadingAuth = isLoading && !user
 
   useEffect(() => {
-    let isMounted = true
-    async function verifyAuth() {
-      try {
-        const res = await apiClient<{ success: boolean; data: UserProfile }>('/auth/me')
-        if (isMounted) {
-          if (res && res.data) {
-            setUser(res.data)
-          } else {
-            setUser(null)
-            router.replace('/')
-          }
-        }
-      } catch {
-        if (isMounted) {
-          setUser(null)
-          router.replace('/')
-        }
-      }
-    }
-
-    verifyAuth()
-    return () => {
-      isMounted = false
-    }
-  }, [setUser, router])
-
-  useEffect(() => {
-    if (!isLoadingAuth && !user) {
-      router.replace('/')
-    }
-  }, [isLoadingAuth, user, router])
+    if (!isLoading && !sessionUser && !storeUser) router.replace('/')
+  }, [isLoading, sessionUser, storeUser, router])
 
   if (isLoadingAuth && !user) {
     return (

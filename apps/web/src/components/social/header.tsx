@@ -40,8 +40,7 @@ import { AuthDialog } from '@/components/auth/auth-dialog'
 import { SearchSettingsDialog } from '@/components/search/search-settings-dialog'
 import { AcademicSearchBar } from '@/components/search/academic-search-bar'
 import { NotificationsPopover } from './notifications-popover'
-import { apiClient } from '@/lib/api-client'
-import type { UserProfile } from '@pu/schemas'
+import { useSession } from '@/hooks/use-session'
 import { cn } from '@/lib/utils'
 
 export function Header() {
@@ -52,7 +51,6 @@ export function Header() {
   
   const { theme, setTheme } = useTheme()
   const user = useAppStore((state) => state.user)
-  const setUser = useAppStore((state) => state.setUser)
   const { logout, isLoggingOut } = useLogout()
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
 
@@ -66,20 +64,8 @@ export function Header() {
     setMobileSearchInput(queryParam)
   }, [queryParam])
 
-  // Fetch current session profile on mount
-  useEffect(() => {
-    async function checkSession() {
-      try {
-        const res = await apiClient<{ success: boolean; data: UserProfile }>('/auth/me')
-        if (res && res.data) {
-          setUser(res.data)
-        }
-      } catch {
-        setUser(null)
-      }
-    }
-    checkSession()
-  }, [setUser])
+  // Phiên đăng nhập dùng chung cache ['me'] (không gọi lại /auth/me mỗi trang)
+  useSession()
 
   const userInitials = (user?.displayName || (user as any)?.display_name || user?.username || 'PU')
     .slice(0, 2)

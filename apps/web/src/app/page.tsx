@@ -1,45 +1,24 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAppStore } from '@/store'
-import { apiClient } from '@/lib/api-client'
+import { useSession } from '@/hooks/use-session'
 import { AuthForm } from '@/components/auth/auth-form'
 import { PuLogo, PuMark } from '@/components/brand/pu-logo'
 import { HeroNetwork } from '@/components/brand/hero-network'
 import { FEATURES } from '@/lib/features'
 import { QrCode } from 'lucide-react'
-import type { UserProfile } from '@pu/schemas'
 
 export default function LandingPage() {
   const router = useRouter()
   const user = useAppStore((state) => state.user)
-  const setUser = useAppStore((state) => state.setUser)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const { isLoading: isCheckingAuth } = useSession()
 
-  // Auto redirect to /home if session already exists
+  // Đã có phiên ⇒ vào thẳng /home
   useEffect(() => {
-    async function checkExistingSession() {
-      try {
-        const res = await apiClient<{ success: boolean; data: UserProfile }>('/auth/me')
-        if (res && res.data) {
-          setUser(res.data)
-          router.replace('/home')
-          return
-        }
-      } catch {
-        setUser(null)
-      } finally {
-        setIsCheckingAuth(false)
-      }
-    }
-
-    if (user) {
-      router.replace('/home')
-    } else {
-      checkExistingSession()
-    }
-  }, [user, setUser, router])
+    if (user) router.replace('/home')
+  }, [user, router])
 
   if (isCheckingAuth || user) {
     return (

@@ -1,5 +1,16 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
 
+// Lỗi HTTP kèm mã trạng thái (phân biệt 401 / 4xx / 5xx khi cache & retry)
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 interface RequestOptions extends RequestInit {
   token?: string
 }
@@ -30,7 +41,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     } catch {
       // Fallback to status text
     }
-    throw new Error(errorMessage)
+    throw new ApiError(errorMessage, response.status)
   }
 
   return response.json() as Promise<T>
