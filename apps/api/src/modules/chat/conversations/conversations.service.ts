@@ -11,6 +11,7 @@ import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
+import { blockExistsSql } from '../../blocks/blocks.sql'
 import { ChatPushService } from '../notify/chat-push.service'
 import { PuaiService } from '../puai/puai.service'
 
@@ -74,6 +75,8 @@ export class ConversationsService {
     if (t.account_type === 'bot') return this.openAi(userId)
     if (t.account_type !== 'human' || t.status === 'suspended') throw new ForbiddenException('Không thể nhắn tin cho tài khoản này')
     await this.assertCanStartChat(userId)
+    const blocked = await this.db.query(`SELECT ${blockExistsSql('$1::uuid', '$2::uuid')} AS blocked`, [userId, targetId])
+    if (blocked.rows[0].blocked) throw new ForbiddenException('Không thể nhắn tin cho người này')
 
     const key = [userId, targetId].sort().join(':')
     const id = await this.db.transaction(async (client) => {
@@ -111,7 +114,7 @@ export class ConversationsService {
     if (memberIds.length + 1 > MAX_GROUP_MEMBERS) throw new BadRequestException(`Nhóm tối đa ${MAX_GROUP_MEMBERS} thành viên`)
 
     const { id, system } = await this.db.transaction(async (client) => {
-      const valid = await this.validUsers(client, memberIds)
+      const valid = await this.validUsers(client, userId, memberIds)
       if (valid.length === 0) throw new BadRequestException('Không có thành viên hợp lệ')
       const conv = await client.query(`INSERT INTO conversations (type, title, created_by) VALUES ('group', $1, $2) RETURNING id`, [
         input.title,
@@ -189,6 +192,7 @@ export class ConversationsService {
       await this.assertGroupMember(client, userId, conversationId)
       const valid = await this.validUsers(
         client,
+        userId,
         userIds.filter((id) => id !== userId)
       )
       const current = await client.query(
@@ -347,11 +351,15 @@ export class ConversationsService {
     return m
   }
 
-  private async validUsers(client: PoolClient, ids: string[]): Promise<string[]> {
+  // Người thật đang hoạt động, không có quan hệ chặn với người thêm (bỏ qua lặng lẽ)
+  private async validUsers(client: PoolClient, actorId: string, ids: string[]): Promise<string[]> {
     if (!ids.length) return []
-    const res = await client.query(`SELECT id FROM users WHERE id = ANY($1::uuid[]) AND account_type = 'human' AND status = 'active'`, [
-      Array.from(new Set(ids))
-    ])
+    const res = await client.query(
+      `SELECT u.id FROM users u
+       WHERE u.id = ANY($1::uuid[]) AND u.account_type = 'human' AND u.status = 'active'
+         AND NOT ${blockExistsSql('$2::uuid', 'u.id')}`,
+      [Array.from(new Set(ids)), actorId]
+    )
     return res.rows.map((r) => r.id)
   }
 

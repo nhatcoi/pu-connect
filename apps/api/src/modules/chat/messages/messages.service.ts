@@ -50,6 +50,7 @@ export class MessagesService {
     const { message, type, created } = await this.db.transaction(async (client) => {
       const member = await this.core.membership(client, userId, conversationId)
       if (!member) throw new ForbiddenException('Bạn không ở trong hội thoại này')
+      if (member.type === 'direct') await this.core.assertDirectNotBlocked(client, userId, conversationId)
 
       if (input.replyToId) {
         const reply = await client.query(`SELECT 1 FROM messages WHERE id = $1 AND conversation_id = $2`, [input.replyToId, conversationId])

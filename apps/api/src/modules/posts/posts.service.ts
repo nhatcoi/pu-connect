@@ -3,6 +3,7 @@ import { DatabaseService } from '../../database/database.service'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet } from '../notifications/notification.types'
+import { blockExistsSql } from '../blocks/blocks.sql'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData } from '@pu/schemas'
 
 export interface FeedResult {
@@ -62,6 +63,8 @@ export class PostsService {
 
     // Bài bị admin ẩn không xuất hiện trên bảng tin
     let whereClause = ` WHERE p.hidden_at IS NULL`
+    // Ẩn bài của người có quan hệ chặn với mình
+    if (currentUserId) whereClause += ` AND NOT ${blockExistsSql('$1', 'p.author_id')}`
 
     if (tag) {
       params.push(tag)

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { BlockState } from './block.schema'
 
 // Nhắn tin: DM, nhóm, hội thoại với PU AI (docs/core/06-messaging-and-ai.md)
 
@@ -150,6 +151,8 @@ export interface ConversationSummary {
   readCursors: Record<string, string>
   mutedUntil: string | null
   pinnedAt: string | null
+  // DM: quan hệ chặn với người kia (khác 'none' ⇒ không gửi tin được)
+  blockState: BlockState
 }
 
 export interface MessagesPage {

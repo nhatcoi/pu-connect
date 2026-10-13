@@ -107,6 +107,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/chat-v2-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/chat-study-group-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/chat-push-clear-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/user-blocks-upgrade.sql
 
 # Seed initial users if empty
 USER_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d '[:space:]' || echo "0")

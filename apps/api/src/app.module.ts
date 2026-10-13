@@ -19,6 +19,7 @@ import { UsersModule } from './modules/users/users.module'
 import { QueueModule } from './modules/queue/queue.module'
 import { AdminModule } from './modules/admin/admin.module'
 import { ChatModule } from './modules/chat/chat.module'
+import { BlocksModule } from './modules/blocks/blocks.module'
 
 @Module({
   imports: [
@@ -51,7 +52,8 @@ import { ChatModule } from './modules/chat/chat.module'
     SearchModule,
     NotificationsModule,
     AdminModule,
-    ChatModule
+    ChatModule,
+    BlocksModule
   ]
 })
 export class AppModule {}

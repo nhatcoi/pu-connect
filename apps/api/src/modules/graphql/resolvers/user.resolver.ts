@@ -6,7 +6,9 @@ import { StudyGroupType } from '../types/study-group.type'
 import { FollowResultType } from '../types/follow-result.type'
 import { DatabaseService } from '../../../database/database.service'
 import { NotificationsService } from '../../notifications/notifications.service'
-import { NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common'
+import { NotFoundException, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common'
+import type { BlockState } from '@pu/schemas'
+import { blockExistsSql, blockStateSql } from '../../blocks/blocks.sql'
 
 @Resolver(() => UserType)
 export class UserResolver {
@@ -58,7 +60,8 @@ export class UserResolver {
     if (currentUserId) {
       params.push(currentUserId)
       sql += ` AND u.id != $${params.length}
-               AND u.id NOT IN (SELECT following_id FROM user_follows WHERE follower_id = $${params.length})`
+               AND u.id NOT IN (SELECT following_id FROM user_follows WHERE follower_id = $${params.length})
+               AND NOT ${blockExistsSql(`$${params.length}`, 'u.id')}`
     }
 
     params.push(limit || 5)
@@ -136,6 +139,8 @@ export class UserResolver {
       )
       isFollowing = false
     } else {
+      const blocked = await this.db.query(`SELECT ${blockExistsSql('$1::uuid', '$2::uuid')} AS blocked`, [currentUserId, targetUserId])
+      if (blocked.rows[0].blocked) throw new ForbiddenException('Không thể theo dõi người dùng này')
       await this.db.query(
         `INSERT INTO user_follows (follower_id, following_id) VALUES ($1, $2)`,
         [currentUserId, targetUserId]
@@ -205,8 +210,19 @@ export class UserResolver {
     return res.rows.length > 0
   }
 
+  // Quan hệ chặn giữa người xem và hồ sơ này
+  @ResolveField(() => String, { name: 'blockState' })
+  async getBlockState(@Parent() user: UserType, @Context() context: any): Promise<BlockState> {
+    const viewerId = this.viewerId(context)
+    if (!viewerId || viewerId === user.id) return 'none'
+    const res = await this.db.query(`SELECT ${blockStateSql('$1::uuid', '$2::uuid')} AS state`, [viewerId, user.id])
+    return res.rows[0]?.state ?? 'none'
+  }
+
+  // Có quan hệ chặn ⇒ không trả bài viết / tài liệu
   @ResolveField(() => [PostType], { name: 'posts' })
-  async getUserPosts(@Parent() user: UserType): Promise<PostType[]> {
+  async getUserPosts(@Parent() user: UserType, @Context() context: any): Promise<PostType[]> {
+    if (await this.isBlockedWithViewer(context, user.id)) return []
     const res = await this.db.query(
       `SELECT p.*,
               u.id as author_id, u.email as author_email, u.username as author_username,
@@ -245,7 +261,8 @@ export class UserResolver {
   }
 
   @ResolveField(() => [DocumentType], { name: 'documents' })
-  async getUserDocuments(@Parent() user: UserType): Promise<DocumentType[]> {
+  async getUserDocuments(@Parent() user: UserType, @Context() context: any): Promise<DocumentType[]> {
+    if (await this.isBlockedWithViewer(context, user.id)) return []
     const res = await this.db.query(
       `SELECT d.*
        FROM documents d
@@ -306,6 +323,17 @@ export class UserResolver {
       isMember: true,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : ''
     }))
+  }
+
+  private viewerId(context: any): string | undefined {
+    return context?.req?.user?.id || context?.req?.session?.passport?.user?.id
+  }
+
+  private async isBlockedWithViewer(context: any, userId: string): Promise<boolean> {
+    const viewerId = this.viewerId(context)
+    if (!viewerId || viewerId === userId) return false
+    const res = await this.db.query(`SELECT ${blockExistsSql('$1::uuid', '$2::uuid')} AS blocked`, [viewerId, userId])
+    return res.rows[0].blocked
   }
 
   private mapRowToUser(row: any): UserType {

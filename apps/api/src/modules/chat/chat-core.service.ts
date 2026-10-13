@@ -3,6 +3,7 @@ import type { ChatMessage, ChatMessageMeta } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { MESSAGE_COLUMNS, MESSAGE_FROM, mapMessageRow } from './chat.mapper'
+import { blockExistsSql } from '../blocks/blocks.sql'
 
 // PoolClient (trong transaction) hoặc DatabaseService
 export type Queryable = { query: (text: string, params?: unknown[]) => Promise<{ rows: any[] }> }
@@ -54,6 +55,16 @@ export class ChatCoreService {
 
   emitTo(userIds: string[], event: string, payload: unknown) {
     for (const id of userIds) this.realtime.emitToUser(id, event, payload)
+  }
+
+  // DM bị khóa khi một trong hai bên đã chặn người kia
+  async assertDirectNotBlocked(client: Queryable, userId: string, conversationId: string) {
+    const res = await client.query(
+      `SELECT 1 FROM conversation_members o
+       WHERE o.conversation_id = $1 AND o.user_id <> $2 AND ${blockExistsSql('$2::uuid', 'o.user_id')} LIMIT 1`,
+      [conversationId, userId]
+    )
+    if (res.rows.length) throw new ForbiddenException('Bạn không thể nhắn tin trong cuộc trò chuyện này')
   }
 
   async fetchMessage(client: Queryable, messageId: string | number): Promise<ChatMessage> {

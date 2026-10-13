@@ -2,12 +2,14 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  ForbiddenException,
   Logger
 } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet, type NotifyInput } from '../notifications/notification.types'
+import { blockExistsSql } from '../blocks/blocks.sql'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
 
 export interface CommentsResult {
@@ -39,32 +41,30 @@ export class CommentsService {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
 
+    // Ẩn bình luận (và nhánh trả lời) của người có quan hệ chặn với mình
+    const visible = (alias: string, viewer: string) => `(${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, `${alias}.author_id`)})`
     const countRes = await this.db.query(
-      `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE parent_id IS NULL)::int AS roots
-       FROM comments WHERE post_id = $1`,
-      [postId]
+      `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE c.parent_id IS NULL)::int AS roots
+       FROM comments c WHERE c.post_id = $1 AND ${visible('c', '$2')}`,
+      [postId, currentUserId ?? null]
     )
     const total = countRes.rows[0]?.total || 0
     const rootsTotal = countRes.rows[0]?.roots || 0
 
-    const params: any[] = [postId, safeLimit, safeOffset]
-    let likedSql = 'FALSE'
-    if (currentUserId) {
-      params.push(currentUserId)
-      likedSql = `EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = c.id AND pr.user_id = $4)`
-    }
+    const params: any[] = [postId, safeLimit, safeOffset, currentUserId ?? null]
+    const likedSql = currentUserId ? `EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = c.id AND pr.user_id = $4)` : 'FALSE'
 
     // Recursive CTE: gốc trong trang + mọi hậu duệ (dữ liệu cũ có thể sâu > 2 cấp)
     const res = await this.db.query(
       `WITH RECURSIVE roots AS (
-         SELECT id FROM comments
-         WHERE post_id = $1 AND parent_id IS NULL
-         ORDER BY is_solution DESC, created_at ASC, id ASC
+         SELECT r.id FROM comments r
+         WHERE r.post_id = $1 AND r.parent_id IS NULL AND ${visible('r', '$4')}
+         ORDER BY r.is_solution DESC, r.created_at ASC, r.id ASC
          LIMIT $2 OFFSET $3
        ), thread AS (
          SELECT id FROM roots
          UNION ALL
-         SELECT c.id FROM comments c JOIN thread t ON c.parent_id = t.id
+         SELECT c.id FROM comments c JOIN thread t ON c.parent_id = t.id WHERE ${visible('c', '$4')}
        )
        SELECT c.*,
               u.id as author_user_id, u.email as author_email, u.username as author_username,
@@ -123,6 +123,13 @@ export class CommentsService {
         parentAuthorId = parentRes.rows[0].author_id
         rootId = parentRes.rows[0].root_id || data.parentId
       }
+
+      // 1.2. Không bình luận / trả lời người có quan hệ chặn với mình
+      const blocked = await client.query(
+        `SELECT 1 FROM unnest($2::uuid[]) AS other(id) WHERE other.id IS NOT NULL AND ${blockExistsSql('$1::uuid', 'other.id')} LIMIT 1`,
+        [authorId, [postAuthorId, parentAuthorId]]
+      )
+      if (blocked.rows.length) throw new ForbiddenException('Bạn không thể bình luận ở đây')
 
       // 2. Fetch author details
       const userRes = await client.query(

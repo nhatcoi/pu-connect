@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, UnauthorizedException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { blockExistsSql } from '../blocks/blocks.sql'
 import type { Community, CommunityRule } from '@pu/schemas'
 
 export interface CommunityPostsResult {
@@ -157,8 +158,10 @@ export class CommunitiesService {
 
     // 1. Get total count of posts in this community
     const countRes = await this.db.query(
-      `SELECT COUNT(*) as total FROM posts WHERE community_id = $1 AND hidden_at IS NULL`,
-      [community.id]
+      `SELECT COUNT(*) as total FROM posts p
+       WHERE p.community_id = $1 AND p.hidden_at IS NULL
+         AND ($2::uuid IS NULL OR NOT ${blockExistsSql('$2::uuid', 'p.author_id')})`,
+      [community.id, currentUserId ?? null]
     )
     const total = parseInt(countRes.rows[0]?.total || '0', 10)
 
@@ -196,6 +199,7 @@ export class CommunitiesService {
       LEFT JOIN communities comm ON p.community_id = comm.id
       WHERE p.community_id = $1 AND p.hidden_at IS NULL
     `
+    if (currentUserId) sql += ` AND NOT ${blockExistsSql('$2', 'p.author_id')}`
 
     params.push(safeLimit, safeOffset)
     sql += ` ORDER BY ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`

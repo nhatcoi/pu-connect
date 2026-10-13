@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { parseQuery, type ParsedQuery } from './search-query'
+import { blockExistsSql } from '../blocks/blocks.sql'
 import type {
   SearchQueryInput,
   SearchResult,
@@ -292,7 +293,8 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         LEFT JOIN courses c ON p.course_id = c.id
         WHERE ${m.where}
           AND p.hidden_at IS NULL
-          AND (p.visibility = 'public' OR p.author_id = ${viewer}::uuid)`
+          AND (p.visibility = 'public' OR p.author_id = ${viewer}::uuid)
+          AND (${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, 'p.author_id')})`
       if (faculty) {
         params.push(faculty)
         sql += ` AND (u.faculty = $${params.length} OR c.faculty_code = $${params.length})`

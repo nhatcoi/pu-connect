@@ -53,6 +53,10 @@ export class UserType {
   @Field(() => Boolean, { defaultValue: false, nullable: true })
   isFollowedByMe?: boolean
 
+  // none | blocking | blocked_by (xem BlockState)
+  @Field(() => String, { defaultValue: 'none', nullable: true })
+  blockState?: string
+
   @Field()
   createdAt: string
 }

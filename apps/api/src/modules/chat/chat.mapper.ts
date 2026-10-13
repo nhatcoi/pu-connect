@@ -1,4 +1,5 @@
 import type { ChatMember, ChatMessage, ChatUser, ConversationSummary } from '@pu/schemas'
+import { blockStateSql } from '../blocks/blocks.sql'
 
 // Cột tin nhắn + người gửi + trích dẫn + cảm xúc (alias m = messages, s = users)
 export const MESSAGE_COLUMNS = `
@@ -73,7 +74,8 @@ export function mapSummaryRow(row: any): ConversationSummary {
     lastReadMessageId: String(row.last_read_message_id),
     readCursors: row.read_cursors || {},
     mutedUntil: muted ? new Date(row.muted_until).toISOString() : null,
-    pinnedAt: row.pinned_at ? new Date(row.pinned_at).toISOString() : null
+    pinnedAt: row.pinned_at ? new Date(row.pinned_at).toISOString() : null,
+    blockState: row.block_state ?? 'none'
   }
 }
 
@@ -105,6 +107,8 @@ export const SUMMARY_SELECT = `
                          ORDER BY o.joined_at LIMIT 8) u), '[]'::json) AS members,
          (SELECT json_object_agg(o.user_id, o.last_read_message_id::text) FROM conversation_members o
           WHERE o.conversation_id = c.id AND o.user_id <> me.user_id AND o.left_at IS NULL AND c.type <> 'ai') AS read_cursors,
+         (SELECT ${blockStateSql('me.user_id', 'o.user_id')} FROM conversation_members o
+          WHERE c.type = 'direct' AND o.conversation_id = c.id AND o.user_id <> me.user_id) AS block_state,
          lm.row AS last_message
   FROM conversation_members me
   JOIN conversations c ON c.id = me.conversation_id

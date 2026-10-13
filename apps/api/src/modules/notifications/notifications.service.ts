@@ -4,6 +4,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { PushService } from '../push/push.service'
 import { type NotificationItem, type NotificationType, type NotifyInput } from './notification.types'
 import { buildStoragePatch, isInAppEnabled, resolveSettings, type NotificationSettings } from './notification-settings'
+import { blockExistsSql } from '../blocks/blocks.sql'
 
 const RETENTION_DAYS = 90
 const MAX_ACTORS_TRACKED = 50
@@ -50,11 +51,14 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     if (input.actorId && input.actorId === input.recipientId) return // không tự báo cho mình
 
     const recipient = await this.db.query(
-      `SELECT account_type, notification_settings FROM users WHERE id = $1 LIMIT 1`,
-      [input.recipientId]
+      `SELECT account_type, notification_settings,
+              ($2::uuid IS NOT NULL AND ${blockExistsSql('$1::uuid', '$2::uuid')}) AS blocked
+       FROM users WHERE id = $1 LIMIT 1`,
+      [input.recipientId, input.actorId ?? null]
     )
     const row = recipient.rows[0]
     if (!row || row.account_type !== 'human') return // bot không nhận thông báo
+    if (row.blocked) return // có quan hệ chặn với người gây ra sự kiện
     if (!isInAppEnabled(row.notification_settings, input.type)) return // người dùng đã tắt loại này
 
     const actorName = input.actorId ? await this.actorName(input.actorId) : null
