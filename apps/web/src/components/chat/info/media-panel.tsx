@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
 import type { ChatAttachment } from '@pu/schemas'
 import { chatApi } from '@/hooks/chat'
+import { MediaPanelSkeleton } from '@/components/skeletons/chat-skeleton'
 import { queryKeys } from '@/lib/query-keys'
 import { FileCard, ImageLightbox } from '../thread/attachment-view'
 
@@ -19,11 +19,7 @@ export function MediaPanel({ conversationId, kind }: { conversationId: string; k
   const items: ChatAttachment[] = data.flatMap((m) => (m.attachments || []).filter((a) => a.kind === kind))
 
   if (isPending) {
-    return (
-      <div className="py-6 flex justify-center">
-        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-      </div>
-    )
+    return <MediaPanelSkeleton kind={kind} />
   }
   if (!items.length) return <p className="py-6 text-center text-xs text-muted-foreground">{kind === 'image' ? 'Chưa có ảnh nào.' : 'Chưa có tệp nào.'}</p>
 

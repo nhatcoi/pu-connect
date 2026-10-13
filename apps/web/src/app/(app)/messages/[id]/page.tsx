@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Loader2, MessageSquare } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -13,6 +13,7 @@ import { ConversationInfo } from '@/components/chat/info/conversation-info'
 import type { MessageHandlers } from '@/components/chat/thread/message-actions'
 import { MessageList } from '@/components/chat/thread/message-list'
 import { PinnedBanner } from '@/components/chat/thread/pinned-banner'
+import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ThreadHeader } from '@/components/chat/thread/thread-header'
 import { chatApi, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
@@ -77,9 +78,7 @@ export default function ConversationPage() {
       <PinnedBanner conversationId={id} onJump={jump} />
 
       {chat.isLoading ? (
-        <div className="flex-1 py-24 flex justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
-        </div>
+        <MessageThreadSkeleton />
       ) : chat.messages.length === 0 ? (
         <div className="flex-1">
           {isAi ? (

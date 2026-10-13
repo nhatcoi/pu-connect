@@ -3,13 +3,13 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
 import type { ChatReaction } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { chatApi } from '@/hooks/chat'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
+import { UserListSkeleton } from '@/components/skeletons/user-row-skeleton'
 
 interface Props {
   messageId: string
@@ -55,9 +55,7 @@ export function ReactionsDialog({ messageId, reactions, myId, open, onOpenChange
         </div>
         <div className="border-t border-border/60 max-h-[60vh] overflow-y-auto py-1">
           {isPending ? (
-            <div className="py-10 flex justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            </div>
+            <UserListSkeleton count={3} avatarClassName="h-9 w-9" className="px-2" label="Đang tải cảm xúc" />
           ) : (
             rows.map((d) => {
               const mine = d.user.id === myId

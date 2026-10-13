@@ -11,6 +11,7 @@ import { useConversationActions, useMembers } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 import { UserPicker } from '../user-picker'
 import { MemberActions } from './member-actions'
+import { UserListSkeleton } from '@/components/skeletons/user-row-skeleton'
 
 // Thành viên nhóm: thêm người (mọi thành viên); chuyển quyền, xóa người (trưởng nhóm)
 export function MemberList({ conversation }: { conversation: ConversationSummary }) {
@@ -41,9 +42,7 @@ export function MemberList({ conversation }: { conversation: ConversationSummary
         Thêm thành viên
       </button>
       {isPending ? (
-        <div className="py-4 flex justify-center">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-        </div>
+        <UserListSkeleton count={4} label="Đang tải thành viên" />
       ) : (
         members.map((m) => (
           <div key={m.id} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/50">

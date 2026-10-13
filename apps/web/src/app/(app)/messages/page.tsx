@@ -7,6 +7,7 @@ import { Loader2, MessageCircle, PenSquare, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageAside } from '@/components/layout/page-aside'
 import { AiStudyCard } from '@/components/chat/ai/ai-study-card'
+import { ConversationListSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
@@ -93,9 +94,7 @@ export default function MessagesPage() {
       )}
 
       {isPending ? (
-        <div className="py-24 flex justify-center">
-          <Loader2 className="h-7 w-7 animate-spin text-primary" />
-        </div>
+        <ConversationListSkeleton />
       ) : visible.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground space-y-2">
           <MessageCircle className="h-10 w-10 mx-auto opacity-30 text-primary" />

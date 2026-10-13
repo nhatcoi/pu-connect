@@ -153,6 +153,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] Primitive `components/ui/skeleton.tsx` (`Skeleton`, `LoadingRegion` hiện sau 150ms, `SkeletonRepeat`), giữ chỗ đúng kích thước thật ⇒ không CLS. Skeleton chỉ cho lần tải đầu; spinner chỉ cho thao tác.
 - [x] Khung app (`AppShellSkeleton`) khi đang xác thực phiên, thay spinner toàn màn hình.
 - [x] Bảng tin & bài viết: `FeedSkeleton`/`PostListSkeleton` (home, `/c/[slug]` kèm `CommunityHeaderSkeleton`, `/post/[id]`), `CommentListSkeleton` (bình luận), `UserListSkeleton` (gợi ý theo dõi; dùng lại cho thành viên/danh sách follow).
+- [x] Tin nhắn: `ConversationListSkeleton` (`/messages`), `MessageThreadSkeleton` (bong bóng xen kẽ hai phía), tiêu đề hội thoại giữ chỗ avatar + tên, `MediaPanelSkeleton` (ảnh/tệp), danh sách thành viên, người thả cảm xúc, bộ chọn người dùng.
 
 ### 🧪 Kiểm Thử Tích Hợp (Integration Tests)
 - [x] Jest + supertest ([`apps/api/test`](../apps/api/test)) chạy trên DB riêng `pu_connector_test` (tự tạo lại + chạy migration): auth (khóa tài khoản, đặt lại mật khẩu), đăng bài & duyệt lời giải, admin, nhắn tin. Chạy: `docker compose up -d && pnpm --filter @pu/api test`.

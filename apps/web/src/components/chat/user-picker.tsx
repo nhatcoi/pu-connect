@@ -2,12 +2,13 @@
 
 import React, { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Check, Loader2, Search, X } from 'lucide-react'
+import { Check, Search, X } from 'lucide-react'
 import type { SearchResult, UserSummary } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Input } from '@/components/ui/input'
 import { apiClient } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
+import { UserListSkeleton } from '@/components/skeletons/user-row-skeleton'
 
 // Tìm & chọn nhiều người dùng (tạo nhóm, thêm thành viên); excludeIds: đã ở trong nhóm / chính mình
 export function UserPicker({
@@ -54,9 +55,7 @@ export function UserPicker({
       </div>
       <div className="max-h-64 overflow-y-auto -mx-1">
         {results.isFetching && !users.length ? (
-          <div className="py-6 flex justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          </div>
+          <UserListSkeleton count={3} label="Đang tìm người dùng" />
         ) : debounced.length >= 2 && !users.length ? (
           <p className="py-6 text-center text-xs text-muted-foreground">Không tìm thấy người dùng.</p>
         ) : debounced.length < 2 ? (

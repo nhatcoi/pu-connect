@@ -8,6 +8,7 @@ import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { conversationTitle, useAiQuota } from '@/hooks/chat'
 import { ConversationAvatar } from '../conversation-avatar'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface ThreadHeaderProps {
   conversation: ConversationSummary | undefined
@@ -40,15 +41,17 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
       <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={() => router.push('/messages')} aria-label="Về tin nhắn">
         <ArrowLeft className="h-4 w-4" />
       </Button>
-      {conv && <ConversationAvatar conversation={conv} className="h-9 w-9" />}
+      {conv ? <ConversationAvatar conversation={conv} className="h-9 w-9" /> : <Skeleton className="h-9 w-9 shrink-0 rounded-full" />}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          {other ? (
+          {!conv ? (
+            <Skeleton className="h-4 w-32 my-0.5" />
+          ) : other ? (
             <Link href={`/${other.username}`} className="text-sm font-semibold truncate hover:underline">
-              {conversationTitle(conv!)}
+              {conversationTitle(conv)}
             </Link>
           ) : (
-            <p className="text-sm font-semibold truncate">{conv ? conversationTitle(conv) : 'Đang tải…'}</p>
+            <p className="text-sm font-semibold truncate">{conversationTitle(conv)}</p>
           )}
           {conv?.mutedUntil && <BellOff className="h-3 w-3 text-muted-foreground shrink-0" />}
         </div>
