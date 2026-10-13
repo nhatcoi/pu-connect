@@ -42,7 +42,9 @@ export const PrivacySettingsSchema = z.object({
   showEmail: z.boolean().default(false),
   showStudentId: z.boolean().default(true),
   showClass: z.boolean().default(true),
-  isPrivateProfile: z.boolean().default(false)
+  isPrivateProfile: z.boolean().default(false),
+  // Hiện "Đang hoạt động" cho người cùng hội thoại (tắt ⇒ cũng không thấy của người khác)
+  showActivityStatus: z.boolean().default(true)
 })
 
 export const UserProfileSchema = z.object({
@@ -73,7 +75,8 @@ export const UserProfileSchema = z.object({
     showEmail: false,
     showStudentId: true,
     showClass: true,
-    isPrivateProfile: false
+    isPrivateProfile: false,
+    showActivityStatus: true
   }),
   skills: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),
@@ -103,6 +106,12 @@ export type RegisterInput = z.infer<typeof RegisterSchema>
 export type LoginInput = z.infer<typeof LoginSchema>
 export type OnboardingInput = z.infer<typeof OnboardingSchema>
 export type PrivacySettings = z.infer<typeof PrivacySettingsSchema>
+
+// Điền mặc định cho privacy_settings cũ / thiếu trường (Fill defaults for legacy rows)
+export function resolvePrivacySettings(raw: unknown): PrivacySettings {
+  const parsed = PrivacySettingsSchema.safeParse(raw ?? {})
+  return parsed.success ? parsed.data : PrivacySettingsSchema.parse({})
+}
 export type UserProfile = z.infer<typeof UserProfileSchema>
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>
 export type UpdatePrivacySettingsInput = z.infer<typeof UpdatePrivacySettingsSchema>

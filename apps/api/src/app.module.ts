@@ -20,6 +20,7 @@ import { QueueModule } from './modules/queue/queue.module'
 import { AdminModule } from './modules/admin/admin.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { BlocksModule } from './modules/blocks/blocks.module'
+import { PresenceModule } from './modules/presence/presence.module'
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { BlocksModule } from './modules/blocks/blocks.module'
     NotificationsModule,
     AdminModule,
     ChatModule,
-    BlocksModule
+    BlocksModule,
+    PresenceModule
   ]
 })
 export class AppModule {}

@@ -10,7 +10,7 @@ import {
   Logger
 } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
-import type { RegisterInput, OnboardingInput, UserProfile } from '@pu/schemas'
+import { resolvePrivacySettings, type RegisterInput, type OnboardingInput, type UserProfile } from '@pu/schemas'
 import * as bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'crypto'
 import { ConfigService } from '@nestjs/config'
@@ -443,12 +443,7 @@ export class AuthService {
       className: row.class_name || null,
       isVerified: !!row.is_verified,
       verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
-      privacySettings: row.privacy_settings || {
-        showEmail: false,
-        showStudentId: true,
-        showClass: true,
-        isPrivateProfile: false
-      },
+      privacySettings: resolvePrivacySettings(row.privacy_settings),
       location: row.location || null,
       website: row.website || null,
       birthDate: row.birth_date || null,

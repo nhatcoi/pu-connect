@@ -3,6 +3,7 @@ import {
   WebSocketServer,
   OnGatewayInit,
   OnGatewayConnection,
+  OnGatewayDisconnect,
   SubscribeMessage,
   ConnectedSocket,
   MessageBody
@@ -21,6 +22,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export const REALTIME_PATH = '/api/socket.io'
 
 type AuthedRequest = IncomingMessage & { user?: { id: string }; _query?: Record<string, string> }
+
+// Đổi trạng thái kết nối của user: tab đầu tiên mở / tab cuối cùng đóng
+export type PresenceListener = (userId: string, online: boolean) => void
 
 // Chỉ chạy middleware ở handshake đầu tiên (request không có sid)
 function onlyForHandshake(middleware: RequestHandler) {
@@ -47,11 +51,14 @@ function onlyForHandshake(middleware: RequestHandler) {
   allowRequest: (req: IncomingMessage, cb: (err: string | null | undefined, ok: boolean) => void) =>
     cb(null, isAllowedOrigin(req.headers.origin))
 })
-export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
+export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server
 
   private readonly logger = new Logger(RealtimeGateway.name)
+  // Số socket đang mở theo user (1 instance API ⇒ đếm trong bộ nhớ là đủ)
+  private readonly connections = new Map<string, number>()
+  private readonly presenceListeners: PresenceListener[] = []
 
   constructor(private readonly db: DatabaseService) {}
 
@@ -72,6 +79,27 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
     const userId = (socket.request as AuthedRequest).user!.id
     socket.data.visible = true // client gửi 'presence' ngay sau khi kết nối
     socket.join(this.userRoom(userId))
+    const count = (this.connections.get(userId) ?? 0) + 1
+    this.connections.set(userId, count)
+    if (count === 1) this.emitPresence(userId, true)
+  }
+
+  handleDisconnect(socket: Socket) {
+    const userId = (socket.request as AuthedRequest).user?.id
+    if (!userId) return
+    const count = (this.connections.get(userId) ?? 1) - 1
+    if (count > 0) return void this.connections.set(userId, count)
+    this.connections.delete(userId)
+    this.emitPresence(userId, false)
+  }
+
+  // User còn ít nhất một socket mở (bất kể tab ẩn hay hiện)
+  isOnline(userId: string): boolean {
+    return this.connections.has(userId)
+  }
+
+  onPresenceChange(listener: PresenceListener) {
+    this.presenceListeners.push(listener)
   }
 
   // Tab đang hiển thị hay ẩn (document.visibilityState) — quyết định có cần Web Push không
@@ -111,6 +139,10 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
   // Ngắt mọi socket của user (khi bị khóa tài khoản)
   disconnectUser(userId: string) {
     this.server?.in(this.userRoom(userId)).disconnectSockets(true)
+  }
+
+  private emitPresence(userId: string, online: boolean) {
+    for (const listener of this.presenceListeners) listener(userId, online)
   }
 
   private userRoom(userId: string) {

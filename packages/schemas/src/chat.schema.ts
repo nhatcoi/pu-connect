@@ -182,3 +182,14 @@ export interface ReadEvent {
   userId: string
   lastReadMessageId: string
 }
+
+// Trạng thái hoạt động của người cùng hội thoại (GET /presence, event presence.update)
+export interface PresenceInfo {
+  online: boolean
+  lastSeenAt: string | null
+}
+export type PresenceMap = Record<string, PresenceInfo>
+export interface PresenceUpdateEvent extends PresenceInfo {
+  userId: string
+}
+

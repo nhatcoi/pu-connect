@@ -12,7 +12,8 @@ import {
 } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
-import type { UpdateProfileInput, UpdatePrivacySettingsInput } from '@pu/schemas'
+import { UpdatePrivacySettingsSchema, type UpdateProfileInput, type UpdatePrivacySettingsInput } from '@pu/schemas'
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import type { Request } from 'express'
 
 @Controller('users')
@@ -41,7 +42,7 @@ export class UsersController {
   @Patch('privacy')
   @UseGuards(AuthenticatedGuard)
   @HttpCode(HttpStatus.OK)
-  async updatePrivacy(@Req() req: Request, @Body() body: UpdatePrivacySettingsInput) {
+  async updatePrivacy(@Req() req: Request, @Body(new ZodValidationPipe(UpdatePrivacySettingsSchema)) body: UpdatePrivacySettingsInput) {
     const userId = (req.user as any).id
     return this.usersService.updatePrivacySettings(userId, body)
   }

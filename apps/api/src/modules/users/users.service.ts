@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
-import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings } from '@pu/schemas'
+import { resolvePrivacySettings, type UserProfile, type UpdateProfileInput, type UpdatePrivacySettingsInput, type PrivacySettings } from '@pu/schemas'
 
 @Injectable()
 export class UsersService {
@@ -28,12 +28,7 @@ export class UsersService {
 
     const row = res.rows[0]
     const isOwner = viewerId && viewerId === row.id
-    const privacy: PrivacySettings = row.privacy_settings || {
-      showEmail: false,
-      showStudentId: true,
-      showClass: true,
-      isPrivateProfile: false
-    }
+    const privacy = resolvePrivacySettings(row.privacy_settings)
 
     return {
       id: row.id,
@@ -176,12 +171,7 @@ export class UsersService {
       birthDate: row.birth_date || null,
       isVerified: !!row.is_verified,
       verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
-      privacySettings: row.privacy_settings || {
-        showEmail: false,
-        showStudentId: true,
-        showClass: true,
-        isPrivateProfile: false
-      },
+      privacySettings: resolvePrivacySettings(row.privacy_settings),
       avatarUrl: row.avatar_url,
       bannerUrl: row.banner_url || null,
       bio: row.bio,
@@ -203,19 +193,9 @@ export class UsersService {
       throw new NotFoundException('Người dùng không tồn tại')
     }
 
-    const currentPrivacy: PrivacySettings = existing.rows[0].privacy_settings || {
-      showEmail: false,
-      showStudentId: true,
-      showClass: true,
-      isPrivateProfile: false
-    }
-
-    const updatedPrivacy: PrivacySettings = {
-      showEmail: data.showEmail !== undefined ? data.showEmail : currentPrivacy.showEmail,
-      showStudentId: data.showStudentId !== undefined ? data.showStudentId : currentPrivacy.showStudentId,
-      showClass: data.showClass !== undefined ? data.showClass : currentPrivacy.showClass,
-      isPrivateProfile: data.isPrivateProfile !== undefined ? data.isPrivateProfile : currentPrivacy.isPrivateProfile
-    }
+    // Chỉ ghi đè trường được gửi lên (Patch semantics)
+    const changes = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined))
+    const updatedPrivacy = resolvePrivacySettings({ ...resolvePrivacySettings(existing.rows[0].privacy_settings), ...changes })
 
     await this.db.query(
       `UPDATE users SET privacy_settings = $1::jsonb, updated_at = NOW() WHERE id = $2`,
