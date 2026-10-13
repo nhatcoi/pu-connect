@@ -5,7 +5,7 @@ import type { ChatCitation } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { ChatService } from './chat.service'
 
-const DEFAULT_MODEL = 'v3' // model của gateway OpenAI-compatible (AI_BASE_URL), đổi bằng AI_MODEL
+const DEFAULT_MODEL = 'v5' // Sonnet qua gateway OpenAI-compatible: nhanh, đủ chất lượng cho hỏi đáp học tập; đổi bằng AI_MODEL
 const HISTORY_LIMIT = 20
 const MAX_OUTPUT_TOKENS = 2048
 
