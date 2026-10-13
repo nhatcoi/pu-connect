@@ -37,5 +37,5 @@ Thumbs.db
 .turbo
 .next
 dist
-build
-
+# IDE & tool configs
+.claude/
