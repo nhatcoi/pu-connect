@@ -1,6 +1,6 @@
 # 💬 Đặc Tả Thiết Kế: Nhắn Tin & PU AI (Messaging + AI Layer)
 
-> Trạng thái: **P0 đã triển khai** (session Postgres, gateway bảo mật, `@puai`, mentions) · P1–P5: thiết kế · Phạm vi: Domain 10 (Realtime Messaging) + Domain 13 (AI Layer)
+> Trạng thái: **P0 + P1 + P2 (rút gọn) + P4 (rút gọn) đã triển khai** — xem mục 12 · P3, P5: thiết kế · Phạm vi: Domain 10 (Realtime Messaging) + Domain 13 (AI Layer)
 > Liên quan: [05-notifications-and-realtime.md](./05-notifications-and-realtime.md), [../auth-google.md](../auth-google.md)
 
 ---
@@ -554,3 +554,17 @@ store: aiDrawer { open, contextRef }, unreadTotal
 | 2 | Model embedding | Giữ `VECTOR(1536)` nếu dùng OpenAI `text-embedding-3-small`; đổi chiều nếu dùng Voyage (1024) |
 | 3 | Chính sách DM mặc định | Người đã xác thực email; người nhận tự chỉnh |
 | 4 | Lưu lịch sử AI bao lâu | Hội thoại: đến khi người dùng xóa; `ai_runs` metadata: 90 ngày |
+
+---
+
+## 12. Đã triển khai (2026-10-13) & khác biệt so với thiết kế
+
+| Hạng mục | Trạng thái | Ghi chú |
+|---|---|---|
+| P1 `ChatModule` | ✅ | DM (`direct_key`), nhóm ≤ 50, read cursor, thu hồi tin, rời nhóm, typing, badge chưa đọc, `/messages`, `/messages/[id]`, nút Nhắn tin trên hồ sơ. Migration `chat-upgrade.sql`. |
+| Room `conv:{id}` | ⚠️ khác thiết kế | Chưa dùng `conv.open`; server phát `message.*` tới room `user:{id}` của **từng thành viên** (đơn giản, vẫn do server cấp). Đổi sang `conv:` khi nhóm lớn. |
+| P2 PU AI lõi | ✅ rút gọn | Hội thoại `type='ai'` (`POST /conversations/ai`), streaming qua `message.delta`, quota `AI_DAILY_QUOTA`/ngày từ `ai_runs` (migration `ai-upgrade.sql`). Model `AI_MODEL` (mặc định `claude-haiku-4-5`). **Chạy trong tiến trình API** (fire-and-forget) thay vì worker `SKIP LOCKED` — đủ cho 1 instance. Chưa có AI drawer, `POST /ai/tasks`, `ai_cache`, 👍/👎. |
+| P4 RAG | ✅ rút gọn | Truy xuất **full-text** (`search_tsv`, OR các từ khóa bỏ dấu) trên bài viết + tài liệu công khai (kèm lời giải đã duyệt), bọc `<data>` trong `<context>`; câu trả lời có `blocks` citation. **Chưa dùng pgvector**: cần chọn nhà cung cấp embedding (§11 #2) và trích text PDF vào `document_chunks`. |
+| P3 `@puai` trong bình luận, P5 | ⏳ | Chưa làm. |
+| Thông báo / Web Push cho tin nhắn | ⏳ | Chưa gửi push khi người nhận offline. |
+| `privacy_settings.dm`, `user_blocks` | ⏳ | Hiện: chỉ tài khoản đã xác thực email mới mở DM/nhóm mới; không nhắn được tài khoản bị khóa. |

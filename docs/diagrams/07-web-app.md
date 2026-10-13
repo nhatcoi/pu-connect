@@ -1,6 +1,6 @@
 # 07 · Web App (`apps/web`)
 
-> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-04**.
+> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-13**.
 
 ## Route map
 
@@ -20,6 +20,11 @@ flowchart LR
     profile["<b>/[username]</b><br/>?edit=1 mở dialog sửa hồ sơ"]
     notif["<b>/notifications</b><br/>tab · cài đặt"]
     post["<b>/post/[id]</b><br/>?comment= highlight"]
+    courses["<b>/courses</b><br/>danh mục học phần"]
+    course["<b>/courses/[code]</b><br/>thảo luận · tài liệu · nhóm học"]
+    msgs["<b>/messages</b><br/>hội thoại · tin nhắn mới · PU AI"]
+    thread["<b>/messages/[id]</b><br/>thread · typing · AI streaming"]
+    adminp["<b>/admin</b><br/>chỉ role admin"]
   end
 
   landing -->|login / register / Google| home
@@ -31,10 +36,14 @@ flowchart LR
   home --> search & comms & profile & notif
   notif --> post
   comms --> comm
+  home --> courses & msgs
+  courses --> course
+  msgs --> thread
+  profile -->|Nhắn tin| thread
 
   classDef page fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef redirect fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post page
+  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp page
   class getstarted redirect
 ```
 
@@ -82,12 +91,16 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | Communities | `communities`, `communities/:slug/*` | — | — |
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
+| `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
+| `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id`, `search?type=users` (tin nhắn mới) | — | `message.new/updated/delta`, `conv.read/updated`, `typing` (useChatRealtime trong AppLayout) |
+| `/admin` | `admin/*` | — | — |
 
 ## Feature flags (`lib/features.ts`)
 
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, trang pháp lý, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-13 — thêm `/courses`, `/courses/[code]`, `/messages`, `/messages/[id]`, `/admin`; sidebar & bottom nav có Học phần, Tin nhắn (badge chưa đọc), Quản trị (admin).
 - 2026-10-09 — route group `(app)` + `AppLayout` dùng chung; dữ liệu server qua TanStack Query (cache, prefetch, cập nhật lạc quan); bỏ `AppShell`.
 - 2026-10-04 — thêm `/forgot-password`, `/reset-password`.
 - 2026-10-04 — thêm `/notifications`, `/post/[id]`, store thông báo dùng chung, mục Thông báo ở sidebar.

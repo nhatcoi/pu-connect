@@ -1,6 +1,6 @@
 # 05 · Luồng Nghiệp Vụ Chính (Sequence)
 
-> Thứ tự gọi giữa các thành phần cho các luồng quan trọng. Cập nhật lần cuối: **2026-10-04**.
+> Thứ tự gọi giữa các thành phần cho các luồng quan trọng. Cập nhật lần cuối: **2026-10-13**.
 
 ## 5.1. Đăng ký / đăng nhập bằng email (email-first)
 
@@ -218,7 +218,63 @@ sequenceDiagram
   A-->>W: courses · documents · posts · users · groups
 ```
 
+## 5.7. Nhắn tin & PU AI
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor U as Người dùng
+  participant W as Web (/messages/[id])
+  participant A as ChatController
+  participant S as ChatService
+  participant DB as Postgres
+  participant RT as RealtimeGateway
+  participant P as PuaiService
+  participant L as Claude API
+
+  W->>W: hiện tin lạc quan (clientMsgId)
+  W->>A: POST /api/conversations/:id/messages
+  A->>S: sendMessage() (zod · 20 tin/10s · kiểm tra thành viên)
+  S->>DB: TX: INSERT messages ON CONFLICT(sender, clientMsgId) · UPDATE conversations.last_* · read cursor
+  A-->>W: 201 ChatMessage (thay tin lạc quan)
+  S->>RT: message.new → user:{memberId} mỗi thành viên
+  alt conversation.type = 'ai'
+    S-)P: reply() chạy nền
+    P->>DB: quota ai_runs hôm nay · INSERT tin @puai (status=streaming)
+    P->>RT: message.new (placeholder)
+    P->>DB: full-text posts + documents (OR từ khóa, lọc quyền xem) ⇒ nguồn
+    P->>L: messages.stream(system, lịch sử ≤20 tin, <context> nguồn)
+    loop text delta
+      L-->>P: delta
+      P->>RT: message.delta
+    end
+    P->>DB: UPDATE tin (content, blocks=citations, status=done) · ai_runs tokens
+    P->>RT: message.updated
+  end
+```
+
+## 5.8. Khóa tài khoản (admin)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Ad as Admin
+  participant A as AdminController (AdminGuard)
+  participant DB as Postgres
+  participant RT as RealtimeGateway
+  actor X as Người bị khóa
+
+  Ad->>A: POST /api/admin/users/:id/suspend { reason }
+  A->>DB: TX: status='suspended' · DELETE user_sessions của user · INSERT admin_audit_logs
+  A->>RT: disconnectUser(id) ⇒ ngắt socket
+  X->>A: request bất kỳ với cookie cũ
+  Note over A: deserializeUser trả false ⇒ 401
+  X->>A: POST /api/auth/login (đúng mật khẩu)
+  A-->>X: 403 "Tài khoản của bạn đã bị khóa" (sai mật khẩu vẫn 401)
+```
+
 **Changelog:**
+- 2026-10-13 — thêm 5.7 Nhắn tin & PU AI, 5.8 Khóa tài khoản.
 - 2026-10-04 — thêm 5.6 Tìm kiếm.
 - 2026-10-04 — thêm 5.1b Quên mật khẩu.
 - 2026-10-04 — thêm 5.5 Web Push qua BullMQ.

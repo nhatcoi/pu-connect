@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **24 bảng**, **34 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **29 bảng**, **45 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -18,17 +18,26 @@ erDiagram
   user_sessions {
     string no_fk
   }
+  users |o--o{ admin_audit_logs : "admin_id"
+  users ||--o{ ai_runs : "bot_id"
+  users ||--o{ ai_runs : "requester_id"
   users ||--o{ comments : "author_id"
   comments |o--o{ comments : "parent_id"
   posts ||--o{ comments : "post_id"
   communities ||--o{ community_members : "community_id"
   users ||--o{ community_members : "user_id"
+  conversations ||--o{ conversation_members : "conversation_id"
+  users ||--o{ conversation_members : "user_id"
+  users |o--o{ conversations : "created_by"
   faculties |o--o{ courses : "faculty_id"
   documents ||--o{ document_chunks : "document_id"
   courses |o--o{ documents : "course_id"
   users ||--o{ documents : "owner_id"
   users |o--o{ mentions : "author_id"
   users ||--o{ mentions : "mentioned_user_id"
+  conversations ||--o{ messages : "conversation_id"
+  messages |o--o{ messages : "reply_to_id"
+  users |o--o{ messages : "sender_id"
   users |o--o{ notifications : "actor_id"
   users ||--o{ notifications : "recipient_id"
   post_polls ||--o{ post_poll_options : "poll_id"
@@ -40,9 +49,11 @@ erDiagram
   users ||--o{ post_reactions : "user_id"
   posts ||--o{ post_reports : "post_id"
   users ||--o{ post_reports : "reporter_id"
+  users |o--o{ post_reports : "resolved_by"
   users ||--o{ posts : "author_id"
   communities |o--o{ posts : "community_id"
   courses |o--o{ posts : "course_id"
+  users |o--o{ posts : "hidden_by"
   users ||--o{ push_subscriptions : "user_id"
   posts ||--o{ saved_posts : "post_id"
   users ||--o{ saved_posts : "user_id"
@@ -101,6 +112,8 @@ erDiagram
     timestamptz reset_sent_at
     timestamptz password_changed_at
     tsvector search_tsv
+    timestamptz suspended_at
+    varchar suspended_reason
   }
   user_follows {
     uuid follower_id PK,FK
@@ -145,7 +158,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `comments.author_id → users`, `community_members.user_id → users`, `documents.owner_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `posts.author_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
 
 ## 3. Feed & Q&A
 
@@ -173,6 +186,9 @@ erDiagram
     timestamptz updated_at
     uuid community_id FK
     tsvector search_tsv
+    timestamptz hidden_at
+    uuid hidden_by FK
+    varchar hidden_reason
   }
   comments {
     uuid id PK
@@ -205,6 +221,9 @@ erDiagram
     text details
     varchar status
     timestamptz created_at
+    varchar resolution
+    uuid resolved_by FK
+    timestamptz resolved_at
   }
   post_polls {
     uuid id PK
@@ -238,7 +257,7 @@ erDiagram
   posts ||--o{ saved_posts : "post_id"
 ```
 
-Liên kết ra ngoài nhóm: `comments.author_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `posts.author_id → users`, `posts.community_id → communities`, `posts.course_id → courses`, `saved_posts.user_id → users`
+Liên kết ra ngoài nhóm: `comments.author_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.community_id → communities`, `posts.course_id → courses`, `posts.hidden_by → users`, `saved_posts.user_id → users`
 
 ## 4. Communities
 
@@ -384,6 +403,64 @@ Liên kết ra ngoài nhóm: `documents.owner_id → users`, `posts.course_id �
 
 ```mermaid
 erDiagram
+  admin_audit_logs {
+    bigint id PK
+    uuid admin_id FK
+    varchar action
+    varchar target_type
+    text target_id
+    jsonb details
+    timestamptz created_at
+  }
+  ai_runs {
+    uuid id PK
+    uuid bot_id FK
+    uuid requester_id FK
+    varchar trigger
+    varchar task
+    jsonb source_ref
+    jsonb reply_ref
+    varchar status
+    varchar model
+    integer input_tokens
+    integer output_tokens
+    text error
+    integer latency_ms
+    timestamptz created_at
+    timestamptz finished_at
+  }
+  conversation_members {
+    uuid conversation_id PK,FK
+    uuid user_id PK,FK
+    varchar role
+    bigint last_read_message_id
+    timestamptz joined_at
+    timestamptz left_at
+  }
+  conversations {
+    uuid id PK
+    varchar type
+    varchar title
+    varchar avatar_url
+    uuid created_by FK
+    varchar direct_key UK
+    bigint last_message_id
+    timestamptz last_message_at
+    timestamptz created_at
+  }
+  messages {
+    bigint id PK
+    uuid conversation_id FK
+    uuid sender_id FK,UK
+    uuid client_msg_id UK
+    varchar kind
+    text content
+    jsonb blocks
+    bigint reply_to_id FK
+    varchar status
+    timestamptz deleted_at
+    timestamptz created_at
+  }
   push_subscriptions {
     uuid id PK
     uuid user_id FK
@@ -402,6 +479,9 @@ erDiagram
     integer result_count
     timestamptz created_at
   }
+  conversations ||--o{ conversation_members : "conversation_id"
+  conversations ||--o{ messages : "conversation_id"
+  messages ||--o{ messages : "reply_to_id"
 ```
 
-Liên kết ra ngoài nhóm: `push_subscriptions.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`

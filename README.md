@@ -108,6 +108,14 @@ npx web-push generate-vapid-keys         # điền VAPID_PUBLIC_KEY / VAPID_PRIV
 ```
 Thiếu VAPID ⇒ chỉ có thông báo trong app. Chi tiết: [`docs/core/05`](docs/core/05-notifications-and-realtime.md#7-triển-khai-v2--web-push--bullmq-đang-chạy).
 
+**PU AI** (trợ lý trong `/messages`): điền `ANTHROPIC_API_KEY` vào `apps/api/.env` (tùy chọn `AI_MODEL`, mặc định `claude-haiku-4-5`; `AI_DAILY_QUOTA`, mặc định 30). Thiếu key ⇒ bot trả lời "chưa bật".
+
+**Test tích hợp API** (Jest + supertest, DB riêng `pu_connector_test` được tạo lại mỗi lượt):
+```bash
+docker compose up -d postgres redis
+pnpm --filter @pu/api test
+```
+
 ### 7. Vận hành: backup & giám sát (VPS)
 Cài một lần trên VPS (idempotent): `ssh root@<vps> 'bash /var/www/pu-connector/scripts/ops/setup-ops.sh'`
 - **Backup DB** 03:17 hằng ngày (`scripts/ops/backup-db.sh`): `pg_dump` → gzip → mã hóa AES-256 (`BACKUP_PASSPHRASE` trong `.env`, tự sinh) → R2 `backups/db/` (giữ 30 ngày) + `/var/backups/pu-connector` (giữ 7 bản). Bucket R2 là public nên **bắt buộc mã hóa**. **Lưu bản sao `BACKUP_PASSPHRASE` ngoài VPS** — mất khóa = không khôi phục được.

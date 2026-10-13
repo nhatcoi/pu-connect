@@ -128,6 +128,24 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🌐 **Trang Diễn Đàn Sinh Viên Chuyên Sâu ([`/c/[slug]`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/c/[slug]/page.tsx))**: Banner, Avatar, Thống kê, Nút gia nhập đàn hồi, 4 tabs nội dung.
 - [x] 🧭 **Trang Danh Bạ Cộng Đồng Toàn Trường ([`/communities`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/app/communities/page.tsx))**: Duyệt theo 6 danh mục, tìm kiếm, nút tham gia nhanh.
 
+### 🎓 Trang Học Phần (Course Hub — 2026-10-13)
+- [x] 🧭 **[`/courses`](../apps/web/src/app/(app)/courses/page.tsx)**: danh mục học phần, tìm theo mã/tên không dấu; mục "Học phần" ở sidebar & bottom nav.
+- [x] 📘 **[`/courses/[code]`](../apps/web/src/app/(app)/courses/[code]/page.tsx)**: 3 tab *Thảo luận & Hỏi đáp* (composer gắn sẵn mã môn), *Tài liệu & Đề thi*, *Nhóm học* (tham gia trực tiếp); số liệu câu hỏi / đã giải / tài liệu / nhóm đang tuyển; cột phải "Đóng góp nhiều nhất". Endpoint `GET /api/courses/:code/overview`, bộ lọc `course=` cho `GET /api/posts`, `GET /api/documents`.
+- [x] 🔗 Mã môn trên PostCard, CourseCard, kết quả tìm kiếm dẫn tới trang học phần.
+- [x] 💾 **Nhóm học lưu PostgreSQL** (trước đây giữ trong bộ nhớ, mất khi restart): tạo nhóm + trưởng nhóm và tham gia nhóm là transaction có `FOR UPDATE` (không vượt sĩ số).
+
+### 🛡️ Quản Trị Tối Giản (Admin — 2026-10-13)
+- [x] 🔒 **Chặn tài khoản `suspended`**: đăng nhập mật khẩu trả 403 (chỉ sau khi đúng mật khẩu ⇒ không lộ trạng thái), Google OAuth về `/?auth_error=suspended`, phiên cũ hết hiệu lực ở `deserializeUser` (HTTP lẫn socket).
+- [x] 🧑‍⚖️ **[`/admin`](../apps/web/src/app/(app)/admin/page.tsx)** (role `admin`, `AdminGuard`): báo cáo gom theo bài (ẩn bài / hiện lại / bỏ qua), tìm & khóa / mở khóa tài khoản (hủy session + ngắt socket ngay), từ khóa tìm kiếm không có kết quả, nhật ký thao tác `admin_audit_logs`. Migration `admin-upgrade.sql`.
+- [x] 🙈 Bài bị ẩn không xuất hiện ở feed, cộng đồng, tìm kiếm, GraphQL; tác giả vẫn xem được bài của mình.
+
+### 💬 Nhắn Tin & PU AI (Domain 10 + 13 — 2026-10-13)
+- [x] 💬 **[`/messages`](../apps/web/src/app/(app)/messages/page.tsx)**: DM 1-1, nhóm (≤ 50), tin nhắn lạc quan + `clientMsgId` idempotent, đã đọc, đang nhập, thu hồi, badge chưa đọc ở sidebar/bottom nav, nút Nhắn tin trên hồ sơ. Realtime qua `message.*` / `typing`.
+- [x] ✨ **PU AI** (`POST /api/conversations/ai`): trả lời streaming bằng Claude (`AI_MODEL`, mặc định Haiku 4.5), truy xuất bài viết & tài liệu liên quan bằng full-text và trích nguồn, quota `AI_DAILY_QUOTA`/ngày. Thiết kế & phần còn thiếu: [`core/06-messaging-and-ai.md` §12](./core/06-messaging-and-ai.md).
+
+### 🧪 Kiểm Thử Tích Hợp (Integration Tests)
+- [x] Jest + supertest ([`apps/api/test`](../apps/api/test)) chạy trên DB riêng `pu_connector_test` (tự tạo lại + chạy migration): auth (khóa tài khoản, đặt lại mật khẩu), đăng bài & duyệt lời giải, admin, nhắn tin. Chạy: `docker compose up -d && pnpm --filter @pu/api test`.
+
 ---
 
 ## 2a. Backlog vai trò & quản trị (ghi chú quyết định)
@@ -136,8 +154,7 @@ Role trong DB: `student`, `lecturer`, `ta`, `club_lead`, `admin` (prod: 1 admin,
 
 | Việc | Làm khi | Ghi chú |
 |---|---|---|
-| **Trang admin tối giản**: danh sách báo cáo (ẩn bài / bỏ qua), khóa–mở tài khoản, nhật ký thao tác admin | Có báo cáo vi phạm đầu tiên cần xử lý tay, hoặc ≥ ~200 người dùng thật | Trước đó dùng SQL/script. `status = suspended` đã có, cần chặn đăng nhập khi bị khóa |
-| Xem **từ khóa tìm không có kết quả** ([07-search](./core/07-search.md#6-nhật-ký-truy-vấn-search_logs--riêng-tư)) | Cùng lúc làm trang admin | SQL mẫu có sẵn trong tài liệu |
+| ~~Trang admin tối giản~~ · ~~từ khóa tìm không có kết quả~~ | ✅ 2026-10-13 | Xem mục "Quản Trị Tối Giản" ở trên |
 | `lecturer` / `ta`: nhãn **"giảng viên xác nhận"** cho lời giải | Khi Kho tài liệu & Hỏi đáp có người dùng | Tăng độ tin cậy câu trả lời |
 | `club_lead`: quản lý CLB / sự kiện | Khi làm Domain Clubs/Events | Chưa cần |
 | Moderator theo từng cộng đồng (duyệt bài, ẩn bình luận) | Khi có cộng đồng đông | Giảm tải cho admin hệ thống |
@@ -149,5 +166,5 @@ Role trong DB: `student`, `lecturer`, `ta`, `club_lead`, `admin` (prod: 1 admin,
 3. **Domain 7: Career & Alumni (`/career`)**: Bảng tin thực tập, CV/Portfolio số sinh viên, Mạng lưới Cựu sinh viên (Alumni Mentorship).
 4. **Domain 8: Events (`/events`)**: Form đăng ký tham gia sự kiện campus, vé mã QR Check-in.
 5. **Domain 9: Clubs & Organizations (`/clubs/[slug]`)**: Hub riêng cho CLB, quản lý thành viên ban/đội, đợt tuyển quân.
-6. **Domain 10: Realtime Messaging (`/messages`)**: Chat 1-1 giữa sinh viên, chat kênh cộng đồng, trạng thái online. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
-7. **Domain 13: AI Layer (PU AI Study Assistant - RAG)**: Hỏi đáp dựa trên kho slide và đề thi của trường qua `pgvector`. `@puai` là bot user, dùng chung pipeline nhắn tin — xem [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
+6. **Domain 10: Realtime Messaging (phần còn lại)**: chat tự tạo cho cộng đồng/nhóm học, trạng thái online, Web Push cho tin nhắn, chặn người dùng. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
+7. **Domain 13: AI Layer (phần còn lại)**: `@puai` trong bình luận, tóm tắt bài, RAG bằng `pgvector` (cần chọn model embedding + trích text PDF) — xem [`core/06-messaging-and-ai.md` §12](./core/06-messaging-and-ai.md).

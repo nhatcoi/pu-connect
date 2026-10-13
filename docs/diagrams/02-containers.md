@@ -1,6 +1,6 @@
 # 02 · Containers (C4 Level 2)
 
-> Các ứng dụng/tiến trình và giao thức giữa chúng. Cập nhật lần cuối: **2026-10-04**.
+> Các ứng dụng/tiến trình và giao thức giữa chúng. Cập nhật lần cuối: **2026-10-13**.
 
 ```mermaid
 flowchart LR
@@ -20,17 +20,19 @@ flowchart LR
   google["Google OAuth"]
   gmail["Gmail SMTP"]
   r2["Cloudflare R2"]
+  claude["Anthropic Claude API"]
 
   browser -->|"HTTPS: trang SSR/CSR"| web
   browser -->|"HTTPS fetch /api/* · /graphql<br/>cookie pu_session"| web
   web -->|"rewrite /api/* · /graphql → INTERNAL_API_URL"| api
-  browser <-->|"WebSocket /api/socket.io<br/>event: notification"| api
+  browser <-->|"WebSocket /api/socket.io<br/>notification · message.* · typing"| api
   browser -->|"tải ảnh/tài liệu (public URL)"| r2
 
   api -->|"SQL · pg.Pool (max 20)<br/>ACID transaction"| db
   api -->|OAuth 2.0| google
   api -->|SMTP| gmail
   api -->|S3 PutObject| r2
+  api -->|"HTTPS streaming (PU AI)"| claude
   api <-->|BullMQ job · worker| redis
   api -->|Web Push VAPID| pushsvc["Push service<br/>FCM · Mozilla · Apple"]
   pushsvc --> sw
@@ -47,7 +49,7 @@ flowchart LR
   class web,api,sw app
   class db,redis store
   class schemas lib
-  class google,gmail,r2,pushsvc external
+  class google,gmail,r2,pushsvc,claude external
   class mobile planned
 ```
 
@@ -57,7 +59,7 @@ flowchart LR
 |---|---|---|---|
 | REST | `/api/*` | Auth, posts, comments, communities, upload, notifications, search | Cookie `pu_session` (Passport) |
 | GraphQL (Apollo) | `/graphql` | Hồ sơ, follow, gợi ý theo dõi, feed/document lồng nhau | Cookie `pu_session` |
-| WebSocket (Socket.IO) | `/api/socket.io` | Đẩy thông báo realtime (`notification`) | Cookie ở handshake; room `user:{id}` do server cấp |
+| WebSocket (Socket.IO) | `/api/socket.io` | Đẩy thông báo (`notification`), tin nhắn (`message.*`, `typing`), AI streaming (`message.delta`) | Cookie ở handshake; room `user:{id}` do server cấp |
 | Redis (BullMQ) | `REDIS_URL` | Hàng đợi push: delay, retry, hoãn | localhost-only |
 | Web Push | VAPID | Thông báo khi đã đóng tab (qua `sw.js`) | Chữ ký VAPID |
 | SQL | `pg.Pool` | Toàn bộ dữ liệu, session store `user_sessions` | `DATABASE_URL` |
@@ -69,5 +71,6 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-13 — thêm Anthropic Claude API (PU AI), sự kiện nhắn tin qua Socket.IO.
 - 2026-10-04 — thêm Redis/BullMQ, Service Worker và Web Push.
 - 2026-10-04 — tạo mới; Socket.IO chuyển sang `/api/socket.io` có xác thực; session store Postgres.

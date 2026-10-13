@@ -1,6 +1,6 @@
 # 03 · API Components (C4 Level 3 — `apps/api`)
 
-> Module NestJS, phụ thuộc giữa chúng và endpoint. Cập nhật lần cuối: **2026-10-04**.
+> Module NestJS, phụ thuộc giữa chúng và endpoint. Cập nhật lần cuối: **2026-10-13**.
 
 ## Module & phụ thuộc
 
@@ -16,6 +16,8 @@ flowchart TB
     gql["<b>SocialGraphQL</b><br/>user · feed · comment<br/>document · study-group"]
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
+    admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
+    chat["<b>Chat</b><br/>ChatService (DM · nhóm · AI)<br/>PuaiService → Claude API"]
   end
 
   subgraph Platform["Platform modules"]
@@ -39,15 +41,18 @@ flowchart TB
   Feature -->|SQL| db
   Platform -->|SQL| db
   auth & storage --> ext
+  admin -->|disconnectUser| rt
+  chat -->|emitToUser message.*| rt
+  chat -->|stream| llm["Anthropic Claude API"]
 
   classDef mod fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef plat fill:#334155,stroke:#334155,color:#fff
   classDef store fill:#ffedd5,stroke:#f97316,color:#7c2d12
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
-  class auth,users,posts,communities,others,storage,gql mod
+  class auth,users,posts,communities,others,storage,gql,admin,chat mod
   class mentions,notif,rt,push,queue plat
   class db store
-  class ext,mw external
+  class ext,mw,llm external
 ```
 
 > Quy tắc phụ thuộc: feature module → platform module → `DatabaseModule`. Platform module **không** import feature module (tránh vòng lặp). Token dùng chung đặt trong `*.constants.ts`.
@@ -60,17 +65,19 @@ flowchart TB
 |---|---|
 | Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/forgot-password` · `POST auth/reset-password` · `POST auth/resend-verification` · `POST auth/onboarding` |
 | Users | `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `POST users/verify-university` |
-| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`) · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` |
+| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`) · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` |
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `DELETE comments/:id` |
 | Communities | `GET communities` · `GET communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` |
-| Documents | `GET documents` · `GET documents/:id` · `POST documents` · `POST documents/:id/download` |
-| Courses | `GET courses` · `GET courses/:id` · `POST courses` |
+| Documents | `GET documents` (`type`, `search`, `course`) · `GET documents/:id` · `POST documents` · `POST documents/:id/download` |
+| Courses | `GET courses` · `GET courses/:id` · `GET courses/:id/overview` (số liệu + người đóng góp) · `POST courses` |
 | Study groups | `GET study-groups` · `GET study-groups/:id` · `POST study-groups` · `POST study-groups/:id/join` |
 | Campus | `GET campus-events` · `POST campus-events` |
 | Search | `GET search` |
 | Notifications | `GET notifications` (cursor `before`, `unread`, `type`) · `GET notifications/unread-count` · `PATCH notifications/:id/read` · `PATCH notifications/read-all` · `GET/PATCH notifications/settings` |
 | Storage | `POST upload/file` · `POST upload/multiple` |
 | Push | `GET push/config` · `POST/DELETE push/subscriptions` · `POST push/test` |
+| Admin (role `admin`) | `GET admin/stats` · `GET admin/reports?status=pending\|resolved` · `POST admin/posts/:id/{hide,unhide,dismiss-reports}` · `GET admin/users?q=&status=` · `POST admin/users/:id/{suspend,unsuspend}` · `GET admin/audit-logs` · `GET admin/search/zero-results?days=` |
+| Chat | `GET conversations` · `GET conversations/unread-count` · `POST conversations/direct` · `POST conversations/ai` · `POST conversations` (nhóm) · `GET conversations/:id` · `GET/POST conversations/:id/messages` (keyset `before`, `clientMsgId` idempotent) · `POST conversations/:id/read` · `POST conversations/:id/leave` · `DELETE messages/:id` · `GET ai/quota` |
 
 ### GraphQL (`/graphql`)
 
@@ -86,8 +93,13 @@ flowchart TB
 | Server → client | `notification` | `{ notification, unreadCount }` vào room `user:{recipientId}` (NotificationsService.notify) |
 | Server → client | `notification.read` | `{ ids?, all?, unreadCount }` — đồng bộ đã đọc giữa các tab |
 | Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
+| Server → client | `message.new` · `message.updated` | `ChatMessage` tới room `user:{id}` của mọi thành viên |
+| Server → client | `message.delta` | `{ conversationId, messageId, delta }` — PU AI trả lời dần |
+| Server → client | `conv.read` · `conv.updated` | đồng bộ đã đọc / hội thoại mới giữa các tab |
+| Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-13 — AdminModule, ChatModule (+ PuaiService), `courses/:id/overview`, lọc `course` cho posts/documents; StudyGroups lưu Postgres; event `message.*`, `typing`; khóa tài khoản chặn login/session/socket.
 - 2026-10-04 — Search: unaccent + trigram, `search_logs` (xem [07-search](../core/07-search.md)).
 - 2026-10-04 — Auth: `forgot-password`, `reset-password`.
 - 2026-10-04 — PushModule + QueueModule (BullMQ), endpoint push, event `presence`.
