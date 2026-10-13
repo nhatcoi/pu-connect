@@ -10,7 +10,8 @@ import {
   Logger
 } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
-import { resolvePrivacySettings, type RegisterInput, type OnboardingInput, type UserProfile } from '@pu/schemas'
+import type { RegisterInput, OnboardingInput, UserProfile } from '@pu/schemas'
+import { resolvePrivacySettings } from '../users/dto/privacy.dto'
 import * as bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'crypto'
 import { ConfigService } from '@nestjs/config'

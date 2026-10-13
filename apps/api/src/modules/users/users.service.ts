@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
-import { resolvePrivacySettings, type UserProfile, type UpdateProfileInput, type UpdatePrivacySettingsInput, type PrivacySettings } from '@pu/schemas'
+import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings } from '@pu/schemas'
+import { resolvePrivacySettings } from './dto/privacy.dto'
 
 @Injectable()
 export class UsersService {
