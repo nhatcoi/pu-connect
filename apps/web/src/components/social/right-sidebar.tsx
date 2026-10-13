@@ -138,9 +138,9 @@ export function RightSidebar() {
       {/* 3. Sleek Minimal Footer */}
       <div className="px-2 text-[11px] text-muted-foreground/70 space-y-1">
         <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-          <Link href="/home" className="hover:underline">Điều khoản</Link>
+          <Link href="/terms" className="hover:underline">Điều khoản</Link>
           <span>·</span>
-          <Link href="/home" className="hover:underline">Quyền riêng tư</Link>
+          <Link href="/privacy-policy" className="hover:underline">Quyền riêng tư</Link>
           <span>·</span>
           <Link href="/search" className="hover:underline">Trợ giúp</Link>
         </div>

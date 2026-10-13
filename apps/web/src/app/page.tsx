@@ -7,7 +7,9 @@ import { useSession } from '@/hooks/use-session'
 import { AuthForm } from '@/components/auth/auth-form'
 import { PuLogo, PuMark } from '@/components/brand/pu-logo'
 import { HeroNetwork } from '@/components/brand/hero-network'
+import Link from 'next/link'
 import { FEATURES } from '@/lib/features'
+import { LEGAL_LINKS } from '@/lib/legal'
 import { QrCode } from 'lucide-react'
 
 export default function LandingPage() {
@@ -49,7 +51,9 @@ export default function LandingPage() {
             <AuthForm />
 
             <p className="text-[11px] text-muted-foreground leading-relaxed mt-5">
-              Bằng việc tiếp tục, bạn đồng ý với Điều khoản dịch vụ, Chính sách bảo mật và Quy định cộng đồng Phenikaa.
+              Bằng việc tiếp tục, bạn đồng ý với{' '}
+              <Link href="/terms" className="text-primary hover:underline">Điều khoản dịch vụ</Link> và{' '}
+              <Link href="/privacy-policy" className="text-primary hover:underline">Chính sách bảo mật</Link> của PU Connector.
             </p>
           </div>
         </div>
@@ -77,20 +81,11 @@ export default function LandingPage() {
       {/* Footer (Standard X Style) */}
       <footer className="w-full py-4 px-6 text-center text-[11px] text-muted-foreground">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-          {FEATURES.legalPages && (
-          <>
-          <a href="#" className="hover:underline">Giới thiệu</a>
-          <a href="#" className="hover:underline">Tải ứng dụng</a>
-          <a href="#" className="hover:underline">PU AI Assistant</a>
-          <a href="#" className="hover:underline">Trợ giúp & Hỗ trợ</a>
-          <a href="#" className="hover:underline">Điều khoản dịch vụ</a>
-          <a href="#" className="hover:underline">Chính sách bảo mật</a>
-          <a href="#" className="hover:underline">Quy chế học vụ</a>
-          <a href="#" className="hover:underline">Cơ hội việc làm</a>
-          <a href="#" className="hover:underline">Dành cho Nhà phát triển</a>
-          <a href="#" className="hover:underline">Khả năng tiếp cận</a>
-          </>
-          )}
+          {LEGAL_LINKS.map((l) => (
+            <Link key={l.href} href={l.href} className="hover:underline">
+              {l.label}
+            </Link>
+          ))}
           <span>© 2026 Phenikaa University. All rights reserved.</span>
         </div>
       </footer>

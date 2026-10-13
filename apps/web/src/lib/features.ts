@@ -3,8 +3,6 @@
 export const FEATURES = {
   // Landing: thẻ QR tải app mobile (chưa phát hành)
   mobileAppPromo: false,
-  // Landing: footer & link điều khoản (chưa có trang)
-  legalPages: false,
   // Sidebar/mobile nav: Học phần, Tài liệu, Hỏi đáp (search bỏ qua `type` khi không có từ khóa)
   categoryShortcuts: false,
   // Sidebar: "Môn học sôi nổi" (dữ liệu cứng, link chết)

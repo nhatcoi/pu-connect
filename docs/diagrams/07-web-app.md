@@ -11,6 +11,7 @@ flowchart LR
   forgot["<b>/forgot-password</b><br/>nhập email"]
   reset["<b>/reset-password</b><br/>?token="]
   getstarted["/get-started<br/>→ redirect /home"]
+  legal["<b>/terms</b> · <b>/privacy-policy</b><br/>route group (legal), công khai"]
 
   subgraph guarded["AuthGuard (cần đăng nhập)"]
     home["<b>/home</b><br/>tab: for_you · following · qa"]
@@ -28,6 +29,7 @@ flowchart LR
   end
 
   landing -->|login / register / Google| home
+  landing -->|footer · lời đồng ý| legal
   verify --> home
   landing -->|Quên mật khẩu?| forgot
   forgot -.->|email chứa link| reset
@@ -97,9 +99,10 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 
 ## Feature flags (`lib/features.ts`)
 
-Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, trang pháp lý, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
+Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-13 — thêm `/terms`, `/privacy-policy` (route group `(legal)`, `LegalDocument`, link chung `lib/legal.ts`); bỏ flag `legalPages` và link footer chết.
 - 2026-10-13 — chat P2: hooks tách `hooks/chat/`, component theo `components/chat/{thread,composer,ai,info}`; cột phải `/messages/[id]` = bảng thông tin hội thoại.
 - 2026-10-13 — thêm `/courses`, `/courses/[code]`, `/messages`, `/messages/[id]`, `/admin`; sidebar & bottom nav có Học phần, Tin nhắn (badge chưa đọc), Quản trị (admin).
 - 2026-10-09 — route group `(app)` + `AppLayout` dùng chung; dữ liệu server qua TanStack Query (cache, prefetch, cập nhật lạc quan); bỏ `AppShell`.
