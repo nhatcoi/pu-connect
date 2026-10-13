@@ -29,7 +29,8 @@ import {
   UserMinus,
   Pin,
   PinOff,
-  EyeOff
+  EyeOff,
+  Sparkles
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,7 @@ import { ReportPostDialog } from './report-post-dialog'
 import { PostAnalyticsDialog } from './post-analytics-dialog'
 import { PostMediaGallery } from './post-media-gallery'
 import { PostCommentsSection } from './comments/post-comments-section'
+import { PostSummary } from './post-summary'
 import { useAppStore } from '@/store'
 import { apiClient } from '@/lib/api-client'
 import { graphqlClient } from '@/lib/graphql-client'
@@ -161,6 +163,7 @@ export function PostCard({
   const contentRef = useRef<HTMLDivElement>(null)
   const [isExpanded, setIsExpanded] = useState(defaultCommentsOpen)
   const [isOverflowing, setIsOverflowing] = useState(false)
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false)
 
   useLayoutEffect(() => {
     const el = contentRef.current
@@ -617,14 +620,29 @@ export function PostCard({
               )}
             </div>
             {isOverflowing && (
-              <button
-                type="button"
-                onClick={() => setIsExpanded((v) => !v)}
-                className="text-xs font-medium text-primary hover:underline cursor-pointer"
-              >
-                {isExpanded ? 'Thu gọn' : 'Xem thêm'}
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded((v) => !v)}
+                  className="text-xs font-medium text-primary hover:underline cursor-pointer"
+                >
+                  {isExpanded ? 'Thu gọn' : 'Xem thêm'}
+                </button>
+                {/* Bài dài: tóm tắt bằng PU AI (cần đăng nhập) */}
+                {user && (
+                  <button
+                    type="button"
+                    onClick={() => setIsSummaryOpen((v) => !v)}
+                    aria-expanded={isSummaryOpen}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline cursor-pointer"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    {isSummaryOpen ? 'Ẩn tóm tắt' : 'Tóm tắt'}
+                  </button>
+                )}
+              </div>
             )}
+            {isSummaryOpen && <PostSummary postId={post.id} />}
 
             {/* Student Poll */}
             {post.poll && (

@@ -7,6 +7,7 @@ export const queryKeys = {
   feed: (feedType: FeedType, tag?: string | null) => ['feed', feedType, tag ?? null] as const,
   feedAll: ['feed'] as const,
   post: (id: string) => ['post', id] as const,
+  postSummary: (id: string) => ['post-summary', id] as const,
   comments: (postId: string) => ['comments', postId] as const,
   profile: (username: string) => ['profile', username.toLowerCase()] as const,
   profileAll: ['profile'] as const,
