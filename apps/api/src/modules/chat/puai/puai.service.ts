@@ -7,6 +7,7 @@ import { LlmService, MAX_OUTPUT_TOKENS, type LlmMessage as Msg, type LlmUsage } 
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
 import { attachmentParts, isReadableDoc } from './puai.attachments'
+import { FOLLOWUP_PROMPT, FollowUpSplitter } from './puai.followups'
 import { GROUP_PROMPT, MODE_PROMPTS } from './puai.prompts'
 
 const AI_HISTORY_LIMIT = 20
@@ -107,26 +108,28 @@ export class PuaiService {
       })
       // Danh sách thành viên lấy 1 lần (delta đến liên tục)
       const memberIds = await this.core.memberIds(conversationId)
-      let text = ''
+      const emit = (delta: string) => this.core.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
+      // Phần sau dấu mốc = câu hỏi gợi ý tiếp theo ⇒ không đẩy ra màn hình
+      const splitter = new FollowUpSplitter()
       let finishReason: string | null = null
       let usage: LlmUsage = { prompt_tokens: 0, completion_tokens: 0 }
       for await (const chunk of stream) {
         const choice = chunk.choices[0]
         const delta = choice?.delta?.content
-        if (delta) {
-          text += delta
-          this.core.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
-        }
+        const shown = delta ? splitter.push(delta) : ''
+        if (shown) emit(shown)
         if (choice?.finish_reason) finishReason = choice.finish_reason
         if (chunk.usage) usage = chunk.usage
       }
 
-      text = text.trim()
+      const { rest, text: answer, followUps } = splitter.finish()
+      if (rest) emit(rest)
+      let text = answer.trim()
       if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
       if (finishReason === 'length') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
 
       const citations: ChatCitation[] = sources.map((s) => ({ type: 'citation', ref: { type: s.type, id: s.id }, title: s.title }))
-      await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done')
+      await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', finishReason === 'length' || finishReason === 'content_filter' ? [] : followUps)
       await this.llm.finishRun(runId, { usage, startedAt: started })
     } catch (err) {
       const busy = this.llm.isBusyError(err)
@@ -164,7 +167,7 @@ export class PuaiService {
   // System prompt (+ chế độ học, + nhóm) → lịch sử → lượt hỏi hiện tại (nguồn + tệp đính kèm)
   private async buildMessages(conversationId: string, botId: string, trigger: Trigger, question: string, sources: any[]): Promise<Msg[]> {
     const inGroup = trigger.type === 'group'
-    const system = SYSTEM_PROMPT + (inGroup ? GROUP_PROMPT : '') + MODE_PROMPTS[trigger.aiMode]
+    const system = SYSTEM_PROMPT + (inGroup ? GROUP_PROMPT : '') + MODE_PROMPTS[trigger.aiMode] + (inGroup ? '' : FOLLOWUP_PROMPT)
     const history = await this.loadHistory(conversationId, botId, trigger.id, inGroup)
 
     const { parts, notes } = await attachmentParts(trigger.attachments)
@@ -242,13 +245,21 @@ export class PuaiService {
     await this.core.broadcast(conversationId, 'message.new', message)
   }
 
-  private async finish(messageId: string, conversationId: string, text: string, blocks: ChatCitation[] | null, status: 'done' | 'error') {
-    await this.db.query(`UPDATE messages SET content = $2, blocks = $3, status = $4 WHERE id = $1`, [
-      messageId,
-      text,
-      blocks ? JSON.stringify(blocks) : null,
-      status
-    ])
+  private async finish(
+    messageId: string,
+    conversationId: string,
+    text: string,
+    blocks: ChatCitation[] | null,
+    status: 'done' | 'error',
+    followUps: string[] = []
+  ) {
+    // Gợi ý tiếp theo gộp vào meta (giữ aiMode sẵn có)
+    await this.db.query(
+      `UPDATE messages SET content = $2, blocks = $3, status = $4,
+         meta = CASE WHEN $5::jsonb IS NULL THEN meta ELSE COALESCE(meta, '{}'::jsonb) || $5::jsonb END
+       WHERE id = $1`,
+      [messageId, text, blocks ? JSON.stringify(blocks) : null, status, followUps.length ? JSON.stringify({ followUps }) : null]
+    )
     const message = await this.core.fetchMessage(this.db, messageId)
     await this.core.broadcast(conversationId, 'message.updated', message)
     // Trả lời xong ⇒ push cho người đang chờ (đã rời app)

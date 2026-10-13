@@ -112,6 +112,7 @@ export interface ChatMessageMeta {
   event?: ChatSystemEvent
   actorName?: string
   targetNames?: string[]
+  followUps?: string[] // PU AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
 }
 
 export interface ChatMessage {
