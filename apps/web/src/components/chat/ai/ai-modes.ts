@@ -7,7 +7,7 @@ export const AI_MODE_META: Record<AiMode, { label: string; icon: LucideIcon; pla
   explain: { label: 'Giải thích', icon: Brain, placeholder: 'Khái niệm cần giải thích, vd. "Đệ quy là gì?"', hint: 'Từng bước, có ví dụ' },
   quiz: { label: 'Quiz', icon: BookOpen, placeholder: 'Chủ đề muốn tự kiểm tra, vd. "Chuẩn hóa CSDL"', hint: '5 câu trắc nghiệm có chấm điểm' },
   flashcards: { label: 'Flashcard', icon: Layers, placeholder: 'Chủ đề cần ghi nhớ, vd. "Công thức đạo hàm"', hint: 'Thẻ lật để học thuộc' },
-  summarize: { label: 'Tóm tắt', icon: FileText, placeholder: 'Dán văn bản hoặc gửi ảnh/tệp cần tóm tắt…', hint: 'Ý chính, thuật ngữ, câu ôn' },
+  summarize: { label: 'Tóm tắt', icon: FileText, placeholder: 'Dán văn bản hoặc gửi ảnh, PDF, Word cần tóm tắt…', hint: 'Ý chính, thuật ngữ, câu ôn' },
   plan: { label: 'Lộ trình ôn', icon: CalendarCheck, placeholder: 'Môn + thời gian, vd. "Giải tích 2, thi sau 10 ngày"', hint: 'Kế hoạch theo ngày' }
 }
 

@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
 import type { AiMode, AiQuota, ChatAttachment, ChatCitation, ChatMessage } from '@pu/schemas'
 import { ChatCoreService } from '../chat-core.service'
-import { attachmentParts } from './puai.attachments'
+import { attachmentParts, isReadableDoc } from './puai.attachments'
 import { GROUP_PROMPT, MODE_PROMPTS, SYSTEM_PROMPT } from './puai.prompts'
 import { PuaiRetrieval, contextBlock } from './puai.retrieval'
 
@@ -215,12 +215,40 @@ export class PuaiService {
     const history = await this.loadHistory(conversationId, botId, trigger.id, inGroup)
 
     const { parts, notes } = await attachmentParts(trigger.attachments)
+    // Không gửi kèm tệp ⇒ dùng lại tài liệu gần nhất trong chủ đề (hỏi tiếp về cùng PDF/DOCX)
+    let docNote = ''
+    if (!trigger.attachments?.length) {
+      const recent = await this.recentDocuments(conversationId, trigger.id)
+      if (recent.length) {
+        const prev = await attachmentParts(recent, { images: false })
+        parts.push(...prev.parts)
+        if (prev.parts.length) docNote = `\n\n(Tài liệu đang thảo luận, gửi ở tin trước: ${recent.map((a) => a.name).join(', ')})`
+      }
+    }
     const label = inGroup ? `${trigger.senderName}: ` : ''
     const fileNote = notes.length ? `\n\n(Người dùng có gửi kèm tệp PU AI chưa đọc được: ${notes.join(', ')})` : ''
-    const text = `${contextBlock(sources)}${label}${question || '(Xem tệp đính kèm)'}${fileNote}`
+    const text = `${contextBlock(sources)}${label}${question || '(Xem tệp đính kèm)'}${fileNote}${docNote}`
     const current: Msg = { role: 'user', content: parts.length ? [{ type: 'text', text }, ...parts] : text }
 
     return [{ role: 'system', content: system }, ...history, current]
+  }
+
+  // Tài liệu đọc được ở tin gần nhất (≤ 10 tin trước, sau mốc "Chủ đề mới") / Latest readable docs in topic
+  private async recentDocuments(conversationId: string, beforeId: string): Promise<ChatAttachment[]> {
+    const res = await this.db.query(
+      `SELECT attachments FROM (
+         SELECT id, attachments FROM messages
+         WHERE conversation_id = $1 AND id < $2 AND deleted_at IS NULL AND kind <> 'system'
+           AND id > COALESCE((SELECT MAX(id) FROM messages WHERE conversation_id = $1 AND kind = 'system' AND meta->>'event' = 'ai.reset'), 0)
+         ORDER BY id DESC LIMIT 10
+       ) t WHERE attachments IS NOT NULL ORDER BY id DESC`,
+      [conversationId, beforeId]
+    )
+    for (const row of res.rows) {
+      const docs = (row.attachments as ChatAttachment[]).filter(isReadableDoc)
+      if (docs.length) return docs
+    }
+    return []
   }
 
   // Lịch sử trước tin hiện tại ⇒ lượt user/assistant xen kẽ (gộp lượt liên tiếp cùng vai)

@@ -126,7 +126,7 @@ export function Composer({ conversationId, isAi, disabled, placeholder, replyTo,
                 type="file"
                 multiple
                 hidden
-                accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar"
+                accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.csv,.zip,.rar"
                 onChange={(e) => {
                   if (e.target.files) uploads.add(e.target.files)
                   e.target.value = ''

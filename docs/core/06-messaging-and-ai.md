@@ -600,6 +600,6 @@ apps/web/src/components/chat/
 | Chế độ học | `aiMode` gửi kèm tin (`meta.aiMode`), server ghép `MODE_PROMPTS[mode]` vào system prompt, ghi `ai_runs.task`. Quiz/flashcard: model trả JSON trong khối code; web kiểm tra schema, JSON hỏng ⇒ hiện như code thường, đang stream ⇒ "Đang tạo…". |
 | `@puai` trong nhóm | Tin nhóm khớp `@puai` (đầu tin hoặc sau khoảng trắng) ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
 | Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
-| Vision | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB); `.txt/.md/.csv` ≤ 200 KB chèn `<file>`; định dạng khác (PDF, DOCX) chỉ báo tên — *chưa trích text PDF*. |
+| Vision & tài liệu | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB). PDF (`pdf-parse`, ≤ 40 trang, ≤ 20 MB), DOCX (`mammoth`), `.txt/.md/.csv` ⇒ trích text chèn `<file>` (≤ 40k ký tự/tệp, ≤ 80k/lượt), cache LRU 30 tệp theo key R2. Tin không kèm tệp ⇒ dùng lại tài liệu đọc được ở ≤ 10 tin trước (sau mốc "Chủ đề mới"). PDF scan (không có lớp chữ) ⇒ báo người dùng; PPTX/XLSX chỉ báo tên. |
 
-Còn thiếu: push cho tin nhắn, trích text PDF/DOCX cho PU AI, ảnh đại diện nhóm (API có `avatarUrl`, UI chưa có nút đổi), chuyển quyền trưởng nhóm thủ công, xem ai đã thả cảm xúc.
+Còn thiếu: push cho tin nhắn, ảnh đại diện nhóm (API có `avatarUrl`, UI chưa có nút đổi), chuyển quyền trưởng nhóm thủ công, xem ai đã thả cảm xúc.

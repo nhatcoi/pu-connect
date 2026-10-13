@@ -29,6 +29,8 @@ const DOCUMENT_TYPES = [
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/plain',
+  'text/markdown',
+  'text/csv',
   // Nén: tên MIME khác nhau theo trình duyệt/hệ điều hành
   'application/zip',
   'application/x-zip-compressed',
