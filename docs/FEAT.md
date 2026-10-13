@@ -151,6 +151,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 👥 **Nhóm chat**: đổi tên & **ảnh nhóm** (`PATCH conversations/:id` nhận `avatarKey` — ảnh do chính người đổi tải lên `avatars/{userId}/`, server tự suy URL R2; tin hệ thống "đã đổi ảnh nhóm"), thêm thành viên (mọi người) / xóa (trưởng nhóm) (`POST/DELETE conversations/:id/members`), chuyển quyền trưởng nhóm thủ công (`POST conversations/:id/owner`, menu `⋯` có xác nhận) hoặc tự động khi trưởng nhóm rời, tin hệ thống "A đã thêm B…". Cài đặt riêng: tắt thông báo 1h/8h/24h/vô hạn (không tính vào badge), ghim hội thoại lên đầu (`PATCH conversations/:id/settings`). Bảng thông tin (cột phải / hộp thoại mobile): thành viên, kho Ảnh/Tệp (`GET conversations/:id/attachments`), Đã ghim, tìm tin không dấu (`GET conversations/:id/messages/search`). Danh sách lọc Tất cả / Chưa đọc / Nhóm.
 - [x] 🎓 **PU AI học tập**: 6 chế độ (Hỏi đáp, Giải thích, Quiz, Flashcard, Tóm tắt, Lộ trình ôn) — chế độ đổi chỉ dẫn hệ thống (`puai.prompts.ts`); Quiz/Flashcard trả JSON trong khối ```` ```quiz ```` / ```` ```flashcards ```` ⇒ web dựng **quiz chấm điểm** và **bộ thẻ lật** tương tác. PU AI đọc **ảnh đính kèm** (vision, base64 ≤ 4 ảnh) và **nội dung tệp PDF / DOCX / .txt/.md/.csv** (`pdf-parse` ≤ 40 trang, `mammoth`; ≤ 40k ký tự/tệp, cache theo key R2), hỏi tiếp tự dùng lại tài liệu gần nhất trong chủ đề; gọi **`@puai` trong nhóm chat** (trả lời trích tin người hỏi, tính quota người hỏi); "Chủ đề mới" (`POST ai/conversations/:id/reset`) làm mới ngữ cảnh; hiện lượt còn lại. Chi tiết: [`core/06` §13](./core/06-messaging-and-ai.md).
 
+### 🎯 Cá Nhân Hóa & Gợi Ý PU AI (2026-10-14)
+- [x] Ghi hành vi ngầm `user_events` (bài xem ≥ 2s, mở bài/tài liệu, tải tài liệu, tìm kiếm, bấm kết quả, bấm gợi ý) qua `POST /api/events` theo lô (`lib/track.ts`), giữ 90 ngày.
+- [x] Hồ sơ quan tâm `user_interests` (môn / tag / từ khóa) tính bằng SQL từ đăng bài, lưu, bình luận, cảm xúc, nhóm học, câu hỏi PU AI và sự kiện; suy giảm nửa đời 14 ngày; worker BullMQ làm mới mỗi giờ (`modules/personalization/`).
+- [x] `GET /api/ai/suggestions?mode=`: gợi ý PU AI theo chủ đề quan tâm × mẫu câu từng chế độ (thay thẻ viết cứng ở client); chọn chế độ giữa hội thoại mở bảng gợi ý trên ô soạn.
+- [x] PU AI trả kèm 3 câu hỏi tiếp theo trong cùng lượt gọi (`meta.followUps`), hiện thành chip dưới câu trả lời.
+- [x] Bảng tin For You cộng điểm bài khớp hồ sơ quan tâm.
+- [x] Công tắc "Cá nhân hóa gợi ý" (`privacySettings.personalization`): tắt ⇒ ngừng ghi, xóa dữ liệu hành vi & hồ sơ. Test `apps/api/test/personalization.e2e-spec.ts`. Chi tiết: [`core/06` §19](./core/06-messaging-and-ai.md).
+
 ### ⚡ Hiệu Năng Chat (2026-10-14)
 - [x] Danh sách hội thoại phân trang keyset 20/trang, lọc Tất cả/Chưa đọc/Nhóm ở server, cuộn xuống tải thêm.
 - [x] Tin mới / đã đọc vá cache danh sách & badge từ sự kiện socket thay vì tải lại; mở hội thoại dùng lại dữ liệu danh sách; đồng bộ lại khi socket nối lại.

@@ -147,7 +147,7 @@ sequenceDiagram
 
   W->>P: GET /api/posts?feedType=for_you&limit&offset
   P->>DB: Một query: JOIN users/courses/communities<br/>+ recommendation_score
-  Note right of DB: +30 cùng khoa · +15 cùng khóa · +35 đang theo dõi<br/>+35 tag ∩ interests · +25 tag ∩ skills · +10 đã giải<br/>+ likes×2 + comments×5 − 2/ngày tuổi
+  Note right of DB: +30 cùng khoa · +15 cùng khóa · +35 đang theo dõi<br/>+35 tag ∩ interests · +25 tag ∩ skills · +10 đã giải<br/>+0..40 khớp hồ sơ quan tâm (user_interests: môn + tag)<br/>+ likes×2 + comments×5 − 2/ngày tuổi
   DB-->>P: ORDER BY score DESC, created_at DESC LIMIT/OFFSET
   P->>DB: Batch lấy poll cho các bài
   P-->>W: { data, total, hasMore, nextOffset }
@@ -274,6 +274,8 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-14 — 5.4: cộng điểm khớp hồ sơ quan tâm (`interestBoostSql`, chuẩn hóa theo chủ đề mạnh nhất).
+- 2026-10-14 — 5.7: PU AI viết câu hỏi tiếp theo sau dấu mốc `<<<FOLLOWUPS>>>` trong cùng luồng stream; server giấu khỏi delta, lưu `meta.followUps`.
 - 2026-10-13 — 5.7: `@puai` trong nhóm, chế độ học, ảnh đính kèm, kiểm tra tệp.
 - 2026-10-13 — thêm 5.7 Nhắn tin & PU AI, 5.8 Khóa tài khoản.
 - 2026-10-04 — thêm 5.6 Tìm kiếm.

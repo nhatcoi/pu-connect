@@ -683,3 +683,41 @@ Hội thoại đang mở (`setActiveConversation`) không cộng chưa đọc kh
 
 Khác: bảng thông tin DM mở tab "Đã ghim" (dùng lại cache thanh tin ghim) ⇒ ảnh/tệp chỉ tải khi bấm tab; tắt prefetch link footer và `?edit=1`.
 
+
+## 19. Cá nhân hóa: hành vi → hồ sơ quan tâm → gợi ý (2026-10-14)
+
+Mục tiêu: gợi ý PU AI và bảng tin dựa trên **việc người dùng thật sự làm**, không chỉ ngành/sở thích khai báo. Không gọi LLM để chọn gợi ý.
+
+Migration `personalization-upgrade.sql`:
+- `user_events (id, user_id, type, target_type, target_id, meta, created_at)` — chỉ ghi thêm, xóa sau **90 ngày** (worker hằng ngày).
+- `user_interests (user_id, kind 'course'|'tag'|'query', key, label, score)` — hồ sơ suy ra, tối đa 30 chủ đề/người.
+- `users.interests_updated_at`.
+
+**Thu thập** (`lib/track.ts`): client gom sự kiện, gửi `POST /api/events` mỗi 10s / khi đủ 20 / khi rời trang (`keepalive`). Loại: `post_view` (bài hiện ≥ 2s, ≥ 50% hoặc ≥ 40% màn hình — `useDwellTracking`), `post_open`, `doc_open`, `doc_download`, `search` (`meta.q`, bỏ tìm người), `search_click`, `ai_suggestion_click` (`meta.kind/key` của chủ đề). Zod chặn loại lạ, `targetId` phải là UUID, `meta` chỉ chuỗi ngắn.
+
+**Hồ sơ quan tâm** (`interest-profile.sql.ts`): 1 câu SQL gom tín hiệu theo môn (`course_id` của bài/tài liệu), tag và từ khóa tìm kiếm:
+
+| Tín hiệu | Trọng số |
+|---|---|
+| Đăng bài / tải tài liệu lên | 5 |
+| Lưu bài · vào nhóm học (không suy giảm) | 4 |
+| Bình luận · hỏi PU AI nhắc tên/mã môn · tải tài liệu | 3 |
+| Bấm kết quả tìm kiếm | 2 |
+| Mở bài / tài liệu · tìm kiếm | 1.5 |
+| Thả cảm xúc · bấm gợi ý AI · sở thích/kỹ năng hồ sơ | 1 |
+| Bài hiện ≥ 2s trên bảng tin | 0.5 |
+
+`điểm = Σ trọng số × 0.5^(tuổi_ngày / 14)` (nửa đời 14 ngày, chỉ xét 180 ngày). Tính lại: worker `personalization` (BullMQ job scheduler) mỗi giờ cho người hoạt động trong 24h có hồ sơ cũ > 1h (≤ 500 người/lượt); hoặc ngay khi xin gợi ý mà hồ sơ cũ > 6h.
+
+**Gợi ý PU AI** — `GET /api/ai/suggestions?mode=` → `{ personalized, items: [{ mode, text, topic }] }`: top chủ đề (bỏ trùng, ≤ 1 từ khóa tìm kiếm) × mẫu câu theo chế độ (`ai-suggestions.templates.ts`); "Hỏi đáp" trộn Giải thích / Quiz / Flashcard / Lộ trình; thiếu thì bù gợi ý mặc định (trước đây viết cứng ở web). Web cache 10 phút/chế độ.
+- Màn trống: thẻ gợi ý đổi theo chip chế độ đang chọn; bấm ⇒ điền sẵn để sửa.
+- Đang có tin: chọn chế độ ⇒ bảng gợi ý trên ô soạn (2 hàng chip), bấm ⇒ gửi ngay.
+- Bấm gợi ý ghi `ai_suggestion_click` ⇒ chủ đề đó mạnh lên (vòng phản hồi).
+
+**Câu hỏi tiếp theo** (`puai.followups.ts`): hội thoại PU AI riêng thêm chỉ dẫn viết 3 câu hỏi sau dấu mốc `<<<FOLLOWUPS>>>` trong **cùng lượt gọi**. `FollowUpSplitter` giữ lại đuôi có thể là đầu dấu mốc ⇒ client không bao giờ thấy dấu mốc; phần sau mốc lưu `messages.meta.followUps` (bỏ khi bị cắt do dài / lọc nội dung). Web hiện chip dưới câu trả lời AI cuối, bấm ⇒ gửi.
+
+**Bảng tin**: điểm For You cộng `0..40 × (Σ điểm chủ đề khớp bài / điểm chủ đề mạnh nhất)` (`interestBoostSql`, khớp môn hoặc tag).
+
+**Quyền riêng tư**: `privacySettings.personalization` (mặc định bật, công tắc "Cá nhân hóa gợi ý"). Tắt ⇒ server không ghi sự kiện, `UserEventsService.forget` xóa `user_events` + `user_interests`, gợi ý về mặc định. `search_logs` vẫn ẩn danh như cũ (thống kê từ khóa cho admin).
+
+Chưa làm: đo CTR theo `ai_suggestion_shown` / xếp hạng bằng bandit; nhờ LLM viết lại câu gợi ý; partition `user_events` theo tháng (khi bảng lớn).

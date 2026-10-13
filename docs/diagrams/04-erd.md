@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **32 bảng**, **52 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **34 bảng**, **54 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -68,8 +68,10 @@ erDiagram
   users ||--o{ study_groups : "leader_id"
   users ||--o{ user_blocks : "blocked_id"
   users ||--o{ user_blocks : "blocker_id"
+  users ||--o{ user_events : "user_id"
   users ||--o{ user_follows : "follower_id"
   users ||--o{ user_follows : "following_id"
+  users ||--o{ user_interests : "user_id"
 ```
 
 ## 2. Identity & Social graph
@@ -122,6 +124,7 @@ erDiagram
     timestamptz suspended_at
     varchar suspended_reason
     timestamptz last_seen_at
+    timestamptz interests_updated_at
   }
   user_follows {
     uuid follower_id PK,FK
@@ -166,7 +169,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -407,7 +410,31 @@ erDiagram
 
 Liên kết ra ngoài nhóm: `conversations.study_group_id → study_groups`, `documents.owner_id → users`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
 
-## 6. Chưa phân nhóm (cập nhật DOMAINS trong scripts/gen-erd.mjs)
+## 6. Personalization
+
+```mermaid
+erDiagram
+  user_events {
+    bigint id PK
+    uuid user_id FK
+    varchar type
+    varchar target_type
+    uuid target_id
+    jsonb meta
+    timestamptz created_at
+  }
+  user_interests {
+    uuid user_id PK,FK
+    varchar kind PK
+    text key PK
+    text label
+    real score
+  }
+```
+
+Liên kết ra ngoài nhóm: `user_events.user_id → users`, `user_interests.user_id → users`
+
+## 7. Chưa phân nhóm (cập nhật DOMAINS trong scripts/gen-erd.mjs)
 
 ```mermaid
 erDiagram
