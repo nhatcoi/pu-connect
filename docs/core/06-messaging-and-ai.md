@@ -598,7 +598,7 @@ apps/web/src/components/chat/
 | Đã xem | `summary.readCursors` (con trỏ của người khác) + `conv.read {userId}` gửi mọi thành viên. |
 | Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge. *Chưa có push cho tin nhắn nên chưa ảnh hưởng push.* |
 | Chế độ học | `aiMode` gửi kèm tin (`meta.aiMode`), server ghép `MODE_PROMPTS[mode]` vào system prompt, ghi `ai_runs.task`. Quiz/flashcard: model trả JSON trong khối code; web kiểm tra schema, JSON hỏng ⇒ hiện như code thường, đang stream ⇒ "Đang tạo…". |
-| `@puai` trong nhóm | Tin nhóm khớp `/(^|\s)@puai\b/i` ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
+| `@puai` trong nhóm | Tin nhóm khớp `@puai` (đầu tin hoặc sau khoảng trắng) ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
 | Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
 | Vision | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB); `.txt/.md/.csv` ≤ 200 KB chèn `<file>`; định dạng khác (PDF, DOCX) chỉ báo tên — *chưa trích text PDF*. |
 
