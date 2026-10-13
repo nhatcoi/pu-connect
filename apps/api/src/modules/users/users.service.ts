@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings } from '@pu/schemas'
+import { UserEventsService } from '../personalization/user-events.service'
 import { resolvePrivacySettings } from './dto/privacy.dto'
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name)
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly userEvents: UserEventsService
+  ) {}
 
   /**
    * Lấy thông tin hồ sơ sinh viên, tự động lọc theo privacy_settings
@@ -202,6 +206,9 @@ export class UsersService {
       `UPDATE users SET privacy_settings = $1::jsonb, updated_at = NOW() WHERE id = $2`,
       [JSON.stringify(updatedPrivacy), userId]
     )
+
+    // Tắt cá nhân hóa ⇒ xóa hành vi đã ghi & hồ sơ quan tâm
+    if (changes.personalization === false) await this.userEvents.forget(userId)
 
     this.logger.log(`User ${userId} updated privacy settings: ${JSON.stringify(updatedPrivacy)}`)
     return updatedPrivacy

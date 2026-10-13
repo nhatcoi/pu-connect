@@ -9,7 +9,8 @@ export const DEFAULT_PRIVACY_SETTINGS: PrivacySettings = {
   showStudentId: true,
   showClass: true,
   isPrivateProfile: false,
-  showActivityStatus: true
+  showActivityStatus: true,
+  personalization: true
 }
 
 // PATCH /users/privacy: chỉ nhận đúng các cờ boolean đã biết
@@ -19,7 +20,8 @@ export const UpdatePrivacyBodySchema = z
     showStudentId: z.boolean(),
     showClass: z.boolean(),
     isPrivateProfile: z.boolean(),
-    showActivityStatus: z.boolean()
+    showActivityStatus: z.boolean(),
+    personalization: z.boolean()
   })
   .partial()
   .strict()

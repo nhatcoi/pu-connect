@@ -44,7 +44,9 @@ export const PrivacySettingsSchema = z.object({
   showClass: z.boolean().default(true),
   isPrivateProfile: z.boolean().default(false),
   // Hiện "Đang hoạt động" cho người cùng hội thoại (tắt ⇒ cũng không thấy của người khác)
-  showActivityStatus: z.boolean().default(true)
+  showActivityStatus: z.boolean().default(true),
+  // Dùng hành vi (bài đã xem, tìm kiếm, tương tác) để gợi ý; tắt ⇒ xóa dữ liệu hành vi
+  personalization: z.boolean().default(true)
 })
 
 export const UserProfileSchema = z.object({
@@ -76,7 +78,8 @@ export const UserProfileSchema = z.object({
     showStudentId: true,
     showClass: true,
     isPrivateProfile: false,
-    showActivityStatus: true
+    showActivityStatus: true,
+    personalization: true
   }),
   skills: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),

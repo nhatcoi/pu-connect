@@ -21,6 +21,7 @@ import { AdminModule } from './modules/admin/admin.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { BlocksModule } from './modules/blocks/blocks.module'
 import { PresenceModule } from './modules/presence/presence.module'
+import { PersonalizationModule } from './modules/personalization/personalization.module'
 
 @Module({
   imports: [
@@ -55,7 +56,8 @@ import { PresenceModule } from './modules/presence/presence.module'
     AdminModule,
     ChatModule,
     BlocksModule,
-    PresenceModule
+    PresenceModule,
+    PersonalizationModule
   ]
 })
 export class AppModule {}

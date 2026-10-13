@@ -22,7 +22,8 @@ export const MIGRATIONS = [
   'chat-push-clear-upgrade.sql',
   'user-blocks-upgrade.sql',
   'presence-upgrade.sql',
-  'post-summary-upgrade.sql'
+  'post-summary-upgrade.sql',
+  'personalization-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)
