@@ -291,6 +291,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         JOIN users u ON p.author_id = u.id
         LEFT JOIN courses c ON p.course_id = c.id
         WHERE ${m.where}
+          AND p.hidden_at IS NULL
           AND (p.visibility = 'public' OR p.author_id = ${viewer}::uuid)`
       if (faculty) {
         params.push(faculty)

@@ -33,6 +33,7 @@ export class PostsController {
     @Query('limit') limit: string | undefined,
     @Query('offset') offset: string | undefined,
     @Query('feedType') feedType: string | undefined,
+    @Query('course') course: string | undefined,
     @Req() req: Request
   ) {
     const currentUserId = (req.user as any)?.id || null
@@ -43,7 +44,8 @@ export class PostsController {
       tag,
       parsedLimit,
       parsedOffset,
-      feedType || 'for_you'
+      feedType || 'for_you',
+      course
     )
     return {
       success: true,

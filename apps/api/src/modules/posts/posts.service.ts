@@ -27,7 +27,8 @@ export class PostsService {
     tag?: string,
     limit = 10,
     offset = 0,
-    feedType = 'for_you'
+    feedType = 'for_you',
+    courseCode?: string
   ): Promise<FeedResult> {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
@@ -59,11 +60,18 @@ export class PostsService {
       )`
     }
 
-    let whereClause = ` WHERE 1=1`
+    // Bài bị admin ẩn không xuất hiện trên bảng tin
+    let whereClause = ` WHERE p.hidden_at IS NULL`
 
     if (tag) {
       params.push(tag)
       whereClause += ` AND $${params.length} = ANY(p.tags)`
+    }
+
+    // Trang học phần: chỉ bài gắn môn đó (theo mã hoặc id)
+    if (courseCode) {
+      params.push(courseCode)
+      whereClause += ` AND (c.code ILIKE $${params.length} OR c.id::text = $${params.length})`
     }
 
     let orderBy = `ORDER BY recommendation_score DESC, p.created_at DESC`
@@ -149,7 +157,8 @@ export class PostsService {
       sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me, FALSE as is_author_followed_by_me`
     }
 
-    sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id WHERE p.id = $1 LIMIT 1`
+    sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id WHERE p.id = $1
+             AND (p.hidden_at IS NULL${currentUserId ? ' OR p.author_id = $2' : ''}) LIMIT 1`
 
     const res = await this.db.query(sql, params)
     if (res.rows.length === 0) {

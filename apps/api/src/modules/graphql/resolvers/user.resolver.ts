@@ -215,7 +215,7 @@ export class UserResolver {
               u.created_at as author_created_at
        FROM posts p
        JOIN users u ON p.author_id = u.id
-       WHERE p.author_id = $1
+       WHERE p.author_id = $1 AND p.hidden_at IS NULL
        ORDER BY p.is_pinned DESC, p.created_at DESC
        LIMIT 50`,
       [user.id]

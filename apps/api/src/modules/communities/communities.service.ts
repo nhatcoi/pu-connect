@@ -157,7 +157,7 @@ export class CommunitiesService {
 
     // 1. Get total count of posts in this community
     const countRes = await this.db.query(
-      `SELECT COUNT(*) as total FROM posts WHERE community_id = $1`,
+      `SELECT COUNT(*) as total FROM posts WHERE community_id = $1 AND hidden_at IS NULL`,
       [community.id]
     )
     const total = parseInt(countRes.rows[0]?.total || '0', 10)
@@ -194,7 +194,7 @@ export class CommunitiesService {
       JOIN users u ON p.author_id = u.id
       LEFT JOIN courses c ON p.course_id = c.id
       LEFT JOIN communities comm ON p.community_id = comm.id
-      WHERE p.community_id = $1
+      WHERE p.community_id = $1 AND p.hidden_at IS NULL
     `
 
     params.push(safeLimit, safeOffset)

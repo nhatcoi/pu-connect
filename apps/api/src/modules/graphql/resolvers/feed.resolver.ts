@@ -54,9 +54,10 @@ export class FeedResolver {
       sql += ` LEFT JOIN users cu ON cu.id = $1`
     }
 
+    sql += ` WHERE p.hidden_at IS NULL`
     if (tag) {
       params.push(tag)
-      sql += ` WHERE $${params.length} = ANY(p.tags)`
+      sql += ` AND $${params.length} = ANY(p.tags)`
     }
 
     params.push(limit, offset)
@@ -89,7 +90,7 @@ export class FeedResolver {
       sql += `, FALSE as is_liked_by_me`
     }
 
-    sql += ` FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 LIMIT 1`
+    sql += ` FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 AND p.hidden_at IS NULL LIMIT 1`
 
     const res = await this.db.query(sql, params)
     if (res.rows.length === 0) return null
