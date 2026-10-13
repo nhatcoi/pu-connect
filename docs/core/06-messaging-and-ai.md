@@ -566,7 +566,8 @@ store: aiDrawer { open, contextRef }, unreadTotal
 | Room `conv:{id}` | ⚠️ khác thiết kế | Chưa dùng `conv.open`; server phát `message.*` tới room `user:{id}` của **từng thành viên** (đơn giản, vẫn do server cấp). Đổi sang `conv:` khi nhóm lớn. |
 | P2 PU AI lõi | ✅ rút gọn | Hội thoại `type='ai'` (`POST /conversations/ai`), streaming qua `message.delta`, quota `AI_DAILY_QUOTA`/ngày từ `ai_runs` (migration `ai-upgrade.sql`). Gọi **API tương thích OpenAI** (SDK `openai`, `AI_BASE_URL` + `AI_API_KEY`, `AI_MODEL` mặc định `v9`) thay cho Anthropic SDK như §11 #1; gateway không trả usage khi stream ⇒ `ai_runs` ghi 0 token. **Chạy trong tiến trình API** (fire-and-forget) thay vì worker `SKIP LOCKED` — đủ cho 1 instance. Chưa có AI drawer, `POST /ai/tasks`, `ai_cache`, 👍/👎. |
 | P4 RAG | ✅ rút gọn | Truy xuất **full-text** (`search_tsv`, OR các từ khóa bỏ dấu) trên bài viết + tài liệu công khai (kèm lời giải đã duyệt), bọc `<data>` trong `<context>`; câu trả lời có `blocks` citation. **Chưa dùng pgvector**: cần chọn nhà cung cấp embedding (§11 #2) và trích text PDF vào `document_chunks`. |
-| P3 `@puai` trong bình luận, P5 | ⏳ | Chưa làm. |
+| P3 `@puai` trong bình luận | ✅ 2026-10-14 | Xem §16. |
+| P5 | ⏳ | Chưa làm. |
 | Thông báo / Web Push cho tin nhắn | ⏳ | Chưa gửi push khi người nhận offline. |
 | `user_blocks` | ✅ 2026-10-14 | Xem §14. |
 | `privacy_settings.dm` | ⏳ | Hiện: chỉ tài khoản đã xác thực email mới mở DM/nhóm mới; không nhắn được tài khoản bị khóa. |
@@ -639,4 +640,17 @@ Migration `presence-upgrade.sql`: `users.last_seen_at`. Cài đặt `privacy_set
 | Trạng thái ban đầu qua `GET /presence`, sau đó `presence.update` vá cache | 1 request khi mở app thay vì hỏi từng người. |
 
 Giới hạn: tắt `showActivityStatus` không phát "offline" ngay cho người đang xem (họ thấy trạng thái cũ tới lần nạp lại kế tiếp).
+
+## 16. Lõi AI dùng chung & `@puai` trong bình luận (2026-10-14)
+
+`modules/ai/` (AiModule) gom phần dùng chung: `LlmService` (client OpenAI-compatible, `@puai` bot id, quota/ngày, nhật ký `ai_runs` — `startRun`/`finishRun`/`failRun`/`logRejected`, `complete()` không stream), `AiRetrieval` (full-text), `ai.prompts.ts` (`SYSTEM_PROMPT`, `COMMENT_PROMPT`), `ai.constants.ts` (`PUAI_MENTION`). Chat (`PuaiService`) giữ phần stream theo tin nhắn.
+
+Luồng bình luận (`posts/post-ai.service.ts`):
+1. `CommentsController` lưu bình luận rồi gọi nền `PostAiService.onComment` nếu có `@puai`.
+2. Hết quota / chưa cấu hình key ⇒ trả lời bằng 1 bình luận thông báo (không gọi LLM).
+3. Ngữ cảnh: bài viết (≤ 4000 ký tự) + ≤ 12 bình luận trước trong cùng nhánh, bọc `<post>`/`<thread>` (dữ liệu, không phải chỉ dẫn) + nguồn truy xuất (bỏ chính bài đó).
+4. Gọi `complete()` (không stream, ≤ 4096 token) ⇒ lưu bình luận con của `@puai` qua `CommentsService.create` ⇒ đếm bình luận + thông báo "đã trả lời bình luận của bạn" dùng chung luồng cũ. `ai_runs.trigger = 'comment'`, `reply_ref = {type:'comment'}`.
+5. Socket `comments.changed {postId}` tới người hỏi ⇒ web tải lại bình luận.
+
+Khác thiết kế §5.3: không có worker riêng (chạy trong tiến trình API như chat), quota dùng chung với chat (không tách quota công khai), chưa có nhãn "AI" riêng ngoài avatar N7AI.
 

@@ -19,7 +19,8 @@ flowchart TB
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
-    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages<br/>Puai (prompts · retrieval · vision) → LLM"]
+    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages<br/>Puai (stream · vision)"]
+    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval · prompts"]
   end
 
   subgraph Platform["Platform modules"]
@@ -46,7 +47,9 @@ flowchart TB
   admin -->|disconnectUser| rt
   chat -->|emitToUser message.*| rt
   chat -->|chat-push: sendToUser| push
-  chat -->|chat/completions stream| llm["LLM gateway"]
+  chat --> ai
+  posts -->|PostAiService: @puai trong bình luận| ai
+  ai -->|chat/completions| llm["LLM gateway"]
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
   others -->|StudyGroupChatService: đồng bộ thành viên| chat
   blocks -->|block.changed| rt
@@ -57,7 +60,7 @@ flowchart TB
   classDef plat fill:#334155,stroke:#334155,color:#fff
   classDef store fill:#ffedd5,stroke:#f97316,color:#7c2d12
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
-  class auth,users,blocks,presence,posts,communities,others,storage,gql,admin,chat mod
+  class auth,users,blocks,presence,ai,posts,communities,others,storage,gql,admin,chat mod
   class mentions,notif,rt,push,queue plat
   class db store
   class ext,mw,llm external
@@ -108,10 +111,12 @@ flowchart TB
 | Server → client | `conv.read` · `conv.updated` · `conv.removed` | đã đọc `{conversationId, userId, lastReadMessageId}` (mọi thành viên) · đổi tên/thành viên · bị xóa khỏi nhóm |
 | Server → client | `conv.read` · `conv.updated` | đồng bộ đã đọc / hội thoại mới giữa các tab |
 | Server → client | `presence.update` | `{ userId, online, lastSeenAt }` tới người cùng hội thoại (không chặn nhau, cả hai bật `showActivityStatus`) |
+| Server → client | `comments.changed` | `{ postId }` tới người gọi @puai khi PU AI đã trả lời bình luận |
 | Server → client | `block.changed` | `{ userId }` tới cả 2 phía khi chặn / bỏ chặn ⇒ web làm mới hồ sơ, feed, hội thoại |
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-14 — AiModule (LlmService, AiRetrieval) tách khỏi Chat; Posts → Ai: `PostAiService` trả lời @puai trong bình luận, event `comments.changed`.
 - 2026-10-14 — PresenceModule: gateway đếm socket theo user (`isOnline`, `onPresenceChange`), `GET presence`, event `presence.update`.
 - 2026-10-14 — BlocksModule: `GET/PUT/DELETE blocks`, event `block.changed`; GraphQL `User.blockState`; hội thoại trả `blockState`.
 - 2026-10-13 — `POST conversations/:id/owner` (chuyển quyền trưởng nhóm).
