@@ -259,3 +259,23 @@
 /* Brand motion: floating & dash flow (Hiệu ứng nền trang đăng nhập) */
 @keyframes pu-dash { to { stroke-dashoffset: -24; } }
 @keyframes pu-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* Skeleton: ẩn 150ms đầu (tải nhanh ⇒ không nháy), rồi hiện dần */
+@keyframes skeleton-reveal {
+  to {
+    opacity: 1;
+  }
+}
+.skeleton-reveal {
+  opacity: 0;
+  animation: skeleton-reveal 200ms ease-out 150ms forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-reveal {
+    animation: none;
+    opacity: 1;
+  }
+  [data-slot='skeleton'] {
+    animation: none;
+  }
+}

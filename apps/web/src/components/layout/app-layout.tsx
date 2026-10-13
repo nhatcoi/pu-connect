@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { AuthGuard } from '@/components/auth/auth-guard'
+import { AppShellSkeleton } from '@/components/skeletons/app-shell-skeleton'
 import { Header } from '@/components/social/header'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
@@ -49,7 +50,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const onCustomChange = React.useCallback((count: number) => setHasCustomAside(count > 0), [])
 
   return (
-    <AuthGuard>
+    <AuthGuard fallback={<AppShellSkeleton />}>
       <AsideSlotProvider node={asideNode} onCustomChange={onCustomChange}>
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
           <Header />
