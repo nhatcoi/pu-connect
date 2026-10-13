@@ -1,22 +1,31 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { ConversationSummary, MemberSettingsInput } from '@pu/schemas'
+import type { ConversationFilter, ConversationSummary, MemberSettingsInput } from '@pu/schemas'
 import { uploadFileToR2 } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { useAppStore } from '@/store'
 import { chatApi } from './api'
-import { patchConversation } from './cache'
+import { findConversation, patchConversation, refreshConversationLists } from './cache'
 
-export function useConversations() {
-  return useQuery({ queryKey: queryKeys.conversations, queryFn: chatApi.list, staleTime: 30 * 1000 })
+// Danh sách theo bộ lọc, 20 hội thoại/trang (cuộn xuống tải thêm); socket vá cache ⇒ ít khi cần tải lại
+export function useConversations(filter: ConversationFilter = 'all') {
+  const query = useInfiniteQuery({
+    queryKey: queryKeys.conversationList(filter),
+    queryFn: ({ pageParam }) => chatApi.list(filter, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    staleTime: 5 * 60 * 1000
+  })
+  const conversations = query.data?.pages.flatMap((p) => p.data) ?? []
+  return { ...query, conversations }
 }
 
 export function useUnreadMessages(): number {
   const userId = useAppStore((s) => s.user?.id)
-  const { data } = useQuery({ queryKey: [...queryKeys.conversations, 'unread'], queryFn: chatApi.unread, staleTime: 60 * 1000, enabled: !!userId })
+  const { data } = useQuery({ queryKey: queryKeys.unreadMessages, queryFn: chatApi.unread, staleTime: 5 * 60 * 1000, enabled: !!userId })
   return data ?? 0
 }
 
@@ -25,10 +34,10 @@ export function useConversation(id: string) {
   return useQuery({
     queryKey: queryKeys.conversation(id),
     queryFn: () => chatApi.get(id),
-    // Có sẵn trong danh sách ⇒ hiện ngay
-    initialData: () => qc.getQueryData<ConversationSummary[]>(queryKeys.conversations)?.find((c) => c.id === id),
-    initialDataUpdatedAt: 0,
-    staleTime: 30 * 1000,
+    // Có sẵn trong danh sách ⇒ hiện ngay, chỉ tải lại khi bản trong danh sách đã cũ
+    initialData: () => findConversation(qc, id)?.conversation,
+    initialDataUpdatedAt: () => findConversation(qc, id)?.updatedAt,
+    staleTime: 5 * 60 * 1000,
     retry: false
   })
 }
@@ -41,10 +50,12 @@ export function useMembers(id: string, enabled = true) {
 export function useConversationActions(id: string) {
   const qc = useQueryClient()
   const onError = (err: Error) => toast.error(err.message || 'Thao tác thất bại')
+  // Server trả bản mới nhất ⇒ ghi thẳng cache (ghim đổi thứ tự ⇒ tải lại danh sách)
   const store = (c: ConversationSummary) => {
+    const before = findConversation(qc, id)?.conversation
     qc.setQueryData(queryKeys.conversation(id), c)
     patchConversation(qc, id, () => c)
-    void qc.invalidateQueries({ queryKey: queryKeys.conversations, exact: true })
+    if (before?.pinnedAt !== c.pinnedAt || before?.mutedUntil !== c.mutedUntil) refreshConversationLists(qc)
   }
 
   const settings = useMutation({
@@ -88,7 +99,7 @@ export function useConversationActions(id: string) {
     mutationFn: () => chatApi.leave(id),
     onSuccess: () => {
       qc.removeQueries({ queryKey: queryKeys.conversation(id) })
-      void qc.invalidateQueries({ queryKey: queryKeys.conversations })
+      refreshConversationLists(qc)
     },
     onError
   })
@@ -103,7 +114,7 @@ export function useOpenStudyGroupChat() {
     mutationFn: (groupId: string) => chatApi.openStudyGroup(groupId),
     onSuccess: (c) => {
       qc.setQueryData(queryKeys.conversation(c.id), c)
-      void qc.invalidateQueries({ queryKey: queryKeys.conversations, exact: true })
+      refreshConversationLists(qc)
       router.push(`/messages/${c.id}`)
     },
     onError: (err: Error) => toast.error(err.message || 'Không mở được nhóm chat')

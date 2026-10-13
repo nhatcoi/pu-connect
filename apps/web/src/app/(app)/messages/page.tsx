@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, MessageCircle, PenSquare } from 'lucide-react'
@@ -12,12 +12,11 @@ import { ConversationListSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
-import { chatApi, useConversations } from '@/hooks/chat'
-import { queryKeys } from '@/lib/query-keys'
+import { chatApi, refreshConversationLists, useConversations } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
+import type { ConversationFilter as Filter } from '@pu/schemas'
 
-type Filter = 'all' | 'unread' | 'group'
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'Tất cả' },
   { id: 'unread', label: 'Chưa đọc' },
@@ -29,25 +28,35 @@ export default function MessagesPage() {
   const router = useRouter()
   const qc = useQueryClient()
   const myId = useAppStore((s) => s.user?.id)
-  const { data: conversations = [], isPending } = useConversations()
   const [composing, setComposing] = useState(false)
   const [openingAi, setOpeningAi] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
-  const hasAi = conversations.some((c) => c.type === 'ai')
+  // Lọc ở server, mỗi bộ lọc 1 cache; 'all' dùng chung với hasAi (cùng query ⇒ không tải 2 lần)
+  const { conversations: visible, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useConversations(filter)
+  const { conversations: all, isPending: allPending } = useConversations('all')
+  const hasAi = all.some((c) => c.type === 'ai')
+
+  // Cuộn gần cuối ⇒ tải trang tiếp
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasNextPage) return
+    const observer = new IntersectionObserver((e) => e[0].isIntersecting && !isFetchingNextPage && void fetchNextPage(), { rootMargin: '300px' })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const openAi = async () => {
     setOpeningAi(true)
     try {
       const conv = await chatApi.openAi()
-      void qc.invalidateQueries({ queryKey: queryKeys.conversations })
+      refreshConversationLists(qc)
       router.push(`/messages/${conv.id}`)
     } catch (err: any) {
       toast.error(err?.message || 'Không mở được PU AI')
       setOpeningAi(false)
     }
   }
-
-  const visible = conversations.filter((c) => (filter === 'unread' ? c.unreadCount > 0 : filter === 'group' ? c.type === 'group' : true))
 
   return (
     <>
@@ -78,7 +87,7 @@ export default function MessagesPage() {
 
       {composing && <NewChatPanel onClose={() => setComposing(false)} />}
 
-      {!hasAi && !isPending && (
+      {!hasAi && !allPending && (
         <button
           onClick={openAi}
           disabled={openingAi}
@@ -107,6 +116,12 @@ export default function MessagesPage() {
           {visible.map((c) => (
             <ConversationItem key={c.id} conversation={c} myId={myId} />
           ))}
+        </div>
+      )}
+      <div ref={sentinelRef} aria-hidden />
+      {isFetchingNextPage && (
+        <div className="flex justify-center py-3">
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Đang tải thêm hội thoại" />
         </div>
       )}
 

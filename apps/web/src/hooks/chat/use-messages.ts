@@ -7,7 +7,7 @@ import type { AiMode, ChatAttachment, ChatMessage, ChatReaction } from '@pu/sche
 import { queryKeys } from '@/lib/query-keys'
 import { useAppStore } from '@/store'
 import { chatApi } from './api'
-import { patchMessages, syncPinned, upsertMessage, type UiMessage, type UiPage } from './cache'
+import { applyRead, patchMessages, syncPinned, upsertMessage, type UiMessage, type UiPage } from './cache'
 
 export type Draft = {
   content: string
@@ -72,8 +72,7 @@ export function useMessages(conversationId: string) {
           attachments: draft.attachments?.length ? draft.attachments : undefined,
           aiMode: draft.aiMode
         })
-        upsertMessage(qc, saved)
-        void qc.invalidateQueries({ queryKey: queryKeys.conversations, exact: true })
+        upsertMessage(qc, saved) // danh sách hội thoại cập nhật qua sự kiện message.new
       } catch (err: any) {
         upsertMessage(qc, { ...optimistic, status: 'failed' })
         if (err?.status && err.status < 500) toast.error(err.message)
@@ -148,6 +147,6 @@ export function useMarkRead(conversationId: string, latest: UiMessage | undefine
     if (!latest || latest.id.startsWith('tmp-') || latest.sender?.id === myId) return
     if (lastSent.current === latest.id || document.visibilityState !== 'visible') return
     lastSent.current = latest.id
-    void chatApi.read(conversationId, latest.id).then(() => qc.invalidateQueries({ queryKey: queryKeys.conversations }))
+    void chatApi.read(conversationId, latest.id).then(() => applyRead(qc, conversationId))
   }, [conversationId, latest, myId, qc])
 }

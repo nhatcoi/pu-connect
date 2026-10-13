@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,7 +16,7 @@ import { MessageList } from '@/components/chat/thread/message-list'
 import { PinnedBanner } from '@/components/chat/thread/pinned-banner'
 import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ThreadHeader } from '@/components/chat/thread/thread-header'
-import { chatApi, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
+import { chatApi, setActiveConversation, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 
 // Màn hội thoại: đầu trang + tin ghim + dòng tin + ô soạn; thông tin ở cột phải (desktop) / hộp thoại (mobile)
@@ -29,6 +29,11 @@ export default function ConversationPage() {
   const typingLabel = useTypingLabel(id, conv?.members ?? [], me?.id)
   const latest = chat.messages[chat.messages.length - 1]
   useMarkRead(id, latest, me?.id)
+  // Tin đến hội thoại đang mở không tính "chưa đọc"
+  useEffect(() => {
+    setActiveConversation(id)
+    return () => setActiveConversation(null)
+  }, [id])
 
   const [replyTo, setReplyTo] = useState<UiMessage | null>(null)
   const [editing, setEditing] = useState<UiMessage | null>(null)

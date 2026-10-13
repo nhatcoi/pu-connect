@@ -8,8 +8,7 @@ import { toast } from 'sonner'
 import type { UserSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { chatApi } from '@/hooks/chat'
-import { queryKeys } from '@/lib/query-keys'
+import { chatApi, refreshConversationLists } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 import { UserPicker } from './user-picker'
 
@@ -33,7 +32,7 @@ export function NewChatPanel({ onClose }: { onClose: () => void }) {
               title.trim() || selected.map((u) => u.displayName).join(', ').slice(0, 150),
               selected.map((u) => u.id)
             )
-      void qc.invalidateQueries({ queryKey: queryKeys.conversations })
+      refreshConversationLists(qc)
       router.push(`/messages/${conv.id}`)
     } catch (err: any) {
       toast.error(err?.message || 'Không thể tạo hội thoại')

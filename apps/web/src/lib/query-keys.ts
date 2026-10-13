@@ -23,7 +23,10 @@ export const queryKeys = {
   coursePosts: (code: string) => ['feed', 'course', code.toUpperCase()] as const,
   courseDocuments: (code: string) => ['course-documents', code.toUpperCase()] as const,
   courseGroups: (code: string) => ['course-groups', code.toUpperCase()] as const,
-  conversations: ['conversations'] as const,
+  conversations: ['conversations'] as const, // gốc: mọi dữ liệu hội thoại
+  conversationLists: ['conversations', 'list'] as const,
+  conversationList: (filter: string) => ['conversations', 'list', filter] as const,
+  unreadMessages: ['conversations', 'unread'] as const,
   conversation: (id: string) => ['conversations', 'detail', id] as const,
   chatMembers: (id: string) => ['conversations', 'members', id] as const,
   messages: (conversationId: string) => ['messages', conversationId] as const,

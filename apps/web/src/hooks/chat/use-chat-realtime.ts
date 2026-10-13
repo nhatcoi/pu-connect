@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ChatMessage, MessageDeltaEvent, ReadEvent, TypingEvent } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
+import { getRealtimeSocket } from '@/lib/realtime'
 import { useAppStore } from '@/store'
-import { patchConversation, patchMessages, syncPinned, upsertMessage } from './cache'
+import { applyNewMessage, applyRead, applyUpdatedMessage, patchConversation, patchMessages, refreshConversationLists, syncPinned, upsertMessage } from './cache'
 import { useTypingStore } from './use-typing'
 import { usePresenceRealtime } from './use-presence'
 
@@ -14,14 +15,21 @@ import { usePresenceRealtime } from './use-presence'
 export function useChatRealtime() {
   const qc = useQueryClient()
   const myId = useAppStore((s) => s.user?.id)
-  const refreshLists = useCallback(() => {
-    void qc.invalidateQueries({ queryKey: queryKeys.conversations, exact: true })
-    void qc.invalidateQueries({ queryKey: [...queryKeys.conversations, 'unread'] })
-  }, [qc])
+  const refreshLists = useCallback(() => refreshConversationLists(qc), [qc])
+
+  // Mất kết nối có thể lỡ sự kiện ⇒ đồng bộ lại danh sách & badge khi nối lại
+  useEffect(() => {
+    if (!myId) return
+    const manager = getRealtimeSocket().io
+    manager.on('reconnect', refreshLists)
+    return () => {
+      manager.off('reconnect', refreshLists)
+    }
+  }, [myId, refreshLists])
 
   useRealtimeEvent<ChatMessage>('message.new', (msg) => {
     upsertMessage(qc, msg)
-    refreshLists()
+    applyNewMessage(qc, msg, myId)
     // Người gửi đã thôi nhập
     if (msg.sender) useTypingStore.getState().set({ conversationId: msg.conversationId, userId: msg.sender.id, isTyping: false })
     if (msg.kind === 'ai' || msg.attachments) void qc.invalidateQueries({ queryKey: ['chat-media', msg.conversationId] })
@@ -29,7 +37,7 @@ export function useChatRealtime() {
   useRealtimeEvent<ChatMessage>('message.updated', (msg) => {
     upsertMessage(qc, msg)
     syncPinned(qc, msg)
-    refreshLists()
+    applyUpdatedMessage(qc, msg)
     if (msg.kind === 'ai' && msg.status !== 'streaming') void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
   })
   // AI trả lời dần: nối delta vào nội dung tin đang streaming
@@ -40,7 +48,7 @@ export function useChatRealtime() {
   })
   // Đã đọc: của mình ⇒ đồng bộ badge; của người khác ⇒ "Đã xem"
   useRealtimeEvent<ReadEvent>('conv.read', (e) => {
-    if (e.userId === myId) return refreshLists()
+    if (e.userId === myId) return applyRead(qc, e.conversationId)
     patchConversation(qc, e.conversationId, (c) => ({ ...c, readCursors: { ...c.readCursors, [e.userId]: e.lastReadMessageId } }))
   })
   useRealtimeEvent<{ conversationId: string }>('conv.updated', (e) => {

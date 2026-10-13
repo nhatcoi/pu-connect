@@ -5,7 +5,9 @@ import type {
   ChatMember,
   ChatMessage,
   ChatReactionDetail,
+  ConversationFilter,
   ConversationSummary,
+  ConversationsPage,
   MemberSettingsInput,
   MessagesPage,
   PresenceMap,
@@ -27,7 +29,8 @@ export type SendBody = {
 
 // REST client nhắn tin (apps/api/src/modules/chat)
 export const chatApi = {
-  list: () => unwrap(apiClient<Envelope<ConversationSummary[]>>('/conversations')),
+  list: (filter: ConversationFilter, cursor: string | null, limit = 20) =>
+    unwrap(apiClient<Envelope<ConversationsPage>>(`/conversations?filter=${filter}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)),
   get: (id: string) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}`)),
   unread: async () => (await unwrap(apiClient<Envelope<{ total: number }>>('/conversations/unread-count'))).total,
   openDirect: (userId: string) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/direct', json('POST', { userId }))),
