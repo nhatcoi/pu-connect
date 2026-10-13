@@ -3,7 +3,6 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
-import { Button } from '@/components/ui/button'
 import type { UiMessage } from '@/hooks/chat'
 import { dayLabel, isContinuation, sameDay } from '../utils'
 import { MessageBubble } from './message-bubble'
@@ -23,7 +22,7 @@ interface MessageListProps {
   handlers: MessageHandlers
 }
 
-// Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", tự cuộn xuống khi có tin mới
+// Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", tự cuộn xuống khi có tin mới, cuộn lên tải tin cũ
 export function MessageList({ conversation, messages, myId, hasOlder, isLoadingOlder, loadOlder, jumpTo, onJumpHandled, onJump, onRetry, handlers }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
@@ -43,6 +42,33 @@ export function MessageList({ conversation, messages, myId, hasOlder, isLoadingO
   useLayoutEffect(() => {
     if (nearBottom.current || latest?.sender?.id === myId) bottomRef.current?.scrollIntoView({ block: 'end' })
   }, [latestKey, latest?.sender?.id, myId])
+
+  // Cuộn gần đầu ⇒ tự tải trang tin cũ hơn; giữ nguyên tin đang nhìn khi chèn phía trên
+  const topRef = useRef<HTMLDivElement>(null)
+  const anchor = useRef<{ id: string; top: number } | null>(null)
+  const firstId = messages[0]?.id
+  useEffect(() => {
+    const el = topRef.current
+    if (!el || !hasOlder || isLoadingOlder || !firstId) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return
+        const first = document.getElementById(`msg-${firstId}`)
+        anchor.current = first ? { id: firstId, top: first.getBoundingClientRect().top } : null
+        loadOlder()
+      },
+      { rootMargin: '600px 0px 0px 0px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasOlder, isLoadingOlder, firstId, loadOlder])
+  useLayoutEffect(() => {
+    const a = anchor.current
+    if (!a || a.id === firstId) return
+    const el = document.getElementById(`msg-${a.id}`)
+    if (el) window.scrollBy(0, el.getBoundingClientRect().top - a.top)
+    anchor.current = null
+  }, [firstId])
 
   // Nhảy tới tin (tải thêm trang cũ nếu chưa có)
   useEffect(() => {
@@ -71,11 +97,10 @@ export function MessageList({ conversation, messages, myId, hasOlder, isLoadingO
 
   return (
     <div className="flex-1 px-3 sm:px-1 pt-2 pb-4">
-      {hasOlder && (
+      <div ref={topRef} aria-hidden />
+      {isLoadingOlder && (
         <div className="flex justify-center pb-2">
-          <Button variant="ghost" size="sm" className="h-7 text-xs rounded-full" disabled={isLoadingOlder} onClick={loadOlder}>
-            {isLoadingOlder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Xem tin cũ hơn'}
-          </Button>
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Đang tải tin cũ hơn" />
         </div>
       )}
       {messages.map((m, i) => {
@@ -92,7 +117,7 @@ export function MessageList({ conversation, messages, myId, hasOlder, isLoadingO
               </div>
             )}
             {m.kind === 'system' ? (
-              <p className="my-3 text-center text-[11px] text-muted-foreground px-6">{m.content}</p>
+              <p id={`msg-${m.id}`} className="my-3 text-center text-[11px] text-muted-foreground px-6">{m.content}</p>
             ) : (
               <MessageBubble
                 message={m}
