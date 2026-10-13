@@ -6,9 +6,9 @@ import { ChatCoreService } from '../chat-core.service'
 import { MESSAGE_COLUMNS, MESSAGE_FROM, mapMessageRow } from '../chat.mapper'
 import { ChatPushService } from '../notify/chat-push.service'
 import { PuaiService } from '../puai/puai.service'
+import { PUAI_MENTION } from '../../ai/ai.constants'
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000 // sửa tin trong 15 phút
-const PUAI_MENTION = /(^|\s)@puai\b/i // gọi PU AI trong nhóm
 
 // Tin nhắn: gửi/sửa/thu hồi, cảm xúc, ghim, tìm kiếm, kho tệp
 @Injectable()

@@ -1,19 +1,17 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import { ConfigService } from '@nestjs/config'
-import OpenAI from 'openai'
-import type { AiMode, AiQuota, ChatAttachment, ChatCitation, ChatMessage } from '@pu/schemas'
+import type { AiMode, ChatAttachment, ChatCitation, ChatMessage } from '@pu/schemas'
+import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
+import { stripPuaiMention } from '../../ai/ai.constants'
+import { AiRetrieval, contextBlock } from '../../ai/ai.retrieval'
+import { LlmService, MAX_OUTPUT_TOKENS, type LlmMessage as Msg, type LlmUsage } from '../../ai/llm.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
 import { attachmentParts, isReadableDoc } from './puai.attachments'
-import { GROUP_PROMPT, MODE_PROMPTS, SYSTEM_PROMPT } from './puai.prompts'
-import { PuaiRetrieval, contextBlock } from './puai.retrieval'
+import { GROUP_PROMPT, MODE_PROMPTS } from './puai.prompts'
 
-const DEFAULT_MODEL = 'v9' // Model suy nghĩ qua gateway OpenAI-compatible; đổi bằng AI_MODEL
 const AI_HISTORY_LIMIT = 20
 const GROUP_HISTORY_LIMIT = 12
-const MAX_OUTPUT_TOKENS = 8192 // Gồm cả token suy nghĩ (thinking counts toward cap)
 
-type Msg = OpenAI.Chat.Completions.ChatCompletionMessageParam
 type Trigger = { id: string; type: string; content: string; attachments: ChatAttachment[] | null; aiMode: AiMode; senderName: string }
 
 // PU AI: hội thoại riêng (type='ai') hoặc được @puai trong nhóm
@@ -21,49 +19,16 @@ type Trigger = { id: string; type: string; content: string; attachments: ChatAtt
 @Injectable()
 export class PuaiService {
   private readonly logger = new Logger(PuaiService.name)
-  private readonly client: OpenAI | null
-  private readonly model: string
-  private readonly dailyQuota: number
-  private botId: string | null = null
 
   constructor(
     private readonly core: ChatCoreService,
-    private readonly retrieval: PuaiRetrieval,
-    private readonly chatPush: ChatPushService,
-    config: ConfigService
-  ) {
-    // Chưa cấu hình key ⇒ PU AI trả lời thông báo thay vì lỗi
-    const apiKey = config.get<string>('AI_API_KEY')
-    let baseURL = config.get<string>('AI_BASE_URL') || undefined
-    if (baseURL && !baseURL.endsWith('/v1') && !baseURL.endsWith('/v1/')) {
-      baseURL = baseURL.replace(/\/+$/, '') + '/v1'
-    }
-    this.client = apiKey ? new OpenAI({ apiKey, baseURL, timeout: 120_000, maxRetries: 1 }) : null
-    this.model = config.get<string>('AI_MODEL') || DEFAULT_MODEL
-    this.dailyQuota = Number(config.get('AI_DAILY_QUOTA') || 30)
-  }
+    private readonly llm: LlmService,
+    private readonly retrieval: AiRetrieval,
+    private readonly chatPush: ChatPushService
+  ) {}
 
   private get db() {
     return this.core.db
-  }
-
-  async getBotId(): Promise<string> {
-    if (this.botId) return this.botId
-    const res = await this.db.query(`SELECT id FROM users WHERE username = 'puai' AND account_type = 'bot' LIMIT 1`)
-    if (!res.rows[0]) throw new Error('Thiếu tài khoản @puai (chạy messaging-upgrade.sql)')
-    this.botId = res.rows[0].id as string
-    return this.botId
-  }
-
-  // Lượt đã dùng hôm nay (theo giờ Việt Nam)
-  async quota(userId: string): Promise<AiQuota> {
-    const res = await this.db.query(
-      `SELECT COUNT(*)::int AS used FROM ai_runs
-       WHERE requester_id = $1 AND status <> 'rejected'
-         AND created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh'`,
-      [userId]
-    )
-    return { used: res.rows[0].used, limit: this.dailyQuota, enabled: !!this.client }
   }
 
   // "Chủ đề mới": PU AI quên các tin phía trên mốc này
@@ -87,21 +52,16 @@ export class PuaiService {
   }
 
   private async runReply(conversationId: string, requesterId: string, triggerId: string) {
-    const botId = await this.getBotId()
+    const botId = await this.llm.getBotId()
     const started = Date.now()
     const trigger = await this.loadTrigger(triggerId)
     if (!trigger) return
     const inGroup = trigger.type === 'group'
     const replyTo = inGroup ? trigger.id : null
 
-    const { used, limit } = await this.quota(requesterId)
+    const { used, limit } = await this.llm.quota(requesterId)
     if (used >= limit) {
-      await this.db.query(`INSERT INTO ai_runs (bot_id, requester_id, trigger, status, model) VALUES ($1, $2, $3, 'rejected', $4)`, [
-        botId,
-        requesterId,
-        inGroup ? 'mention' : 'dm',
-        this.model
-      ])
+      await this.llm.logRejected(requesterId, inGroup ? 'mention' : 'dm')
       await this.postFinal(conversationId, botId, `Bạn đã dùng hết ${limit} lượt hỏi PU AI hôm nay. Hẹn bạn ngày mai nhé!`, replyTo)
       return
     }
@@ -118,34 +78,28 @@ export class PuaiService {
     })
     await this.core.broadcast(conversationId, 'message.new', placeholder)
 
-    const run = await this.db.query(
-      `INSERT INTO ai_runs (bot_id, requester_id, trigger, task, source_ref, reply_ref, model)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-      [
-        botId,
-        requesterId,
-        inGroup ? 'mention' : 'dm',
-        trigger.aiMode === 'ask' ? 'chat' : trigger.aiMode,
-        JSON.stringify({ type: 'message', id: trigger.id }),
-        JSON.stringify({ type: 'message', id: placeholder.id }),
-        this.model
-      ]
-    )
-    const runId = run.rows[0].id
+    const runId = await this.llm.startRun({
+      requesterId,
+      trigger: inGroup ? 'mention' : 'dm',
+      task: trigger.aiMode === 'ask' ? 'chat' : trigger.aiMode,
+      source: { type: 'message', id: trigger.id },
+      reply: { type: 'message', id: placeholder.id }
+    })
 
-    if (!this.client) {
+    const client = this.llm.client
+    if (!client) {
       await this.finish(placeholder.id, conversationId, 'Máy chủ bận', null, 'error')
-      await this.db.query(`UPDATE ai_runs SET status = 'error', error = 'disabled', finished_at = NOW() WHERE id = $1`, [runId])
+      await this.llm.failRun(runId, 'disabled', started)
       return
     }
 
-    const question = trigger.content.replace(/@puai\b/gi, '').trim()
+    const question = stripPuaiMention(trigger.content)
     const sources = await this.retrieval.retrieve(question, requesterId)
     const messages = await this.buildMessages(conversationId, botId, trigger, question, sources)
 
     try {
-      const stream = await this.client.chat.completions.create({
-        model: this.model,
+      const stream = await client.chat.completions.create({
+        model: this.llm.model,
         max_tokens: MAX_OUTPUT_TOKENS,
         stream: true,
         stream_options: { include_usage: true },
@@ -155,7 +109,7 @@ export class PuaiService {
       const memberIds = await this.core.memberIds(conversationId)
       let text = ''
       let finishReason: string | null = null
-      let usage = { prompt_tokens: 0, completion_tokens: 0 }
+      let usage: LlmUsage = { prompt_tokens: 0, completion_tokens: 0 }
       for await (const chunk of stream) {
         const choice = chunk.choices[0]
         const delta = choice?.delta?.content
@@ -173,12 +127,9 @@ export class PuaiService {
 
       const citations: ChatCitation[] = sources.map((s) => ({ type: 'citation', ref: { type: s.type, id: s.id }, title: s.title }))
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done')
-      await this.db.query(
-        `UPDATE ai_runs SET status = 'done', input_tokens = $2, output_tokens = $3, latency_ms = $4, finished_at = NOW() WHERE id = $1`,
-        [runId, usage.prompt_tokens, usage.completion_tokens, Date.now() - started]
-      )
+      await this.llm.finishRun(runId, { usage, startedAt: started })
     } catch (err) {
-      const busy = err instanceof OpenAI.RateLimitError || err instanceof OpenAI.APIConnectionError || (err instanceof OpenAI.APIError && (err.status ?? 0) >= 500)
+      const busy = this.llm.isBusyError(err)
       await this.finish(
         placeholder.id,
         conversationId,
@@ -186,11 +137,7 @@ export class PuaiService {
         null,
         'error'
       )
-      await this.db.query(`UPDATE ai_runs SET status = 'error', error = $2, latency_ms = $3, finished_at = NOW() WHERE id = $1`, [
-        runId,
-        String((err as Error)?.message || err).slice(0, 500),
-        Date.now() - started
-      ])
+      await this.llm.failRun(runId, err, started)
       throw err
     }
   }

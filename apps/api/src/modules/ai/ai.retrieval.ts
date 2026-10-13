@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { DatabaseService } from '../../../database/database.service'
+import { DatabaseService } from '../../database/database.service'
 
 export type Source = { type: 'post' | 'document'; id: string; title: string; body: string }
 
@@ -7,10 +7,10 @@ export type Source = { type: 'post' | 'document'; id: string; title: string; bod
 const unaccent = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
-// Truy xuất nguồn cho PU AI: full-text (OR từ khóa) trên bài viết & tài liệu công khai, kèm lời giải đã duyệt
+// Truy xuất nguồn cho PU AI (chat, bình luận): full-text (OR từ khóa) trên bài viết & tài liệu công khai, kèm lời giải đã duyệt
 @Injectable()
-export class PuaiRetrieval {
-  private readonly logger = new Logger(PuaiRetrieval.name)
+export class AiRetrieval {
+  private readonly logger = new Logger(AiRetrieval.name)
 
   constructor(private readonly db: DatabaseService) {}
 

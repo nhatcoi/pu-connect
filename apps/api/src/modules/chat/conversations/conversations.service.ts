@@ -13,7 +13,7 @@ import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
 import { blockExistsSql } from '../../blocks/blocks.sql'
 import { ChatPushService } from '../notify/chat-push.service'
-import { PuaiService } from '../puai/puai.service'
+import { LlmService } from '../../ai/llm.service'
 
 const MAX_GROUP_MEMBERS = 50
 
@@ -24,7 +24,7 @@ export class ConversationsService {
 
   constructor(
     private readonly core: ChatCoreService,
-    private readonly puai: PuaiService,
+    private readonly llm: LlmService,
     private readonly storage: StorageService,
     private readonly chatPush: ChatPushService
   ) {}
@@ -93,7 +93,7 @@ export class ConversationsService {
 
   // Hội thoại riêng với @puai (mỗi người 1 hội thoại)
   async openAi(userId: string): Promise<ConversationSummary> {
-    const botId = await this.puai.getBotId()
+    const botId = await this.llm.getBotId()
     const id = await this.db.transaction(async (client) => {
       const conv = await this.upsertKeyed(client, 'ai', `ai:${userId}`, userId)
       await client.query(
