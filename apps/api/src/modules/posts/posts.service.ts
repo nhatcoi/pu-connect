@@ -4,6 +4,7 @@ import { MentionsService, type MentionedUser } from '../mentions/mentions.servic
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
+import { interestBoostSql } from '../personalization/interest-profile.sql'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData } from '@pu/schemas'
 
 export interface FeedResult {
@@ -49,6 +50,7 @@ export class PostsService {
         + (CASE WHEN EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = cu.id AND uf.following_id = p.author_id) THEN 35.0 ELSE 0.0 END)
         + (CASE WHEN cu.interests IS NOT NULL AND array_length(cu.interests, 1) > 0 AND p.tags && cu.interests THEN 35.0 ELSE 0.0 END)
         + (CASE WHEN cu.skills IS NOT NULL AND array_length(cu.skills, 1) > 0 AND p.tags && cu.skills THEN 25.0 ELSE 0.0 END)
+        + ${interestBoostSql('$1', 'p')}
         + (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
         + (p.likes_count * 2.0 + p.comments_count * 5.0)
         - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
