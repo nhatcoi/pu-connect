@@ -49,7 +49,6 @@ import {
   Sparkles,
   Filter,
   ArrowRight,
-  Loader2,
   GraduationCap,
   Star,
   Award,
@@ -58,6 +57,7 @@ import {
   Clock
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
 
 const FACULTIES = [
   { code: 'ALL', name: 'Tất cả khoa' },
@@ -331,10 +331,7 @@ function SearchContent() {
         /* ── 1. ACTIVE SEARCH RESULTS STREAM (Image 2) ── */
         <div className="space-y-2.5 px-2 sm:px-0">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
-              <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              <p className="text-xs">Đang tìm kiếm dữ liệu học thuật cho &ldquo;{queryParam}&rdquo;...</p>
-            </div>
+            <FeedSkeleton label={`Đang tìm “${queryParam}”`} />
           ) : totalCount === 0 ? (
             <div className="py-20 px-6 text-center space-y-3">
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto text-muted-foreground">

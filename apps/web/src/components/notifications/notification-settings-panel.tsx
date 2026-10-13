@@ -18,6 +18,7 @@ import {
   sendTestPush,
   type PushStatus
 } from '@/lib/push'
+import { SettingsListSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 const TYPE_LABELS: Record<string, string> = {
   comment_reply: 'Trả lời bình luận của bạn',
@@ -89,11 +90,7 @@ export function NotificationSettingsPanel() {
   }
 
   if (!settings) {
-    return (
-      <div className="flex justify-center py-6">
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <SettingsListSkeleton />
   }
 
   const pushOn = pushStatus === 'enabled'

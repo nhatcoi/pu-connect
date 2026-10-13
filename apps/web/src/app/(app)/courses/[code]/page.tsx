@@ -28,6 +28,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useCourse } from '@/hooks/use-course'
 import { useAppStore } from '@/store'
+import { CardListSkeleton, CourseHeaderSkeleton } from '@/components/skeletons/catalog-skeleton'
+import { FeedSkeleton, PostListSkeleton } from '@/components/skeletons/feed-skeleton'
+import { LoadingRegion } from '@/components/ui/skeleton'
 
 type Tab = 'posts' | 'documents' | 'groups'
 
@@ -94,10 +97,10 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
       </div>
 
       {c.isLoading || !overview || !course ? (
-        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Đang tải học phần {courseCode}...</p>
-        </div>
+        <LoadingRegion label={`Đang tải học phần ${courseCode}`}>
+          <CourseHeaderSkeleton />
+          <PostListSkeleton className="px-2 sm:px-0" />
+        </LoadingRegion>
       ) : (
         <>
           <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card p-4 sm:p-5 space-y-4">
@@ -141,9 +144,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
                 <AcademicPostComposer defaultCourseId={course.code} onPostCreated={c.addPost} />
               </div>
               {c.postsLoading ? (
-                <div className="py-12 flex justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
+                <FeedSkeleton count={2} className="px-2 sm:px-0" />
               ) : c.posts.length === 0 ? (
                 <Empty icon={MessagesSquare} title="Chưa có thảo luận nào" hint={`Đặt câu hỏi đầu tiên cho ${course.code}!`} />
               ) : (
@@ -167,9 +168,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
                 <Plus className="h-3.5 w-3.5" /> Chia sẻ tài liệu
               </Button>
               {c.documentsLoading ? (
-                <div className="py-12 flex justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
+                <CardListSkeleton label="Đang tải tài liệu" />
               ) : c.documents.length === 0 ? (
                 <Empty icon={FileText} title="Chưa có tài liệu" hint="Slide, đề thi, bài tập của môn sẽ hiện ở đây." />
               ) : (
@@ -184,9 +183,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
                 <Plus className="h-3.5 w-3.5" /> Lập nhóm học
               </Button>
               {c.groupsLoading ? (
-                <div className="py-12 flex justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
+                <CardListSkeleton label="Đang tải nhóm học" />
               ) : c.groups.length === 0 ? (
                 <Empty icon={Users} title="Chưa có nhóm học" hint="Lập nhóm ôn thi hoặc làm đồ án cùng bạn học." />
               ) : (

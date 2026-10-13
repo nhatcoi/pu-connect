@@ -88,7 +88,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 - `components/skeletons/*`: giữ chỗ theo đúng hình học component thật (cùng padding, cỡ avatar) ⇒ không xô lệch bố cục khi dữ liệu về.
 - Quy tắc: skeleton chỉ cho **lần tải đầu** (`isPending` và chưa có dữ liệu); refetch giữ dữ liệu cũ; spinner chỉ cho thao tác (gửi, lưu, tải thêm).
 - `AuthGuard fallback` = `AppShellSkeleton` (khung 3 cột) thay spinner toàn màn hình.
-- Có sẵn: `PostCardSkeleton`, `FeedSkeleton`/`PostListSkeleton`, `CommunityHeaderSkeleton`, `CommentListSkeleton`, `UserRowSkeleton`/`UserListSkeleton`, `ConversationListSkeleton`, `MessageThreadSkeleton`, `MediaPanelSkeleton`, `ProfileSkeleton`, `NotificationListSkeleton`.
+- Có sẵn: `PostCardSkeleton`, `FeedSkeleton`/`PostListSkeleton`, `CommunityHeaderSkeleton`, `CommentListSkeleton`, `UserRowSkeleton`/`UserListSkeleton`, `ConversationListSkeleton`, `MessageThreadSkeleton`, `MediaPanelSkeleton`, `ProfileSkeleton`, `NotificationListSkeleton`, `CommunityCardsSkeleton`, `CourseListSkeleton`, `CourseHeaderSkeleton`, `CardListSkeleton`, `SettingsListSkeleton`.
 
 ## Nguồn dữ liệu theo màn hình
 
@@ -110,7 +110,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
-- 2026-10-13 — skeleton loading: primitive `Skeleton`/`LoadingRegion`, `AppShellSkeleton` khi xác thực phiên.
+- 2026-10-13 — skeleton loading toàn app: primitive `Skeleton`/`LoadingRegion`, `AppShellSkeleton` khi xác thực phiên, skeleton theo màn hình (`components/skeletons/`).
 - 2026-10-13 — thêm `/terms`, `/privacy-policy` (route group `(legal)`, `LegalDocument`, link chung `lib/legal.ts`); bỏ flag `legalPages` và link footer chết.
 - 2026-10-13 — chat P2: hooks tách `hooks/chat/`, component theo `components/chat/{thread,composer,ai,info}`; cột phải `/messages/[id]` = bảng thông tin hội thoại.
 - 2026-10-13 — thêm `/courses`, `/courses/[code]`, `/messages`, `/messages/[id]`, `/admin`; sidebar & bottom nav có Học phần, Tin nhắn (badge chưa đọc), Quản trị (admin).

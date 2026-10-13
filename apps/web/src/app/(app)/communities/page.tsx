@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { CommunityCardsSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 const CATEGORIES = [
   { id: 'all', label: 'Tất cả' },
@@ -144,10 +145,7 @@ export default function CommunitiesDirectoryPage() {
       {/* Communities Grid / List */}
       <div className="px-2 sm:px-0 space-y-2.5">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm">Đang tải danh sách cộng đồng...</p>
-          </div>
+          <CommunityCardsSkeleton />
         ) : communities.length === 0 ? (
           <div className="py-20 text-center text-muted-foreground space-y-2">
             <Compass className="h-10 w-10 mx-auto opacity-30 text-primary" />

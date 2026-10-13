@@ -15,6 +15,7 @@ import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CardListSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 type Tab = 'reports' | 'users' | 'searches' | 'logs'
 type Envelope<T> = { success: boolean; data: T }
@@ -115,11 +116,7 @@ function Stat({ label, value, highlight }: { label: string; value?: number; high
 }
 
 function Loading() {
-  return (
-    <div className="py-16 flex justify-center">
-      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-    </div>
-  )
+  return <CardListSkeleton count={4} />
 }
 
 function EmptyState({ text }: { text: string }) {

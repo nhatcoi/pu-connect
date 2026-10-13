@@ -2,9 +2,10 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { FileText, GraduationCap, Loader2, MessageSquare, Search } from 'lucide-react'
+import { FileText, GraduationCap, MessageSquare, Search } from 'lucide-react'
 import { useCourses } from '@/hooks/use-course'
 import { Input } from '@/components/ui/input'
+import { CourseListSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 // Bỏ dấu tiếng Việt để tìm "giai tich" khớp "Giải tích"
 const normalize = (s: string) =>
@@ -39,9 +40,7 @@ export default function CoursesPage() {
       </div>
 
       {isPending ? (
-        <div className="py-24 flex justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <CourseListSkeleton />
       ) : filtered.length === 0 ? (
         <p className="py-16 text-center text-sm text-muted-foreground">Không tìm thấy học phần phù hợp.</p>
       ) : (
