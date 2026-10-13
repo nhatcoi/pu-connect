@@ -9,8 +9,8 @@ export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
   @Get()
-  async findAll(@Query('type') type?: string, @Query('search') search?: string) {
-    return this.documentsService.findAll(type, search)
+  async findAll(@Query('type') type?: string, @Query('search') search?: string, @Query('course') course?: string) {
+    return this.documentsService.findAll(type, search, course)
   }
 
   @Get(':id')

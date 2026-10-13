@@ -6,7 +6,7 @@ import type { CreateDocumentInput, DocumentItem } from '@pu/schemas'
 export class DocumentsService {
   constructor(private readonly db: DatabaseService) {}
 
-  async findAll(type?: string, search?: string): Promise<DocumentItem[]> {
+  async findAll(type?: string, search?: string, course?: string): Promise<DocumentItem[]> {
     let sql = `
       SELECT d.*,
              u.id as user_id, u.email as user_email, u.username as user_username,
@@ -16,9 +16,14 @@ export class DocumentsService {
       FROM documents d
       JOIN users u ON d.owner_id = u.id
       LEFT JOIN courses c ON d.course_id = c.id
-      WHERE 1=1
+      WHERE d.visibility = 'public'
     `
     const params: any[] = []
+
+    if (course) {
+      params.push(course)
+      sql += ` AND (c.code ILIKE $${params.length} OR c.id::text = $${params.length})`
+    }
 
     if (type && type !== 'all') {
       params.push(type)

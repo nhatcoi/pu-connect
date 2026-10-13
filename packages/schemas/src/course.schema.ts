@@ -34,3 +34,23 @@ export const CreateCourseSchema = z.object({
 export type Department = z.infer<typeof DepartmentSchema>
 export type Course = z.infer<typeof CourseSchema>
 export type CreateCourseInput = z.infer<typeof CreateCourseSchema>
+
+// Trang học phần /courses/[code]
+export interface CourseOverview {
+  course: Course
+  stats: {
+    questionCount: number
+    solvedCount: number
+    documentCount: number
+    groupCount: number
+    recruitingGroupCount: number
+  }
+  topContributors: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+    role: string
+    contributions: number
+  }[]
+}

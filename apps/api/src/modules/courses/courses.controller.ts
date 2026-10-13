@@ -13,6 +13,11 @@ export class CoursesController {
     return this.coursesService.findAll(department)
   }
 
+  @Get(':id/overview')
+  async overview(@Param('id') id: string) {
+    return this.coursesService.getOverview(id)
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id)
