@@ -6,7 +6,6 @@ import { useAppStore } from '@/store'
 import { useSession } from '@/hooks/use-session'
 import { AuthForm } from '@/components/auth/auth-form'
 import { PuLogo, PuMark } from '@/components/brand/pu-logo'
-import { HeroNetwork } from '@/components/brand/hero-network'
 import Link from 'next/link'
 import { FEATURES } from '@/lib/features'
 import { LEGAL_LINKS } from '@/lib/legal'
@@ -58,9 +57,9 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Right Column: Animated network vector (Hiệu ứng mạng lưới kết nối) */}
-        <div className="flex-1 flex items-center justify-center relative w-full max-w-lg lg:max-w-none">
-          <HeroNetwork />
+        {/* Right Column: Logo lớn (mobile đã có logo nhỏ phía trên) */}
+        <div className="hidden lg:flex flex-1 items-center justify-center relative">
+          <PuMark className="h-80 w-80" />
 
           {/* Thẻ QR tải app (ẩn tới khi phát hành mobile) */}
           {FEATURES.mobileAppPromo && (

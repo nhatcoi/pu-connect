@@ -256,10 +256,6 @@
   scrollbar-color: rgba(140, 140, 140, 0.3) transparent;
 }
 
-/* Brand motion: floating & dash flow (Hiệu ứng nền trang đăng nhập) */
-@keyframes pu-dash { to { stroke-dashoffset: -24; } }
-@keyframes pu-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
 /* Skeleton: ẩn 150ms đầu (tải nhanh ⇒ không nháy), rồi hiện dần */
 @keyframes skeleton-reveal {
   to {
