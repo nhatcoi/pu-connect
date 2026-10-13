@@ -33,7 +33,8 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
   const router = useRouter()
   const isGroup = c.type === 'group'
   const isAi = c.type === 'ai'
-  const [tab, setTab] = useState<Tab>(isGroup ? 'members' : 'image')
+  // DM/AI mở tab "Đã ghim" (dùng lại cache của thanh tin ghim) ⇒ ảnh/tệp chỉ tải khi bấm tab
+  const [tab, setTab] = useState<Tab>(isGroup ? 'members' : 'pinned')
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState(c.title ?? '')
   const { settings, rename, leave } = useConversationActions(c.id)

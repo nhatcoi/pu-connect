@@ -82,6 +82,7 @@ export function ProfileCompletionCard() {
 
       <Link
         href={`/${user.username}?edit=1`}
+        prefetch={false}
         className="block w-full rounded-full bg-primary py-2 text-center text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
       >
         Cập nhật hồ sơ
