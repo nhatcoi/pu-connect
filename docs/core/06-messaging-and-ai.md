@@ -593,7 +593,7 @@ apps/web/src/components/chat/
 | Hạng mục | Quyết định |
 |---|---|
 | Tệp đính kèm | Tải trước lên R2 (`POST /upload/file?folder=chat`, ≤ 25 MB phía web), tin chỉ mang metadata. Server từ chối tệp không nằm dưới `chat/{senderId}/` hoặc URL khác `R2_PUBLIC_URL/key` ⇒ không gắn được tệp của người khác, PU AI tải ảnh không bị SSRF. |
-| Cảm xúc | Bật/tắt theo `(message, user, emoji)`; tin trả `reactions: [{emoji, userIds}]` để client tự tính "của mình". Cập nhật lạc quan, phát `message.updated`. |
+| Cảm xúc | Bật/tắt theo `(message, user, emoji)`; tin trả `reactions: [{emoji, userIds}]` để client tự tính "của mình". Cập nhật lạc quan, phát `message.updated`. Bấm cụm cảm xúc ⇒ hộp thoại "Cảm xúc về tin nhắn" (`GET messages/:id/reactions`, kể cả người đã rời nhóm; query key kèm chữ ký số lượng ⇒ tự tải lại). |
 | Sửa / ghim | Sửa tin `text` của mình trong 15 phút (`edited_at`); ghim: mọi thành viên, thu hồi tin ⇒ bỏ ghim. |
 | Đã xem | `summary.readCursors` (con trỏ của người khác) + `conv.read {userId}` gửi mọi thành viên. |
 | Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge. *Chưa có push cho tin nhắn nên chưa ảnh hưởng push.* |
@@ -602,4 +602,4 @@ apps/web/src/components/chat/
 | Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
 | Vision & tài liệu | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB). PDF (`pdf-parse`, ≤ 40 trang, ≤ 20 MB), DOCX (`mammoth`), `.txt/.md/.csv` ⇒ trích text chèn `<file>` (≤ 40k ký tự/tệp, ≤ 80k/lượt), cache LRU 30 tệp theo key R2. Tin không kèm tệp ⇒ dùng lại tài liệu đọc được ở ≤ 10 tin trước (sau mốc "Chủ đề mới"). PDF scan (không có lớp chữ) ⇒ báo người dùng; PPTX/XLSX chỉ báo tên. |
 
-Còn thiếu: push cho tin nhắn, ảnh đại diện nhóm (API có `avatarUrl`, UI chưa có nút đổi), chuyển quyền trưởng nhóm thủ công, xem ai đã thả cảm xúc.
+Còn thiếu: push cho tin nhắn, ảnh đại diện nhóm (API có `avatarUrl`, UI chưa có nút đổi), chuyển quyền trưởng nhóm thủ công.

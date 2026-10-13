@@ -26,6 +26,7 @@ export const queryKeys = {
   chatMembers: (id: string) => ['conversations', 'members', id] as const,
   messages: (conversationId: string) => ['messages', conversationId] as const,
   chatPinned: (id: string) => ['chat-pinned', id] as const,
+  chatReactions: (messageId: string, sig: string) => ['chat-reactions', messageId, sig] as const,
   chatMedia: (id: string, kind: 'image' | 'file') => ['chat-media', id, kind] as const,
   chatSearch: (id: string, q: string) => ['chat-search', id, q] as const,
   aiQuota: ['ai-quota'] as const,

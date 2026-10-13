@@ -87,6 +87,13 @@ export interface ChatReaction {
   userIds: string[]
 }
 
+// Danh sách người đã thả cảm xúc (hộp thoại "Cảm xúc về tin nhắn")
+export interface ChatReactionDetail {
+  emoji: string
+  user: ChatUser
+  createdAt: string
+}
+
 export interface ChatReplyPreview {
   id: string
   senderName: string | null

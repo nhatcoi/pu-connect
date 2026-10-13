@@ -67,6 +67,11 @@ export class MessagesController {
     return this.messages.react(requireUserId(req), messageId(id), body.emoji)
   }
 
+  @Get('messages/:id/reactions')
+  reactions(@Param('id') id: string, @Req() req: Request) {
+    return this.messages.listReactions(requireUserId(req), messageId(id))
+  }
+
   @Post('messages/:id/pin')
   @HttpCode(HttpStatus.OK)
   pin(@Param('id') id: string, @Req() req: Request) {

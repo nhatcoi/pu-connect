@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
-import type { ChatAttachment, ChatMessage, EditMessageInput, MessagesPage, SendMessageInput } from '@pu/schemas'
+import type { ChatAttachment, ChatMessage, ChatReactionDetail, EditMessageInput, MessagesPage, SendMessageInput } from '@pu/schemas'
 import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
@@ -139,6 +139,22 @@ export class MessagesService {
       }
     })
     return this.publishUpdate(conversationId, messageId)
+  }
+
+  // Ai đã thả cảm xúc nào (kể cả người đã rời nhóm) / Who reacted
+  async listReactions(userId: string, messageId: string): Promise<ChatReactionDetail[]> {
+    await this.messageConversation(userId, messageId)
+    const res = await this.db.query(
+      `SELECT r.emoji, r.created_at, u.id, u.username, u.display_name, u.avatar_url, u.account_type
+       FROM message_reactions r JOIN users u ON u.id = r.user_id
+       WHERE r.message_id = $1 ORDER BY r.created_at DESC LIMIT 500`,
+      [messageId]
+    )
+    return res.rows.map((r) => ({
+      emoji: r.emoji,
+      createdAt: new Date(r.created_at).toISOString(),
+      user: { id: r.id, username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url, isBot: r.account_type === 'bot' }
+    }))
   }
 
   // Ghim / bỏ ghim (mọi thành viên)

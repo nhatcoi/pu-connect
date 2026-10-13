@@ -11,6 +11,7 @@ import { AI_MODE_META } from '../ai/ai-modes'
 import { messagePreview, timeOf } from '../utils'
 import { AttachmentView } from './attachment-view'
 import { MessageActions, type MessageHandlers } from './message-actions'
+import { ReactionsDialog } from './reactions-dialog'
 
 // Màn cảm ứng không có hover ⇒ chạm vào tin để hiện thanh thao tác
 const isTouch = () => typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches
@@ -31,6 +32,8 @@ interface BubbleProps {
 
 export function MessageBubble({ message: m, mine, myId, continued, showAvatar, showName, seenLabel, highlighted, onJumpTo, onRetry, handlers }: BubbleProps) {
   const [actionsOpen, setActionsOpen] = useState(false)
+  const [reactionsOpen, setReactionsOpen] = useState(false)
+  const reactionCount = m.reactions.reduce((n, r) => n + r.userIds.length, 0)
   const isAi = m.kind === 'ai'
   const interactive = !m.deleted && !m.id.startsWith('tmp-') && m.status !== 'streaming'
   const hasText = !!m.content && !m.deleted
@@ -96,23 +99,28 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
         </div>
 
         {m.reactions.length > 0 && !m.deleted && (
-          <div className={cn('flex flex-wrap gap-1 -mt-1.5 z-10 px-2', mine && 'justify-end')}>
-            {m.reactions.map((r) => {
-              const reacted = !!myId && r.userIds.includes(myId)
-              return (
-                <button
-                  key={r.emoji}
-                  onClick={() => handlers.onReact(m, r.emoji)}
-                  className={cn(
-                    'h-5 px-1.5 rounded-full text-[11px] flex items-center gap-0.5 border bg-card shadow-xs cursor-pointer',
-                    reacted && 'border-primary/50 bg-primary/10'
-                  )}
-                >
-                  {r.emoji}
-                  {r.userIds.length > 1 && <span className="text-muted-foreground">{r.userIds.length}</span>}
-                </button>
-              )
-            })}
+          <div className={cn('flex -mt-1.5 z-10 px-2', mine && 'justify-end')}>
+            <button
+              onClick={() => setReactionsOpen(true)}
+              title="Xem ai đã thả cảm xúc"
+              className={cn(
+                'h-5 pl-1 pr-1.5 rounded-full text-[11px] flex items-center gap-0.5 border bg-card shadow-xs cursor-pointer hover:bg-muted',
+                !!myId && m.reactions.some((r) => r.userIds.includes(myId)) && 'border-primary/50'
+              )}
+            >
+              {m.reactions.slice(0, 3).map((r) => (
+                <span key={r.emoji}>{r.emoji}</span>
+              ))}
+              {reactionCount > 1 && <span className="text-muted-foreground ml-0.5">{reactionCount}</span>}
+            </button>
+            <ReactionsDialog
+              messageId={m.id}
+              reactions={m.reactions}
+              myId={myId}
+              open={reactionsOpen}
+              onOpenChange={setReactionsOpen}
+              onToggle={(emoji) => handlers.onReact(m, emoji)}
+            />
           </div>
         )}
 
