@@ -47,7 +47,8 @@ export type CreateGroupChatInput = z.infer<typeof CreateGroupChatSchema>
 
 export const UpdateGroupSchema = z.object({
   title: z.string().trim().min(1, { message: 'Nhập tên nhóm' }).max(150).optional(),
-  avatarUrl: z.string().url().max(500).nullable().optional()
+  // Key ảnh trong avatars/{userId}/ (tải lên trước); null = xóa ảnh nhóm
+  avatarKey: z.string().max(300).nullable().optional()
 })
 export type UpdateGroupInput = z.infer<typeof UpdateGroupSchema>
 
@@ -103,7 +104,7 @@ export interface ChatReplyPreview {
 }
 
 // Tin hệ thống (thêm/xóa thành viên, đổi tên nhóm, làm mới ngữ cảnh AI)
-export type ChatSystemEvent = 'group.created' | 'group.renamed' | 'member.added' | 'member.removed' | 'member.left' | 'ai.reset'
+export type ChatSystemEvent = 'group.created' | 'group.renamed' | 'member.added' | 'member.removed' | 'member.left' | 'group.avatar' | 'ai.reset'
 
 export interface ChatMessageMeta {
   aiMode?: AiMode

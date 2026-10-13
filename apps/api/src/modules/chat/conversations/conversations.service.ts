@@ -8,6 +8,7 @@ import type {
   UpdateGroupInput
 } from '@pu/schemas'
 import { SimpleRateLimiter } from '../../auth/rate-limit.util'
+import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
 import { PuaiService } from '../puai/puai.service'
@@ -21,7 +22,8 @@ export class ConversationsService {
 
   constructor(
     private readonly core: ChatCoreService,
-    private readonly puai: PuaiService
+    private readonly puai: PuaiService,
+    private readonly storage: StorageService
   ) {}
 
   private get db() {
@@ -130,32 +132,41 @@ export class ConversationsService {
     return this.get(userId, id)
   }
 
-  // Đổi tên / ảnh nhóm: mọi thành viên đều được (như Messenger)
+  // Đổi tên / ảnh nhóm (mọi thành viên); mỗi thay đổi ghi 1 tin hệ thống
   async updateGroup(userId: string, conversationId: string, input: UpdateGroupInput): Promise<ConversationSummary> {
-    const system = await this.db.transaction(async (client) => {
+    const avatarUrl = input.avatarKey === undefined ? undefined : this.groupAvatarUrl(userId, input.avatarKey)
+    const systems = await this.db.transaction(async (client) => {
       await this.assertGroupMember(client, userId, conversationId)
-      const sets: string[] = []
-      const params: unknown[] = [conversationId]
-      if (input.title !== undefined) {
-        params.push(input.title)
-        sets.push(`title = $${params.length}`)
-      }
-      if (input.avatarUrl !== undefined) {
-        params.push(input.avatarUrl)
-        sets.push(`avatar_url = $${params.length}`)
-      }
-      if (!sets.length) return null
-      await client.query(`UPDATE conversations SET ${sets.join(', ')} WHERE id = $1`, params)
-      if (input.title === undefined) return null
+      const changes: [string, unknown][] = []
+      if (input.title !== undefined) changes.push(['title', input.title])
+      if (avatarUrl !== undefined) changes.push(['avatar_url', avatarUrl])
+      if (!changes.length) return []
+      await client.query(
+        `UPDATE conversations SET ${changes.map(([col], i) => `${col} = $${i + 2}`).join(', ')} WHERE id = $1`,
+        [conversationId, ...changes.map(([, v]) => v)]
+      )
+
       const [actor] = await this.core.displayNames(client, [userId])
-      return this.core.insertSystem(client, conversationId, userId, `${actor} đã đổi tên nhóm thành "${input.title}"`, {
-        event: 'group.renamed',
-        actorName: actor
-      })
+      const out = []
+      if (input.title !== undefined) {
+        out.push(await this.core.insertSystem(client, conversationId, userId, `${actor} đã đổi tên nhóm thành "${input.title}"`, { event: 'group.renamed', actorName: actor }))
+      }
+      if (avatarUrl !== undefined) {
+        const text = avatarUrl ? `${actor} đã đổi ảnh nhóm` : `${actor} đã xóa ảnh nhóm`
+        out.push(await this.core.insertSystem(client, conversationId, userId, text, { event: 'group.avatar', actorName: actor }))
+      }
+      return out
     })
-    if (system) await this.core.broadcast(conversationId, 'message.new', system)
-    await this.core.broadcast(conversationId, 'conv.updated', { conversationId })
+    for (const m of systems) await this.core.broadcast(conversationId, 'message.new', m)
+    if (systems.length) await this.core.broadcast(conversationId, 'conv.updated', { conversationId })
     return this.get(userId, conversationId)
+  }
+
+  // Ảnh nhóm chỉ nhận ảnh do chính người đổi tải lên avatars/{userId}/ (thư mục chỉ cho phép ảnh)
+  private groupAvatarUrl(userId: string, key: string | null): string | null {
+    if (key === null) return null
+    if (!this.storage.isOwnedKey(key, 'avatars', userId)) throw new BadRequestException('Ảnh nhóm không hợp lệ')
+    return this.storage.publicUrlFor(key)
   }
 
   async listMembers(userId: string, conversationId: string): Promise<ChatMember[]> {

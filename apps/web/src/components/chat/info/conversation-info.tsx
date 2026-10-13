@@ -14,6 +14,7 @@ import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 import { ConversationAvatar } from '../conversation-avatar'
 import { messagePreview } from '../utils'
+import { GroupAvatarEditor } from './group-avatar-editor'
 import { MediaPanel } from './media-panel'
 import { MemberList } from './member-list'
 import { MessageSearch } from './message-search'
@@ -49,7 +50,7 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
   return (
     <div className="rounded-2xl bg-card p-4 space-y-4">
       <div className="flex flex-col items-center text-center gap-2">
-        <ConversationAvatar conversation={c} className="h-16 w-16" />
+        {isGroup ? <GroupAvatarEditor conversation={c} /> : <ConversationAvatar conversation={c} className="h-16 w-16" />}
         {renaming ? (
           <form
             className="flex items-center gap-1 w-full"

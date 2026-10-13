@@ -10,13 +10,12 @@ import {
   Query
 } from '@nestjs/common'
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
-import { StorageService } from './storage.service'
+import { StorageService, type UploadFolder } from './storage.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import type { Request } from 'express'
 import 'multer'
 import { requireUserId } from '../../common/http/current-user'
 
-type UploadFolder = 'posts/images' | 'documents' | 'avatars' | 'banners' | 'chat'
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const DOCUMENT_TYPES = [

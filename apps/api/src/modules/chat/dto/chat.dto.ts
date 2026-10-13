@@ -39,7 +39,8 @@ export const CreateGroupChatBodySchema = z.object({
 
 export const UpdateGroupBodySchema = z.object({
   title: z.string().trim().min(1, { message: 'Nhập tên nhóm' }).max(150).optional(),
-  avatarUrl: z.string().url().max(500).nullable().optional()
+  // Key ảnh trong avatars/{userId}/ (tải lên trước); null = xóa ảnh nhóm
+  avatarKey: z.string().max(300).nullable().optional()
 })
 
 export const AddMembersBodySchema = z.object({ userIds: z.array(z.string().uuid()).min(1, { message: 'Chọn người để thêm' }).max(49) })

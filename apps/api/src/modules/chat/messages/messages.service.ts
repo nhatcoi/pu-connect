@@ -215,7 +215,7 @@ export class MessagesService {
   private checkAttachments(userId: string, list?: ChatAttachment[]): ChatAttachment[] | null {
     if (!list?.length) return null
     for (const a of list) {
-      if (!a.key.startsWith(`chat/${userId}/`) || a.url !== this.storage.publicUrlFor(a.key)) {
+      if (!this.storage.isOwnedKey(a.key, 'chat', userId) || a.url !== this.storage.publicUrlFor(a.key)) {
         throw new BadRequestException('Tệp đính kèm không hợp lệ')
       }
     }

@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
+export type UploadFolder = 'posts/images' | 'documents' | 'avatars' | 'banners' | 'chat'
+
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name)
@@ -40,11 +42,16 @@ export class StorageService {
     return `${this.publicUrl.replace(/\/$/, '')}/${key}`
   }
 
+  // Key do chính user tải lên thư mục này? (chặn gắn tệp người khác / URL ngoài) / Ownership check
+  isOwnedKey(key: string, folder: UploadFolder, userId: string): boolean {
+    return key.startsWith(`${folder}/${userId}/`) && !key.includes('..')
+  }
+
   async uploadFile(
     fileBuffer: Buffer,
     fileName: string,
     mimeType: string,
-    folder: 'posts/images' | 'documents' | 'avatars' | 'banners' | 'chat' = 'posts/images',
+    folder: UploadFolder = 'posts/images',
     userId?: string
   ): Promise<{ url: string; key: string; size: number }> {
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
