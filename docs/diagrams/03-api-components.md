@@ -17,7 +17,7 @@ flowchart TB
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
-    chat["<b>Chat</b><br/>ChatService (DM · nhóm · AI)<br/>PuaiService → LLM (OpenAI-compatible)"]
+    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages<br/>Puai (prompts · retrieval · vision) → LLM"]
   end
 
   subgraph Platform["Platform modules"]
@@ -44,6 +44,7 @@ flowchart TB
   admin -->|disconnectUser| rt
   chat -->|emitToUser message.*| rt
   chat -->|chat/completions stream| llm["LLM gateway"]
+  chat -->|publicUrlFor · kiểm tra tệp chat/| storage
 
   classDef mod fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef plat fill:#334155,stroke:#334155,color:#fff
@@ -77,7 +78,7 @@ flowchart TB
 | Storage | `POST upload/file` · `POST upload/multiple` |
 | Push | `GET push/config` · `POST/DELETE push/subscriptions` · `POST push/test` |
 | Admin (role `admin`) | `GET admin/stats` · `GET admin/reports?status=pending\|resolved` · `POST admin/posts/:id/{hide,unhide,dismiss-reports}` · `GET admin/users?q=&status=` · `POST admin/users/:id/{suspend,unsuspend}` · `GET admin/audit-logs` · `GET admin/search/zero-results?days=` |
-| Chat | `GET conversations` · `GET conversations/unread-count` · `POST conversations/direct` · `POST conversations/ai` · `POST conversations` (nhóm) · `GET conversations/:id` · `GET/POST conversations/:id/messages` (keyset `before`, `clientMsgId` idempotent) · `POST conversations/:id/read` · `POST conversations/:id/leave` · `DELETE messages/:id` · `GET ai/quota` |
+| Chat | `GET conversations` · `GET conversations/unread-count` · `POST conversations/direct` · `POST conversations/ai` · `POST conversations` (nhóm) · `GET/PATCH conversations/:id` · `PATCH conversations/:id/settings` (tắt TB, ghim) · `GET/POST conversations/:id/members` · `DELETE conversations/:id/members/:userId` · `POST conversations/:id/read` · `POST conversations/:id/leave` · `GET/POST conversations/:id/messages` (keyset `before`, `clientMsgId` idempotent, `attachments`, `replyToId`, `aiMode`) · `GET conversations/:id/messages/search` · `GET conversations/:id/pinned` · `GET conversations/:id/attachments` · `PATCH/DELETE messages/:id` · `POST messages/:id/reactions` · `POST messages/:id/pin` · `GET ai/quota` · `POST ai/conversations/:id/reset` |
 
 ### GraphQL (`/graphql`)
 
@@ -95,11 +96,13 @@ flowchart TB
 | Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
 | Server → client | `message.new` · `message.updated` | `ChatMessage` tới room `user:{id}` của mọi thành viên |
 | Server → client | `message.delta` | `{ conversationId, messageId, delta }` — PU AI trả lời dần |
+| Server → client | `conv.read` · `conv.updated` · `conv.removed` | đã đọc `{conversationId, userId, lastReadMessageId}` (mọi thành viên) · đổi tên/thành viên · bị xóa khỏi nhóm |
 | Server → client | `conv.read` · `conv.updated` | đồng bộ đã đọc / hội thoại mới giữa các tab |
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
 - 2026-10-13 — PuaiService dùng SDK `openai` (gateway OpenAI-compatible).
+- 2026-10-13 — ChatModule tách `chat-core` / `conversations` / `messages` / `puai`; thêm endpoint thành viên, cài đặt, cảm xúc, ghim, sửa, tìm kiếm, kho tệp, reset AI; Storage thêm thư mục `chat`; event `conv.removed`.
 - 2026-10-13 — AdminModule, ChatModule (+ PuaiService), `courses/:id/overview`, lọc `course` cho posts/documents; StudyGroups lưu Postgres; event `message.*`, `typing`; khóa tài khoản chặn login/session/socket.
 - 2026-10-04 — Search: unaccent + trigram, `search_logs` (xem [07-search](../core/07-search.md)).
 - 2026-10-04 — Auth: `forgot-password`, `reset-password`.

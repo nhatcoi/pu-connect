@@ -225,8 +225,8 @@ sequenceDiagram
   autonumber
   actor U as Người dùng
   participant W as Web (/messages/[id])
-  participant A as ChatController
-  participant S as ChatService
+  participant A as MessagesController
+  participant S as MessagesService
   participant DB as Postgres
   participant RT as RealtimeGateway
   participant P as PuaiService
@@ -234,16 +234,16 @@ sequenceDiagram
 
   W->>W: hiện tin lạc quan (clientMsgId)
   W->>A: POST /api/conversations/:id/messages
-  A->>S: sendMessage() (zod · 20 tin/10s · kiểm tra thành viên)
+  A->>S: send() (zod · 20 tin/10s · thành viên · tệp phải thuộc chat/{senderId}/)
   S->>DB: TX: INSERT messages ON CONFLICT(sender, clientMsgId) · UPDATE conversations.last_* · read cursor
   A-->>W: 201 ChatMessage (thay tin lạc quan)
   S->>RT: message.new → user:{memberId} mỗi thành viên
-  alt conversation.type = 'ai'
-    S-)P: reply() chạy nền
+  alt type = 'ai' hoặc (type = 'group' và có @puai)
+    S-)P: reply(triggerId) chạy nền
     P->>DB: quota ai_runs hôm nay · INSERT tin @puai (status=streaming)
     P->>RT: message.new (placeholder)
     P->>DB: full-text posts + documents (OR từ khóa, lọc quyền xem) ⇒ nguồn
-    P->>L: chat.completions stream (system, lịch sử ≤20 tin, <context> nguồn)
+    P->>L: chat.completions stream (system + chế độ học, lịch sử sau mốc reset, <context> nguồn, ảnh base64)
     loop text delta
       L-->>P: delta
       P->>RT: message.delta
@@ -274,6 +274,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-13 — 5.7: `@puai` trong nhóm, chế độ học, ảnh đính kèm, kiểm tra tệp.
 - 2026-10-13 — thêm 5.7 Nhắn tin & PU AI, 5.8 Khóa tài khoản.
 - 2026-10-04 — thêm 5.6 Tìm kiếm.
 - 2026-10-04 — thêm 5.1b Quên mật khẩu.

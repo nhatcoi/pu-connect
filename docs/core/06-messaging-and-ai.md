@@ -568,3 +568,38 @@ store: aiDrawer { open, contextRef }, unreadTotal
 | P3 `@puai` trong bình luận, P5 | ⏳ | Chưa làm. |
 | Thông báo / Web Push cho tin nhắn | ⏳ | Chưa gửi push khi người nhận offline. |
 | `privacy_settings.dm`, `user_blocks` | ⏳ | Hiện: chỉ tài khoản đã xác thực email mới mở DM/nhóm mới; không nhắn được tài khoản bị khóa. |
+
+## 13. Chat P2 & PU AI học tập (2026-10-13)
+
+Migration `chat-v2-upgrade.sql`: `messages.attachments/edited_at/pinned_at/pinned_by/meta`, bảng `message_reactions (message_id, user_id, emoji)`, `conversation_members.muted_until/pinned_at`.
+
+**Cấu trúc mã** (không vòng phụ thuộc: core ← puai ← conversations / messages):
+
+```
+apps/api/src/modules/chat/
+  chat.module.ts · chat.mapper.ts (SQL cột + map) · chat-core.service.ts (quyền thành viên, phát sự kiện, tin hệ thống)
+  conversations/  controller + service — DM, nhóm, thành viên, cài đặt riêng, đã đọc
+  messages/       controller + service — gửi/sửa/thu hồi, cảm xúc, ghim, tìm kiếm, kho tệp
+  puai/           controller (quota, reset) · service (stream) · prompts (chế độ học) · retrieval (full-text) · attachments (vision)
+  dto/chat.dto.ts
+apps/web/src/hooks/chat/        api · cache · use-chat-realtime · use-conversations · use-messages · use-typing · use-ai
+apps/web/src/components/chat/
+  thread/   header · message-list · message-bubble · message-actions · attachment-view · pinned-banner
+  composer/ composer · attachment-tray · use-attachment-upload (XHR có tiến trình) · ai-mode-bar
+  ai/       ai-modes · study-blocks (tách ```quiz/```flashcards) · quiz-card · flashcard-deck · ai-message-body · ai-welcome · ai-study-card
+  info/     conversation-info · member-list · media-panel · message-search
+```
+
+| Hạng mục | Quyết định |
+|---|---|
+| Tệp đính kèm | Tải trước lên R2 (`POST /upload/file?folder=chat`, ≤ 25 MB phía web), tin chỉ mang metadata. Server từ chối tệp không nằm dưới `chat/{senderId}/` hoặc URL khác `R2_PUBLIC_URL/key` ⇒ không gắn được tệp của người khác, PU AI tải ảnh không bị SSRF. |
+| Cảm xúc | Bật/tắt theo `(message, user, emoji)`; tin trả `reactions: [{emoji, userIds}]` để client tự tính "của mình". Cập nhật lạc quan, phát `message.updated`. |
+| Sửa / ghim | Sửa tin `text` của mình trong 15 phút (`edited_at`); ghim: mọi thành viên, thu hồi tin ⇒ bỏ ghim. |
+| Đã xem | `summary.readCursors` (con trỏ của người khác) + `conv.read {userId}` gửi mọi thành viên. |
+| Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge. *Chưa có push cho tin nhắn nên chưa ảnh hưởng push.* |
+| Chế độ học | `aiMode` gửi kèm tin (`meta.aiMode`), server ghép `MODE_PROMPTS[mode]` vào system prompt, ghi `ai_runs.task`. Quiz/flashcard: model trả JSON trong khối code; web kiểm tra schema, JSON hỏng ⇒ hiện như code thường, đang stream ⇒ "Đang tạo…". |
+| `@puai` trong nhóm | Tin nhóm khớp `/(^|\s)@puai\b/i` ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
+| Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
+| Vision | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB); `.txt/.md/.csv` ≤ 200 KB chèn `<file>`; định dạng khác (PDF, DOCX) chỉ báo tên — *chưa trích text PDF*. |
+
+Còn thiếu: push cho tin nhắn, trích text PDF/DOCX cho PU AI, ảnh đại diện nhóm (API có `avatarUrl`, UI chưa có nút đổi), chuyển quyền trưởng nhóm thủ công, xem ai đã thả cảm xúc.

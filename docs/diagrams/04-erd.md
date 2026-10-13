@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **29 bảng**, **45 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **30 bảng**, **48 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -35,7 +35,10 @@ erDiagram
   users ||--o{ documents : "owner_id"
   users |o--o{ mentions : "author_id"
   users ||--o{ mentions : "mentioned_user_id"
+  messages ||--o{ message_reactions : "message_id"
+  users ||--o{ message_reactions : "user_id"
   conversations ||--o{ messages : "conversation_id"
+  users |o--o{ messages : "pinned_by"
   messages |o--o{ messages : "reply_to_id"
   users |o--o{ messages : "sender_id"
   users |o--o{ notifications : "actor_id"
@@ -158,7 +161,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
 
 ## 3. Feed & Q&A
 
@@ -436,6 +439,8 @@ erDiagram
     bigint last_read_message_id
     timestamptz joined_at
     timestamptz left_at
+    timestamptz muted_until
+    timestamptz pinned_at
   }
   conversations {
     uuid id PK
@@ -446,6 +451,12 @@ erDiagram
     varchar direct_key UK
     bigint last_message_id
     timestamptz last_message_at
+    timestamptz created_at
+  }
+  message_reactions {
+    bigint message_id PK,FK
+    uuid user_id PK,FK
+    varchar emoji PK
     timestamptz created_at
   }
   messages {
@@ -460,6 +471,11 @@ erDiagram
     varchar status
     timestamptz deleted_at
     timestamptz created_at
+    jsonb attachments
+    timestamptz edited_at
+    timestamptz pinned_at
+    uuid pinned_by FK
+    jsonb meta
   }
   push_subscriptions {
     uuid id PK
@@ -480,8 +496,9 @@ erDiagram
     timestamptz created_at
   }
   conversations ||--o{ conversation_members : "conversation_id"
+  messages ||--o{ message_reactions : "message_id"
   conversations ||--o{ messages : "conversation_id"
   messages ||--o{ messages : "reply_to_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`
