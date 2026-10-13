@@ -77,7 +77,8 @@ export class ChatCoreService {
 
   async displayNames(client: Queryable, ids: string[]): Promise<string[]> {
     if (!ids.length) return []
-    const res = await client.query(`SELECT display_name FROM users WHERE id = ANY($1::uuid[])`, [ids])
+    // Giữ đúng thứ tự ids truyền vào (Preserve input order)
+    const res = await client.query(`SELECT display_name FROM users WHERE id = ANY($1::uuid[]) ORDER BY array_position($1::uuid[], id)`, [ids])
     return res.rows.map((r) => r.display_name)
   }
 }

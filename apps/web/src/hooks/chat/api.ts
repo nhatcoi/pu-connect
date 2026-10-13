@@ -40,6 +40,7 @@ export const chatApi = {
   members: (id: string) => unwrap(apiClient<Envelope<ChatMember[]>>(`/conversations/${id}/members`)),
   addMembers: (id: string, userIds: string[]) => unwrap(apiClient<Envelope<ChatMember[]>>(`/conversations/${id}/members`, json('POST', { userIds }))),
   removeMember: (id: string, userId: string) => apiClient(`/conversations/${id}/members/${userId}`, json('DELETE')),
+  transferOwner: (id: string, userId: string) => unwrap(apiClient<Envelope<ChatMember[]>>(`/conversations/${id}/owner`, json('POST', { userId }))),
   leave: (id: string) => apiClient(`/conversations/${id}/leave`, json('POST')),
   read: (id: string, messageId: string) => apiClient(`/conversations/${id}/read`, json('POST', { messageId })),
 

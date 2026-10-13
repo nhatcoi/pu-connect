@@ -45,6 +45,8 @@ export const UpdateGroupBodySchema = z.object({
 
 export const AddMembersBodySchema = z.object({ userIds: z.array(z.string().uuid()).min(1, { message: 'Chọn người để thêm' }).max(49) })
 
+export const TransferOwnerBodySchema = z.object({ userId: z.string().uuid() })
+
 export const MemberSettingsBodySchema = z.object({
   mutedHours: z.number().int().min(-1).max(24 * 30).optional(),
   pinned: z.boolean().optional()

@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 CREATE TABLE IF NOT EXISTS conversation_members (
   conversation_id UUID REFERENCES conversations(id) ON DELETE CASCADE,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-  role VARCHAR(10) DEFAULT 'member',     -- owner | admin | member
+  role VARCHAR(10) DEFAULT 'member',     -- owner | member
   last_read_message_id BIGINT DEFAULT 0,
   muted_until TIMESTAMPTZ,
   pinned BOOLEAN DEFAULT FALSE,
@@ -270,6 +270,7 @@ erDiagram
 | PATCH | `/messages/:id` / DELETE `/messages/:id` | Sửa (≤ 15 phút) / thu hồi (soft delete). |
 | POST | `/conversations/:id/read` `{ messageId }` | Cập nhật read cursor. |
 | POST | `/conversations/:id/members` / DELETE `.../members/:userId` | Quản lý thành viên nhóm. |
+| POST | `/conversations/:id/owner` `{ userId }` | Trưởng nhóm chuyển quyền cho thành viên người thật khác. |
 | POST | `/messages/:id/actions/:index` `{ decision: 'accept'|'dismiss' }` | Xác nhận thẻ đề xuất của AI. |
 
 ### 4.2. AI (`/api/ai`)
@@ -597,6 +598,7 @@ apps/web/src/components/chat/
 | Cảm xúc | Bật/tắt theo `(message, user, emoji)`; tin trả `reactions: [{emoji, userIds}]` để client tự tính "của mình". Cập nhật lạc quan, phát `message.updated`. Bấm cụm cảm xúc ⇒ hộp thoại "Cảm xúc về tin nhắn" (`GET messages/:id/reactions`, kể cả người đã rời nhóm; query key kèm chữ ký số lượng ⇒ tự tải lại). |
 | Nhóm học ↔ chat | `conversations.study_group_id` (UNIQUE). `StudyGroupChatService` (chat module, được `StudyGroupsModule` import — chat không phụ thuộc ngược lại): `open()` khóa hàng `study_groups FOR UPDATE`, chỉ thành viên nhóm học; chưa có chat ⇒ tạo + thêm cả nhóm; đã có ⇒ đưa người mở vào lại nếu đã rời. `join` nhóm học ⇒ sau commit gọi `onStudyGroupJoined` (best-effort, lỗi chỉ log; `open()` tự sửa lệch). Nguồn sự thật về thành viên = `study_group_members`. |
 | Ảnh nhóm | Web tải ảnh lên `avatars/` (thư mục chỉ nhận ảnh) rồi gửi `avatarKey`; server kiểm `StorageService.isOwnedKey(key, 'avatars', userId)` và tự ghép URL ⇒ không gắn được URL ngoài (pixel theo dõi) hay ảnh người khác. `null` = xóa. Tin hệ thống `group.avatar`. |
+| Chuyển trưởng nhóm | `POST conversations/:id/owner`: khóa hàng `conversations` (`FOR UPDATE`) ⇒ 2 lượt chuyển song song không tạo 2 trưởng nhóm; chỉ chuyển cho thành viên người thật đang ở trong nhóm; tin hệ thống `owner.transferred`. Trưởng nhóm rời mà không chuyển ⇒ tự trao cho người thật vào sớm nhất (bỏ qua bot). Web: menu `⋯` mỗi thành viên (`MemberActions`) có xác nhận, thay nút xóa chỉ hiện khi hover. |
 | Sửa / ghim | Sửa tin `text` của mình trong 15 phút (`edited_at`); ghim: mọi thành viên, thu hồi tin ⇒ bỏ ghim. |
 | Đã xem | `summary.readCursors` (con trỏ của người khác) + `conv.read {userId}` gửi mọi thành viên. |
 | Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge và không push. |
@@ -606,4 +608,4 @@ apps/web/src/components/chat/
 | Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
 | Vision & tài liệu | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB). PDF (`pdf-parse`, ≤ 40 trang, ≤ 20 MB), DOCX (`mammoth`), `.txt/.md/.csv` ⇒ trích text chèn `<file>` (≤ 40k ký tự/tệp, ≤ 80k/lượt), cache LRU 30 tệp theo key R2. Tin không kèm tệp ⇒ dùng lại tài liệu đọc được ở ≤ 10 tin trước (sau mốc "Chủ đề mới"). PDF scan (không có lớp chữ) ⇒ báo người dùng; PPTX/XLSX chỉ báo tên. |
 
-Còn thiếu: chuyển quyền trưởng nhóm thủ công, xóa thông báo hệ điều hành khi đã đọc trên thiết bị khác.
+Còn thiếu: xóa thông báo hệ điều hành khi đã đọc trên thiết bị khác.

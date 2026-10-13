@@ -10,6 +10,7 @@ import {
   MarkReadBodySchema,
   MemberSettingsBodySchema,
   OpenDirectBodySchema,
+  TransferOwnerBodySchema,
   UpdateGroupBodySchema
 } from '../dto/chat.dto'
 import { ConversationsService } from './conversations.service'
@@ -91,6 +92,13 @@ export class ConversationsController {
   @Delete(':id/members/:userId')
   removeMember(@Param('id', ParseUUIDPipe) id: string, @Param('userId', ParseUUIDPipe) userId: string, @Req() req: Request) {
     return this.conversations.removeMember(requireUserId(req), id, userId)
+  }
+
+  // Chuyển quyền trưởng nhóm
+  @Post(':id/owner')
+  @HttpCode(HttpStatus.OK)
+  transferOwner(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(TransferOwnerBodySchema)) body: { userId: string }, @Req() req: Request) {
+    return this.conversations.transferOwnership(requireUserId(req), id, body.userId)
   }
 
   @Post(':id/read')

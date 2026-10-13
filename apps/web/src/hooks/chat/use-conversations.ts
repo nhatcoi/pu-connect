@@ -76,6 +76,14 @@ export function useConversationActions(id: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.chatMembers(id) }),
     onError
   })
+  const transferOwner = useMutation({
+    mutationFn: (userId: string) => chatApi.transferOwner(id, userId),
+    onSuccess: (members) => {
+      qc.setQueryData(queryKeys.chatMembers(id), members)
+      void qc.invalidateQueries({ queryKey: queryKeys.conversation(id) })
+    },
+    onError
+  })
   const leave = useMutation({
     mutationFn: () => chatApi.leave(id),
     onSuccess: () => {
@@ -84,7 +92,7 @@ export function useConversationActions(id: string) {
     },
     onError
   })
-  return { settings, rename, changeAvatar, addMembers, removeMember, leave }
+  return { settings, rename, changeAvatar, addMembers, removeMember, transferOwner, leave }
 }
 
 // Mở nhóm chat của nhóm học (server tạo lười) rồi chuyển tới hội thoại

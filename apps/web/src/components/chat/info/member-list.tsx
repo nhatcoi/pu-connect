@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Crown, Loader2, UserMinus, UserPlus } from 'lucide-react'
+import { Crown, Loader2, UserPlus } from 'lucide-react'
 import type { ConversationSummary, UserSummary } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -10,12 +10,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useConversationActions, useMembers } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 import { UserPicker } from '../user-picker'
+import { MemberActions } from './member-actions'
 
-// Thành viên nhóm: thêm người (mọi thành viên), xóa người (trưởng nhóm)
+// Thành viên nhóm: thêm người (mọi thành viên); chuyển quyền, xóa người (trưởng nhóm)
 export function MemberList({ conversation }: { conversation: ConversationSummary }) {
   const myId = useAppStore((s) => s.user?.id)
   const { data: members = [], isPending } = useMembers(conversation.id)
-  const { addMembers, removeMember } = useConversationActions(conversation.id)
+  const { addMembers } = useConversationActions(conversation.id)
   const [adding, setAdding] = useState(false)
   const [picked, setPicked] = useState<UserSummary[]>([])
   const isOwner = conversation.myRole === 'owner'
@@ -60,16 +61,7 @@ export function MemberList({ conversation }: { conversation: ConversationSummary
                 <span className="block text-[11px] text-muted-foreground truncate">@{m.username}</span>
               </span>
             </Link>
-            {isOwner && m.id !== myId && (
-              <button
-                onClick={() => removeMember.mutate(m.id)}
-                disabled={removeMember.isPending}
-                title="Xóa khỏi nhóm"
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-              >
-                <UserMinus className="h-3.5 w-3.5" />
-              </button>
-            )}
+            {isOwner && m.id !== myId && !m.isBot && <MemberActions conversationId={conversation.id} member={m} />}
           </div>
         ))
       )}

@@ -228,7 +228,7 @@ export class ConversationsService {
         [conversationId, targetId]
       )
       if (!res.rows[0]) throw new NotFoundException('Thành viên không có trong nhóm')
-      const [actor, target] = [...(await this.core.displayNames(client, [userId])), ...(await this.core.displayNames(client, [targetId]))]
+      const [actor, target] = await this.core.displayNames(client, [userId, targetId])
       return this.core.insertSystem(client, conversationId, userId, `${actor} đã xóa ${target} khỏi nhóm`, {
         event: 'member.removed',
         actorName: actor,
@@ -239,6 +239,34 @@ export class ConversationsService {
     await this.core.broadcast(conversationId, 'conv.updated', { conversationId })
     this.core.emitTo([targetId], 'conv.removed', { conversationId })
     return { removed: true }
+  }
+
+  // Chuyển quyền trưởng nhóm (Transfer ownership): khóa hàng hội thoại ⇒ không có 2 lượt chuyển song song
+  async transferOwnership(userId: string, conversationId: string, targetId: string): Promise<ChatMember[]> {
+    if (userId === targetId) throw new BadRequestException('Bạn đang là trưởng nhóm')
+    const system = await this.db.transaction(async (client) => {
+      await client.query(`SELECT 1 FROM conversations WHERE id = $1 FOR UPDATE`, [conversationId])
+      const m = await this.assertGroupMember(client, userId, conversationId)
+      if (m.role !== 'owner') throw new ForbiddenException('Chỉ trưởng nhóm được chuyển quyền')
+      const res = await client.query(
+        `UPDATE conversation_members me SET role = 'owner' FROM users u
+         WHERE u.id = me.user_id AND u.account_type = 'human'
+           AND me.conversation_id = $1 AND me.user_id = $2 AND me.left_at IS NULL
+         RETURNING me.user_id`,
+        [conversationId, targetId]
+      )
+      if (!res.rows[0]) throw new NotFoundException('Thành viên không có trong nhóm')
+      await client.query(`UPDATE conversation_members SET role = 'member' WHERE conversation_id = $1 AND user_id = $2`, [conversationId, userId])
+      const [actor, target] = await this.core.displayNames(client, [userId, targetId])
+      return this.core.insertSystem(client, conversationId, userId, `${actor} đã chuyển quyền trưởng nhóm cho ${target}`, {
+        event: 'owner.transferred',
+        actorName: actor,
+        targetNames: [target]
+      })
+    })
+    await this.core.broadcast(conversationId, 'message.new', system)
+    await this.core.broadcast(conversationId, 'conv.updated', { conversationId })
+    return this.listMembers(userId, conversationId)
   }
 
   // Rời nhóm; trưởng nhóm rời ⇒ chuyển quyền cho người vào sớm nhất
@@ -253,8 +281,8 @@ export class ConversationsService {
         await client.query(
           `UPDATE conversation_members SET role = 'owner'
            WHERE (conversation_id, user_id) = (
-             SELECT conversation_id, user_id FROM conversation_members
-             WHERE conversation_id = $1 AND left_at IS NULL ORDER BY joined_at LIMIT 1)`,
+             SELECT me.conversation_id, me.user_id FROM conversation_members me JOIN users u ON u.id = me.user_id
+             WHERE me.conversation_id = $1 AND me.left_at IS NULL AND u.account_type = 'human' ORDER BY me.joined_at LIMIT 1)`,
           [conversationId]
         )
       }
