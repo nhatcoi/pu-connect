@@ -11,12 +11,13 @@ import { AiWelcome } from '@/components/chat/ai/ai-welcome'
 import { Composer, type ComposerHandle } from '@/components/chat/composer/composer'
 import { BlockedComposer } from '@/components/chat/composer/blocked-composer'
 import { ConversationInfo } from '@/components/chat/info/conversation-info'
+import type { AiMode, AiSuggestion } from '@pu/schemas'
 import type { MessageHandlers } from '@/components/chat/thread/message-actions'
 import { MessageList } from '@/components/chat/thread/message-list'
 import { PinnedBanner } from '@/components/chat/thread/pinned-banner'
 import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ThreadHeader } from '@/components/chat/thread/thread-header'
-import { chatApi, setActiveConversation, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
+import { chatApi, setActiveConversation, trackSuggestionClick, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 
 // Màn hội thoại: đầu trang + tin ghim + dòng tin + ô soạn; thông tin ở cột phải (desktop) / hộp thoại (mobile)
@@ -39,6 +40,7 @@ export default function ConversationPage() {
   const [editing, setEditing] = useState<UiMessage | null>(null)
   const [jumpTo, setJumpTo] = useState<string | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
+  const [aiMode, setAiMode] = useState<AiMode>('ask')
   const composer = useRef<ComposerHandle>(null)
 
   const jump = useCallback((messageId: string) => {
@@ -77,6 +79,16 @@ export default function ConversationPage() {
 
   const isAi = conv?.type === 'ai'
   const resetAi = () => chatApi.aiReset(id).catch((err) => toast.error(err?.message || 'Không làm mới được'))
+  // Gợi ý mở đầu ⇒ điền sẵn để sửa; câu hỏi tiếp theo ⇒ gửi ngay
+  const pickStarter = (s: AiSuggestion) => {
+    trackSuggestionClick('starter', s)
+    setAiMode(s.mode)
+    composer.current?.prefill(s.text)
+  }
+  const sendFollowUp = (text: string) => {
+    trackSuggestionClick('followup')
+    chat.send({ content: text, aiMode: 'ask' })
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
@@ -88,7 +100,7 @@ export default function ConversationPage() {
       ) : chat.messages.length === 0 ? (
         <div className="flex-1">
           {isAi ? (
-            <AiWelcome onPick={(mode, text) => composer.current?.prefill(text, mode)} />
+            <AiWelcome mode={aiMode} onPick={pickStarter} />
           ) : (
             <div className="py-16 text-center text-muted-foreground space-y-2">
               <MessageSquare className="h-9 w-9 mx-auto opacity-30" />
@@ -110,6 +122,7 @@ export default function ConversationPage() {
           onJump={jump}
           onRetry={chat.retry}
           handlers={handlers}
+          onFollowUp={isAi ? sendFollowUp : undefined}
         />
       )}
 
@@ -130,6 +143,9 @@ export default function ConversationPage() {
           }}
           onSend={chat.send}
           onEdit={chat.edit}
+          aiMode={aiMode}
+          onAiModeChange={setAiMode}
+          suggestOnModeChange={chat.messages.length > 0}
         />
       )}
 

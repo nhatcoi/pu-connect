@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import type { UiMessage } from '@/hooks/chat'
+import { AiFollowUps } from '../ai/ai-follow-ups'
 import { dayLabel, isContinuation, sameDay } from '../utils'
 import { MessageBubble } from './message-bubble'
 import type { MessageHandlers } from './message-actions'
@@ -20,17 +21,20 @@ interface MessageListProps {
   onJump: (id: string) => void
   onRetry: (m: UiMessage) => void
   handlers: MessageHandlers
+  onFollowUp?: (text: string) => void // PU AI: bấm câu hỏi gợi ý tiếp theo
 }
 
 // Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", tự cuộn xuống khi có tin mới, cuộn lên tải tin cũ
-export function MessageList({ conversation, messages, myId, hasOlder, isLoadingOlder, loadOlder, jumpTo, onJumpHandled, onJump, onRetry, handlers }: MessageListProps) {
+export function MessageList({ conversation, messages, myId, hasOlder, isLoadingOlder, loadOlder, jumpTo, onJumpHandled, onJump, onRetry, handlers, onFollowUp }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
   const isGroup = conversation?.type === 'group'
   const latest = messages[messages.length - 1]
+  // Chỉ hiện gợi ý dưới câu trả lời AI cuối cùng (đã xong)
+  const followUps = onFollowUp && latest?.kind === 'ai' && latest.status === 'done' ? (latest.meta?.followUps ?? []) : []
 
   // Cuộn xuống cuối khi có tin mới / AI đang trả lời dần
-  const latestKey = latest ? `${latest.id}:${latest.content.length}:${latest.reactions.length}` : ''
+  const latestKey = latest ? `${latest.id}:${latest.content.length}:${latest.reactions.length}:${latest.status}` : ''
   const nearBottom = useRef(true)
   useEffect(() => {
     const onScroll = () => {
@@ -136,6 +140,7 @@ export function MessageList({ conversation, messages, myId, hasOlder, isLoadingO
           </React.Fragment>
         )
       })}
+      {followUps.length > 0 && onFollowUp && <AiFollowUps items={followUps} onPick={onFollowUp} />}
       <div ref={bottomRef} />
     </div>
   )

@@ -2,17 +2,18 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Loader2, Paperclip, Pencil, Reply, SendHorizontal, X } from 'lucide-react'
-import type { AiMode } from '@pu/schemas'
+import type { AiMode, AiSuggestion } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
-import { useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
+import { trackSuggestionClick, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META } from '../ai/ai-modes'
+import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
 import { messagePreview } from '../utils'
 import { AiModeBar } from './ai-mode-bar'
 import { AttachmentTray } from './attachment-tray'
 import { useAttachmentUpload } from './use-attachment-upload'
 
-export type ComposerHandle = { prefill: (text: string, mode?: AiMode) => void }
+export type ComposerHandle = { prefill: (text: string) => void }
 
 interface ComposerProps {
   conversationId: string
@@ -25,12 +26,30 @@ interface ComposerProps {
   onSend: (draft: Draft) => void
   onEdit: (id: string, content: string) => void
   handleRef?: React.Ref<ComposerHandle>
+  // PU AI: chế độ học do trang giữ (màn trống cũng đổi gợi ý theo chế độ)
+  aiMode?: AiMode
+  onAiModeChange?: (mode: AiMode) => void
+  suggestOnModeChange?: boolean // đã có tin ⇒ chọn chế độ mở bảng gợi ý trên ô soạn
 }
 
 // Ô soạn tin: văn bản + đính kèm (chọn / dán / kéo thả), trả lời, sửa tin, chế độ học khi chat với PU AI
-export function Composer({ conversationId, isAi, disabled, placeholder, replyTo, editing, onCancelContext, onSend, onEdit, handleRef }: ComposerProps) {
+export function Composer({
+  conversationId,
+  isAi,
+  disabled,
+  placeholder,
+  replyTo,
+  editing,
+  onCancelContext,
+  onSend,
+  onEdit,
+  handleRef,
+  aiMode = 'ask',
+  onAiModeChange,
+  suggestOnModeChange
+}: ComposerProps) {
   const [text, setText] = useState('')
-  const [mode, setMode] = useState<AiMode>('ask')
+  const [panelOpen, setPanelOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
   const ref = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -38,9 +57,8 @@ export function Composer({ conversationId, isAi, disabled, placeholder, replyTo,
   const uploads = useAttachmentUpload()
 
   React.useImperativeHandle(handleRef, () => ({
-    prefill: (value, m) => {
+    prefill: (value) => {
       setText(value)
-      if (m) setMode(m)
       ref.current?.focus()
     }
   }))
@@ -67,12 +85,25 @@ export function Composer({ conversationId, isAi, disabled, placeholder, replyTo,
     if (editing) {
       if (content !== editing.content) onEdit(editing.id, content)
     } else {
-      onSend({ content, attachments: uploads.ready, replyTo, aiMode: isAi ? mode : undefined })
+      onSend({ content, attachments: uploads.ready, replyTo, aiMode: isAi ? aiMode : undefined })
       uploads.clear()
+      setPanelOpen(false)
     }
     setText('')
     onCancelContext()
     typing.stop()
+  }
+
+  const changeMode = (m: AiMode) => {
+    onAiModeChange?.(m)
+    setPanelOpen(!!suggestOnModeChange && m !== 'ask')
+  }
+
+  // Bấm gợi ý trong bảng ⇒ gửi ngay theo chế độ của gợi ý
+  const pickSuggestion = (s: AiSuggestion) => {
+    trackSuggestionClick('panel', s)
+    onSend({ content: s.text, aiMode: s.mode })
+    setPanelOpen(false)
   }
 
   const onPaste = (e: React.ClipboardEvent) => {
@@ -114,7 +145,10 @@ export function Composer({ conversationId, isAi, disabled, placeholder, replyTo,
         uploads.add(e.dataTransfer.files)
       }}
     >
-      {isAi && !editing && <AiModeBar value={mode} onChange={setMode} />}
+      {isAi && !editing && panelOpen && (
+        <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />
+      )}
+      {isAi && !editing && <AiModeBar value={aiMode} onChange={changeMode} />}
       <div className={cn('rounded-2xl bg-card px-2.5 py-1.5 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
         {contextBar}
         <AttachmentTray files={uploads.files} onRemove={uploads.remove} />
@@ -150,7 +184,7 @@ export function Composer({ conversationId, isAi, disabled, placeholder, replyTo,
             rows={1}
             value={text}
             maxLength={4000}
-            placeholder={isAi && !editing ? AI_MODE_META[mode].placeholder : placeholder}
+            placeholder={isAi && !editing ? AI_MODE_META[aiMode].placeholder : placeholder}
             onPaste={onPaste}
             onChange={(e) => {
               setText(e.target.value)

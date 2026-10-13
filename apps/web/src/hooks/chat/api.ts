@@ -1,6 +1,7 @@
 import type {
   AiMode,
   AiQuota,
+  AiSuggestionsResponse,
   ChatAttachment,
   ChatMember,
   ChatMessage,
@@ -63,6 +64,7 @@ export const chatApi = {
   search: (id: string, q: string) => unwrap(apiClient<Envelope<ChatMessage[]>>(`/conversations/${id}/messages/search?q=${encodeURIComponent(q)}`)),
 
   aiQuota: () => unwrap(apiClient<Envelope<AiQuota>>('/ai/quota')),
+  aiSuggestions: (mode: AiMode) => unwrap(apiClient<Envelope<AiSuggestionsResponse>>(`/ai/suggestions?mode=${mode}`)),
   presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),
   aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST')))
 }

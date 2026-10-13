@@ -12,11 +12,3 @@ export const AI_MODE_META: Record<AiMode, { label: string; icon: LucideIcon; pla
 }
 
 export const AI_MODE_ORDER: AiMode[] = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan']
-
-// Gợi ý mở đầu ở màn hình trống của PU AI
-export const AI_STARTERS: { mode: AiMode; text: string }[] = [
-  { mode: 'explain', text: 'Giải thích con trỏ trong C bằng ví dụ dễ hiểu' },
-  { mode: 'quiz', text: 'Quiz 5 câu về chuẩn hóa cơ sở dữ liệu (1NF–3NF)' },
-  { mode: 'flashcards', text: 'Flashcard các công thức đạo hàm cơ bản' },
-  { mode: 'plan', text: 'Lộ trình ôn Giải tích 2 trong 7 ngày, mỗi ngày 2 tiếng' }
-]

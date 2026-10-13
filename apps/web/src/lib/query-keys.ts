@@ -35,6 +35,7 @@ export const queryKeys = {
   chatMedia: (id: string, kind: 'image' | 'file') => ['chat-media', id, kind] as const,
   chatSearch: (id: string, q: string) => ['chat-search', id, q] as const,
   aiQuota: ['ai-quota'] as const,
+  aiSuggestions: (mode: string) => ['ai-suggestions', mode] as const,
   presence: ['presence'] as const,
   admin: (section: string, ...args: unknown[]) => ['admin', section, ...args] as const
 }
