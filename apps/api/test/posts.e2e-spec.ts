@@ -1,4 +1,5 @@
 import * as request from 'supertest'
+import { createHash } from 'crypto'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
@@ -86,5 +87,30 @@ describe('Posts & accepted solution (e2e)', () => {
     await new Promise((r) => setTimeout(r, 300))
     const count = await db.query(`SELECT comments_count FROM posts WHERE id = $1`, [postId])
     expect(count.rows[0].comments_count).toBe(3)
+  })
+
+  it('tóm tắt bài: bài ngắn 400, dùng bản đã lưu khi nội dung chưa đổi', async () => {
+    const author = await createUser(db)
+    const agent = await loginAgent(app, author)
+    const short = await agent.post('/api/posts').send({ content: 'Ngắn thôi' }).expect(201)
+    await agent.post(`/api/posts/${short.body.data.id}/summary`).expect(400)
+
+    const content = 'Nội dung dài về cấu trúc dữ liệu. '.repeat(20)
+    const post = await agent.post('/api/posts').send({ content }).expect(201)
+    const postId = post.body.data.id
+    // PU AI tắt trong test ⇒ chưa có bản lưu thì 503
+    await agent.post(`/api/posts/${postId}/summary`).expect(503)
+
+    // Băm giống server: tiêu đề + nội dung
+    const stored = await db.query(`SELECT title, content FROM posts WHERE id = $1`, [postId])
+    const text = [stored.rows[0].title, stored.rows[0].content].filter(Boolean).join('\n\n')
+    const hash = createHash('sha256').update(text).digest('hex')
+    await db.query(`INSERT INTO post_summaries (post_id, content_hash, summary) VALUES ($1, $2, '- Ý chính')`, [postId, hash])
+    const cached = await agent.post(`/api/posts/${postId}/summary`).expect(200)
+    expect(cached.body.data).toEqual({ summary: '- Ý chính', cached: true })
+
+    // Nội dung đổi ⇒ bản lưu hết hiệu lực
+    await db.query(`UPDATE posts SET content = content || ' (đã sửa)' WHERE id = $1`, [postId])
+    await agent.post(`/api/posts/${postId}/summary`).expect(503)
   })
 })

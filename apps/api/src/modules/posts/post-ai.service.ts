@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common'
-import type { CommentItem } from '@pu/schemas'
+import { createHash } from 'crypto'
+import { BadRequestException, HttpException, HttpStatus, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
+import type { CommentItem, PostSummary } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
-import { COMMENT_PROMPT, SYSTEM_PROMPT } from '../ai/ai.prompts'
+import { COMMENT_PROMPT, SUMMARY_PROMPT, SYSTEM_PROMPT } from '../ai/ai.prompts'
+import { blockExistsSql } from '../blocks/blocks.sql'
 import { PUAI_MENTION, stripPuaiMention } from '../ai/ai.constants'
 import { AiRetrieval, contextBlock } from '../ai/ai.retrieval'
 import { LlmService, type LlmMessage } from '../ai/llm.service'
@@ -11,10 +13,14 @@ import { CommentsService } from './comments.service'
 const POST_CHARS = 4000 // Nội dung bài đưa vào ngữ cảnh
 const THREAD_LIMIT = 12 // Số bình luận trước đó trong cùng nhánh
 const COMMENT_MAX_TOKENS = 4096
+const SUMMARY_MAX_TOKENS = 2048
+const SUMMARY_MIN_CHARS = 300 // Bài ngắn hơn không cần tóm tắt (web chỉ hiện nút khi bài bị thu gọn)
+const SUMMARY_INPUT_CHARS = 12000
 
-type ThreadContext = { title: string; content: string; author: string; thread: { name: string; content: string }[]; question: string; asker: string }
+type PostContext = { title: string; content: string; author: string; thread: { name: string; content: string }[] }
+type ThreadContext = PostContext & { question: string; asker: string }
 
-// PU AI dưới bài viết: được @puai trong bình luận ⇒ trả lời thành bình luận con (Domain 13 · P3)
+// PU AI trên bài viết (Domain 13): trả lời @puai trong bình luận, tóm tắt bài dài
 @Injectable()
 export class PostAiService {
   private readonly logger = new Logger(PostAiService.name)
@@ -70,6 +76,56 @@ export class PostAiService {
     }
   }
 
+  // Tóm tắt bài: dùng lại bản đã lưu nếu nội dung chưa đổi (không tốn lượt)
+  async summarize(postId: string, requesterId: string): Promise<PostSummary> {
+    const res = await this.db.query(
+      `SELECT p.title, p.content, s.content_hash, s.summary
+       FROM posts p LEFT JOIN post_summaries s ON s.post_id = p.id
+       WHERE p.id = $1 AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)
+         AND NOT ${blockExistsSql('$2::uuid', 'p.author_id')}`,
+      [postId, requesterId]
+    )
+    const post = res.rows[0]
+    if (!post) throw new NotFoundException('Không tìm thấy bài viết')
+    const text = [post.title, post.content].filter(Boolean).join('\n\n')
+    if (text.length < SUMMARY_MIN_CHARS) throw new BadRequestException('Bài viết ngắn, không cần tóm tắt')
+
+    const hash = createHash('sha256').update(text).digest('hex')
+    if (post.content_hash === hash) return { summary: post.summary, cached: true }
+
+    if (!this.llm.client) throw new ServiceUnavailableException('PU AI chưa sẵn sàng, bạn thử lại sau nhé')
+    if (!(await this.llm.hasQuota(requesterId))) {
+      await this.llm.logRejected(requesterId, 'summary')
+      throw new HttpException('Bạn đã dùng hết lượt PU AI hôm nay', HttpStatus.TOO_MANY_REQUESTS)
+    }
+
+    const started = Date.now()
+    const runId = await this.llm.startRun({ requesterId, trigger: 'summary', task: 'summary', source: { type: 'post', id: postId } })
+    try {
+      const block = postBlock({ title: post.title || '', content: (post.content || '').slice(0, SUMMARY_INPUT_CHARS), author: '', thread: [] })
+      const { text: summary, usage } = await this.llm.complete(
+        [
+          { role: 'system', content: SYSTEM_PROMPT + SUMMARY_PROMPT },
+          { role: 'user', content: `${block}Tóm tắt bài viết trên.` }
+        ],
+        SUMMARY_MAX_TOKENS
+      )
+      if (!summary) throw new Error('empty summary')
+      // Upsert: 2 người bấm cùng lúc ⇒ bản sau ghi đè, cùng nội dung
+      await this.db.query(
+        `INSERT INTO post_summaries (post_id, content_hash, summary, model) VALUES ($1, $2, $3, $4)
+         ON CONFLICT (post_id) DO UPDATE SET content_hash = EXCLUDED.content_hash, summary = EXCLUDED.summary,
+                                             model = EXCLUDED.model, created_at = NOW()`,
+        [postId, hash, summary, this.llm.model]
+      )
+      await this.llm.finishRun(runId, { usage, startedAt: started })
+      return { summary, cached: false }
+    } catch (err) {
+      await this.llm.failRun(runId, err, started)
+      throw new ServiceUnavailableException(this.llm.isBusyError(err) ? 'PU AI đang quá tải, bạn thử lại sau ít phút nhé' : 'PU AI chưa tóm tắt được bài này')
+    }
+  }
+
   // Bình luận của @puai (qua CommentsService ⇒ đếm, thông báo "đã trả lời bình luận của bạn" dùng chung)
   private async postReply(botId: string, comment: CommentItem, content: string, requesterId: string) {
     const saved = await this.comments.create(botId, { postId: comment.postId, parentId: comment.id, content })
@@ -110,8 +166,9 @@ export class PostAiService {
 }
 
 // Bài + bình luận là DỮ LIỆU (không phải chỉ dẫn) — giống khối <context>
-function postBlock(ctx: ThreadContext): string {
+function postBlock(ctx: PostContext): string {
   const attr = (s: string) => s.replace(/"/g, "'")
+  const author = ctx.author ? ` author="${attr(ctx.author)}"` : ''
   const thread = ctx.thread.length ? `\n<thread>\n${ctx.thread.map((c) => `${c.name}: ${c.content}`).join('\n')}\n</thread>` : ''
-  return `<post title="${attr(ctx.title)}" author="${attr(ctx.author)}">\n${ctx.content}\n</post>${thread}\n\n`
+  return `<post title="${attr(ctx.title)}"${author}>\n${ctx.content}\n</post>${thread}\n\n`
 }

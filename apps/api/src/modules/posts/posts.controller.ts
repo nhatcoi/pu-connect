@@ -8,9 +8,13 @@ import {
   Param,
   Query,
   Req,
-  UnauthorizedException
+  UnauthorizedException,
+  HttpCode,
+  HttpStatus,
+  ParseUUIDPipe
 } from '@nestjs/common'
 import { PostsService } from './posts.service'
+import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
 import type { CreatePostInput, UpdatePostInput, ReportPostInput, VotePollInput } from '@pu/schemas'
 import type { Request } from 'express'
@@ -20,6 +24,7 @@ import { requireUserId } from '../../common/http/current-user'
 export class PostsController {
   constructor(
     private readonly postsService: PostsService,
+    private readonly postAi: PostAiService,
     private readonly db: DatabaseService
   ) {}
 
@@ -128,6 +133,13 @@ export class PostsController {
   async toggleResolve(@Param('id') id: string, @Req() req: Request) {
     const userId = await this.resolveUserId(req)
     return this.postsService.toggleResolve(id, userId)
+  }
+
+  // Tóm tắt bài bằng PU AI (bản đã lưu không tốn lượt)
+  @Post(':id/summary')
+  @HttpCode(HttpStatus.OK)
+  summarize(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.postAi.summarize(id, requireUserId(req, 'Đăng nhập để dùng PU AI'))
   }
 
   @Post(':id/report')
