@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Loader2, MessageCircle, PenSquare, Sparkles } from 'lucide-react'
+import { Loader2, MessageCircle, PenSquare } from 'lucide-react'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import { toast } from 'sonner'
 import { PageAside } from '@/components/layout/page-aside'
 import { AiStudyCard } from '@/components/chat/ai/ai-study-card'
@@ -84,7 +85,7 @@ export default function MessagesPage() {
           className="mx-2 sm:mx-0 mb-2.5 w-[calc(100%-1rem)] sm:w-full rounded-xl bg-gradient-to-r from-primary/10 to-brand-orange/10 hover:from-primary/15 hover:to-brand-orange/15 p-4 flex items-center gap-3 text-left cursor-pointer"
         >
           <div className="h-10 w-10 rounded-full bg-card text-primary flex items-center justify-center shrink-0">
-            {openingAi ? <Loader2 className="h-5 w-5 animate-spin" /> : <Sparkles className="h-5 w-5" />}
+            {openingAi ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <N7AiMark className="h-7 w-7" />}
           </div>
           <div>
             <p className="text-sm font-semibold">Học cùng PU AI</p>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import type { ChatReaction } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { chatApi } from '@/hooks/chat'
 import { queryKeys } from '@/lib/query-keys'
@@ -61,10 +62,16 @@ export function ReactionsDialog({ messageId, reactions, myId, open, onOpenChange
               const mine = d.user.id === myId
               return (
                 <div key={`${d.user.id}-${d.emoji}`} className="flex items-center gap-3 px-4 py-2">
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={d.user.avatarUrl || ''} />
-                    <AvatarFallback className="text-[10px] font-bold">{d.user.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
+                  {d.user.isBot ? (
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted">
+                      <N7AiMark className="h-[70%] w-[70%]" />
+                    </span>
+                  ) : (
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={d.user.avatarUrl || ''} />
+                      <AvatarFallback className="text-[10px] font-bold">{d.user.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  )}
                   <div className="min-w-0 flex-1">
                     {d.user.isBot ? (
                       <p className="text-sm font-medium truncate">{d.user.displayName}</p>

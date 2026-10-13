@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import { useAiQuota } from '@/hooks/chat'
 import { AI_MODE_META, AI_MODE_ORDER } from './ai-modes'
 
@@ -12,9 +13,7 @@ export function AiStudyCard({ onOpen, opening }: { onOpen: () => void; opening: 
   return (
     <div className="rounded-2xl bg-card p-4 space-y-3">
       <div className="flex items-center gap-2.5">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary/20 to-brand-orange/20 text-primary flex items-center justify-center">
-          <Sparkles className="h-4.5 w-4.5" />
-        </div>
+        <N7AiMark className="h-9 w-9" />
         <div>
           <p className="text-sm font-semibold">Học cùng PU AI</p>
           {quota && (

@@ -1,18 +1,19 @@
 'use client'
 
-import { Sparkles, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
+import { N7AiMark } from '@/components/brand/pu-logo'
 
 const initials = (name?: string) => (name || '?').slice(0, 2).toUpperCase()
 
-// Avatar hội thoại: PU AI ✨, nhóm = ảnh nhóm hoặc 2 avatar chồng nhau, DM = avatar người kia
+// Avatar hội thoại: PU AI = logo N7AI, nhóm = ảnh nhóm hoặc 2 avatar chồng nhau, DM = avatar người kia
 export function ConversationAvatar({ conversation, className }: { conversation: ConversationSummary; className?: string }) {
   if (conversation.type === 'ai') {
     return (
-      <div className={cn('h-10 w-10 rounded-full bg-gradient-to-br from-primary/20 to-brand-orange/20 text-primary flex items-center justify-center shrink-0', className)}>
-        <Sparkles className="h-1/2 w-1/2" />
+      <div className={cn('h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0', className)}>
+        <N7AiMark className="h-[68%] w-[68%]" />
       </div>
     )
   }

@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { Pin, RotateCcw } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import type { UiMessage } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 import { AiMessageBody } from '../ai/ai-message-body'
@@ -44,12 +45,19 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
       {showAvatar && !mine && (
         <div className="w-7 shrink-0 self-end">
           {!continued && m.sender && (
-            <Link href={m.sender.isBot ? '#' : `/${m.sender.username}`}>
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={m.sender.avatarUrl || ''} />
-                <AvatarFallback className="text-[9px] font-bold">{m.sender.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-            </Link>
+            m.sender.isBot ? (
+              // Bot @puai: logo N7AI
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                <N7AiMark className="h-[70%] w-[70%]" />
+              </span>
+            ) : (
+              <Link href={`/${m.sender.username}`}>
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={m.sender.avatarUrl || ''} />
+                  <AvatarFallback className="text-[9px] font-bold">{m.sender.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+              </Link>
+            )
           )}
         </div>
       )}
