@@ -35,11 +35,16 @@ export class StorageService {
     })
   }
 
+  // URL công khai của 1 key trên R2 (dùng để kiểm tra tệp đính kèm)
+  publicUrlFor(key: string): string {
+    return `${this.publicUrl.replace(/\/$/, '')}/${key}`
+  }
+
   async uploadFile(
     fileBuffer: Buffer,
     fileName: string,
     mimeType: string,
-    folder: 'posts/images' | 'documents' | 'avatars' | 'banners' = 'posts/images',
+    folder: 'posts/images' | 'documents' | 'avatars' | 'banners' | 'chat' = 'posts/images',
     userId?: string
   ): Promise<{ url: string; key: string; size: number }> {
     const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -57,7 +62,7 @@ export class StorageService {
       })
 
       await this.s3Client.send(command)
-      const url = `${this.publicUrl.replace(/\/$/, '')}/${key}`
+      const url = this.publicUrlFor(key)
 
       this.logger.log(`Uploaded file to R2 successfully: ${url}`)
       return {

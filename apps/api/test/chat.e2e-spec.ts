@@ -8,7 +8,7 @@ describe('Chat (e2e)', () => {
   let db: DatabaseService
 
   beforeAll(async () => {
-    delete process.env.ANTHROPIC_API_KEY // PU AI chạy ở chế độ tắt trong test
+    delete process.env.AI_API_KEY // PU AI chạy ở chế độ tắt trong test
     ;({ app, db } = await createTestApp())
   })
   afterAll(async () => {

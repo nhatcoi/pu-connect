@@ -16,7 +16,7 @@ import type { Request } from 'express'
 import 'multer'
 import { requireUserId } from '../../common/http/current-user'
 
-type UploadFolder = 'posts/images' | 'documents' | 'avatars' | 'banners'
+type UploadFolder = 'posts/images' | 'documents' | 'avatars' | 'banners' | 'chat'
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const DOCUMENT_TYPES = [
@@ -40,7 +40,8 @@ const ALLOWED_TYPES: Record<UploadFolder, string[]> = {
   'posts/images': IMAGE_TYPES,
   avatars: IMAGE_TYPES,
   banners: IMAGE_TYPES,
-  documents: DOCUMENT_TYPES
+  documents: DOCUMENT_TYPES,
+  chat: DOCUMENT_TYPES // tệp đính kèm tin nhắn
 }
 
 function validateUpload(folder: string | undefined, files: Express.Multer.File[]): UploadFolder {
@@ -62,7 +63,7 @@ export class StorageController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
   async uploadSingleFile(
     @UploadedFile() file: Express.Multer.File,
-    @Query('folder') folder?: 'posts/images' | 'documents' | 'avatars' | 'banners',
+    @Query('folder') folder?: UploadFolder,
     @Req() req?: Request
   ) {
     if (!file) {
@@ -83,7 +84,7 @@ export class StorageController {
   @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 50 * 1024 * 1024 } }))
   async uploadMultipleFiles(
     @UploadedFiles() files: Express.Multer.File[],
-    @Query('folder') folder?: 'posts/images' | 'documents' | 'avatars' | 'banners',
+    @Query('folder') folder?: UploadFolder,
     @Req() req?: Request
   ) {
     if (!files || files.length === 0) {
