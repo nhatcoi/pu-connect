@@ -136,6 +136,12 @@ pnpm install
 echo "Đang build API & packages..."
 pnpm exec turbo run build --concurrency=1 --filter='!@pu/web'  # tuần tự: VPS 2GB RAM, build song song dễ hết bộ nhớ
 
+# Smoke check: nạp toàn bộ module API đã build (bắt lỗi import runtime) TRƯỚC khi restart
+(cd apps/api && node -e "require('./dist/apps/api/src/app.module')") || {
+  echo "Lỗi: API build không nạp được — dừng deploy, bản đang chạy giữ nguyên."
+  exit 1
+}
+
 # Web blue/green: build vào slot rảnh, server cũ vẫn phục vụ slot đang chạy ⇒ không lỗi chunk giữa lúc build
 # (gọi thẳng next build: cache output của turbo gắn với .next/**)
 LIVE=$(sed -n 's/^NEXT_DIST_DIR=//p' .web-slot.env 2>/dev/null || true)
