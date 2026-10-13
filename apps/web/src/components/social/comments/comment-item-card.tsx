@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import { PostMediaGallery } from '../post-media-gallery'
 import { CommentComposer } from './comment-composer'
 import { Heart, MessageSquare, CheckCircle2, Trash2, Check } from 'lucide-react'
@@ -12,6 +13,8 @@ import { cn, formatRelativeTime } from '@/lib/utils'
 import type { CommentItem } from '@pu/schemas'
 import { useQueryClient } from '@tanstack/react-query'
 import { prefetchProfile } from '@/hooks/use-profile'
+
+const PUAI_USERNAME = 'puai'
 
 interface CommentItemCardProps {
   comment: CommentItem
@@ -76,12 +79,19 @@ export function CommentItemCard({
           onMouseEnter={() => prefetchProfile(queryClient, comment.author?.username || '')}
           className="flex items-center space-x-2.5 group/author cursor-pointer"
         >
-          <Avatar className="h-7 w-7 border border-border select-none shadow-xs">
-            <AvatarImage src={comment.author?.avatarUrl || ''} alt={comment.author?.displayName || ''} />
-            <AvatarFallback className="bg-muted text-foreground font-bold text-[10px]">
-              {authorInitials}
-            </AvatarFallback>
-          </Avatar>
+          {comment.author?.username === PUAI_USERNAME ? (
+            // PU AI trả lời khi được @puai
+            <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-muted">
+              <N7AiMark className="h-[68%] w-[68%]" />
+            </span>
+          ) : (
+            <Avatar className="h-7 w-7 border border-border select-none shadow-xs">
+              <AvatarImage src={comment.author?.avatarUrl || ''} alt={comment.author?.displayName || ''} />
+              <AvatarFallback className="bg-muted text-foreground font-bold text-[10px]">
+                {authorInitials}
+              </AvatarFallback>
+            </Avatar>
+          )}
 
           <div className="flex items-center gap-2">
             <span className="font-bold text-xs text-foreground group-hover/author:underline">
