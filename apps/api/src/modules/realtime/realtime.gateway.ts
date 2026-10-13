@@ -14,6 +14,9 @@ import * as passport from 'passport'
 import { Server, Socket } from 'socket.io'
 import { getSessionMiddleware } from '../../common/http/session'
 import { isAllowedOrigin } from '../../common/http/origins'
+import { DatabaseService } from '../../database/database.service'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const REALTIME_PATH = '/api/socket.io'
 
@@ -50,6 +53,8 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
 
   private readonly logger = new Logger(RealtimeGateway.name)
 
+  constructor(private readonly db: DatabaseService) {}
+
   afterInit(server: Server) {
     server.engine.use(onlyForHandshake(getSessionMiddleware()))
     server.engine.use(onlyForHandshake(passport.initialize() as RequestHandler))
@@ -75,6 +80,22 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
     socket.data.visible = body?.visible === true
   }
 
+  // Đang nhập tin: chỉ chuyển tới thành viên khác của hội thoại (server kiểm tra membership)
+  @SubscribeMessage('typing')
+  async handleTyping(@ConnectedSocket() socket: Socket, @MessageBody() body: { conversationId?: string; isTyping?: boolean }) {
+    const userId = (socket.request as AuthedRequest).user?.id
+    const conversationId = body?.conversationId
+    if (!userId || typeof conversationId !== 'string' || !UUID_RE.test(conversationId)) return
+    const res = await this.db.query(
+      `SELECT o.user_id FROM conversation_members o
+       WHERE o.conversation_id = $1 AND o.left_at IS NULL AND o.user_id <> $2
+         AND EXISTS (SELECT 1 FROM conversation_members me WHERE me.conversation_id = $1 AND me.user_id = $2 AND me.left_at IS NULL)`,
+      [conversationId, userId]
+    )
+    const payload = { conversationId, userId, isTyping: body.isTyping === true }
+    for (const row of res.rows) this.emitToUser(row.user_id, 'typing', payload)
+  }
+
   // User đang nhìn thấy app ở ít nhất một tab ⇒ không cần push
   async isUserActive(userId: string): Promise<boolean> {
     if (!this.server) return false
@@ -85,6 +106,11 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection {
   // Gửi sự kiện tới mọi tab/thiết bị của một user
   emitToUser(userId: string, event: string, payload: unknown) {
     this.server?.to(this.userRoom(userId)).emit(event, payload)
+  }
+
+  // Ngắt mọi socket của user (khi bị khóa tài khoản)
+  disconnectUser(userId: string) {
+    this.server?.in(this.userRoom(userId)).disconnectSockets(true)
   }
 
   private userRoom(userId: string) {

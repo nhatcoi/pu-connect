@@ -17,6 +17,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { CommunitiesModule } from './modules/communities/communities.module'
 import { UsersModule } from './modules/users/users.module'
 import { QueueModule } from './modules/queue/queue.module'
+import { AdminModule } from './modules/admin/admin.module'
+import { ChatModule } from './modules/chat/chat.module'
 
 @Module({
   imports: [
@@ -46,7 +48,9 @@ import { QueueModule } from './modules/queue/queue.module'
     CampusModule,
     StorageModule,
     SearchModule,
-    NotificationsModule
+    NotificationsModule,
+    AdminModule,
+    ChatModule
   ]
 })
 export class AppModule {}
