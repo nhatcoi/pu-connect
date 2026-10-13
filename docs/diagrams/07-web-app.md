@@ -88,7 +88,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 - `components/skeletons/*`: giữ chỗ theo đúng hình học component thật (cùng padding, cỡ avatar) ⇒ không xô lệch bố cục khi dữ liệu về.
 - Quy tắc: skeleton chỉ cho **lần tải đầu** (`isPending` và chưa có dữ liệu); refetch giữ dữ liệu cũ; spinner chỉ cho thao tác (gửi, lưu, tải thêm).
 - `AuthGuard fallback` = `AppShellSkeleton` (khung 3 cột) thay spinner toàn màn hình.
-- Có sẵn: `PostCardSkeleton`, `FeedSkeleton`/`PostListSkeleton`, `CommunityHeaderSkeleton`, `CommentListSkeleton`, `UserRowSkeleton`/`UserListSkeleton`, `ConversationListSkeleton`, `MessageThreadSkeleton`, `MediaPanelSkeleton`.
+- Có sẵn: `PostCardSkeleton`, `FeedSkeleton`/`PostListSkeleton`, `CommunityHeaderSkeleton`, `CommentListSkeleton`, `UserRowSkeleton`/`UserListSkeleton`, `ConversationListSkeleton`, `MessageThreadSkeleton`, `MediaPanelSkeleton`, `ProfileSkeleton`, `NotificationListSkeleton`.
 
 ## Nguồn dữ liệu theo màn hình
 

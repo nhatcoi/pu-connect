@@ -11,8 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { FollowButton } from './follow-button'
 import { graphqlClient } from '@/lib/graphql-client'
-import { Loader2, Users, GraduationCap, ShieldCheck } from 'lucide-react'
+import { Users, GraduationCap, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
+import { UserListSkeleton } from '@/components/skeletons/user-row-skeleton'
 
 interface UserListItem {
   id: string
@@ -113,9 +114,7 @@ export function UserListDialog({
 
         <div className="max-h-[60vh] overflow-y-auto divide-y divide-border/40">
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
+            <UserListSkeleton count={4} avatarClassName="h-10 w-10" action rowClassName="p-3.5 border-b border-border/40 last:border-b-0" />
           ) : users.length > 0 ? (
             users.map((item) => (
               <div

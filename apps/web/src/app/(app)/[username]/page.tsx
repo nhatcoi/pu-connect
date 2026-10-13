@@ -9,15 +9,10 @@ import { DocumentCard } from '@/components/social/document-card'
 import { useProfile } from '@/hooks/use-profile'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { Button } from '@/components/ui/button'
-import {
-  ArrowLeft,
-  FileText,
-  BookOpen,
-  HelpCircle,
-  Loader2,
-  AlertCircle
-} from 'lucide-react'
+import { ArrowLeft, FileText, BookOpen, HelpCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ProfileSkeleton } from '@/components/skeletons/profile-skeleton'
 
 type TabType = 'posts' | 'documents' | 'questions'
 
@@ -49,24 +44,24 @@ export default function ProfilePage({
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
-          <h2 className="text-[15px] font-semibold tracking-tight text-foreground truncate leading-none">
-            {isLoading
-              ? 'Đang tải...'
-              : profile?.displayName || `@${username}`}
-          </h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            {profile?.posts?.length || 0} bài viết
-          </p>
+          {isLoading ? (
+            <div className="space-y-1.5" aria-hidden>
+              <Skeleton className="h-[15px] w-32" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          ) : (
+            <>
+              <h2 className="text-[15px] font-semibold tracking-tight text-foreground truncate leading-none">
+                {profile?.displayName || `@${username}`}
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">{profile?.posts?.length || 0} bài viết</p>
+            </>
+          )}
         </div>
       </div>
 
       {/* Profile Loading State */}
-      {isLoading && (
-        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Đang tải hồ sơ @{username}...</p>
-        </div>
-      )}
+      {isLoading && <ProfileSkeleton />}
 
       {/* Profile Error / Not Found State */}
       {!isLoading && error && (

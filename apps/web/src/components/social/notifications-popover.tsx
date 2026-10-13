@@ -3,10 +3,11 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, CheckCheck, Loader2 } from 'lucide-react'
+import { Bell, CheckCheck } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { NotificationRow } from '@/components/notifications/notification-row'
+import { NotificationListSkeleton } from '@/components/skeletons/notification-skeleton'
 import {
   notificationsApi,
   openNotification,
@@ -69,9 +70,7 @@ export function NotificationsPopover() {
 
         <div className="max-h-[420px] overflow-y-auto">
           {!loaded ? (
-            <div className="flex items-center justify-center py-8 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
+            <NotificationListSkeleton count={4} compact />
           ) : items.length === 0 ? (
             <div className="py-10 text-center text-xs text-muted-foreground">Chưa có thông báo nào</div>
           ) : (

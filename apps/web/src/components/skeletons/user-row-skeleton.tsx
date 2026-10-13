@@ -19,17 +19,19 @@ export function UserListSkeleton({
   count = 3,
   label = 'Đang tải danh sách',
   className,
+  rowClassName,
   ...row
 }: {
   count?: number
   label?: string
   className?: string
+  rowClassName?: string
   avatarClassName?: string
   action?: boolean
 }) {
   return (
     <LoadingRegion label={label} className={className}>
-      <SkeletonRepeat count={count}>{() => <UserRowSkeleton {...row} />}</SkeletonRepeat>
+      <SkeletonRepeat count={count}>{() => <UserRowSkeleton {...row} className={rowClassName} />}</SkeletonRepeat>
     </LoadingRegion>
   )
 }

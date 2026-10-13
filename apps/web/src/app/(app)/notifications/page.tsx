@@ -15,6 +15,7 @@ import {
   type NotificationItem
 } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
+import { NotificationListSkeleton } from '@/components/skeletons/notification-skeleton'
 
 type Filter = 'all' | 'unread' | 'mentions'
 
@@ -142,9 +143,7 @@ export default function NotificationsPage() {
 
         <div className="p-2">
           {isLoading ? (
-            <div className="flex justify-center py-12 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
-            </div>
+            <NotificationListSkeleton />
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-14 text-center text-muted-foreground">
               <BellOff className="h-8 w-8 opacity-60" />
