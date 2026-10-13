@@ -8,6 +8,7 @@ import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 import { useAppStore } from '@/store'
 import { patchConversation, patchMessages, syncPinned, upsertMessage } from './cache'
 import { useTypingStore } from './use-typing'
+import { usePresenceRealtime } from './use-presence'
 
 // Cầu nối socket → cache: gắn MỘT lần trong AppLayout
 export function useChatRealtime() {
@@ -52,4 +53,5 @@ export function useChatRealtime() {
     qc.removeQueries({ queryKey: queryKeys.conversation(e.conversationId) })
   })
   useRealtimeEvent<TypingEvent>('typing', (e) => useTypingStore.getState().set(e))
+  usePresenceRealtime()
 }

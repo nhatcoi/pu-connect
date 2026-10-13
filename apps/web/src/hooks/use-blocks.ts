@@ -17,7 +17,7 @@ export const blocksApi = {
 }
 
 // Chặn ảnh hưởng hồ sơ, bảng tin, bình luận, tìm kiếm, gợi ý, hội thoại ⇒ làm mới các nhánh cache đó
-const AFFECTED_ROOTS = [queryKeys.blocks, queryKeys.profileAll, queryKeys.feedAll, queryKeys.conversations, ['comments'], ['community'], ['search'], ['suggested-users']]
+const AFFECTED_ROOTS = [queryKeys.blocks, queryKeys.profileAll, queryKeys.feedAll, queryKeys.conversations, queryKeys.presence, ['comments'], ['community'], ['search'], ['suggested-users']]
 
 function refreshAfterBlockChange(qc: QueryClient) {
   for (const queryKey of AFFECTED_ROOTS) void qc.invalidateQueries({ queryKey })

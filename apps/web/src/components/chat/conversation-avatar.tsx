@@ -5,10 +5,11 @@ import type { ConversationSummary } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { N7AiMark } from '@/components/brand/pu-logo'
+import { PresenceDot } from './presence-dot'
 
 const initials = (name?: string) => (name || '?').slice(0, 2).toUpperCase()
 
-// Avatar hội thoại: PU AI = logo N7AI, nhóm = ảnh nhóm hoặc 2 avatar chồng nhau, DM = avatar người kia
+// Avatar hội thoại: PU AI = logo N7AI, nhóm = ảnh nhóm hoặc 2 avatar chồng nhau, DM = avatar người kia (+ chấm hoạt động)
 export function ConversationAvatar({ conversation, className }: { conversation: ConversationSummary; className?: string }) {
   if (conversation.type === 'ai') {
     return (
@@ -44,9 +45,12 @@ export function ConversationAvatar({ conversation, className }: { conversation: 
   }
   const other = conversation.members[0]
   return (
-    <Avatar className={cn('h-10 w-10 shrink-0', className)}>
-      <AvatarImage src={other?.avatarUrl || ''} />
-      <AvatarFallback className="text-xs font-bold">{initials(other?.displayName)}</AvatarFallback>
-    </Avatar>
+    <div className={cn('relative h-10 w-10 shrink-0', className)}>
+      <Avatar className="h-full w-full">
+        <AvatarImage src={other?.avatarUrl || ''} />
+        <AvatarFallback className="text-xs font-bold">{initials(other?.displayName)}</AvatarFallback>
+      </Avatar>
+      {conversation.blockState === 'none' && <PresenceDot userId={other?.id} />}
+    </div>
   )
 }

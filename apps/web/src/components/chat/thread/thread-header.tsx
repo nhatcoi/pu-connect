@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, BellOff, Eraser, Info } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
-import { conversationTitle, useAiQuota } from '@/hooks/chat'
+import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
 import { ConversationAvatar } from '../conversation-avatar'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -17,12 +17,14 @@ interface ThreadHeaderProps {
   onAiReset: () => void
 }
 
-// Đầu hội thoại: quay lại, tên + trạng thái (đang nhập / lượt AI / số thành viên), thông tin
+// Đầu hội thoại: quay lại, tên + trạng thái (đang nhập / hoạt động / lượt AI / số thành viên), thông tin
 export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiReset }: ThreadHeaderProps) {
   const router = useRouter()
   const isAi = conv?.type === 'ai'
   const other = conv?.type === 'direct' ? conv.members[0] : null
   const { data: quota } = useAiQuota(isAi)
+  const otherPresence = usePresence(other?.id)
+  const onlineInGroup = useOnlineCount(conv?.type === 'group' ? conv.members.map((m) => m.id) : [])
 
   const subtitle =
     typingLabel ??
@@ -31,9 +33,9 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
         ? `Trợ lý học tập · còn ${Math.max(0, quota.limit - quota.used)}/${quota.limit} lượt hôm nay`
         : 'Trợ lý học tập'
       : conv?.type === 'group'
-        ? `${conv.memberCount} thành viên`
+        ? `${conv.memberCount} thành viên${onlineInGroup ? ` · ${onlineInGroup} đang hoạt động` : ''}`
         : other
-          ? `@${other.username}`
+          ? ((conv?.blockState === 'none' && presenceLabel(otherPresence)) || `@${other.username}`)
           : '')
 
   return (

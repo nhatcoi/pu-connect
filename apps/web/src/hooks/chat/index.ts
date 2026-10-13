@@ -6,3 +6,4 @@ export { conversationTitle, useConversation, useConversationActions, useConversa
 export { useMarkRead, useMessages, type Draft } from './use-messages'
 export { useTypingEmitter, useTypingLabel, useTypingStore } from './use-typing'
 export { useAiQuota } from './use-ai'
+export { presenceLabel, useOnlineCount, usePresence } from './use-presence'

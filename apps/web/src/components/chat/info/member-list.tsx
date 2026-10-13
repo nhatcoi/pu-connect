@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Crown, Loader2, UserPlus } from 'lucide-react'
 import type { ConversationSummary, UserSummary } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { PresenceDot } from '../presence-dot'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useConversationActions, useMembers } from '@/hooks/chat'
@@ -47,10 +48,13 @@ export function MemberList({ conversation }: { conversation: ConversationSummary
         members.map((m) => (
           <div key={m.id} className="group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/50">
             <Link href={`/${m.username}`} className="flex items-center gap-2.5 min-w-0 flex-1">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={m.avatarUrl || ''} />
-                <AvatarFallback className="text-[10px] font-bold">{m.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
+              <span className="relative shrink-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={m.avatarUrl || ''} />
+                  <AvatarFallback className="text-[10px] font-bold">{m.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                {m.id !== myId && <PresenceDot userId={m.id} className="h-2.5 w-2.5" />}
+              </span>
               <span className="min-w-0">
                 <span className="flex items-center gap-1 text-[13px] font-medium truncate">
                   {m.displayName}

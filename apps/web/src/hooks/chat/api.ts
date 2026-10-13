@@ -8,6 +8,7 @@ import type {
   ConversationSummary,
   MemberSettingsInput,
   MessagesPage,
+  PresenceMap,
   UpdateGroupInput
 } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
@@ -59,5 +60,6 @@ export const chatApi = {
   search: (id: string, q: string) => unwrap(apiClient<Envelope<ChatMessage[]>>(`/conversations/${id}/messages/search?q=${encodeURIComponent(q)}`)),
 
   aiQuota: () => unwrap(apiClient<Envelope<AiQuota>>('/ai/quota')),
+  presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),
   aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST')))
 }
