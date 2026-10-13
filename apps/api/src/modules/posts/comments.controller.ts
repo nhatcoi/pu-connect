@@ -10,6 +10,7 @@ import {
   UnauthorizedException
 } from '@nestjs/common'
 import { CommentsService } from './comments.service'
+import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
 import type { CreateCommentInput } from '@pu/schemas'
 import type { Request } from 'express'
@@ -19,6 +20,7 @@ import { requireUserId } from '../../common/http/current-user'
 export class CommentsController {
   constructor(
     private readonly commentsService: CommentsService,
+    private readonly postAi: PostAiService,
     private readonly db: DatabaseService
   ) {}
 
@@ -60,6 +62,7 @@ export class CommentsController {
       ...body,
       postId
     })
+    void this.postAi.onComment(comment, authorId) // @puai ⇒ PU AI trả lời nền
 
     return {
       success: true,
