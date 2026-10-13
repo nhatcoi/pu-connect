@@ -654,3 +654,12 @@ Luồng bình luận (`posts/post-ai.service.ts`):
 
 Khác thiết kế §5.3: không có worker riêng (chạy trong tiến trình API như chat), quota dùng chung với chat (không tách quota công khai), chưa có nhãn "AI" riêng ngoài avatar N7AI.
 
+## 17. Tóm tắt bài viết (2026-10-14)
+
+Migration `post-summary-upgrade.sql`: `post_summaries (post_id PK, content_hash CHAR(64), summary, model, created_at)`.
+
+- `POST /api/posts/:id/summary` → `{ summary, cached }` (`PostAiService.summarize`). Kiểm tra: bài hiển thị được với người hỏi (không ẩn, công khai hoặc của mình, không chặn nhau), dài ≥ 300 ký tự.
+- **Cache theo nội dung**: `sha256(tiêu đề + nội dung)` trùng ⇒ trả bản đã lưu, **không tốn lượt** và không gọi LLM ⇒ cả lớp xem chung một bản tóm tắt. Bài bị sửa ⇒ hash khác ⇒ tóm tắt lại (upsert).
+- Chưa có bản lưu: cần quota (`ai_runs.trigger = 'summary'`), hết lượt ⇒ 429, PU AI tắt / lỗi ⇒ 503.
+- Web: nút "✨ Tóm tắt" cạnh "Xem thêm" (chỉ hiện khi bài bị thu gọn), khung `PostSummary` có skeleton; query `['post-summary', id]` `staleTime: Infinity`.
+
