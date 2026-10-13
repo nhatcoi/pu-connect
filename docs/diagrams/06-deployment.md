@@ -52,10 +52,12 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  s1["1 · Kiểm tra SSH"] --> s2["2 · rsync --delete<br/>(giữ .env, bỏ secret json)"] --> s3["3 · docker compose up postgres redis<br/>+ migrations idempotent"] --> s4["4 · pnpm install<br/>+ turbo build --concurrency=1"] --> s5["5 · restart pu-api, pu-web<br/>reload nginx"] --> s6["6 · Health check<br/>web 200 · /api/auth/me 401"]
+  s1["1 · Kiểm tra SSH"] --> s2["2 · rsync --delete<br/>(giữ .env, bỏ secret json)"] --> s3["3 · docker compose up postgres redis<br/>+ migrations idempotent"] --> s4["4 · pnpm install<br/>+ turbo build API/packages<br/>+ next build vào slot rảnh .next-a|b"] --> s5["5 · đổi slot (.web-slot.env)<br/>restart pu-api, pu-web · reload nginx"] --> s6["6 · Health check<br/>web 200 · /api/auth/me 401"]
 ```
 
 Migration chạy **mỗi lần deploy** theo thứ tự: `schema.sql` → `domain1-upgrade.sql` → `add-communities.sql` → `add-indexes.sql` → `auth-upgrade.sql` → `messaging-upgrade.sql` → `notifications-upgrade.sql` → `push-upgrade.sql`. ⇒ Mọi file phải **idempotent** và **không bao giờ UPDATE hàng loạt dữ liệu người dùng thật**.
+
+**Web blue/green (không lỗi giữa lúc deploy):** trước đây `next build` ghi đè `.next` trong khi `next start` vẫn phục vụ từ đó ⇒ HTML trỏ tới chunk đã bị xóa, trình duyệt báo *"Application error: a client-side exception"* suốt thời gian build. Nay web build vào slot rảnh (`apps/web/.next-a` hoặc `.next-b`, qua `NEXT_DIST_DIR`), server cũ chạy tiếp tới lúc restart; slot đang chạy ghi trong `/var/www/pu-connector/.web-slot.env`, systemd drop-in `pu-web.service.d/slot.conf` nạp file này. Chunk JS bản trước được chép sang slot mới (giữ 7 ngày) ⇒ tab đang mở chuyển trang không gặp ChunkLoadError. Rollback: ghi lại slot cũ vào `.web-slot.env` rồi `systemctl restart pu-web`.
 
 ## Vận hành: backup & giám sát
 
@@ -76,6 +78,7 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 | `/etc/nginx/sites-available/pu-connector.conf` | Routing + SSL | Backup `/root/pu-connector.conf.bak.*` |
 
 **Changelog:**
+- 2026-10-13 — Web build blue/green (`.next-a`/`.next-b`), giữ chunk cũ 7 ngày; gián đoạn chỉ còn lúc restart.
 - 2026-10-04 — thêm cron backup DB mã hóa lên R2, healthcheck 5 phút, restore-db.sh.
 - 2026-10-04 — Postgres/Redis chỉ bind localhost (Docker bỏ qua firewall), thêm pu_redis, build tuần tự, migration push.
 - 2026-10-04 — tạo mới; thêm `location /api/socket.io` (websocket), `messaging-upgrade.sql`, session lưu Postgres.

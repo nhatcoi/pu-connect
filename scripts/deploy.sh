@@ -36,7 +36,8 @@ ssh "$VPS_HOST" "mkdir -p $VPS_DIR"
 rsync -avz --delete \
   --exclude 'node_modules' \
   --exclude '.next' \
-  --exclude '.next-prod' \
+  --exclude '.next-*' \
+  --exclude '.web-slot.env*' \
   --exclude 'dist' \
   --exclude '.turbo' \
   --exclude '.git' \
@@ -130,14 +131,40 @@ cd /var/www/pu-connector
 echo "Đang chạy pnpm install..."
 pnpm install
 
-echo "Đang build Monorepo (@pu/web & @pu/api)..."
-pnpm exec turbo run build --concurrency=1  # tuần tự: VPS 2GB RAM, build song song dễ hết bộ nhớ
+echo "Đang build API & packages..."
+pnpm exec turbo run build --concurrency=1 --filter='!@pu/web'  # tuần tự: VPS 2GB RAM, build song song dễ hết bộ nhớ
+
+# Web blue/green: build vào slot rảnh, server cũ vẫn phục vụ slot đang chạy ⇒ không lỗi chunk giữa lúc build
+# (gọi thẳng next build: cache output của turbo gắn với .next/**)
+LIVE=$(sed -n 's/^NEXT_DIST_DIR=//p' .web-slot.env 2>/dev/null || true)
+LIVE=${LIVE:-.next}
+[ "$LIVE" = ".next-a" ] && SLOT=.next-b || SLOT=.next-a
+echo "Đang build Web vào apps/web/$SLOT (đang chạy: $LIVE)..."
+mkdir -p "apps/web/$SLOT"
+find "apps/web/$SLOT" -mindepth 1 -maxdepth 1 ! -name cache -exec rm -rf {} +  # giữ cache webpack
+NEXT_DIST_DIR=$SLOT pnpm --filter @pu/web build
+
+# Giữ chunk JS của bản trước 7 ngày: tab đang mở HTML cũ chuyển trang vẫn tải được (tránh ChunkLoadError)
+if [ -d "apps/web/$LIVE/static" ]; then
+  cp -Rnp "apps/web/$LIVE/static/." "apps/web/$SLOT/static/"
+  find "apps/web/$SLOT/static" -type f -mtime +7 -delete
+fi
+echo "NEXT_DIST_DIR=$SLOT" > .web-slot.env.next
 REMOTE_BUILD
 
 # 5. Restart Systemd Services & Reload Nginx
 echo -e "\n${YELLOW}[5/6] Khởi động lại dịch vụ Systemd và Nginx...${NC}"
 ssh "$VPS_HOST" "bash -s" << 'REMOTE_SERVICES'
 set -e
+# pu-web đọc slot web từ .web-slot.env (drop-in, ghi đè .env)
+mkdir -p /etc/systemd/system/pu-web.service.d
+cat > /etc/systemd/system/pu-web.service.d/slot.conf << 'UNIT'
+[Service]
+EnvironmentFile=-/var/www/pu-connector/.web-slot.env
+UNIT
+cd /var/www/pu-connector
+mv .web-slot.env.next .web-slot.env  # chuyển slot (rollback: ghi lại slot cũ rồi restart pu-web)
+
 systemctl daemon-reload
 systemctl enable pu-api pu-web
 systemctl restart pu-api
@@ -152,6 +179,9 @@ systemctl is-active --quiet pu-web && echo "pu-web (Next.js): ACTIVE" || { echo 
 
 # Reload Nginx
 nginx -t && systemctl reload nginx
+
+# Dọn thư mục build cũ trước khi có slot (chỉ khi không còn là slot đang chạy)
+if grep -q '^NEXT_DIST_DIR=.next-' .web-slot.env; then rm -rf apps/web/.next; fi
 REMOTE_SERVICES
 
 # 6. Verify Deployment Health
