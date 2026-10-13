@@ -34,7 +34,11 @@ export class PuaiService {
   ) {
     // Chưa cấu hình key ⇒ PU AI trả lời thông báo thay vì lỗi
     const apiKey = config.get<string>('AI_API_KEY')
-    this.client = apiKey ? new OpenAI({ apiKey, baseURL: config.get<string>('AI_BASE_URL') || undefined, timeout: 120_000, maxRetries: 1 }) : null
+    let baseURL = config.get<string>('AI_BASE_URL') || undefined
+    if (baseURL && !baseURL.endsWith('/v1') && !baseURL.endsWith('/v1/')) {
+      baseURL = baseURL.replace(/\/+$/, '') + '/v1'
+    }
+    this.client = apiKey ? new OpenAI({ apiKey, baseURL, timeout: 120_000, maxRetries: 1 }) : null
     this.model = config.get<string>('AI_MODEL') || DEFAULT_MODEL
     this.dailyQuota = Number(config.get('AI_DAILY_QUOTA') || 30)
   }
@@ -130,7 +134,7 @@ export class PuaiService {
     const runId = run.rows[0].id
 
     if (!this.client) {
-      await this.finish(placeholder.id, conversationId, 'PU AI chưa được bật trên máy chủ này (thiếu AI_API_KEY).', null, 'error')
+      await this.finish(placeholder.id, conversationId, 'Máy chủ bận', null, 'error')
       await this.db.query(`UPDATE ai_runs SET status = 'error', error = 'disabled', finished_at = NOW() WHERE id = $1`, [runId])
       return
     }
