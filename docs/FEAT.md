@@ -151,6 +151,11 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 👥 **Nhóm chat**: đổi tên & **ảnh nhóm** (`PATCH conversations/:id` nhận `avatarKey` — ảnh do chính người đổi tải lên `avatars/{userId}/`, server tự suy URL R2; tin hệ thống "đã đổi ảnh nhóm"), thêm thành viên (mọi người) / xóa (trưởng nhóm) (`POST/DELETE conversations/:id/members`), chuyển quyền trưởng nhóm thủ công (`POST conversations/:id/owner`, menu `⋯` có xác nhận) hoặc tự động khi trưởng nhóm rời, tin hệ thống "A đã thêm B…". Cài đặt riêng: tắt thông báo 1h/8h/24h/vô hạn (không tính vào badge), ghim hội thoại lên đầu (`PATCH conversations/:id/settings`). Bảng thông tin (cột phải / hộp thoại mobile): thành viên, kho Ảnh/Tệp (`GET conversations/:id/attachments`), Đã ghim, tìm tin không dấu (`GET conversations/:id/messages/search`). Danh sách lọc Tất cả / Chưa đọc / Nhóm.
 - [x] 🎓 **PU AI học tập**: 6 chế độ (Hỏi đáp, Giải thích, Quiz, Flashcard, Tóm tắt, Lộ trình ôn) — chế độ đổi chỉ dẫn hệ thống (`puai.prompts.ts`); Quiz/Flashcard trả JSON trong khối ```` ```quiz ```` / ```` ```flashcards ```` ⇒ web dựng **quiz chấm điểm** và **bộ thẻ lật** tương tác. PU AI đọc **ảnh đính kèm** (vision, base64 ≤ 4 ảnh) và **nội dung tệp PDF / DOCX / .txt/.md/.csv** (`pdf-parse` ≤ 40 trang, `mammoth`; ≤ 40k ký tự/tệp, cache theo key R2), hỏi tiếp tự dùng lại tài liệu gần nhất trong chủ đề; gọi **`@puai` trong nhóm chat** (trả lời trích tin người hỏi, tính quota người hỏi); "Chủ đề mới" (`POST ai/conversations/:id/reset`) làm mới ngữ cảnh; hiện lượt còn lại. Chi tiết: [`core/06` §13](./core/06-messaging-and-ai.md).
 
+### ⚡ Hiệu Năng Chat (2026-10-14)
+- [x] Danh sách hội thoại phân trang keyset 20/trang, lọc Tất cả/Chưa đọc/Nhóm ở server, cuộn xuống tải thêm.
+- [x] Tin mới / đã đọc vá cache danh sách & badge từ sự kiện socket thay vì tải lại; mở hội thoại dùng lại dữ liệu danh sách; đồng bộ lại khi socket nối lại.
+- [x] Tin nhắn cũ tự tải khi cuộn lên, giữ vị trí đang đọc. Chi tiết: [`core/06` §18](./core/06-messaging-and-ai.md).
+
 ### 🔗 Liên Kết N7AI (2026-10-14)
 - [x] "Mở trong N7AI" (`components/chat/ai/open-in-n7ai.tsx`): nút ở đầu hội thoại PU AI + thẻ ở màn chào PU AI, mở `n7ai.vnhat.dev/#/ai` ở tab mới. PU AI lo nội dung trên PU Connector; N7AI lo dữ liệu trường (lịch học, lịch thi, Canvas qua extension). URL đổi bằng `NEXT_PUBLIC_N7AI_URL` (`lib/n7ai.ts`).
 

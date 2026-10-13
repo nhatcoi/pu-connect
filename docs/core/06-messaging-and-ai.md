@@ -663,3 +663,23 @@ Migration `post-summary-upgrade.sql`: `post_summaries (post_id PK, content_hash 
 - Chưa có bản lưu: cần quota (`ai_runs.trigger = 'summary'`), hết lượt ⇒ 429, PU AI tắt / lỗi ⇒ 503.
 - Web: nút "✨ Tóm tắt" cạnh "Xem thêm" (chỉ hiện khi bài bị thu gọn), khung `PostSummary` có skeleton; query `['post-summary', id]` `staleTime: Infinity`.
 
+## 18. Hiệu năng chat: phân trang & cache (2026-10-14)
+
+**Danh sách hội thoại** — `GET /api/conversations?filter=all|unread|group&cursor=&limit=20` → `{ data, nextCursor }` (trước: cố định 100 hàng, lọc ở client).
+- Thứ tự = khóa keyset `(rank, sort_at, id)` giảm dần: `rank` 2 = PU AI, 1 = đã ghim, 0 = còn lại; `sort_at` = lúc ghim hoặc tin mới nhất. Cursor là base64url của khóa, `sort_at` giữ micro giây (JS Date chỉ mili giây ⇒ có thể sót/lặp hàng). Xem `conversations/conversation-list.query.ts`.
+- 2 bước: chọn id trang (rẻ) rồi mới dựng `SUMMARY_SELECT` cho đúng các id đó.
+- Web: `useConversations(filter)` là infinite query, mỗi bộ lọc 1 cache, cuộn gần cuối tải trang tiếp.
+
+**Cache theo sự kiện** (`hooks/chat/cache.ts`) — không tải lại danh sách / badge mỗi tin:
+| Sự kiện | Trước | Sau |
+|---|---|---|
+| `message.new` | tải lại danh sách + badge | `applyNewMessage`: sửa tin cuối, `unreadCount`, đưa lên đầu nhóm thường, badge ±; bỏ qua sự kiện lặp; chưa có trong cache ⇒ tải lại danh sách đang mở |
+| Đọc tin (`useMarkRead`, `conv.read` của mình) | invalidate mọi query `conversations` (danh sách, badge, chi tiết, thành viên) — 4+ request, 2 lần | `applyRead`: về 0 + trừ badge đúng 1 lần |
+| Mở hội thoại | luôn gọi `GET /conversations/:id` (`initialDataUpdatedAt: 0`) | dùng hàng trong danh sách, chỉ tải lại khi bản đó cũ (> 5 phút) |
+| Socket nối lại | — | đồng bộ lại danh sách + badge (có thể đã lỡ sự kiện) |
+Hội thoại đang mở (`setActiveConversation`) không cộng chưa đọc khi có tin đến.
+
+**Tin nhắn** — keyset 30 tin/trang (`before` = id cũ nhất). Cuộn gần đầu (600px) tự tải trang cũ hơn, giữ nguyên tin đang nhìn (đo vị trí tin đầu trước/sau khi chèn). Bỏ nút "Xem tin cũ hơn".
+
+Khác: bảng thông tin DM mở tab "Đã ghim" (dùng lại cache thanh tin ghim) ⇒ ảnh/tệp chỉ tải khi bấm tab; tắt prefetch link footer và `?edit=1`.
+
