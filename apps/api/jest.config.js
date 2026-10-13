@@ -3,7 +3,12 @@
 module.exports = {
   rootDir: '.',
   testMatch: ['<rootDir>/test/**/*.e2e-spec.ts'],
-  transform: { '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json', isolatedModules: true }] },
+  transform: {
+    '^.+\\.ts$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json', isolatedModules: true }],
+    // @nestjs/bullmq ≥12 chỉ phát hành ESM ⇒ chuyển sang CommonJS cho jest
+    '^.+\\.js$': ['ts-jest', { tsconfig: { allowJs: true, module: 'commonjs' }, isolatedModules: true }]
+  },
+  transformIgnorePatterns: ['/node_modules/(?!(\\.pnpm/@nestjs\\+bull[^/]*/node_modules/)?@nestjs/bull)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@pu/schemas$': '<rootDir>/../../packages/schemas/src'
