@@ -37,7 +37,7 @@ import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { FEATURES } from '@/lib/features'
 import { useNotificationsStore } from '@/hooks/use-notifications'
-import { useUnreadMessages } from '@/hooks/use-chat'
+import { useUnreadMessages } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 
 export type NavTabType = 'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa' | 'messages' | 'admin'

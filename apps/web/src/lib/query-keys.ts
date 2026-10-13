@@ -22,7 +22,13 @@ export const queryKeys = {
   courseDocuments: (code: string) => ['course-documents', code.toUpperCase()] as const,
   courseGroups: (code: string) => ['course-groups', code.toUpperCase()] as const,
   conversations: ['conversations'] as const,
+  conversation: (id: string) => ['conversations', 'detail', id] as const,
+  chatMembers: (id: string) => ['conversations', 'members', id] as const,
   messages: (conversationId: string) => ['messages', conversationId] as const,
+  chatPinned: (id: string) => ['chat-pinned', id] as const,
+  chatMedia: (id: string, kind: 'image' | 'file') => ['chat-media', id, kind] as const,
+  chatSearch: (id: string, q: string) => ['chat-search', id, q] as const,
+  aiQuota: ['ai-quota'] as const,
   admin: (section: string, ...args: unknown[]) => ['admin', section, ...args] as const
 }
 

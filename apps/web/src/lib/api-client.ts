@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api'
 
 // Lỗi HTTP kèm mã trạng thái (phân biệt 401 / 4xx / 5xx khi cache & retry)
 export class ApiError extends Error {

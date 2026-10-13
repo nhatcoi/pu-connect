@@ -12,7 +12,7 @@ import { CreateGroupDialog } from '@/components/social/create-group-dialog'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
 import { AsideSlotProvider } from '@/components/layout/page-aside'
 import { useAppStore } from '@/store'
-import { useChatRealtime } from '@/hooks/use-chat'
+import { useChatRealtime } from '@/hooks/chat'
 
 // Hộp thoại dùng chung: mở được từ mọi trang (soạn bài, tài liệu, nhóm, xem tài liệu)
 function GlobalDialogs() {

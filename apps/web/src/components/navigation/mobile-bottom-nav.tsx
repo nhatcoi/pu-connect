@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
-import { useUnreadMessages } from '@/hooks/use-chat'
+import { useUnreadMessages } from '@/hooks/chat'
 import { FEATURES } from '@/lib/features'
 import { cn } from '@/lib/utils'
 

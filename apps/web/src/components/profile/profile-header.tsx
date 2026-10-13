@@ -1,6 +1,6 @@
 'use client'
 
-import { chatApi } from '@/hooks/use-chat'
+import { chatApi } from '@/hooks/chat'
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
