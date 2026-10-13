@@ -46,7 +46,9 @@ export function NotificationRow({ item, onClick, compact }: NotificationRowProps
           </Avatar>
         ) : (
           // Thông báo hệ thống (không có actor)
-          <PuMark className={cn('rounded-full', compact ? 'h-8 w-8' : 'h-10 w-10')} />
+          <span className={cn('flex items-center justify-center rounded-full bg-muted', compact ? 'h-8 w-8' : 'h-10 w-10')}>
+            <PuMark className="h-[72%] w-[72%]" />
+          </span>
         )}
         <span className="absolute -bottom-1 -right-1 rounded-full bg-background p-[3px] shadow-sm">
           {TYPE_ICON[item.type] ?? <Sparkles className="h-3 w-3 text-primary" />}

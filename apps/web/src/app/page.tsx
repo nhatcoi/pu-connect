@@ -26,7 +26,7 @@ export default function LandingPage() {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
-          <PuMark className="h-14 w-14 animate-pulse shadow-lg rounded-2xl" />
+          <PuMark className="h-14 w-14 animate-pulse" />
         </div>
       </div>
     )

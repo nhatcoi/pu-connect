@@ -88,7 +88,7 @@ export function HeroNetwork() {
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <PuMark className="h-28 w-28 drop-shadow-[0_12px_30px_rgba(247,148,29,0.45)]" />
+        <PuMark className="h-28 w-28 drop-shadow-[0_12px_30px_rgba(10,140,240,0.35)]" />
       </motion.div>
 
       {/* Chip chủ đề trôi nổi */}

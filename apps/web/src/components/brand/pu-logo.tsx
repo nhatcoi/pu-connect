@@ -1,18 +1,19 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
-// Logo mark: chữ U (cộng đồng) + vòm cam (kết nối / cánh phượng)
+// Logo dạng <img> (không inline SVG): gradient id không đụng nhau khi 1 bản bị ẩn (display:none)
+function BrandMark({ src, label, className }: { src: string; label: string; className?: string }) {
+  return <img src={src} alt={label} draggable={false} className={cn('h-9 w-9 shrink-0 object-contain select-none', className)} />
+}
+
+// Logo app: chữ P (người dùng) + U/i cam (kết nối)
 export function PuMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 100 100" className={cn('h-9 w-9', className)} role="img" aria-label="PU Connector">
-      <rect width="100" height="100" rx="24" fill="#0B3D91" />
-      <path d="M32 34V56a18 18 0 0 0 36 0V34" fill="none" stroke="#fff" strokeWidth="10" strokeLinecap="round" />
-      <path d="M32 34Q50 8 68 34" fill="none" stroke="#F7941D" strokeWidth="6" strokeLinecap="round" />
-      <circle cx="32" cy="34" r="7" fill="#fff" />
-      <circle cx="68" cy="34" r="7" fill="#fff" />
-      <circle cx="50" cy="19" r="5.5" fill="#F7941D" />
-    </svg>
-  )
+  return <BrandMark src="/brand/pu-mark.svg" label="PU Connector" className={className} />
+}
+
+// Logo trợ lý AI (N7AI): kim cương xanh-cam + node mạch
+export function N7AiMark({ className }: { className?: string }) {
+  return <BrandMark src="/brand/n7ai-mark.svg" label="PU AI" className={className} />
 }
 
 // Lockup ngang: mark + tên

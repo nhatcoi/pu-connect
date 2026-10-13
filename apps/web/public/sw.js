@@ -25,8 +25,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'PU Connector'
   const options = {
     body: data.body || '',
-    icon: '/apple-icon',
-    badge: '/icon',
+    icon: '/brand/icon-192.png',
+    badge: '/brand/badge-96.png', // badge: nền trong suốt (Android dùng kênh alpha)
     tag: data.tag || data.notificationId || 'pu-connector',
     renotify: Boolean(data.tag), // thông báo gộp cùng tag: thay thế nhưng vẫn rung/báo lại
     data: { url: data.url || '/notifications', notificationId: data.notificationId },
