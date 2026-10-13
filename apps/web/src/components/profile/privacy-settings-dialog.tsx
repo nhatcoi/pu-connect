@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -13,17 +13,13 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { ShieldCheck, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { resolvePrivacySettings, type PrivacySettings } from '@pu/schemas'
+import { useAppStore } from '@/store'
 import { BlockedUsersSection } from './blocked-users-section'
 
 interface PrivacySettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  initialSettings?: {
-    showEmail?: boolean
-    showStudentId?: boolean
-    showClass?: boolean
-    isPrivateProfile?: boolean
-  }
   isVerified?: boolean
   email?: string
   onSuccess: () => void
@@ -32,15 +28,16 @@ interface PrivacySettingsDialogProps {
 export function PrivacySettingsDialog({
   open,
   onOpenChange,
-  initialSettings,
   isVerified = false,
   email = '',
   onSuccess
 }: PrivacySettingsDialogProps) {
-  const [showEmail, setShowEmail] = useState(initialSettings?.showEmail ?? false)
-  const [showStudentId, setShowStudentId] = useState(initialSettings?.showStudentId ?? true)
-  const [showClass, setShowClass] = useState(initialSettings?.showClass ?? true)
-  const [isPrivateProfile, setIsPrivateProfile] = useState(initialSettings?.isPrivateProfile ?? false)
+  // Nạp cài đặt hiện tại mỗi lần mở (tránh lưu đè bằng giá trị mặc định)
+  const [settings, setSettings] = useState<PrivacySettings>(() => resolvePrivacySettings(useAppStore.getState().user?.privacySettings))
+  useEffect(() => {
+    if (open) setSettings(resolvePrivacySettings(useAppStore.getState().user?.privacySettings))
+  }, [open])
+  const toggle = (key: keyof PrivacySettings) => (checked: boolean) => setSettings((prev) => ({ ...prev, [key]: checked }))
   const [isSaving, setIsSaving] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const [verifiedState, setVerifiedState] = useState(isVerified)
@@ -53,17 +50,14 @@ export function PrivacySettingsDialog({
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          showEmail,
-          showStudentId,
-          showClass,
-          isPrivateProfile
-        })
+        body: JSON.stringify(settings)
       })
 
       if (!res.ok) {
         throw new Error('Không thể lưu cài đặt quyền riêng tư')
       }
+      const { user, setUser } = useAppStore.getState()
+      if (user) setUser({ ...user, privacySettings: resolvePrivacySettings((await res.json()).data) })
 
       toast.success('Đã lưu quyền riêng tư')
       onOpenChange(false)
@@ -165,8 +159,8 @@ export function PrivacySettingsDialog({
               </label>
               <Switch
                 id="showEmail"
-                checked={showEmail}
-                onCheckedChange={setShowEmail}
+                checked={settings.showEmail}
+                onCheckedChange={toggle('showEmail')}
               />
             </div>
 
@@ -180,8 +174,8 @@ export function PrivacySettingsDialog({
               </label>
               <Switch
                 id="showStudentId"
-                checked={showStudentId}
-                onCheckedChange={setShowStudentId}
+                checked={settings.showStudentId}
+                onCheckedChange={toggle('showStudentId')}
               />
             </div>
 
@@ -195,8 +189,8 @@ export function PrivacySettingsDialog({
               </label>
               <Switch
                 id="showClass"
-                checked={showClass}
-                onCheckedChange={setShowClass}
+                checked={settings.showClass}
+                onCheckedChange={toggle('showClass')}
               />
             </div>
 
@@ -210,8 +204,23 @@ export function PrivacySettingsDialog({
               </label>
               <Switch
                 id="isPrivateProfile"
-                checked={isPrivateProfile}
-                onCheckedChange={setIsPrivateProfile}
+                checked={settings.isPrivateProfile}
+                onCheckedChange={toggle('isPrivateProfile')}
+              />
+            </div>
+
+            {/* Activity Status Toggle */}
+            <div className="flex items-center justify-between space-x-2">
+              <label htmlFor="showActivityStatus" className="text-xs font-medium cursor-pointer flex flex-col gap-0.5">
+                <span>Hiển thị trạng thái hoạt động</span>
+                <span className="text-[11px] text-muted-foreground font-normal">
+                  Người cùng hội thoại thấy khi bạn đang hoạt động. Tắt thì bạn cũng không thấy của họ
+                </span>
+              </label>
+              <Switch
+                id="showActivityStatus"
+                checked={settings.showActivityStatus}
+                onCheckedChange={toggle('showActivityStatus')}
               />
             </div>
           </div>
