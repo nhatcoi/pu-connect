@@ -110,6 +110,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-14 — khung app 1440px, cột giữa 760px (`lib/layout.ts` dùng chung cho Header/AppLayout/skeleton); xem trước tin nhắn bỏ ký hiệu Markdown (`lib/plain-text.ts`).
 - 2026-10-14 — chat: danh sách hội thoại infinite query theo bộ lọc, cache vá theo socket (`hooks/chat/cache.ts`), tin cũ tự tải khi cuộn lên.
 - 2026-10-14 — liên kết ngoài "Mở trong N7AI" (đầu hội thoại PU AI, màn chào); biến build `NEXT_PUBLIC_N7AI_URL`.
 - 2026-10-14 — PostCard: nút "Tóm tắt" (bài bị thu gọn) mở `PostSummary`; bình luận PU AI có avatar N7AI, tự tải lại khi có `comments.changed`.
