@@ -102,7 +102,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
 | `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
-| `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id*`, `ai/*`, `upload/file?folder=chat`, `search?type=users` | — | `message.new/updated/delta`, `conv.read/updated/removed`, `typing` (useChatRealtime trong AppLayout, `hooks/chat/`) |
+| `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id*`, `ai/*`, `upload/file?folder=chat`, `search?type=users`, `presence` | — | `message.new/updated/delta`, `conv.read/updated/removed`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
 | `/admin` | `admin/*` | — | — |
 
 ## Feature flags (`lib/features.ts`)
@@ -110,6 +110,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-14 — trạng thái hoạt động: `hooks/chat/use-presence.ts`, `PresenceDot` (avatar DM, thành viên nhóm), tiêu đề hội thoại "Đang hoạt động" / "Hoạt động N phút trước" / "K đang hoạt động"; hộp Cài đặt quyền riêng tư nạp cài đặt hiện tại + công tắc trạng thái hoạt động.
 - 2026-10-14 — chặn người dùng: `hooks/use-blocks.ts`, `BlockUserControl` (hồ sơ), `BlockedUsersSection` (cài đặt quyền riêng tư), `BlockedComposer` thay ô soạn tin trong DM bị chặn.
 - 2026-10-13 — skeleton loading toàn app: primitive `Skeleton`/`LoadingRegion`, `AppShellSkeleton` khi xác thực phiên, skeleton theo màn hình (`components/skeletons/`).
 - 2026-10-13 — thêm `/terms`, `/privacy-policy` (route group `(legal)`, `LegalDocument`, link chung `lib/legal.ts`); bỏ flag `legalPages` và link footer chết.

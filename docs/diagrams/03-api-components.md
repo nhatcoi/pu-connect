@@ -12,6 +12,7 @@ flowchart TB
     direction LR
     auth["<b>Auth</b><br/>Local + Google strategy<br/>MailService · rate limit"]
     users["<b>Users</b><br/>hồ sơ · privacy"]
+    presence["<b>Presence</b><br/>ai thấy ai online · last_seen_at<br/>chờ 15s trước khi offline"]
     blocks["<b>Blocks</b><br/>chặn 2 chiều · blocks.sql<br/>(feed, bình luận, chat, TB lọc bằng SQL)"]
     posts["<b>Posts</b><br/>feed ranking · comments Q&A"]
     gql["<b>SocialGraphQL</b><br/>user · feed · comment<br/>document · study-group"]
@@ -49,12 +50,14 @@ flowchart TB
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
   others -->|StudyGroupChatService: đồng bộ thành viên| chat
   blocks -->|block.changed| rt
+  rt -->|onPresenceChange: tab đầu mở / tab cuối đóng| presence
+  presence -->|presence.update tới liên hệ| rt
 
   classDef mod fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef plat fill:#334155,stroke:#334155,color:#fff
   classDef store fill:#ffedd5,stroke:#f97316,color:#7c2d12
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
-  class auth,users,blocks,posts,communities,others,storage,gql,admin,chat mod
+  class auth,users,blocks,presence,posts,communities,others,storage,gql,admin,chat mod
   class mentions,notif,rt,push,queue plat
   class db store
   class ext,mw,llm external
@@ -82,6 +85,7 @@ flowchart TB
 | Storage | `POST upload/file` · `POST upload/multiple` |
 | Push | `GET push/config` · `POST/DELETE push/subscriptions` · `POST push/test` |
 | Admin (role `admin`) | `GET admin/stats` · `GET admin/reports?status=pending\|resolved` · `POST admin/posts/:id/{hide,unhide,dismiss-reports}` · `GET admin/users?q=&status=` · `POST admin/users/:id/{suspend,unsuspend}` · `GET admin/audit-logs` · `GET admin/search/zero-results?days=` |
+| Presence | `GET presence` (`{ [userId]: { online, lastSeenAt } }` của người cùng hội thoại) |
 | Blocks | `GET blocks` (mình đã chặn ai) · `PUT blocks/:userId` (chặn, idempotent, hủy theo dõi 2 chiều) · `DELETE blocks/:userId` |
 | Chat | `GET conversations` · `GET conversations/unread-count` · `POST conversations/direct` · `POST conversations/ai` · `POST conversations` (nhóm) · `POST conversations/study-groups/:groupId` · `GET/PATCH conversations/:id` · `PATCH conversations/:id/settings` (tắt TB, ghim) · `GET/POST conversations/:id/members` · `DELETE conversations/:id/members/:userId` · `POST conversations/:id/owner` · `POST conversations/:id/read` · `POST conversations/:id/leave` · `GET/POST conversations/:id/messages` (keyset `before`, `clientMsgId` idempotent, `attachments`, `replyToId`, `aiMode`) · `GET conversations/:id/messages/search` · `GET conversations/:id/pinned` · `GET conversations/:id/attachments` · `PATCH/DELETE messages/:id` · `GET/POST messages/:id/reactions` · `POST messages/:id/pin` · `GET ai/quota` · `POST ai/conversations/:id/reset` |
 
@@ -103,10 +107,12 @@ flowchart TB
 | Server → client | `message.delta` | `{ conversationId, messageId, delta }` — PU AI trả lời dần |
 | Server → client | `conv.read` · `conv.updated` · `conv.removed` | đã đọc `{conversationId, userId, lastReadMessageId}` (mọi thành viên) · đổi tên/thành viên · bị xóa khỏi nhóm |
 | Server → client | `conv.read` · `conv.updated` | đồng bộ đã đọc / hội thoại mới giữa các tab |
+| Server → client | `presence.update` | `{ userId, online, lastSeenAt }` tới người cùng hội thoại (không chặn nhau, cả hai bật `showActivityStatus`) |
 | Server → client | `block.changed` | `{ userId }` tới cả 2 phía khi chặn / bỏ chặn ⇒ web làm mới hồ sơ, feed, hội thoại |
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-14 — PresenceModule: gateway đếm socket theo user (`isOnline`, `onPresenceChange`), `GET presence`, event `presence.update`.
 - 2026-10-14 — BlocksModule: `GET/PUT/DELETE blocks`, event `block.changed`; GraphQL `User.blockState`; hội thoại trả `blockState`.
 - 2026-10-13 — `POST conversations/:id/owner` (chuyển quyền trưởng nhóm).
 - 2026-10-13 — Chat → Push: queue `chat-push` (`ChatPushService` / `ChatPushProcessor`), kênh cài đặt `chat_message`.

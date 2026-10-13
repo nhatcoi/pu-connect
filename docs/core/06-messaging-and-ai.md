@@ -626,3 +626,17 @@ Migration `user-blocks-upgrade.sql`: `user_blocks (blocker_id, blocked_id, creat
 
 Chưa làm: chặn mention trong nội dung (thông báo đã bị lọc), báo cáo tin nhắn.
 
+## 15. Trạng thái hoạt động (2026-10-14)
+
+Migration `presence-upgrade.sql`: `users.last_seen_at`. Cài đặt `privacy_settings.showActivityStatus` (mặc định `true`).
+
+| Quyết định | Lý do |
+|---|---|
+| **Gateway** chỉ đếm socket/user (`isOnline`, `onPresenceChange`); **PresenceService** giữ chính sách | Tách transport khỏi quyền riêng tư; gateway không cần biết ai được thấy ai. |
+| Đếm **trong bộ nhớ**, không Redis | API chạy 1 instance. Khi scale ngang cần adapter Redis cho socket.io + đếm bằng Redis (`HINCRBY`). |
+| Chờ **15s** trước khi báo offline | Reload trang / đổi mạng ngắn không làm nháy "offline → online". |
+| Chỉ chia sẻ với **người cùng hội thoại**, không chặn nhau, **cả hai** bật trạng thái | Không lộ thói quen online cho người lạ; có qua có lại như Messenger. |
+| Trạng thái ban đầu qua `GET /presence`, sau đó `presence.update` vá cache | 1 request khi mở app thay vì hỏi từng người. |
+
+Giới hạn: tắt `showActivityStatus` không phát "offline" ngay cho người đang xem (họ thấy trạng thái cũ tới lần nạp lại kế tiếp).
+

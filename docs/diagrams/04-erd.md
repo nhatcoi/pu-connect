@@ -120,6 +120,7 @@ erDiagram
     tsvector search_tsv
     timestamptz suspended_at
     varchar suspended_reason
+    timestamptz last_seen_at
   }
   user_follows {
     uuid follower_id PK,FK
