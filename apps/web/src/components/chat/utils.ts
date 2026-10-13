@@ -1,4 +1,5 @@
 import type { UiMessage } from '@/hooks/chat'
+import { markdownToPlainText } from '@/lib/plain-text'
 
 export const timeOf = (iso: string) => new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
 
@@ -31,10 +32,10 @@ export function fileSize(bytes: number): string {
 // Đuôi tệp in hoa cho thẻ tệp (PDF, DOCX…)
 export const fileExt = (name: string) => (name.split('.').pop() || 'FILE').slice(0, 4).toUpperCase()
 
-// Xem trước 1 dòng cho danh sách / trích dẫn
+// Xem trước 1 dòng cho danh sách / trích dẫn (bỏ ký hiệu Markdown)
 export function messagePreview(m: { content: string; attachments: { kind: string }[] | null; deleted: boolean }): string {
   if (m.deleted) return 'Tin nhắn đã thu hồi'
-  if (m.content) return m.content.replace(/```[\s\S]*?```/g, '[nội dung]').replace(/\s+/g, ' ').trim()
+  if (m.content) return markdownToPlainText(m.content) || '…'
   const n = m.attachments?.length ?? 0
   if (!n) return '…'
   return m.attachments!.every((a) => a.kind === 'image') ? `📷 ${n} ảnh` : `📎 ${n} tệp`
