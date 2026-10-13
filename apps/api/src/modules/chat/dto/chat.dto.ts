@@ -24,6 +24,14 @@ export const SendMessageBodySchema = z
   })
   .refine((v) => v.content.length > 0 || (v.attachments?.length ?? 0) > 0, { message: 'Tin nhắn trống', path: ['content'] })
 
+// GET /conversations?filter=&cursor=&limit=
+export const ListConversationsQuerySchema = z.object({
+  filter: z.enum(['all', 'unread', 'group']).default('all'),
+  cursor: z.string().max(300).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(20)
+})
+export type ListConversationsQuery = z.infer<typeof ListConversationsQuerySchema>
+
 export const EditMessageBodySchema = z.object({
   content: z.string().trim().min(1, { message: 'Tin nhắn trống' }).max(4000, { message: 'Tin nhắn tối đa 4000 ký tự' })
 })

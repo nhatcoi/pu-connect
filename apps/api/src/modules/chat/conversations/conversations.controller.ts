@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
 import type { CreateGroupChatInput, MemberSettingsInput, UpdateGroupInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
@@ -7,11 +7,13 @@ import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import {
   AddMembersBodySchema,
   CreateGroupChatBodySchema,
+  ListConversationsQuerySchema,
   MarkReadBodySchema,
   MemberSettingsBodySchema,
   OpenDirectBodySchema,
   TransferOwnerBodySchema,
-  UpdateGroupBodySchema
+  UpdateGroupBodySchema,
+  type ListConversationsQuery
 } from '../dto/chat.dto'
 import { ConversationsService } from './conversations.service'
 import { StudyGroupChatService } from './study-group-chat.service'
@@ -25,9 +27,10 @@ export class ConversationsController {
     private readonly studyGroupChat: StudyGroupChatService
   ) {}
 
+  // ?filter=all|unread|group&cursor=&limit= (keyset, mới nhất trước)
   @Get()
-  list(@Req() req: Request) {
-    return this.conversations.list(requireUserId(req))
+  list(@Query(new ZodValidationPipe(ListConversationsQuerySchema)) query: ListConversationsQuery, @Req() req: Request) {
+    return this.conversations.list(requireUserId(req), query)
   }
 
   @Get('unread-count')

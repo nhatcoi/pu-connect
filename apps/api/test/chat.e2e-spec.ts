@@ -82,4 +82,36 @@ describe('Chat (e2e)', () => {
     }
     expect(botReply).toMatchObject({ kind: 'ai', status: 'error' })
   })
+
+  it('danh sách hội thoại: phân trang keyset, mới nhất trước, lọc chưa đọc ở server', async () => {
+    const me = await createUser(db)
+    const agent = await loginAgent(app, me)
+    const others = await Promise.all(Array.from({ length: 5 }, () => createUser(db)))
+    const ids: string[] = []
+    for (const o of others) {
+      const conv = await agent.post('/api/conversations/direct').send({ userId: o.id }).expect(200)
+      ids.push(conv.body.data.id)
+      await agent.post(`/api/conversations/${conv.body.data.id}/messages`).send({ content: 'hi' }).expect(201)
+    }
+
+    const seen: string[] = []
+    let cursor: string | null = null
+    do {
+      const qs: string = cursor ? `&cursor=${cursor}` : ''
+      const page = await agent.get(`/api/conversations?limit=2${qs}`).expect(200)
+      expect(page.body.data.data.length).toBeLessThanOrEqual(2)
+      seen.push(...page.body.data.data.map((c: { id: string }) => c.id))
+      cursor = page.body.data.nextCursor
+    } while (cursor)
+    expect(seen).toEqual([...ids].reverse()) // tin mới nhất trước, không trùng/sót
+
+    // Người kia nhắn ⇒ chỉ hội thoại đó ở bộ lọc "chưa đọc"
+    const other = await loginAgent(app, others[1])
+    await other.post(`/api/conversations/${ids[1]}/messages`).send({ content: 'chào' }).expect(201)
+    const unread = await agent.get('/api/conversations?filter=unread').expect(200)
+    expect(unread.body.data.data.map((c: { id: string }) => c.id)).toEqual([ids[1]])
+
+    await agent.get('/api/conversations?cursor=abc').expect(400)
+    await agent.get('/api/conversations?filter=xyz').expect(400)
+  })
 })

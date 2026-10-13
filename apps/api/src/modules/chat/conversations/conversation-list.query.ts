@@ -1,0 +1,40 @@
+import { BadRequestException } from '@nestjs/common'
+import type { ConversationFilter } from '@pu/schemas'
+
+// Thứ tự danh sách: PU AI → hội thoại đã ghim (theo lúc ghim) → còn lại (theo tin mới nhất)
+// Khóa keyset (rank, sort_at, id) giảm dần ⇒ so sánh tuple "<" để lấy trang sau
+export const LIST_RANK = `CASE WHEN c.type = 'ai' THEN 2 WHEN me.pinned_at IS NOT NULL THEN 1 ELSE 0 END`
+export const LIST_SORT_AT = `CASE WHEN c.type <> 'ai' AND me.pinned_at IS NOT NULL THEN me.pinned_at ELSE COALESCE(c.last_message_at, c.created_at) END`
+
+// Lọc ở server ⇒ phân trang đúng cả khi lọc (alias me = thành viên là mình, c = hội thoại)
+export const LIST_FILTERS: Record<ConversationFilter, string> = {
+  all: '',
+  group: `AND c.type = 'group'`,
+  unread: `AND EXISTS (SELECT 1 FROM messages um
+                       WHERE um.conversation_id = c.id AND um.id > me.last_read_message_id
+                         AND um.deleted_at IS NULL AND um.kind <> 'system' AND um.sender_id IS DISTINCT FROM me.user_id)`
+}
+
+export type ListCursor = { rank: number; sortAt: string; id: string }
+
+// sort_at giữ độ chính xác micro giây (JS Date chỉ có mili giây ⇒ có thể bỏ sót / lặp hàng)
+export const SORT_AT_TEXT = `to_char(k.sort_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`
+
+export function encodeCursor(c: ListCursor): string {
+  return Buffer.from(JSON.stringify([c.rank, c.sortAt, c.id])).toString('base64url')
+}
+
+export function decodeCursor(raw: string | undefined): ListCursor | null {
+  if (!raw) return null
+  try {
+    const [rank, sortAt, id] = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'))
+    const valid =
+      [0, 1, 2].includes(rank) &&
+      typeof sortAt === 'string' && !Number.isNaN(Date.parse(sortAt)) &&
+      typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)
+    if (valid) return { rank, sortAt, id }
+  } catch {
+    // rơi xuống lỗi bên dưới
+  }
+  throw new BadRequestException('cursor không hợp lệ')
+}

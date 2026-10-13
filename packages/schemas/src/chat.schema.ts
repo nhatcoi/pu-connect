@@ -155,6 +155,14 @@ export interface ConversationSummary {
   blockState: BlockState
 }
 
+// Danh sách hội thoại: lọc ở server + phân trang keyset (cursor mờ)
+export const CONVERSATION_FILTERS = ['all', 'unread', 'group'] as const
+export type ConversationFilter = (typeof CONVERSATION_FILTERS)[number]
+export interface ConversationsPage {
+  data: ConversationSummary[]
+  nextCursor: string | null
+}
+
 export interface MessagesPage {
   data: ChatMessage[] // mới nhất trước
   nextCursor: string | null

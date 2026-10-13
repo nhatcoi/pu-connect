@@ -3,6 +3,7 @@ import type { PoolClient } from 'pg'
 import type {
   ChatMember,
   ConversationSummary,
+  ConversationsPage,
   CreateGroupChatInput,
   MemberSettingsInput,
   UpdateGroupInput
@@ -11,6 +12,8 @@ import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
+import type { ListConversationsQuery } from '../dto/chat.dto'
+import { LIST_FILTERS, LIST_RANK, LIST_SORT_AT, SORT_AT_TEXT, decodeCursor, encodeCursor } from './conversation-list.query'
 import { blockExistsSql } from '../../blocks/blocks.sql'
 import { ChatPushService } from '../notify/chat-push.service'
 import { LlmService } from '../../ai/llm.service'
@@ -33,16 +36,39 @@ export class ConversationsService {
     return this.core.db
   }
 
-  // PU AI ghim đầu, rồi hội thoại tự ghim, còn lại theo tin mới nhất
-  async list(userId: string): Promise<ConversationSummary[]> {
-    const res = await this.db.query(
-      `${SUMMARY_SELECT}
-       WHERE me.user_id = $1 AND me.left_at IS NULL
-       ORDER BY (c.type = 'ai') DESC, me.pinned_at DESC NULLS LAST, COALESCE(c.last_message_at, c.created_at) DESC
-       LIMIT 100`,
-      [userId]
+  // Phân trang keyset: chọn id trang (rẻ) rồi mới dựng tóm tắt đầy đủ cho đúng các id đó
+  async list(userId: string, query: ListConversationsQuery): Promise<ConversationsPage> {
+    const params: unknown[] = [userId, query.limit + 1]
+    let keyset = ''
+    const cursor = decodeCursor(query.cursor)
+    if (cursor) {
+      params.push(cursor.rank, cursor.sortAt, cursor.id)
+      keyset = `WHERE (k.rank, k.sort_at, k.id) < ($3::int, $4::timestamptz, $5::uuid)`
+    }
+    const page = await this.db.query(
+      `SELECT k.id, k.rank, ${SORT_AT_TEXT} AS sort_at FROM (
+         SELECT c.id, ${LIST_RANK} AS rank, ${LIST_SORT_AT} AS sort_at
+         FROM conversation_members me JOIN conversations c ON c.id = me.conversation_id
+         WHERE me.user_id = $1 AND me.left_at IS NULL ${LIST_FILTERS[query.filter]}
+       ) k ${keyset}
+       ORDER BY k.rank DESC, k.sort_at DESC, k.id DESC
+       LIMIT $2`,
+      params
     )
-    return res.rows.map(mapSummaryRow)
+    const rows = page.rows.slice(0, query.limit)
+    const last = rows[rows.length - 1]
+    return {
+      data: await this.summaries(userId, rows.map((r) => r.id)),
+      nextCursor: page.rows.length > query.limit ? encodeCursor({ rank: last.rank, sortAt: last.sort_at, id: last.id }) : null
+    }
+  }
+
+  // Tóm tắt theo đúng thứ tự ids
+  private async summaries(userId: string, ids: string[]): Promise<ConversationSummary[]> {
+    if (!ids.length) return []
+    const res = await this.db.query(`${SUMMARY_SELECT} WHERE me.user_id = $1 AND me.left_at IS NULL AND c.id = ANY($2::uuid[])`, [userId, ids])
+    const byId = new Map(res.rows.map((r) => [r.id as string, mapSummaryRow(r)]))
+    return ids.map((id) => byId.get(id)).filter((c): c is ConversationSummary => !!c)
   }
 
   async get(userId: string, conversationId: string): Promise<ConversationSummary> {
