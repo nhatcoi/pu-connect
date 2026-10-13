@@ -141,7 +141,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ### 💬 Nhắn Tin & PU AI (Domain 10 + 13 — 2026-10-13)
 - [x] 💬 **[`/messages`](../apps/web/src/app/(app)/messages/page.tsx)**: DM 1-1, nhóm (≤ 50), tin nhắn lạc quan + `clientMsgId` idempotent, đã đọc, đang nhập, thu hồi, badge chưa đọc ở sidebar/bottom nav, nút Nhắn tin trên hồ sơ. Realtime qua `message.*` / `typing`.
-- [x] ✨ **PU AI** (`POST /api/conversations/ai`): trả lời streaming qua API tương thích OpenAI (`AI_BASE_URL`, `AI_MODEL` mặc định `v5`), truy xuất bài viết & tài liệu liên quan bằng full-text và trích nguồn, quota `AI_DAILY_QUOTA`/ngày. Thiết kế & phần còn thiếu: [`core/06-messaging-and-ai.md` §12](./core/06-messaging-and-ai.md).
+- [x] ✨ **PU AI** (`POST /api/conversations/ai`): trả lời streaming qua API tương thích OpenAI (`AI_BASE_URL`, `AI_MODEL` mặc định `v9`), truy xuất bài viết & tài liệu liên quan bằng full-text và trích nguồn, quota `AI_DAILY_QUOTA`/ngày. Thiết kế & phần còn thiếu: [`core/06-messaging-and-ai.md` §12](./core/06-messaging-and-ai.md).
 
 ### 🧪 Kiểm Thử Tích Hợp (Integration Tests)
 - [x] Jest + supertest ([`apps/api/test`](../apps/api/test)) chạy trên DB riêng `pu_connector_test` (tự tạo lại + chạy migration): auth (khóa tài khoản, đặt lại mật khẩu), đăng bài & duyệt lời giải, admin, nhắn tin. Chạy: `docker compose up -d && pnpm --filter @pu/api test`.

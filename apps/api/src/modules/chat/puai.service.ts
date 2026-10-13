@@ -5,9 +5,9 @@ import type { ChatCitation } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { ChatService } from './chat.service'
 
-const DEFAULT_MODEL = 'v5' // Sonnet qua gateway OpenAI-compatible: nhanh, đủ chất lượng cho hỏi đáp học tập; đổi bằng AI_MODEL
+const DEFAULT_MODEL = 'v9' // Model suy nghĩ qua gateway OpenAI-compatible; đổi bằng AI_MODEL
 const HISTORY_LIMIT = 20
-const MAX_OUTPUT_TOKENS = 2048
+const MAX_OUTPUT_TOKENS = 8192 // Gồm cả token suy nghĩ (thinking counts toward cap)
 
 const SYSTEM_PROMPT = `Bạn là PU AI, trợ lý học tập của PU Connector — mạng xã hội học thuật của sinh viên Trường Đại học Phenikaa.
 

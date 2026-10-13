@@ -108,7 +108,7 @@ npx web-push generate-vapid-keys         # điền VAPID_PUBLIC_KEY / VAPID_PRIV
 ```
 Thiếu VAPID ⇒ chỉ có thông báo trong app. Chi tiết: [`docs/core/05`](docs/core/05-notifications-and-realtime.md#7-triển-khai-v2--web-push--bullmq-đang-chạy).
 
-**PU AI** (trợ lý trong `/messages`): gọi API tương thích OpenAI. Điền `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v5`) vào `apps/api/.env`; `AI_DAILY_QUOTA` mặc định 30. Thiếu key ⇒ bot trả lời "chưa bật".
+**PU AI** (trợ lý trong `/messages`): gọi API tương thích OpenAI. Điền `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v9`) vào `apps/api/.env`; `AI_DAILY_QUOTA` mặc định 30. Thiếu key ⇒ bot trả lời "chưa bật".
 
 **Test tích hợp API** (Jest + supertest, DB riêng `pu_connector_test` được tạo lại mỗi lượt):
 ```bash

@@ -45,7 +45,7 @@ flowchart TB
 | Cloudflare R2 | Upload file | `R2_*` | Upload lỗi, phần còn lại vẫn chạy |
 | Push service (FCM/Mozilla/Apple) | Web Push khi đã đóng tab | `VAPID_*` | Thiếu khóa ⇒ chỉ in-app |
 | DiceBear | Avatar mặc định | — | Ảnh không hiện, fallback chữ cái |
-| LLM gateway OpenAI-compatible | PU AI trả lời trong hội thoại `/messages` | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v5`), `AI_DAILY_QUOTA` | Thiếu key ⇒ bot trả lời "chưa bật"; 429/5xx ⇒ tin lỗi "quá tải" · xem [06-messaging-and-ai](../core/06-messaging-and-ai.md) |
+| LLM gateway OpenAI-compatible | PU AI trả lời trong hội thoại `/messages` | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v9`), `AI_DAILY_QUOTA` | Thiếu key ⇒ bot trả lời "chưa bật"; 429/5xx ⇒ tin lỗi "quá tải" · xem [06-messaging-and-ai](../core/06-messaging-and-ai.md) |
 
 **Changelog:**
 - 2026-10-13 — PU AI chuyển từ Anthropic SDK sang gateway OpenAI-compatible (`AI_BASE_URL`).
