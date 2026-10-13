@@ -43,6 +43,7 @@ flowchart TB
   auth & storage --> ext
   admin -->|disconnectUser| rt
   chat -->|emitToUser message.*| rt
+  chat -->|chat-push: sendToUser| push
   chat -->|chat/completions stream| llm["LLM gateway"]
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
   others -->|StudyGroupChatService: đồng bộ thành viên| chat
@@ -102,6 +103,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-13 — Chat → Push: queue `chat-push` (`ChatPushService` / `ChatPushProcessor`), kênh cài đặt `chat_message`.
 - 2026-10-13 — PuaiService dùng SDK `openai` (gateway OpenAI-compatible).
 - 2026-10-13 — StudyGroups → Chat (`StudyGroupChatService`): `POST conversations/study-groups/:groupId`, tự thêm thành viên mới vào nhóm chat.
 - 2026-10-13 — Chat: `GET messages/:id/reactions` (ai đã thả cảm xúc); `PATCH conversations/:id` nhận `avatarKey`.

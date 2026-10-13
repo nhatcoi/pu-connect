@@ -134,6 +134,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🔗 Mã môn trên PostCard, CourseCard, kết quả tìm kiếm dẫn tới trang học phần.
 - [x] 💾 **Nhóm học lưu PostgreSQL** (trước đây giữ trong bộ nhớ, mất khi restart): tạo nhóm + trưởng nhóm và tham gia nhóm là transaction có `FOR UPDATE` (không vượt sĩ số).
 - [x] 💬 **Nhóm học ↔ nhóm chat** (migration `chat-study-group-upgrade.sql`, `conversations.study_group_id` UNIQUE): nút *Mở nhóm chat* trên thẻ nhóm học (`POST conversations/study-groups/:groupId`) tạo lười nhóm chat với toàn bộ thành viên (trưởng nhóm học = trưởng nhóm chat, khóa `FOR UPDATE` chống tạo trùng); ai tham gia nhóm học sau được tự thêm vào chat (`StudyGroupChatService.onStudyGroupJoined`); rời chat vẫn mở lại được khi còn trong nhóm học.
+- [x] 🔔 **Web Push cho tin nhắn** (queue `chat-push`, `chat/notify/`): tin mới (kể cả PU AI trả lời xong) ⇒ push sau 15s nếu chưa đọc và không mở app; gộp nhiều tin thành 1 thông báo/hội thoại ("Nhóm X · 3 tin mới"), tôn trọng tắt tiếng hội thoại, giờ yên tĩnh và công tắc **Tin nhắn mới** trong cài đặt thông báo (kênh `chat_message`).
 
 ### 🛡️ Quản Trị Tối Giản (Admin — 2026-10-13)
 - [x] 🔒 **Chặn tài khoản `suspended`**: đăng nhập mật khẩu trả 403 (chỉ sau khi đúng mật khẩu ⇒ không lộ trạng thái), Google OAuth về `/?auth_error=suspended`, phiên cũ hết hiệu lực ở `deserializeUser` (HTTP lẫn socket).
@@ -170,5 +171,5 @@ Role trong DB: `student`, `lecturer`, `ta`, `club_lead`, `admin` (prod: 1 admin,
 3. **Domain 7: Career & Alumni (`/career`)**: Bảng tin thực tập, CV/Portfolio số sinh viên, Mạng lưới Cựu sinh viên (Alumni Mentorship).
 4. **Domain 8: Events (`/events`)**: Form đăng ký tham gia sự kiện campus, vé mã QR Check-in.
 5. **Domain 9: Clubs & Organizations (`/clubs/[slug]`)**: Hub riêng cho CLB, quản lý thành viên ban/đội, đợt tuyển quân.
-6. **Domain 10: Realtime Messaging (phần còn lại)**: chat tự tạo cho cộng đồng, trạng thái online, Web Push cho tin nhắn, chặn người dùng. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
+6. **Domain 10: Realtime Messaging (phần còn lại)**: chat tự tạo cho cộng đồng, trạng thái online, chặn người dùng. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
 7. **Domain 13: AI Layer (phần còn lại)**: `@puai` trong bình luận, tóm tắt bài, RAG bằng `pgvector` (cần chọn model embedding + trích text PDF) — xem [`core/06-messaging-and-ai.md` §12](./core/06-messaging-and-ai.md).

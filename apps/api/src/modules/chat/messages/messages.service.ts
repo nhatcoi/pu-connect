@@ -4,6 +4,7 @@ import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { MESSAGE_COLUMNS, MESSAGE_FROM, mapMessageRow } from '../chat.mapper'
+import { ChatPushService } from '../notify/chat-push.service'
 import { PuaiService } from '../puai/puai.service'
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000 // sửa tin trong 15 phút
@@ -19,7 +20,8 @@ export class MessagesService {
   constructor(
     private readonly core: ChatCoreService,
     private readonly puai: PuaiService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly chatPush: ChatPushService
   ) {}
 
   private get db() {
@@ -90,6 +92,7 @@ export class MessagesService {
 
     if (created) {
       await this.core.broadcast(conversationId, 'message.new', message)
+      void this.chatPush.onNewMessage(conversationId, userId) // Web Push (trễ, gộp tin)
       // PU AI trả lời nền: hội thoại AI, hoặc được @puai trong nhóm
       if (type === 'ai') void this.puai.reply(conversationId, userId, message.id)
       else if (type === 'group' && PUAI_MENTION.test(input.content)) void this.puai.reply(conversationId, userId, message.id)

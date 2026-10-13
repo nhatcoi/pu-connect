@@ -573,14 +573,15 @@ store: aiDrawer { open, contextRef }, unreadTotal
 
 Migration `chat-v2-upgrade.sql`: `messages.attachments/edited_at/pinned_at/pinned_by/meta`, bảng `message_reactions (message_id, user_id, emoji)`, `conversation_members.muted_until/pinned_at`.
 
-**Cấu trúc mã** (không vòng phụ thuộc: core ← puai ← conversations / messages):
+**Cấu trúc mã** (không vòng phụ thuộc: core · notify ← puai ← conversations ← study-group-chat / messages):
 
 ```
 apps/api/src/modules/chat/
   chat.module.ts · chat.mapper.ts (SQL cột + map) · chat-core.service.ts (quyền thành viên, phát sự kiện, tin hệ thống)
-  conversations/  controller + service — DM, nhóm, thành viên, cài đặt riêng, đã đọc
+  conversations/  controller + service — DM, nhóm, thành viên, cài đặt riêng, đã đọc · study-group-chat.service (nhóm học ↔ chat)
   messages/       controller + service — gửi/sửa/thu hồi, cảm xúc, ghim, tìm kiếm, kho tệp
-  puai/           controller (quota, reset) · service (stream) · prompts (chế độ học) · retrieval (full-text) · attachments (vision)
+  puai/           controller (quota, reset) · service (stream) · prompts (chế độ học) · retrieval (full-text) · attachments (vision, PDF/DOCX)
+  notify/         chat-push.constants · chat-push.service (xếp job) · chat-push.processor (worker Web Push)
   dto/chat.dto.ts
 apps/web/src/hooks/chat/        api · cache · use-chat-realtime · use-conversations · use-messages · use-typing · use-ai
 apps/web/src/components/chat/
@@ -598,10 +599,11 @@ apps/web/src/components/chat/
 | Ảnh nhóm | Web tải ảnh lên `avatars/` (thư mục chỉ nhận ảnh) rồi gửi `avatarKey`; server kiểm `StorageService.isOwnedKey(key, 'avatars', userId)` và tự ghép URL ⇒ không gắn được URL ngoài (pixel theo dõi) hay ảnh người khác. `null` = xóa. Tin hệ thống `group.avatar`. |
 | Sửa / ghim | Sửa tin `text` của mình trong 15 phút (`edited_at`); ghim: mọi thành viên, thu hồi tin ⇒ bỏ ghim. |
 | Đã xem | `summary.readCursors` (con trỏ của người khác) + `conv.read {userId}` gửi mọi thành viên. |
-| Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge. *Chưa có push cho tin nhắn nên chưa ảnh hưởng push.* |
+| Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge và không push. |
+| Push tin nhắn | `chat/notify/`: `ChatPushService.onNewMessage` (sau commit, không chặn luồng gửi; gọi khi người gửi tin và khi PU AI trả lời xong) xếp job trễ 15s vào queue `chat-push` cho thành viên người thật chưa tắt tiếng, `jobId = chat-{conv}-{user}` ⇒ nhiều tin trong lúc chờ gộp 1 push. `ChatPushProcessor` đọc trạng thái lúc chạy (1 truy vấn): hết tin chưa đọc / tắt tiếng / tắt kênh `chat_message` / đang mở app ⇒ bỏ; giờ yên tĩnh ⇒ hoãn. Tiêu đề = tên người/nhóm (+ "N tin mới"), nội dung = tin mới nhất (nhóm có tên người gửi; chỉ ảnh/tệp ⇒ "🖼️ Ảnh"/"📎 N tệp"), `tag = chat-{conv}` ⇒ thông báo sau thay thế thông báo trước. Tin đến khi job đang chạy có thể không tạo push riêng (đã được gộp vào số tin chưa đọc lần sau). |
 | Chế độ học | `aiMode` gửi kèm tin (`meta.aiMode`), server ghép `MODE_PROMPTS[mode]` vào system prompt, ghi `ai_runs.task`. Quiz/flashcard: model trả JSON trong khối code; web kiểm tra schema, JSON hỏng ⇒ hiện như code thường, đang stream ⇒ "Đang tạo…". |
 | `@puai` trong nhóm | Tin nhóm khớp `@puai` (đầu tin hoặc sau khoảng trắng) ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
 | Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
 | Vision & tài liệu | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB). PDF (`pdf-parse`, ≤ 40 trang, ≤ 20 MB), DOCX (`mammoth`), `.txt/.md/.csv` ⇒ trích text chèn `<file>` (≤ 40k ký tự/tệp, ≤ 80k/lượt), cache LRU 30 tệp theo key R2. Tin không kèm tệp ⇒ dùng lại tài liệu đọc được ở ≤ 10 tin trước (sau mốc "Chủ đề mới"). PDF scan (không có lớp chữ) ⇒ báo người dùng; PPTX/XLSX chỉ báo tên. |
 
-Còn thiếu: push cho tin nhắn, chuyển quyền trưởng nhóm thủ công.
+Còn thiếu: chuyển quyền trưởng nhóm thủ công, xóa thông báo hệ điều hành khi đã đọc trên thiết bị khác.

@@ -140,6 +140,17 @@ export function NotificationSettingsPanel() {
           <span className="text-xs font-semibold text-muted-foreground">Loại thông báo</span>
           <span className="w-14 text-center text-[11px] font-semibold text-muted-foreground">Trong app</span>
           <span className="w-14 text-center text-[11px] font-semibold text-muted-foreground">Trình duyệt</span>
+          {/* Tin nhắn: trong app luôn có badge "Tin nhắn"; chỉ bật/tắt push (tắt riêng từng hội thoại trong chat) */}
+          <span>Tin nhắn mới</span>
+          <span className="w-14 text-center text-[11px] text-muted-foreground">Luôn bật</span>
+          <span className="flex w-14 justify-center">
+            <Switch
+              checked={settings.push.chat_message !== false}
+              disabled={!pushOn}
+              aria-label="Tin nhắn mới — trình duyệt"
+              onCheckedChange={(v) => save({ push: { chat_message: v } }, { ...settings, push: { ...settings.push, chat_message: v } })}
+            />
+          </span>
           {Object.entries(TYPE_LABELS).map(([type, label]) => {
             const inApp = settings.inApp[type] !== false
             const push = inApp && settings.push[type] === true

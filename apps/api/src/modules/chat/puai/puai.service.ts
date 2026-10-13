@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import OpenAI from 'openai'
 import type { AiMode, AiQuota, ChatAttachment, ChatCitation, ChatMessage } from '@pu/schemas'
 import { ChatCoreService } from '../chat-core.service'
+import { ChatPushService } from '../notify/chat-push.service'
 import { attachmentParts, isReadableDoc } from './puai.attachments'
 import { GROUP_PROMPT, MODE_PROMPTS, SYSTEM_PROMPT } from './puai.prompts'
 import { PuaiRetrieval, contextBlock } from './puai.retrieval'
@@ -28,6 +29,7 @@ export class PuaiService {
   constructor(
     private readonly core: ChatCoreService,
     private readonly retrieval: PuaiRetrieval,
+    private readonly chatPush: ChatPushService,
     config: ConfigService
   ) {
     // Chưa cấu hình key ⇒ PU AI trả lời thông báo thay vì lỗi
@@ -296,6 +298,9 @@ export class PuaiService {
       blocks ? JSON.stringify(blocks) : null,
       status
     ])
-    await this.core.broadcast(conversationId, 'message.updated', await this.core.fetchMessage(this.db, messageId))
+    const message = await this.core.fetchMessage(this.db, messageId)
+    await this.core.broadcast(conversationId, 'message.updated', message)
+    // Trả lời xong ⇒ push cho người đang chờ (đã rời app)
+    void this.chatPush.onNewMessage(conversationId, message.sender?.id ?? null)
   }
 }

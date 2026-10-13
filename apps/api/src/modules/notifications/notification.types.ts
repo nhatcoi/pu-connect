@@ -21,6 +21,10 @@ export const CONFIGURABLE_TYPES: NotificationType[] = [
   'accepted_solution'
 ]
 
+// Kênh chỉ có push (không tạo bản ghi notifications): tin nhắn chat — in-app đã có badge "Tin nhắn"
+export const PUSH_ONLY_CHANNELS = ['chat_message'] as const
+export type PushChannel = NotificationType | (typeof PUSH_ONLY_CHANNELS)[number]
+
 export interface NotifyInput {
   type: NotificationType
   recipientId: string

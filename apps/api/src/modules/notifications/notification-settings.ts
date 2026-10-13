@@ -1,4 +1,4 @@
-import { CONFIGURABLE_TYPES, type NotificationType } from './notification.types'
+import { CONFIGURABLE_TYPES, PUSH_ONLY_CHANNELS, type NotificationType, type PushChannel } from './notification.types'
 
 // Lưu trong users.notification_settings (JSONB), tương thích ngược với v1:
 //   { "post_like": false,                       ← in-app (key phẳng, từ v1)
@@ -17,7 +17,8 @@ export interface NotificationSettings {
 }
 
 // Mặc định push: chỉ những gì cần phản hồi (trả lời, nhắc tên, lời giải, bình luận)
-export const PUSH_DEFAULTS: Record<NotificationType, boolean> = {
+export const PUSH_DEFAULTS: Record<PushChannel, boolean> = {
+  chat_message: true,
   post_like: false,
   post_comment: true,
   comment_reply: true,
@@ -28,6 +29,10 @@ export const PUSH_DEFAULTS: Record<NotificationType, boolean> = {
   ai_reply: true
 }
 
+// Kênh push người dùng bật/tắt được = loại thông báo cấu hình được + kênh chỉ push
+const PUSH_CHANNELS: PushChannel[] = [...CONFIGURABLE_TYPES, ...PUSH_ONLY_CHANNELS]
+const isPushOnly = (c: PushChannel) => (PUSH_ONLY_CHANNELS as readonly string[]).includes(c)
+
 const DEFAULT_QUIET_HOURS: QuietHours = { enabled: true, start: '23:00', end: '07:00' }
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
 
@@ -37,7 +42,7 @@ export function resolveSettings(stored: any): NotificationSettings {
   return {
     inApp: Object.fromEntries(CONFIGURABLE_TYPES.map((t) => [t, raw[t] !== false])),
     push: Object.fromEntries(
-      CONFIGURABLE_TYPES.map((t) => [t, typeof raw.push?.[t] === 'boolean' ? raw.push[t] : PUSH_DEFAULTS[t]])
+      PUSH_CHANNELS.map((t) => [t, typeof raw.push?.[t] === 'boolean' ? raw.push[t] : PUSH_DEFAULTS[t]])
     ),
     quietHours: {
       enabled: typeof qh.enabled === 'boolean' ? qh.enabled : DEFAULT_QUIET_HOURS.enabled,
@@ -51,8 +56,8 @@ export function isInAppEnabled(stored: any, type: NotificationType): boolean {
   return stored?.[type] !== false
 }
 
-export function isPushEnabled(stored: any, type: NotificationType): boolean {
-  if (!isInAppEnabled(stored, type)) return false // tắt in-app ⇒ tắt luôn push
+export function isPushEnabled(stored: any, type: PushChannel): boolean {
+  if (!isPushOnly(type) && !isInAppEnabled(stored, type as NotificationType)) return false // tắt in-app ⇒ tắt luôn push
   const value = stored?.push?.[type]
   return typeof value === 'boolean' ? value : PUSH_DEFAULTS[type] ?? false
 }
@@ -61,9 +66,10 @@ export function isPushEnabled(stored: any, type: NotificationType): boolean {
 export function buildStoragePatch(patch: any): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   const valid = (k: string) => (CONFIGURABLE_TYPES as string[]).includes(k)
+  const validPush = (k: string) => (PUSH_CHANNELS as string[]).includes(k)
   for (const [k, v] of Object.entries(patch?.inApp || {})) if (valid(k) && typeof v === 'boolean') out[k] = v
   const push = Object.fromEntries(
-    Object.entries(patch?.push || {}).filter(([k, v]) => valid(k) && typeof v === 'boolean')
+    Object.entries(patch?.push || {}).filter(([k, v]) => validPush(k) && typeof v === 'boolean')
   )
   if (Object.keys(push).length) out.push = push
   const qh = patch?.quietHours

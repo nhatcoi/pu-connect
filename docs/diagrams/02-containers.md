@@ -11,7 +11,7 @@ flowchart LR
     web["<b>apps/web</b><br/>Next.js 15 App Router<br/>React 19 · Tailwind v4 · animate-ui<br/>Zustand store"]
     api["<b>apps/api</b><br/>NestJS 11<br/>REST /api · GraphQL /graphql<br/>Socket.IO /api/socket.io<br/>Passport session"]
     schemas[["<b>packages/schemas</b><br/>zod schemas + TS types<br/>(dùng chung web ↔ api)"]]
-    redis[("<b>Redis 7</b><br/>BullMQ queue notification-push")]
+    redis[("<b>Redis 7</b><br/>BullMQ queues notification-push · chat-push")]
     sw["<b>public/sw.js</b><br/>Service Worker"]
     db[("<b>PostgreSQL 16 + pgvector</b><br/>dữ liệu nghiệp vụ<br/>user_sessions (session store)")]
     mobile["apps/mobile<br/>Expo (planned)"]
@@ -71,6 +71,7 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-13 — Redis: thêm queue `chat-push` (Web Push tin nhắn).
 - 2026-10-13 — LLM: gateway OpenAI-compatible thay cho Anthropic API.
 - 2026-10-13 — thêm Anthropic Claude API (PU AI), sự kiện nhắn tin qua Socket.IO.
 - 2026-10-04 — thêm Redis/BullMQ, Service Worker và Web Push.
