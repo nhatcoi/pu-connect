@@ -1,10 +1,17 @@
 import type { NextConfig } from 'next'
 
+// Build trên VPS (2GB RAM): bỏ typecheck/lint — đã chạy `pnpm typecheck` trước khi push (AGENTS.md)
+const skipChecks = process.env.NEXT_SKIP_CHECKS === '1'
+
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  typescript: { ignoreBuildErrors: skipChecks },
+  eslint: { ignoreDuringBuilds: skipChecks },
   reactStrictMode: true,
   transpilePackages: ['@pu/ui', '@pu/schemas'],
   experimental: {
+    // Giảm RAM lúc build webpack (đổi lại build chậm hơn chút)
+    webpackMemoryOptimizations: true,
     serverActions: {
       bodySizeLimit: '50mb'
     }

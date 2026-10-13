@@ -4,7 +4,8 @@ node_modules
 
 # Next.js
 apps/web/.next/
-apps/web/.next-prod/
+apps/web/.next-*/
+.web-slot.env*
 apps/web/out/
 
 # NestJS / Build outputs

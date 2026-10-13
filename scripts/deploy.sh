@@ -140,9 +140,14 @@ LIVE=$(sed -n 's/^NEXT_DIST_DIR=//p' .web-slot.env 2>/dev/null || true)
 LIVE=${LIVE:-.next}
 [ "$LIVE" = ".next-a" ] && SLOT=.next-b || SLOT=.next-a
 echo "Đang build Web vào apps/web/$SLOT (đang chạy: $LIVE)..."
-mkdir -p "apps/web/$SLOT"
-find "apps/web/$SLOT" -mindepth 1 -maxdepth 1 ! -name cache -exec rm -rf {} +  # giữ cache webpack
-NEXT_DIST_DIR=$SLOT pnpm --filter @pu/web build
+# Mồi cache chung từ cache thật của slot đang chạy (lần đầu chuyển sang slot)
+if [ ! -d apps/web/.next-cache ] && [ -d "apps/web/$LIVE/cache" ] && [ ! -L "apps/web/$LIVE/cache" ]; then
+  mv "apps/web/$LIVE/cache" apps/web/.next-cache
+fi
+rm -rf "apps/web/$SLOT" && mkdir -p "apps/web/$SLOT" apps/web/.next-cache
+ln -s ../.next-cache "apps/web/$SLOT/cache"  # 2 slot dùng chung cache webpack ⇒ build ấm, ít RAM
+# Ưu tiên thấp (nice/ionice): site đang chạy vẫn được CPU/IO trong lúc build
+NEXT_DIST_DIR=$SLOT NEXT_SKIP_CHECKS=1 nice -n 15 ionice -c3 pnpm --filter @pu/web build
 
 # Giữ chunk JS của bản trước 7 ngày: tab đang mở HTML cũ chuyển trang vẫn tải được (tránh ChunkLoadError)
 if [ -d "apps/web/$LIVE/static" ]; then

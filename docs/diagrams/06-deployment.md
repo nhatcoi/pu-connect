@@ -57,7 +57,9 @@ flowchart LR
 
 Migration chạy **mỗi lần deploy** theo thứ tự: `schema.sql` → `domain1-upgrade.sql` → `add-communities.sql` → `add-indexes.sql` → `auth-upgrade.sql` → `messaging-upgrade.sql` → `notifications-upgrade.sql` → `push-upgrade.sql`. ⇒ Mọi file phải **idempotent** và **không bao giờ UPDATE hàng loạt dữ liệu người dùng thật**.
 
-**Web blue/green (không lỗi giữa lúc deploy):** trước đây `next build` ghi đè `.next` trong khi `next start` vẫn phục vụ từ đó ⇒ HTML trỏ tới chunk đã bị xóa, trình duyệt báo *"Application error: a client-side exception"* suốt thời gian build. Nay web build vào slot rảnh (`apps/web/.next-a` hoặc `.next-b`, qua `NEXT_DIST_DIR`), server cũ chạy tiếp tới lúc restart; slot đang chạy ghi trong `/var/www/pu-connector/.web-slot.env`, systemd drop-in `pu-web.service.d/slot.conf` nạp file này. Chunk JS bản trước được chép sang slot mới (giữ 7 ngày) ⇒ tab đang mở chuyển trang không gặp ChunkLoadError. Rollback: ghi lại slot cũ vào `.web-slot.env` rồi `systemctl restart pu-web`.
+**Web blue/green (không lỗi giữa lúc deploy):** trước đây `next build` ghi đè `.next` trong khi `next start` vẫn phục vụ từ đó ⇒ HTML trỏ tới chunk đã bị xóa, trình duyệt báo *"Application error: a client-side exception"* suốt thời gian build. Nay web build vào slot rảnh (`apps/web/.next-a` hoặc `.next-b`, qua `NEXT_DIST_DIR`), server cũ chạy tiếp tới lúc restart; slot đang chạy ghi trong `/var/www/pu-connector/.web-slot.env`, systemd drop-in `pu-web.service.d/slot.conf` nạp file này. Chunk JS bản trước được chép sang slot mới (giữ 7 ngày) ⇒ tab đang mở chuyển trang không gặp ChunkLoadError. Rollback: ghi lại slot cũ vào `.web-slot.env` rồi `systemctl restart pu-web`. Build hỏng (vd. OOM) ⇒ deploy dừng trước bước đổi slot, site vẫn chạy bản cũ.
+
+**RAM khi build (VPS 2GB, dùng chung với dịch vụ khác):** build lạnh cần ~2GB ⇒ bị OOM kill và làm cả máy nghẽn. Giảm tải: 2 slot dùng chung cache webpack (`apps/web/.next-cache`, symlink `<slot>/cache`) ⇒ build luôn ấm; `NEXT_SKIP_CHECKS=1` bỏ typecheck/lint trong `next build` (đã chạy trước khi push); `experimental.webpackMemoryOptimizations`; build chạy `nice -n 15 ionice -c3`.
 
 ## Vận hành: backup & giám sát
 
@@ -78,6 +80,7 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 | `/etc/nginx/sites-available/pu-connector.conf` | Routing + SSL | Backup `/root/pu-connector.conf.bak.*` |
 
 **Changelog:**
+- 2026-10-13 — Build web nhẹ RAM: cache webpack dùng chung giữa slot, bỏ typecheck/lint trên VPS, nice/ionice.
 - 2026-10-13 — Web build blue/green (`.next-a`/`.next-b`), giữ chunk cũ 7 ngày; gián đoạn chỉ còn lúc restart.
 - 2026-10-04 — thêm cron backup DB mã hóa lên R2, healthcheck 5 phút, restore-db.sh.
 - 2026-10-04 — Postgres/Redis chỉ bind localhost (Docker bỏ qua firewall), thêm pu_redis, build tuần tự, migration push.
