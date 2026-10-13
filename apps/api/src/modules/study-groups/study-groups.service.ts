@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import type { StudyGroup, CreateStudyGroupInput } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { StudyGroupChatService } from '../chat/conversations/study-group-chat.service'
 
 const GROUP_SELECT = `
   SELECT g.*, u.display_name AS leader_name,
@@ -18,7 +19,10 @@ const GROUP_SELECT = `
 
 @Injectable()
 export class StudyGroupsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly groupChat: StudyGroupChatService
+  ) {}
 
   // Lọc theo mã học phần hoặc course id
   async findAll(course?: string): Promise<StudyGroup[]> {
@@ -92,6 +96,8 @@ export class StudyGroupsService {
         [group.id]
       )
     })
+    // Sau khi commit: đưa người mới vào nhóm chat của nhóm học (nếu đã có)
+    await this.groupChat.onStudyGroupJoined(groupId, userId)
     return this.findOne(groupId)
   }
 

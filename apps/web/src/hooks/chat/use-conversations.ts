@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ConversationSummary, MemberSettingsInput } from '@pu/schemas'
@@ -84,6 +85,21 @@ export function useConversationActions(id: string) {
     onError
   })
   return { settings, rename, changeAvatar, addMembers, removeMember, leave }
+}
+
+// Mở nhóm chat của nhóm học (server tạo lười) rồi chuyển tới hội thoại
+export function useOpenStudyGroupChat() {
+  const router = useRouter()
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (groupId: string) => chatApi.openStudyGroup(groupId),
+    onSuccess: (c) => {
+      qc.setQueryData(queryKeys.conversation(c.id), c)
+      void qc.invalidateQueries({ queryKey: queryKeys.conversations, exact: true })
+      router.push(`/messages/${c.id}`)
+    },
+    onError: (err: Error) => toast.error(err.message || 'Không mở được nhóm chat')
+  })
 }
 
 // Tên hiển thị hội thoại

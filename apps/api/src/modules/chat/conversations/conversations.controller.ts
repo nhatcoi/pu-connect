@@ -13,12 +13,16 @@ import {
   UpdateGroupBodySchema
 } from '../dto/chat.dto'
 import { ConversationsService } from './conversations.service'
+import { StudyGroupChatService } from './study-group-chat.service'
 
 // Hội thoại & thành viên (socket chỉ đẩy sự kiện xuống)
 @Controller('conversations')
 @UseGuards(AuthenticatedGuard)
 export class ConversationsController {
-  constructor(private readonly conversations: ConversationsService) {}
+  constructor(
+    private readonly conversations: ConversationsService,
+    private readonly studyGroupChat: StudyGroupChatService
+  ) {}
 
   @Get()
   list(@Req() req: Request) {
@@ -40,6 +44,13 @@ export class ConversationsController {
   @HttpCode(HttpStatus.OK)
   openAi(@Req() req: Request) {
     return this.conversations.openAi(requireUserId(req))
+  }
+
+  // Nhóm chat của nhóm học (tạo lười, chỉ thành viên nhóm học)
+  @Post('study-groups/:groupId')
+  @HttpCode(HttpStatus.OK)
+  openStudyGroup(@Param('groupId', ParseUUIDPipe) groupId: string, @Req() req: Request) {
+    return this.studyGroupChat.open(requireUserId(req), groupId)
   }
 
   @Post()

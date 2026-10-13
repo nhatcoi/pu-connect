@@ -138,6 +138,7 @@ export interface ConversationSummary {
   type: 'direct' | 'group' | 'ai'
   title: string | null
   avatarUrl: string | null
+  studyGroupId: string | null // nhóm chat gắn với nhóm học
   members: ChatUser[] // thành viên khác (không gồm mình)
   memberCount: number
   myRole: 'owner' | 'member'

@@ -83,7 +83,7 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
               ? `Còn ${Math.max(0, quota.limit - quota.used)}/${quota.limit} lượt hỏi hôm nay`
               : 'Trợ lý học tập'
             : isGroup
-              ? `Nhóm · ${c.memberCount} thành viên`
+              ? `${c.studyGroupId ? 'Nhóm học' : 'Nhóm'} · ${c.memberCount} thành viên`
               : other && (
                   <Link href={`/${other.username}`} className="hover:underline">
                     @{other.username}

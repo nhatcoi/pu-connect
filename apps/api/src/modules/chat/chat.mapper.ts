@@ -63,6 +63,7 @@ export function mapSummaryRow(row: any): ConversationSummary {
     type: row.type,
     title: row.title,
     avatarUrl: row.avatar_url,
+    studyGroupId: row.study_group_id ?? null,
     members: (row.members || []) as ChatUser[],
     memberCount: row.member_count,
     myRole: row.my_role,
@@ -91,7 +92,7 @@ export function mapMemberRow(row: any): ChatMember {
 
 // Câu SELECT tóm tắt hội thoại cho người xem (alias me = thành viên là mình)
 export const SUMMARY_SELECT = `
-  SELECT c.id, c.type, c.title, c.avatar_url, c.last_message_at, c.created_at,
+  SELECT c.id, c.type, c.title, c.avatar_url, c.study_group_id, c.last_message_at, c.created_at,
          me.last_read_message_id, me.role AS my_role, me.muted_until, me.pinned_at,
          (SELECT COUNT(*) FROM conversation_members x WHERE x.conversation_id = c.id AND x.left_at IS NULL)::int AS member_count,
          (SELECT COUNT(*) FROM messages um

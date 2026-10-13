@@ -3,9 +3,10 @@
 import React from 'react'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Users, Code, Calendar, CheckCircle2, UserPlus } from 'lucide-react'
+import { Users, Code, Loader2, MessageCircle, UserPlus } from 'lucide-react'
 import type { StudyGroup } from '@pu/schemas'
 import { toast } from 'sonner'
+import { useOpenStudyGroupChat } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 
 interface StudyGroupCardProps {
@@ -19,6 +20,7 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
   const userId = useAppStore((state) => state.user?.id)
   const isMember = !!userId && (group.members ?? []).some((m) => m.userId === userId)
   const [isJoining, setIsJoining] = React.useState(false)
+  const openChat = useOpenStudyGroupChat()
 
   const handleJoin = async () => {
     if (!onJoin || isJoining) return
@@ -91,15 +93,29 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
-        <Button
-          size="sm"
-          disabled={isFull || isMember || !onJoin || isJoining}
-          onClick={handleJoin}
-          className="w-full text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-        >
-          {isMember ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
-          <span>{isMember ? 'Bạn đã ở trong nhóm' : isFull ? 'Nhóm đã đủ thành viên' : 'Tham gia nhóm'}</span>
-        </Button>
+        {isMember ? (
+          // Thành viên ⇒ vào nhóm chat của nhóm học
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={openChat.isPending}
+            onClick={() => openChat.mutate(group.id)}
+            className="w-full text-xs gap-1.5"
+          >
+            {openChat.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
+            <span>Mở nhóm chat</span>
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            disabled={isFull || !onJoin || isJoining}
+            onClick={handleJoin}
+            className="w-full text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            <span>{isFull ? 'Nhóm đã đủ thành viên' : 'Tham gia nhóm'}</span>
+          </Button>
+        )}
       </CardFooter>
     </Card>
   )

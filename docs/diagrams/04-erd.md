@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **30 bảng**, **48 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **30 bảng**, **49 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -29,6 +29,7 @@ erDiagram
   conversations ||--o{ conversation_members : "conversation_id"
   users ||--o{ conversation_members : "user_id"
   users |o--o{ conversations : "created_by"
+  study_groups |o--o{ conversations : "study_group_id"
   faculties |o--o{ courses : "faculty_id"
   documents ||--o{ document_chunks : "document_id"
   courses |o--o{ documents : "course_id"
@@ -400,7 +401,7 @@ erDiagram
   courses ||--o{ study_groups : "course_id"
 ```
 
-Liên kết ra ngoài nhóm: `documents.owner_id → users`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+Liên kết ra ngoài nhóm: `conversations.study_group_id → study_groups`, `documents.owner_id → users`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
 
 ## 6. Chưa phân nhóm (cập nhật DOMAINS trong scripts/gen-erd.mjs)
 
@@ -452,6 +453,7 @@ erDiagram
     bigint last_message_id
     timestamptz last_message_at
     timestamptz created_at
+    uuid study_group_id FK
   }
   message_reactions {
     bigint message_id PK,FK
@@ -501,4 +503,4 @@ erDiagram
   messages ||--o{ messages : "reply_to_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`
