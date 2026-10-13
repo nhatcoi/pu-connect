@@ -67,7 +67,9 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - Tái cấu trúc consumer components trong `src/components/ui/` đạt 100% Backward Compatibility.
 
 ### 🎨 Brand Phenikaa (Navy + Cam) & Landing Mới
-- [x] Logo `PuMark`/`PuLogo` (`components/brand/pu-logo.tsx`): chữ U + vòm cam kết nối; dùng ở landing, header, favicon (`app/icon.tsx`).
+- [x] Logo `PuMark`/`PuLogo` (`components/brand/pu-logo.tsx`): logo **PU** (chữ P xanh + U/i cam, node kết nối) thay logo cũ; render bằng `<img src="/brand/pu-mark.svg">` (không inline SVG để gradient id không xung đột khi một bản bị `display:none`). Dùng ở landing, header, auth, skeleton, thông báo hệ thống.
+- [x] Logo trợ lý AI **N7AI** (`N7AiMark`, `/brand/n7ai-mark.svg`): avatar hội thoại PU AI, avatar bot `@puai` trong tin nhắn & danh sách reaction, thẻ "Học cùng PU AI", nút mở PU AI ở `/messages`.
+- [x] Bộ asset `apps/web/public/brand/`: `pu-mark.svg`, `pu-logo-full(-dark).svg`, `n7ai-mark.svg`, `n7ai-logo-full(-dark).svg` (vector hoá từ ảnh gốc, chữ đã chuyển thành path), `icon-192.png`/`icon-512.png` (nền trắng), `badge-96.png` (nền trong suốt cho badge Web Push). Favicon = `app/icon.svg` + `public/favicon.ico`; `app/apple-icon.png` 180px thay route `icon.tsx`/`apple-icon.tsx`; `sw.js` dùng `/brand/icon-192.png` + `/brand/badge-96.png`.
 - [x] Palette chủ đạo: `--primary` navy `#0b3d91`, `--brand-orange` `#f7941d` (dark mode sáng hơn) trong `globals.css`, thay màu đen.
 - [x] Landing (`app/page.tsx`): headline mới, nút dùng animate-ui `Button`, khối tài khoản seed chỉ hiện ở `NODE_ENV=development`.
 - [x] Vector động bên phải (`components/brand/hero-network.tsx`): mạng lưới nút, cạnh nét đứt chạy, gói dữ liệu, sóng lan, chip nổi (motion/react).
