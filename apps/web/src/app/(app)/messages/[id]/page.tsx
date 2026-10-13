@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PageAside } from '@/components/layout/page-aside'
 import { AiWelcome } from '@/components/chat/ai/ai-welcome'
 import { Composer, type ComposerHandle } from '@/components/chat/composer/composer'
+import { BlockedComposer } from '@/components/chat/composer/blocked-composer'
 import { ConversationInfo } from '@/components/chat/info/conversation-info'
 import type { MessageHandlers } from '@/components/chat/thread/message-actions'
 import { MessageList } from '@/components/chat/thread/message-list'
@@ -107,21 +108,25 @@ export default function ConversationPage() {
         />
       )}
 
-      <Composer
-        handleRef={composer}
-        conversationId={id}
-        isAi={isAi}
-        disabled={!conv}
-        placeholder={conv?.type === 'group' ? 'Nhắn tin… (gõ @puai để hỏi AI)' : 'Nhắn tin…'}
-        replyTo={replyTo}
-        editing={editing}
-        onCancelContext={() => {
-          setReplyTo(null)
-          setEditing(null)
-        }}
-        onSend={chat.send}
-        onEdit={chat.edit}
-      />
+      {conv && (conv.blockState ?? 'none') !== 'none' ? (
+        <BlockedComposer conversation={conv} />
+      ) : (
+        <Composer
+          handleRef={composer}
+          conversationId={id}
+          isAi={isAi}
+          disabled={!conv}
+          placeholder={conv?.type === 'group' ? 'Nhắn tin… (gõ @puai để hỏi AI)' : 'Nhắn tin…'}
+          replyTo={replyTo}
+          editing={editing}
+          onCancelContext={() => {
+            setReplyTo(null)
+            setEditing(null)
+          }}
+          onSend={chat.send}
+          onEdit={chat.edit}
+        />
+      )}
 
       {conv && (
         <>

@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { ShieldCheck, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { BlockedUsersSection } from './blocked-users-section'
 
 interface PrivacySettingsDialogProps {
   open: boolean
@@ -97,7 +98,7 @@ export function PrivacySettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-semibold">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -214,6 +215,8 @@ export function PrivacySettingsDialog({
               />
             </div>
           </div>
+
+          <BlockedUsersSection enabled={open} />
         </div>
 
         <DialogFooter className="pt-2 gap-2">

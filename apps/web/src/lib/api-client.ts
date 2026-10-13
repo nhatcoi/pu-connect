@@ -44,6 +44,7 @@ export async function apiClient<T>(endpoint: string, options: RequestOptions = {
     throw new ApiError(errorMessage, response.status)
   }
 
+  if (response.status === 204) return undefined as T // No Content (PUT/DELETE idempotent)
   return response.json() as Promise<T>
 }
 

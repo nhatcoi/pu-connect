@@ -10,6 +10,7 @@ export const queryKeys = {
   comments: (postId: string) => ['comments', postId] as const,
   profile: (username: string) => ['profile', username.toLowerCase()] as const,
   profileAll: ['profile'] as const,
+  blocks: ['blocks'] as const,
   communities: ['communities'] as const,
   community: (slug: string, sort: CommunitySort) => ['community', slug, sort] as const,
   communityAll: (slug: string) => ['community', slug] as const,

@@ -1,7 +1,7 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query-keys'
 import { graphqlClient } from '@/lib/graphql-client'
-import type { PostItem, DocumentItem, StudyGroup } from '@pu/schemas'
+import type { BlockState, PostItem, DocumentItem, StudyGroup } from '@pu/schemas'
 
 export interface UserProfileData {
   id: string
@@ -26,6 +26,7 @@ export interface UserProfileData {
   followersCount: number
   followingCount: number
   isFollowedByMe?: boolean
+  blockState?: BlockState
   createdAt: string
   posts: PostItem[]
   documents: DocumentItem[]
@@ -52,6 +53,7 @@ const GET_USER_PROFILE_QUERY = `
       followersCount
       followingCount
       isFollowedByMe
+      blockState
       createdAt
       posts {
         id

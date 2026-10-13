@@ -14,11 +14,13 @@ import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal
 import { AsideSlotProvider } from '@/components/layout/page-aside'
 import { useAppStore } from '@/store'
 import { useChatRealtime } from '@/hooks/chat'
+import { useBlocksRealtime } from '@/hooks/use-blocks'
 
 // Hộp thoại dùng chung: mở được từ mọi trang (soạn bài, tài liệu, nhóm, xem tài liệu)
 function GlobalDialogs() {
-  // Socket nhắn tin → cache (một lần cho cả app)
+  // Socket nhắn tin / chặn → cache (một lần cho cả app)
   useChatRealtime()
+  useBlocksRealtime()
   const isCreateDocumentOpen = useAppStore((state) => state.isCreateDocumentOpen)
   const setCreateDocumentOpen = useAppStore((state) => state.setCreateDocumentOpen)
   const isCreateGroupOpen = useAppStore((state) => state.isCreateGroupOpen)

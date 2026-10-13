@@ -26,6 +26,7 @@ import { FollowButton } from './follow-button'
 import { UserListDialog } from './user-list-dialog'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { PrivacySettingsDialog } from './privacy-settings-dialog'
+import { BlockUserControl } from './block-user-control'
 
 interface ProfileHeaderProps {
   profile: UserProfileData
@@ -39,6 +40,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
     currentUser?.username?.toLowerCase() === profile.username?.toLowerCase() ||
     currentUser?.id === profile.id
 
+  const blockState = profile.blockState ?? 'none'
   const [followersCount, setFollowersCount] = useState(profile.followersCount || 0)
   const [followingCount, setFollowingCount] = useState(profile.followingCount || 0)
   const [listDialog, setListDialog] = useState<{
@@ -175,8 +177,12 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                   <Settings className="h-4 w-4" />
                 </Button>
               </>
+            ) : blockState !== 'none' ? (
+              // Có quan hệ chặn: không nhắn tin / theo dõi
+              <BlockUserControl userId={profile.id} username={profile.username} blockState={blockState} />
             ) : (
               <>
+                <BlockUserControl userId={profile.id} username={profile.username} blockState={blockState} />
                 {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển sang /messages/{id} */}
                 <Button
                     variant="outline"
