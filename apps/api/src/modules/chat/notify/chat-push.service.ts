@@ -3,7 +3,14 @@ import { InjectQueue } from '@nestjs/bullmq'
 import type { Queue } from 'bullmq'
 import { DatabaseService } from '../../../database/database.service'
 import { PushService } from '../../push/push.service'
-import { CHAT_PUSH_DELAY_MS, CHAT_PUSH_QUEUE, chatPushJobId, type ChatPushJobData } from './chat-push.constants'
+import {
+  CHAT_PUSH_DELAY_MS,
+  CHAT_PUSH_QUEUE,
+  chatClearJobId,
+  chatPushJobId,
+  type ChatPushJobData,
+  type ChatPushJobName
+} from './chat-push.constants'
 
 // Xếp hàng Web Push cho tin nhắn mới; worker (ChatPushProcessor) quyết định gửi hay bỏ lúc chạy
 @Injectable()
@@ -13,7 +20,7 @@ export class ChatPushService {
   constructor(
     private readonly db: DatabaseService,
     private readonly push: PushService,
-    @InjectQueue(CHAT_PUSH_QUEUE) private readonly queue: Queue<ChatPushJobData>
+    @InjectQueue(CHAT_PUSH_QUEUE) private readonly queue: Queue<ChatPushJobData, unknown, ChatPushJobName>
   ) {}
 
   // Có tin mới (người hoặc PU AI) ⇒ 1 job trễ cho mỗi thành viên người thật khác, chưa tắt thông báo
@@ -30,7 +37,7 @@ export class ChatPushService {
       )
       if (!res.rows.length) return
       const jobs = res.rows.map((r) => ({
-        name: 'send',
+        name: 'send' as const,
         data: { conversationId, recipientId: r.user_id as string },
         opts: {
           jobId: chatPushJobId(conversationId, r.user_id),
@@ -42,12 +49,30 @@ export class ChatPushService {
           removeOnFail: true
         }
       }))
-      await Promise.race([
-        this.queue.addBulk(jobs),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('enqueue timeout')), 3000))
-      ])
+      await withTimeout(this.queue.addBulk(jobs))
     } catch (err) {
       this.logger.warn(`Chat push enqueue failed (${conversationId}): ${(err as Error).message}`)
     }
   }
+
+  // Đã đọc hội thoại từng hiện thông báo ⇒ đóng thông báo đó trên mọi thiết bị (best-effort)
+  async onRead(conversationId: string, userId: string): Promise<void> {
+    if (!this.push.isEnabled()) return
+    try {
+      await withTimeout(
+        this.queue.add(
+          'clear',
+          { conversationId, recipientId: userId },
+          { jobId: chatClearJobId(conversationId, userId), attempts: 2, removeOnComplete: true, removeOnFail: true }
+        )
+      )
+    } catch (err) {
+      this.logger.warn(`Chat push clear enqueue failed (${conversationId}): ${(err as Error).message}`)
+    }
+  }
+}
+
+// Redis lỗi không được làm treo luồng nhắn tin
+function withTimeout<T>(p: Promise<T>, ms = 3000): Promise<T> {
+  return Promise.race([p, new Promise<never>((_, reject) => setTimeout(() => reject(new Error('enqueue timeout')), ms))])
 }

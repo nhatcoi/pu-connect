@@ -11,6 +11,7 @@ import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
+import { ChatPushService } from '../notify/chat-push.service'
 import { PuaiService } from '../puai/puai.service'
 
 const MAX_GROUP_MEMBERS = 50
@@ -23,7 +24,8 @@ export class ConversationsService {
   constructor(
     private readonly core: ChatCoreService,
     private readonly puai: PuaiService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly chatPush: ChatPushService
   ) {}
 
   private get db() {
@@ -317,17 +319,24 @@ export class ConversationsService {
     return this.get(userId, conversationId)
   }
 
-  // Con trỏ đã đọc: báo cho mọi thành viên (hiện "Đã xem") & các tab của mình
+  // Con trỏ đã đọc: báo cho mọi thành viên (hiện "Đã xem") & các tab của mình; đóng thông báo OS đã hiện
   async markRead(userId: string, conversationId: string, messageId: string): Promise<{ lastReadMessageId: string }> {
+    // Lấy & xóa cờ push_shown_at trong 1 câu lệnh (khóa hàng qua FOR UPDATE ⇒ chỉ 1 lượt đọc gửi lệnh đóng)
     const res = await this.db.query(
-      `UPDATE conversation_members SET last_read_message_id = GREATEST(last_read_message_id, $3)
-       WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL
-       RETURNING last_read_message_id`,
+      `WITH prev AS (
+         SELECT push_shown_at FROM conversation_members
+         WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL FOR UPDATE)
+       UPDATE conversation_members me
+       SET last_read_message_id = GREATEST(me.last_read_message_id, $3), push_shown_at = NULL
+       FROM prev
+       WHERE me.conversation_id = $1 AND me.user_id = $2
+       RETURNING me.last_read_message_id, prev.push_shown_at IS NOT NULL AS had_push`,
       [conversationId, userId, messageId]
     )
     if (!res.rows[0]) throw new ForbiddenException('Bạn không ở trong hội thoại này')
     const lastRead = String(res.rows[0].last_read_message_id)
     await this.core.broadcast(conversationId, 'conv.read', { conversationId, userId, lastReadMessageId: lastRead })
+    if (res.rows[0].had_push) void this.chatPush.onRead(conversationId, userId)
     return { lastReadMessageId: lastRead }
   }
 

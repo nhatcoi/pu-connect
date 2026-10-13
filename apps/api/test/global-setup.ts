@@ -18,7 +18,8 @@ export const MIGRATIONS = [
   'chat-upgrade.sql',
   'ai-upgrade.sql',
   'chat-v2-upgrade.sql',
-  'chat-study-group-upgrade.sql'
+  'chat-study-group-upgrade.sql',
+  'chat-push-clear-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

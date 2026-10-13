@@ -1,6 +1,7 @@
 /* PU Connector — Service Worker cho Web Push
  * Nhận push (kể cả khi đã đóng tab) → hiện thông báo hệ điều hành → bấm để mở đúng trang.
  * Payload từ API: { title, body, url, tag, notificationId, type, unreadCount }
+ * Lệnh im lặng: { kind: 'close', tag } — đóng thông báo đã đọc ở thiết bị khác, không hiện gì
  */
 
 self.addEventListener('install', () => self.skipWaiting())
@@ -12,6 +13,13 @@ self.addEventListener('push', (event) => {
     data = event.data ? event.data.json() : {}
   } catch {
     data = { title: 'PU Connector', body: event.data ? event.data.text() : '' }
+  }
+
+  if (data.kind === 'close') {
+    event.waitUntil(
+      self.registration.getNotifications({ tag: data.tag }).then((list) => list.forEach((n) => n.close()))
+    )
+    return
   }
 
   const title = data.title || 'PU Connector'

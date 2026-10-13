@@ -4,7 +4,15 @@ import { InjectQueue } from '@nestjs/bullmq'
 import type { Queue } from 'bullmq'
 import * as webpush from 'web-push'
 import { DatabaseService } from '../../database/database.service'
-import { PUSH_DELAY_MS, PUSH_QUEUE, PUSH_TTL_SECONDS, type PushJobData, type PushPayload } from './push.constants'
+import {
+  APPLE_PUSH_ORIGIN,
+  PUSH_DELAY_MS,
+  PUSH_QUEUE,
+  PUSH_TTL_SECONDS,
+  type PushJobData,
+  type PushPayload,
+  type SilentPushPayload
+} from './push.constants'
 
 export interface SubscriptionInput {
   endpoint: string
@@ -12,6 +20,7 @@ export interface SubscriptionInput {
 }
 
 type SendResult = { sent: number; removed: number; failed: number }
+type SubscriptionRow = { id: string; endpoint: string; p256dh: string; auth: string }
 
 // Web Push (VAPID): lưu đăng ký trình duyệt, xếp job vào BullMQ, gửi qua push service
 @Injectable()
@@ -96,20 +105,31 @@ export class PushService implements OnModuleInit {
   // ── Gửi ──────────────────────────────────────────────────────────
 
   async sendToUser(userId: string, payload: PushPayload, urgency: webpush.Urgency = 'normal'): Promise<SendResult> {
+    const subs = await this.db.query(`SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1`, [userId])
+    return this.deliver(subs.rows, JSON.stringify(payload), urgency, payload.tag)
+  }
+
+  // Push "im lặng" (SW xử lý, không hiện thông báo), vd. đóng thông báo đã đọc ở thiết bị khác
+  // Bỏ qua Apple: Safari thu hồi đăng ký nếu push không hiện thông báo. Cùng `topic` ⇒ thay push cũ chưa giao
+  async sendSilent(userId: string, payload: SilentPushPayload): Promise<SendResult> {
     const subs = await this.db.query(
-      `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1`,
-      [userId]
+      `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1 AND endpoint NOT LIKE $2`,
+      [userId, `${APPLE_PUSH_ORIGIN}%`]
     )
+    return this.deliver(subs.rows, JSON.stringify(payload), 'normal', payload.tag)
+  }
+
+  private async deliver(subs: SubscriptionRow[], body: string, urgency: webpush.Urgency, tag: string): Promise<SendResult> {
     const result: SendResult = { sent: 0, removed: 0, failed: 0 }
-    const body = JSON.stringify(payload)
+    const topic = tag.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || undefined
 
     await Promise.all(
-      subs.rows.map(async (sub) => {
+      subs.map(async (sub) => {
         try {
           await webpush.sendNotification(
             { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
             body,
-            { TTL: PUSH_TTL_SECONDS, urgency, topic: payload.tag.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || undefined }
+            { TTL: PUSH_TTL_SECONDS, urgency, topic }
           )
           result.sent++
           await this.db.query(

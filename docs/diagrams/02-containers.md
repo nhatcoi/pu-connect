@@ -71,6 +71,7 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-13 — `chat-push` thêm job `clear`: push im lặng đóng thông báo OS đã đọc ở thiết bị khác.
 - 2026-10-13 — Redis: thêm queue `chat-push` (Web Push tin nhắn).
 - 2026-10-13 — LLM: gateway OpenAI-compatible thay cho Anthropic API.
 - 2026-10-13 — thêm Anthropic Claude API (PU AI), sự kiện nhắn tin qua Socket.IO.

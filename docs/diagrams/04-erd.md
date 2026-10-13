@@ -442,6 +442,7 @@ erDiagram
     timestamptz left_at
     timestamptz muted_until
     timestamptz pinned_at
+    timestamptz push_shown_at
   }
   conversations {
     uuid id PK

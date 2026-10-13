@@ -20,3 +20,12 @@ export interface PushPayload {
   type?: string
   unreadCount?: number
 }
+
+// Lệnh cho Service Worker, không hiện thông báo: `close` = đóng thông báo theo tag
+export interface SilentPushPayload {
+  kind: 'close'
+  tag: string
+}
+
+// Push service của Safari/iOS (không cho push im lặng)
+export const APPLE_PUSH_ORIGIN = 'https://web.push.apple.com'

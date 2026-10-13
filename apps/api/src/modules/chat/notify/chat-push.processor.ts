@@ -6,7 +6,7 @@ import { isPushEnabled, quietHoursEnd, resolveSettings } from '../../notificatio
 import { snippet } from '../../notifications/notification.types'
 import { PushService } from '../../push/push.service'
 import { RealtimeGateway } from '../../realtime/realtime.gateway'
-import { CHAT_PUSH_QUEUE, type ChatPushJobData } from './chat-push.constants'
+import { CHAT_PUSH_QUEUE, chatNotificationTag, type ChatPushJobData, type ChatPushJobName } from './chat-push.constants'
 
 // Trạng thái người nhận + tin chưa đọc mới nhất của 1 hội thoại (1 truy vấn)
 const STATE_SQL = `
@@ -41,7 +41,17 @@ export class ChatPushProcessor extends WorkerHost {
     super()
   }
 
-  async process(job: Job<ChatPushJobData>, token?: string): Promise<string> {
+  async process(job: Job<ChatPushJobData, string, ChatPushJobName>, token?: string): Promise<string> {
+    return job.name === 'clear' ? this.clear(job.data) : this.send(job, token)
+  }
+
+  // Đóng thông báo của hội thoại trên mọi thiết bị (SW đóng theo tag, không hiện gì)
+  private async clear({ conversationId, recipientId }: ChatPushJobData): Promise<string> {
+    const result = await this.push.sendSilent(recipientId, { kind: 'close', tag: chatNotificationTag(conversationId) })
+    return result.sent > 0 ? `cleared:${result.sent}` : 'skip:no-subscription'
+  }
+
+  private async send(job: Job<ChatPushJobData>, token?: string): Promise<string> {
     const { conversationId, recipientId } = job.data
     const res = await this.db.query(STATE_SQL, [conversationId, recipientId])
     const s = res.rows[0]
@@ -61,13 +71,18 @@ export class ChatPushProcessor extends WorkerHost {
     const sender = last.sender || 'Thành viên'
     const name = s.type === 'group' ? s.title || 'Nhóm chat' : s.type === 'ai' ? 'PU AI' : sender
     const preview = this.preview(last)
+    // Đánh dấu TRƯỚC khi gửi: đọc trong lúc gửi vẫn kích hoạt "đóng" (thừa 1 push im lặng còn hơn sót)
+    await this.db.query(`UPDATE conversation_members SET push_shown_at = NOW() WHERE conversation_id = $1 AND user_id = $2`, [
+      conversationId,
+      recipientId
+    ])
     const result = await this.push.sendToUser(
       recipientId,
       {
         title: s.unread > 1 ? `${name} · ${s.unread} tin mới` : name,
         body: s.type === 'group' ? `${sender}: ${preview}` : preview,
         url: `/messages/${conversationId}`,
-        tag: `chat-${conversationId}`, // tin sau thay thế thông báo trước của cùng hội thoại
+        tag: chatNotificationTag(conversationId), // tin sau thay thế thông báo trước của cùng hội thoại
         type: 'chat_message'
       },
       s.type === 'group' ? 'normal' : 'high'

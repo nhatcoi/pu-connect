@@ -305,7 +305,7 @@ Cài đặt người dùng (tương thích ngược v1) — `GET/PATCH /api/noti
   "quietHours": { "enabled": true, "start": "23:00", "end": "07:00" } }
 ```
 
-Mặc định push: bật cho `comment_reply`, `user_mention`, `accepted_solution`, `post_comment`, `chat_message`; tắt cho `post_like`, `user_follow`. Tắt in-app ⇒ tắt luôn push. `chat_message` là **kênh chỉ push** (`PUSH_ONLY_CHANNELS`): tin nhắn không tạo bản ghi `notifications` (in-app đã có badge Tin nhắn); hàng đợi riêng `chat-push` — xem [`06` §13](./06-messaging-and-ai.md). Giờ yên tĩnh theo giờ Việt Nam (UTC+7).
+Mặc định push: bật cho `comment_reply`, `user_mention`, `accepted_solution`, `post_comment`, `chat_message`; tắt cho `post_like`, `user_follow`. Tắt in-app ⇒ tắt luôn push. `chat_message` là **kênh chỉ push** (`PUSH_ONLY_CHANNELS`): tin nhắn không tạo bản ghi `notifications` (in-app đã có badge Tin nhắn); hàng đợi riêng `chat-push` (job `send` + job `clear` đóng thông báo đã đọc qua `PushService.sendSilent`, bỏ qua Safari) — xem [`06` §13](./06-messaging-and-ai.md). Giờ yên tĩnh theo giờ Việt Nam (UTC+7).
 
 | Method | Path | Mô tả |
 |---|---|---|
