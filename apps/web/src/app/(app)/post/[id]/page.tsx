@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React, { Suspense, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
@@ -10,6 +10,7 @@ import { PostCard } from '@/components/social/post-card'
 import { apiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { findCachedPost } from '@/lib/post-cache'
+import { trackOnce } from '@/lib/track'
 import type { PostItem } from '@pu/schemas'
 
 // Trang chi tiết bài viết: /post/{id}?comment={commentId} (đích điều hướng của thông báo)
@@ -29,6 +30,10 @@ function PostDetail() {
     enabled: !!id
   })
   const status = isPending ? 'loading' : isError || !post ? 'missing' : 'ready'
+  // Mở chi tiết bài ⇒ tín hiệu quan tâm mạnh hơn lướt qua bảng tin
+  useEffect(() => {
+    if (status === 'ready') trackOnce({ type: 'post_open', targetType: 'post', targetId: id })
+  }, [status, id])
 
   return (
     <div className="pt-3">

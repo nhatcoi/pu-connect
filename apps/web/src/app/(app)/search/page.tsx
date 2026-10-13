@@ -10,6 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PostCard } from '@/components/social/post-card'
 import { DocumentCard } from '@/components/social/document-card'
+import { track, trackOnce } from '@/lib/track'
 import { StudyGroupCard } from '@/components/social/study-group-card'
 import { FollowButton } from '@/components/profile/follow-button'
 import { AcademicBadge } from '@/components/ui/academic-badge'
@@ -178,6 +179,17 @@ function SearchContent() {
     staleTime: 5 * 60 * 1000
   })
 
+  // Ghi từ khóa (trừ tìm người) & kết quả được bấm ⇒ hồ sơ quan tâm
+  useEffect(() => {
+    if (trimmedQuery && activeType !== 'users') track({ type: 'search', meta: { q: trimmedQuery.slice(0, 120), type: activeType } })
+  }, [trimmedQuery, activeType])
+  const trackResultClick = (e: React.MouseEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-track-post],[data-track-doc]')
+    if (!el) return
+    const post = el.dataset.trackPost
+    trackOnce({ type: 'search_click', targetType: post ? 'post' : 'document', targetId: post ?? el.dataset.trackDoc })
+  }
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!inputQuery.trim()) {
@@ -329,7 +341,7 @@ function SearchContent() {
       {/* ── B. CONTENT RENDERER ── */}
       {isSearchActive ? (
         /* ── 1. ACTIVE SEARCH RESULTS STREAM (Image 2) ── */
-        <div className="space-y-2.5 px-2 sm:px-0">
+        <div className="space-y-2.5 px-2 sm:px-0" onClickCapture={trackResultClick}>
           {isLoading ? (
             <FeedSkeleton label={`Đang tìm “${queryParam}”`} />
           ) : totalCount === 0 ? (

@@ -14,6 +14,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
+import { trackOnce } from '@/lib/track'
 
 interface DocumentCardProps {
   document: DocumentItem
@@ -54,7 +55,7 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
     : [courseCode, faculty].filter(Boolean) as string[]
 
   return (
-    <Card className="flex flex-col justify-between transition-all duration-200 hover:border-border/80 hover:shadow-sm">
+    <Card data-track-doc={item.id} className="flex flex-col justify-between transition-all duration-200 hover:border-border/80 hover:shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -110,7 +111,10 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
           variant="outline"
           size="sm"
           className="gap-1.5 text-xs"
-          onClick={() => setPreviewDocument(item)}
+          onClick={() => {
+            trackOnce({ type: 'doc_open', targetType: 'document', targetId: item.id })
+            setPreviewDocument(item)
+          }}
         >
           <Eye className="h-3.5 w-3.5" />
           <span>Xem trước</span>
@@ -125,6 +129,7 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
             size="sm"
             className="gap-1.5 text-xs"
             onClick={() => {
+              trackOnce({ type: 'doc_download', targetType: 'document', targetId: item.id })
               const a = window.document.createElement('a')
               a.href = item.fileUrl
               a.download = item.title

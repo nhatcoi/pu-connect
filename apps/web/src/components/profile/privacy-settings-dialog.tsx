@@ -223,6 +223,21 @@ export function PrivacySettingsDialog({
                 onCheckedChange={toggle('showActivityStatus')}
               />
             </div>
+
+            {/* Personalization Toggle */}
+            <div className="flex items-center justify-between space-x-2">
+              <label htmlFor="personalization" className="text-xs font-medium cursor-pointer flex flex-col gap-0.5">
+                <span>Cá nhân hóa gợi ý</span>
+                <span className="text-[11px] text-muted-foreground font-normal">
+                  Dùng bài bạn xem, tìm kiếm và tương tác để gợi ý bảng tin & PU AI. Tắt sẽ xóa dữ liệu hành vi đã lưu
+                </span>
+              </label>
+              <Switch
+                id="personalization"
+                checked={settings.personalization}
+                onCheckedChange={toggle('personalization')}
+              />
+            </div>
           </div>
 
           <BlockedUsersSection enabled={open} />

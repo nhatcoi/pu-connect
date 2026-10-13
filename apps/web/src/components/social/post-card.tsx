@@ -60,6 +60,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { prefetchProfile } from '@/hooks/use-profile'
 import { prefetchCommunity } from '@/hooks/use-community'
 import { patchPostEverywhere, removePostEverywhere, patchAuthorFollowed, invalidateFollowRelated } from '@/lib/post-cache'
+import { useDwellTracking } from '@/hooks/use-dwell-tracking'
 
 // Helper: Convert UUID / raw faculty code into human-readable label
 function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolean; href?: string } | null {
@@ -164,6 +165,9 @@ export function PostCard({
   const [isExpanded, setIsExpanded] = useState(defaultCommentsOpen)
   const [isOverflowing, setIsOverflowing] = useState(false)
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
+  // Bài hiện ≥ 2s trên bảng tin ⇒ tín hiệu quan tâm (trang chi tiết ghi post_open riêng)
+  const articleRef = useRef<HTMLElement>(null)
+  useDwellTracking(articleRef, defaultCommentsOpen ? null : { type: 'post_view', targetType: 'post', targetId: initialPost.id })
 
   useLayoutEffect(() => {
     const el = contentRef.current
@@ -381,7 +385,9 @@ export function PostCard({
   return (
     <>
       <article
+        ref={articleRef}
         id={`post-${post.id}`}
+        data-track-post={post.id}
         className={cn(
           'text-foreground transition-colors',
           variant === 'card'
