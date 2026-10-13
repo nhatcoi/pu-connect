@@ -5,6 +5,8 @@ import { MailWarning } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { apiClient } from '@/lib/api-client'
+import { cn } from '@/lib/utils'
+import { SHELL_WIDTH } from '@/lib/layout'
 
 // Nhắc xác thực email (chỉ hiện khi đã đăng nhập mà email chưa xác thực)
 export function VerifyEmailBanner() {
@@ -27,7 +29,7 @@ export function VerifyEmailBanner() {
 
   return (
     <div role="status" className="w-full bg-brand-orange/10 text-[13px]">
-      <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 px-4 py-2 text-center">
+      <div className={cn('mx-auto flex items-center justify-center gap-2 px-4 py-2 text-center', SHELL_WIDTH)}>
         <MailWarning className="h-4 w-4 shrink-0 text-brand-orange" />
         <span className="text-foreground">
           Xác thực email <b>{user.email}</b> để hoàn tất tài khoản.

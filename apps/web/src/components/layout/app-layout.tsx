@@ -15,6 +15,8 @@ import { AsideSlotProvider } from '@/components/layout/page-aside'
 import { useAppStore } from '@/store'
 import { useChatRealtime } from '@/hooks/chat'
 import { useBlocksRealtime } from '@/hooks/use-blocks'
+import { cn } from '@/lib/utils'
+import { SHELL_WIDTH, MAIN_WIDTH } from '@/lib/layout'
 
 // Hộp thoại dùng chung: mở được từ mọi trang (soạn bài, tài liệu, nhóm, xem tài liệu)
 function GlobalDialogs() {
@@ -57,11 +59,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
           <Header />
           <GlobalDialogs />
-          <div className="mx-auto flex justify-center gap-6 max-w-7xl px-0 sm:px-4 lg:px-6 min-h-screen">
+          <div className={cn('mx-auto flex justify-center gap-6 px-0 sm:px-4 lg:px-6 min-h-screen', SHELL_WIDTH)}>
             <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
               <Sidebar />
             </div>
-            <main className="flex-1 max-w-[640px] w-full min-w-0 min-h-screen pb-20 md:pb-12">{children}</main>
+            <main className={cn('flex-1 w-full min-w-0 min-h-screen pb-20 md:pb-12', MAIN_WIDTH)}>{children}</main>
             <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar py-4">
               {/* Cột phải riêng của trang được portal vào đây */}
               <div ref={setAsideNode} className="space-y-4" />

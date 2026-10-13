@@ -42,6 +42,7 @@ import { AcademicSearchBar } from '@/components/search/academic-search-bar'
 import { NotificationsPopover } from './notifications-popover'
 import { useSession } from '@/hooks/use-session'
 import { cn } from '@/lib/utils'
+import { SHELL_WIDTH } from '@/lib/layout'
 
 export function Header() {
   const router = useRouter()
@@ -91,7 +92,7 @@ export function Header() {
       <SearchSettingsDialog open={isSearchSettingsOpen} onOpenChange={setIsSearchSettingsOpen} />
 
       {/* ── 1. Desktop & Tablet Header (md:flex) ── */}
-      <div className="hidden md:flex mx-auto h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className={cn('hidden md:flex mx-auto h-14 items-center justify-between px-4 sm:px-6', SHELL_WIDTH)}>
         <div className="flex items-center gap-6">
           <Link href="/home" className="flex items-center gap-2.5 group cursor-pointer">
             <PuMark className="h-9 w-9 group-hover:scale-105 transition-transform" />
