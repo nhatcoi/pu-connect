@@ -60,7 +60,11 @@ import { prefetchCommunity } from '@/hooks/use-community'
 import { patchPostEverywhere, removePostEverywhere, patchAuthorFollowed, invalidateFollowRelated } from '@/lib/post-cache'
 
 // Helper: Convert UUID / raw faculty code into human-readable label
-function getCleanCourseBadge(post: PostItem) {
+function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolean; href?: string } | null {
+  // Bài gắn học phần ⇒ link sang trang học phần
+  if (post.courseCode) {
+    return { label: post.courseCode, isFaculty: false, href: `/courses/${encodeURIComponent(post.courseCode)}` }
+  }
   if ((post as any).course) {
     return {
       label: `${(post as any).course.code} • ${(post as any).course.name}`,
@@ -464,7 +468,19 @@ export function PostCard({
                   </Link>
                 )}
 
-                {courseBadge && (
+                {courseBadge?.href && (
+                  <Link
+                    href={courseBadge.href}
+                    onClick={(e) => e.stopPropagation()}
+                    title={post.courseName || courseBadge.label}
+                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary hover:underline max-w-[120px] truncate"
+                  >
+                    <GraduationCap className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{courseBadge.label}</span>
+                  </Link>
+                )}
+
+                {courseBadge && !courseBadge.href && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground max-w-[120px] truncate">
                     {courseBadge.isFaculty ? (
                       <Building2 className="h-3 w-3 shrink-0" />

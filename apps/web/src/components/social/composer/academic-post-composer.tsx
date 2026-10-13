@@ -27,12 +27,15 @@ interface AcademicPostComposerProps {
   onPostCreated?: (post: PostItem) => void
   defaultCommunityId?: string
   defaultCommunitySlug?: string
+  // Trang học phần: gắn sẵn mã môn
+  defaultCourseId?: string
 }
 
 export function AcademicPostComposer({
   onPostCreated,
   defaultCommunityId,
-  defaultCommunitySlug
+  defaultCommunitySlug,
+  defaultCourseId
 }: AcademicPostComposerProps = {}) {
   const user = useAppStore((state) => state.user)
   const queryClient = useQueryClient()
@@ -47,7 +50,7 @@ export function AcademicPostComposer({
   const [postType, setPostType] = useState<PostType>('general')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>()
+  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(defaultCourseId)
   const [targetAudience, setTargetAudience] = useState<TargetAudience>('everyone')
   const [tags, setTags] = useState<string[]>([])
   const [tagInputValue, setTagInputValue] = useState('')
@@ -247,7 +250,7 @@ export function AcademicPostComposer({
       // Reset form
       setTitle('')
       setContent('')
-      setSelectedCourseId(undefined)
+      setSelectedCourseId(defaultCourseId)
       setTags([])
       setAttachedFiles([])
       setShowPollCreator(false)

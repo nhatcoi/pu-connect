@@ -15,7 +15,7 @@ export const FEATURES = {
   exploreSubTabs: false,
   // Bài viết: lượt xem & phân tích (số liệu tự tính, không có tracking)
   postAnalytics: false,
-  // Nhắn tin / chia sẻ vào chat (chưa có module chat)
+  // Chia sẻ bài viết vào chat (cần bộ chọn hội thoại; DM từ hồ sơ đã bật)
   directMessage: false,
   // Composer: chọn đối tượng xem (backend chưa lưu)
   postAudience: false,

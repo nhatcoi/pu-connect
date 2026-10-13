@@ -624,7 +624,7 @@ function CourseCardItem({ course }: { course: Course }) {
   const router = useRouter()
   return (
     <div
-      onClick={() => router.push(`/home?tab=courses`)}
+      onClick={() => router.push(`/courses/${encodeURIComponent(course.code)}`)}
       className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-card-foreground transition-all cursor-pointer space-y-1.5"
     >
       <div className="flex items-center justify-between">

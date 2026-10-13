@@ -5,9 +5,33 @@ import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Users, Code, Calendar, CheckCircle2, UserPlus } from 'lucide-react'
 import type { StudyGroup } from '@pu/schemas'
+import { toast } from 'sonner'
+import { useAppStore } from '@/store'
 
-export function StudyGroupCard({ group }: { group: StudyGroup }) {
+interface StudyGroupCardProps {
+  group: StudyGroup
+  // Không truyền ⇒ nút tham gia bị vô hiệu (chỉ xem)
+  onJoin?: (groupId: string) => Promise<unknown>
+}
+
+export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
   const isFull = group.currentMembersCount >= group.maxMembers
+  const userId = useAppStore((state) => state.user?.id)
+  const isMember = !!userId && (group.members ?? []).some((m) => m.userId === userId)
+  const [isJoining, setIsJoining] = React.useState(false)
+
+  const handleJoin = async () => {
+    if (!onJoin || isJoining) return
+    setIsJoining(true)
+    try {
+      await onJoin(group.id)
+      toast.success(`Đã tham gia ${group.name}`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Không thể tham gia nhóm')
+    } finally {
+      setIsJoining(false)
+    }
+  }
 
   return (
     <Card className="hover:border-primary/50 transition-all hover:shadow-md flex flex-col justify-between">
@@ -69,11 +93,12 @@ export function StudyGroupCard({ group }: { group: StudyGroup }) {
       <CardFooter className="p-4 pt-0">
         <Button
           size="sm"
-          disabled={isFull}
+          disabled={isFull || isMember || !onJoin || isJoining}
+          onClick={handleJoin}
           className="w-full text-xs gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
         >
-          <UserPlus className="h-3.5 w-3.5" />
-          <span>{isFull ? 'Nhóm đã đủ thành viên' : 'Xin tham gia nhóm'}</span>
+          {isMember ? <CheckCircle2 className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
+          <span>{isMember ? 'Bạn đã ở trong nhóm' : isFull ? 'Nhóm đã đủ thành viên' : 'Tham gia nhóm'}</span>
         </Button>
       </CardFooter>
     </Card>

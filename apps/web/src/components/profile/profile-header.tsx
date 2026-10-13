@@ -1,8 +1,8 @@
 'use client'
 
-import { FEATURES } from '@/lib/features'
+import { chatApi } from '@/hooks/use-chat'
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +33,7 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
+  const router = useRouter()
   const currentUser = useAppStore((state) => state.user)
   const isOwnProfile =
     currentUser?.username?.toLowerCase() === profile.username?.toLowerCase() ||
@@ -176,17 +177,23 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
               </>
             ) : (
               <>
-                {/* Nhắn tin — ẩn tới khi có module chat */}
-                {FEATURES.directMessage && (
-                  <Button
+                {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển sang /messages/{id} */}
+                <Button
                     variant="outline"
                     size="icon"
                     className="rounded-full h-8 w-8 border-border"
-                    onClick={() => toast.info(`Gửi tin nhắn đến ${profile.displayName}`)}
+                    title={`Nhắn tin cho ${profile.displayName}`}
+                    onClick={async () => {
+                      try {
+                        const conv = await chatApi.openDirect(profile.id)
+                        router.push(`/messages/${conv.id}`)
+                      } catch (err: any) {
+                        toast.error(err?.message || 'Không thể mở hội thoại')
+                      }
+                    }}
                   >
                     <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                   </Button>
-                )}
                 <FollowButton
                   targetUserId={profile.id}
                   targetUsername={profile.username}

@@ -19,7 +19,9 @@ import {
   MoreHorizontal,
   Sparkles,
   Compass,
-  Bell
+  Bell,
+  MessageCircle,
+  ShieldCheck
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
@@ -35,9 +37,10 @@ import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { FEATURES } from '@/lib/features'
 import { useNotificationsStore } from '@/hooks/use-notifications'
+import { useUnreadMessages } from '@/hooks/use-chat'
 import { cn } from '@/lib/utils'
 
-export type NavTabType = 'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa'
+export type NavTabType = 'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa' | 'messages' | 'admin'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -50,11 +53,20 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const user = useAppStore((state) => state.user)
   const { logout, isLoggingOut } = useLogout()
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
+  const unreadMessages = useUnreadMessages()
 
   const navItems = [
     { id: 'feed' as const, path: '/home', label: 'Bảng tin', icon: Home },
     { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
     { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
+    { id: 'courses' as const, path: '/courses', label: 'Học phần', icon: GraduationCap },
+    {
+      id: 'messages' as const,
+      path: '/messages',
+      label: 'Tin nhắn',
+      icon: MessageCircle,
+      badge: unreadMessages > 0 ? (unreadMessages > 99 ? '99+' : String(unreadMessages)) : undefined
+    },
     {
       id: 'notifications' as const,
       path: '/notifications',
@@ -65,10 +77,10 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
     ...(user?.username
       ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ', icon: User }]
       : []),
+    ...(user?.role === 'admin' ? [{ id: 'admin' as const, path: '/admin', label: 'Quản trị', icon: ShieldCheck }] : []),
     // Lối tắt danh mục: ẩn tới khi /search hỗ trợ lọc theo type không cần từ khóa
     ...(FEATURES.categoryShortcuts
       ? [
-          { id: 'courses' as const, path: '/search?type=courses', label: 'Học phần', icon: GraduationCap },
           { id: 'documents' as const, path: '/search?type=documents', label: 'Tài liệu & Đề thi', icon: FileText },
           { id: 'qa' as const, path: '/search?type=qa', label: 'Hỏi đáp', icon: HelpCircle }
         ]
@@ -100,7 +112,10 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
           >
           {navItems.map((item) => {
             const Icon = item.icon
-            const isActive = currentTab ? currentTab === item.id : pathname === item.path
+            // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
+            const isActive = currentTab
+              ? currentTab === item.id
+              : pathname === item.path || (item.path !== '/home' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
 
             return (
               <HighlightItem key={item.id} value={item.id} disabled={isActive} className="xl:w-full">

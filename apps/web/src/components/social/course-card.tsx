@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { GraduationCap, FileText, MessageSquare, Star, ArrowRight } from 'lucide-react'
@@ -44,10 +45,12 @@ export function CourseCard({ course }: { course: Course }) {
       </CardContent>
 
       <CardFooter className="p-4 pt-0">
-        <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 hover:bg-primary hover:text-primary-foreground">
-          <span>Xem kho môn học</span>
-          <ArrowRight className="h-3.5 w-3.5" />
-        </Button>
+        <Link href={`/courses/${encodeURIComponent(course.code)}`} className="w-full">
+          <Button variant="outline" size="sm" className="w-full text-xs gap-1.5 hover:bg-primary hover:text-primary-foreground">
+            <span>Xem kho môn học</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Link>
       </CardFooter>
     </Card>
   )

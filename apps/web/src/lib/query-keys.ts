@@ -15,7 +15,15 @@ export const queryKeys = {
   communityAll: (slug: string) => ['community', slug] as const,
   suggestedUsers: (limit: number) => ['suggested-users', limit] as const,
   search: (q: string, type: string, faculty?: string | null) => ['search', q, type, faculty ?? null] as const,
-  notifications: (filter: string) => ['notifications', filter] as const
+  notifications: (filter: string) => ['notifications', filter] as const,
+  courses: ['courses'] as const,
+  course: (code: string) => ['course', code.toUpperCase()] as const,
+  coursePosts: (code: string) => ['feed', 'course', code.toUpperCase()] as const,
+  courseDocuments: (code: string) => ['course-documents', code.toUpperCase()] as const,
+  courseGroups: (code: string) => ['course-groups', code.toUpperCase()] as const,
+  conversations: ['conversations'] as const,
+  messages: (conversationId: string) => ['messages', conversationId] as const,
+  admin: (section: string, ...args: unknown[]) => ['admin', section, ...args] as const
 }
 
 // Các nhánh cache có thể chứa bài viết (để cập nhật một bài ở mọi nơi)

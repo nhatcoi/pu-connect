@@ -8,10 +8,12 @@ import {
   GraduationCap,
   FileText,
   Compass,
-  Plus
+  Plus,
+  MessageCircle
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
+import { useUnreadMessages } from '@/hooks/use-chat'
 import { FEATURES } from '@/lib/features'
 import { cn } from '@/lib/utils'
 
@@ -21,6 +23,7 @@ export function MobileBottomNav() {
   const searchParams = useSearchParams()
   const currentTabParam = searchParams.get('tab')
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
+  const unreadMessages = useUnreadMessages()
   
   // High-performance scroll state for fade/dimming on scroll
   const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
@@ -46,14 +49,22 @@ export function MobileBottomNav() {
       path: '/search',
       isActive: pathname === '/search' && (!searchParams.get('type') || searchParams.get('type') === 'all')
     },
-    ...(FEATURES.categoryShortcuts ? [{
+    {
       id: 'courses',
-      label: 'Môn học',
+      label: 'Học phần',
       icon: GraduationCap,
-      path: '/search?type=courses',
-      isActive: pathname === '/search' && searchParams.get('type') === 'courses'
+      path: '/courses',
+      isActive: pathname === '/courses' || pathname.startsWith('/courses/')
     },
     {
+      id: 'messages',
+      label: 'Tin nhắn',
+      icon: MessageCircle,
+      path: '/messages',
+      isActive: pathname === '/messages' || pathname.startsWith('/messages/'),
+      unread: unreadMessages
+    },
+    ...(FEATURES.categoryShortcuts ? [{
       id: 'documents',
       label: 'Tài liệu',
       icon: FileText,
@@ -119,8 +130,12 @@ export function MobileBottomNav() {
                     isActive ? 'scale-110 stroke-[2.5] text-primary' : 'stroke-[1.75]'
                   )}
                 />
-                {isActive && (
-                  <span className="absolute -top-1 right-[-4px] h-1.5 w-1.5 rounded-full bg-primary" />
+                {'unread' in item && !!item.unread ? (
+                  <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-brand-orange text-[9px] font-bold text-white flex items-center justify-center">
+                    {item.unread > 9 ? '9+' : item.unread}
+                  </span>
+                ) : (
+                  isActive && <span className="absolute -top-1 right-[-4px] h-1.5 w-1.5 rounded-full bg-primary" />
                 )}
               </div>
               <span className="mt-0.5 tracking-tight truncate max-w-[64px]">{item.label}</span>
