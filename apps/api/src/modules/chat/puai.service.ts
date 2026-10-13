@@ -1,11 +1,11 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import type { ChatCitation } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { ChatService } from './chat.service'
 
-const DEFAULT_MODEL = 'claude-haiku-4-5' // docs/core/06 §11: Haiku 4.5 mặc định, đổi bằng AI_MODEL
+const DEFAULT_MODEL = 'v3' // model của gateway OpenAI-compatible (AI_BASE_URL), đổi bằng AI_MODEL
 const HISTORY_LIMIT = 20
 const MAX_OUTPUT_TOKENS = 2048
 
@@ -24,11 +24,13 @@ type Source = { type: 'post' | 'document'; id: string; title: string; body: stri
 const unaccent = (s: string) =>
   s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
-// PU AI trong hội thoại type='ai': truy xuất nguồn (full-text) → gọi Claude (streaming) → đẩy delta qua socket
+type Turn = { role: 'user' | 'assistant'; content: string }
+
+// PU AI trong hội thoại type='ai': truy xuất nguồn (full-text) → gọi LLM OpenAI-compatible (streaming) → đẩy delta qua socket
 @Injectable()
 export class PuaiService {
   private readonly logger = new Logger(PuaiService.name)
-  private readonly client: Anthropic | null
+  private readonly client: OpenAI | null
   private readonly model: string
   private readonly dailyQuota: number
   private botId: string | null = null
@@ -39,7 +41,8 @@ export class PuaiService {
     @Inject(forwardRef(() => ChatService)) private readonly chat: ChatService
   ) {
     // Chưa cấu hình key ⇒ PU AI trả lời thông báo thay vì lỗi
-    this.client = config.get<string>('ANTHROPIC_API_KEY') ? new Anthropic() : null
+    const apiKey = config.get<string>('AI_API_KEY')
+    this.client = apiKey ? new OpenAI({ apiKey, baseURL: config.get<string>('AI_BASE_URL') || undefined, timeout: 90_000, maxRetries: 1 }) : null
     this.model = config.get<string>('AI_MODEL') || DEFAULT_MODEL
     this.dailyQuota = Number(config.get('AI_DAILY_QUOTA') || 30)
   }
@@ -113,44 +116,50 @@ export class PuaiService {
     const runId = run.rows[0].id
 
     if (!this.client) {
-      await this.finish(placeholder.id, conversationId, 'PU AI chưa được bật trên máy chủ này (thiếu ANTHROPIC_API_KEY).', null, 'error')
+      await this.finish(placeholder.id, conversationId, 'PU AI chưa được bật trên máy chủ này (thiếu AI_API_KEY).', null, 'error')
       await this.db.query(`UPDATE ai_runs SET status = 'error', error = 'disabled', finished_at = NOW() WHERE id = $1`, [runId])
       return
     }
 
-    const sources = await this.retrieve(question.content as string, requesterId)
+    const sources = await this.retrieve(question.content, requesterId)
     const messages = this.withContext(history, sources)
 
     try {
-      const stream = this.client.messages.stream({
+      const stream = await this.client.chat.completions.create({
         model: this.model,
         max_tokens: MAX_OUTPUT_TOKENS,
-        system: SYSTEM_PROMPT,
-        messages
+        stream: true,
+        stream_options: { include_usage: true },
+        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages]
       })
       // Danh sách thành viên lấy 1 lần (delta đến liên tục)
       const memberIds = await this.chat.memberIds(conversationId)
-      stream.on('text', (delta) => {
-        this.chat.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
-      })
-      const final = await stream.finalMessage()
+      let text = ''
+      let finishReason: string | null = null
+      let usage = { prompt_tokens: 0, completion_tokens: 0 }
+      for await (const chunk of stream) {
+        const choice = chunk.choices[0]
+        const delta = choice?.delta?.content
+        if (delta) {
+          text += delta
+          this.chat.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
+        }
+        if (choice?.finish_reason) finishReason = choice.finish_reason
+        if (chunk.usage) usage = chunk.usage
+      }
 
-      let text = final.content
-        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-        .map((b) => b.text)
-        .join('')
-        .trim()
-      if (final.stop_reason === 'refusal' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
-      if (final.stop_reason === 'max_tokens') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
+      text = text.trim()
+      if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
+      if (finishReason === 'length') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
 
       const citations: ChatCitation[] = sources.map((s) => ({ type: 'citation', ref: { type: s.type, id: s.id }, title: s.title }))
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done')
       await this.db.query(
         `UPDATE ai_runs SET status = 'done', input_tokens = $2, output_tokens = $3, latency_ms = $4, finished_at = NOW() WHERE id = $1`,
-        [runId, final.usage.input_tokens, final.usage.output_tokens, Date.now() - started]
+        [runId, usage.prompt_tokens, usage.completion_tokens, Date.now() - started]
       )
     } catch (err) {
-      const busy = err instanceof Anthropic.RateLimitError || (err instanceof Anthropic.APIError && (err.status ?? 0) >= 500)
+      const busy = err instanceof OpenAI.RateLimitError || err instanceof OpenAI.APIConnectionError || (err instanceof OpenAI.APIError && (err.status ?? 0) >= 500)
       await this.finish(
         placeholder.id,
         conversationId,
@@ -167,15 +176,15 @@ export class PuaiService {
     }
   }
 
-  // Lịch sử gần nhất ⇒ messages của Claude (gộp lượt liên tiếp cùng vai, bắt đầu bằng user)
-  private async loadHistory(conversationId: string, botId: string): Promise<Anthropic.MessageParam[]> {
+  // Lịch sử gần nhất ⇒ messages cho LLM (gộp lượt liên tiếp cùng vai, bắt đầu bằng user)
+  private async loadHistory(conversationId: string, botId: string): Promise<Turn[]> {
     const res = await this.db.query(
       `SELECT sender_id, content FROM messages
        WHERE conversation_id = $1 AND deleted_at IS NULL AND status = 'done' AND content <> ''
        ORDER BY id DESC LIMIT $2`,
       [conversationId, HISTORY_LIMIT]
     )
-    const turns: Anthropic.MessageParam[] = []
+    const turns: Turn[] = []
     for (const row of res.rows.reverse()) {
       const role = row.sender_id === botId ? 'assistant' : 'user'
       const last = turns[turns.length - 1]
@@ -189,7 +198,7 @@ export class PuaiService {
   }
 
   // Nguồn chỉ gắn vào câu hỏi hiện tại (không lưu DB, không lặp lại ở lượt sau)
-  private withContext(history: Anthropic.MessageParam[], sources: Source[]): Anthropic.MessageParam[] {
+  private withContext(history: Turn[], sources: Source[]): Turn[] {
     if (!sources.length) return history
     const context = sources
       .map((s) => `<data source="${s.type}:${s.id}" title="${s.title.replace(/"/g, "'")}">\n${s.body}\n</data>`)
