@@ -1,7 +1,7 @@
 import { Strategy, type Profile } from 'passport-google-oauth20'
 import { PassportStrategy } from '@nestjs/passport'
 import { Injectable, Logger } from '@nestjs/common'
-import { AuthService } from './auth.service'
+import { AuthService, assertNotSuspended } from './auth.service'
 
 export interface GoogleStrategyConfig {
   clientID: string
@@ -26,12 +26,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       return false
     }
 
-    return this.authService.findOrCreateGoogleUser({
+    const user = await this.authService.findOrCreateGoogleUser({
       googleId: profile.id,
       email: email.value,
       emailVerified: email.verified === true || (profile as any)._json?.email_verified === true,
       displayName: profile.displayName || email.value.split('@')[0],
       avatarUrl: profile.photos?.[0]?.value
     })
+    assertNotSuspended(user.status)
+    return user
   }
 }

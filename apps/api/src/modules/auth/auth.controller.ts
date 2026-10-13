@@ -107,8 +107,9 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  googleCallback(@Req() req: Request & { googleAuthFailed?: boolean }, @Res() res: Response) {
+  googleCallback(@Req() req: Request & { googleAuthFailed?: boolean | 'suspended' }, @Res() res: Response) {
     const user = req.user as UserProfile | undefined
+    if (req.googleAuthFailed === 'suspended') return res.redirect('/?auth_error=suspended')
     if (req.googleAuthFailed || !user) return res.redirect('/?auth_error=google')
     return res.redirect('/home')
   }

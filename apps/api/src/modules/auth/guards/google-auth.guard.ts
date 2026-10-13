@@ -15,7 +15,8 @@ export class GoogleAuthGuard extends AuthGuard('google') {
       return result
     } catch (err: any) {
       const req = context.switchToHttp().getRequest()
-      req.googleAuthFailed = true
+      // 403 = tài khoản bị khóa ⇒ báo riêng cho người dùng
+      req.googleAuthFailed = err?.status === 403 ? 'suspended' : true
       const googleError = typeof req.query?.error === 'string' ? req.query.error : undefined
       const detail = err?.oauthError?.data ? ` | oauth: ${String(err.oauthError.data).slice(0, 300)}` : ''
       this.logger.warn(

@@ -4,6 +4,7 @@ import {
   ConflictException,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
   HttpException,
   HttpStatus,
   Logger
@@ -17,6 +18,13 @@ import { MailService } from './mail.service'
 import { inferStudentInfoFromEmail, isPhenikaaEmail } from './email-profile.util'
 import { isReservedUsername } from './reserved-usernames'
 import { NotificationsService } from '../notifications/notifications.service'
+
+export const SUSPENDED_MESSAGE = 'Tài khoản của bạn đã bị khóa. Liên hệ quản trị viên nếu đây là nhầm lẫn.'
+
+// Chặn tài khoản bị khóa (suspended) ở mọi điểm đăng nhập
+export function assertNotSuspended(status: string | null | undefined): void {
+  if (status === 'suspended') throw new ForbiddenException(SUSPENDED_MESSAGE)
+}
 
 @Injectable()
 export class AuthService {
@@ -53,6 +61,8 @@ export class AuthService {
     if (!isMatch) {
       return null
     }
+    // Chỉ báo bị khóa sau khi đúng mật khẩu (không lộ trạng thái tài khoản)
+    assertNotSuspended(row.status)
 
     return this.mapUserRowToProfile(row)
   }
@@ -445,6 +455,7 @@ export class AuthService {
       avatarUrl: row.avatar_url,
       bio: row.bio,
       role: row.role,
+      status: row.status || 'active',
       reputationPoints: row.reputation_points || 0,
       isOnboarded: !!row.is_onboarded,
       isEmailVerified: !!row.email_verified,

@@ -24,7 +24,8 @@ interface AuthFormProps {
 
 const GOOGLE_ERRORS: Record<string, string> = {
   google: 'Đăng nhập Google không thành công. Vui lòng thử lại.',
-  google_unavailable: 'Đăng nhập Google hiện chưa khả dụng.'
+  google_unavailable: 'Đăng nhập Google hiện chưa khả dụng.',
+  suspended: 'Tài khoản của bạn đã bị khóa. Liên hệ quản trị viên nếu đây là nhầm lẫn.'
 }
 
 function GoogleIcon() {
