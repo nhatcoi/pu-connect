@@ -4,6 +4,7 @@ import React from 'react'
 import { Sparkles } from 'lucide-react'
 import type { AiMode } from '@pu/schemas'
 import { AI_MODE_META, AI_STARTERS } from './ai-modes'
+import { OpenInN7AiCard } from './open-in-n7ai'
 
 // Màn hình trống của PU AI: giới thiệu + gợi ý mở đầu theo chế độ học
 export function AiWelcome({ onPick }: { onPick: (mode: AiMode, text: string) => void }) {
@@ -36,6 +37,7 @@ export function AiWelcome({ onPick }: { onPick: (mode: AiMode, text: string) => 
           )
         })}
       </div>
+      <OpenInN7AiCard />
     </div>
   )
 }

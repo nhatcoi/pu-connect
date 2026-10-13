@@ -110,6 +110,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-14 — liên kết ngoài "Mở trong N7AI" (đầu hội thoại PU AI, màn chào); biến build `NEXT_PUBLIC_N7AI_URL`.
 - 2026-10-14 — PostCard: nút "Tóm tắt" (bài bị thu gọn) mở `PostSummary`; bình luận PU AI có avatar N7AI, tự tải lại khi có `comments.changed`.
 - 2026-10-14 — trạng thái hoạt động: `hooks/chat/use-presence.ts`, `PresenceDot` (avatar DM, thành viên nhóm), tiêu đề hội thoại "Đang hoạt động" / "Hoạt động N phút trước" / "K đang hoạt động"; hộp Cài đặt quyền riêng tư nạp cài đặt hiện tại + công tắc trạng thái hoạt động.
 - 2026-10-14 — chặn người dùng: `hooks/use-blocks.ts`, `BlockUserControl` (hồ sơ), `BlockedUsersSection` (cài đặt quyền riêng tư), `BlockedComposer` thay ô soạn tin trong DM bị chặn.

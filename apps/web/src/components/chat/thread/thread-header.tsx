@@ -8,6 +8,7 @@ import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
 import { ConversationAvatar } from '../conversation-avatar'
+import { OpenInN7AiButton } from '../ai/open-in-n7ai'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface ThreadHeaderProps {
@@ -59,6 +60,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
         </div>
         <p className={`text-[11px] truncate ${typingLabel ? 'text-primary' : 'text-muted-foreground'}`}>{subtitle}</p>
       </div>
+      {isAi && <OpenInN7AiButton />}
       {isAi && (
         <Button variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" onClick={onAiReset} title="PU AI quên các tin phía trên">
           <Eraser className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Chủ đề mới</span>
