@@ -230,7 +230,7 @@ sequenceDiagram
   participant DB as Postgres
   participant RT as RealtimeGateway
   participant P as PuaiService
-  participant L as Claude API
+  participant L as LLM gateway
 
   W->>W: hiện tin lạc quan (clientMsgId)
   W->>A: POST /api/conversations/:id/messages
@@ -243,7 +243,7 @@ sequenceDiagram
     P->>DB: quota ai_runs hôm nay · INSERT tin @puai (status=streaming)
     P->>RT: message.new (placeholder)
     P->>DB: full-text posts + documents (OR từ khóa, lọc quyền xem) ⇒ nguồn
-    P->>L: messages.stream(system, lịch sử ≤20 tin, <context> nguồn)
+    P->>L: chat.completions stream (system, lịch sử ≤20 tin, <context> nguồn)
     loop text delta
       L-->>P: delta
       P->>RT: message.delta

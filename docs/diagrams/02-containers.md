@@ -20,7 +20,7 @@ flowchart LR
   google["Google OAuth"]
   gmail["Gmail SMTP"]
   r2["Cloudflare R2"]
-  claude["Anthropic Claude API"]
+  claude["LLM gateway<br/>OpenAI-compatible"]
 
   browser -->|"HTTPS: trang SSR/CSR"| web
   browser -->|"HTTPS fetch /api/* · /graphql<br/>cookie pu_session"| web
@@ -71,6 +71,7 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-13 — LLM: gateway OpenAI-compatible thay cho Anthropic API.
 - 2026-10-13 — thêm Anthropic Claude API (PU AI), sự kiện nhắn tin qua Socket.IO.
 - 2026-10-04 — thêm Redis/BullMQ, Service Worker và Web Push.
 - 2026-10-04 — tạo mới; Socket.IO chuyển sang `/api/socket.io` có xác thực; session store Postgres.

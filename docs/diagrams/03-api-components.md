@@ -17,7 +17,7 @@ flowchart TB
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
-    chat["<b>Chat</b><br/>ChatService (DM · nhóm · AI)<br/>PuaiService → Claude API"]
+    chat["<b>Chat</b><br/>ChatService (DM · nhóm · AI)<br/>PuaiService → LLM (OpenAI-compatible)"]
   end
 
   subgraph Platform["Platform modules"]
@@ -43,7 +43,7 @@ flowchart TB
   auth & storage --> ext
   admin -->|disconnectUser| rt
   chat -->|emitToUser message.*| rt
-  chat -->|stream| llm["Anthropic Claude API"]
+  chat -->|chat/completions stream| llm["LLM gateway"]
 
   classDef mod fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef plat fill:#334155,stroke:#334155,color:#fff
@@ -99,6 +99,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-13 — PuaiService dùng SDK `openai` (gateway OpenAI-compatible).
 - 2026-10-13 — AdminModule, ChatModule (+ PuaiService), `courses/:id/overview`, lọc `course` cho posts/documents; StudyGroups lưu Postgres; event `message.*`, `typing`; khóa tài khoản chặn login/session/socket.
 - 2026-10-04 — Search: unaccent + trigram, `search_logs` (xem [07-search](../core/07-search.md)).
 - 2026-10-04 — Auth: `forgot-password`, `reset-password`.
