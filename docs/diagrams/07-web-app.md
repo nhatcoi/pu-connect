@@ -1,6 +1,6 @@
 # 07 · Web App (`apps/web`)
 
-> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-13**.
+> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-14**.
 
 ## Route map
 
@@ -97,7 +97,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | Landing / AuthForm | `auth/providers`, `auth/check-email`, `auth/login`, `auth/register`, `auth/me` | — | — |
 | `/home` feed, PostCard | `posts`, `posts/:id/*`, `posts/:postId/comments`, `comments/:id/*` | `toggleFollow` (follow trên PostCard) | — |
 | RightSidebar | — | `suggestedUsers` | — |
-| `/[username]` | `users/:username`, `users/profile` | `userProfile`, `userFollowers`, `userFollowing` | — |
+| `/[username]` (+ menu ⋯ Chặn, danh sách đã chặn trong Cài đặt quyền riêng tư) | `users/:username`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
 | Communities | `communities`, `communities/:slug/*` | — | — |
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
@@ -110,6 +110,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-14 — chặn người dùng: `hooks/use-blocks.ts`, `BlockUserControl` (hồ sơ), `BlockedUsersSection` (cài đặt quyền riêng tư), `BlockedComposer` thay ô soạn tin trong DM bị chặn.
 - 2026-10-13 — skeleton loading toàn app: primitive `Skeleton`/`LoadingRegion`, `AppShellSkeleton` khi xác thực phiên, skeleton theo màn hình (`components/skeletons/`).
 - 2026-10-13 — thêm `/terms`, `/privacy-policy` (route group `(legal)`, `LegalDocument`, link chung `lib/legal.ts`); bỏ flag `legalPages` và link footer chết.
 - 2026-10-13 — chat P2: hooks tách `hooks/chat/`, component theo `components/chat/{thread,composer,ai,info}`; cột phải `/messages/[id]` = bảng thông tin hội thoại.

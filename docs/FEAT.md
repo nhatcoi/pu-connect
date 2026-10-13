@@ -151,6 +151,13 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 👥 **Nhóm chat**: đổi tên & **ảnh nhóm** (`PATCH conversations/:id` nhận `avatarKey` — ảnh do chính người đổi tải lên `avatars/{userId}/`, server tự suy URL R2; tin hệ thống "đã đổi ảnh nhóm"), thêm thành viên (mọi người) / xóa (trưởng nhóm) (`POST/DELETE conversations/:id/members`), chuyển quyền trưởng nhóm thủ công (`POST conversations/:id/owner`, menu `⋯` có xác nhận) hoặc tự động khi trưởng nhóm rời, tin hệ thống "A đã thêm B…". Cài đặt riêng: tắt thông báo 1h/8h/24h/vô hạn (không tính vào badge), ghim hội thoại lên đầu (`PATCH conversations/:id/settings`). Bảng thông tin (cột phải / hộp thoại mobile): thành viên, kho Ảnh/Tệp (`GET conversations/:id/attachments`), Đã ghim, tìm tin không dấu (`GET conversations/:id/messages/search`). Danh sách lọc Tất cả / Chưa đọc / Nhóm.
 - [x] 🎓 **PU AI học tập**: 6 chế độ (Hỏi đáp, Giải thích, Quiz, Flashcard, Tóm tắt, Lộ trình ôn) — chế độ đổi chỉ dẫn hệ thống (`puai.prompts.ts`); Quiz/Flashcard trả JSON trong khối ```` ```quiz ```` / ```` ```flashcards ```` ⇒ web dựng **quiz chấm điểm** và **bộ thẻ lật** tương tác. PU AI đọc **ảnh đính kèm** (vision, base64 ≤ 4 ảnh) và **nội dung tệp PDF / DOCX / .txt/.md/.csv** (`pdf-parse` ≤ 40 trang, `mammoth`; ≤ 40k ký tự/tệp, cache theo key R2), hỏi tiếp tự dùng lại tài liệu gần nhất trong chủ đề; gọi **`@puai` trong nhóm chat** (trả lời trích tin người hỏi, tính quota người hỏi); "Chủ đề mới" (`POST ai/conversations/:id/reset`) làm mới ngữ cảnh; hiện lượt còn lại. Chi tiết: [`core/06` §13](./core/06-messaging-and-ai.md).
 
+### 🚫 Chặn Người Dùng (2026-10-14)
+- [x] Bảng `user_blocks` (migration `user-blocks-upgrade.sql`), API `GET /api/blocks` · `PUT/DELETE /api/blocks/:userId` (`modules/blocks/`). Chặn ⇒ hủy theo dõi 2 chiều.
+- [x] Chính sách 2 chiều dùng chung `blocks.sql.ts` (`blockExistsSql`, `blockStateSql`): ẩn bài ở bảng tin, cộng đồng, tìm kiếm; ẩn bình luận (cả nhánh trả lời); không bình luận/trả lời được bài của nhau; không theo dõi; bỏ khỏi gợi ý theo dõi; không nhận thông báo do người kia gây ra; hồ sơ trả `blockState` và ẩn bài/tài liệu.
+- [x] Nhắn tin: không mở DM mới, DM cũ khóa gửi tin cả 2 phía (`ConversationSummary.blockState`), không thêm được vào nhóm (bỏ qua lặng lẽ). Nhóm chat sẵn có vẫn giữ nguyên.
+- [x] Web: menu ⋯ "Chặn @user" có xác nhận trên hồ sơ, nút "Bỏ chặn", thông báo thay nội dung hồ sơ, danh sách đã chặn trong Cài đặt quyền riêng tư, thanh "Bạn đã chặn…" thay ô soạn tin. Event `block.changed` làm mới 2 phía ngay.
+- [x] Test tích hợp `apps/api/test/blocks.e2e-spec.ts`; sửa jest để chạy được với `@nestjs/bullmq` (ESM).
+
 ### ⏳ Skeleton Loading (2026-10-13)
 - [x] Primitive `components/ui/skeleton.tsx` (`Skeleton`, `LoadingRegion` hiện sau 150ms, `SkeletonRepeat`), giữ chỗ đúng kích thước thật ⇒ không CLS. Skeleton chỉ cho lần tải đầu; spinner chỉ cho thao tác.
 - [x] Khung app (`AppShellSkeleton`) khi đang xác thực phiên, thay spinner toàn màn hình.
@@ -182,5 +189,5 @@ Role trong DB: `student`, `lecturer`, `ta`, `club_lead`, `admin` (prod: 1 admin,
 3. **Domain 7: Career & Alumni (`/career`)**: Bảng tin thực tập, CV/Portfolio số sinh viên, Mạng lưới Cựu sinh viên (Alumni Mentorship).
 4. **Domain 8: Events (`/events`)**: Form đăng ký tham gia sự kiện campus, vé mã QR Check-in.
 5. **Domain 9: Clubs & Organizations (`/clubs/[slug]`)**: Hub riêng cho CLB, quản lý thành viên ban/đội, đợt tuyển quân.
-6. **Domain 10: Realtime Messaging (phần còn lại)**: chat tự tạo cho cộng đồng, trạng thái online, chặn người dùng. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
+6. **Domain 10: Realtime Messaging (phần còn lại)**: chat tự tạo cho cộng đồng, trạng thái online. Thiết kế: [`core/06-messaging-and-ai.md`](./core/06-messaging-and-ai.md).
 7. **Domain 13: AI Layer (phần còn lại)**: `@puai` trong bình luận, tóm tắt bài, RAG bằng `pgvector` (cần chọn model embedding + trích text PDF) — xem [`core/06-messaging-and-ai.md` §12](./core/06-messaging-and-ai.md).

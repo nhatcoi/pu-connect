@@ -568,7 +568,8 @@ store: aiDrawer { open, contextRef }, unreadTotal
 | P4 RAG | ✅ rút gọn | Truy xuất **full-text** (`search_tsv`, OR các từ khóa bỏ dấu) trên bài viết + tài liệu công khai (kèm lời giải đã duyệt), bọc `<data>` trong `<context>`; câu trả lời có `blocks` citation. **Chưa dùng pgvector**: cần chọn nhà cung cấp embedding (§11 #2) và trích text PDF vào `document_chunks`. |
 | P3 `@puai` trong bình luận, P5 | ⏳ | Chưa làm. |
 | Thông báo / Web Push cho tin nhắn | ⏳ | Chưa gửi push khi người nhận offline. |
-| `privacy_settings.dm`, `user_blocks` | ⏳ | Hiện: chỉ tài khoản đã xác thực email mới mở DM/nhóm mới; không nhắn được tài khoản bị khóa. |
+| `user_blocks` | ✅ 2026-10-14 | Xem §14. |
+| `privacy_settings.dm` | ⏳ | Hiện: chỉ tài khoản đã xác thực email mới mở DM/nhóm mới; không nhắn được tài khoản bị khóa. |
 
 ## 13. Chat P2 & PU AI học tập (2026-10-13)
 
@@ -610,3 +611,18 @@ apps/web/src/components/chat/
 | Vision & tài liệu | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB). PDF (`pdf-parse`, ≤ 40 trang, ≤ 20 MB), DOCX (`mammoth`), `.txt/.md/.csv` ⇒ trích text chèn `<file>` (≤ 40k ký tự/tệp, ≤ 80k/lượt), cache LRU 30 tệp theo key R2. Tin không kèm tệp ⇒ dùng lại tài liệu đọc được ở ≤ 10 tin trước (sau mốc "Chủ đề mới"). PDF scan (không có lớp chữ) ⇒ báo người dùng; PPTX/XLSX chỉ báo tên. |
 
 Còn thiếu: đóng thông báo đã đọc trên Safari/iOS (không cho push im lặng).
+
+## 14. Chặn người dùng (2026-10-14)
+
+Migration `user-blocks-upgrade.sql`: `user_blocks (blocker_id, blocked_id, created_at)`, PK + index `(blocked_id, blocker_id)` ⇒ tra 2 chiều đều dùng index.
+
+| Quyết định | Lý do |
+|---|---|
+| Chính sách **2 chiều** (A chặn B ⇒ cả hai không thấy/nhắn nhau) | Đơn giản, đúng kỳ vọng người dùng; không rò rỉ nội dung qua chiều ngược. |
+| Lọc **trong SQL** bằng `blockExistsSql(a, b)` (`modules/blocks/blocks.sql.ts`) | Mỗi truy vấn tự lọc (feed, cộng đồng, tìm kiếm, bình luận, gợi ý, thông báo, chat) ⇒ phân trang/đếm đúng, không cần nạp danh sách chặn vào bộ nhớ; module khác không phụ thuộc `BlocksService`. |
+| DM cũ **giữ lịch sử**, chỉ khóa gửi (`assertDirectNotBlocked`) | Không mất dữ liệu; bỏ chặn là nhắn tiếp được. |
+| Nhóm chat sẵn có không đổi; chỉ chặn **thêm mới** vào nhóm | Không phá nhóm học/đồ án đang dùng chung. |
+| Người bị chặn **không được báo**; nhận `block.changed` chỉ để làm mới giao diện | Tránh xung đột; UI hiện "Bạn không thể trả lời cuộc trò chuyện này". |
+
+Chưa làm: chặn mention trong nội dung (thông báo đã bị lọc), báo cáo tin nhắn.
+

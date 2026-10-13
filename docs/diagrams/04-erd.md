@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **30 bảng**, **49 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **31 bảng**, **51 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -65,6 +65,8 @@ erDiagram
   users ||--o{ study_group_members : "user_id"
   courses |o--o{ study_groups : "course_id"
   users ||--o{ study_groups : "leader_id"
+  users ||--o{ user_blocks : "blocked_id"
+  users ||--o{ user_blocks : "blocker_id"
   users ||--o{ user_follows : "follower_id"
   users ||--o{ user_follows : "following_id"
 ```
@@ -162,7 +164,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`
 
 ## 3. Feed & Q&A
 
@@ -498,10 +500,15 @@ erDiagram
     integer result_count
     timestamptz created_at
   }
+  user_blocks {
+    uuid blocker_id PK,FK
+    uuid blocked_id PK,FK
+    timestamptz created_at
+  }
   conversations ||--o{ conversation_members : "conversation_id"
   messages ||--o{ message_reactions : "message_id"
   conversations ||--o{ messages : "conversation_id"
   messages ||--o{ messages : "reply_to_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `push_subscriptions.user_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`
