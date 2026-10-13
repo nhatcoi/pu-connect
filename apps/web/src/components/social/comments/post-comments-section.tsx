@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useComments } from '@/hooks/use-comments'
 import { useAppStore } from '@/store'
+import { CommentListSkeleton } from '@/components/skeletons/comment-skeleton'
 import { CommentComposer } from './comment-composer'
 import { CommentItemCard } from './comment-item-card'
 import { Button } from '@/components/ui/button'
@@ -114,10 +115,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
       {/* Comments List */}
       <div className="space-y-3 pt-2">
         {isLoading ? (
-          <div className="flex items-center justify-center py-6 gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin text-foreground" />
-            <span>Đang tải các thảo luận...</span>
-          </div>
+          <CommentListSkeleton />
         ) : topLevelComments.length > 0 ? (
           <>
             {topLevelComments.map((comment) => {

@@ -4,7 +4,8 @@ import React, { Suspense } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, FileX2, Loader2 } from 'lucide-react'
+import { ArrowLeft, FileX2 } from 'lucide-react'
+import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
 import { PostCard } from '@/components/social/post-card'
 import { apiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
@@ -44,9 +45,7 @@ function PostDetail() {
 
       <div className="px-2 sm:px-0">
         {status === 'loading' ? (
-          <div className="flex justify-center py-16 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-          </div>
+          <FeedSkeleton count={1} />
         ) : status === 'missing' || !post ? (
           <div className="flex flex-col items-center gap-2 rounded-xl bg-card py-14 text-center text-muted-foreground">
             <FileX2 className="h-8 w-8 opacity-60" />

@@ -6,13 +6,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { prefetchProfile } from '@/hooks/use-profile'
 import { queryKeys } from '@/lib/query-keys'
 import { graphqlClient } from '@/lib/graphql-client'
+import { UserListSkeleton } from '@/components/skeletons/user-row-skeleton'
 import { FollowButton } from '@/components/profile/follow-button'
 import { ProfileCompletionCard } from '@/components/profile/profile-completion-card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  ShieldCheck,
-  Loader2
-} from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 
 interface SuggestedUser {
@@ -94,9 +92,7 @@ export function RightSidebar() {
       <section className="space-y-1">
         <h3 className="px-2 pb-1 text-[13px] font-semibold text-foreground">Gợi ý theo dõi</h3>
         {isLoadingUsers && suggestedUsers.length === 0 ? (
-          <div className="flex justify-center py-4">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
+          <UserListSkeleton count={3} action label="Đang tải gợi ý theo dõi" />
         ) : (
           displayUsers.slice(0, 3).map((item) => (
             <div key={item.id || item.username} className="flex items-center justify-between gap-2 px-2 py-1.5">

@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge'
 import { PageAside } from '@/components/layout/page-aside'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCommunity } from '@/hooks/use-community'
+import { CommunityHeaderSkeleton, PostListSkeleton } from '@/components/skeletons/feed-skeleton'
+import { LoadingRegion } from '@/components/ui/skeleton'
 import {
   Users,
   Flame,
@@ -124,10 +126,10 @@ export default function CommunityDetailPage({
 
       {/* Community Hero Banner & Header */}
       {isLoading && !community ? (
-        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm">Đang tải cộng đồng c/{slug}...</p>
-        </div>
+        <LoadingRegion label={`Đang tải cộng đồng c/${slug}`}>
+          <CommunityHeaderSkeleton />
+          <PostListSkeleton className="px-2 sm:px-0" />
+        </LoadingRegion>
       ) : community ? (
         <div>
           <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card overflow-hidden">

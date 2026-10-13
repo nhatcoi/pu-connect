@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
+import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
 import { PostCard } from '@/components/social/post-card'
 import { VirtualPostList } from '@/components/social/virtual-post-list'
 import { Button } from '@/components/ui/button'
@@ -95,16 +96,7 @@ function HomeContent() {
       {/* Danh sách bài viết dạng thẻ, cách nhau bằng khoảng trống */}
       <div className="space-y-2.5 px-2 sm:px-0">
         {isPostsLoading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
-            <Loader2 className="h-6 w-6 animate-spin text-foreground" />
-            <span className="text-xs">
-              {activeFeedTab === 'following'
-                ? 'Đang tải bài viết từ những người bạn theo dõi...'
-                : activeFeedTab === 'qa'
-                  ? 'Đang tải các câu hỏi thảo luận học thuật...'
-                  : 'Đang tải bảng tin học thuật được gợi ý...'}
-            </span>
-          </div>
+          <FeedSkeleton />
         ) : posts.length > 0 ? (
           <>
             {/* Ảo hóa: chỉ các bài gần màn hình nằm trong DOM */}
