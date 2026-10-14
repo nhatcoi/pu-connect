@@ -130,6 +130,16 @@ Sơ đồ C4, ERD, sequence, deployment ở [`docs/diagrams/`](docs/diagrams/REA
 pnpm docs:erd
 ```
 
+### 9. Dữ liệu mẫu mạng xã hội (stage / demo)
+20 persona (2 admin, 2 giảng viên, 1 trợ giảng, 15 sinh viên với "gu" đăng bài khác nhau) + ~85 bài có ảnh, link, bình luận, cảm xúc, khảo sát, theo dõi. Nguồn: [`apps/api/src/database/seed-social/`](apps/api/src/database/seed-social/).
+```bash
+pnpm --filter @pu/api seed:social                 # thêm phần còn thiếu (chạy lại không trùng)
+pnpm --filter @pu/api seed:social --reset         # xóa bài seed rồi nạp lại (sau khi sửa nội dung)
+pnpm --filter @pu/api seed:social --purge-legacy  # xóa 100 tài khoản mẫu cũ (seed-users.sql) + dữ liệu của chúng
+```
+- Ảnh nằm trên R2 `seed/` (avatars: chân dung tạo bằng AI, không phải người thật; banners/posts: ảnh Picsum/Unsplash). Thêm ảnh mới: `--print-assets` liệt kê id cần có, tải lên bằng `scripts/ops/r2.mjs put`.
+- Email persona dùng domain `seed.pu-connector.test` (không gửi được mail thật). Chỉ đăng nhập được khi đặt `SEED_PASSWORD` lúc chạy seed (stage: biến này nằm trong `.env` trên VPS, không commit).
+
 ---
 
 ## 📱 Hướng dẫn mở rộng Mobile App (React Native) sau này

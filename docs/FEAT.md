@@ -189,6 +189,12 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] Web: menu ⋯ "Chặn @user" có xác nhận trên hồ sơ, nút "Bỏ chặn", thông báo thay nội dung hồ sơ, danh sách đã chặn trong Cài đặt quyền riêng tư, thanh "Bạn đã chặn…" thay ô soạn tin. Event `block.changed` làm mới 2 phía ngay.
 - [x] Test tích hợp `apps/api/test/blocks.e2e-spec.ts`; sửa jest để chạy được với `@nestjs/bullmq` (ESM).
 
+### 🧑‍🤝‍🧑 Dữ Liệu Mẫu "Trông Thật" (2026-10-14)
+- [x] **Seed mạng xã hội** [`seed-social/`](../apps/api/src/database/seed-social/) (`pnpm --filter @pu/api seed:social`): 20 persona chuyên biệt (công nghệ, kinh doanh, đời sống, học tập, vui vẻ, đăng bừa; 2 admin, 2 giảng viên, 1 trợ giảng), ~85 bài: ảnh (R2 `seed/`), link tài liệu thật, code, LaTeX, bảng, khảo sát, hỏi đáp có lời giải, bình luận lồng nhau. Cảm xúc, lưu bài, theo dõi, thành viên cộng đồng sinh theo độ trùng sở thích (PRNG có hạt giống ⇒ chạy lại ra cùng kết quả). Idempotent theo `slug = seed-<key>`; `--reset`, `--purge-legacy` (xóa 100 tài khoản mẫu cũ theo domain + hash mật khẩu chung). Đồng bộ lại `likes_count`, `comments_count`, `post_count`, `members_count`, điểm uy tín.
+- [x] Avatar persona là chân dung tạo bằng AI (không phải người thật); email `*.test` nên không gửi được mail thật.
+- [x] **Bài không tiêu đề**: không còn tự lấy 50 ký tự đầu làm tiêu đề (card bị lặp chữ). Migration dữ liệu `post-title-cleanup.sql`.
+- [x] **Bảng tin hiện nhiều chữ hơn**: thu gọn ở ~10 dòng (240px), chỉ thu khi phần ẩn ≥ ~3 dòng.
+
 ### ⏳ Skeleton Loading (2026-10-13)
 - [x] Primitive `components/ui/skeleton.tsx` (`Skeleton`, `LoadingRegion` hiện sau 150ms, `SkeletonRepeat`), giữ chỗ đúng kích thước thật ⇒ không CLS. Skeleton chỉ cho lần tải đầu; spinner chỉ cho thao tác.
 - [x] Khung app (`AppShellSkeleton`) khi đang xác thực phiên, thay spinner toàn màn hình.
