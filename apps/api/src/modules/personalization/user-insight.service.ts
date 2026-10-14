@@ -44,7 +44,7 @@ export class UserInsightService {
       this.db.query(`SELECT type, COUNT(*)::int AS n FROM user_events WHERE user_id = $1 GROUP BY type`, [userId]),
       this.db.query(
         `SELECT e.type, e.created_at,
-                COALESCE(p.title, d.title, e.meta->>'q', e.meta->>'text') AS target,
+                COALESCE(NULLIF(p.title, ''), left(p.content, 80), d.title, e.meta->>'q', e.meta->>'text') AS target,
                 COALESCE(pc.code, dc.code) AS course, COALESCE(p.tags, d.tags, '{}') AS tags
          FROM user_events e
          LEFT JOIN posts p ON e.target_type = 'post' AND p.id = e.target_id

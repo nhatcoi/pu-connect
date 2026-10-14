@@ -246,7 +246,7 @@ export class PostsService {
           courseUuid,
           communityUuid,
           dbPostType,
-          data.title || data.content.slice(0, 50),
+          data.title?.trim() || '', // không tiêu đề ⇒ rỗng (card không lặp lại đoạn đầu nội dung)
           data.content,
           data.tags || [],
           data.mediaUrls || [],
