@@ -1,5 +1,10 @@
 import { HALF_LIFE_DAYS, PROFILE_MAX_TOPICS, SIGNAL_WINDOW_DAYS } from './personalization.constants'
 
+// Câu hỏi nhắc tới tên (bỏ dấu) hoặc mã môn / Question mentions a course name or code
+export const courseMentionSql = (content: string, course: string) =>
+  `(immutable_unaccent(lower(${content})) LIKE '%' || immutable_unaccent(lower(${course}.name)) || '%'
+    OR lower(${content}) LIKE '%' || lower(${course}.code) || '%')`
+
 // Hồ sơ quan tâm của 1 người ($1): gom tín hiệu → (kind, key) → điểm = Σ trọng số × suy giảm theo thời gian
 // Interest profile: weighted, time-decayed signals grouped by course / tag / search query
 //
@@ -37,8 +42,7 @@ signals(kind, key, w, at) AS (
     WHERE m.user_id = $1 AND sg.course_id IS NOT NULL
   -- Câu hỏi PU AI nhắc tới tên / mã môn
   UNION ALL SELECT 'course', co.id::text, 3.0, q.created_at FROM ai_questions q JOIN courses co
-    ON immutable_unaccent(lower(q.content)) LIKE '%' || immutable_unaccent(lower(co.name)) || '%'
-    OR lower(q.content) LIKE '%' || lower(co.code) || '%'
+    ON ${courseMentionSql('q.content', 'co')}
   UNION ALL SELECT 'query', lower(trim(meta->>'q')), 1.5, created_at FROM user_events
     WHERE user_id = $1 AND type = 'search' AND char_length(trim(meta->>'q')) BETWEEN 2 AND 60
   UNION ALL SELECT meta->>'kind', meta->>'key', 1.0, created_at FROM user_events

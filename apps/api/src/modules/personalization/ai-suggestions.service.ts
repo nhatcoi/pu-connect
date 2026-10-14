@@ -4,6 +4,7 @@ import { DEFAULT_SUGGESTIONS, MIXED_MODES, fillTemplate } from './ai-suggestions
 import { InterestProfileService, type InterestTopic } from './interest-profile.service'
 
 const SUGGESTION_COUNT = 4
+export const SUGGESTION_POOL = 12 // số chủ đề top đọc từ hồ sơ
 const MAX_QUERY_TOPICS = 1 // từ khóa tìm kiếm dễ nhiễu ⇒ tối đa 1
 const MAX_LABEL = 50
 
@@ -14,7 +15,12 @@ export class AiSuggestionsService {
   constructor(private readonly profile: InterestProfileService) {}
 
   async suggest(userId: string, mode: AiMode): Promise<AiSuggestionsResponse> {
-    const topics = pickTopics(await this.profile.topTopics(userId, 12))
+    return this.fromTopics(mode, await this.profile.topTopics(userId, SUGGESTION_POOL))
+  }
+
+  // Thuần: chủ đề sẵn có → gợi ý (admin xem trước dùng lại, không tính lại hồ sơ)
+  fromTopics(mode: AiMode, ranked: InterestTopic[]): AiSuggestionsResponse {
+    const topics = pickTopics(ranked)
     const items: AiSuggestion[] = topics.map((t, i) => {
       const m = mode === 'ask' ? MIXED_MODES[i % MIXED_MODES.length] : mode
       return { mode: m, text: fillTemplate(m, t.kind, t.label), topic: { kind: t.kind, key: t.key } }
