@@ -142,6 +142,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 ### 🛡️ Quản Trị Tối Giản (Admin — 2026-10-13)
 - [x] 🔒 **Chặn tài khoản `suspended`**: đăng nhập mật khẩu trả 403 (chỉ sau khi đúng mật khẩu ⇒ không lộ trạng thái), Google OAuth về `/?auth_error=suspended`, phiên cũ hết hiệu lực ở `deserializeUser` (HTTP lẫn socket).
 - [x] 🧑‍⚖️ **[`/admin`](../apps/web/src/app/(app)/admin/page.tsx)** (role `admin`, `AdminGuard`): báo cáo gom theo bài (ẩn bài / hiện lại / bỏ qua), tìm & khóa / mở khóa tài khoản (hủy session + ngắt socket ngay), từ khóa tìm kiếm không có kết quả, nhật ký thao tác `admin_audit_logs`. Migration `admin-upgrade.sql`.
+- [x] 🔎 **Xem dữ liệu cá nhân hóa của 1 người** (2026-10-14): nút trong tab Người dùng → [`UserInsightDialog`](../apps/web/src/components/admin/user-insight-dialog.tsx), `GET /api/admin/users/:id/insight` (`UserInsightService`, chỉ đọc, không tính lại hồ sơ). Hiện hồ sơ + cờ cá nhân hóa, chủ đề quan tâm có điểm, gợi ý PU AI hiện tại, tín hiệu nguồn, 30 hành vi gần nhất, câu hỏi PU AI kèm môn nhận diện. Mỗi lần xem ghi nhật ký `user.insight_view`. CLI tương đương: `pnpm user:insight <username>`.
 - [x] 🙈 Bài bị ẩn không xuất hiện ở feed, cộng đồng, tìm kiếm, GraphQL; tác giả vẫn xem được bài của mình.
 
 ### 💬 Nhắn Tin & PU AI (Domain 10 + 13 — 2026-10-13)
