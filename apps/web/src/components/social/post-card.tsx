@@ -130,8 +130,10 @@ interface PostCardProps {
   highlightCommentId?: string | null
 }
 
-// Chiều cao tối đa nội dung khi thu gọn (~5 dòng)
-const COLLAPSED_MAX_HEIGHT = 120
+// Thu gọn bài dài: hiện ~10 dòng; chỉ thu khi dư ≥ ~3 dòng (tránh "Xem thêm" chỉ để lộ 1 dòng)
+// Collapse long posts to ~10 lines, only when the hidden part is worth a click
+const COLLAPSED_MAX_HEIGHT = 240
+const COLLAPSE_MIN_OVERFLOW = 64
 
 export function PostCard({
   post: initialPost,
@@ -172,7 +174,7 @@ export function PostCard({
   useLayoutEffect(() => {
     const el = contentRef.current
     if (!el) return
-    const check = () => setIsOverflowing(el.scrollHeight > COLLAPSED_MAX_HEIGHT + 8)
+    const check = () => setIsOverflowing(el.scrollHeight > COLLAPSED_MAX_HEIGHT + COLLAPSE_MIN_OVERFLOW)
     check()
     const ro = new ResizeObserver(check)
     ro.observe(el)
@@ -614,9 +616,9 @@ export function PostCard({
                 ref={contentRef}
                 className={cn(
                   'text-[13px] sm:text-sm text-foreground/90 leading-relaxed break-words',
-                  !isExpanded && 'overflow-hidden'
+                  isOverflowing && !isExpanded && 'overflow-hidden'
                 )}
-                style={!isExpanded ? { maxHeight: COLLAPSED_MAX_HEIGHT } : undefined}
+                style={isOverflowing && !isExpanded ? { maxHeight: COLLAPSED_MAX_HEIGHT } : undefined}
               >
                 <MarkdownPreview content={post.content} />
               </div>
