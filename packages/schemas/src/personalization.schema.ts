@@ -35,3 +35,43 @@ export interface AiSuggestionsResponse {
   personalized: boolean
   items: AiSuggestion[]
 }
+
+// Admin: ảnh chụp dữ liệu cá nhân hóa của 1 người (chỉ đọc) / Per-user personalisation snapshot
+export interface UserInsightEvent {
+  type: UserEventType
+  createdAt: string
+  target: string | null // tên bài / tài liệu, hoặc từ khóa tìm kiếm
+  course: string | null
+  tags: string[]
+}
+
+export interface UserInsight {
+  user: {
+    id: string
+    username: string
+    displayName: string
+    avatarUrl: string | null
+    major: string | null
+    className: string | null
+    interests: string[]
+    skills: string[]
+    lastSeenAt: string | null
+  }
+  personalization: boolean
+  profileUpdatedAt: string | null
+  profileStale: boolean
+  interests: { kind: InterestKind; key: string; label: string; score: number }[]
+  signals: {
+    postsAuthored: number
+    docsUploaded: number
+    postsSaved: number
+    studyGroups: number
+    comments: number
+    reactions: number
+    aiQuestions: number
+  }
+  eventCounts: Partial<Record<UserEventType, number>>
+  recentEvents: UserInsightEvent[]
+  aiQuestions: { createdAt: string; text: string; courses: string[] }[]
+  suggestionPreview: AiSuggestion[] // gợi ý chế độ "Hỏi đáp" từ hồ sơ đang lưu
+}

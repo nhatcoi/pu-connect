@@ -5,9 +5,11 @@ import type {
   AdminReportedPost,
   AdminStats,
   AdminUserRow,
+  UserInsight,
   ZeroResultQuery
 } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { UserInsightService } from '../personalization/user-insight.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 
 type AuditEntry = { action: string; targetType: 'post' | 'user'; targetId: string; details?: Record<string, unknown> }
@@ -16,7 +18,8 @@ type AuditEntry = { action: string; targetType: 'post' | 'user'; targetId: strin
 export class AdminService {
   constructor(
     private readonly db: DatabaseService,
-    private readonly realtime: RealtimeGateway
+    private readonly realtime: RealtimeGateway,
+    private readonly insight: UserInsightService
   ) {}
 
   async getStats(): Promise<AdminStats> {
@@ -188,6 +191,14 @@ export class AdminService {
       await this.audit(client, adminId, { action: 'user.unsuspend', targetType: 'user', targetId: userId })
     })
     return { status: 'active' }
+  }
+
+  // Xem dữ liệu cá nhân hóa của 1 người — dữ liệu nhạy cảm ⇒ luôn ghi nhật ký
+  // Personalisation snapshot; every view is audited
+  async userInsight(adminId: string, userId: string): Promise<UserInsight> {
+    const insight = await this.insight.get(userId)
+    await this.db.transaction((client) => this.audit(client, adminId, { action: 'user.insight_view', targetType: 'user', targetId: userId }))
+    return insight
   }
 
   async listAuditLogs(limit = 50): Promise<AdminAuditLog[]> {

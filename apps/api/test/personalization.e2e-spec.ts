@@ -58,6 +58,32 @@ describe('Cá nhân hóa (e2e)', () => {
     expect(off.body.data.personalized).toBe(false)
   })
 
+  it('admin xem dữ liệu cá nhân hóa của 1 người: đủ phần, ghi nhật ký; người thường 403', async () => {
+    const admin = await createUser(db, { role: 'admin' })
+    const target = await createUser(db)
+    const agentAdmin = await loginAgent(app, admin)
+    const agentTarget = await loginAgent(app, target)
+
+    const post = await agentTarget.post('/api/posts').send({ content: 'Ôn tập cây AVL', tags: ['CTDL'] }).expect(201)
+    await agentTarget.post('/api/events').send({ events: [{ type: 'post_open', targetType: 'post', targetId: post.body.data.id }] }).expect(204)
+    await agentTarget.get('/api/ai/suggestions').expect(200) // tính hồ sơ
+
+    await agentTarget.get(`/api/admin/users/${target.id}/insight`).expect(403)
+    const res = await agentAdmin.get(`/api/admin/users/${target.id}/insight`).expect(200)
+    const d = res.body.data
+    expect(d.user.username).toBe(target.username)
+    expect(d.personalization).toBe(true)
+    expect(d.signals.postsAuthored).toBe(1)
+    expect(d.eventCounts.post_open).toBe(1)
+    expect(d.recentEvents[0]).toMatchObject({ type: 'post_open', tags: ['CTDL'] })
+    expect(d.interests.map((t: { label: string }) => t.label)).toContain('ctdl')
+    expect(d.suggestionPreview).toHaveLength(4)
+
+    const log = await db.query(`SELECT 1 FROM admin_audit_logs WHERE admin_id = $1 AND action = 'user.insight_view' AND target_id = $2`, [admin.id, target.id])
+    expect(log.rowCount).toBe(1)
+    await agentAdmin.get('/api/admin/users/00000000-0000-0000-0000-000000000000/insight').expect(404)
+  })
+
   it('từ chối sự kiện không hợp lệ', async () => {
     const a = await createUser(db)
     const agentA = await loginAgent(app, a)

@@ -55,6 +55,12 @@ export class AdminController {
     return this.admin.listUsers(q, status, toInt(limit, 50))
   }
 
+  // Dữ liệu cá nhân hóa (hồ sơ quan tâm, hành vi, câu hỏi PU AI) — có ghi nhật ký
+  @Get('users/:id/insight')
+  userInsight(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.admin.userInsight(requireUserId(req), id)
+  }
+
   @Post('users/:id/suspend')
   @HttpCode(HttpStatus.OK)
   suspend(
