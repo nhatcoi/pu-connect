@@ -720,4 +720,6 @@ Migration `personalization-upgrade.sql`:
 
 **Quyền riêng tư**: `privacySettings.personalization` (mặc định bật, công tắc "Cá nhân hóa gợi ý"). Tắt ⇒ server không ghi sự kiện, `UserEventsService.forget` xóa `user_events` + `user_interests`, gợi ý về mặc định. `search_logs` vẫn ẩn danh như cũ (thống kê từ khóa cho admin).
 
+**Soi dữ liệu 1 người**: `pnpm user:insight <username> [--local]` (`scripts/ops/user-insight.sh` + `sql/user-insight.sql`, chỉ đọc) — hồ sơ, cờ, `user_interests` (top 12 = thứ gợi ý AI dùng), số tín hiệu nguồn, 30 sự kiện gần nhất, câu hỏi PU AI kèm môn nhận diện.
+
 Chưa làm: đo CTR theo `ai_suggestion_shown` / xếp hạng bằng bandit; nhờ LLM viết lại câu gợi ý; partition `user_events` theo tháng (khi bảng lớn).

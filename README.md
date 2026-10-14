@@ -121,6 +121,7 @@ Cài một lần trên VPS (idempotent): `ssh root@<vps> 'bash /var/www/pu-conne
 - **Backup DB** 03:17 hằng ngày (`scripts/ops/backup-db.sh`): `pg_dump` → gzip → mã hóa AES-256 (`BACKUP_PASSPHRASE` trong `.env`, tự sinh) → R2 `backups/db/` (giữ 30 ngày) + `/var/backups/pu-connector` (giữ 7 bản). Bucket R2 là public nên **bắt buộc mã hóa**. **Lưu bản sao `BACKUP_PASSPHRASE` ngoài VPS** — mất khóa = không khôi phục được.
 - **Thử khôi phục** (an toàn, vào DB tạm rồi xóa): `bash scripts/ops/restore-db.sh [file | backups/db/<tên>]`. Ghi đè DB thật: thêm `--into-live` (phải gõ tên DB xác nhận).
 - **Giám sát** mỗi 5 phút (`scripts/ops/healthcheck.sh`): web 200, API 401, systemd, container, Postgres, đĩa < 85%, RAM, backup < 26 giờ. Chỉ cảnh báo khi trạng thái đổi.
+- **Xem dữ liệu cá nhân hóa của 1 user** (chỉ đọc): `pnpm user:insight <username>` (DB stage qua SSH) hoặc thêm `--local`. In hồ sơ, `user_interests`, tín hiệu nguồn, `user_events` gần nhất, câu hỏi PU AI.
 - **Cảnh báo Telegram** (tùy chọn): thêm `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` vào `.env` trên VPS (tạo bot qua @BotFather). Không có thì ghi log `/var/log/pu-monitor.log`, `/var/log/pu-backup.log`.
 
 ### 8. Sơ đồ hệ thống
