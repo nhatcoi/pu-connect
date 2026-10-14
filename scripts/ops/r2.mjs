@@ -23,9 +23,13 @@ const s3 = new S3Client({
   credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY }
 })
 
+// Kiểu nội dung theo đuôi tệp ⇒ ảnh hiển thị thẳng trên trình duyệt / Content type from extension
+const CONTENT_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf' }
+const contentType = (file) => CONTENT_TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream'
+
 const [cmd, a, b] = process.argv.slice(2)
 if (cmd === 'put') {
-  await s3.send(new PutObjectCommand({ Bucket, Key: b, Body: createReadStream(a), ContentType: 'application/octet-stream' }))
+  await s3.send(new PutObjectCommand({ Bucket, Key: b, Body: createReadStream(a), ContentType: contentType(a) }))
   console.log(`uploaded ${b}`)
 } else if (cmd === 'list') {
   let token
