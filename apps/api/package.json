@@ -11,6 +11,7 @@
     "start:prod": "node dist/apps/api/src/main",
     "typecheck": "tsc --noEmit",
     "seed:posts": "ts-node src/database/seed-posts.ts",
+    "seed:social": "ts-node src/database/seed-social/index.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:e2e": "jest --runInBand"
