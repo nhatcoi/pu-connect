@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { EyeOff, Eye, Loader2, Lock, LockOpen, SearchX, ShieldCheck, X } from 'lucide-react'
+import { Activity, EyeOff, Eye, Loader2, Lock, LockOpen, SearchX, ShieldCheck, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminAuditLog, AdminReportedPost, AdminStats, AdminUserRow, ZeroResultQuery } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CardListSkeleton } from '@/components/skeletons/catalog-skeleton'
+import { UserInsightDialog } from '@/components/admin/user-insight-dialog'
 
 type Tab = 'reports' | 'users' | 'searches' | 'logs'
 type Envelope<T> = { success: boolean; data: T }
@@ -38,7 +39,8 @@ const ACTION_LABELS: Record<string, string> = {
   'post.unhide': 'Hiện lại bài viết',
   'report.dismiss': 'Bỏ qua báo cáo',
   'user.suspend': 'Khóa tài khoản',
-  'user.unsuspend': 'Mở khóa tài khoản'
+  'user.unsuspend': 'Mở khóa tài khoản',
+  'user.insight_view': 'Xem dữ liệu cá nhân hóa'
 }
 
 // Trang quản trị tối giản: xử lý báo cáo, khóa/mở tài khoản, từ khóa tìm trống, nhật ký
@@ -277,6 +279,7 @@ function ReportRow({
 function UsersTab({ currentUserId }: { currentUserId: string }) {
   const [q, setQ] = useState('')
   const [onlySuspended, setOnlySuspended] = useState(false)
+  const [insightId, setInsightId] = useState<string | null>(null)
   const refresh = useAdminRefresh()
   const params = new URLSearchParams()
   if (q.trim()) params.set('q', q.trim())
@@ -324,9 +327,11 @@ function UsersTab({ currentUserId }: { currentUserId: string }) {
             isSelf={u.id === currentUserId}
             busy={act.isPending && act.variables?.id === u.id}
             onAction={(action, reason) => act.mutate({ id: u.id, action, reason })}
+            onInsight={() => setInsightId(u.id)}
           />
         ))
       )}
+      <UserInsightDialog userId={insightId} onClose={() => setInsightId(null)} />
     </>
   )
 }
@@ -335,12 +340,14 @@ function UserRow({
   user,
   isSelf,
   busy,
-  onAction
+  onAction,
+  onInsight
 }: {
   user: AdminUserRow
   isSelf: boolean
   busy: boolean
   onAction: (action: 'suspend' | 'unsuspend', reason?: string) => void
+  onInsight: () => void
 }) {
   const [confirm, setConfirm] = useState(false)
   const [reason, setReason] = useState('')
@@ -369,6 +376,9 @@ function UserRow({
             <p className="text-[11px] text-destructive truncate">Lý do: {user.suspendedReason}</p>
           )}
         </div>
+        <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" title="Dữ liệu cá nhân hóa" aria-label="Dữ liệu cá nhân hóa" onClick={onInsight}>
+          <Activity className="h-3.5 w-3.5" />
+        </Button>
         {!protectedAccount && !confirm && (
           suspended ? (
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" disabled={busy} onClick={() => onAction('unsuspend')}>
