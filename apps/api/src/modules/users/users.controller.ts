@@ -5,12 +5,14 @@ import {
   Post,
   Param,
   Body,
+  Query,
   Req,
   UseGuards,
   HttpCode,
   HttpStatus
 } from '@nestjs/common'
 import { UsersService } from './users.service'
+import { FollowSuggestionsService } from './follow-suggestions.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import type { UpdateProfileInput, UpdatePrivacySettingsInput } from '@pu/schemas'
 import { UpdatePrivacyBodySchema } from './dto/privacy.dto'
@@ -20,7 +22,17 @@ import type { Request } from 'express'
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly suggestions: FollowSuggestionsService
+  ) {}
+
+  // Gợi ý theo dõi đã xếp hạng (đặt trước ':username' để không bị route động bắt)
+  @Get('suggestions')
+  @UseGuards(AuthenticatedGuard)
+  async getSuggestions(@Req() req: Request, @Query('limit') limit?: string) {
+    return this.suggestions.list((req.user as any).id, parseInt(limit ?? '', 10) || 20)
+  }
 
   @Get(':username')
   async getProfile(@Param('username') username: string, @Req() req: Request) {
