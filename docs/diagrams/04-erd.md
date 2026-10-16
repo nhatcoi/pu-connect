@@ -97,6 +97,7 @@ erDiagram
     text_array interests
     timestamptz created_at
     timestamptz updated_at
+    varchar school
     varchar major
     varchar class_name
     boolean is_verified
@@ -104,9 +105,8 @@ erDiagram
     jsonb privacy_settings
     varchar location
     varchar website
-    varchar birth_date
+    date birth_date
     varchar banner_url
-    varchar school
     varchar google_id
     varchar auth_provider
     boolean email_verified
@@ -125,6 +125,7 @@ erDiagram
     varchar suspended_reason
     timestamptz last_seen_at
     timestamptz interests_updated_at
+    jsonb preferences
   }
   user_follows {
     uuid follower_id PK,FK
