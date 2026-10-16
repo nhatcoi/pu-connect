@@ -1,6 +1,6 @@
 # 02 · Containers (C4 Level 2)
 
-> Các ứng dụng/tiến trình và giao thức giữa chúng. Cập nhật lần cuối: **2026-10-13**.
+> Các ứng dụng/tiến trình và giao thức giữa chúng. Cập nhật lần cuối: **2026-10-16**.
 
 ```mermaid
 flowchart LR
@@ -30,6 +30,7 @@ flowchart LR
 
   api -->|"SQL · pg.Pool (max 20)<br/>ACID transaction"| db
   api -->|OAuth 2.0| google
+  api -->|OAuth drive.readonly · Drive API v3| google
   api -->|SMTP| gmail
   api -->|S3 PutObject| r2
   api -->|"HTTPS streaming (PU AI)"| claude
@@ -71,6 +72,7 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-16 — API gọi Google Drive API cho connector PU AI.
 - 2026-10-13 — `chat-push` thêm job `clear`: push im lặng đóng thông báo OS đã đọc ở thiết bị khác.
 - 2026-10-13 — Redis: thêm queue `chat-push` (Web Push tin nhắn).
 - 2026-10-13 — LLM: gateway OpenAI-compatible thay cho Anthropic API.

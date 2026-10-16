@@ -22,7 +22,7 @@
 | Trí nhớ dài | Tóm tắt cuộn `conversations.ai_summary` + `ai_summary_upto`; gửi LLM = tóm tắt + ≤ 20 tin sau mốc | Thread dài không quên phần đầu, prompt không phình |
 | Skill | Bảng `ai_skills` của từng người (≤ 30), chỉ chủ skill gọi được; list trả payload nhẹ, chi tiết mới có `instructions` | Prompt riêng tư; cache list lâu ở client |
 | Chế độ học | Giữ 6 `AiMode` (thanh chip + `/explain`…) — skill là lớp chỉ dẫn **cộng thêm** | Không phá quiz/flashcard đang render theo `aiMode` |
-| Connector | Registry nội bộ: Thư viện PU (mặc định), Tài liệu của tôi (gồm riêng tư, đọc `document_chunks`), Nhóm học của tôi; Google Drive "Sắp có" | Drive cần OAuth scope `drive.readonly` + Google verification — ghi backlog |
+| Connector | Thư viện PU (mặc định), Tài liệu của tôi (gồm riêng tư, đọc `document_chunks`), Nhóm học của tôi, **Google Drive** (OAuth riêng `drive.readonly`, xem §7) | Nguồn nội bộ không cần quyền thêm; Drive chỉ khi người dùng tự kết nối, token mã hóa |
 | Research | Cờ theo tin: truy xuất sâu hơn (8 bài + 4 tài liệu, thân dài hơn) + prompt báo cáo; **tốn 2 lượt** (`ai_runs.task='research'`) | Chi phí token cao hơn |
 | Tùy chọn composer | Connector / Research nhớ ở `localStorage` (try/catch), gửi kèm từng tin, lưu `meta` | Không cần thêm bảng / endpoint cài đặt |
 
@@ -52,7 +52,9 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 | PATCH / DELETE | `/ai/threads/:id` | đổi tên / xóa (cascade tin) |
 | GET / POST | `/ai/skills` | list nhẹ / tạo |
 | GET / PATCH / DELETE | `/ai/skills/:id` | chi tiết có `instructions` / sửa / xóa |
-| GET | `/ai/connectors` | registry + trạng thái khả dụng |
+| GET | `/ai/connectors` | registry + `available` / `connected` / `account` của người xem |
+| GET | `/ai/connectors/google-drive/connect` · `/callback` | OAuth redirect flow (state trong session) ⇒ `/messages?drive=connected\|error` |
+| DELETE | `/ai/connectors/google-drive` | xóa token + revoke phía Google |
 
 `ConversationSummary.unreadMentions` (badge `@`).
 
@@ -75,7 +77,15 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 
 ## 6. Backlog
 
-- Connector Google Drive / Calendar (OAuth scope riêng + màn đồng ý Google).
+- Connector Google Calendar (cùng cơ chế Drive).
 - Chia sẻ skill công khai (thư viện skill trường).
 - Tìm thread theo nội dung tin (hiện: theo tiêu đề).
 - Xóa tệp R2 khi xóa thread AI.
+
+## 7. Connector Google Drive
+
+- Migration `ai-connectors-upgrade.sql`: `user_connectors(user_id, provider, refresh_token_enc, account_email, scope, …, PK(user_id, provider))`.
+- `ai/connectors/`: `GoogleDriveService` (authorize URL, đổi code, làm mới access token có cache, tìm `fullText contains`, export Docs/Sheets/Slides, tải PDF/DOCX/txt ≤ 10 MB ⇒ `ai/doc-text.ts`), `TokenCipher` (AES-256-GCM), `AiConnectorsService` (registry + trạng thái), `AiConnectorsController`.
+- Token bị thu hồi (`invalid_grant`) ⇒ tự xóa kết nối; mọi lỗi Drive ⇒ PU AI bỏ qua nguồn này (`AiRetrieval.safe`).
+- Web: menu `+` › Connectors hiện "Kết nối" (điều hướng cả trang tới `/api/ai/connectors/google-drive/connect`), đã kết nối ⇒ bật/tắt như nguồn khác + email tài khoản + "Ngắt Google Drive"; `/messages?drive=` báo kết quả bằng toast.
+- Cấu hình Google Console: [`docs/auth-google.md`](../auth-google.md#connector-google-drive-cho-pu-ai-tùy-chọn).
