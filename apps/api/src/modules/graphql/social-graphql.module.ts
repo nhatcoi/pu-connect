@@ -5,9 +5,10 @@ import { DocumentResolver } from './resolvers/document.resolver'
 import { StudyGroupResolver } from './resolvers/study-group.resolver'
 import { CommentResolver } from './resolvers/comment.resolver'
 import { NotificationsModule } from '../notifications/notifications.module'
+import { UsersModule } from '../users/users.module'
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, UsersModule],
   providers: [FeedResolver, UserResolver, DocumentResolver, StudyGroupResolver, CommentResolver],
   exports: [FeedResolver, UserResolver, DocumentResolver, StudyGroupResolver, CommentResolver]
 })

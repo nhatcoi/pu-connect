@@ -1,4 +1,5 @@
 import { ObjectType, Field, ID, Int } from '@nestjs/graphql'
+import type { ProfileAccess } from '../../users/profile-access.service'
 
 @ObjectType('User')
 export class UserType {
@@ -59,4 +60,15 @@ export class UserType {
 
   @Field()
   createdAt: string
+
+  // Hồ sơ riêng tư & người xem chưa theo dõi ⇒ ẩn bài, tài liệu, hoạt động
+  @Field(() => Boolean, { defaultValue: false, nullable: true })
+  isContentLocked?: boolean
+
+  // Tab hoạt động người xem được mở: liked | saved | commented
+  @Field(() => [String], { nullable: true })
+  activityTabs?: string[]
+
+  // Nội bộ (không phải field GraphQL): quyền xem đã tính cho request này
+  access?: ProfileAccess
 }

@@ -9,16 +9,22 @@ import { NotificationsService } from '../../notifications/notifications.service'
 import { NotFoundException, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common'
 import type { BlockState } from '@pu/schemas'
 import { blockExistsSql, blockStateSql } from '../../blocks/blocks.sql'
+import { ProfileAccessService } from '../../users/profile-access.service'
 
 @Resolver(() => UserType)
 export class UserResolver {
   constructor(
     private readonly db: DatabaseService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly profileAccess: ProfileAccessService
   ) {}
 
+  // Hồ sơ: áp privacy (email / MSSV / lớp) + hồ sơ riêng tư + tab hoạt động theo người xem
   @Query(() => UserType, { name: 'userProfile', nullable: true })
-  async getUserProfile(@Args('username', { type: () => String }) username: string): Promise<UserType | null> {
+  async getUserProfile(
+    @Args('username', { type: () => String }) username: string,
+    @Context() context: any
+  ): Promise<UserType | null> {
     const res = await this.db.query(
       `SELECT id, email, username, display_name, student_id, faculty, academic_year, major, class_name, is_verified, avatar_url, bio, role, reputation_points, created_at
        FROM users
@@ -30,7 +36,18 @@ export class UserResolver {
       throw new NotFoundException(`Không tìm thấy sinh viên/giảng viên @${username}`)
     }
 
-    return this.mapRowToUser(res.rows[0])
+    const user = this.mapRowToUser(res.rows[0], true)
+    const access = await this.profileAccess.resolve({ id: user.id }, this.viewerId(context))
+    const { privacy, isOwner } = access
+    return {
+      ...user,
+      email: isOwner || privacy.showEmail ? user.email : '',
+      studentId: isOwner || privacy.showStudentId ? user.studentId : null,
+      className: isOwner || privacy.showClass ? user.className : null,
+      isContentLocked: access.locked,
+      activityTabs: access.activityTabs,
+      access
+    }
   }
 
   @Query(() => UserType, { name: 'me', nullable: true })
@@ -183,10 +200,10 @@ export class UserResolver {
     return res.rows[0]?.state ?? 'none'
   }
 
-  // Có quan hệ chặn ⇒ không trả bài viết / tài liệu
+  // Có quan hệ chặn / hồ sơ riêng tư chưa theo dõi ⇒ không trả bài viết / tài liệu
   @ResolveField(() => [PostType], { name: 'posts' })
   async getUserPosts(@Parent() user: UserType, @Context() context: any): Promise<PostType[]> {
-    if (await this.isBlockedWithViewer(context, user.id)) return []
+    if (await this.isHiddenFromViewer(context, user)) return []
     const res = await this.db.query(
       `SELECT p.*,
               u.id as author_id, u.email as author_email, u.username as author_username,
@@ -226,7 +243,7 @@ export class UserResolver {
 
   @ResolveField(() => [DocumentType], { name: 'documents' })
   async getUserDocuments(@Parent() user: UserType, @Context() context: any): Promise<DocumentType[]> {
-    if (await this.isBlockedWithViewer(context, user.id)) return []
+    if (await this.isHiddenFromViewer(context, user)) return []
     const res = await this.db.query(
       `SELECT d.*
        FROM documents d
@@ -293,6 +310,12 @@ export class UserResolver {
     return context?.req?.user?.id || context?.req?.session?.passport?.user?.id
   }
 
+  // Dùng quyền đã tính ở userProfile; nơi khác (danh sách user) chỉ xét chặn
+  private async isHiddenFromViewer(context: any, user: UserType): Promise<boolean> {
+    if (user.access) return user.access.blocked || user.access.locked
+    return this.isBlockedWithViewer(context, user.id)
+  }
+
   private async isBlockedWithViewer(context: any, userId: string): Promise<boolean> {
     const viewerId = this.viewerId(context)
     if (!viewerId || viewerId === userId) return false
@@ -300,17 +323,19 @@ export class UserResolver {
     return res.rows[0].blocked
   }
 
-  private mapRowToUser(row: any): UserType {
+  // withPrivate = false (danh sách user) ⇒ không bao giờ trả email / MSSV / lớp
+  // userProfile tự lọc lại theo privacy của chủ hồ sơ
+  private mapRowToUser(row: any, withPrivate = false): UserType {
     return {
       id: row.id,
-      email: row.email,
+      email: withPrivate ? row.email : '',
       username: row.username,
       displayName: row.display_name,
-      studentId: row.student_id,
+      studentId: withPrivate ? row.student_id : null,
       faculty: row.faculty,
       academicYear: row.academic_year,
       major: row.major || null,
-      className: row.class_name || null,
+      className: withPrivate ? row.class_name || null : null,
       isVerified: !!row.is_verified,
       avatarUrl: row.avatar_url,
       bio: row.bio,
