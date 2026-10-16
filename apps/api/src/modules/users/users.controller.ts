@@ -14,6 +14,7 @@ import { UsersService } from './users.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import type { UpdateProfileInput, UpdatePrivacySettingsInput } from '@pu/schemas'
 import { UpdatePrivacyBodySchema } from './dto/privacy.dto'
+import { UpdatePreferencesBodySchema, type UpdatePreferencesInput } from './dto/preferences.dto'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import type { Request } from 'express'
 
@@ -46,6 +47,15 @@ export class UsersController {
   async updatePrivacy(@Req() req: Request, @Body(new ZodValidationPipe(UpdatePrivacyBodySchema)) body: UpdatePrivacySettingsInput) {
     const userId = (req.user as any).id
     return this.usersService.updatePrivacySettings(userId, body)
+  }
+
+  // Bật/tắt tính năng (Feature plugs) — lưu ngay từng công tắc
+  @Patch('preferences')
+  @UseGuards(AuthenticatedGuard)
+  @HttpCode(HttpStatus.OK)
+  async updatePreferences(@Req() req: Request, @Body(new ZodValidationPipe(UpdatePreferencesBodySchema)) body: UpdatePreferencesInput) {
+    const userId = (req.user as any).id
+    return this.usersService.updatePreferences(userId, body)
   }
 
   @Post('verify-university')

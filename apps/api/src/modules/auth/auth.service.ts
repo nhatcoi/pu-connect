@@ -12,6 +12,7 @@ import {
 import { DatabaseService } from '../../database/database.service'
 import type { RegisterInput, OnboardingInput, UserProfile } from '@pu/schemas'
 import { resolvePrivacySettings } from '../users/dto/privacy.dto'
+import { resolveFeaturePreferences } from '../users/dto/preferences.dto'
 import * as bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'crypto'
 import { ConfigService } from '@nestjs/config'
@@ -41,7 +42,7 @@ export class AuthService {
   async validateUser(emailOrUsername: string, password: string): Promise<UserProfile | null> {
     const res = await this.db.query(
       `SELECT id, email, username, password_hash, display_name, student_id, school, faculty, academic_year,
-              major, class_name, is_verified, verified_at, privacy_settings,
+              major, class_name, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
               avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at
        FROM users
@@ -71,7 +72,7 @@ export class AuthService {
   async findById(id: string): Promise<UserProfile | null> {
     const res = await this.db.query(
       `SELECT id, email, username, display_name, student_id, school, faculty, academic_year,
-              major, class_name, is_verified, verified_at, privacy_settings,
+              major, class_name, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
               avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at
        FROM users
@@ -116,7 +117,7 @@ export class AuthService {
         email, username, password_hash, display_name, student_id, faculty, academic_year, avatar_url, role, reputation_points, is_onboarded, is_verified, verified_at
        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, TRUE, FALSE, NULL)
        RETURNING id, email, username, display_name, student_id, faculty, academic_year,
-                 major, class_name, is_verified, verified_at, privacy_settings,
+                 major, class_name, is_verified, verified_at, privacy_settings, preferences,
                  avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at`,
       [
         emailLower,
@@ -381,7 +382,7 @@ export class AuthService {
            updated_at = NOW()
        WHERE id = $10
        RETURNING id, email, username, display_name, student_id, school, faculty, academic_year,
-                 major, class_name, is_verified, verified_at, privacy_settings,
+                 major, class_name, is_verified, verified_at, privacy_settings, preferences,
                  location, website, birth_date,
                  avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at`,
       [
@@ -445,6 +446,7 @@ export class AuthService {
       isVerified: !!row.is_verified,
       verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
       privacySettings: resolvePrivacySettings(row.privacy_settings),
+      preferences: resolveFeaturePreferences(row.preferences),
       location: row.location || null,
       website: row.website || null,
       birthDate: row.birth_date || null,

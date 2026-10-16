@@ -24,6 +24,12 @@ export interface FeedWindow {
   after?: string
 }
 
+// Tùy chọn feed: cửa sổ thời gian + cờ tính năng của người xem (preferences)
+export interface FeedOptions extends FeedWindow {
+  // false ⇒ không chạy query bình luận nổi bật
+  featuredComment?: boolean
+}
+
 export interface NewPostsSummary {
   count: number
   authors: { id: string; username: string; displayName: string; avatarUrl: string | null }[]
@@ -56,7 +62,7 @@ export class PostsService {
     offset = 0,
     feedType = 'for_you',
     courseCode?: string,
-    window: FeedWindow = {}
+    window: FeedOptions = {}
   ): Promise<FeedResult> {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
@@ -134,7 +140,9 @@ export class PostsService {
     const postIds = res.rows.map((r) => r.id)
     const [pollsMap, featuredMap] = await Promise.all([
       this.fetchPollsForPosts(postIds, currentUserId),
-      this.fetchFeaturedComments(postIds, currentUserId)
+      window.featuredComment === false
+        ? new Map<string, FeaturedComment>()
+        : this.fetchFeaturedComments(postIds, currentUserId)
     ])
 
     const items = res.rows.map((row) => ({

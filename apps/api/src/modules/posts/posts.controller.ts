@@ -16,7 +16,7 @@ import {
 import { PostsService } from './posts.service'
 import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
-import type { CreatePostInput, UpdatePostInput, ReportPostInput, VotePollInput } from '@pu/schemas'
+import type { CreatePostInput, UpdatePostInput, ReportPostInput, VotePollInput, UserProfile } from '@pu/schemas'
 import type { Request } from 'express'
 import { requireUserId } from '../../common/http/current-user'
 
@@ -53,7 +53,8 @@ export class PostsController {
       parsedOffset,
       feedType || 'for_you',
       course,
-      { before, after }
+      // Người xem tắt "Bình luận nổi bật" ⇒ bỏ query (req.user nạp từ session mỗi request)
+      { before, after, featuredComment: (req.user as UserProfile | undefined)?.preferences?.featuredComment }
     )
     return {
       success: true,

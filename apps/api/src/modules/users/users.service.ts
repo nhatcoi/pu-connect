@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
-import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings } from '@pu/schemas'
+import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings, FeaturePreferences } from '@pu/schemas'
 import { UserEventsService } from '../personalization/user-events.service'
 import { resolvePrivacySettings } from './dto/privacy.dto'
+import { resolveFeaturePreferences, type UpdatePreferencesInput } from './dto/preferences.dto'
 
 @Injectable()
 export class UsersService {
@@ -212,6 +213,19 @@ export class UsersService {
 
     this.logger.log(`User ${userId} updated privacy settings: ${JSON.stringify(updatedPrivacy)}`)
     return updatedPrivacy
+  }
+
+  // Gộp cờ tính năng vào preferences (jsonb ||, 1 câu lệnh) rồi trả bản đầy đủ
+  // Merge feature flags atomically; returns resolved preferences
+  async updatePreferences(userId: string, data: UpdatePreferencesInput): Promise<FeaturePreferences> {
+    const changes = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined))
+    const res = await this.db.query(
+      `UPDATE users SET preferences = COALESCE(preferences, '{}'::jsonb) || $1::jsonb, updated_at = NOW()
+       WHERE id = $2 RETURNING preferences`,
+      [JSON.stringify(changes), userId]
+    )
+    if (res.rows.length === 0) throw new NotFoundException('Người dùng không tồn tại')
+    return resolveFeaturePreferences(res.rows[0].preferences)
   }
 
   /**

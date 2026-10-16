@@ -49,6 +49,16 @@ export const PrivacySettingsSchema = z.object({
   personalization: z.boolean().default(true)
 })
 
+// Tùy chọn tính năng (Feature plugs): chỉ ảnh hưởng trải nghiệm của chính mình
+export const FeaturePreferencesSchema = z.object({
+  // Bảng tin: 1 bình luận nổi bật dưới mỗi bài (tắt ⇒ server bỏ luôn query)
+  featuredComment: z.boolean().default(true),
+  // Bảng tin: pill "N bài mới" (tắt ⇒ dừng polling + socket)
+  newPostsPill: z.boolean().default(true),
+  // PU AI: nút "✨ Tóm tắt" trên bài dài
+  aiSummary: z.boolean().default(true)
+})
+
 export const UserProfileSchema = z.object({
   id: z.string(),
   email: z.string().email(),
@@ -81,6 +91,7 @@ export const UserProfileSchema = z.object({
     showActivityStatus: true,
     personalization: true
   }),
+  preferences: FeaturePreferencesSchema.default({ featuredComment: true, newPostsPill: true, aiSummary: true }),
   skills: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),
   createdAt: z.string()
@@ -109,11 +120,18 @@ export type RegisterInput = z.infer<typeof RegisterSchema>
 export type LoginInput = z.infer<typeof LoginSchema>
 export type OnboardingInput = z.infer<typeof OnboardingSchema>
 export type PrivacySettings = z.infer<typeof PrivacySettingsSchema>
+export type FeaturePreferences = z.infer<typeof FeaturePreferencesSchema>
+export type FeaturePreferenceKey = keyof FeaturePreferences
 
 // Điền mặc định cho privacy_settings cũ / thiếu trường (Fill defaults for legacy rows)
 export function resolvePrivacySettings(raw: unknown): PrivacySettings {
   const parsed = PrivacySettingsSchema.safeParse(raw ?? {})
   return parsed.success ? parsed.data : PrivacySettingsSchema.parse({})
+}
+// Điền mặc định cho preferences cũ / thiếu trường
+export function resolveFeaturePreferences(raw: unknown): FeaturePreferences {
+  const parsed = FeaturePreferencesSchema.safeParse(raw ?? {})
+  return parsed.success ? parsed.data : FeaturePreferencesSchema.parse({})
 }
 export type UserProfile = z.infer<typeof UserProfileSchema>
 export type UpdateProfileInput = z.infer<typeof UpdateProfileSchema>
