@@ -54,7 +54,31 @@ export interface NotificationItem {
   updatedAt: string
 }
 
+const FENCE_LABELS: Record<string, string> = { quiz: '📝 Quiz', flashcards: '🗂️ Flashcard' }
+
+// Markdown → văn bản thuần 1 dòng cho thông báo in-app & Web Push
+export function markdownToPlainText(md: string): string {
+  return (
+    md
+      .replace(/```(\w+)?[^\n]*\n?[\s\S]*?(```|$)/g, (_, lang?: string) => ` ${(lang && FENCE_LABELS[lang]) || '[code]'} `)
+      .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, (_, alt: string) => alt || '🖼️')
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+      .replace(/<[^>]+>/g, '')
+      .replace(/^\s{0,3}(#{1,6}|>+|[-*+]|\d+[.)])\s+/gm, '')
+      .replace(/^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-*:?\s*$/gm, '')
+      .replace(/\|/g, ' ')
+      .replace(/(\*\*|__|~~)(.+?)\1/g, '$2')
+      .replace(/(^|[^\w*])[*_](?!\s)([^*_\n]+?)[*_](?=[^\w*]|$)/g, '$1$2')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\$([^$\n]+)\$/g, '$1')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+}
+
 export function snippet(text: string | null | undefined, max = 120): string {
-  const clean = (text || '').replace(/\s+/g, ' ').trim()
+  const clean = markdownToPlainText(text || '')
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean
 }
+

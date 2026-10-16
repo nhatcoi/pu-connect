@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react'
 import { create } from 'zustand'
 import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
+import { markdownToPlainText } from '@/lib/plain-text'
 import { useAppStore } from '@/store'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 
@@ -121,8 +122,9 @@ export function useNotificationsSync(onNavigate: (link: string) => void) {
     if (!payload?.notification) return refresh()
     upsert(payload.notification, payload.unreadCount)
     const { notification } = payload
+    const description = notification.message ? markdownToPlainText(notification.message) : ''
     toast(notification.title, {
-      description: notification.message || undefined,
+      description: description || undefined,
       action: notification.link
         ? { label: 'Xem', onClick: () => onNavigate(notification.link as string) }
         : undefined

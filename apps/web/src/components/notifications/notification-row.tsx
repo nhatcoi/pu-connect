@@ -3,7 +3,9 @@
 import React from 'react'
 import { AtSign, Award, BadgeCheck, Heart, MessageSquare, Reply, Sparkles, UserPlus } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { PuMark } from '@/components/brand/pu-logo'
+import { N7AiMark, PuMark } from '@/components/brand/pu-logo'
+import { PUAI_USERNAME } from '@/lib/mention'
+import { markdownToPlainText } from '@/lib/plain-text'
 import { formatRelativeTime, cn } from '@/lib/utils'
 import type { NotificationItem, NotificationType } from '@/hooks/use-notifications'
 
@@ -27,6 +29,7 @@ interface NotificationRowProps {
 
 export function NotificationRow({ item, onClick, compact }: NotificationRowProps) {
   const initials = (item.actor?.displayName || 'PU').slice(0, 2).toUpperCase()
+  const preview = item.message ? markdownToPlainText(item.message) : ''
 
   return (
     <button
@@ -39,7 +42,12 @@ export function NotificationRow({ item, onClick, compact }: NotificationRowProps
       )}
     >
       <div className="relative shrink-0">
-        {item.actor ? (
+        {item.actor?.username === PUAI_USERNAME ? (
+          // Thông báo từ trợ lý PU AI (@puai)
+          <span className={cn('flex items-center justify-center rounded-full bg-muted', compact ? 'h-8 w-8' : 'h-10 w-10')}>
+            <N7AiMark className="h-[72%] w-[72%]" />
+          </span>
+        ) : item.actor ? (
           <Avatar className={compact ? 'h-8 w-8' : 'h-10 w-10'}>
             <AvatarImage src={item.actor.avatarUrl || ''} />
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials}</AvatarFallback>
@@ -59,9 +67,9 @@ export function NotificationRow({ item, onClick, compact }: NotificationRowProps
         <p className={cn('leading-snug text-foreground', compact ? 'text-xs' : 'text-[13px]', !item.isRead && 'font-semibold')}>
           {item.title}
         </p>
-        {item.message && (
+        {preview && (
           <p className={cn('mt-0.5 line-clamp-2 text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}>
-            {item.message}
+            {preview}
           </p>
         )}
         <p className="mt-1 text-[10px] font-medium text-muted-foreground">{formatRelativeTime(item.updatedAt)}</p>
