@@ -100,5 +100,5 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 
 ## 9. Chất lượng mã
 
-- ESLint flat config: `apps/web/eslint.config.mjs` (`next/core-web-vitals` + `next/typescript`), `apps/api/eslint.config.mjs` (`typescript-eslint` recommended). `pnpm lint`: API 0 vấn đề; web 0 lỗi — đã dọn ~120 cảnh báo (import/biến thừa, `catch (err: any)` ⇒ `errorMessage(err, fallback)`, kiểu phản hồi feed/bình luận, `ApiError`, `<img>` cố ý có chú thích lý do). Cảnh báo còn lại chỉ ở các file đang có thay đổi dở của người khác lúc dọn.
+- ESLint flat config: `apps/web/eslint.config.mjs` (`next/core-web-vitals` + `next/typescript`), `apps/api/eslint.config.mjs` (`typescript-eslint` recommended). `pnpm lint`: API và web đều 0 lỗi, 0 cảnh báo — đã dọn ~150 cảnh báo (import/biến thừa, `catch (err: any)` ⇒ `errorMessage(err, fallback)`, kiểu phản hồi feed/bình luận, `ApiError`, `<img>` cố ý có chú thích lý do).
 - `.prettierrc.json` khớp style repo; toàn bộ mã `apps/*`, `packages/*` đã format (commit `style: format codebase…`, không đổi hành vi; kiểm lại bằng typecheck + build + 39 e2e).
