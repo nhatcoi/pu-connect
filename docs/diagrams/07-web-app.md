@@ -99,7 +99,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | Màn hình / component | REST | GraphQL | Realtime |
 |---|---|---|---|
 | Landing / AuthForm | `auth/providers`, `auth/check-email`, `auth/login`, `auth/register`, `auth/me` | — | — |
-| `/home` feed, PostCard (+ nút ✨ Tóm tắt) | `posts`, `posts/:id/*` (gồm `summary`), `posts/:postId/comments`, `comments/:id/*` | `toggleFollow` (follow trên PostCard) | — |
+| `/home` feed, PostCard (+ nút ✨ Tóm tắt) | `posts`, `posts/:id/*` (gồm `summary`), `posts/:postId/comments`, `comments/:id/*` (gồm `PATCH` sửa), `mentions/suggest` | `toggleFollow` (follow trên PostCard) | — |
 | RightSidebar | — | `suggestedUsers` | — |
 | `/[username]` (+ menu ⋯ Chặn) | `users/:username`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
 | Communities | `communities`, `communities/:slug/*` | — | — |
@@ -115,6 +115,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-16 — bình luận: mention picker (`useMentionPicker` + `components/mentions/MentionPopover`, PU AI ghim đầu, gọi `GET /mentions/suggest`), sửa bình luận tại chỗ, nháp localStorage (`useDraft`).
 - 2026-10-16 — thêm `/settings`, `/settings/[section]` (thay dialog quyền riêng tư; menu mục ở cột phải qua `PageAside`); feature plugs `useFeatureEnabled` gắn vào PostCard (bình luận nổi bật, tóm tắt) và `/home` (pill bài mới).
 - 2026-10-14 — `lib/track.ts` (gom sự kiện hành vi, gửi `POST /events` theo lô) + `useDwellTracking` trên PostCard; PU AI: gợi ý mở đầu từ `GET /ai/suggestions` theo chế độ, bảng gợi ý trên ô soạn khi đổi chế độ, chip câu hỏi tiếp theo; công tắc "Cá nhân hóa gợi ý" trong quyền riêng tư.
 - 2026-10-14 — khung app 1440px, cột giữa 760px (`lib/layout.ts` dùng chung cho Header/AppLayout/skeleton); xem trước tin nhắn bỏ ký hiệu Markdown (`lib/plain-text.ts`).

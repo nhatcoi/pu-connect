@@ -102,6 +102,13 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
   ```
 * `GET /api/auth/me` trả kèm `privacySettings` và `preferences`. `featuredComment: false` ⇒ `GET /api/posts` trả `featuredComment: null` cho mọi bài.
 
+### 1.6. Gợi ý mention (`/api/mentions`)
+* **`GET /api/mentions/suggest?q=&postId=`** (cần đăng nhập) — `q` bỏ `@`, ≤ 30 ký tự (rỗng ⇒ chỉ người trong bài + đang theo dõi); `postId` UUID tùy chọn. Trả ≤ 8 người thật, đã loại chính mình và quan hệ chặn:
+  ```json
+  { "success": true, "data": [{ "id": "…", "username": "minhtuan_dev", "displayName": "Nguyễn Minh Tuấn", "avatarUrl": null, "isVerified": true, "reason": "participant" }] }
+  ```
+  `reason`: `author` · `participant` · `following` · `other`. PU AI (`@puai`) không có trong kết quả — client tự ghim.
+
 ---
 
 ## 2. Mạng xã hội & Bài viết (`/api/posts`)

@@ -196,6 +196,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - Web: `hooks/use-new-posts.ts`, `components/social/new-posts-pill.tsx`, `hooks/use-posts.ts` (pageParam `{ offset, before }`), gắn ở `app/(app)/home/page.tsx`.
 - Giới hạn: mỗi lần bấm chèn tối đa 50 bài; bài của người lạ trong tab For You chỉ cập nhật theo polling (không fan-out).
 
+### ＠ Gợi Ý Mention, Sửa Bình Luận & Lưu Nháp (2026-10-16)
+- [x] **Mention picker** trong ô bình luận/trả lời: gõ `@` (đầu dòng hoặc sau khoảng trắng; bỏ qua email/URL như server) ⇒ popover dưới ô nhập. Thứ tự: **PU AI** ghim đầu (badge AI, "Hỏi PU AI về bài viết này") → **người trong bài** (tác giả, người đã bình luận; lấy từ cache client, hiện ngay) → kết quả server.
+- [x] API `GET /api/mentions/suggest?q=&postId=` (`mentions/mention-suggest.service.ts`): ≤ 8 người, xếp `username` khớp đầu > từ trong tên khớp đầu (bỏ dấu, dùng index trigram `idx_users_name_trgm`) > tác giả bài > người bình luận > đang theo dõi. Loại chính mình, bot, tài khoản không active, quan hệ chặn 2 chiều. `q` rỗng ⇒ chỉ người trong bài + đang theo dõi (không quét toàn bảng).
+- [x] Phím: ↑↓ chọn, Enter/Tab chèn `@username `, Esc đóng (Ctrl/⌘+Enter vẫn gửi). Debounce 150ms, giữ kết quả cũ khi đang tải ⇒ danh sách không nháy. A11y: textarea `role=combobox` + `aria-activedescendant`, popover `role=listbox`. Hook `useMentionPicker` + `MentionPopover` dùng lại được cho ô soạn bài/tin nhắn.
+- [x] Có `@puai` trong nội dung ⇒ dòng báo "PU AI sẽ trả lời bình luận này" dưới ô nhập.
+- [x] **Sửa bình luận** `PATCH /api/comments/:id` (chỉ tác giả, Zod ≤ 10.000 ký tự): transaction khóa dòng, cập nhật `content` + `edited_at` (migration `comments-edit-upgrade.sql`), ghi mention mới ⇒ chỉ người **mới** được nhắc nhận thông báo; sửa không gọi lại PU AI. Web: nút ✎ cạnh nút xóa, sửa ngay tại chỗ (dùng lại `CommentComposer mode="edit"`), nhãn "· đã chỉnh sửa" (tooltip giờ sửa). Nút sửa/xóa luôn hiện trên màn cảm ứng.
+- [x] **Lưu nháp** (`hooks/use-draft.ts`, localStorage `pu:draft:comment:<postId>` / `reply:<commentId>`): khôi phục sau mount, ghi trễ 400ms + ghi nốt khi đóng ô; xóa khi gửi thành công hoặc bấm Hủy. Gửi lỗi ⇒ giữ nguyên nội dung.
+
 ### 🤖 `@puai` Trong Bình Luận (2026-10-14)
 - [x] Gõ `@puai` trong bình luận ⇒ PU AI trả lời thành bình luận con (`posts/post-ai.service.ts`), ngữ cảnh = bài viết + nhánh bình luận + nguồn liên quan; dùng chung quota/ngày với chat; người hỏi nhận thông báo "đã trả lời bình luận của bạn" và bình luận tự tải lại (socket `comments.changed`). Avatar N7AI cho bình luận của PU AI.
 - [x] Tách lõi AI dùng chung `modules/ai/` (`LlmService`, `AiRetrieval`, prompts) cho chat và bài viết. Chi tiết: [`core/06` §16](./core/06-messaging-and-ai.md).
@@ -231,6 +239,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] Jest + supertest ([`apps/api/test`](../apps/api/test)) chạy trên DB riêng `pu_connector_test` (tự tạo lại + chạy migration): auth (khóa tài khoản, đặt lại mật khẩu), đăng bài & duyệt lời giải, admin, nhắn tin. Chạy: `docker compose up -d && pnpm --filter @pu/api test`.
 
 ---
+
+## 2b. Backlog bình luận (ghi chú 2026-10-16)
+
+- [ ] Tô màu `@mention` hợp lệ ngay trong ô nhập (overlay), báo trước tên gõ sai sẽ không có thông báo.
+- [ ] Giới hạn `@puai` theo người (vd 5 lần/giờ) và chặn PU AI tự gọi lại trong luồng trả lời của chính nó.
+- [ ] Tác giả ghim 1 bình luận; bình luận ghim ưu tiên hơn Top trong Bình luận nổi bật.
+- [ ] Dùng `useMentionPicker` cho ô soạn bài viết và tin nhắn.
+- [ ] Sửa bình luận chưa cập nhật `featuredComment` trong cache feed (hiện nội dung cũ tới lần tải feed sau).
 
 ## 2a. Backlog vai trò & quản trị (ghi chú quyết định)
 
