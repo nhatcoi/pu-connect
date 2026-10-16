@@ -115,6 +115,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-16 — thông báo & xem trước (`NotificationRow`, toast `useNotificationsSync`, `FeaturedCommentPreview`, `MessageSearch`, `AcademicSearchBar`, `snippet` API): dùng chung `markdownToPlainText` bỏ ký hiệu Markdown + hiện avatar `N7AiMark` cho `@puai`; `QuizCard` & `FlashcardDeck` dựng `MarkdownPreview` (in đậm, code, KaTeX); `DropdownMenu` mặc định `modal={false}` tránh CLS.
 - 2026-10-16 — chat: ô soạn `@` (nhắc tên + ngữ cảnh) / `/` (chế độ, skill, lệnh) / `+` (tệp, skill, connector, Research) — `composer/use-composer-picker.ts`, `picker-popover`, `plus-menu`, `context-chips`, `skills-dialog`; lịch sử PU AI `ai/ai-thread-list.tsx` (`hooks/chat/use-ai-threads.ts`); `thread/message-text.tsx` (tô sáng @, chip ngữ cảnh), `thread/mention-jump.tsx`, badge @ ở danh sách.
 - 2026-10-16 — `/home` tab Đang theo dõi: CTA "Khám phá thêm" cuối feed / khi trống ⇒ `FollowSuggestionsDialog` (`GET /users/suggestions`, `hooks/use-follow-suggestions.ts`); cột phải dùng chung endpoint + "Xem thêm".
 - 2026-10-16 — bình luận: mention picker (`useMentionPicker` + `components/mentions/MentionPopover`, PU AI ghim đầu, gọi `GET /mentions/suggest`), sửa bình luận tại chỗ, nháp localStorage (`useDraft`).

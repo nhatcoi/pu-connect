@@ -39,8 +39,9 @@ import {
   type DropdownMenuPortalProps as DropdownMenuPortalPrimitiveProps,
 } from '@/components/animate-ui/primitives/radix/dropdown-menu';
 
-function DropdownMenu(props: DropdownMenuPrimitiveProps) {
-  return <DropdownMenuPrimitive {...props} />;
+// Mặc định modal={false} để mở menu không khóa cuộn / gây rung layout (Zero CLS)
+function DropdownMenu({ modal = false, ...props }: DropdownMenuPrimitiveProps) {
+  return <DropdownMenuPrimitive modal={modal} {...props} />;
 }
 
 const DropdownMenuTrigger = DropdownMenuTriggerPrimitive;

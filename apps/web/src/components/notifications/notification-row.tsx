@@ -4,8 +4,8 @@ import React from 'react'
 import { AtSign, Award, BadgeCheck, Heart, MessageSquare, Reply, Sparkles, UserPlus } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark, PuMark } from '@/components/brand/pu-logo'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { PUAI_USERNAME } from '@/lib/mention'
-import { markdownToPlainText } from '@/lib/plain-text'
 import { formatRelativeTime, cn } from '@/lib/utils'
 import type { NotificationItem, NotificationType } from '@/hooks/use-notifications'
 
@@ -29,7 +29,6 @@ interface NotificationRowProps {
 
 export function NotificationRow({ item, onClick, compact }: NotificationRowProps) {
   const initials = (item.actor?.displayName || 'PU').slice(0, 2).toUpperCase()
-  const preview = item.message ? markdownToPlainText(item.message) : ''
 
   return (
     <button
@@ -67,10 +66,12 @@ export function NotificationRow({ item, onClick, compact }: NotificationRowProps
         <p className={cn('leading-snug text-foreground', compact ? 'text-xs' : 'text-[13px]', !item.isRead && 'font-semibold')}>
           {item.title}
         </p>
-        {preview && (
-          <p className={cn('mt-0.5 line-clamp-2 text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}>
-            {preview}
-          </p>
+        {item.message && (
+          <MarkdownPreview
+            content={item.message}
+            inline
+            className={cn('mt-0.5 line-clamp-2 text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}
+          />
         )}
         <p className="mt-1 text-[10px] font-medium text-muted-foreground">{formatRelativeTime(item.updatedAt)}</p>
       </div>

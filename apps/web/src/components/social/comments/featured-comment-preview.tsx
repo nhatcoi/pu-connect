@@ -3,18 +3,11 @@
 import React from 'react'
 import { Heart, MessageSquare, CheckCircle2 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { N7AiMark } from '@/components/brand/pu-logo'
+import { PUAI_USERNAME } from '@/lib/mention'
+import { markdownToPlainText } from '@/lib/plain-text'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { FeaturedComment } from '@pu/schemas'
-
-// Bỏ cú pháp markdown cơ bản để xem trước 2 dòng (Plain-text preview)
-function toPlainText(md: string): string {
-  return md
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/[*_`~#>]+/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 interface FeaturedCommentPreviewProps {
   comment: FeaturedComment
@@ -25,6 +18,7 @@ interface FeaturedCommentPreviewProps {
 export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPreviewProps) {
   const name = comment.author.displayName || comment.author.username
   const isSolution = comment.reason === 'solution'
+  const isBot = comment.author.username === PUAI_USERNAME
 
   return (
     <button
@@ -36,12 +30,16 @@ export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPrevi
       )}
       title="Xem bình luận"
     >
-      <Avatar className="h-6 w-6 shrink-0 border border-border">
-        <AvatarImage src={comment.author.avatarUrl || ''} alt={name} />
-        <AvatarFallback className="bg-muted text-foreground font-bold text-[9px]">
-          {name.slice(0, 2).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+      {isBot ? (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
+          <N7AiMark className="h-[68%] w-[68%]" />
+        </span>
+      ) : (
+        <Avatar className="h-6 w-6 shrink-0 border border-border">
+          <AvatarImage src={comment.author.avatarUrl || ''} alt={name} />
+          <AvatarFallback className="bg-muted text-foreground font-bold text-[9px]">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      )}
 
       <div className="min-w-0 flex-1 space-y-0.5">
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -59,7 +57,7 @@ export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPrevi
         </div>
 
         <p className="line-clamp-2 text-[13px] leading-snug text-foreground/90 break-words">
-          {toPlainText(comment.content)}
+          {markdownToPlainText(comment.content)}
         </p>
 
         {(comment.likesCount > 0 || comment.repliesCount > 0) && (

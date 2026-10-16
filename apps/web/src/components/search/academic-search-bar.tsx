@@ -16,6 +16,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
+import { markdownToPlainText } from '@/lib/plain-text'
 import type { SearchResult } from '@pu/schemas'
 import { cn } from '@/lib/utils'
 
@@ -238,11 +239,11 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
                           key={post.id}
                           onClick={() => {
                             setIsOpen(false)
-                            router.push(`/#post-${post.id}`)
+                            router.push(`/post/${post.id}`)
                           }}
                           className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs hover:bg-muted cursor-pointer transition-colors"
                         >
-                          <span className="truncate text-foreground font-medium">{post.title || post.content.slice(0, 50)}</span>
+                          <span className="truncate text-foreground font-medium">{post.title || markdownToPlainText(post.content).slice(0, 60)}</span>
                           <span className="text-[10px] text-muted-foreground shrink-0">{post.likesCount} ❤️</span>
                         </div>
                       ))}

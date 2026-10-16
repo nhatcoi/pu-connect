@@ -4,7 +4,7 @@ import { DelayedError, type Job } from 'bullmq'
 import { DatabaseService } from '../../database/database.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { isPushEnabled, quietHoursEnd, resolveSettings } from '../notifications/notification-settings'
-import type { NotificationType } from '../notifications/notification.types'
+import { markdownToPlainText, type NotificationType } from '../notifications/notification.types'
 import { PushService } from './push.service'
 import { PUSH_QUEUE, PUSH_RATE_LIMIT_PER_HOUR, type PushJobData } from './push.constants'
 

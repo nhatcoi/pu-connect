@@ -18,6 +18,24 @@ interface MarkdownPreviewProps {
   content: string
   className?: string
   isDark?: boolean
+  /** Chế độ rút gọn (thông báo, trích dẫn bình luận): hiển thị inline bold/code/KaTeX, không sinh thẻ <a>/<button> lồng nhau */
+  inline?: boolean
+}
+
+const INLINE_FENCE_LABELS: Record<string, string> = { quiz: '📝 Quiz', flashcards: '🗂️ Flashcard' }
+
+function normalizeInlineMarkdown(text: string): string {
+  let out = text
+    .replace(/```(\w+)?[^\n]*\n?[\s\S]*?(```|$)/g, (_, lang?: string) => ` ${(lang && INLINE_FENCE_LABELS[lang]) || '[code]'} `)
+    .replace(/^\s{0,3}(#{1,6}|>+)\s+/gm, '')
+    .replace(/\n+/g, ' ')
+    .trim()
+  // Cân bằng ký hiệu bị cắt cụt ở cuối snippet (vd "**AVL..." hoặc "$H_2O...")
+  const boldCount = (out.match(/\*\*/g) || []).length
+  if (boldCount % 2 === 1) out = out.replace(/\*\*(?=[^*]*$)/, '')
+  const codeCount = (out.match(/`/g) || []).length
+  if (codeCount % 2 === 1) out = out.replace(/`(?=[^`]*$)/, '')
+  return out
 }
 
 function CodeBlock({
@@ -94,20 +112,43 @@ function enhanceMentionsAndTags(text: string): string {
     .join('')
 }
 
-export function MarkdownPreview({ content, className, isDark = false }: MarkdownPreviewProps) {
-  const processedContent = useMemo(() => enhanceMentionsAndTags(content || ''), [content])
+export function MarkdownPreview({ content, className, isDark = false, inline = false }: MarkdownPreviewProps) {
+  const processedContent = useMemo(
+    () => (inline ? normalizeInlineMarkdown(content || '') : enhanceMentionsAndTags(content || '')),
+    [content, inline]
+  )
 
   const components: Components = {
+    ...(inline
+      ? {
+          p: ({ children }) => <span>{children} </span>,
+          h1: ({ children }) => <strong className="font-semibold">{children} </strong>,
+          h2: ({ children }) => <strong className="font-semibold">{children} </strong>,
+          h3: ({ children }) => <strong className="font-semibold">{children} </strong>,
+          h4: ({ children }) => <strong className="font-semibold">{children} </strong>,
+          ul: ({ children }) => <span>{children}</span>,
+          ol: ({ children }) => <span>{children}</span>,
+          li: ({ children }) => <span>• {children} </span>,
+          blockquote: ({ children }) => <span className="italic">{children}</span>,
+          strong: ({ children }) => <strong className="font-semibold text-foreground/90">{children}</strong>
+        }
+      : {}),
     pre({ children }) {
       return <>{children}</>
     },
     code({ node, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || '')
-      const isInline = !match && !String(children).includes('\n')
+      const isInline = inline || (!match && !String(children).includes('\n'))
 
       if (isInline) {
         return (
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground" {...props}>
+          <code
+            className={cn(
+              'rounded bg-muted font-mono text-foreground',
+              inline ? 'px-1 py-0.5 text-[0.92em]' : 'px-1.5 py-0.5 text-xs'
+            )}
+            {...props}
+          >
             {children}
           </code>
         )
@@ -120,6 +161,7 @@ export function MarkdownPreview({ content, className, isDark = false }: Markdown
       )
     },
     table({ children }) {
+      if (inline) return <span>{children}</span>
       return (
         <div className="my-4 overflow-x-auto">
           <table className="w-full border-collapse text-sm">{children}</table>
@@ -127,6 +169,7 @@ export function MarkdownPreview({ content, className, isDark = false }: Markdown
       )
     },
     th({ children }) {
+      if (inline) return <strong className="font-semibold">{children} </strong>
       return (
         <th className="border bg-muted px-3 py-2 text-left font-semibold text-foreground">
           {children}
@@ -134,9 +177,13 @@ export function MarkdownPreview({ content, className, isDark = false }: Markdown
       )
     },
     td({ children }) {
+      if (inline) return <span>{children} </span>
       return <td className="border px-3 py-2 text-foreground/90">{children}</td>
     },
     a({ href, children }) {
+      if (inline) {
+        return <span className="font-medium text-primary">{children}</span>
+      }
       const isInternal = href?.startsWith('/') || href?.startsWith('#')
       if (isInternal && href) {
         return (
@@ -163,10 +210,10 @@ export function MarkdownPreview({ content, className, isDark = false }: Markdown
   }
 
   return (
-    <div className={cn('markdown-body space-y-3 leading-relaxed text-sm', className)}>
+    <div className={cn('markdown-body', inline ? 'leading-snug' : 'space-y-3 leading-relaxed text-sm', className)}>
       <Markdown
-        remarkPlugins={[remarkGfm, remarkMath, remarkBreaks]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight, rehypeSlug]}
+        remarkPlugins={inline ? [remarkGfm, remarkMath] : [remarkGfm, remarkMath, remarkBreaks]}
+        rehypePlugins={inline ? [rehypeKatex] : [rehypeKatex, rehypeHighlight, rehypeSlug]}
         components={components}
       >
         {processedContent}

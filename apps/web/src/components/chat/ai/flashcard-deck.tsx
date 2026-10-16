@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { ChevronLeft, ChevronRight, Shuffle } from 'lucide-react'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { FlashcardData } from './study-blocks'
@@ -48,7 +49,10 @@ export function FlashcardDeck({ data }: { data: FlashcardData }) {
           )}
         >
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{flipped ? 'Mặt sau' : 'Mặt trước'} · chạm để lật</span>
-          <span className={cn('leading-snug', flipped ? 'text-[13px]' : 'text-[15px] font-semibold')}>{flipped ? card.back : card.front}</span>
+          <MarkdownPreview
+            content={flipped ? card.back : card.front}
+            className={cn('leading-snug space-y-1 [&>p]:m-0', flipped ? 'text-[13px]' : 'text-[15px] font-semibold')}
+          />
         </button>
         <div className="mt-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">

@@ -56,6 +56,7 @@ import { useAppStore } from '@/store'
 import { useFeatureEnabled } from '@/hooks/use-settings'
 import { apiClient } from '@/lib/api-client'
 import { graphqlClient } from '@/lib/graphql-client'
+import { markdownToPlainText } from '@/lib/plain-text'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
@@ -797,7 +798,7 @@ export function PostCard({
 
                   <DropdownMenuItem
                     onClick={() => {
-                      const text = encodeURIComponent(`Xem bài viết: ${post.title || post.content.slice(0, 80)}`)
+                      const text = encodeURIComponent(`Xem bài viết: ${post.title || markdownToPlainText(post.content).slice(0, 80)}`)
                       const url = encodeURIComponent(window.location.href)
                       window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
                     }}

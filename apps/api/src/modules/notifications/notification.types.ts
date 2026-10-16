@@ -56,7 +56,7 @@ export interface NotificationItem {
 
 const FENCE_LABELS: Record<string, string> = { quiz: '📝 Quiz', flashcards: '🗂️ Flashcard' }
 
-// Markdown → văn bản thuần 1 dòng cho thông báo in-app & Web Push
+// Markdown → văn bản thuần 1 dòng cho Web Push hệ điều hành & tiêu đề tự động
 export function markdownToPlainText(md: string): string {
   return (
     md
@@ -72,13 +72,18 @@ export function markdownToPlainText(md: string): string {
       .replace(/(^|[^\w*])[*_](?!\s)([^*_\n]+?)[*_](?=[^\w*]|$)/g, '$1$2')
       .replace(/`([^`]+)`/g, '$1')
       .replace(/\$([^$\n]+)\$/g, '$1')
+      .replace(/\\%/g, '%')
       .replace(/\s+/g, ' ')
       .trim()
   )
 }
 
 export function snippet(text: string | null | undefined, max = 120): string {
-  const clean = markdownToPlainText(text || '')
+  const clean = (text || '')
+    .replace(/```(\w+)?[^\n]*\n?[\s\S]*?(```|$)/g, (_, lang?: string) => ` ${(lang && FENCE_LABELS[lang]) || '[code]'} `)
+    .replace(/\s+/g, ' ')
+    .trim()
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean
 }
+
 

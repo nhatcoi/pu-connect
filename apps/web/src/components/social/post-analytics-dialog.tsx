@@ -24,6 +24,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
+import { markdownToPlainText } from '@/lib/plain-text'
 
 interface PostAnalyticsDialogProps {
   post: PostItem
@@ -87,7 +88,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
                 </span>
               </div>
               <p className="text-muted-foreground truncate text-[11px]">
-                {post.title || post.content.slice(0, 70)}
+                {post.title || markdownToPlainText(post.content).slice(0, 70)}
               </p>
             </div>
           </div>

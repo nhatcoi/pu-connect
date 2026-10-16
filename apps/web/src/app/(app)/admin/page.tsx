@@ -8,6 +8,7 @@ import { Activity, EyeOff, Eye, Loader2, Lock, LockOpen, SearchX, ShieldCheck, X
 import { toast } from 'sonner'
 import type { AdminAuditLog, AdminReportedPost, AdminStats, AdminUserRow, ZeroResultQuery } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
+import { markdownToPlainText } from '@/lib/plain-text'
 import { queryKeys } from '@/lib/query-keys'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -217,7 +218,7 @@ function ReportRow({
 
       <Link href={`/post/${report.postId}`} className="block rounded-lg bg-muted/40 p-3 hover:bg-muted/60">
         {report.title && <p className="text-sm font-semibold line-clamp-1">{report.title}</p>}
-        <p className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-line">{report.content}</p>
+        <p className="text-xs text-muted-foreground line-clamp-3">{markdownToPlainText(report.content)}</p>
       </Link>
 
       <div className="flex flex-wrap items-center gap-1.5 text-[11px]">

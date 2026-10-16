@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Loader2, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { chatApi } from '@/hooks/chat'
+import { markdownToPlainText } from '@/lib/plain-text'
 import { queryKeys } from '@/lib/query-keys'
 import { formatRelativeTime } from '@/lib/utils'
 
@@ -38,7 +39,7 @@ export function MessageSearch({ conversationId, onJump }: { conversationId: stri
               <span className="truncate font-medium">{m.sender?.displayName}</span>
               <span className="shrink-0">{formatRelativeTime(m.createdAt)}</span>
             </span>
-            <span className="block text-xs line-clamp-2">{m.content}</span>
+            <span className="block text-xs line-clamp-2">{markdownToPlainText(m.content)}</span>
           </button>
         ))}
       </div>

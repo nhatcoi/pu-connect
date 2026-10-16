@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { Check, RotateCcw, Trophy, X } from 'lucide-react'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { QuizData } from './study-blocks'
@@ -26,10 +27,10 @@ export function QuizCard({ data }: { data: QuizData }) {
           const choice = picked[qi]
           return (
             <li key={qi} className="px-3.5 py-3 space-y-2">
-              <p className="text-[13px] font-medium leading-snug">
-                <span className="text-muted-foreground mr-1">{qi + 1}.</span>
-                {q.q}
-              </p>
+              <div className="flex items-start gap-1.5 text-[13px] font-medium leading-snug">
+                <span className="text-muted-foreground shrink-0">{qi + 1}.</span>
+                <MarkdownPreview content={q.q} className="flex-1 min-w-0 text-[13px] leading-snug space-y-1 [&>p]:m-0" />
+              </div>
               <div className="grid gap-1.5">
                 {q.options.map((opt, oi) => {
                   const isAnswer = oi === q.answer
@@ -48,14 +49,19 @@ export function QuizCard({ data }: { data: QuizData }) {
                       )}
                     >
                       <span className="font-semibold text-muted-foreground w-4 shrink-0">{String.fromCharCode(65 + oi)}</span>
-                      <span className="flex-1">{opt}</span>
+                      <MarkdownPreview content={opt} className="flex-1 min-w-0 text-[13px] leading-snug space-y-1 [&>p]:m-0" />
                       {choice !== null && isAnswer && <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />}
                       {isPicked && !isAnswer && <X className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />}
                     </button>
                   )
                 })}
               </div>
-              {choice !== null && q.explain && <p className="text-xs text-muted-foreground leading-relaxed">💡 {q.explain}</p>}
+              {choice !== null && q.explain && (
+                <div className="flex items-start gap-1.5 text-xs text-muted-foreground leading-relaxed">
+                  <span className="shrink-0">💡</span>
+                  <MarkdownPreview content={q.explain} className="flex-1 min-w-0 text-xs text-muted-foreground leading-relaxed space-y-1 [&>p]:m-0" />
+                </div>
+              )}
             </li>
           )
         })}
