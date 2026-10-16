@@ -64,6 +64,24 @@ export const ReportPostSchema = z.object({
 })
 export type ReportPostInput = z.infer<typeof ReportPostSchema>
 
+// Bình luận nổi bật hiện ngay dưới bài trên bảng tin (Featured comment preview)
+export const FeaturedCommentSchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  likesCount: z.number().default(0),
+  repliesCount: z.number().default(0),
+  // solution: lời giải Q&A · top: nhiều tương tác nhất · earliest: bài chưa có tương tác
+  reason: z.enum(['solution', 'top', 'earliest']),
+  createdAt: z.string(),
+  author: z.object({
+    id: z.string(),
+    username: z.string(),
+    displayName: z.string(),
+    avatarUrl: z.string().nullable().optional()
+  })
+})
+export type FeaturedComment = z.infer<typeof FeaturedCommentSchema>
+
 export const PostItemSchema = z.object({
   id: z.string(),
   authorId: z.string(),
@@ -102,6 +120,7 @@ export const PostItemSchema = z.object({
   isBookmarkedByMe: z.boolean().default(false),
   isAuthorFollowedByMe: z.boolean().default(false),
   poll: PollDataSchema.nullable().optional(),
+  featuredComment: FeaturedCommentSchema.nullable().optional(),
   createdAt: z.string(),
   updatedAt: z.string()
 })

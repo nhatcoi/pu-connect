@@ -5,7 +5,8 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import { interestBoostSql } from '../personalization/interest-profile.sql'
-import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData } from '@pu/schemas'
+import { featuredCommentsSql } from './featured-comment.sql'
+import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment } from '@pu/schemas'
 
 export interface FeedResult {
   data: PostItem[]
@@ -128,11 +129,17 @@ export class PostsService {
 
     const res = await this.db.query(sql, params)
     
-    // 3. Batch fetch polls for these posts
+    // 3. Batch fetch polls + bình luận nổi bật cho các bài trong trang
     const postIds = res.rows.map((r) => r.id)
-    const pollsMap = await this.fetchPollsForPosts(postIds, currentUserId)
+    const [pollsMap, featuredMap] = await Promise.all([
+      this.fetchPollsForPosts(postIds, currentUserId),
+      this.fetchFeaturedComments(postIds, currentUserId)
+    ])
 
-    const items = res.rows.map((row) => this.mapRowToPostItem(row, pollsMap.get(row.id)))
+    const items = res.rows.map((row) => ({
+      ...this.mapRowToPostItem(row, pollsMap.get(row.id)),
+      featuredComment: featuredMap.get(row.id) ?? null
+    }))
 
     return {
       data: items,
@@ -708,6 +715,35 @@ export class PostsService {
       })
     }
 
+    return map
+  }
+
+  // Featured comment cho feed; lỗi (vd. thiếu search-upgrade.sql) không làm hỏng bảng tin
+  private async fetchFeaturedComments(postIds: string[], currentUserId?: string): Promise<Map<string, FeaturedComment>> {
+    const map = new Map<string, FeaturedComment>()
+    if (postIds.length === 0) return map
+
+    try {
+      const res = await this.db.query(featuredCommentsSql(), [postIds, currentUserId ?? null])
+      for (const row of res.rows) {
+        map.set(row.post_id, {
+          id: row.id,
+          content: row.content,
+          likesCount: row.likes_count || 0,
+          repliesCount: row.replies_count || 0,
+          reason: row.reason,
+          createdAt: new Date(row.created_at).toISOString(),
+          author: {
+            id: row.author_id,
+            username: row.author_username || 'user',
+            displayName: row.author_display_name || 'Sinh viên Phenikaa',
+            avatarUrl: row.author_avatar_url || null
+          }
+        })
+      }
+    } catch (err) {
+      this.logger.warn(`[FeaturedComment] skipped: ${(err as Error).message}`)
+    }
     return map
   }
 

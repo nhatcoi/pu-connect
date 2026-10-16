@@ -173,6 +173,12 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] `POST /api/posts/:id/summary`: tóm tắt 3–5 ý; lưu `post_summaries` theo hash nội dung ⇒ người sau xem lại không tốn lượt, bài sửa thì tóm tắt lại. Bài ngắn (< 300 ký tự) từ chối; hết lượt 429; AI tắt/lỗi 503.
 - [x] Web: nút "✨ Tóm tắt" cạnh "Xem thêm" trên bài dài, khung tóm tắt có skeleton và "Thử lại". Chi tiết: [`core/06` §17](./core/06-messaging-and-ai.md).
 
+### 💬 Bình Luận Nổi Bật Trên Bảng Tin (2026-10-16)
+- [x] Mỗi bài trên feed kèm 1 bình luận gốc nổi bật (`PostItem.featuredComment`), chọn trong **1 query batch** cho cả trang (`posts/featured-comment.sql.ts`, gọi song song với poll trong `PostsService.findAll`).
+- [x] Thứ tự chọn: **Lời giải Q&A** (`is_solution`) → **Top** (`likes + 2 × replies`) → **Relevance** (tỉ lệ từ unaccent của bình luận có trong `posts.search_tsv`; < 0.3 không được làm Top nếu còn bình luận liên quan) → **Latest** (sát điểm top ≤ 10% ⇒ chọn mới hơn) → **Earliest** (bài chưa có tương tác ⇒ bình luận sớm nhất). Ẩn bình luận/trả lời của người có quan hệ chặn; lỗi query chỉ log warn, không làm hỏng feed.
+- [x] Web: `FeaturedCommentPreview` dưới hàng nút (avatar, nhãn "Nổi bật"/"Lời giải", 2 dòng plain-text, số tim/trả lời); bấm ⇒ mở khu bình luận; ẩn khi khu bình luận đang mở.
+- Giới hạn: relevance dùng `simple` config nên hư từ tiếng Việt ("mình", "là") làm điểm hơi cao; đủ để loại bình luận chỉ emoji/link, chưa phải độ tương đồng ngữ nghĩa.
+
 ### 🤖 `@puai` Trong Bình Luận (2026-10-14)
 - [x] Gõ `@puai` trong bình luận ⇒ PU AI trả lời thành bình luận con (`posts/post-ai.service.ts`), ngữ cảnh = bài viết + nhánh bình luận + nguồn liên quan; dùng chung quota/ngày với chat; người hỏi nhận thông báo "đã trả lời bình luận của bạn" và bình luận tự tải lại (socket `comments.changed`). Avatar N7AI cho bình luận của PU AI.
 - [x] Tách lõi AI dùng chung `modules/ai/` (`LlmService`, `AiRetrieval`, prompts) cho chat và bài viết. Chi tiết: [`core/06` §16](./core/06-messaging-and-ai.md).

@@ -50,6 +50,7 @@ import { ReportPostDialog } from './report-post-dialog'
 import { PostAnalyticsDialog } from './post-analytics-dialog'
 import { PostMediaGallery } from './post-media-gallery'
 import { PostCommentsSection } from './comments/post-comments-section'
+import { FeaturedCommentPreview } from './comments/featured-comment-preview'
 import { PostSummary } from './post-summary'
 import { useAppStore } from '@/store'
 import { apiClient } from '@/lib/api-client'
@@ -804,6 +805,11 @@ export function PostCard({
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+            {/* Bình luận nổi bật (ẩn khi đã mở khu bình luận) */}
+            {!isCommentsOpen && post.featuredComment && (post.commentsCount || 0) > 0 && (
+              <FeaturedCommentPreview comment={post.featuredComment} onOpen={() => setIsCommentsOpen(true)} />
+            )}
           </div>
         </div>
 
