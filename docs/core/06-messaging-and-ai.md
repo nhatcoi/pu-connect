@@ -723,3 +723,13 @@ Migration `personalization-upgrade.sql`:
 **Soi dữ liệu 1 người**: trang `/admin` → tab Người dùng → nút ⚡ (`GET /api/admin/users/:id/insight`, `UserInsightService` chỉ đọc, ghi audit `user.insight_view`; gợi ý xem trước dùng `AiSuggestionsService.fromTopics` trên hồ sơ đang lưu). CLI: `pnpm user:insight <username> [--local]` (`scripts/ops/user-insight.sh` + `sql/user-insight.sql`, chỉ đọc) — hồ sơ, cờ, `user_interests` (top 12 = thứ gợi ý AI dùng), số tín hiệu nguồn, 30 sự kiện gần nhất, câu hỏi PU AI kèm môn nhận diện.
 
 Chưa làm: đo CTR theo `ai_suggestion_shown` / xếp hạng bằng bandit; nhờ LLM viết lại câu gợi ý; partition `user_events` theo tháng (khi bảng lớn).
+
+## 20. Mention chat · PU AI nhiều hội thoại · slash skills · menu `+` (2026-10-16)
+
+Chi tiết thiết kế & quyết định: [`09-chat-mention-ai-threads-skills.md`](./09-chat-mention-ai-threads-skills.md). Tóm tắt:
+
+- **Mention nhóm** (`message_mentions`): chỉ khớp thành viên đang ở nhóm; `@all` chỉ trưởng nhóm; badge `@` + nút nhảy tới tin; người bị nhắc nhận push kể cả khi tắt tiếng; sửa tin tính lại mention.
+- **Ngữ cảnh** (`refs` ≤ 5 / tin): học phần, tài liệu (đọc `document_chunks`), bài viết, hội thoại PU AI của mình (chỉ trong thread AI); kiểm quyền khi gửi, PU AI ghim trước nguồn truy xuất.
+- **PU AI nhiều thread**: `ai/threads` (keyset, tìm tiêu đề, đổi tên, xóa), "Chat mới" dùng lại thread rỗng, tiêu đề tự đặt từ câu hỏi đầu, danh sách chính chỉ giữ thread đại diện; **tóm tắt cuộn** `conversations.ai_summary` khi > 24 tin sau mốc.
+- **Skill** (`ai_skills`, ≤ 30 / người): lệnh `/slug` cộng chỉ dẫn vào system prompt; 6 chế độ học vẫn là `aiMode`.
+- **Connector** (Thư viện PU · Tài liệu của tôi · Nhóm học) + **Research** (truy xuất sâu, prompt báo cáo, 2 lượt). Nhóm chat chỉ dùng Thư viện PU.

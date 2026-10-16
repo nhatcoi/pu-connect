@@ -1,6 +1,6 @@
 # 05 · Luồng Nghiệp Vụ Chính (Sequence)
 
-> Thứ tự gọi giữa các thành phần cho các luồng quan trọng. Cập nhật lần cuối: **2026-10-13**.
+> Thứ tự gọi giữa các thành phần cho các luồng quan trọng. Cập nhật lần cuối: **2026-10-16**.
 
 ## 5.1. Đăng ký / đăng nhập bằng email (email-first)
 
@@ -265,20 +265,25 @@ sequenceDiagram
   W->>A: POST /api/conversations/:id/messages
   A->>S: send() (zod · 20 tin/10s · thành viên · tệp phải thuộc chat/{senderId}/)
   S->>DB: TX: INSERT messages ON CONFLICT(sender, clientMsgId) · UPDATE conversations.last_* · read cursor
+  S->>DB: (cùng TX) refs kiểm quyền · skill use_count · nhóm: message_mentions (thành viên, @all = trưởng nhóm) ⇒ meta · thread AI: title nếu NULL
   A-->>W: 201 ChatMessage (thay tin lạc quan)
-  S->>RT: message.new → user:{memberId} mỗi thành viên
-  alt type = 'ai' hoặc (type = 'group' và có @puai)
+  S->>RT: message.new → user:{memberId} mỗi thành viên · ai.thread.updated (tiêu đề tự đặt)
+  S-)S: ChatPushService.onNewMessage(mentionedIds) — người bị nhắc vượt tắt tiếng
+  alt type = 'ai' hoặc (type = 'group' và có @puai / chế độ / skill / Research)
     S-)P: reply(triggerId) chạy nền
-    P->>DB: quota ai_runs hôm nay · INSERT tin @puai (status=streaming)
+    P->>DB: quota ai_runs hôm nay (Research = 2 lượt) · INSERT tin @puai (status=streaming)
     P->>RT: message.new (placeholder)
-    P->>DB: full-text posts + documents (OR từ khóa, lọc quyền xem) ⇒ nguồn
-    P->>L: chat.completions stream (system + chế độ học, lịch sử sau mốc reset, <context> nguồn, ảnh base64)
+    P->>DB: refs ghim (môn/tài liệu+chunks/bài/thread) ∥ connector: Thư viện PU · Tài liệu của tôi · Nhóm học (nhóm chat: chỉ Thư viện)
+    P->>L: chat.completions stream (system + chế độ + Research + skill + tóm tắt cuộn, lịch sử sau mốc reset/tóm tắt, <context>, ảnh base64)
     loop text delta
       L-->>P: delta
       P->>RT: message.delta
     end
     P->>DB: UPDATE tin (content, blocks=citations, status=done) · ai_runs tokens
     P->>RT: message.updated
+    opt thread AI > 24 tin sau mốc
+      P-)L: AiMemoryService: tóm tắt phần cũ (giữ 12 tin) ⇒ conversations.ai_summary
+    end
   end
 ```
 
@@ -303,6 +308,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-16 — 5.7: mention trong nhóm (`message_mentions`, push vượt tắt tiếng), ngữ cảnh `refs`, skill, Research, connector, tóm tắt cuộn, tiêu đề thread AI.
 - 2026-10-14 — 5.4: cộng điểm khớp hồ sơ quan tâm (`interestBoostSql`, chuẩn hóa theo chủ đề mạnh nhất).
 - 2026-10-14 — 5.7: PU AI viết câu hỏi tiếp theo sau dấu mốc `<<<FOLLOWUPS>>>` trong cùng luồng stream; server giấu khỏi delta, lưu `meta.followUps`.
 - 2026-10-13 — 5.7: `@puai` trong nhóm, chế độ học, ảnh đính kèm, kiểm tra tệp.

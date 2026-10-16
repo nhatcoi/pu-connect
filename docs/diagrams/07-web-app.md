@@ -1,6 +1,6 @@
 # 07 · Web App (`apps/web`)
 
-> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-14**.
+> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-16**.
 
 ## Route map
 
@@ -24,7 +24,7 @@ flowchart LR
     courses["<b>/courses</b><br/>danh mục học phần"]
     course["<b>/courses/[code]</b><br/>thảo luận · tài liệu · nhóm học"]
     msgs["<b>/messages</b><br/>lọc · tin nhắn mới · tạo nhóm · PU AI"]
-    thread["<b>/messages/[id]</b><br/>tệp · trả lời · cảm xúc · ghim<br/>quiz/flashcard AI · bảng thông tin"]
+    thread["<b>/messages/[id]</b><br/>tệp · trả lời · cảm xúc · ghim<br/>@ / + menu · chip ngữ cảnh · nút @<br/>quiz/flashcard AI · lịch sử PU AI · bảng thông tin"]
     adminp["<b>/admin</b><br/>chỉ role admin"]
     settings["<b>/settings</b><br/>danh sách mục"]
     settingsec["<b>/settings/[section]</b><br/>account · privacy · features<br/>notifications · appearance · blocked"]
@@ -106,7 +106,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
 | `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
-| `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id*`, `ai/*`, `upload/file?folder=chat`, `search?type=users`, `presence` | — | `message.new/updated/delta`, `conv.read/updated/removed`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
+| `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id*`, `ai/*` (threads, skills, connectors), `chat/refs`, `upload/file?folder=chat`, `search?type=users`, `presence` | localStorage `pu.ai.connectors` | `message.new/updated/delta`, `conv.read/updated/removed`, `ai.thread.updated`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
 | `/admin` | `admin/*` | — | — |
 | `/settings/[section]` | `users/privacy`, `users/preferences`, `users/verify-university`, `blocks`, `notifications/settings`, `push/*` | — | — |
 
@@ -115,6 +115,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-16 — chat: ô soạn `@` (nhắc tên + ngữ cảnh) / `/` (chế độ, skill, lệnh) / `+` (tệp, skill, connector, Research) — `composer/use-composer-picker.ts`, `picker-popover`, `plus-menu`, `context-chips`, `skills-dialog`; lịch sử PU AI `ai/ai-thread-list.tsx` (`hooks/chat/use-ai-threads.ts`); `thread/message-text.tsx` (tô sáng @, chip ngữ cảnh), `thread/mention-jump.tsx`, badge @ ở danh sách.
 - 2026-10-16 — `/home` tab Đang theo dõi: CTA "Khám phá thêm" cuối feed / khi trống ⇒ `FollowSuggestionsDialog` (`GET /users/suggestions`, `hooks/use-follow-suggestions.ts`); cột phải dùng chung endpoint + "Xem thêm".
 - 2026-10-16 — bình luận: mention picker (`useMentionPicker` + `components/mentions/MentionPopover`, PU AI ghim đầu, gọi `GET /mentions/suggest`), sửa bình luận tại chỗ, nháp localStorage (`useDraft`).
 - 2026-10-16 — thêm `/settings`, `/settings/[section]` (thay dialog quyền riêng tư; menu mục ở cột phải qua `PageAside`); feature plugs `useFeatureEnabled` gắn vào PostCard (bình luận nổi bật, tóm tắt) và `/home` (pill bài mới).

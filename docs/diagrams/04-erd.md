@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **34 bảng**, **54 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **36 bảng**, **58 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -21,6 +21,7 @@ erDiagram
   users |o--o{ admin_audit_logs : "admin_id"
   users ||--o{ ai_runs : "bot_id"
   users ||--o{ ai_runs : "requester_id"
+  users ||--o{ ai_skills : "owner_id"
   users ||--o{ comments : "author_id"
   comments |o--o{ comments : "parent_id"
   posts ||--o{ comments : "post_id"
@@ -36,6 +37,9 @@ erDiagram
   users ||--o{ documents : "owner_id"
   users |o--o{ mentions : "author_id"
   users ||--o{ mentions : "mentioned_user_id"
+  conversations ||--o{ message_mentions : "conversation_id"
+  messages ||--o{ message_mentions : "message_id"
+  users ||--o{ message_mentions : "user_id"
   messages ||--o{ message_reactions : "message_id"
   users ||--o{ message_reactions : "user_id"
   conversations ||--o{ messages : "conversation_id"
@@ -97,7 +101,6 @@ erDiagram
     text_array interests
     timestamptz created_at
     timestamptz updated_at
-    varchar school
     varchar major
     varchar class_name
     boolean is_verified
@@ -105,8 +108,9 @@ erDiagram
     jsonb privacy_settings
     varchar location
     varchar website
-    date birth_date
+    varchar birth_date
     varchar banner_url
+    varchar school
     varchar google_id
     varchar auth_provider
     boolean email_verified
@@ -125,7 +129,6 @@ erDiagram
     varchar suspended_reason
     timestamptz last_seen_at
     timestamptz interests_updated_at
-    jsonb preferences
   }
   user_follows {
     uuid follower_id PK,FK
@@ -170,7 +173,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_skills.owner_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -212,7 +215,6 @@ erDiagram
     boolean is_solution
     timestamptz created_at
     timestamptz updated_at
-    timestamptz edited_at
   }
   post_reactions {
     uuid post_id PK,FK
@@ -466,6 +468,19 @@ erDiagram
     timestamptz created_at
     timestamptz finished_at
   }
+  ai_skills {
+    uuid id PK
+    uuid owner_id FK,UK
+    varchar slug UK
+    varchar name
+    varchar description
+    text instructions
+    varchar input_hint
+    integer use_count
+    timestamptz last_used_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
   conversation_members {
     uuid conversation_id PK,FK
     uuid user_id PK,FK
@@ -488,6 +503,13 @@ erDiagram
     timestamptz last_message_at
     timestamptz created_at
     uuid study_group_id FK
+    text ai_summary
+    bigint ai_summary_upto
+  }
+  message_mentions {
+    bigint message_id PK,FK
+    uuid user_id PK,FK
+    uuid conversation_id FK
   }
   message_reactions {
     bigint message_id PK,FK
@@ -544,9 +566,11 @@ erDiagram
     timestamptz created_at
   }
   conversations ||--o{ conversation_members : "conversation_id"
+  conversations ||--o{ message_mentions : "conversation_id"
+  messages ||--o{ message_mentions : "message_id"
   messages ||--o{ message_reactions : "message_id"
   conversations ||--o{ messages : "conversation_id"
   messages ||--o{ messages : "reply_to_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_summaries.post_id → posts`, `push_subscriptions.user_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_skills.owner_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_summaries.post_id → posts`, `push_subscriptions.user_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`
