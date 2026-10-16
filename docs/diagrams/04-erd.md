@@ -212,6 +212,7 @@ erDiagram
     boolean is_solution
     timestamptz created_at
     timestamptz updated_at
+    timestamptz edited_at
   }
   post_reactions {
     uuid post_id PK,FK
