@@ -8,10 +8,8 @@ import {
   GraduationCap,
   FileText,
   Compass,
-  Plus,
   MessageCircle
 } from 'lucide-react'
-import { useAppStore } from '@/store'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { useUnreadMessages } from '@/hooks/chat'
 import { FEATURES } from '@/lib/features'
@@ -21,8 +19,6 @@ export function MobileBottomNav() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const currentTabParam = searchParams.get('tab')
-  const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   const unreadMessages = useUnreadMessages()
   
   // High-performance scroll state for fade/dimming on scroll
@@ -82,21 +78,6 @@ export function MobileBottomNav() {
 
   return (
     <>
-      {/* Floating Action Button (FAB) — Smoothly dims & scales down when scrolling */}
-      <button
-        type="button"
-        onClick={() => setCreatePostOpen(true)}
-        aria-label="Tạo bài viết mới"
-        className={cn(
-          'fixed bottom-18 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-2xl shadow-primary/30 transition-all duration-300 ease-in-out active:scale-95 md:hidden cursor-pointer',
-          isDimmed
-            ? 'opacity-25 scale-90 translate-y-2 pointer-events-none'
-            : 'opacity-100 scale-100 translate-y-0 pointer-events-auto hover:scale-105'
-        )}
-      >
-        <Plus className="h-6 w-6 stroke-[2.5]" />
-      </button>
-
       {/* Sticky Bottom Navigation Bar — Smoothly fades and dims when scrolling */}
       <nav
         aria-label="Mobile Navigation"
