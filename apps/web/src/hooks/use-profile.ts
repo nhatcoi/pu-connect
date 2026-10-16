@@ -1,7 +1,7 @@
 import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query-keys'
 import { graphqlClient } from '@/lib/graphql-client'
-import type { BlockState, PostItem, DocumentItem, StudyGroup } from '@pu/schemas'
+import type { BlockState, PostItem, DocumentItem, StudyGroup, ProfileActivityType } from '@pu/schemas'
 
 export interface UserProfileData {
   id: string
@@ -27,6 +27,10 @@ export interface UserProfileData {
   followingCount: number
   isFollowedByMe?: boolean
   blockState?: BlockState
+  // Hồ sơ riêng tư & mình chưa theo dõi ⇒ server không trả bài/tài liệu
+  isContentLocked?: boolean
+  // Tab hoạt động được xem (chủ hồ sơ: cả 3)
+  activityTabs?: ProfileActivityType[]
   createdAt: string
   posts: PostItem[]
   documents: DocumentItem[]
@@ -54,6 +58,8 @@ const GET_USER_PROFILE_QUERY = `
       followingCount
       isFollowedByMe
       blockState
+      isContentLocked
+      activityTabs
       createdAt
       posts {
         id

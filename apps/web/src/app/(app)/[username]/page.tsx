@@ -9,12 +9,23 @@ import { DocumentCard } from '@/components/social/document-card'
 import { useProfile } from '@/hooks/use-profile'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, FileText, BookOpen, HelpCircle, AlertCircle, Ban } from 'lucide-react'
+import { ArrowLeft, FileText, BookOpen, HelpCircle, AlertCircle, Ban, Lock } from 'lucide-react'
+import type { ProfileActivityType } from '@pu/schemas'
+import { ProfileActivityTab } from '@/components/profile/profile-activity-tab'
+import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ProfileSkeleton } from '@/components/skeletons/profile-skeleton'
 
-type TabType = 'posts' | 'documents' | 'questions'
+type TabType = 'posts' | 'documents' | 'questions' | ProfileActivityType
+
+const ACTIVITY_LABEL: Record<ProfileActivityType, string> = {
+  commented: 'Bình luận',
+  liked: 'Đã thích',
+  saved: 'Đã lưu'
+}
+const ACTIVITY_ORDER: ProfileActivityType[] = ['commented', 'liked', 'saved']
+const ACTIVITY_PRIVACY_FLAG = { liked: 'showLikedPosts', saved: 'showSavedPosts', commented: 'showCommentedPosts' } as const
 
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
@@ -23,9 +34,16 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   const { isHeaderVisible } = useScrollDirection(8)
 
   const [activeTab, setActiveTab] = useState<TabType>('posts')
+  const me = useAppStore((s) => s.user)
+  const isOwner = !!me && !!profile && me.id === profile.id
 
   // Filter question posts for Q&A tab
   const questionPosts = profile?.posts?.filter((p) => p.postType === 'qa') || []
+
+  // Tab hoạt động server cho phép; chủ hồ sơ thấy ổ khoá ở mục đang ẩn với người khác
+  const activityTabs = ACTIVITY_ORDER.filter((t) => profile?.activityTabs?.includes(t))
+  const isPrivateToOthers = (t: ProfileActivityType) => isOwner && !me?.privacySettings?.[ACTIVITY_PRIVACY_FLAG[t]]
+  const currentTab: TabType = (activityTabs as string[]).includes(activeTab) || ['posts', 'documents', 'questions'].includes(activeTab) ? activeTab : 'posts'
 
   return (
     <>
@@ -77,6 +95,8 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 
           {profile.blockState && profile.blockState !== 'none' ? (
             <BlockedNotice username={profile.username} blockState={profile.blockState} />
+          ) : profile.isContentLocked ? (
+            <LockedNotice username={profile.username} />
           ) : (
             <>
               {/* Sticky Navigation Tabs */}
@@ -86,19 +106,32 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                   isHeaderVisible ? 'top-[102px] md:top-[109px]' : 'top-0 md:top-[109px]'
                 )}
               >
+                {/* Nhiều tab ⇒ cuộn ngang trên màn hẹp */}
                 <SlidingTabs
-                  value={activeTab}
+                  value={currentTab}
                   onChange={setActiveTab}
+                  className="gap-5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                   items={[
-                    { id: 'posts', label: 'Bài viết', badge: profile.posts?.length || 0 },
-                    { id: 'documents', label: 'Tài liệu', badge: profile.documents?.length || 0 },
-                    { id: 'questions', label: 'Hỏi đáp Q&A', badge: questionPosts.length }
+                    { id: 'posts' as TabType, label: 'Bài viết', badge: profile.posts?.length || 0 },
+                    { id: 'questions' as TabType, label: 'Hỏi đáp', badge: questionPosts.length },
+                    { id: 'documents' as TabType, label: 'Tài liệu', badge: profile.documents?.length || 0 },
+                    ...activityTabs.map((t) => ({
+                      id: t as TabType,
+                      label: isPrivateToOthers(t) ? (
+                        <>
+                          {ACTIVITY_LABEL[t]}
+                          <Lock className="h-3 w-3 text-muted-foreground" aria-label="Chỉ bạn thấy" />
+                        </>
+                      ) : (
+                        ACTIVITY_LABEL[t]
+                      )
+                    }))
                   ]}
                 />
               </div>
 
               {/* Tab 1: Posts (Continuous stream on mobile, card on sm:) */}
-              {activeTab === 'posts' && (
+              {currentTab === 'posts' && (
                 <div className="space-y-2.5 px-2 sm:px-0">
                   {profile.posts && profile.posts.length > 0 ? (
                     profile.posts.map((post) => <PostCard key={post.id} post={post} onLikeToggle={() => {}} variant="card" />)
@@ -113,7 +146,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
               )}
 
               {/* Tab 2: Documents */}
-              {activeTab === 'documents' && (
+              {currentTab === 'documents' && (
                 <div className="px-2 sm:px-0">
                   {profile.documents && profile.documents.length > 0 ? (
                     <div className="grid grid-cols-1 gap-3">
@@ -132,7 +165,7 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
               )}
 
               {/* Tab 3: Q&A Questions */}
-              {activeTab === 'questions' && (
+              {currentTab === 'questions' && (
                 <div className="space-y-2.5 px-2 sm:px-0">
                   {questionPosts.length > 0 ? (
                     questionPosts.map((post) => <PostCard key={post.id} post={post} onLikeToggle={() => {}} variant="card" />)
@@ -145,11 +178,35 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                   )}
                 </div>
               )}
+
+              {/* Tab hoạt động: đã thích / đã lưu / đã bình luận */}
+              {(activityTabs as TabType[]).includes(currentTab) && (
+                <ProfileActivityTab
+                  key={currentTab}
+                  username={profile.username}
+                  type={currentTab as ProfileActivityType}
+                  isOwner={isOwner}
+                  isPrivateToOthers={isPrivateToOthers(currentTab as ProfileActivityType)}
+                />
+              )}
             </>
           )}
         </div>
       )}
     </>
+  )
+}
+
+// Hồ sơ riêng tư, người xem chưa theo dõi
+function LockedNotice({ username }: { username: string }) {
+  return (
+    <div className="mx-2 sm:mx-0 rounded-xl bg-card py-14 px-6 text-center">
+      <Lock className="h-10 w-10 mx-auto mb-3 text-muted-foreground/50" />
+      <p className="text-sm font-semibold text-foreground">Tài khoản này ở chế độ riêng tư</p>
+      <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+        Theo dõi @{username} để xem bài viết, tài liệu và hoạt động của họ.
+      </p>
+    </div>
   )
 }
 

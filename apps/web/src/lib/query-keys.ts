@@ -11,6 +11,8 @@ export const queryKeys = {
   comments: (postId: string) => ['comments', postId] as const,
   profile: (username: string) => ['profile', username.toLowerCase()] as const,
   profileAll: ['profile'] as const,
+  // Dưới gốc 'profile' ⇒ like/lưu bài được vá chung (POST_BEARING_ROOTS)
+  profileActivity: (username: string, type: string) => ['profile', username.toLowerCase(), 'activity', type] as const,
   blocks: ['blocks'] as const,
   communities: ['communities'] as const,
   community: (slug: string, sort: CommunitySort) => ['community', slug, sort] as const,
