@@ -19,7 +19,7 @@ flowchart TB
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
-    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>Puai (stream · vision) · AiThreads · AiSkills · AiMemory"]
+    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>Puai (stream · vision) · AiThreads · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
     ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval · prompts"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý PU AI · worker BullMQ"]
   end
@@ -125,6 +125,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-16 — Cài đặt PU AI: `AiSettingsController` (`ai/settings`, `ai/memories`, `ai/tasks`, `ai/messages/:id/feedback`, `ai/support`, `ai/usage`, `ai/data`), `AiAdminController` `GET admin/ai-feedback`, `PATCH ai/skills/:id/state`; queue BullMQ `ai-maintenance` (tác vụ tự động 5 phút, dọn lịch sử hằng ngày); `WebReaderService` (connector `web`, `web_search`).
 - 2026-10-16 — `ConnectorCallbackMiddleware` trên `GET auth/google/callback`: connector Google dùng chung redirect URI đăng nhập (phân biệt bằng `state` trong session).
 - 2026-10-16 — `GoogleOAuthService` dùng chung + `GoogleCalendarService`; thư viện skill công khai (`ai/skills/library`, `install`); `ai/threads?q=` tìm cả nội dung; xóa thread dọn tệp R2 (`StorageService.deleteObjects`).
 - 2026-10-16 — AiModule: `AiConnectorsController` + `GoogleDriveService` (OAuth `drive.readonly`, token AES-256-GCM trong `user_connectors`), `AiRetrieval` thêm connector `google_drive`; `ai/doc-text.ts` dùng chung trích chữ PDF/DOCX/txt.

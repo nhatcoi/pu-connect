@@ -152,4 +152,4 @@ Khi bạn muốn bổ sung Mobile App:
 ---
 
 ## 🔐 Xác thực
-Email + mật khẩu và Google OAuth (tùy chọn). Biến môi trường `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (xem `.env.example`) và hướng dẫn cấu hình tại [`docs/auth-google.md`](docs/auth-google.md). Connector Google Drive / Calendar của PU AI dùng lại client này, thêm `CONNECTOR_ENCRYPTION_KEY` (và `GOOGLE_CONNECTOR_CALLBACK_URL` nếu khác origin). Kiểm tra mã: `pnpm lint` (ESLint flat config ở `apps/web`, `apps/api`). Tài khoản seed local dùng mật khẩu `password123`.
+Email + mật khẩu và Google OAuth (tùy chọn). Biến môi trường `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (xem `.env.example`) và hướng dẫn cấu hình tại [`docs/auth-google.md`](docs/auth-google.md). Connector Google Drive / Calendar của PU AI dùng lại client này, thêm `CONNECTOR_ENCRYPTION_KEY` (và `GOOGLE_CONNECTOR_CALLBACK_URL` nếu khác origin). Tìm kiếm web cho PU AI: `TAVILY_API_KEY` (tùy chọn). Kiểm tra mã: `pnpm lint` (ESLint flat config ở `apps/web`, `apps/api`). Tài khoản seed local dùng mật khẩu `password123`.
