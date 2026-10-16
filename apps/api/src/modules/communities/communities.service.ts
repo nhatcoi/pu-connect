@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import type { Community, CommunityRule } from '@pu/schemas'

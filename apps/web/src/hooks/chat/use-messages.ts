@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { AiConnectorId, AiMode, ChatAttachment, ChatMessage, ChatMessageMeta, ChatReaction, ChatRef, ChatSkillRef } from '@pu/schemas'
+import { ApiError } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { useAppStore } from '@/store'
 import { chatApi } from './api'
@@ -97,9 +98,10 @@ export function useMessages(conversationId: string) {
           connectors: draft.connectors
         })
         upsertMessage(qc, saved) // danh sách hội thoại cập nhật qua sự kiện message.new
-      } catch (err: any) {
+      } catch (err) {
         upsertMessage(qc, { ...optimistic, status: 'failed' })
-        if (err?.status && err.status < 500) toast.error(err.message)
+        // Lỗi nghiệp vụ (4xx) báo ngay; lỗi mạng / 5xx để nút "thử lại" trên tin
+        if (err instanceof ApiError && err.status < 500) toast.error(err.message)
       }
     },
     [conversationId, me, qc]
@@ -131,7 +133,7 @@ export function useMessages(conversationId: string) {
     },
     [qc]
   )
-  const fail = (err: any) => toast.error(err?.message || 'Thao tác thất bại')
+  const fail = (err: unknown) => toast.error((err as Error)?.message || 'Thao tác thất bại')
 
   const remove = useCallback((id: string) => chatApi.remove(id).then(apply, fail), [apply])
   const edit = useCallback((id: string, content: string) => chatApi.edit(id, content).then(apply, fail), [apply])

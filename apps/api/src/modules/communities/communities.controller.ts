@@ -4,8 +4,7 @@ import {
   Post,
   Param,
   Query,
-  Req,
-  UnauthorizedException
+  Req
 } from '@nestjs/common'
 import { CommunitiesService } from './communities.service'
 import { DatabaseService } from '../../database/database.service'

@@ -11,9 +11,8 @@ export class CommentResolver {
   @Query(() => [CommentType], { name: 'comments' })
   async getComments(
     @Args('postId', { type: () => ID }) postId: string,
-    @Context() context?: any
+    @Context() _context?: any
   ): Promise<CommentType[]> {
-    const currentUserId = context?.req?.user?.id || null
 
     const sql = `
       SELECT c.*,

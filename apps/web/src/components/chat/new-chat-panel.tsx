@@ -34,8 +34,8 @@ export function NewChatPanel({ onClose }: { onClose: () => void }) {
             )
       refreshConversationLists(qc)
       router.push(`/messages/${conv.id}`)
-    } catch (err: any) {
-      toast.error(err?.message || 'Không thể tạo hội thoại')
+    } catch (err) {
+      toast.error((err as Error)?.message || 'Không thể tạo hội thoại')
       setBusy(false)
     }
   }

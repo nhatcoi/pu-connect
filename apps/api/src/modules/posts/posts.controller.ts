@@ -8,7 +8,6 @@ import {
   Param,
   Query,
   Req,
-  UnauthorizedException,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe

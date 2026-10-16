@@ -82,8 +82,8 @@ export function NotificationSettingsPanel() {
       const r = await sendTestPush()
       if (r.sent > 0) toast.success('Đã gửi thông báo thử')
       else toast.error('Chưa có trình duyệt nào nhận được — hãy bật lại thông báo')
-    } catch (e: any) {
-      toast.error(e?.message || 'Gửi thử thất bại')
+    } catch (e) {
+      toast.error((e as Error)?.message || 'Gửi thử thất bại')
     } finally {
       setBusy(false)
     }

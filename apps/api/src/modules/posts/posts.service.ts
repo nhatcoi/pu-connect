@@ -794,7 +794,7 @@ export class PostsService {
       [postIds]
     )
 
-    let myVotesMap = new Map<string, string>()
+    const myVotesMap = new Map<string, string>()
     if (currentUserId) {
       const pollIds = Array.from(new Set(pollsRes.rows.map((r) => r.poll_id)))
       if (pollIds.length > 0) {

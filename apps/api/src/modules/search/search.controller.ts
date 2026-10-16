@@ -3,8 +3,6 @@ import {
   Get,
   Query,
   Req,
-  UsePipes,
-  ValidationPipe,
   BadRequestException
 } from '@nestjs/common'
 import type { Request } from 'express'

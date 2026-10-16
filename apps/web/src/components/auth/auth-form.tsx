@@ -226,7 +226,8 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             asChild
             className="inline-flex items-center justify-center w-full rounded-full h-10 gap-2.5 border border-input bg-background text-[13px] font-semibold text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
           >
-            {/* Điều hướng toàn trang sang Google (OAuth redirect) */}
+            {/* Điều hướng toàn trang sang Google (OAuth redirect qua API, không phải trang Next) */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a href="/api/auth/google">
               <GoogleIcon />
               <span>Tiếp tục với Google</span>
