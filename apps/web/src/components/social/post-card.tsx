@@ -391,10 +391,12 @@ export function PostCard({
         id={`post-${post.id}`}
         data-track-post={post.id}
         className={cn(
-          'text-foreground transition-colors',
+          'text-foreground transition-[color,background-color,box-shadow] duration-200',
           variant === 'card'
             ? 'rounded-xl bg-card px-4 py-3.5 sm:px-5'
-            : 'px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background hover:bg-muted/[0.03]'
+            : 'px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background hover:bg-muted/[0.03]',
+          // Focus ring khi mở bình luận (ring không đổi layout → no CLS)
+          isCommentsOpen && (variant === 'card' ? 'ring-1 ring-sky-500/60' : 'ring-1 ring-inset ring-sky-500/60')
         )}
       >
         {/* Pinned Top Banner (Only visible on author profile page) */}

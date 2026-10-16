@@ -119,6 +119,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 ### 💬 Hệ Thống Bình Luận & Duyệt Lời Giải (Academic Comments & Q&A)
 - [x] 💬 **Bình luận phân cấp & Phân trang ([`PostCommentsSection`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/apps/web/src/components/social/comments/post-comments-section.tsx))**: Tải trước 3 bình luận, trả lời lồng nhau và thu gọn phản hồi.
 - [x] 🎯 **Cơ Chế Duyệt Lời Giải Chính Xác (Accepted Solution)**: Tác giả bài viết Q&A có quyền chọn và ghim câu trả lời chính xác lên đầu, hiển thị huy hiệu xanh lá và đánh dấu bài viết `[Đã giải quyết]`.
+- [x] 🔵 **Viền focus khi mở bình luận**: `PostCard` thêm `ring-1 ring-sky-500/60` (feed list dùng `ring-inset`) khi khu bình luận mở; ring ⇒ không đổi layout, chuyển mượt 200ms.
 
 ### 📚 Kho Tài Liệu & Đề Thi Học Phần (Knowledge Vault)
 - [x] 📑 **Phân loại tài liệu đa định dạng (`PDF`, `Code`, `Sheet`, `Markdown`)**: Tra cứu theo mã học phần và thẻ tag.
