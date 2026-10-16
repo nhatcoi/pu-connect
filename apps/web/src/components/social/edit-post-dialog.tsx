@@ -57,7 +57,7 @@ export function EditPostDialog({ post, open, onOpenChange, onSuccess }: EditPost
         onSuccess?.(res.data)
         onOpenChange(false)
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Không thể cập nhật bài viết')
     } finally {
       setIsSubmitting(false)

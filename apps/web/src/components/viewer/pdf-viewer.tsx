@@ -6,8 +6,6 @@ import {
   Download,
   ZoomIn,
   ZoomOut,
-  ChevronLeft,
-  ChevronRight,
   ExternalLink,
   Loader2
 } from 'lucide-react'

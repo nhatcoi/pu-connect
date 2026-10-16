@@ -8,6 +8,7 @@ import type { StudyGroup } from '@pu/schemas'
 import { toast } from 'sonner'
 import { useOpenStudyGroupChat } from '@/hooks/chat'
 import { useAppStore } from '@/store'
+import { errorMessage } from '@/lib/api-client'
 
 interface StudyGroupCardProps {
   group: StudyGroup
@@ -28,8 +29,8 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
     try {
       await onJoin(group.id)
       toast.success(`Đã tham gia ${group.name}`)
-    } catch (err: any) {
-      toast.error(err?.message || 'Không thể tham gia nhóm')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể tham gia nhóm'))
     } finally {
       setIsJoining(false)
     }

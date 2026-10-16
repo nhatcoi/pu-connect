@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useInfiniteQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { flattenPages } from '@/lib/post-cache'
 import type { CommentItem } from '@pu/schemas'
@@ -24,16 +24,21 @@ interface CommentPage {
 
 type CommentsData = InfiniteData<CommentPage, number>
 
+// Phản hồi GET /posts/:id/comments (meta ở ngoài hoặc lồng trong data)
+type CommentsMeta = { hasMore?: boolean; nextOffset?: number; remainingCount?: number; total?: number }
+type RawCommentsResponse = CommentsMeta & { data?: CommentItem[] | (CommentsMeta & { data?: CommentItem[] }) }
+
 async function fetchCommentPage(postId: string, offset: number): Promise<CommentPage> {
   const limit = offset === 0 ? INITIAL_COMMENT_LIMIT : BATCH_COMMENT_LIMIT
-  const res = await apiClient<any>(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`)
-  const items: CommentItem[] = Array.isArray(res?.data) ? res.data : res?.data?.data || []
+  const res = await apiClient<RawCommentsResponse>(`/posts/${postId}/comments?limit=${limit}&offset=${offset}`)
+  const nested = Array.isArray(res.data) ? undefined : res.data
+  const items: CommentItem[] = Array.isArray(res.data) ? res.data : nested?.data || []
   return {
     items,
-    hasMore: res?.hasMore ?? res?.data?.hasMore ?? false,
-    nextOffset: res?.nextOffset ?? offset + items.filter((c) => !c.parentId).length,
-    remainingCount: res?.remainingCount ?? res?.data?.remainingCount ?? 0,
-    total: res?.total ?? res?.data?.total ?? items.length
+    hasMore: res.hasMore ?? nested?.hasMore ?? false,
+    nextOffset: res.nextOffset ?? offset + items.filter((c) => !c.parentId).length,
+    remainingCount: res.remainingCount ?? nested?.remainingCount ?? 0,
+    total: res.total ?? nested?.total ?? items.length
   }
 }
 
@@ -121,8 +126,8 @@ export function useComments(postId: string, initialOpen = false) {
           }
           return created
         }
-      } catch (err: any) {
-        toast.error(err.message || 'Không thể gửi bình luận')
+      } catch (err) {
+        toast.error(errorMessage(err, 'Không thể gửi bình luận'))
       } finally {
         setIsSubmitting(false)
       }
@@ -165,8 +170,8 @@ export function useComments(postId: string, initialOpen = false) {
           update((items) => items.map((c) => ({ ...c, isSolution: c.id === commentId ? res.isSolution : false })))
           toast.success(res.message)
         }
-      } catch (err: any) {
-        toast.error(err.message || 'Không thể duyệt câu trả lời')
+      } catch (err) {
+        toast.error(errorMessage(err, 'Không thể duyệt câu trả lời'))
       }
     },
     [update]
@@ -183,8 +188,8 @@ export function useComments(postId: string, initialOpen = false) {
         const { content: saved, editedAt } = res.data
         update((items) => items.map((c) => (c.id === commentId ? { ...c, content: saved, editedAt } : c)))
         return true
-      } catch (err: any) {
-        toast.error(err.message || 'Không thể sửa bình luận')
+      } catch (err) {
+        toast.error(errorMessage(err, 'Không thể sửa bình luận'))
         return false
       }
     },
@@ -209,8 +214,8 @@ export function useComments(postId: string, initialOpen = false) {
         }
         update((items) => items.filter((c) => !gone.has(c.id)), -gone.size)
         toast.success('Đã xóa bình luận')
-      } catch (err: any) {
-        toast.error(err.message || 'Không thể xóa bình luận')
+      } catch (err) {
+        toast.error(errorMessage(err, 'Không thể xóa bình luận'))
       }
     },
     [update]

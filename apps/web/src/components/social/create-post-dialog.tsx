@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { onPostCreated as notifyPostCreated } from '@/lib/post-cache'
 import { toast } from 'sonner'
 import { FileUp, Sparkles, Loader2 } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import type { PostItem } from '@pu/schemas'
 
 export function CreatePostDialog() {
@@ -65,8 +65,8 @@ export function CreatePostDialog() {
       setContent('')
       setTagInput('')
       setOpen(false)
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể tạo bài viết')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể tạo bài viết'))
     } finally {
       setIsSubmitting(false)
     }

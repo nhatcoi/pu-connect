@@ -1,7 +1,6 @@
 'use client'
 
 import React, { use, useRef, useEffect, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
@@ -15,9 +14,7 @@ import { useCommunity } from '@/hooks/use-community'
 import { CommunityHeaderSkeleton, PostListSkeleton } from '@/components/skeletons/feed-skeleton'
 import { LoadingRegion } from '@/components/ui/skeleton'
 import {
-  Users,
   Flame,
-  Sparkles,
   Clock,
   Award,
   ShieldCheck,
@@ -136,6 +133,7 @@ export default function CommunityDetailPage({
           {/* Banner Image */}
           <div className="relative h-36 sm:h-44 w-full bg-muted overflow-hidden">
             {community.bannerUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa/icon cộng đồng từ R2, kích thước động
               <img
                 src={community.bannerUrl}
                 alt={community.name}
@@ -152,6 +150,7 @@ export default function CommunityDetailPage({
             <div className="flex items-end justify-between -mt-12 sm:-mt-14 mb-3">
               <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-2xl overflow-hidden border-4 border-card bg-card shadow-md shrink-0">
                 {community.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa/icon cộng đồng từ R2, kích thước động
                   <img
                     src={community.avatarUrl}
                     alt={community.name}

@@ -10,7 +10,9 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Search, X, SlidersHorizontal } from 'lucide-react'
+import { SlidersHorizontal } from 'lucide-react'
+
+type SearchType = 'all' | 'posts' | 'documents' | 'courses' | 'groups'
 
 interface AdvancedSearchDialogProps {
   open: boolean
@@ -41,7 +43,7 @@ export function AdvancedSearchDialog({
   const [exactWords, setExactWords] = useState(initialQuery)
   const [tag, setTag] = useState('')
   const [faculty, setFaculty] = useState(initialFaculty)
-  const [searchType, setSearchType] = useState<'all' | 'posts' | 'documents' | 'courses' | 'groups'>('all')
+  const [searchType, setSearchType] = useState<SearchType>('all')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -131,7 +133,7 @@ export function AdvancedSearchDialog({
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setSearchType(item.id as any)}
+                  onClick={() => setSearchType(item.id as SearchType)}
                   className={`py-2 px-3 rounded-xl text-xs font-medium border transition-colors cursor-pointer text-center ${
                     searchType === item.id
                       ? 'bg-primary text-primary-foreground border-primary font-bold'

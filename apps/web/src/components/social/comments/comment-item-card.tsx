@@ -23,7 +23,7 @@ interface CommentItemCardProps {
   onLikeToggle: (commentId: string) => void
   onAcceptSolution?: (commentId: string) => void
   onDeleteComment?: (commentId: string) => void
-  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[]) => Promise<any>
+  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[]) => Promise<unknown>
   onEditComment?: (commentId: string, content: string) => Promise<boolean>
   mentionContext?: MentionCandidate[]
   // Bình luận được mở từ thông báo (cuộn tới + viền nổi bật)

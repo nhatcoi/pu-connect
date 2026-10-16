@@ -112,7 +112,7 @@ function enhanceMentionsAndTags(text: string): string {
     .join('')
 }
 
-export function MarkdownPreview({ content, className, isDark = false, inline = false }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, className, inline = false }: MarkdownPreviewProps) {
   const processedContent = useMemo(
     () => (inline ? normalizeInlineMarkdown(content || '') : enhanceMentionsAndTags(content || '')),
     [content, inline]
@@ -136,7 +136,7 @@ export function MarkdownPreview({ content, className, isDark = false, inline = f
     pre({ children }) {
       return <>{children}</>
     },
-    code({ node, className, children, ...props }: any) {
+    code({ node: _node, className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || '')
       const isInline = inline || (!match && !String(children).includes('\n'))
 

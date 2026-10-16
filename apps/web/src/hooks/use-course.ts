@@ -3,7 +3,7 @@
 import { useCallback } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-query'
 import type { Course, CourseOverview, DocumentItem, PostItem, StudyGroup } from '@pu/schemas'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, ApiError } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { flattenPages, type OffsetPage } from '@/lib/post-cache'
 
@@ -27,7 +27,7 @@ export function useCourse(code: string) {
     queryKey: queryKeys.course(key),
     queryFn: async () => (await apiClient<Envelope<CourseOverview>>(`/courses/${encodeURIComponent(key)}/overview`)).data,
     staleTime: 2 * 60 * 1000,
-    retry: (count, err: any) => err?.status !== 404 && count < 2
+    retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2
   })
 
   const posts = useInfiniteQuery({
@@ -85,7 +85,7 @@ export function useCourse(code: string) {
   return {
     overview: overview.data ?? null,
     isLoading: overview.isPending,
-    notFound: (overview.error as any)?.status === 404,
+    notFound: overview.error instanceof ApiError && overview.error.status === 404,
     posts: flattenPages(posts.data),
     postsLoading: posts.isPending,
     hasMorePosts: !!posts.hasNextPage,

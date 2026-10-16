@@ -9,15 +9,10 @@ import {
 } from '@pu/schemas'
 import {
   GraduationCap,
-  School,
-  BookOpen,
   Search,
   Check,
   X,
-  ChevronDown,
-  Building2,
-  FlaskConical,
-  Compass
+  ChevronDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

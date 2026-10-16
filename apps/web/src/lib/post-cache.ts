@@ -11,8 +11,8 @@ export interface OffsetPage<T, M = undefined> {
 }
 
 // Bài viết nhận diện bằng id + authorId (tránh nhầm với object khác cùng id)
-function isPost(value: any): value is PostItem {
-  return !!value && typeof value === 'object' && typeof value.id === 'string' && 'authorId' in value && 'content' in value
+function isPost(value: unknown): value is PostItem {
+  return !!value && typeof value === 'object' && typeof (value as { id?: unknown }).id === 'string' && 'authorId' in value && 'content' in value
 }
 
 /**

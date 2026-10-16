@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Eye, EyeOff, Loader2, XCircle } from 'lucide-react'
 import { PuLogo } from '@/components/brand/pu-logo'
 import { Input } from '@/components/ui/input'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { useAppStore } from '@/store'
 
 function ResetPasswordContent() {
@@ -60,8 +60,8 @@ function ResetPasswordContent() {
       // Phiên hiện tại (nếu có) đã bị hủy trên server ⇒ xóa trạng thái đăng nhập phía client
       useAppStore.getState().logout()
       setDone(true)
-    } catch (err: any) {
-      setError(err.message || 'Không thể đặt lại mật khẩu')
+    } catch (err) {
+      setError(errorMessage(err, 'Không thể đặt lại mật khẩu'))
     } finally {
       setIsBusy(false)
     }

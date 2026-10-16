@@ -10,7 +10,7 @@ import {
 import { PdfViewer } from './pdf-viewer'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import type { DocumentItem } from '@pu/schemas'
-import { FileText, FileCode, FileSpreadsheet, Eye } from 'lucide-react'
+import { Eye } from 'lucide-react'
 
 interface DocumentPreviewModalProps {
   document: DocumentItem | null

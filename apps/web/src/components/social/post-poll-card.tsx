@@ -33,7 +33,7 @@ export function PostPollCard({ postId, poll: initialPoll, onPollUpdated }: PostP
         setPoll(res.data)
         onPollUpdated?.(res.data)
       }
-    } catch (err: any) {
+    } catch {
       toast.error('Không thể thực hiện bình chọn')
     } finally {
       setIsVoting(false)

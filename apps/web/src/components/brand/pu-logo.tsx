@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils'
 
 // Logo dạng <img> (không inline SVG): gradient id không đụng nhau khi 1 bản bị ẩn (display:none)
 function BrandMark({ src, label, className }: { src: string; label: string; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element -- SVG tĩnh, không cần tối ưu ảnh
   return <img src={src} alt={label} draggable={false} className={cn('h-9 w-9 shrink-0 object-contain select-none', className)} />
 }
 

@@ -44,15 +44,13 @@ function formatFileSize(bytes?: number | string): string {
 export function DocumentCard({ document: item }: DocumentCardProps) {
   const setPreviewDocument = useAppStore((state) => state.setPreviewDocument)
 
-  const uploader = (item as any).uploader || item.owner
-  const displayName = uploader?.displayName || uploader?.username || 'Thành viên Phenikaa'
-  const faculty = (item as any).faculty || uploader?.faculty
+  const displayName = item.owner?.displayName || item.owner?.username || 'Thành viên Phenikaa'
 
   const rawTags = Array.isArray(item.tags) ? item.tags : []
-  const courseCode = (item as any).courseCode
+  const courseCode = item.courseCode
   const displayTags = rawTags.length > 0
     ? rawTags
-    : [courseCode, faculty].filter(Boolean) as string[]
+    : courseCode ? [courseCode] : []
 
   return (
     <Card data-track-doc={item.id} className="flex flex-col justify-between transition-all duration-200 hover:border-border/80 hover:shadow-sm">
@@ -66,7 +64,6 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
               <h3 className="font-semibold text-sm line-clamp-1 leading-snug">{item.title}</h3>
               <p className="text-xs text-muted-foreground">
                 Tải lên bởi <span className="font-medium text-foreground">{displayName}</span>
-                {faculty && <span className="text-[11px] text-muted-foreground/80"> • {faculty}</span>}
               </p>
             </div>
           </div>

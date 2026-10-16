@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { GraduationCap, FileText, MessageSquare, Star, ArrowRight } from 'lucide-react'
+import { FileText, MessageSquare, Star, ArrowRight } from 'lucide-react'
 import type { Course } from '@pu/schemas'
 
 export function CourseCard({ course }: { course: Course }) {

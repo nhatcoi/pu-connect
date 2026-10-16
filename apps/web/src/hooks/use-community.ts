@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useInfiniteQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { queryKeys, type CommunitySort } from '@/lib/query-keys'
 import { flattenPages, prependPost, type OffsetPage } from '@/lib/post-cache'
 import type { Community, PostItem } from '@pu/schemas'
@@ -68,8 +68,8 @@ export function useCommunity(slug: string, initialSort: CommunitySort = 'hot') {
       )
       patchCommunity(queryClient, slug, (c) => ({ ...c, isMember: res.isMember, membersCount: res.membersCount }))
       toast.success(res.message)
-    } catch (err: any) {
-      toast.error(err.message || 'Thao tác không thành công')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Thao tác không thành công'))
     } finally {
       setIsJoining(false)
     }

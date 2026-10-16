@@ -8,10 +8,9 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { FollowButton } from './follow-button'
 import { graphqlClient } from '@/lib/graphql-client'
-import { Users, GraduationCap, ShieldCheck } from 'lucide-react'
+import { Users, ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
 import { UserListSkeleton } from '@/components/skeletons/user-row-skeleton'
 

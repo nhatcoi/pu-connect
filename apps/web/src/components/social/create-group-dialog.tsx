@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 import { Users, Loader2 } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import type { StudyGroup } from '@pu/schemas'
 
 interface CreateGroupDialogProps {
@@ -66,8 +66,8 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
       setTechStackInput('')
       onOpenChange(false)
       onSuccess?.()
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể tạo nhóm')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể tạo nhóm'))
     } finally {
       setIsSubmitting(false)
     }

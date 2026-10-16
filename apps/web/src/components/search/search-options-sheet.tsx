@@ -7,7 +7,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Settings, SlidersHorizontal, Search, X } from 'lucide-react'
+import { Settings, SlidersHorizontal, Search } from 'lucide-react'
 
 interface SearchOptionsSheetProps {
   open: boolean

@@ -74,3 +74,7 @@ export async function uploadFileToR2(
   return result.data
 }
 
+// Thông điệp lỗi hiển thị cho người dùng (catch nhận unknown) / User-facing error message
+export function errorMessage(err: unknown, fallback: string): string {
+  return (err instanceof Error && err.message) || fallback
+}

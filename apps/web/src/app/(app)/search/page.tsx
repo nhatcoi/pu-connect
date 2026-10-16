@@ -7,7 +7,6 @@ import React, { useState, useEffect, Suspense } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@/lib/query-keys'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { PostCard } from '@/components/social/post-card'
 import { DocumentCard } from '@/components/social/document-card'
 import { track, trackOnce } from '@/lib/track'
@@ -18,21 +17,14 @@ import { SearchSettingsDialog } from '@/components/search/search-settings-dialog
 import { SearchOptionsSheet } from '@/components/search/search-options-sheet'
 import { AdvancedSearchDialog } from '@/components/search/advanced-search-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { apiClient } from '@/lib/api-client'
-import { useAppStore } from '@/store'
 import type {
   SearchResult,
   SearchType,
   Course,
-  DocumentItem,
-  PostItem,
-  UserSummary,
-  StudyGroup
+  UserSummary
 } from '@pu/schemas'
 import {
   Search,
@@ -41,21 +33,12 @@ import {
   Settings,
   MoreHorizontal,
   SlidersHorizontal,
-  TrendingUp,
-  BookOpen,
   FileText,
-  MessageSquare,
   User,
   Users,
-  Sparkles,
   Filter,
-  ArrowRight,
   GraduationCap,
-  Star,
-  Award,
-  Flame,
-  CheckCircle2,
-  Clock
+  Flame
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
@@ -156,8 +139,6 @@ function SearchContent() {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false)
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
-  const user = useAppStore((state) => state.user)
-  const { isHeaderVisible } = useScrollDirection(8)
 
   // Sync input query with URL
   useEffect(() => {
@@ -216,9 +197,6 @@ function SearchContent() {
     router.push(`/search?q=${encodeURIComponent(tag)}&type=all`)
   }
 
-  const userInitials = (user?.displayName || (user as any)?.display_name || user?.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
 
   const totalCount = searchResult?.counts?.total || 0
   const isSearchActive = !!queryParam.trim()

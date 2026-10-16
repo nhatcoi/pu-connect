@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { useWriteSessionUser } from '@/hooks/use-settings'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { SettingRow, SettingsGroup } from './settings-ui'
 
 // Tài khoản: Tích Xanh, thông tin đăng nhập, mật khẩu, đăng xuất
@@ -33,8 +33,8 @@ export function AccountSection() {
       } else {
         toast.info(res.data?.message || 'Email chưa đáp ứng điều kiện nhận Tích Xanh')
       }
-    } catch (err: any) {
-      toast.error(err?.message || 'Không thể xác thực lúc này')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể xác thực lúc này'))
     } finally {
       setIsVerifying(false)
     }

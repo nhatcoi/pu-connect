@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Loader2, MailCheck } from 'lucide-react'
 import { PuLogo } from '@/components/brand/pu-logo'
 import { Input } from '@/components/ui/input'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 
 function ForgotPasswordContent() {
   const [email, setEmail] = useState(useSearchParams().get('email') || '')
@@ -26,8 +26,8 @@ function ForgotPasswordContent() {
     try {
       await apiClient('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email: value }) })
       setSent(true)
-    } catch (err: any) {
-      setError(err.message || 'Có lỗi xảy ra, vui lòng thử lại')
+    } catch (err) {
+      setError(errorMessage(err, 'Có lỗi xảy ra, vui lòng thử lại'))
     } finally {
       setIsBusy(false)
     }

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { Command } from 'cmdk'
 import {
   Search,
@@ -8,25 +8,19 @@ import {
   GraduationCap,
   Users,
   Flame,
-  Building2,
-  Bookmark,
   Sparkles,
   Plus
 } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { useRouter } from 'next/navigation'
 
 interface CommandPaletteProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSelectTab: (tab: any) => void
+  onSelectTab: (tab: 'feed' | 'courses' | 'documents') => void
 }
 
 export function CommandPalette({ open, onOpenChange, onSelectTab }: CommandPaletteProps) {
-  const router = useRouter()
-  const courses = useAppStore((state) => state.courses)
-  const documents = useAppStore((state) => state.documents)
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   const setCreateDocOpen = useAppStore((state) => state.setCreateDocumentOpen)
   const setCreateGroupOpen = useAppStore((state) => state.setCreateGroupOpen)

@@ -58,7 +58,7 @@ function useSettingsPatch<T extends object>(
 }
 
 function pick<T extends object>(obj: T, keys: string[]): Partial<T> {
-  return Object.fromEntries(keys.map((k) => [k, (obj as any)[k]])) as Partial<T>
+  return Object.fromEntries(keys.map((k) => [k, (obj as Record<string, unknown>)[k]])) as Partial<T>
 }
 
 export function usePrivacySettings() {

@@ -1,7 +1,7 @@
 'use client'
 
 import { FEATURES } from '@/lib/features'
-import React, { useState, useRef, useEffect, useId } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { onPostCreated as notifyPostCreated } from '@/lib/post-cache'
 import { toast } from 'sonner'
 import { Loader2, Sparkles, X, Users, Tag, BarChart2 } from 'lucide-react'
-import { apiClient, uploadFileToR2 } from '@/lib/api-client'
+import { apiClient, uploadFileToR2, errorMessage } from '@/lib/api-client'
 import type { PostItem, PostType, TargetAudience } from '@pu/schemas'
 
 import { ComposerProgressRing } from './composer-progress-ring'
@@ -259,8 +259,8 @@ export function AcademicPostComposer({
       setIsExpanded(false)
       setIsPreviewMode(false)
       setShowTagInput(false)
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể đăng bài viết. Vui lòng thử lại.')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể đăng bài viết. Vui lòng thử lại.'))
     } finally {
       setIsSubmitting(false)
       setUploadStatus('')
@@ -269,7 +269,6 @@ export function AcademicPostComposer({
 
   const userInitials = (
     user?.displayName ||
-    (user as any)?.display_name ||
     user?.username ||
     'PU'
   )
@@ -293,7 +292,7 @@ export function AcademicPostComposer({
       <div className="flex gap-3 items-start">
         {/* Left User Personal Avatar */}
         <Avatar className="h-9 w-9 shrink-0 rounded-full border border-border/40 select-none">
-          <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || 'User'} />
+          <AvatarImage src={user?.avatarUrl || ''} alt={user?.displayName || 'User'} />
           <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
             {userInitials}
           </AvatarFallback>

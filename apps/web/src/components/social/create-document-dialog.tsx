@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { FileUp, Loader2 } from 'lucide-react'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import type { DocumentItem } from '@pu/schemas'
 
 interface CreateDocumentDialogProps {
@@ -70,8 +70,8 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
       setTagInput('')
       onOpenChange(false)
       onSuccess?.()
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể lưu tài liệu')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể lưu tài liệu'))
     } finally {
       setIsSubmitting(false)
     }
@@ -113,7 +113,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
               <label className="font-semibold block mb-1 text-foreground">Định dạng</label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value as any)}
+                onChange={(e) => setType(e.target.value as typeof type)}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
               >
                 <option value="pdf">Tệp PDF</option>

@@ -5,7 +5,7 @@ import { FlatCompat } from '@eslint/eslintrc'
 // ESLint flat config: Next.js (core-web-vitals + TypeScript)
 const compat = new FlatCompat({ baseDirectory: dirname(fileURLToPath(import.meta.url)) })
 
-export default [
+const config = [
   { ignores: ['.next/**', '.next-*/**', 'node_modules/**', 'next-env.d.ts', 'public/**'] },
   ...compat.extends('next/core-web-vitals', 'next/typescript'),
   {
@@ -16,3 +16,5 @@ export default [
     }
   }
 ]
+
+export default config

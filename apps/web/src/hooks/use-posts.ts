@@ -28,20 +28,27 @@ export interface FeedMeta {
 
 export type FeedPage = OffsetPage<PostItem, FeedMeta>
 
-// API trả nhiều dạng (mảng thẳng / { data, total, hasMore } lồng) ⇒ chuẩn hóa về một trang
-export function normalizePage(res: any, offset: number): FeedPage {
+// Phản hồi GET /posts: mảng thẳng hoặc { data, hasMore, snapshotAt } (có thể lồng thêm 1 lớp data)
+type FeedBody = { data?: PostItem[]; hasMore?: boolean; snapshotAt?: string }
+type FeedEnvelope = Omit<FeedBody, 'data'> & { data?: PostItem[] | FeedBody }
+export type RawFeedResponse = PostItem[] | FeedEnvelope
+
+// API trả nhiều dạng ⇒ chuẩn hóa về một trang
+export function normalizePage(raw: RawFeedResponse, offset: number): FeedPage {
+  const res = Array.isArray(raw) ? null : raw
+  const nested = res && !Array.isArray(res.data) ? res.data : undefined
   let items: PostItem[] = []
   let hasMore = false
   if (Array.isArray(res?.data)) {
     items = res.data
     hasMore = res.hasMore ?? false
-  } else if (Array.isArray(res?.data?.data)) {
-    items = res.data.data
-    hasMore = res.data.hasMore ?? false
-  } else if (Array.isArray(res)) {
-    items = res
+  } else if (Array.isArray(nested?.data)) {
+    items = nested.data
+    hasMore = nested.hasMore ?? false
+  } else if (Array.isArray(raw)) {
+    items = raw
   }
-  const snapshotAt: string | undefined = res?.snapshotAt ?? res?.data?.snapshotAt
+  const snapshotAt: string | undefined = res?.snapshotAt ?? nested?.snapshotAt
   return { items, hasMore: hasMore && items.length > 0, nextOffset: offset + items.length, meta: { snapshotAt } }
 }
 
@@ -52,7 +59,7 @@ export function feedQueryOptions(feedType: FeedType, tag: string | null) {
       const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(pageParam.offset), feedType })
       if (tag) params.set('tag', tag)
       if (pageParam.before) params.set('before', pageParam.before)
-      return normalizePage(await apiClient<any>(`/posts?${params.toString()}`), pageParam.offset)
+      return normalizePage(await apiClient<RawFeedResponse>(`/posts?${params.toString()}`), pageParam.offset)
     },
     initialPageParam: { offset: 0 } as FeedPageParam,
     // Trang sau giữ mốc snapshot của trang đầu

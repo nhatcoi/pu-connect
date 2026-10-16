@@ -15,7 +15,7 @@ import { Image as ImageIcon, Binary, Code2, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface CommentComposerProps {
-  onSubmit: (content: string, mediaUrls?: string[]) => Promise<any>
+  onSubmit: (content: string, mediaUrls?: string[]) => Promise<unknown>
   parentId?: string
   placeholder?: string
   autoFocus?: boolean
@@ -80,7 +80,6 @@ export function CommentComposer({
 
   const userInitials = (
     user?.displayName ||
-    (user as any)?.display_name ||
     user?.username ||
     'PU'
   )
@@ -142,7 +141,7 @@ export function CommentComposer({
       clearDraft()
       setContent('')
       setAttachedImages([])
-    } catch (err: any) {
+    } catch {
       toast.error('Không thể gửi bình luận')
     } finally {
       setIsSubmitting(false)
@@ -168,7 +167,7 @@ export function CommentComposer({
   return (
     <div className="flex gap-3 items-start">
       <Avatar className="h-8 w-8 shrink-0 rounded-full border border-border select-none shadow-xs mt-0.5">
-        <AvatarImage src={user?.avatarUrl || (user as any)?.avatar || ''} alt={user?.displayName || 'User'} />
+        <AvatarImage src={user?.avatarUrl || ''} alt={user?.displayName || 'User'} />
         <AvatarFallback className="bg-primary text-primary-foreground font-bold text-[10px]">
           {userInitials}
         </AvatarFallback>

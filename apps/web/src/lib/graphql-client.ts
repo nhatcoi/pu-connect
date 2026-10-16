@@ -3,12 +3,12 @@ const GRAPHQL_ENDPOINT =
 
 interface GraphQLResponse<T> {
   data?: T
-  errors?: Array<{ message: string; locations?: any[]; path?: string[] }>
+  errors?: Array<{ message: string; locations?: unknown[]; path?: string[] }>
 }
 
 export async function graphqlClient<T>(
   query: string,
-  variables: Record<string, any> = {}
+  variables: Record<string, unknown> = {}
 ): Promise<T> {
   const response = await fetch(GRAPHQL_ENDPOINT, {
     method: 'POST',

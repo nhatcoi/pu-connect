@@ -49,7 +49,7 @@ export function ReportPostDialog({ postId, open, onOpenChange }: ReportPostDialo
       toast.success('Báo cáo vi phạm đã được gửi đến Ban Quản trị')
       onOpenChange(false)
       setDetails('')
-    } catch (err: any) {
+    } catch {
       toast.error('Không thể gửi báo cáo vi phạm')
     } finally {
       setIsSubmitting(false)

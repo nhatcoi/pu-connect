@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { MailWarning } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { SHELL_WIDTH } from '@/lib/layout'
 
@@ -20,8 +20,8 @@ export function VerifyEmailBanner() {
     try {
       await apiClient('/auth/resend-verification', { method: 'POST' })
       toast.success(`Đã gửi email xác thực tới ${user.email}`)
-    } catch (err: any) {
-      toast.error(err.message || 'Không thể gửi email, vui lòng thử lại')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể gửi email, vui lòng thử lại'))
     } finally {
       setIsSending(false)
     }

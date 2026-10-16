@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AcademicUnitSelector } from './academic-unit-selector'
+import { errorMessage } from '@/lib/api-client'
 
 interface EditProfileDialogProps {
   open: boolean
@@ -66,6 +67,12 @@ const BANNER_PRESETS = [
     url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80'
   }
 ]
+
+// Chi tiết lỗi tải ảnh (bỏ thông điệp chung chung "upload failed")
+const uploadErrorDetail = (err: unknown) => {
+  const msg = errorMessage(err, '')
+  return msg && msg !== 'upload failed' ? `: ${msg}` : ''
+}
 
 export function EditProfileDialog({
   open,
@@ -136,9 +143,9 @@ export function EditProfileDialog({
       const uploadedUrl = data?.data?.url || data?.data?.publicUrl
       if (!res.ok || !uploadedUrl) throw new Error(typeof data?.message === 'string' ? data.message : 'upload failed')
       setAvatarUrl(uploadedUrl)
-    } catch (err: any) {
+    } catch (err) {
       // Không dùng blob: URL tạm (chỉ tồn tại trên máy này) ⇒ giữ ảnh cũ
-      toast.error(`Không tải được ảnh đại diện lên${err?.message && err.message !== 'upload failed' ? `: ${err.message}` : ''}`)
+      toast.error(`Không tải được ảnh đại diện lên${uploadErrorDetail(err)}`)
       e.target.value = ''
     } finally {
       setIsUploadingAvatar(false)
@@ -163,9 +170,9 @@ export function EditProfileDialog({
       const uploadedUrl = data?.data?.url || data?.data?.publicUrl
       if (!res.ok || !uploadedUrl) throw new Error(typeof data?.message === 'string' ? data.message : 'upload failed')
       setBannerUrl(uploadedUrl)
-    } catch (err: any) {
+    } catch (err) {
       // Không dùng blob: URL tạm (chỉ tồn tại trên máy này) ⇒ giữ ảnh cũ
-      toast.error(`Không tải được ảnh bìa lên${err?.message && err.message !== 'upload failed' ? `: ${err.message}` : ''}`)
+      toast.error(`Không tải được ảnh bìa lên${uploadErrorDetail(err)}`)
       e.target.value = ''
     } finally {
       setIsUploadingBanner(false)
@@ -231,8 +238,8 @@ export function EditProfileDialog({
       toast.success('Đã cập nhật hồ sơ')
       onOpenChange(false)
       onSuccess()
-    } catch (err: any) {
-      toast.error(err.message || 'Có lỗi xảy ra khi lưu thông tin')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Có lỗi xảy ra khi lưu thông tin'))
     } finally {
       setIsSubmitting(false)
     }
@@ -300,6 +307,7 @@ export function EditProfileDialog({
           {/* 2. Cover Banner Header với Đầy Đủ Logic Ảnh Bìa */}
           <div className="relative h-32 sm:h-44 w-full bg-muted flex items-center justify-center overflow-hidden group/banner">
             {bannerUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- xem trước ảnh vừa chọn (blob URL)
               <img
                 src={bannerUrl}
                 alt="Ảnh bìa hồ sơ"
@@ -375,6 +383,7 @@ export function EditProfileDialog({
                       onClick={() => handleSelectPresetBanner(preset.url)}
                       className="group/preset relative h-12 rounded-lg overflow-hidden border border-border/80 hover:border-primary transition-all cursor-pointer"
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- xem trước ảnh vừa chọn (blob URL) */}
                       <img
                         src={preset.url}
                         alt={preset.name}

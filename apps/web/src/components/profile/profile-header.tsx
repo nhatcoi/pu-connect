@@ -26,6 +26,7 @@ import { FollowButton } from './follow-button'
 import { UserListDialog } from './user-list-dialog'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { BlockUserControl } from './block-user-control'
+import { errorMessage } from '@/lib/api-client'
 
 interface ProfileHeaderProps {
   profile: UserProfileData
@@ -41,7 +42,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
 
   const blockState = profile.blockState ?? 'none'
   const [followersCount, setFollowersCount] = useState(profile.followersCount || 0)
-  const [followingCount, setFollowingCount] = useState(profile.followingCount || 0)
+  const [followingCount] = useState(profile.followingCount || 0)
   const [listDialog, setListDialog] = useState<{
     open: boolean
     type: 'followers' | 'following'
@@ -108,6 +109,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
       {/* Cover Image Banner */}
       <div className="relative h-36 sm:h-44 w-full bg-gradient-to-br from-[#0B3D91] via-[#0A3380] to-[#072A6B] overflow-hidden">
         {profile.bannerUrl && (
+          // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa người dùng từ R2, kích thước động
           <img
             src={profile.bannerUrl}
             alt="Cover banner"
@@ -181,8 +183,8 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                       try {
                         const conv = await chatApi.openDirect(profile.id)
                         router.push(`/messages/${conv.id}`)
-                      } catch (err: any) {
-                        toast.error(err?.message || 'Không thể mở hội thoại')
+                      } catch (err) {
+                        toast.error(errorMessage(err, 'Không thể mở hội thoại'))
                       }
                     }}
                   >

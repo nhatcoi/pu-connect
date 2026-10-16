@@ -23,7 +23,7 @@ export function isPushSupported(): boolean {
 export function isIosNeedingInstall(): boolean {
   if (typeof window === 'undefined') return false
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
-  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone
+  const standalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone
   return ios && !standalone
 }
 

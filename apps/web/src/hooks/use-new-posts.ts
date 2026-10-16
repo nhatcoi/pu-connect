@@ -5,7 +5,7 @@ import { useQuery, useQueryClient, type InfiniteData } from '@tanstack/react-que
 import { apiClient } from '@/lib/api-client'
 import { queryKeys, type FeedType } from '@/lib/query-keys'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
-import { normalizePage, type FeedPage } from '@/hooks/use-posts'
+import { normalizePage, type FeedPage, type RawFeedResponse } from '@/hooks/use-posts'
 
 export interface NewPostsAuthor {
   id: string
@@ -64,7 +64,7 @@ export function useNewPosts(feedType: FeedType, tag: string | null, since: strin
     try {
       const params = new URLSearchParams({ limit: String(REVEAL_LIMIT), offset: '0', feedType, after: since })
       if (tag) params.set('tag', tag)
-      const page = normalizePage(await apiClient<any>(`/posts?${params.toString()}`), 0)
+      const page = normalizePage(await apiClient<RawFeedResponse>(`/posts?${params.toString()}`), 0)
 
       queryClient.setQueryData<InfiniteData<FeedPage>>(queryKeys.feed(feedType, tag), (old) => {
         if (!old?.pages?.length) return old

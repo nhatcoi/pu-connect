@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { X, ZoomIn } from 'lucide-react'
+import { ZoomIn } from 'lucide-react'
 
 interface PostMediaGalleryProps {
   mediaUrls: string[]
@@ -43,6 +43,7 @@ export function PostMediaGallery({ mediaUrls, className }: PostMediaGalleryProps
               mediaUrls.length >= 4 && 'h-40'
             )}
           >
+            {/* eslint-disable-next-line @next/next/no-img-element -- ảnh bài viết từ R2, tỉ lệ động */}
             <img
               src={url}
               alt={`Post media attachment ${idx + 1}`}
@@ -61,6 +62,7 @@ export function PostMediaGallery({ mediaUrls, className }: PostMediaGalleryProps
         <DialogContent className="max-w-4xl p-1 bg-black/95 border-none shadow-2xl overflow-hidden rounded-2xl flex items-center justify-center">
           {selectedImage && (
             <div className="relative max-h-[85vh] w-full flex items-center justify-center p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element -- ảnh bài viết từ R2, tỉ lệ động */}
               <img
                 src={selectedImage}
                 alt="Full size attachment"

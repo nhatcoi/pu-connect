@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { FileText, X, Hash, UserPlus, AlignLeft, Edit3 } from 'lucide-react'
+import { FileText, X, Hash, UserPlus, AlignLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export interface AttachedFile {
@@ -58,6 +58,7 @@ export function ComposerAttachmentPreview({
                 )}
               >
                 {/* Image element */}
+                {/* eslint-disable-next-line @next/next/no-img-element -- xem trước tệp vừa chọn (blob URL) */}
                 <img
                   src={img.url}
                   alt={img.name}
