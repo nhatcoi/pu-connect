@@ -10,7 +10,10 @@ export const DEFAULT_PRIVACY_SETTINGS: PrivacySettings = {
   showClass: true,
   isPrivateProfile: false,
   showActivityStatus: true,
-  personalization: true
+  personalization: true,
+  showLikedPosts: false,
+  showSavedPosts: false,
+  showCommentedPosts: true
 }
 
 // PATCH /users/privacy: chỉ nhận đúng các cờ boolean đã biết
@@ -21,7 +24,10 @@ export const UpdatePrivacyBodySchema = z
     showClass: z.boolean(),
     isPrivateProfile: z.boolean(),
     showActivityStatus: z.boolean(),
-    personalization: z.boolean()
+    personalization: z.boolean(),
+    showLikedPosts: z.boolean(),
+    showSavedPosts: z.boolean(),
+    showCommentedPosts: z.boolean()
   })
   .partial()
   .strict()
@@ -30,3 +36,12 @@ export const UpdatePrivacyBodySchema = z
 export function resolvePrivacySettings(raw: unknown): PrivacySettings {
   return { ...DEFAULT_PRIVACY_SETTINGS, ...(raw && typeof raw === 'object' ? (raw as Partial<PrivacySettings>) : {}) }
 }
+
+// Tab hoạt động ⇒ cờ privacy tương ứng
+export const ACTIVITY_PRIVACY_FLAG = {
+  liked: 'showLikedPosts',
+  saved: 'showSavedPosts',
+  commented: 'showCommentedPosts'
+} as const satisfies Record<string, keyof PrivacySettings>
+
+export const ACTIVITY_TYPES = Object.keys(ACTIVITY_PRIVACY_FLAG) as (keyof typeof ACTIVITY_PRIVACY_FLAG)[]

@@ -1,9 +1,12 @@
-import { Controller, Get, Patch, Post, Param, Body, Query, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Get, Patch, Post, Param, Body, Query, Req, UseGuards, HttpCode, HttpStatus, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { FollowSuggestionsService } from './follow-suggestions.service'
+import { ProfileAccessService } from './profile-access.service'
+import { PostsService } from '../posts/posts.service'
+import { optionalUserId } from '../../common/http/current-user'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
-import type { UpdateProfileInput, UpdatePrivacySettingsInput } from '@pu/schemas'
-import { UpdatePrivacyBodySchema } from './dto/privacy.dto'
+import type { UpdateProfileInput, UpdatePrivacySettingsInput, ProfileActivityType, UserProfile } from '@pu/schemas'
+import { ACTIVITY_TYPES, UpdatePrivacyBodySchema } from './dto/privacy.dto'
 import { UpdatePreferencesBodySchema, type UpdatePreferencesInput } from './dto/preferences.dto'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import type { Request } from 'express'
@@ -12,7 +15,9 @@ import type { Request } from 'express'
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly suggestions: FollowSuggestionsService
+    private readonly suggestions: FollowSuggestionsService,
+    private readonly access: ProfileAccessService,
+    private readonly posts: PostsService
   ) {}
 
   // Gợi ý theo dõi đã xếp hạng (đặt trước ':username' để không bị route động bắt)
@@ -20,6 +25,38 @@ export class UsersController {
   @UseGuards(AuthenticatedGuard)
   async getSuggestions(@Req() req: Request, @Query('limit') limit?: string) {
     return this.suggestions.list((req.user as any).id, parseInt(limit ?? '', 10) || 20)
+  }
+
+  // Tab hoạt động trên hồ sơ: bài đã thích / đã lưu / đã bình luận (theo cài đặt quyền riêng tư)
+  @Get(':username/activity/:type')
+  async getActivity(
+    @Param('username') username: string,
+    @Param('type') type: string,
+    @Query('limit') limit: string | undefined,
+    @Query('offset') offset: string | undefined,
+    @Query('before') before: string | undefined,
+    @Req() req: Request
+  ) {
+    if (!ACTIVITY_TYPES.includes(type as ProfileActivityType)) throw new BadRequestException('Loại hoạt động không hợp lệ')
+    const viewerId = optionalUserId(req)
+    const access = await this.access.resolve({ username }, viewerId)
+    if (!access.activityTabs.includes(type as ProfileActivityType)) {
+      throw new ForbiddenException('Người dùng không công khai mục này')
+    }
+    const result = await this.posts.findAll(
+      viewerId ?? undefined,
+      undefined,
+      parseInt(limit ?? '', 10) || 10,
+      parseInt(offset ?? '', 10) || 0,
+      'activity',
+      undefined,
+      {
+        before,
+        activity: { userId: access.ownerId, type: type as ProfileActivityType },
+        featuredComment: (req.user as UserProfile | undefined)?.preferences?.featuredComment
+      }
+    )
+    return { success: true, ...result }
   }
 
   @Get(':username')

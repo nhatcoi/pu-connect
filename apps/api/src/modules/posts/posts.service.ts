@@ -7,7 +7,7 @@ import { blockExistsSql } from '../blocks/blocks.sql'
 import { interestBoostSql } from '../personalization/interest-profile.sql'
 import { featuredCommentsSql } from './featured-comment.sql'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
-import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment } from '@pu/schemas'
+import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
 
 export interface FeedResult {
   data: PostItem[]
@@ -28,6 +28,25 @@ export interface FeedWindow {
 export interface FeedOptions extends FeedWindow {
   // false ⇒ không chạy query bình luận nổi bật
   featuredComment?: boolean
+  // Tab hoạt động trên hồ sơ: bài userId đã thích / lưu / bình luận (quyền xem kiểm tra ở caller)
+  activity?: { userId: string; type: ProfileActivityType }
+}
+
+// Bài thuộc hoạt động của $n + thời điểm hoạt động (sắp xếp mới nhất trước)
+// Activity filter: EXISTS for the WHERE, latest activity time for ORDER BY
+const ACTIVITY_SQL: Record<ProfileActivityType, { exists: (u: string) => string; at: (u: string) => string }> = {
+  liked: {
+    exists: (u) => `EXISTS(SELECT 1 FROM post_reactions a WHERE a.post_id = p.id AND a.user_id = ${u})`,
+    at: (u) => `(SELECT a.created_at FROM post_reactions a WHERE a.post_id = p.id AND a.user_id = ${u})`
+  },
+  saved: {
+    exists: (u) => `EXISTS(SELECT 1 FROM saved_posts a WHERE a.post_id = p.id AND a.user_id = ${u})`,
+    at: (u) => `(SELECT a.saved_at FROM saved_posts a WHERE a.post_id = p.id AND a.user_id = ${u})`
+  },
+  commented: {
+    exists: (u) => `EXISTS(SELECT 1 FROM comments a WHERE a.post_id = p.id AND a.author_id = ${u})`,
+    at: (u) => `(SELECT MAX(a.created_at) FROM comments a WHERE a.post_id = p.id AND a.author_id = ${u})`
+  }
 }
 
 export interface NewPostsSummary {
@@ -70,8 +89,15 @@ export class PostsService {
     const params: any[] = []
     const filter = this.buildFeedFilter(params, currentUserId, tag, feedType, courseCode)
     const { joins } = filter
-    let { whereClause } = filter
-    const { orderBy } = filter
+    let { whereClause, orderBy } = filter
+
+    if (window.activity) {
+      params.push(window.activity.userId)
+      const u = `$${params.length}::uuid`
+      const sqlOf = ACTIVITY_SQL[window.activity.type]
+      whereClause += ` AND ${sqlOf.exists(u)}`
+      orderBy = `ORDER BY ${sqlOf.at(u)} DESC NULLS LAST, p.created_at DESC`
+    }
 
     // Mốc snapshot: trang sau chỉ lấy bài ≤ mốc ⇒ bài mới không đẩy lệch offset (pill "bài mới" lo phần > mốc)
     // Snapshot window keeps offset pagination stable while new posts arrive

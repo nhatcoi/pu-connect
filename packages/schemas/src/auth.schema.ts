@@ -43,7 +43,11 @@ export const PrivacySettingsSchema = z.object({
   // Hiện "Đang hoạt động" cho người cùng hội thoại (tắt ⇒ cũng không thấy của người khác)
   showActivityStatus: z.boolean().default(true),
   // Dùng hành vi (bài đã xem, tìm kiếm, tương tác) để gợi ý; tắt ⇒ xóa dữ liệu hành vi
-  personalization: z.boolean().default(true)
+  personalization: z.boolean().default(true),
+  // Tab hoạt động trên hồ sơ: người khác xem được (chủ hồ sơ luôn xem được)
+  showLikedPosts: z.boolean().default(false),
+  showSavedPosts: z.boolean().default(false),
+  showCommentedPosts: z.boolean().default(true)
 })
 
 // Tùy chọn tính năng (Feature plugs): chỉ ảnh hưởng trải nghiệm của chính mình
@@ -86,7 +90,10 @@ export const UserProfileSchema = z.object({
     showClass: true,
     isPrivateProfile: false,
     showActivityStatus: true,
-    personalization: true
+    personalization: true,
+    showLikedPosts: false,
+    showSavedPosts: false,
+    showCommentedPosts: true
   }),
   preferences: FeaturePreferencesSchema.default({ featuredComment: true, newPostsPill: true, aiSummary: true }),
   skills: z.array(z.string()).default([]),
@@ -117,6 +124,10 @@ export type RegisterInput = z.infer<typeof RegisterSchema>
 export type LoginInput = z.infer<typeof LoginSchema>
 export type OnboardingInput = z.infer<typeof OnboardingSchema>
 export type PrivacySettings = z.infer<typeof PrivacySettingsSchema>
+
+// Tab hoạt động trên hồ sơ (bài đã thích / đã lưu / đã bình luận)
+export const PROFILE_ACTIVITY_TYPES = ['liked', 'saved', 'commented'] as const
+export type ProfileActivityType = (typeof PROFILE_ACTIVITY_TYPES)[number]
 export type FeaturePreferences = z.infer<typeof FeaturePreferencesSchema>
 export type FeaturePreferenceKey = keyof FeaturePreferences
 
