@@ -94,6 +94,14 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
   ```
 * **Cookie Action:** Xóa `pu_session` và vô hiệu hóa session trên máy chủ.
 
+### 1.5. Quyền riêng tư & Tùy chọn tính năng (`/api/users`)
+* **`PATCH /api/users/privacy`** — body là một phần của `{ showEmail, showStudentId, showClass, isPrivateProfile, showActivityStatus, personalization }` (boolean, field lạ ⇒ 400). Trả về bộ đầy đủ. Tắt `personalization` ⇒ xóa dữ liệu hành vi.
+* **`PATCH /api/users/preferences`** — body là một phần của `{ featuredComment, newPostsPill, aiSummary }` (boolean, mặc định `true`, field lạ ⇒ 400). Gộp vào `users.preferences` rồi trả về bộ đầy đủ:
+  ```json
+  { "success": true, "data": { "featuredComment": false, "newPostsPill": true, "aiSummary": true } }
+  ```
+* `GET /api/auth/me` trả kèm `privacySettings` và `preferences`. `featuredComment: false` ⇒ `GET /api/posts` trả `featuredComment: null` cho mọi bài.
+
 ---
 
 ## 2. Mạng xã hội & Bài viết (`/api/posts`)

@@ -26,6 +26,8 @@ flowchart LR
     msgs["<b>/messages</b><br/>lọc · tin nhắn mới · tạo nhóm · PU AI"]
     thread["<b>/messages/[id]</b><br/>tệp · trả lời · cảm xúc · ghim<br/>quiz/flashcard AI · bảng thông tin"]
     adminp["<b>/admin</b><br/>chỉ role admin"]
+    settings["<b>/settings</b><br/>danh sách mục"]
+    settingsec["<b>/settings/[section]</b><br/>account · privacy · features<br/>notifications · appearance · blocked"]
   end
 
   landing -->|login / register / Google| home
@@ -42,10 +44,12 @@ flowchart LR
   courses --> course
   msgs --> thread
   profile -->|Nhắn tin| thread
+  home & profile -->|menu tài khoản · ⚙| settings
+  settings --> settingsec
 
   classDef page fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef redirect fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp page
+  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp,settings,settingsec page
   class getstarted redirect
 ```
 
@@ -97,19 +101,21 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | Landing / AuthForm | `auth/providers`, `auth/check-email`, `auth/login`, `auth/register`, `auth/me` | — | — |
 | `/home` feed, PostCard (+ nút ✨ Tóm tắt) | `posts`, `posts/:id/*` (gồm `summary`), `posts/:postId/comments`, `comments/:id/*` | `toggleFollow` (follow trên PostCard) | — |
 | RightSidebar | — | `suggestedUsers` | — |
-| `/[username]` (+ menu ⋯ Chặn, danh sách đã chặn trong Cài đặt quyền riêng tư) | `users/:username`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
+| `/[username]` (+ menu ⋯ Chặn) | `users/:username`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
 | Communities | `communities`, `communities/:slug/*` | — | — |
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
 | `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
 | `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id*`, `ai/*`, `upload/file?folder=chat`, `search?type=users`, `presence` | — | `message.new/updated/delta`, `conv.read/updated/removed`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
 | `/admin` | `admin/*` | — | — |
+| `/settings/[section]` | `users/privacy`, `users/preferences`, `users/verify-university`, `blocks`, `notifications/settings`, `push/*` | — | — |
 
 ## Feature flags (`lib/features.ts`)
 
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-16 — thêm `/settings`, `/settings/[section]` (thay dialog quyền riêng tư; menu mục ở cột phải qua `PageAside`); feature plugs `useFeatureEnabled` gắn vào PostCard (bình luận nổi bật, tóm tắt) và `/home` (pill bài mới).
 - 2026-10-14 — `lib/track.ts` (gom sự kiện hành vi, gửi `POST /events` theo lô) + `useDwellTracking` trên PostCard; PU AI: gợi ý mở đầu từ `GET /ai/suggestions` theo chế độ, bảng gợi ý trên ô soạn khi đổi chế độ, chip câu hỏi tiếp theo; công tắc "Cá nhân hóa gợi ý" trong quyền riêng tư.
 - 2026-10-14 — khung app 1440px, cột giữa 760px (`lib/layout.ts` dùng chung cho Header/AppLayout/skeleton); xem trước tin nhắn bỏ ký hiệu Markdown (`lib/plain-text.ts`).
 - 2026-10-14 — chat: danh sách hội thoại infinite query theo bộ lọc, cache vá theo socket (`hooks/chat/cache.ts`), tin cũ tự tải khi cuộn lên.

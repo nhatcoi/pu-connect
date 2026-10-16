@@ -173,6 +173,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] `POST /api/posts/:id/summary`: tóm tắt 3–5 ý; lưu `post_summaries` theo hash nội dung ⇒ người sau xem lại không tốn lượt, bài sửa thì tóm tắt lại. Bài ngắn (< 300 ký tự) từ chối; hết lượt 429; AI tắt/lỗi 503.
 - [x] Web: nút "✨ Tóm tắt" cạnh "Xem thêm" trên bài dài, khung tóm tắt có skeleton và "Thử lại". Chi tiết: [`core/06` §17](./core/06-messaging-and-ai.md).
 
+### ⚙️ Trang Cài Đặt & Feature Plugs (2026-10-16)
+- [x] Thay dialog "Cài đặt quyền riêng tư & Xác thực" bằng trang `/settings` kiểu X: danh sách mục → `/settings/[section]` (nút quay lại); desktop có menu mục ở cột phải (`PageAside`). Vào từ menu tài khoản (sidebar, header) và nút ⚙ trên hồ sơ.
+- [x] 6 mục (`lib/settings-registry.ts`): **Tài khoản** (Tích Xanh, email/username/MSSV, đổi mật khẩu, sửa hồ sơ, đăng xuất) · **Quyền riêng tư** · **Tính năng** · **Thông báo** (dùng lại `NotificationSettingsPanel`) · **Giao diện** (Sáng/Tối/Hệ thống, thẻ xem trước) · **Chặn & An toàn**.
+- [x] Mọi công tắc **lưu ngay** (bỏ nút "Lưu cài đặt"): cập nhật lạc quan, lỗi ⇒ trả lại giá trị cũ + toast (`hooks/use-settings.ts`, ghi đồng thời cache `/auth/me` và zustand).
+- [x] **Feature plugs**: cột `users.preferences jsonb` (`preferences-upgrade.sql`), tách khỏi `privacy_settings` vì chỉ ảnh hưởng trải nghiệm của chính mình. `PATCH /api/users/preferences` gộp bằng `jsonb ||` trong 1 câu lệnh. Cờ hiện có: Bảng tin → *Bình luận nổi bật*, *Thông báo bài mới*; PU AI → *Tóm tắt bài dài*. Thêm cờ = 1 trường trong `FeaturePreferencesSchema` + DTO + 1 dòng trong `FEATURE_PLUG_GROUPS`.
+- [x] Tắt *Bình luận nổi bật* ⇒ `GET /posts` bỏ hẳn query featured comment (đọc cờ từ `req.user`, không tốn thêm query). Tắt *Thông báo bài mới* ⇒ dừng polling `new-since`.
+- Sửa kèm: dialog cũ đọc sai response `verify-university` (bị bọc `{ success, data }`) nên luôn báo "chưa đủ điều kiện".
+
 ### 💬 Bình Luận Nổi Bật Trên Bảng Tin (2026-10-16)
 - [x] Mỗi bài trên feed kèm 1 bình luận gốc nổi bật (`PostItem.featuredComment`), chọn trong **1 query batch** cho cả trang (`posts/featured-comment.sql.ts`, gọi song song với poll trong `PostsService.findAll`).
 - [x] Thứ tự chọn: **Lời giải Q&A** (`is_solution`) → **Top** (`likes + 2 × replies`) → **Relevance** (tỉ lệ từ unaccent của bình luận có trong `posts.search_tsv`; < 0.3 không được làm Top nếu còn bình luận liên quan) → **Latest** (sát điểm top ≤ 10% ⇒ chọn mới hơn) → **Earliest** (bài chưa có tương tác ⇒ bình luận sớm nhất). Ẩn bình luận/trả lời của người có quan hệ chặn; lỗi query chỉ log warn, không làm hỏng feed.
