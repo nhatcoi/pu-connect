@@ -2,6 +2,7 @@ import type {
   AiConnectorId,
   AiConnectorInfo,
   AiMode,
+  AiPublicSkill,
   AiQuota,
   AiSkill,
   AiSkillDetail,
@@ -40,6 +41,8 @@ export type SendBody = {
   research?: boolean
   connectors?: AiConnectorId[]
 }
+
+export const connectorSlug = (id: AiConnectorId) => id.replace(/_/g, '-')
 
 const qs = (params: Record<string, string | number | null | undefined>) =>
   Object.entries(params)
@@ -88,8 +91,9 @@ export const chatApi = {
   presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),
   aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST'))),
   aiConnectors: () => unwrap(apiClient<Envelope<AiConnectorInfo[]>>('/ai/connectors')),
-  driveConnectUrl: `${API_BASE_URL}/ai/connectors/google-drive/connect`, // điều hướng cả trang (OAuth redirect)
-  disconnectDrive: () => apiClient('/ai/connectors/google-drive', json('DELETE')),
+  // Connector Google: điều hướng cả trang (OAuth redirect); id 'google_drive' ⇒ slug 'google-drive'
+  connectorConnectUrl: (id: AiConnectorId) => `${API_BASE_URL}/ai/connectors/${connectorSlug(id)}/connect`,
+  disconnectConnector: (id: AiConnectorId) => apiClient(`/ai/connectors/${connectorSlug(id)}`, json('DELETE')),
 
   // PU AI nhiều hội thoại
   aiThreads: (q: string, cursor: string | null, signal?: AbortSignal) =>
@@ -103,5 +107,7 @@ export const chatApi = {
   skill: (id: string) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`)),
   createSkill: (body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>('/ai/skills', json('POST', body))),
   updateSkill: (id: string, body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`, json('PATCH', body))),
-  deleteSkill: (id: string) => apiClient(`/ai/skills/${id}`, json('DELETE'))
+  deleteSkill: (id: string) => apiClient(`/ai/skills/${id}`, json('DELETE')),
+  skillLibrary: (q: string, signal?: AbortSignal) => unwrap(apiClient<Envelope<AiPublicSkill[]>>(`/ai/skills/library?${qs({ q })}`, { signal })),
+  installSkill: (id: string) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}/install`, json('POST')))
 }

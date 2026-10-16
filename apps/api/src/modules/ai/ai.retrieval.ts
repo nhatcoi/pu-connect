@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { GoogleCalendarService } from './connectors/google-calendar.service'
 import { GoogleDriveService } from './connectors/google-drive.service'
 
-export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive'; id: string; title: string; body: string }
+export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive' | 'calendar'; id: string; title: string; body: string }
 
 export interface RetrieveOptions {
   connectors?: AiConnectorId[] // mặc định: ['library']
@@ -32,7 +33,8 @@ export class AiRetrieval {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly drive: GoogleDriveService
+    private readonly drive: GoogleDriveService,
+    private readonly calendar: GoogleCalendarService
   ) {}
 
   async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Source[]> {
@@ -44,6 +46,7 @@ export class AiRetrieval {
     if (connectors.has('my_documents') && tsquery) tasks.push(this.safe('my_documents', () => this.myDocuments(tsquery, requesterId, research)))
     if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
     if (connectors.has('google_drive')) tasks.push(this.safe('google_drive', () => this.googleDrive(question, requesterId, research)))
+    if (connectors.has('google_calendar')) tasks.push(this.safe('google_calendar', () => this.googleCalendar(requesterId, research)))
     return (await Promise.all(tasks)).flat()
   }
 
@@ -110,6 +113,12 @@ export class AiRetrieval {
   private async googleDrive(question: string, requesterId: string, research: boolean): Promise<Source[]> {
     const files = await this.drive.search(requesterId, question, research ? 4 : 2)
     return files.map((f) => ({ type: 'drive' as const, id: f.id, title: f.title, body: f.body }))
+  }
+
+  // Google Calendar (đã kết nối): lịch 14 ngày tới (Research: 30 ngày)
+  private async googleCalendar(requesterId: string, research: boolean): Promise<Source[]> {
+    const events = await this.calendar.upcoming(requesterId, research ? 30 : 14, research ? 40 : 20)
+    return events.map((e) => ({ type: 'calendar' as const, id: e.id, title: e.title, body: e.body }))
   }
 
   // Nhóm học của tôi: tóm tắt ngắn (không phụ thuộc câu hỏi, ≤ 5 nhóm)

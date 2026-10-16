@@ -78,6 +78,8 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
 
     expect((await agent.get(`/api/ai/threads?q=${encodeURIComponent('de quy')}`).expect(200)).body.data.data).toHaveLength(1)
     expect((await agent.get('/api/ai/threads?q=khong-co').expect(200)).body.data.data).toHaveLength(0)
+    // Tìm theo nội dung tin (không có trong tiêu đề)
+    expect((await agent.get(`/api/ai/threads?q=${encodeURIComponent('giai thua')}`).expect(200)).body.data.data).toHaveLength(1)
 
     await agent.patch(`/api/ai/threads/${first.id}`).send({ title: 'Đệ quy cơ bản' }).expect(200)
     await agent.delete(`/api/ai/threads/${first.id}`).expect(200)
@@ -108,6 +110,26 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     const conv2 = (await stranger.post('/api/conversations/ai').expect(200)).body.data
     await stranger.post(`/api/conversations/${conv2.id}/messages`).send({ content: 'x', skillId: created.id }).expect(400)
     await stranger.delete(`/api/ai/skills/${created.id}`).expect(404)
+
+    // Chưa công khai ⇒ không có trong thư viện, không cài được
+    await stranger.post(`/api/ai/skills/${created.id}/install`).expect(404)
+    await agent
+      .patch(`/api/ai/skills/${created.id}`)
+      .send({ ...body, isPublic: true })
+      .expect(200)
+    const lib = (await stranger.get(`/api/ai/skills/library?q=${encodeURIComponent('goi y')}`).expect(200)).body.data
+    expect(lib).toEqual([expect.objectContaining({ id: created.id, installed: false, installCount: 0 })])
+    expect((await agent.get('/api/ai/skills/library').expect(200)).body.data.some((s: { id: string }) => s.id === created.id)).toBe(false)
+
+    // Cài = bản sao độc lập; lệnh trùng ⇒ hậu tố; cài lần 2 ⇒ 409
+    await stranger
+      .post('/api/ai/skills')
+      .send({ ...body, name: 'Của tôi' })
+      .expect(201)
+    const installed = (await stranger.post(`/api/ai/skills/${created.id}/install`).expect(201)).body.data
+    expect(installed).toMatchObject({ slug: 'giai-bai-2', name: 'Giải bài tập', isPublic: false, instructions: body.instructions })
+    await stranger.post(`/api/ai/skills/${created.id}/install`).expect(409)
+    expect((await stranger.get('/api/ai/skills/library').expect(200)).body.data[0]).toMatchObject({ installed: true, installCount: 1 })
   })
 
   it('ngữ cảnh: gợi ý, gắn học phần; tài liệu riêng của người khác & thread trong nhóm bị từ chối', async () => {
@@ -152,13 +174,14 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
     const list = (await agent.get('/api/ai/connectors').expect(200)).body.data
-    expect(list.map((c: { id: string }) => c.id)).toEqual(['library', 'my_documents', 'my_groups', 'google_drive'])
+    expect(list.map((c: { id: string }) => c.id)).toEqual(['library', 'my_documents', 'my_groups', 'google_drive', 'google_calendar'])
     expect(list.find((c: { id: string }) => c.id === 'google_drive')).toMatchObject({ requiresAuth: true, connected: false })
     await agent.delete('/api/ai/connectors/google-drive').expect(200)
+    await agent.delete('/api/ai/connectors/dropbox').expect(400)
 
-    // Callback sai state ⇒ không lưu gì, về trang tin nhắn báo lỗi
-    const cb = await agent.get('/api/ai/connectors/google-drive/callback?code=x&state=forged').expect(302)
-    expect(cb.headers.location).toMatch(/\/messages\?drive=error$/)
+    // Callback không có state trong session ⇒ không lưu gì, về trang tin nhắn báo lỗi
+    const cb = await agent.get('/api/ai/connectors/google/callback?code=x&state=forged').expect(302)
+    expect(cb.headers.location).toMatch(/\/messages\?connector=google&result=error$/)
 
     const cipher = new TokenCipher('secret')
     const enc = cipher.encrypt('refresh-token')

@@ -13,7 +13,7 @@ import type {
 const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
 export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive'] as const
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive', 'google_calendar'] as const
 export const CHAT_MAX_REFS = 5
 export const AI_SKILL_LIMIT = 30
 
@@ -73,8 +73,12 @@ export const AiSkillBodySchema = z.object({
   name: z.string().trim().min(1, { message: 'Nhập tên skill' }).max(60),
   description: z.string().trim().max(200).default(''),
   instructions: z.string().trim().min(10, { message: 'Chỉ dẫn tối thiểu 10 ký tự' }).max(4000, { message: 'Chỉ dẫn tối đa 4000 ký tự' }),
-  inputHint: z.string().trim().max(150).nullable().optional()
+  inputHint: z.string().trim().max(150).nullable().optional(),
+  isPublic: z.boolean().default(false)
 })
+
+// GET /ai/skills/library?q=
+export const SkillLibraryQuerySchema = z.object({ q: z.string().trim().max(100).default('') })
 
 // GET /conversations?filter=&cursor=&limit=
 export const ListConversationsQuerySchema = z.object({

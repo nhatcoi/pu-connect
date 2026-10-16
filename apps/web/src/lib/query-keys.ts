@@ -44,6 +44,7 @@ export const queryKeys = {
   aiThreads: (q: string) => ['ai-threads', q.trim().toLowerCase()] as const,
   aiSkills: ['ai-skills'] as const,
   aiSkill: (id: string) => ['ai-skills', id] as const,
+  aiSkillLibrary: (q: string) => ['ai-skill-library', q.trim().toLowerCase()] as const,
   aiConnectors: ['ai-connectors'] as const,
   aiSuggestions: (mode: string) => ['ai-suggestions', mode] as const,
   presence: ['presence'] as const,

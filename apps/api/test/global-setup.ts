@@ -28,7 +28,8 @@ export const MIGRATIONS = [
   'preferences-upgrade.sql',
   'comments-edit-upgrade.sql',
   'chat-mention-ai-upgrade.sql',
-  'ai-connectors-upgrade.sql'
+  'ai-connectors-upgrade.sql',
+  'ai-skills-share-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

@@ -16,7 +16,7 @@ export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
 
 // Nguồn PU AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive'] as const
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive', 'google_calendar'] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
 export const ChatAttachmentSchema = z.object({
@@ -243,7 +243,8 @@ export const AiSkillInputSchema = z.object({
   name: z.string().trim().min(1, { message: 'Nhập tên skill' }).max(60),
   description: z.string().trim().max(200).default(''),
   instructions: z.string().trim().min(10, { message: 'Chỉ dẫn tối thiểu 10 ký tự' }).max(4000, { message: 'Chỉ dẫn tối đa 4000 ký tự' }),
-  inputHint: z.string().trim().max(150).nullable().optional()
+  inputHint: z.string().trim().max(150).nullable().optional(),
+  isPublic: z.boolean().default(false) // chia sẻ lên thư viện skill
 })
 export type AiSkillInput = z.infer<typeof AiSkillInputSchema>
 
@@ -255,9 +256,22 @@ export interface AiSkill {
   description: string
   inputHint: string | null
   useCount: number
+  isPublic: boolean
+  installCount: number
 }
 export interface AiSkillDetail extends AiSkill {
   instructions: string
+}
+
+// Thư viện skill công khai của người khác (cài = sao chép về skill của mình)
+export interface AiPublicSkill {
+  id: string
+  slug: string
+  name: string
+  description: string
+  installCount: number
+  author: { username: string; displayName: string }
+  installed: boolean
 }
 
 export interface AiConnectorInfo {

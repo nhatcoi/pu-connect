@@ -15,7 +15,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { chatApi, useAiConnectors, useAiSkills, useDisconnectDrive } from '@/hooks/chat'
+import { chatApi, useAiConnectors, useAiSkills, useDisconnectConnector } from '@/hooks/chat'
 
 interface Props {
   disabled?: boolean
@@ -36,7 +36,7 @@ export function PlusMenu(props: Props) {
   const [open, setOpen] = React.useState(false)
   const { data: skills } = useAiSkills(open && props.aiTools)
   const { data: connectors } = useAiConnectors(open && props.connectorsEnabled)
-  const disconnectDrive = useDisconnectDrive()
+  const disconnect = useDisconnectConnector()
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
@@ -96,11 +96,11 @@ export function PlusMenu(props: Props) {
                 // Cần kết nối tài khoản ngoài mà chưa kết nối ⇒ mục "Kết nối" (chuyển sang Google)
                 if (c.requiresAuth && !c.connected) {
                   return (
-                    <DropdownMenuItem key={c.id} disabled={!c.available} onSelect={() => window.location.assign(chatApi.driveConnectUrl)}>
+                    <DropdownMenuItem key={c.id} disabled={!c.available} onSelect={() => window.location.assign(chatApi.connectorConnectUrl(c.id))}>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-medium">{c.name}</span>
                         <span className="block truncate text-[11px] text-muted-foreground">
-                          {c.available ? 'Kết nối để PU AI đọc Drive (chỉ đọc)' : 'Máy chủ chưa cấu hình'}
+                          {c.available ? `Kết nối để PU AI đọc ${c.name} (chỉ đọc)` : 'Máy chủ chưa cấu hình'}
                         </span>
                       </span>
                       {c.available && <ExternalLink />}
@@ -125,14 +125,14 @@ export function PlusMenu(props: Props) {
                   </DropdownMenuItem>
                 )
               })}
-              {connectors?.some((c) => c.id === 'google_drive' && c.connected) && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" disabled={disconnectDrive.isPending} onSelect={() => disconnectDrive.mutate()}>
-                    <Unplug /> Ngắt Google Drive
+              {connectors?.some((c) => c.requiresAuth && c.connected) && <DropdownMenuSeparator />}
+              {connectors
+                ?.filter((c) => c.requiresAuth && c.connected)
+                .map((c) => (
+                  <DropdownMenuItem key={`off-${c.id}`} variant="destructive" disabled={disconnect.isPending} onSelect={() => disconnect.mutate(c)}>
+                    <Unplug /> Ngắt {c.name}
                   </DropdownMenuItem>
-                </>
-              )}
+                ))}
             </DropdownMenuSubContent>
           </DropdownMenuSub>
         )}

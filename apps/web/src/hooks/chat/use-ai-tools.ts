@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { AiConnectorId, AiSkill, AiSkillDetail, AiSkillInput, ChatRefType } from '@pu/schemas'
+import type { AiConnectorId, AiConnectorInfo, AiSkill, AiSkillDetail, AiSkillInput, ChatRefType } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
 
@@ -30,12 +30,33 @@ export function useAiSkillActions() {
   }
   const create = useMutation({ mutationFn: (body: AiSkillInput) => chatApi.createSkill(body), onSuccess: store, onError })
   const update = useMutation({ mutationFn: ({ id, body }: { id: string; body: AiSkillInput }) => chatApi.updateSkill(id, body), onSuccess: store, onError })
+  // Cài từ thư viện ⇒ thêm vào skill của mình, cập nhật cờ "đã cài" ở thư viện
+  const install = useMutation({
+    mutationFn: (id: string) => chatApi.installSkill(id),
+    onSuccess: (s) => {
+      store(s)
+      toast.success(`Đã thêm /${s.slug}`)
+      void qc.invalidateQueries({ queryKey: ['ai-skill-library'] })
+    },
+    onError
+  })
   const remove = useMutation({
     mutationFn: (id: string) => chatApi.deleteSkill(id),
     onSuccess: (_, id) => qc.setQueryData<AiSkill[]>(queryKeys.aiSkills, (old) => old?.filter((s) => s.id !== id)),
     onError
   })
-  return { create, update, remove }
+  return { create, update, install, remove }
+}
+
+// Thư viện skill công khai (tìm ở server, giữ kết quả cũ khi gõ)
+export function useSkillLibrary(q: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aiSkillLibrary(q),
+    queryFn: ({ signal }) => chatApi.skillLibrary(q, signal),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000
+  })
 }
 
 // Registry connector + trạng thái kết nối (đổi khi kết nối / ngắt) ⇒ cache 5 phút
@@ -43,13 +64,13 @@ export function useAiConnectors(enabled = true) {
   return useQuery({ queryKey: queryKeys.aiConnectors, queryFn: chatApi.aiConnectors, staleTime: 5 * 60 * 1000, enabled })
 }
 
-// Ngắt Google Drive ⇒ làm mới trạng thái connector
-export function useDisconnectDrive() {
+// Ngắt connector Google ⇒ làm mới trạng thái connector
+export function useDisconnectConnector() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: chatApi.disconnectDrive,
-    onSuccess: () => {
-      toast.success('Đã ngắt kết nối Google Drive')
+    mutationFn: (c: AiConnectorInfo) => chatApi.disconnectConnector(c.id),
+    onSuccess: (_, c) => {
+      toast.success(`Đã ngắt kết nối ${c.name}`)
       void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
     },
     onError: (err: Error) => toast.error(err.message || 'Không ngắt được kết nối')

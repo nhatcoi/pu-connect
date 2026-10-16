@@ -24,6 +24,7 @@ export {
   useAiSkillActions,
   useAiSkills,
   useConnectorPrefs,
-  useDisconnectDrive,
-  useRefSuggestions
+  useDisconnectConnector,
+  useRefSuggestions,
+  useSkillLibrary
 } from './use-ai-tools'

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3'
 
 export type UploadFolder = 'posts/images' | 'documents' | 'avatars' | 'banners' | 'chat'
 
@@ -45,6 +45,18 @@ export class StorageService {
   // Key do chính user tải lên thư mục này? (chặn gắn tệp người khác / URL ngoài) / Ownership check
   isOwnedKey(key: string, folder: UploadFolder, userId: string): boolean {
     return key.startsWith(`${folder}/${userId}/`) && !key.includes('..')
+  }
+
+  // Xóa nhiều key (≤ 1000 / lệnh, chuẩn S3); lỗi chỉ ghi log — dọn tệp là best-effort
+  async deleteObjects(keys: string[]): Promise<void> {
+    for (let i = 0; i < keys.length; i += 1000) {
+      const batch = keys.slice(i, i + 1000)
+      try {
+        await this.s3Client.send(new DeleteObjectsCommand({ Bucket: this.bucketName, Delete: { Objects: batch.map((Key) => ({ Key })), Quiet: true } }))
+      } catch (error: any) {
+        this.logger.warn(`Xóa ${batch.length} tệp R2 thất bại: ${error?.message}`)
+      }
+    }
   }
 
   async uploadFile(

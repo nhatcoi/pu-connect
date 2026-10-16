@@ -1,10 +1,11 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
-import type { AiSkill, AiSkillDetail, AiSkillInput, ChatSkillRef } from '@pu/schemas'
+import type { AiPublicSkill, AiSkill, AiSkillDetail, AiSkillInput, ChatSkillRef } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
 import type { Queryable } from '../chat-core.service'
 import { AI_SKILL_LIMIT } from '../dto/chat.dto'
 
-const LIST_COLUMNS = `id, slug, name, description, input_hint, use_count`
+const LIST_COLUMNS = `id, slug, name, description, input_hint, use_count, is_public, install_count`
+const LIBRARY_LIMIT = 30
 
 const mapSkill = (r: any): AiSkill => ({
   id: r.id,
@@ -12,10 +13,22 @@ const mapSkill = (r: any): AiSkill => ({
   name: r.name,
   description: r.description,
   inputHint: r.input_hint,
-  useCount: r.use_count
+  useCount: r.use_count,
+  isPublic: r.is_public,
+  installCount: r.install_count
 })
 
+// Lệnh còn trống: slug, slug-2 … (giữ ≤ 40 ký tự)
+function freeSlug(base: string, taken: Set<string>): string {
+  if (!taken.has(base)) return base
+  for (let i = 2; ; i++) {
+    const candidate = `${base.slice(0, 40 - String(i).length - 1)}-${i}`
+    if (!taken.has(candidate)) return candidate
+  }
+}
+
 // Skill tự tạo (slash command "/slug"): chỉ dẫn bổ sung cho PU AI, riêng từng người
+// Chia sẻ công khai ⇒ người khác "cài" (sao chép) từ thư viện; bản cài độc lập với bản gốc
 @Injectable()
 export class AiSkillsService {
   constructor(private readonly db: DatabaseService) {}
@@ -38,10 +51,10 @@ export class AiSkillsService {
   async create(userId: string, input: AiSkillInput): Promise<AiSkillDetail> {
     try {
       const res = await this.db.query(
-        `INSERT INTO ai_skills (owner_id, slug, name, description, instructions, input_hint)
-         SELECT $1, $2, $3, $4, $5, $6 WHERE (SELECT COUNT(*) FROM ai_skills WHERE owner_id = $1) < $7
+        `INSERT INTO ai_skills (owner_id, slug, name, description, instructions, input_hint, is_public)
+         SELECT $1, $2, $3, $4, $5, $6, $8 WHERE (SELECT COUNT(*) FROM ai_skills WHERE owner_id = $1) < $7
          RETURNING ${LIST_COLUMNS}, instructions`,
-        [userId, input.slug, input.name, input.description, input.instructions, input.inputHint ?? null, AI_SKILL_LIMIT]
+        [userId, input.slug, input.name, input.description, input.instructions, input.inputHint ?? null, AI_SKILL_LIMIT, input.isPublic]
       )
       if (!res.rows[0]) throw new BadRequestException(`Tối đa ${AI_SKILL_LIMIT} skill`)
       return { ...mapSkill(res.rows[0]), instructions: res.rows[0].instructions }
@@ -53,15 +66,65 @@ export class AiSkillsService {
   async update(userId: string, id: string, input: AiSkillInput): Promise<AiSkillDetail> {
     try {
       const res = await this.db.query(
-        `UPDATE ai_skills SET slug = $3, name = $4, description = $5, instructions = $6, input_hint = $7, updated_at = NOW()
+        `UPDATE ai_skills SET slug = $3, name = $4, description = $5, instructions = $6, input_hint = $7, is_public = $8, updated_at = NOW()
          WHERE id = $1 AND owner_id = $2 RETURNING ${LIST_COLUMNS}, instructions`,
-        [id, userId, input.slug, input.name, input.description, input.instructions, input.inputHint ?? null]
+        [id, userId, input.slug, input.name, input.description, input.instructions, input.inputHint ?? null, input.isPublic]
       )
       if (!res.rows[0]) throw new NotFoundException('Không tìm thấy skill')
       return { ...mapSkill(res.rows[0]), instructions: res.rows[0].instructions }
     } catch (err) {
       throw this.duplicate(err)
     }
+  }
+
+  // Thư viện: skill công khai của người khác (nhiều lượt cài trước), đánh dấu đã cài
+  async library(userId: string, q: string): Promise<AiPublicSkill[]> {
+    const term = q
+      .trim()
+      .toLowerCase()
+      .replace(/[%_\\]/g, (c) => `\\${c}`)
+    const res = await this.db.query(
+      `SELECT s.id, s.slug, s.name, s.description, s.install_count, u.username, u.display_name,
+              EXISTS (SELECT 1 FROM ai_skills m WHERE m.owner_id = $1 AND m.source_skill_id = s.id) AS installed
+       FROM ai_skills s JOIN users u ON u.id = s.owner_id
+       WHERE s.is_public AND s.owner_id <> $1 AND u.status = 'active'
+         ${term ? `AND immutable_unaccent(lower(s.name || ' ' || s.description || ' ' || s.slug)) LIKE '%' || immutable_unaccent($3) || '%'` : ''}
+       ORDER BY s.install_count DESC, s.created_at DESC LIMIT $2`,
+      term ? [userId, LIBRARY_LIMIT, term] : [userId, LIBRARY_LIMIT]
+    )
+    return res.rows.map((r) => ({
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      description: r.description,
+      installCount: r.install_count,
+      author: { username: r.username, displayName: r.display_name },
+      installed: r.installed
+    }))
+  }
+
+  // Cài skill công khai = sao chép về skill của mình (lệnh trùng ⇒ thêm hậu tố), tăng lượt cài của bản gốc
+  async install(userId: string, sourceId: string): Promise<AiSkillDetail> {
+    return this.db.transaction(async (client) => {
+      const src = await client.query(`SELECT slug, name, description, instructions, input_hint FROM ai_skills WHERE id = $1 AND is_public AND owner_id <> $2`, [
+        sourceId,
+        userId
+      ])
+      if (!src.rows[0]) throw new NotFoundException('Không tìm thấy skill công khai')
+      const mine = await client.query(`SELECT slug FROM ai_skills WHERE owner_id = $1`, [userId])
+      if (mine.rows.length >= AI_SKILL_LIMIT) throw new BadRequestException(`Tối đa ${AI_SKILL_LIMIT} skill`)
+      const s = src.rows[0]
+      const res = await client.query(
+        `INSERT INTO ai_skills (owner_id, slug, name, description, instructions, input_hint, source_skill_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (owner_id, source_skill_id) WHERE source_skill_id IS NOT NULL DO NOTHING
+         RETURNING ${LIST_COLUMNS}, instructions`,
+        [userId, freeSlug(s.slug, new Set(mine.rows.map((r) => r.slug))), s.name, s.description, s.instructions, s.input_hint, sourceId]
+      )
+      if (!res.rows[0]) throw new ConflictException('Bạn đã cài skill này')
+      await client.query(`UPDATE ai_skills SET install_count = install_count + 1 WHERE id = $1`, [sourceId])
+      return { ...mapSkill(res.rows[0]), instructions: res.rows[0].instructions }
+    })
   }
 
   async remove(userId: string, id: string): Promise<{ deleted: boolean }> {

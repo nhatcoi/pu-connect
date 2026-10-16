@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import type { AiThread, AiThreadsPage } from '@pu/schemas'
 import { markdownToPlainText } from '../../notifications/notification.types'
+import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import type { ListAiThreadsQuery } from '../dto/chat.dto'
 
@@ -33,7 +34,10 @@ export const mapThread = (r: any): AiThread => ({
 // Tạo thread mới nằm ở ConversationsService (nơi sở hữu việc tạo mọi loại hội thoại)
 @Injectable()
 export class AiThreadsService {
-  constructor(private readonly core: ChatCoreService) {}
+  constructor(
+    private readonly core: ChatCoreService,
+    private readonly storage: StorageService
+  ) {}
 
   async list(userId: string, query: ListAiThreadsQuery): Promise<AiThreadsPage> {
     const params: unknown[] = [userId, query.limit + 1]
@@ -41,7 +45,11 @@ export class AiThreadsService {
     const term = query.q?.trim().toLowerCase()
     if (term) {
       params.push(term.replace(/[%_\\]/g, (ch) => `\\${ch}`))
-      where.push(`immutable_unaccent(lower(c.title)) LIKE '%' || immutable_unaccent($${params.length}) || '%'`)
+      // Tiêu đề (trgm) hoặc nội dung tin — chỉ quét tin trong thread của chính mình (idx_messages_conv)
+      const like = `LIKE '%' || immutable_unaccent($${params.length}) || '%'`
+      where.push(`(immutable_unaccent(lower(c.title)) ${like}
+        OR EXISTS (SELECT 1 FROM messages m WHERE m.conversation_id = c.id AND m.deleted_at IS NULL AND m.kind <> 'system'
+                   AND immutable_unaccent(lower(m.content)) ${like}))`)
     }
     const cursor = decodeCursor(query.cursor)
     if (cursor) {
@@ -75,24 +83,36 @@ export class AiThreadsService {
     return thread
   }
 
-  // Xóa hẳn (cascade tin, thành viên, mention); tab khác nhận conv.removed
+  // Xóa hẳn; tab khác nhận conv.removed
   async remove(userId: string, id: string): Promise<{ deleted: boolean }> {
-    const res = await this.core.db.query(`DELETE FROM conversations WHERE id = $1 AND type = 'ai' AND created_by = $2 RETURNING id`, [id, userId])
-    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy hội thoại')
+    // Cùng snapshot: lấy key tệp đính kèm rồi xóa hội thoại (cascade tin, thành viên, mention)
+    const res = await this.core.db.query(
+      `WITH files AS (
+         SELECT a->>'key' AS key FROM messages m CROSS JOIN LATERAL jsonb_array_elements(m.attachments) a
+         WHERE m.conversation_id = $1 AND m.attachments IS NOT NULL
+       ), del AS (
+         DELETE FROM conversations WHERE id = $1 AND type = 'ai' AND created_by = $2 RETURNING id
+       )
+       SELECT (SELECT id FROM del) AS id, (SELECT array_agg(key) FROM files) AS keys`,
+      [id, userId]
+    )
+    if (!res.rows[0]?.id) throw new NotFoundException('Không tìm thấy hội thoại')
+    // Chỉ xóa tệp do chính mình tải lên chat/{userId}/ (sau commit, không chặn phản hồi)
+    const keys = ((res.rows[0].keys as string[] | null) ?? []).filter((k) => this.storage.isOwnedKey(k, 'chat', userId))
+    if (keys.length) void this.storage.deleteObjects(keys)
     this.core.emitTo([userId], 'conv.removed', { conversationId: id })
     return { deleted: true }
   }
 }
 
-// Tiêu đề tự đặt từ câu hỏi đầu (dòng đầu, gọn khoảng trắng, ≤ 60 ký tự)
+// Tiêu đề tự đặt từ câu hỏi đầu (dòng đầu, bỏ ký hiệu Markdown, ≤ 60 ký tự)
 // Chỉ có tệp ⇒ null (tin sau sẽ đặt tiêu đề)
 export function deriveThreadTitle(content: string): string | null {
-  const line = content
+  const firstLine = content
     .replace(/@puai\b/gi, '')
     .split('\n')
     .find((l) => l.trim())
-    ?.replace(/\s+/g, ' ')
-    .trim()
+  const line = firstLine ? markdownToPlainText(firstLine) : ''
   if (!line) return null
   return line.length > 60 ? `${line.slice(0, 57).trimEnd()}…` : line
 }

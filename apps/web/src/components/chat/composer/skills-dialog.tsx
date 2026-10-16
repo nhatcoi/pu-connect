@@ -1,17 +1,20 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Loader2, Pencil, Plus, Trash2, Wand2 } from 'lucide-react'
+import { ArrowLeft, Check, Download, Loader2, Pencil, Plus, Trash2, Wand2 } from 'lucide-react'
 import { AI_SKILL_LIMIT, AiSkillInputSchema, type AiSkillInput } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { useAiSkill, useAiSkillActions, useAiSkills } from '@/hooks/chat'
+import { useAiSkill, useAiSkillActions, useAiSkills, useSkillLibrary } from '@/hooks/chat'
+import { cn } from '@/lib/utils'
 
-type View = { mode: 'list' } | { mode: 'edit'; id: string | null }
+type View = { mode: 'list' } | { mode: 'library' } | { mode: 'edit'; id: string | null }
+const TITLE = { list: 'Skill của bạn', library: 'Thư viện skill' }
 
-const EMPTY: AiSkillInput = { slug: '', name: '', description: '', instructions: '', inputHint: '' }
+const EMPTY: AiSkillInput = { slug: '', name: '', description: '', instructions: '', inputHint: '', isPublic: false }
 
 // Tên → lệnh gợi ý: bỏ dấu, chữ thường, gạch ngang
 const toSlug = (s: string) =>
@@ -46,14 +49,31 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
-            <Wand2 className="h-4 w-4 text-primary" /> {view.mode === 'list' ? 'Skill của bạn' : view.id ? 'Sửa skill' : 'Tạo skill'}
+            <Wand2 className="h-4 w-4 text-primary" /> {view.mode === 'edit' ? (view.id ? 'Sửa skill' : 'Tạo skill') : TITLE[view.mode]}
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Lưu chỉ dẫn hay dùng thành lệnh <code>/tên-lệnh</code> cho PU AI (ví dụ: chấm bài theo rubric, giải thích kiểu Feynman). Chỉ bạn thấy và dùng được.
+            Lưu chỉ dẫn hay dùng thành lệnh <code>/tên-lệnh</code> cho PU AI (ví dụ: chấm bài theo rubric, giải thích kiểu Feynman). Bật “Chia sẻ” để người khác
+            cài từ thư viện.
           </DialogDescription>
         </DialogHeader>
+        {view.mode !== 'edit' && (
+          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 text-xs font-medium">
+            {(['list', 'library'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setView({ mode: m })}
+                className={cn('h-7 rounded-full cursor-pointer', view.mode === m ? 'bg-background shadow-xs' : 'text-muted-foreground')}
+              >
+                {m === 'list' ? 'Của bạn' : 'Thư viện'}
+              </button>
+            ))}
+          </div>
+        )}
         {view.mode === 'list' ? (
           <SkillList onEdit={(id) => setView({ mode: 'edit', id })} />
+        ) : view.mode === 'library' ? (
+          <SkillLibrary />
         ) : (
           <SkillForm id={view.id} onDone={() => setView({ mode: 'list' })} />
         )}
@@ -77,6 +97,7 @@ function SkillList({ onEdit }: { onEdit: (id: string | null) => void }) {
                 <span className="block truncate text-[11px] text-muted-foreground">
                   /{s.slug}
                   {s.useCount > 0 && ` · đã dùng ${s.useCount} lần`}
+                  {s.isPublic && ` · công khai, ${s.installCount} lượt cài`}
                 </span>
               </span>
               <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => onEdit(s.id)} aria-label={`Sửa ${s.name}`}>
@@ -114,7 +135,14 @@ function SkillForm({ id, onDone }: { id: string | null; onDone: () => void }) {
 
   useEffect(() => {
     if (detail) {
-      setForm({ slug: detail.slug, name: detail.name, description: detail.description, instructions: detail.instructions, inputHint: detail.inputHint ?? '' })
+      setForm({
+        slug: detail.slug,
+        name: detail.name,
+        description: detail.description,
+        instructions: detail.instructions,
+        inputHint: detail.inputHint ?? '',
+        isPublic: detail.isPublic
+      })
       setSlugEdited(true)
     }
   }, [detail])
@@ -175,11 +203,72 @@ function SkillForm({ id, onDone }: { id: string | null; onDone: () => void }) {
       <Field label="Gợi ý nhập (tùy chọn)">
         <Input value={form.inputHint ?? ''} maxLength={150} placeholder="Dán đề bài cần gợi ý…" onChange={(e) => set('inputHint', e.target.value)} />
       </Field>
+      <label className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-3 py-2">
+        <span>
+          <span className="block text-xs font-medium">Chia sẻ lên thư viện</span>
+          <span className="block text-[11px] text-muted-foreground">Người khác thấy tên, mô tả và cài được bản sao chỉ dẫn</span>
+        </span>
+        <Switch checked={form.isPublic} onCheckedChange={(v) => set('isPublic', v)} />
+      </label>
       {error && <p className="text-xs text-destructive">{error}</p>}
       <Button type="submit" size="sm" className="w-full rounded-full" disabled={saving}>
         {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />} {id ? 'Lưu thay đổi' : 'Tạo skill'}
       </Button>
     </form>
+  )
+}
+
+// Thư viện: skill công khai của người khác, tìm ở server (debounce), cài = sao chép về của mình
+function SkillLibrary() {
+  const [search, setSearch] = useState('')
+  const [q, setQ] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setQ(search.trim()), 250)
+    return () => clearTimeout(t)
+  }, [search])
+  const { data, isPending } = useSkillLibrary(q)
+  const { install } = useAiSkillActions()
+
+  return (
+    <div className="space-y-2">
+      <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm skill (vd. ôn thi, code review)…" />
+      {isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
+      ) : data?.length ? (
+        <ul className="divide-y divide-border/60 rounded-xl border">
+          {data.map((s) => (
+            <li key={s.id} className="flex items-center gap-2 px-3 py-2">
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{s.name}</span>
+                <span className="block truncate text-[11px] text-muted-foreground">
+                  /{s.slug} · {s.author.displayName} · {s.installCount} lượt cài
+                </span>
+                {s.description && <span className="block truncate text-[11px] text-muted-foreground">{s.description}</span>}
+              </span>
+              <Button
+                size="sm"
+                variant={s.installed ? 'secondary' : 'outline'}
+                className="h-7 rounded-full text-xs gap-1"
+                disabled={s.installed || install.isPending}
+                onClick={() => install.mutate(s.id)}
+              >
+                {s.installed ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" /> Đã cài
+                  </>
+                ) : (
+                  <>
+                    <Download className="h-3.5 w-3.5" /> Cài
+                  </>
+                )}
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-xs text-muted-foreground text-center py-4">{q ? 'Không tìm thấy skill' : 'Chưa có skill công khai nào'}</p>
+      )}
+    </div>
   )
 }
 

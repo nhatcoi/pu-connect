@@ -24,6 +24,8 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'group', label: 'Nhóm' }
 ]
 
+const CONNECTOR_NAMES: Record<string, string> = { 'google-drive': 'Google Drive', 'google-calendar': 'Google Calendar' }
+
 // Danh sách hội thoại (mobile & desktop đều tách 2 màn: /messages và /messages/[id])
 export default function MessagesPage() {
   const router = useRouter()
@@ -33,16 +35,18 @@ export default function MessagesPage() {
   const [openingAi, setOpeningAi] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   const searchParams = useSearchParams()
-  const driveResult = searchParams.get('drive')
+  const connector = searchParams.get('connector')
+  const connectResult = searchParams.get('result')
 
-  // Quay về từ màn đồng ý Google Drive ⇒ báo kết quả, làm mới connector, xóa tham số khỏi URL
+  // Quay về từ màn đồng ý Google (Drive / Calendar) ⇒ báo kết quả, làm mới connector, xóa tham số khỏi URL
   useEffect(() => {
-    if (!driveResult) return
-    if (driveResult === 'connected') toast.success('Đã kết nối Google Drive — bật trong + › Connectors khi hỏi PU AI')
-    else toast.error('Không kết nối được Google Drive. Thử lại nhé!')
+    if (!connector || !connectResult) return
+    const name = CONNECTOR_NAMES[connector] ?? 'Google'
+    if (connectResult === 'connected') toast.success(`Đã kết nối ${name} — bật trong + › Connectors khi hỏi PU AI`)
+    else toast.error(`Không kết nối được ${name}. Thử lại nhé!`)
     void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
     router.replace('/messages')
-  }, [driveResult, qc, router])
+  }, [connector, connectResult, qc, router])
   // Lọc ở server, mỗi bộ lọc 1 cache; 'all' dùng chung với hasAi (cùng query ⇒ không tải 2 lần)
   const { conversations: visible, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useConversations(filter)
   const { conversations: all, isPending: allPending } = useConversations('all')
@@ -64,8 +68,8 @@ export default function MessagesPage() {
       const conv = await chatApi.openAi()
       refreshConversationLists(qc)
       router.push(`/messages/${conv.id}`)
-    } catch (err: any) {
-      toast.error(err?.message || 'Không mở được PU AI')
+    } catch (err) {
+      toast.error((err as Error)?.message || 'Không mở được PU AI')
       setOpeningAi(false)
     }
   }
