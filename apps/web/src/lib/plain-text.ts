@@ -18,6 +18,7 @@ export function markdownToPlainText(md: string): string {
       .replace(/(^|[^\w*])[*_](?!\s)([^*_\n]+?)[*_](?=[^\w*]|$)/g, '$1$2') // nghiêng
       .replace(/`([^`]+)`/g, '$1') // code ngắn
       .replace(/\$([^$\n]+)\$/g, '$1') // công thức ngắn
+      .replace(/\\%/g, '%')
       .replace(/\s+/g, ' ')
       .trim()
   )

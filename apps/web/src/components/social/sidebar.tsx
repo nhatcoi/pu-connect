@@ -57,7 +57,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
   const unreadMessages = useUnreadMessages()
 
   const navItems = [
-    { id: 'feed' as const, path: '/home', label: 'Bảng tin', icon: Home },
+    { id: 'feed' as const, path: '/', label: 'Bảng tin', icon: Home },
     { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
     { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
     { id: 'courses' as const, path: '/courses', label: 'Học phần', icon: GraduationCap },
@@ -116,7 +116,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
             // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
             const isActive = currentTab
               ? currentTab === item.id
-              : pathname === item.path || (item.path !== '/home' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
+              : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
 
             return (
               <HighlightItem key={item.id} value={item.id} disabled={isActive} className="xl:w-full">
@@ -175,7 +175,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
             {hotCourses.map((course) => (
               <div
                 key={course}
-                onClick={() => router.push(`/home?tab=courses&course=${course.split(' ')[0]}`)}
+                onClick={() => router.push(`/courses/${course.split(' ')[0]}`)}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/60 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />

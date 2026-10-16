@@ -352,7 +352,7 @@ export function PostCard({
 
   // Copy Link to Clipboard
   const handleCopyLink = () => {
-    const postUrl = `${window.location.origin}/home#post-${post.id}`
+    const postUrl = `${window.location.origin}/post/${post.id}`
     navigator.clipboard.writeText(postUrl)
     setIsCopied(true)
     toast.success('Đã sao chép liên kết bài viết')

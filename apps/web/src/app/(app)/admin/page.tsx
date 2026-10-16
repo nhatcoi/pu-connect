@@ -62,7 +62,7 @@ export default function AdminPage() {
       <div className="py-24 text-center space-y-3 text-muted-foreground">
         <ShieldCheck className="h-10 w-10 mx-auto opacity-30" />
         <p className="text-sm font-medium">Chỉ quản trị viên mới truy cập được trang này.</p>
-        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/home')}>
+        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/')}>
           Về bảng tin
         </Button>
       </div>

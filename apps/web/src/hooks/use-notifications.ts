@@ -1,10 +1,10 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect } from 'react'
 import { create } from 'zustand'
 import { toast } from 'sonner'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { apiClient } from '@/lib/api-client'
-import { markdownToPlainText } from '@/lib/plain-text'
 import { useAppStore } from '@/store'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 
@@ -122,9 +122,14 @@ export function useNotificationsSync(onNavigate: (link: string) => void) {
     if (!payload?.notification) return refresh()
     upsert(payload.notification, payload.unreadCount)
     const { notification } = payload
-    const description = notification.message ? markdownToPlainText(notification.message) : ''
     toast(notification.title, {
-      description: description || undefined,
+      description: notification.message
+        ? React.createElement(MarkdownPreview, {
+            content: notification.message,
+            inline: true,
+            className: 'line-clamp-2 text-xs text-muted-foreground'
+          })
+        : undefined,
       action: notification.link
         ? { label: 'Xem', onClick: () => onNavigate(notification.link as string) }
         : undefined

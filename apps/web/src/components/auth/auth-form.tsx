@@ -196,7 +196,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             : `Chào mừng ${res.data.displayName} quay lại!`
         )
         onSuccess?.()
-        router.replace('/home')
+        router.replace('/')
       }
     } catch (err: any) {
       setErrors({ password: err.message || 'Có lỗi xảy ra, vui lòng thử lại' })

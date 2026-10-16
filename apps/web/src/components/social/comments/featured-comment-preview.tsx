@@ -4,8 +4,8 @@ import React from 'react'
 import { Heart, MessageSquare, CheckCircle2 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { PUAI_USERNAME } from '@/lib/mention'
-import { markdownToPlainText } from '@/lib/plain-text'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { FeaturedComment } from '@pu/schemas'
 
@@ -56,9 +56,11 @@ export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPrevi
           <span className="shrink-0">{formatRelativeTime(comment.createdAt)}</span>
         </div>
 
-        <p className="line-clamp-2 text-[13px] leading-snug text-foreground/90 break-words">
-          {markdownToPlainText(comment.content)}
-        </p>
+        <MarkdownPreview
+          content={comment.content}
+          inline
+          className="line-clamp-2 text-[13px] leading-snug text-foreground/90 break-words"
+        />
 
         {(comment.likesCount > 0 || comment.repliesCount > 0) && (
           <div className="flex items-center gap-3 pt-0.5 text-[11px] text-muted-foreground">

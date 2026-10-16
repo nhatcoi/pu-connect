@@ -39,7 +39,7 @@ function PostDetail() {
     <div className="pt-3">
       <div className="mx-2 sm:mx-0 mb-2 flex items-center gap-2">
         <button
-          onClick={() => (window.history.length > 1 ? router.back() : router.push('/home'))}
+          onClick={() => (window.history.length > 1 ? router.back() : router.push('/'))}
           aria-label="Quay lại"
           className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
         >
@@ -55,7 +55,7 @@ function PostDetail() {
           <div className="flex flex-col items-center gap-2 rounded-xl bg-card py-14 text-center text-muted-foreground">
             <FileX2 className="h-8 w-8 opacity-60" />
             <p className="text-sm">Bài viết không tồn tại hoặc đã bị xóa</p>
-            <Link href="/home" className="text-xs font-semibold text-primary hover:underline">
+            <Link href="/" className="text-xs font-semibold text-primary hover:underline">
               Về bảng tin
             </Link>
           </div>
@@ -66,7 +66,7 @@ function PostDetail() {
             variant="card"
             defaultCommentsOpen
             highlightCommentId={highlightCommentId}
-            onDeleteSuccess={() => router.push('/home')}
+            onDeleteSuccess={() => router.push('/')}
           />
         )}
       </div>

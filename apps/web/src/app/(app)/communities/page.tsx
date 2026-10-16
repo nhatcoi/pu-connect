@@ -95,7 +95,7 @@ export default function CommunitiesDirectoryPage() {
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer shrink-0"
-            onClick={() => router.push('/home')}
+            onClick={() => router.push('/')}
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>

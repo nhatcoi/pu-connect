@@ -94,7 +94,7 @@ export function Header() {
       {/* ── 1. Desktop & Tablet Header (md:flex) ── */}
       <div className={cn('hidden md:flex mx-auto h-14 items-center justify-between px-4 sm:px-6', SHELL_WIDTH)}>
         <div className="flex items-center gap-6">
-          <Link href="/home" className="flex items-center gap-2.5 group cursor-pointer">
+          <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
             <PuMark className="h-9 w-9 group-hover:scale-105 transition-transform" />
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight leading-none text-foreground">
@@ -270,10 +270,10 @@ export function Header() {
                 >
                   <User className="mr-2 h-4 w-4 text-primary" /> Hồ sơ cá nhân
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/home?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
+                <DropdownMenuItem onClick={() => router.push('/?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
                   <Bookmark className="mr-2 h-4 w-4 text-amber-500" /> Bài viết đã lưu
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/home?tab=courses')} className="text-xs rounded-xl cursor-pointer">
+                <DropdownMenuItem onClick={() => router.push('/courses')} className="text-xs rounded-xl cursor-pointer">
                   <GraduationCap className="mr-2 h-4 w-4 text-primary" /> Môn học & Đề thi
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -321,7 +321,7 @@ export function Header() {
         ) : (
           /* Mode 2: Signature Centered PU Emblem Logo */
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
-            <Link href="/home" className="flex items-center justify-center cursor-pointer group">
+            <Link href="/" className="flex items-center justify-center cursor-pointer group">
               <PuMark className="h-8 w-8 group-hover:scale-105 transition-transform" />
             </Link>
           </div>

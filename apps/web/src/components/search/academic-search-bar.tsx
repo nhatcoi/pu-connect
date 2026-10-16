@@ -188,7 +188,7 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
                           onClick={() => {
                             saveRecentSearch(course.code)
                             setIsOpen(false)
-                            router.push(`/home?tab=courses&course=${course.code}`)
+                            router.push(`/courses/${course.code}`)
                           }}
                           className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs hover:bg-muted cursor-pointer transition-colors"
                         >

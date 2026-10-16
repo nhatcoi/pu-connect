@@ -6,15 +6,15 @@
 
 ```mermaid
 flowchart LR
-  landing["<b>/</b><br/>Landing + AuthForm<br/>(đã đăng nhập → /home)"]
+  landing["<b>/ (chưa đăng nhập)</b><br/>LandingView + AuthForm"]
   verify["<b>/verify-email</b><br/>?token="]
   forgot["<b>/forgot-password</b><br/>nhập email"]
   reset["<b>/reset-password</b><br/>?token="]
-  getstarted["/get-started<br/>→ redirect /home"]
+  getstarted["/home · /get-started<br/>→ redirect /"]
   legal["<b>/terms</b> · <b>/privacy-policy</b><br/>route group (legal), công khai"]
 
   subgraph guarded["AuthGuard (cần đăng nhập)"]
-    home["<b>/home</b><br/>tab: for_you · following · qa"]
+    home["<b>/</b><br/>Bảng tin: for_you · following · qa"]
     search["<b>/search</b><br/>?q= &type="]
     comms["<b>/communities</b>"]
     comm["<b>/c/[slug]</b>"]
@@ -98,8 +98,8 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 
 | Màn hình / component | REST | GraphQL | Realtime |
 |---|---|---|---|
-| Landing / AuthForm | `auth/providers`, `auth/check-email`, `auth/login`, `auth/register`, `auth/me` | — | — |
-| `/home` feed, PostCard (+ nút ✨ Tóm tắt) | `posts`, `posts/:id/*` (gồm `summary`), `posts/:postId/comments`, `comments/:id/*` (gồm `PATCH` sửa), `mentions/suggest` | `toggleFollow` (follow trên PostCard) | — |
+| `/` (LandingView khi chưa đăng nhập) | `auth/providers`, `auth/check-email`, `auth/login`, `auth/register`, `auth/me` | — | — |
+| `/` Bảng tin, PostCard (+ nút ✨ Tóm tắt) | `posts`, `posts/:id/*` (gồm `summary`), `posts/:postId/comments`, `comments/:id/*` (gồm `PATCH` sửa), `mentions/suggest` | `toggleFollow` (follow trên PostCard) | — |
 | RightSidebar | — | `suggestedUsers` | — |
 | `/[username]` (+ menu ⋯ Chặn) | `users/:username`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
 | Communities | `communities`, `communities/:slug/*` | — | — |
@@ -115,7 +115,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
-- 2026-10-16 — thông báo & xem trước (`NotificationRow`, toast `useNotificationsSync`, `FeaturedCommentPreview`, `MessageSearch`, `AcademicSearchBar`, `snippet` API): dùng chung `markdownToPlainText` bỏ ký hiệu Markdown + hiện avatar `N7AiMark` cho `@puai`; `QuizCard` & `FlashcardDeck` dựng `MarkdownPreview` (in đậm, code, KaTeX); `DropdownMenu` mặc định `modal={false}` tránh CLS.
+- 2026-10-16 — bảng tin mặc định chuyển về `/` (`app/(app)/page.tsx`, chưa đăng nhập hiện `LandingView`); `/home` tự động chuyển về `/`. Thông báo & xem trước (`NotificationRow`, toast `useNotificationsSync`, `FeaturedCommentPreview`, `QuizCard`, `FlashcardDeck`) dựng qua `MarkdownPreview` (`inline` cho thông báo/bình luận nổi bật, hỗ trợ in đậm, code, KaTeX) + hiện avatar `N7AiMark` cho `@puai`; `DropdownMenu` mặc định `modal={false}` tránh CLS.
 - 2026-10-16 — chat: ô soạn `@` (nhắc tên + ngữ cảnh) / `/` (chế độ, skill, lệnh) / `+` (tệp, skill, connector, Research) — `composer/use-composer-picker.ts`, `picker-popover`, `plus-menu`, `context-chips`, `skills-dialog`; lịch sử PU AI `ai/ai-thread-list.tsx` (`hooks/chat/use-ai-threads.ts`); `thread/message-text.tsx` (tô sáng @, chip ngữ cảnh), `thread/mention-jump.tsx`, badge @ ở danh sách.
 - 2026-10-16 — `/home` tab Đang theo dõi: CTA "Khám phá thêm" cuối feed / khi trống ⇒ `FollowSuggestionsDialog` (`GET /users/suggestions`, `hooks/use-follow-suggestions.ts`); cột phải dùng chung endpoint + "Xem thêm".
 - 2026-10-16 — bình luận: mention picker (`useMentionPicker` + `components/mentions/MentionPopover`, PU AI ghim đầu, gọi `GET /mentions/suggest`), sửa bình luận tại chỗ, nháp localStorage (`useDraft`).

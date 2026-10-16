@@ -111,7 +111,7 @@ export class AuthController {
     const user = req.user as UserProfile | undefined
     if (req.googleAuthFailed === 'suspended') return res.redirect('/?auth_error=suspended')
     if (req.googleAuthFailed || !user) return res.redirect('/?auth_error=google')
-    return res.redirect('/home')
+    return res.redirect('/')
   }
 
   @Post('register')

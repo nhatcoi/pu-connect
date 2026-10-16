@@ -68,7 +68,7 @@ function VerifyEmailContent() {
       )}
       {status !== 'loading' && (
         <Link
-          href="/home"
+          href="/"
           className="inline-block rounded-full bg-primary px-6 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
         >
           Vào PU Connector

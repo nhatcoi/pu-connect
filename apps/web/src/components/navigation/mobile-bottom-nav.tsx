@@ -25,18 +25,13 @@ export function MobileBottomNav() {
   const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
   const isDimmed = !isAtTop && (!isHeaderVisible || isScrolling)
 
-  // Don't show bottom nav on landing / auth pages
-  if (pathname === '/') {
-    return null
-  }
-
   const navItems = [
     {
       id: 'feed',
       label: 'Bảng tin',
       icon: Home,
-      path: '/home',
-      isActive: pathname === '/home'
+      path: '/',
+      isActive: pathname === '/'
     },
     {
       id: 'search',

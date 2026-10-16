@@ -3,7 +3,7 @@ import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq'
 import { DelayedError, type Job } from 'bullmq'
 import { DatabaseService } from '../../../database/database.service'
 import { isPushEnabled, quietHoursEnd, resolveSettings } from '../../notifications/notification-settings'
-import { snippet } from '../../notifications/notification.types'
+import { markdownToPlainText, snippet } from '../../notifications/notification.types'
 import { PushService } from '../../push/push.service'
 import { RealtimeGateway } from '../../realtime/realtime.gateway'
 import { CHAT_PUSH_QUEUE, chatNotificationTag, type ChatPushJobData, type ChatPushJobName } from './chat-push.constants'
@@ -94,7 +94,7 @@ export class ChatPushProcessor extends WorkerHost {
 
   // Nội dung xem trước: chữ, hoặc mô tả tệp đính kèm
   private preview(m: LastMessage): string {
-    const text = snippet(m.content, 140)
+    const text = snippet(markdownToPlainText(m.content || ''), 140)
     if (text) return text
     if (m.images && m.images === m.files) return m.images > 1 ? `🖼️ ${m.images} ảnh` : '🖼️ Ảnh'
     if (m.files) return `📎 ${m.files} tệp đính kèm`

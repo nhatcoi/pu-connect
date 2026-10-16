@@ -17,8 +17,11 @@ const nextConfig: NextConfig = {
     }
   },
   async redirects() {
-    // Trang onboarding đã gỡ: link cũ chuyển về bảng tin
-    return [{ source: '/get-started', destination: '/home', permanent: false }]
+    // /home và trang onboarding cũ /get-started chuyển thẳng về bảng tin mặc định /
+    return [
+      { source: '/home', destination: '/', permanent: false },
+      { source: '/get-started', destination: '/', permanent: false }
+    ]
   },
   async rewrites() {
     const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:4000'

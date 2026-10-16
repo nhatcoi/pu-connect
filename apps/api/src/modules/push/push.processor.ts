@@ -63,7 +63,7 @@ export class PushProcessor extends WorkerHost {
       recipientId,
       {
         title: n.title,
-        body: n.message || 'PU Connector',
+        body: n.message ? markdownToPlainText(n.message) : 'PU Connector',
         url: link,
         tag: n.group_key || n.id,
         notificationId: n.id,

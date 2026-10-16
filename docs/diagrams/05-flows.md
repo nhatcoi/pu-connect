@@ -98,7 +98,7 @@ sequenceDiagram
     S->>DB: INSERT users (email_verified = TRUE)
   end
   A->>A: super.logIn(req) → session
-  A-->>B: 302 /home (lỗi → /?auth_error=google)
+  A-->>B: 302 / (lỗi → /?auth_error=google)
 ```
 
 ## 5.3. Bình luận → thông báo (reply · mention · post_comment) realtime

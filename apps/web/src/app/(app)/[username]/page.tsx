@@ -39,7 +39,7 @@ export default function ProfilePage({
           variant="ghost"
           size="icon"
           className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer"
-          onClick={() => router.push('/home')}
+          onClick={() => router.push('/')}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -75,7 +75,7 @@ export default function ProfilePage({
           <p className="text-sm text-muted-foreground max-w-md mb-6">
             Tài khoản @{username} không tồn tại hoặc đã được thay đổi.
           </p>
-          <Button onClick={() => router.push('/home')} className="rounded-full cursor-pointer">
+          <Button onClick={() => router.push('/')} className="rounded-full cursor-pointer">
             Quay lại Bảng tin
           </Button>
         </div>
