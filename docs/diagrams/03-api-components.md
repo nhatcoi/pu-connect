@@ -80,7 +80,7 @@ flowchart TB
 |---|---|
 | Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/forgot-password` · `POST auth/reset-password` · `POST auth/resend-verification` · `POST auth/onboarding` |
 | Users | `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `POST users/verify-university` |
-| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`) · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` · `POST posts/:id/summary` (PU AI, có cache) |
+| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`, `before`/`after` = cửa sổ snapshot; mỗi bài kèm `featuredComment`) · `GET posts/new-since?since=` (pill "bài mới") · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` · `POST posts/:id/summary` (PU AI, có cache) |
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `DELETE comments/:id` |
 | Communities | `GET communities` · `GET communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` |
 | Documents | `GET documents` (`type`, `search`, `course`) · `GET documents/:id` · `POST documents` · `POST documents/:id/download` |
@@ -118,9 +118,11 @@ flowchart TB
 | Server → client | `presence.update` | `{ userId, online, lastSeenAt }` tới người cùng hội thoại (không chặn nhau, cả hai bật `showActivityStatus`) |
 | Server → client | `comments.changed` | `{ postId }` tới người gọi @puai khi PU AI đã trả lời bình luận |
 | Server → client | `block.changed` | `{ userId }` tới cả 2 phía khi chặn / bỏ chặn ⇒ web làm mới hồ sơ, feed, hội thoại |
+| Server → client | `feed:new_post` | `{ postId, authorId }` tới follower khi có bài mới — chỉ là tín hiệu, web gọi `GET posts/new-since` để lấy số thật |
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-16 — Posts: `featuredComment` trong feed (`featured-comment.sql.ts`), `GET posts/new-since`, cửa sổ `before`/`after` cho `GET posts`; Posts → Realtime: `emitToUsers` event `feed:new_post`.
 - 2026-10-14 — Admin → Personalization: `GET admin/users/:id/insight` (dữ liệu cá nhân hóa 1 người, chỉ đọc, ghi `user.insight_view`).
 - 2026-10-14 — PersonalizationModule: `POST events`, `GET ai/suggestions`, worker `personalization` (BullMQ job scheduler); feed For You cộng điểm khớp `user_interests`; PU AI trả kèm câu hỏi gợi ý tiếp theo (`meta.followUps`).
 - 2026-10-14 — `GET conversations` phân trang keyset + lọc ở server.

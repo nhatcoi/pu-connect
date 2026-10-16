@@ -148,10 +148,39 @@ sequenceDiagram
   W->>P: GET /api/posts?feedType=for_you&limit&offset
   P->>DB: Một query: JOIN users/courses/communities<br/>+ recommendation_score
   Note right of DB: +30 cùng khoa · +15 cùng khóa · +35 đang theo dõi<br/>+35 tag ∩ interests · +25 tag ∩ skills · +10 đã giải<br/>+0..40 khớp hồ sơ quan tâm (user_interests: môn + tag)<br/>+ likes×2 + comments×5 − 2/ngày tuổi
-  DB-->>P: ORDER BY score DESC, created_at DESC LIMIT/OFFSET
-  P->>DB: Batch lấy poll cho các bài
-  P-->>W: { data, total, hasMore, nextOffset }
-  Note over W: following: lọc theo user_follows, sort thời gian<br/>qa: post_type = question
+  DB-->>P: ORDER BY score DESC, created_at DESC LIMIT/OFFSET<br/>(chỉ bài created_at ≤ before = snapshotAt)
+  par Batch theo trang
+    P->>DB: poll của các bài
+  and
+    P->>DB: featured comment (solution > top > relevance > latest > earliest)
+  end
+  P-->>W: { data, total, hasMore, nextOffset, snapshotAt }
+  Note over W: trang sau gửi before = snapshotAt trang đầu ⇒ offset không lệch<br/>following: lọc theo user_follows, sort thời gian · qa: post_type = question
+```
+
+### 5.4b. Pill "bài mới" (kiểu X)
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant A as Tác giả
+  participant P as PostsService
+  participant G as RealtimeGateway
+  participant W as Web (useNewPosts)
+  participant DB as Postgres
+
+  A->>P: POST /api/posts (commit)
+  P->>DB: SELECT follower_id FROM user_follows
+  P-)G: emitToUsers(followers, feed:new_post)
+  G-)W: feed:new_post (tín hiệu, debounce 3s)
+  loop mỗi 60s · khi quay lại tab · khi có tín hiệu
+    W->>P: GET /api/posts/new-since?feedType&since=latestAt|snapshotAt
+    P->>DB: cùng bộ lọc feed + created_at > since, bỏ bài của mình (≤ 50)
+    P-->>W: { count, authors[≤3, ưu tiên người đang follow] }
+  end
+  W->>P: Bấm pill ⇒ GET /api/posts?after=since&limit=50
+  P-->>W: bài mới + snapshotAt
+  Note over W: chèn lên đầu trang 0 (bỏ trùng), latestAt = snapshotAt, cuộn lên đầu
 ```
 
 ## 5.5. Web Push (BullMQ)
@@ -277,6 +306,7 @@ sequenceDiagram
 - 2026-10-14 — 5.4: cộng điểm khớp hồ sơ quan tâm (`interestBoostSql`, chuẩn hóa theo chủ đề mạnh nhất).
 - 2026-10-14 — 5.7: PU AI viết câu hỏi tiếp theo sau dấu mốc `<<<FOLLOWUPS>>>` trong cùng luồng stream; server giấu khỏi delta, lưu `meta.followUps`.
 - 2026-10-13 — 5.7: `@puai` trong nhóm, chế độ học, ảnh đính kèm, kiểm tra tệp.
+- 2026-10-16 — 5.4 thêm snapshot `before` + featured comment; thêm 5.4b Pill "bài mới".
 - 2026-10-13 — thêm 5.7 Nhắn tin & PU AI, 5.8 Khóa tài khoản.
 - 2026-10-04 — thêm 5.6 Tìm kiếm.
 - 2026-10-04 — thêm 5.1b Quên mật khẩu.

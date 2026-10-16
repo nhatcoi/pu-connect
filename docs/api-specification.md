@@ -103,7 +103,11 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
 * **Query Parameters:**
   * `tag` *(optional)*: Lọc bài viết theo chủ đề (VD: `?tag=nextjs`).
   * `limit` *(optional)*: Số bài viết mỗi trang (default: 20).
-  * `cursor` *(optional)*: Con trỏ phân trang vô tận (Infinite scroll).
+  * `offset` *(optional)*: Vị trí bắt đầu (phân trang offset).
+  * `feedType` *(optional)*: `for_you` (mặc định) · `following` · `qa` · `courses` · `bookmarks`.
+  * `before` *(optional, ISO)*: Mốc snapshot — chỉ lấy bài `created_at ≤ before`. Gửi lại `snapshotAt` của trang đầu cho các trang sau để bài mới không làm lệch offset.
+  * `after` *(optional, ISO)*: Chỉ lấy bài `created_at > after` (dùng khi bấm pill "bài mới").
+* **Response thêm:** `snapshotAt` (ISO) và mỗi bài có `featuredComment` (`{ id, content, likesCount, repliesCount, reason: solution|top|earliest, createdAt, author }` hoặc `null`).
 * **Response (200 OK):**
   ```json
   {
@@ -132,6 +136,12 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
     ]
   }
   ```
+
+### 2.1b. Đếm bài mới (pill "bài mới")
+* **Endpoint:** `GET /api/posts/new-since`
+* **Query:** `since` (ISO, bắt buộc), `feedType`, `tag`, `course` — cùng bộ lọc với feed; không đếm bài của chính mình; tối đa 50.
+* **Response (200 OK):** `{ "success": true, "data": { "count": 3, "authors": [{ "id", "username", "displayName", "avatarUrl" }] } }` — ≤ 3 tác giả, ưu tiên người mình đang theo dõi.
+* **Realtime:** khi có bài mới, follower đang online nhận event socket `feed:new_post` `{ postId, authorId }` (chỉ là tín hiệu để gọi lại endpoint này).
 
 ### 2.2. Tạo bài viết mới
 * **Endpoint:** `POST /api/posts`
