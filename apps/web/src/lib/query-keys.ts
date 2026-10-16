@@ -17,6 +17,7 @@ export const queryKeys = {
   communityAll: (slug: string) => ['community', slug] as const,
   suggestedUsers: (limit: number) => ['suggested-users', limit] as const,
   search: (q: string, type: string, faculty?: string | null) => ['search', q, type, faculty ?? null] as const,
+  mentionSuggest: (q: string, postId: string | null) => ['mention-suggest', q.toLowerCase(), postId] as const,
   notifications: (filter: string) => ['notifications', filter] as const,
   courses: ['courses'] as const,
   course: (code: string) => ['course', code.toUpperCase()] as const,

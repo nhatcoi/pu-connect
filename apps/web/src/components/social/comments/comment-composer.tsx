@@ -1,10 +1,16 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useId } from 'react'
+import type { MentionCandidate } from '@pu/schemas'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { N7AiMark } from '@/components/brand/pu-logo'
+import { MentionPopover, mentionOptionId } from '@/components/mentions/mention-popover'
 import { useAppStore } from '@/store'
+import { useMentionPicker } from '@/hooks/use-mention-picker'
+import { useDraft } from '@/hooks/use-draft'
 import { uploadFileToR2 } from '@/lib/api-client'
+import { PUAI_MENTION } from '@/lib/mention'
 import { Image as ImageIcon, Binary, Code2, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -15,6 +21,13 @@ interface CommentComposerProps {
   autoFocus?: boolean
   initialContent?: string
   onCancel?: () => void
+  // Gợi ý @mention theo bài viết (người trong bài hiện ngay)
+  postId?: string
+  mentionContext?: MentionCandidate[]
+  // Khoá nháp trên trình duyệt (bỏ trống = không lưu nháp)
+  draftKey?: string
+  // Sửa bình luận: nút "Lưu", không đính kèm ảnh, không gọi PU AI
+  mode?: 'create' | 'edit'
 }
 
 export function CommentComposer({
@@ -23,8 +36,13 @@ export function CommentComposer({
   placeholder = 'Viết câu trả lời hoặc thảo luận của bạn...',
   autoFocus = false,
   initialContent = '',
-  onCancel
+  onCancel,
+  postId,
+  mentionContext,
+  draftKey,
+  mode = 'create'
 }: CommentComposerProps) {
+  const isEdit = mode === 'edit'
   const user = useAppStore((state) => state.user)
   const [content, setContent] = useState(initialContent)
   const [attachedImages, setAttachedImages] = useState<{ id: string; url: string; file?: File }[]>([])
@@ -32,11 +50,18 @@ export function CommentComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    if (initialContent) {
-      setContent(initialContent)
-    }
-  }, [initialContent])
+  const listId = useId()
+  const mention = useMentionPicker({
+    textareaRef,
+    value: content,
+    setValue: setContent,
+    postId,
+    context: mentionContext
+  })
+
+  // Nháp: chỉ lưu phần người dùng tự gõ (bỏ qua "@user " điền sẵn khi trả lời)
+  const clearDraft = useDraft(draftKey, content === initialContent ? '' : content, setContent)
+  const asksPuai = !isEdit && PUAI_MENTION.test(content)
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -111,7 +136,10 @@ export function CommentComposer({
         }
       }
 
-      await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined)
+      const ok = await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined)
+      // onSubmit trả null/false = lỗi ⇒ giữ nguyên nội dung để gửi lại
+      if (ok === null || ok === false) return
+      clearDraft()
       setContent('')
       setAttachedImages([])
     } catch (err: any) {
@@ -121,10 +149,19 @@ export function CommentComposer({
     }
   }
 
+  const handleCancel = () => {
+    clearDraft()
+    onCancel?.()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mention.onKeyDown(e)) return
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       e.preventDefault()
       handleSubmit()
+    } else if (e.key === 'Escape' && onCancel) {
+      e.preventDefault()
+      handleCancel()
     }
   }
 
@@ -137,16 +174,43 @@ export function CommentComposer({
         </AvatarFallback>
       </Avatar>
 
-      <div className="flex-1 min-w-0 rounded-2xl border border-border/80 bg-card p-2.5 space-y-2 shadow-2xs focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+      <div className="relative flex-1 min-w-0 rounded-2xl border border-border/80 bg-card p-2.5 space-y-2 shadow-2xs focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
         <textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
+          onSelect={mention.sync}
+          onBlur={mention.close}
           placeholder={placeholder}
           rows={1}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={mention.open}
+          aria-controls={mention.open ? listId : undefined}
+          aria-activedescendant={mention.open && mention.items.length ? mentionOptionId(listId, mention.index) : undefined}
           className="w-full resize-none bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none leading-relaxed"
         />
+
+        {mention.open && (
+          <MentionPopover
+            id={listId}
+            items={mention.items}
+            index={mention.index}
+            isLoading={mention.isLoading}
+            onHover={mention.setIndex}
+            onSelect={mention.select}
+            className="absolute left-2 top-full mt-1"
+          />
+        )}
+
+        {/* Đã gọi @puai ⇒ báo trước PU AI sẽ trả lời */}
+        {asksPuai && (
+          <p className="flex items-center gap-1.5 text-[11px] text-primary">
+            <N7AiMark className="h-3.5 w-3.5" />
+            PU AI sẽ trả lời bình luận này
+          </p>
+        )}
 
         {/* Attached Images Preview */}
         {attachedImages.length > 0 && (
@@ -170,6 +234,8 @@ export function CommentComposer({
         {/* Bottom Toolbar & Submit Button */}
         <div className="flex items-center justify-between pt-1 border-t border-border/40">
           <div className="flex items-center gap-1">
+            {!isEdit && (
+            <>
             <input
               ref={fileInputRef}
               type="file"
@@ -186,6 +252,8 @@ export function CommentComposer({
             >
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
+            </>
+            )}
 
             <button
               type="button"
@@ -212,7 +280,7 @@ export function CommentComposer({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={onCancel}
+                onClick={handleCancel}
                 disabled={isSubmitting}
                 className="h-7 px-2.5 text-xs text-muted-foreground hover:text-foreground"
               >
@@ -230,7 +298,7 @@ export function CommentComposer({
               {isSubmitting ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
               ) : (
-                <span>{parentId ? 'Trả lời' : 'Bình luận'}</span>
+                <span>{isEdit ? 'Lưu' : parentId ? 'Trả lời' : 'Bình luận'}</span>
               )}
             </Button>
           </div>

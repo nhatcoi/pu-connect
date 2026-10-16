@@ -8,13 +8,12 @@ import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { PostMediaGallery } from '../post-media-gallery'
 import { CommentComposer } from './comment-composer'
-import { Heart, MessageSquare, CheckCircle2, Trash2, Check } from 'lucide-react'
+import { Heart, MessageSquare, CheckCircle2, Trash2, Check, Pencil } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
-import type { CommentItem } from '@pu/schemas'
+import type { CommentItem, MentionCandidate } from '@pu/schemas'
 import { useQueryClient } from '@tanstack/react-query'
 import { prefetchProfile } from '@/hooks/use-profile'
-
-const PUAI_USERNAME = 'puai'
+import { PUAI_USERNAME } from '@/lib/mention'
 
 interface CommentItemCardProps {
   comment: CommentItem
@@ -25,6 +24,8 @@ interface CommentItemCardProps {
   onAcceptSolution?: (commentId: string) => void
   onDeleteComment?: (commentId: string) => void
   onReplySubmit: (content: string, parentId: string, mediaUrls?: string[]) => Promise<any>
+  onEditComment?: (commentId: string, content: string) => Promise<boolean>
+  mentionContext?: MentionCandidate[]
   // Bình luận được mở từ thông báo (cuộn tới + viền nổi bật)
   isHighlighted?: boolean
 }
@@ -38,9 +39,12 @@ export function CommentItemCard({
   onLikeToggle,
   onAcceptSolution,
   onDeleteComment,
-  onReplySubmit
+  onReplySubmit,
+  onEditComment,
+  mentionContext
 }: CommentItemCardProps) {
   const [showReplyComposer, setShowReplyComposer] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const queryClient = useQueryClient()
 
   const authorInitials = (
@@ -102,6 +106,14 @@ export function CommentItemCard({
             </span>
             <span className="text-muted-foreground text-[10px]">•</span>
             <span className="text-[10px] text-muted-foreground">{formatRelativeTime(comment.createdAt)}</span>
+            {comment.editedAt && (
+              <span
+                className="text-[10px] text-muted-foreground"
+                title={`Sửa lúc ${new Date(comment.editedAt).toLocaleString('vi-VN')}`}
+              >
+                · đã chỉnh sửa
+              </span>
+            )}
           </div>
         </Link>
 
@@ -124,12 +136,26 @@ export function CommentItemCard({
             </Button>
           )}
 
+          {/* Màn cảm ứng không có hover ⇒ luôn hiện; desktop hiện khi rê chuột / focus */}
+          {isMyComment && onEditComment && !isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 p-1 text-muted-foreground hover:text-foreground transition-all cursor-pointer rounded-full"
+              title="Sửa bình luận"
+              aria-label="Sửa bình luận"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+
           {isMyComment && onDeleteComment && (
             <button
               type="button"
               onClick={() => onDeleteComment(comment.id)}
-              className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all cursor-pointer rounded-full"
+              className="sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all cursor-pointer rounded-full"
               title="Xóa bình luận"
+              aria-label="Xóa bình luận"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -139,7 +165,23 @@ export function CommentItemCard({
 
       {/* Comment Body */}
       <div className="pl-9 space-y-2">
-        <MarkdownPreview content={comment.content} className="text-xs leading-relaxed" />
+        {isEditing && onEditComment ? (
+          <CommentComposer
+            mode="edit"
+            autoFocus
+            initialContent={comment.content}
+            postId={comment.postId}
+            mentionContext={mentionContext}
+            onSubmit={async (text) => {
+              const ok = await onEditComment(comment.id, text)
+              if (ok) setIsEditing(false)
+              return ok
+            }}
+            onCancel={() => setIsEditing(false)}
+          />
+        ) : (
+          <MarkdownPreview content={comment.content} className="text-xs leading-relaxed" />
+        )}
 
         {comment.mediaUrls && comment.mediaUrls.length > 0 && (
           <PostMediaGallery mediaUrls={comment.mediaUrls} className="mt-1" />
@@ -181,9 +223,13 @@ export function CommentItemCard({
               parentId={comment.id}
               autoFocus
               initialContent={`@${comment.author?.username || 'user'} `}
+              postId={comment.postId}
+              mentionContext={mentionContext}
+              draftKey={`reply:${comment.id}`}
               onSubmit={async (text, media) => {
-                await onReplySubmit(text, comment.id, media)
-                setShowReplyComposer(false)
+                const created = await onReplySubmit(text, comment.id, media)
+                if (created) setShowReplyComposer(false)
+                return created
               }}
               onCancel={() => setShowReplyComposer(false)}
             />

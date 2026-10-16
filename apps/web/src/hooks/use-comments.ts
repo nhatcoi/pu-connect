@@ -8,8 +8,7 @@ import { flattenPages } from '@/lib/post-cache'
 import type { CommentItem } from '@pu/schemas'
 import { toast } from 'sonner'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
-
-const PUAI_MENTION = /(^|\s)@puai\b/i
+import { PUAI_MENTION } from '@/lib/mention'
 
 const INITIAL_COMMENT_LIMIT = 3
 const BATCH_COMMENT_LIMIT = 10
@@ -173,6 +172,25 @@ export function useComments(postId: string, initialOpen = false) {
     [update]
   )
 
+  // Sửa nội dung; trả về true khi lưu thành công (composer đóng chế độ sửa)
+  const editComment = useCallback(
+    async (commentId: string, content: string) => {
+      try {
+        const res = await apiClient<{ data: { id: string; content: string; editedAt: string } }>(
+          `/comments/${commentId}`,
+          { method: 'PATCH', body: JSON.stringify({ content }) }
+        )
+        const { content: saved, editedAt } = res.data
+        update((items) => items.map((c) => (c.id === commentId ? { ...c, content: saved, editedAt } : c)))
+        return true
+      } catch (err: any) {
+        toast.error(err.message || 'Không thể sửa bình luận')
+        return false
+      }
+    },
+    [update]
+  )
+
   const deleteComment = useCallback(
     async (commentId: string) => {
       try {
@@ -213,6 +231,7 @@ export function useComments(postId: string, initialOpen = false) {
     addComment,
     toggleLike,
     acceptSolution,
+    editComment,
     deleteComment
   }
 }

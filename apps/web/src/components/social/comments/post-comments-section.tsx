@@ -8,7 +8,8 @@ import { CommentComposer } from './comment-composer'
 import { CommentItemCard } from './comment-item-card'
 import { Button } from '@/components/ui/button'
 import { Loader2, MessageSquare, ChevronDown } from 'lucide-react'
-import type { PostItem } from '@pu/schemas'
+import type { MentionCandidate, PostItem } from '@pu/schemas'
+import { PUAI_USERNAME } from '@/lib/mention'
 
 interface PostCommentsSectionProps {
   post: PostItem
@@ -32,6 +33,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
     addComment,
     toggleLike,
     acceptSolution,
+    editComment,
     deleteComment
   } = useComments(post.id, isOpen)
 
@@ -54,6 +56,18 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
     for (const list of repliesByRoot.values()) list.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     return { topLevelComments: comments.filter((c) => !c.parentId), repliesByRoot, rootOf }
   }, [comments])
+
+  // Người trong bài cho gợi ý @mention: tác giả trước, rồi người bình luận (mới nhất trước)
+  const mentionContext = useMemo<MentionCandidate[]>(() => {
+    const out = new Map<string, MentionCandidate>()
+    const add = (a: { id: string; username: string; displayName?: string | null; avatarUrl?: string | null } | undefined, reason: MentionCandidate['reason']) => {
+      if (!a?.username || a.id === user?.id || a.username === PUAI_USERNAME || out.has(a.username)) return
+      out.set(a.username, { id: a.id, username: a.username, displayName: a.displayName || a.username, avatarUrl: a.avatarUrl, reason })
+    }
+    add(post.author, 'author')
+    for (let i = comments.length - 1; i >= 0; i--) add(comments[i].author, 'participant')
+    return [...out.values()]
+  }, [post.author, comments, user?.id])
 
   useEffect(() => {
     if (isOpen && isLoaded) onCountChange?.(totalCount)
@@ -105,6 +119,9 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
       {/* Top Comment Input Box */}
       <CommentComposer
         onSubmit={(text, media) => addComment(text, undefined, media)}
+        postId={post.id}
+        mentionContext={mentionContext}
+        draftKey={`comment:${post.id}`}
         placeholder={
           isQaPost
             ? 'Nhập lời giải hoặc gợi ý giải bài tập...'
@@ -133,7 +150,9 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
                     onLikeToggle={toggleLike}
                     onAcceptSolution={acceptSolution}
                     onDeleteComment={deleteComment}
+                    onEditComment={editComment}
                     onReplySubmit={submitReply}
+                    mentionContext={mentionContext}
                   />
 
                   {/* Toggle nested replies */}
@@ -168,7 +187,9 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
                               onLikeToggle={toggleLike}
                               onAcceptSolution={acceptSolution}
                               onDeleteComment={deleteComment}
+                              onEditComment={editComment}
                               onReplySubmit={submitReply}
+                              mentionContext={mentionContext}
                             />
                           ))}
                         </div>
