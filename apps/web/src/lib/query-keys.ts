@@ -16,6 +16,8 @@ export const queryKeys = {
   community: (slug: string, sort: CommunitySort) => ['community', slug, sort] as const,
   communityAll: (slug: string) => ['community', slug] as const,
   suggestedUsers: (limit: number) => ['suggested-users', limit] as const,
+  // Modal khám phá: khóa riêng ⇒ không tự tải lại (người vừa theo dõi không biến mất giữa chừng)
+  followSuggestions: (limit: number) => ['follow-suggestions', limit] as const,
   search: (q: string, type: string, faculty?: string | null) => ['search', q, type, faculty ?? null] as const,
   mentionSuggest: (q: string, postId: string | null) => ['mention-suggest', q.toLowerCase(), postId] as const,
   notifications: (filter: string) => ['notifications', filter] as const,

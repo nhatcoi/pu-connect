@@ -6,7 +6,7 @@ import {
   Loader2,
   CheckCircle2,
   MessageSquarePlus,
-  UserPlus
+  Compass
 } from 'lucide-react'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { usePosts, prefetchFeed } from '@/hooks/use-posts'
 import { useNewPosts } from '@/hooks/use-new-posts'
 import { NewPostsPill } from '@/components/social/new-posts-pill'
+import { FollowSuggestionsDialog } from '@/components/social/follow-suggestions-dialog'
 import { useFeatureEnabled } from '@/hooks/use-settings'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/store'
@@ -57,6 +58,9 @@ function HomeContent() {
   const queryClient = useQueryClient()
   const user = useAppStore((state) => state.user)
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
+  // Modal "Khám phá thêm" (gợi ý theo dõi) — mở từ cuối / trạng thái trống của tab Đang theo dõi
+  const [exploreOpen, setExploreOpen] = useState(false)
+  const isFollowingTab = activeFeedTab === 'following'
 
   // Infinite Scroll Sentinel Observer
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -129,6 +133,22 @@ function HomeContent() {
                   <Loader2 className="h-4 w-4 animate-spin text-foreground" />
                   <span>Đang nạp thêm bài viết phù hợp...</span>
                 </div>
+              ) : !hasMore && isFollowingTab ? (
+                // Hết bài từ người theo dõi ⇒ mời khám phá thêm người mới
+                <div className="flex flex-col items-center gap-3 rounded-xl bg-card px-6 py-6">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-foreground">Bạn đã xem hết bài từ người đang theo dõi</p>
+                    <p className="text-xs text-muted-foreground">Theo dõi thêm bạn cùng lớp, cùng khoa để bảng tin phong phú hơn.</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => setExploreOpen(true)}
+                    className="h-9 gap-1.5 rounded-full px-5 text-xs font-semibold cursor-pointer"
+                  >
+                    <Compass className="h-4 w-4" />
+                    Khám phá thêm
+                  </Button>
+                </div>
               ) : !hasMore && posts.length > 5 ? (
                 <div className="flex items-center justify-center gap-1.5 py-4 text-xs text-muted-foreground">
                   <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -154,16 +174,29 @@ function HomeContent() {
                   ? 'Hãy là người đầu tiên đặt câu hỏi thắc mắc về bài tập, môn học hoặc đồ án để nhận lời giải chuẩn!'
                   : 'Hãy là người đầu tiên chia sẻ kiến thức, kinh nghiệm học tập hoặc tài liệu học phần!'}
             </p>
-            <Button
-              size="sm"
-              onClick={() => setCreatePostOpen(true)}
-              className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
-            >
-              {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
-            </Button>
+            {isFollowingTab ? (
+              <Button
+                size="sm"
+                onClick={() => setExploreOpen(true)}
+                className="gap-1.5 bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
+              >
+                <Compass className="h-4 w-4" />
+                Khám phá người để theo dõi
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                onClick={() => setCreatePostOpen(true)}
+                className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
+              >
+                {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
+              </Button>
+            )}
           </div>
         )}
       </div>
+
+      <FollowSuggestionsDialog open={exploreOpen} onOpenChange={setExploreOpen} />
     </>
   )
 }
