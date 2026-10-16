@@ -52,7 +52,7 @@ export function PlusMenu(props: Props) {
           <Plus className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-60">
+      <DropdownMenuContent side="top" align="start" className="w-64">
         <DropdownMenuItem onSelect={props.onUpload}>
           <Paperclip /> Tải ảnh hoặc tệp
         </DropdownMenuItem>
