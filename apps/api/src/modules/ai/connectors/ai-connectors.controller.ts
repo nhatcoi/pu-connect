@@ -1,16 +1,11 @@
-import { BadRequestException, Controller, Delete, Get, Param, Query, Req, Res, UseGuards } from '@nestjs/common'
+import { BadRequestException, Controller, Delete, Get, Param, Req, Res, UseGuards } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Request, Response } from 'express'
 import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import { AiConnectorsService } from './ai-connectors.service'
-import { GOOGLE_PROVIDERS, GoogleOAuthService, providerFromSlug, type GoogleProvider } from './google-oauth.service'
-
-declare module 'express-session' {
-  interface SessionData {
-    connectorOAuth?: { state: string; provider: GoogleProvider }
-  }
-}
+import { completeConnectorOAuth } from './connector-callback'
+import { GoogleOAuthService, providerFromSlug, type GoogleProvider } from './google-oauth.service'
 
 // Connector PU AI: danh sách + kết nối / ngắt Google Drive, Google Calendar (OAuth redirect flow, state lưu session)
 @Controller('ai/connectors')
@@ -31,21 +26,10 @@ export class AiConnectorsController {
     return this.connectors.list(requireUserId(req))
   }
 
-  // Google gọi lại (1 URI cho mọi provider): kiểm state (CSRF) ⇒ lưu token ⇒ về trang tin nhắn kèm kết quả
+  // Callback riêng (khi đặt GOOGLE_CONNECTOR_CALLBACK_URL); mặc định Google gọi về callback đăng nhập ⇒ ConnectorCallbackMiddleware
   @Get('google/callback')
-  async callback(@Query('code') code: string | undefined, @Query('state') state: string | undefined, @Req() req: Request, @Res() res: Response) {
-    const pending = req.session.connectorOAuth
-    req.session.connectorOAuth = undefined
-    let result = 'error'
-    try {
-      if (!code || !state || !pending || state !== pending.state) throw new Error('state')
-      await this.oauth.connect(requireUserId(req), pending.provider, code)
-      result = 'connected'
-    } catch {
-      // result = error
-    }
-    const slug = pending ? GOOGLE_PROVIDERS[pending.provider].slug : 'google'
-    res.redirect(`${this.appUrl}/messages?connector=${slug}&result=${result}`)
+  async callback(@Req() req: Request, @Res() res: Response) {
+    res.redirect(await completeConnectorOAuth(req, this.oauth, this.appUrl))
   }
 
   // Chuyển sang màn đồng ý của Google (google-drive | google-calendar)

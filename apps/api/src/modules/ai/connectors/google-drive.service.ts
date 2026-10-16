@@ -16,16 +16,14 @@ const EXPORT_MIME: Record<string, string> = {
 export type ConnectorSource = { id: string; title: string; body: string }
 type DriveFile = { id: string; name: string; mimeType: string; size?: string }
 
-// Từ khóa giữ dấu (Drive fullText tự xử lý), ưu tiên từ dài
+// Hư từ / từ đệm hay gặp trong câu hỏi tiếng Việt ⇒ không dùng làm từ khóa tìm file
+const STOPWORDS = new Set(
+  'giúp mình bạn tôi cho của là gì thế nào này kia với và các những được một hãy làm sao không có về thích ơi nhé nha giùm em anh chị trong'.split(' ')
+)
+
+// Từ khóa giữ dấu (Drive fullText tự xử lý), bỏ hư từ, ưu tiên từ dài
 function keywords(question: string): string[] {
-  const words = Array.from(
-    new Set(
-      question
-        .toLowerCase()
-        .split(/[^\p{L}\p{N}]+/u)
-        .filter((w) => w.length >= 3)
-    )
-  )
+  const words = Array.from(new Set(question.toLowerCase().split(/[^\p{L}\p{N}]+/u))).filter((w) => w.length >= 2 && !STOPWORDS.has(w))
   return words.sort((a, b) => b.length - a.length).slice(0, 4)
 }
 

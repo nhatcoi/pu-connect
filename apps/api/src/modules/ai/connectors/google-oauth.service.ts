@@ -17,7 +17,6 @@ export const providerFromSlug = (slug: string): GoogleProvider | null =>
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke'
-export const GOOGLE_CALLBACK_PATH = '/api/ai/connectors/google/callback'
 const TIMEOUT_MS = 10_000
 
 type TokenResponse = { access_token?: string; refresh_token?: string; expires_in?: number; id_token?: string; scope?: string; error?: string }
@@ -39,10 +38,8 @@ export class GoogleOAuthService {
   ) {
     this.clientId = config.get<string>('GOOGLE_CLIENT_ID') || undefined
     this.clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET') || undefined
-    // Mặc định cùng origin với callback đăng nhập Google (khai báo thêm URI này trên Google Console)
-    const loginCallback = config.get<string>('GOOGLE_CALLBACK_URL')
-    this.redirectUri =
-      config.get<string>('GOOGLE_CONNECTOR_CALLBACK_URL') || (loginCallback ? new URL(GOOGLE_CALLBACK_PATH, loginCallback).toString() : undefined)
+    // Mặc định dùng lại redirect URI của đăng nhập Google (đã khai báo) ⇒ ConnectorCallbackMiddleware nhận theo state
+    this.redirectUri = config.get<string>('GOOGLE_CONNECTOR_CALLBACK_URL') || config.get<string>('GOOGLE_CALLBACK_URL') || undefined
     this.cipher = new TokenCipher(config.get<string>('CONNECTOR_ENCRYPTION_KEY') || config.get<string>('SESSION_SECRET') || 'dev-connector-key')
   }
 
