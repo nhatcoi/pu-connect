@@ -125,6 +125,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-16 — `ConnectorCallbackMiddleware` trên `GET auth/google/callback`: connector Google dùng chung redirect URI đăng nhập (phân biệt bằng `state` trong session).
 - 2026-10-16 — `GoogleOAuthService` dùng chung + `GoogleCalendarService`; thư viện skill công khai (`ai/skills/library`, `install`); `ai/threads?q=` tìm cả nội dung; xóa thread dọn tệp R2 (`StorageService.deleteObjects`).
 - 2026-10-16 — AiModule: `AiConnectorsController` + `GoogleDriveService` (OAuth `drive.readonly`, token AES-256-GCM trong `user_connectors`), `AiRetrieval` thêm connector `google_drive`; `ai/doc-text.ts` dùng chung trích chữ PDF/DOCX/txt.
 - 2026-10-16 — Chat: `ChatMentionsService` (mention nhóm, `GET conversations/:id/mentions`), `ChatRefsController` `GET chat/refs`, `AiThreadsController` `ai/threads`, `AiSkillsController` `ai/skills`, `GET ai/connectors`, `AiMemoryService` (tóm tắt cuộn); event `ai.thread.updated`; `AiRetrieval` theo connector.

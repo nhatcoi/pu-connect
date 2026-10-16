@@ -83,6 +83,8 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 ## 7. Connector Google (Drive · Calendar)
 
 - Migration `ai-connectors-upgrade.sql`: `user_connectors(user_id, provider, refresh_token_enc, account_email, scope, …, PK(user_id, provider))`.
+- Redirect URI: dùng lại URI đăng nhập Google (`/api/auth/google/callback`) — `ConnectorCallbackMiddleware` (đăng ký trong `AiModule.configure`) bắt request khi `state` khớp phiên connector, còn lại nhường passport; không phải khai báo URI mới trên Google Console.
+- Từ khóa Drive bỏ hư từ tiếng Việt (`giúp`, `mình`, `cho`…) trước khi chọn 4 từ dài nhất cho `fullText contains`.
 - `ai/connectors/`: `GoogleOAuthService` (dùng chung: authorize URL, đổi code, kiểm scope, làm mới access token có cache, revoke, `invalid_grant` ⇒ xóa), `GoogleDriveService` (tìm `fullText contains`, export Docs/Sheets/Slides, tải PDF/DOCX/txt ≤ 10 MB ⇒ `ai/doc-text.ts`), `GoogleCalendarService` (sự kiện lịch chính N ngày tới), `TokenCipher` (AES-256-GCM), `AiConnectorsService` (registry + trạng thái), `AiConnectorsController` (`:provider/connect`, `google/callback`, `DELETE :provider`).
 - Thêm provider Google mới = 1 dòng `GOOGLE_PROVIDERS` + 1 service đọc dữ liệu + 1 nhánh trong `AiRetrieval`.
 - Token bị thu hồi (`invalid_grant`) ⇒ tự xóa kết nối; mọi lỗi Drive ⇒ PU AI bỏ qua nguồn này (`AiRetrieval.safe`).
@@ -98,5 +100,5 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 
 ## 9. Chất lượng mã
 
-- ESLint flat config: `apps/web/eslint.config.mjs` (`next/core-web-vitals` + `next/typescript`), `apps/api/eslint.config.mjs` (`typescript-eslint` recommended). `pnpm lint`: API 0 cảnh báo; web 0 lỗi (cảnh báo còn lại ở code cũ: biến thừa, `any`, `<img>`).
-- `.prettierrc.json` khớp style repo; file của tính năng này đã format, code cũ không format lại hàng loạt (tránh diff lớn).
+- ESLint flat config: `apps/web/eslint.config.mjs` (`next/core-web-vitals` + `next/typescript`), `apps/api/eslint.config.mjs` (`typescript-eslint` recommended). `pnpm lint`: API 0 vấn đề; web 0 lỗi — đã dọn ~120 cảnh báo (import/biến thừa, `catch (err: any)` ⇒ `errorMessage(err, fallback)`, kiểu phản hồi feed/bình luận, `ApiError`, `<img>` cố ý có chú thích lý do). Cảnh báo còn lại chỉ ở các file đang có thay đổi dở của người khác lúc dọn.
+- `.prettierrc.json` khớp style repo; toàn bộ mã `apps/*`, `packages/*` đã format (commit `style: format codebase…`, không đổi hành vi; kiểm lại bằng typecheck + build + 39 e2e).
