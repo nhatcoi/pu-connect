@@ -13,7 +13,7 @@ import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
 import type { ListConversationsQuery } from '../dto/chat.dto'
-import { LIST_FILTERS, LIST_RANK, LIST_SORT_AT, SORT_AT_TEXT, decodeCursor, encodeCursor } from './conversation-list.query'
+import { LATEST_AI_ONLY, LATEST_AI_SQL, LIST_FILTERS, LIST_RANK, LIST_SORT_AT, SORT_AT_TEXT, decodeCursor, encodeCursor } from './conversation-list.query'
 import { blockExistsSql } from '../../blocks/blocks.sql'
 import { ChatPushService } from '../notify/chat-push.service'
 import { LlmService } from '../../ai/llm.service'
@@ -49,7 +49,7 @@ export class ConversationsService {
       `SELECT k.id, k.rank, ${SORT_AT_TEXT} AS sort_at FROM (
          SELECT c.id, ${LIST_RANK} AS rank, ${LIST_SORT_AT} AS sort_at
          FROM conversation_members me JOIN conversations c ON c.id = me.conversation_id
-         WHERE me.user_id = $1 AND me.left_at IS NULL ${LIST_FILTERS[query.filter]}
+         WHERE me.user_id = $1 AND me.left_at IS NULL AND ${LATEST_AI_ONLY} ${LIST_FILTERS[query.filter]}
        ) k ${keyset}
        ORDER BY k.rank DESC, k.sort_at DESC, k.id DESC
        LIMIT $2`,
@@ -106,7 +106,7 @@ export class ConversationsService {
 
     const key = [userId, targetId].sort().join(':')
     const id = await this.db.transaction(async (client) => {
-      const conv = await this.upsertKeyed(client, 'direct', key, userId)
+      const conv = await this.upsertDirect(client, key, userId)
       await client.query(
         `INSERT INTO conversation_members (conversation_id, user_id) VALUES ($1, $2), ($1, $3)
          ON CONFLICT (conversation_id, user_id) DO UPDATE SET left_at = NULL`,
@@ -117,17 +117,28 @@ export class ConversationsService {
     return this.get(userId, id)
   }
 
-  // Hội thoại riêng với @puai (mỗi người 1 hội thoại)
+  // Mở PU AI: thread đại diện (cùng thread hiện ở danh sách chính), chưa có thì tạo
   async openAi(userId: string): Promise<ConversationSummary> {
+    const res = await this.db.query(LATEST_AI_SQL, [userId])
+    return res.rows[0] ? this.get(userId, res.rows[0].id) : this.createAiThread(userId)
+  }
+
+  // "Chat mới" với PU AI: dùng lại thread chưa có tin (bấm nhiều lần không sinh rác)
+  async createAiThread(userId: string): Promise<ConversationSummary> {
     const botId = await this.llm.getBotId()
     const id = await this.db.transaction(async (client) => {
-      const conv = await this.upsertKeyed(client, 'ai', `ai:${userId}`, userId)
-      await client.query(
-        `INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'member')
-         ON CONFLICT DO NOTHING`,
-        [conv, userId, botId]
+      const empty = await client.query(
+        `SELECT id FROM conversations WHERE type = 'ai' AND created_by = $1 AND last_message_id IS NULL ORDER BY created_at DESC LIMIT 1`,
+        [userId]
       )
-      return conv
+      if (empty.rows[0]) return empty.rows[0].id as string
+      const conv = await client.query(`INSERT INTO conversations (type, created_by) VALUES ('ai', $1) RETURNING id`, [userId])
+      await client.query(`INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'member')`, [
+        conv.rows[0].id,
+        userId,
+        botId
+      ])
+      return conv.rows[0].id as string
     })
     return this.get(userId, id)
   }
@@ -395,11 +406,11 @@ export class ConversationsService {
     if (!res.rows[0]?.email_verified) throw new ForbiddenException('Xác thực email để bắt đầu nhắn tin')
   }
 
-  private async upsertKeyed(client: PoolClient, type: 'direct' | 'ai', key: string, createdBy: string): Promise<string> {
+  private async upsertDirect(client: PoolClient, key: string, createdBy: string): Promise<string> {
     const ins = await client.query(
-      `INSERT INTO conversations (type, direct_key, created_by) VALUES ($1, $2, $3)
+      `INSERT INTO conversations (type, direct_key, created_by) VALUES ('direct', $1, $2)
        ON CONFLICT (direct_key) DO NOTHING RETURNING id`,
-      [type, key, createdBy]
+      [key, createdBy]
     )
     if (ins.rows[0]) return ins.rows[0].id
     const found = await client.query(`SELECT id FROM conversations WHERE direct_key = $1`, [key])

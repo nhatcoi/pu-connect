@@ -24,16 +24,17 @@ export class ChatPushService {
   ) {}
 
   // Có tin mới (người hoặc PU AI) ⇒ 1 job trễ cho mỗi thành viên người thật khác, chưa tắt thông báo
+  // Người bị nhắc (@tên / @all) nhận cả khi đang tắt tiếng hội thoại
   // Gọi sau commit, không await ở luồng gửi tin (lỗi Redis không ảnh hưởng nhắn tin)
-  async onNewMessage(conversationId: string, senderId: string | null): Promise<void> {
+  async onNewMessage(conversationId: string, senderId: string | null, mentionedIds: string[] = []): Promise<void> {
     if (!this.push.isEnabled()) return
     try {
       const res = await this.db.query(
         `SELECT me.user_id FROM conversation_members me JOIN users u ON u.id = me.user_id
          WHERE me.conversation_id = $1 AND me.left_at IS NULL AND u.account_type = 'human'
            AND me.user_id IS DISTINCT FROM $2::uuid
-           AND (me.muted_until IS NULL OR me.muted_until < NOW())`,
-        [conversationId, senderId]
+           AND (me.muted_until IS NULL OR me.muted_until < NOW() OR me.user_id = ANY($3::uuid[]))`,
+        [conversationId, senderId, mentionedIds]
       )
       if (!res.rows.length) return
       const jobs = res.rows.map((r) => ({

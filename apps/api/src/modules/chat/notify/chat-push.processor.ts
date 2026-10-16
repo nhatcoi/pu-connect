@@ -14,6 +14,9 @@ const STATE_SQL = `
          (SELECT COUNT(*) FROM messages m
           WHERE m.conversation_id = c.id AND m.id > me.last_read_message_id AND m.deleted_at IS NULL
             AND m.kind <> 'system' AND m.status <> 'streaming' AND m.sender_id IS DISTINCT FROM me.user_id)::int AS unread,
+         EXISTS (SELECT 1 FROM message_mentions mm JOIN messages mmsg ON mmsg.id = mm.message_id
+                 WHERE mm.user_id = me.user_id AND mm.conversation_id = c.id AND mm.message_id > me.last_read_message_id
+                   AND mmsg.deleted_at IS NULL) AS mentioned,
          (SELECT json_build_object('content', m.content, 'files', COALESCE(jsonb_array_length(m.attachments), 0),
                                    'images', (SELECT COUNT(*) FROM jsonb_array_elements(COALESCE(m.attachments, '[]'::jsonb)) a WHERE a->>'kind' = 'image'),
                                    'sender', s.display_name)
@@ -57,7 +60,8 @@ export class ChatPushProcessor extends WorkerHost {
     const s = res.rows[0]
     if (!s) return 'skip:not-member'
     if (!s.unread || !s.last) return 'skip:read'
-    if (s.muted_until && new Date(s.muted_until).getTime() > Date.now()) return 'skip:muted'
+    // Tắt tiếng chỉ chặn tin thường; bị nhắc vẫn báo
+    if (!s.mentioned && s.muted_until && new Date(s.muted_until).getTime() > Date.now()) return 'skip:muted'
     if (!isPushEnabled(s.notification_settings, 'chat_message')) return 'skip:disabled'
     if (await this.realtime.isUserActive(recipientId)) return 'skip:active'
 
@@ -79,7 +83,7 @@ export class ChatPushProcessor extends WorkerHost {
     const result = await this.push.sendToUser(
       recipientId,
       {
-        title: s.unread > 1 ? `${name} · ${s.unread} tin mới` : name,
+        title: s.mentioned ? `${name} · có người nhắc đến bạn` : s.unread > 1 ? `${name} · ${s.unread} tin mới` : name,
         body: s.type === 'group' ? `${sender}: ${preview}` : preview,
         url: `/messages/${conversationId}`,
         tag: chatNotificationTag(conversationId), // tin sau thay thế thông báo trước của cùng hội thoại

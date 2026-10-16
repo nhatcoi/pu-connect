@@ -23,7 +23,11 @@ export const MIGRATIONS = [
   'user-blocks-upgrade.sql',
   'presence-upgrade.sql',
   'post-summary-upgrade.sql',
-  'personalization-upgrade.sql'
+  'personalization-upgrade.sql',
+  'post-title-cleanup.sql',
+  'preferences-upgrade.sql',
+  'comments-edit-upgrade.sql',
+  'chat-mention-ai-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

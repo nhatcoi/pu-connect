@@ -1,7 +1,7 @@
 // Username dành riêng cho bot/hệ thống/route — người dùng không được đăng ký
 // Reserved for bots, system accounts and top-level routes
 const RESERVED = new Set([
-  'puai', 'pu_ai', 'ai', 'bot', 'admin', 'administrator', 'root', 'system', 'support', 'help',
+  'puai', 'pu_ai', 'ai', 'bot', 'all', 'everyone', 'admin', 'administrator', 'root', 'system', 'support', 'help',
   'phenikaa', 'puconnector', 'moderator', 'mod', 'staff', 'official', 'null', 'undefined',
   'home', 'search', 'communities', 'messages', 'notifications', 'settings', 'api', 'graphql',
   'verify-email', 'get-started', 'post', 'p', 'c', 'u', 'login', 'logout', 'register', 'signup'

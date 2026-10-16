@@ -8,6 +8,9 @@ import type { AiRef, AiTrigger } from './ai.constants'
 const DEFAULT_MODEL = 'v9' // Model suy nghĩ qua gateway OpenAI-compatible; đổi bằng AI_MODEL
 export const MAX_OUTPUT_TOKENS = 8192 // Gồm cả token suy nghĩ (thinking counts toward cap)
 
+export const RESEARCH_TASK = 'research'
+export const RESEARCH_COST = 2 // truy xuất sâu + câu trả lời dài ⇒ tốn gấp đôi
+
 export type LlmMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam
 export type LlmUsage = { prompt_tokens: number; completion_tokens: number }
 
@@ -43,10 +46,10 @@ export class LlmService {
     return this.botId
   }
 
-  // Lượt đã dùng hôm nay (theo giờ Việt Nam), tính chung mọi nơi gọi PU AI
+  // Lượt đã dùng hôm nay (theo giờ Việt Nam), tính chung mọi nơi gọi PU AI; Research tính 2 lượt
   async quota(userId: string): Promise<AiQuota> {
     const res = await this.db.query(
-      `SELECT COUNT(*)::int AS used FROM ai_runs
+      `SELECT COALESCE(SUM(CASE WHEN task = '${RESEARCH_TASK}' THEN ${RESEARCH_COST} ELSE 1 END), 0)::int AS used FROM ai_runs
        WHERE requester_id = $1 AND status <> 'rejected'
          AND created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh'`,
       [userId]

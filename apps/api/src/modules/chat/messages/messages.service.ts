@@ -1,12 +1,28 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
-import type { ChatAttachment, ChatMessage, ChatReactionDetail, EditMessageInput, MessagesPage, SendMessageInput } from '@pu/schemas'
+import type { PoolClient } from 'pg'
+import type {
+  AiThread,
+  ChatAttachment,
+  ChatMessage,
+  ChatMessageMeta,
+  ChatReactionDetail,
+  EditMessageInput,
+  MessagesPage,
+  SendMessageInput
+} from '@pu/schemas'
 import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { MESSAGE_COLUMNS, MESSAGE_FROM, mapMessageRow } from '../chat.mapper'
+import { ChatMentionsService, mentionMeta } from '../mentions/chat-mentions.service'
 import { ChatPushService } from '../notify/chat-push.service'
+import { AiSkillsService } from '../puai/ai-skills.service'
+import { deriveThreadTitle, mapThread } from '../puai/ai-threads.service'
 import { PuaiService } from '../puai/puai.service'
+import { ChatRefsService } from '../refs/chat-refs.service'
 import { PUAI_MENTION } from '../../ai/ai.constants'
+
+type Membership = { type: string; role: string }
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000 // sửa tin trong 15 phút
 
@@ -21,7 +37,10 @@ export class MessagesService {
     private readonly core: ChatCoreService,
     private readonly puai: PuaiService,
     private readonly storage: StorageService,
-    private readonly chatPush: ChatPushService
+    private readonly chatPush: ChatPushService,
+    private readonly mentions: ChatMentionsService,
+    private readonly refs: ChatRefsService,
+    private readonly skills: AiSkillsService
   ) {}
 
   private get db() {
@@ -43,11 +62,11 @@ export class MessagesService {
     return { data: rows.map(mapMessageRow), nextCursor: res.rows.length > lim ? String(rows[rows.length - 1].id) : null }
   }
 
-  // ACID: lưu tin + cập nhật tin cuối của hội thoại + read cursor người gửi
+  // ACID: lưu tin + cập nhật tin cuối + read cursor người gửi + mention / ngữ cảnh / skill / tiêu đề thread AI
   async send(userId: string, conversationId: string, input: SendMessageInput): Promise<ChatMessage> {
     this.sendLimiter.consume(userId)
     const attachments = this.checkAttachments(userId, input.attachments)
-    const { message, type, created } = await this.db.transaction(async (client) => {
+    const { message, type, created, mentioned, thread } = await this.db.transaction(async (client) => {
       const member = await this.core.membership(client, userId, conversationId)
       if (!member) throw new ForbiddenException('Bạn không ở trong hội thoại này')
       if (member.type === 'direct') await this.core.assertDirectNotBlocked(client, userId, conversationId)
@@ -56,8 +75,7 @@ export class MessagesService {
         const reply = await client.query(`SELECT 1 FROM messages WHERE id = $1 AND conversation_id = $2`, [input.replyToId, conversationId])
         if (!reply.rows[0]) throw new BadRequestException('Tin nhắn được trả lời không tồn tại')
       }
-      // Chế độ học chỉ có nghĩa khi hỏi PU AI
-      const meta = input.aiMode && input.aiMode !== 'ask' && member.type !== 'direct' ? { aiMode: input.aiMode } : null
+      const meta = this.aiMeta(member.type, input)
 
       const ins = await client.query(
         `INSERT INTO messages (conversation_id, sender_id, client_msg_id, content, reply_to_id, attachments, meta)
@@ -71,46 +89,121 @@ export class MessagesService {
           input.content,
           input.replyToId || null,
           attachments ? JSON.stringify(attachments) : null,
-          meta ? JSON.stringify(meta) : null
+          Object.keys(meta).length ? JSON.stringify(meta) : null
         ]
       )
       // Gửi lại cùng clientMsgId ⇒ trả tin đã lưu, không tạo bản sao
       let messageId = ins.rows[0]?.id
-      const isNew = !!messageId
       if (!messageId) {
         const existing = await client.query(`SELECT id FROM messages WHERE sender_id = $1 AND client_msg_id = $2`, [userId, input.clientMsgId])
         messageId = existing.rows[0].id
-      } else {
-        await this.core.touchConversation(client, conversationId, messageId)
-        await client.query(
-          `UPDATE conversation_members SET last_read_message_id = GREATEST(last_read_message_id, $3)
-           WHERE conversation_id = $1 AND user_id = $2`,
-          [conversationId, userId, messageId]
-        )
+        return { message: await this.core.fetchMessage(client, messageId), type: member.type, created: false, mentioned: [], thread: null }
       }
-      return { message: await this.core.fetchMessage(client, messageId), type: member.type, created: isNew }
+
+      await this.core.touchConversation(client, conversationId, messageId)
+      await client.query(
+        `UPDATE conversation_members SET last_read_message_id = GREATEST(last_read_message_id, $3)
+         WHERE conversation_id = $1 AND user_id = $2`,
+        [conversationId, userId, messageId]
+      )
+      const mentioned = await this.attachEntities(client, userId, conversationId, String(messageId), member, input)
+      const thread = member.type === 'ai' ? await this.autoTitle(client, conversationId, input.content) : null
+      return { message: await this.core.fetchMessage(client, messageId), type: member.type, created: true, mentioned, thread }
     })
 
     if (created) {
       await this.core.broadcast(conversationId, 'message.new', message)
-      void this.chatPush.onNewMessage(conversationId, userId) // Web Push (trễ, gộp tin)
-      // PU AI trả lời nền: hội thoại AI, hoặc được @puai trong nhóm
-      if (type === 'ai') void this.puai.reply(conversationId, userId, message.id)
-      else if (type === 'group' && PUAI_MENTION.test(input.content)) void this.puai.reply(conversationId, userId, message.id)
+      if (thread) this.core.emitTo([userId], 'ai.thread.updated', thread)
+      void this.chatPush.onNewMessage(conversationId, userId, mentioned) // Web Push (trễ, gộp tin; bị nhắc ⇒ vượt tắt tiếng)
+      if (this.asksAi(type, input.content, message.meta)) void this.puai.reply(conversationId, userId, message.id)
     }
     return message
   }
 
-  // Sửa tin văn bản của mình trong 15 phút
-  async edit(userId: string, messageId: string, input: EditMessageInput): Promise<ChatMessage> {
-    const res = await this.db.query(
-      `UPDATE messages SET content = $3, edited_at = NOW()
-       WHERE id = $1 AND sender_id = $2 AND kind = 'text' AND deleted_at IS NULL AND created_at > NOW() - make_interval(secs => $4)
-       RETURNING conversation_id`,
-      [messageId, userId, input.content, EDIT_WINDOW_MS / 1000]
+  // Chế độ học / Research / connector chỉ có nghĩa khi hỏi PU AI (thread AI hoặc nhóm)
+  private aiMeta(type: string, input: SendMessageInput): ChatMessageMeta {
+    if (type === 'direct') return {}
+    const meta: ChatMessageMeta = {}
+    if (input.aiMode && input.aiMode !== 'ask') meta.aiMode = input.aiMode
+    if (input.research) meta.research = true
+    if (type === 'ai' && input.connectors?.length) meta.connectors = [...new Set(input.connectors)]
+    return meta
+  }
+
+  // Sau khi có id tin: mention (nhóm), ngữ cảnh, skill ⇒ gộp vào meta bằng 1 câu UPDATE; trả người nhận mention
+  private async attachEntities(
+    client: PoolClient,
+    userId: string,
+    conversationId: string,
+    messageId: string,
+    member: Membership,
+    input: SendMessageInput
+  ): Promise<string[]> {
+    const extra: ChatMessageMeta = {}
+    const refs = await this.refs.resolve(client, userId, input.refs, member.type === 'ai')
+    if (refs.length) extra.refs = refs
+    if (member.type !== 'direct') {
+      const skill = await this.skills.useForMessage(client, userId, input.skillId)
+      if (skill) extra.skill = skill
+    }
+    let recipients: string[] = []
+    if (member.type === 'group') {
+      const result = await this.mentions.sync(client, { conversationId, messageId, authorId: userId, isOwner: member.role === 'owner', content: input.content })
+      Object.assign(extra, mentionMeta(result))
+      recipients = result.recipientIds
+    }
+    if (Object.keys(extra).length) {
+      await client.query(`UPDATE messages SET meta = COALESCE(meta, '{}'::jsonb) || $2::jsonb WHERE id = $1`, [messageId, JSON.stringify(extra)])
+    }
+    return recipients
+  }
+
+  // Thread AI chưa có tiêu đề ⇒ lấy từ câu hỏi đầu (tin chỉ có tệp ⇒ để tin sau)
+  private async autoTitle(client: PoolClient, conversationId: string, content: string): Promise<AiThread | null> {
+    const title = deriveThreadTitle(content)
+    if (!title) return null
+    const res = await client.query(
+      `UPDATE conversations SET title = $2 WHERE id = $1 AND title IS NULL RETURNING id, title, last_message_at, created_at`,
+      [conversationId, title]
     )
-    if (!res.rows[0]) throw new BadRequestException('Chỉ sửa được tin của bạn trong 15 phút sau khi gửi')
-    return this.publishUpdate(res.rows[0].conversation_id, messageId)
+    return res.rows[0] ? mapThread(res.rows[0]) : null
+  }
+
+  // Thread AI luôn hỏi; nhóm: @puai, hoặc chọn chế độ / skill / Research qua "/" hay "+"
+  private asksAi(type: string, content: string, meta: ChatMessageMeta | null): boolean {
+    if (type === 'ai') return true
+    return type === 'group' && (PUAI_MENTION.test(content) || !!meta?.aiMode || !!meta?.skill || !!meta?.research)
+  }
+
+  // Sửa tin văn bản của mình trong 15 phút; nhóm ⇒ tính lại mention (bỏ @ thì hết badge, không push lại)
+  async edit(userId: string, messageId: string, input: EditMessageInput): Promise<ChatMessage> {
+    const conversationId = await this.db.transaction(async (client) => {
+      const res = await client.query(
+        `UPDATE messages SET content = $3, edited_at = NOW()
+         WHERE id = $1 AND sender_id = $2 AND kind = 'text' AND deleted_at IS NULL AND created_at > NOW() - make_interval(secs => $4)
+         RETURNING conversation_id`,
+        [messageId, userId, input.content, EDIT_WINDOW_MS / 1000]
+      )
+      if (!res.rows[0]) throw new BadRequestException('Chỉ sửa được tin của bạn trong 15 phút sau khi gửi')
+      const convId: string = res.rows[0].conversation_id
+      const member = await this.core.membership(client, userId, convId)
+      if (member?.type === 'group') {
+        const result = await this.mentions.sync(client, {
+          conversationId: convId,
+          messageId,
+          authorId: userId,
+          isOwner: member.role === 'owner',
+          content: input.content,
+          replace: true
+        })
+        await client.query(
+          `UPDATE messages SET meta = NULLIF((COALESCE(meta, '{}'::jsonb) - 'mentions' - 'mentionAll') || $2::jsonb, '{}'::jsonb) WHERE id = $1`,
+          [messageId, JSON.stringify(mentionMeta(result))]
+        )
+      }
+      return convId
+    })
+    return this.publishUpdate(conversationId, messageId)
   }
 
   // Thu hồi tin của chính mình (soft delete, bỏ ghim)

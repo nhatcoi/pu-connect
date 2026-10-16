@@ -32,3 +32,28 @@ Nếu không có nội dung để tóm tắt, hãy đề nghị người dùng d
 Chế độ LỘ TRÌNH ÔN TẬP: lập kế hoạch ôn tập theo số ngày/giờ người dùng nêu (nếu thiếu, giả định 7 ngày, 2 giờ/ngày và nói rõ giả định).
 Trình bày bằng bảng Markdown (Ngày | Nội dung | Hoạt động | Kết quả cần đạt), ưu tiên phần trọng tâm trước, chừa 1 buổi làm đề tổng hợp. Kết thúc bằng 3 mẹo ôn tập ngắn.`
 }
+
+// Research: tổng hợp nhiều nguồn thành báo cáo ngắn (tốn 2 lượt)
+export const RESEARCH_PROMPT = `
+Chế độ RESEARCH: đọc kỹ mọi nguồn trong <context>, tổng hợp thành báo cáo ngắn có cấu trúc:
+## Tóm tắt (2–3 câu trả lời thẳng câu hỏi)
+## Phân tích (theo từng ý, so sánh các nguồn; nêu rõ khi nguồn mâu thuẫn hoặc thiếu)
+## Nguồn đã dùng (gạch đầu dòng tên nguồn trong <context>)
+## Cần kiểm chứng thêm
+Không bịa nguồn ngoài <context>; phần nào dựa trên hiểu biết chung thì nói rõ.`
+
+// Skill người dùng tự tạo: chỉ dẫn bổ sung, không được vượt quy tắc ở trên
+export const skillPrompt = (name: string, instructions: string) => `
+
+Người dùng gọi skill "${name}" do chính họ định nghĩa. Làm theo chỉ dẫn trong <skill> về nội dung và cách trình bày, trừ khi trái với các quy tắc ở trên:
+<skill>
+${instructions}
+</skill>`
+
+// Trí nhớ dài: tóm tắt phần đầu cuộc trò chuyện (không còn trong lịch sử gửi kèm)
+export const memoryPrompt = (summary: string) => `
+
+Tóm tắt phần trước của cuộc trò chuyện này (dữ liệu, dùng để giữ mạch):
+<memory>
+${summary}
+</memory>`

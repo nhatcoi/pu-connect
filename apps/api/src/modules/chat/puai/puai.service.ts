@@ -1,22 +1,40 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import type { AiMode, ChatAttachment, ChatCitation, ChatMessage } from '@pu/schemas'
+import type { AiConnectorId, AiMode, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatRef } from '@pu/schemas'
 import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripPuaiMention } from '../../ai/ai.constants'
-import { AiRetrieval, contextBlock } from '../../ai/ai.retrieval'
-import { LlmService, MAX_OUTPUT_TOKENS, type LlmMessage as Msg, type LlmUsage } from '../../ai/llm.service'
+import { AiRetrieval, contextBlock, type Source } from '../../ai/ai.retrieval'
+import { LlmService, MAX_OUTPUT_TOKENS, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg, type LlmUsage } from '../../ai/llm.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
+import { ChatRefsService } from '../refs/chat-refs.service'
+import { AI_HISTORY_FLOOR, AiMemoryService } from './ai-memory.service'
+import { AiSkillsService } from './ai-skills.service'
 import { attachmentParts, isReadableDoc } from './puai.attachments'
 import { FOLLOWUP_PROMPT, FollowUpSplitter } from './puai.followups'
-import { GROUP_PROMPT, MODE_PROMPTS } from './puai.prompts'
+import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, memoryPrompt, skillPrompt } from './puai.prompts'
 
 const AI_HISTORY_LIMIT = 20
 const GROUP_HISTORY_LIMIT = 12
 
-type Trigger = { id: string; type: string; content: string; attachments: ChatAttachment[] | null; aiMode: AiMode; senderName: string }
+type Trigger = {
+  id: string
+  senderId: string // người hỏi (chủ skill)
+  type: string // loại hội thoại: ai | group
+  content: string
+  attachments: ChatAttachment[] | null
+  aiMode: AiMode
+  senderName: string
+  refs: ChatRef[]
+  skillId: string | null
+  research: boolean
+  connectors: AiConnectorId[] | undefined
+}
+
+// Chỉ post / document có trang để trích nguồn
+const citable = (s: Source) => s.type === 'post' || s.type === 'document'
 
 // PU AI: hội thoại riêng (type='ai') hoặc được @puai trong nhóm
-// Truy xuất nguồn (full-text) → gọi LLM OpenAI-compatible (streaming) → đẩy delta qua socket
+// Ngữ cảnh ghim + nguồn theo connector → gọi LLM OpenAI-compatible (streaming) → đẩy delta qua socket
 @Injectable()
 export class PuaiService {
   private readonly logger = new Logger(PuaiService.name)
@@ -25,7 +43,10 @@ export class PuaiService {
     private readonly core: ChatCoreService,
     private readonly llm: LlmService,
     private readonly retrieval: AiRetrieval,
-    private readonly chatPush: ChatPushService
+    private readonly chatPush: ChatPushService,
+    private readonly refs: ChatRefsService,
+    private readonly skills: AiSkillsService,
+    private readonly memory: AiMemoryService
   ) {}
 
   private get db() {
@@ -60,10 +81,16 @@ export class PuaiService {
     const inGroup = trigger.type === 'group'
     const replyTo = inGroup ? trigger.id : null
 
+    // Research tốn 2 lượt ⇒ còn 1 lượt thì báo rõ thay vì "hết lượt"
+    const cost = trigger.research ? RESEARCH_COST : 1
     const { used, limit } = await this.llm.quota(requesterId)
-    if (used >= limit) {
+    if (used + cost > limit) {
       await this.llm.logRejected(requesterId, inGroup ? 'mention' : 'dm')
-      await this.postFinal(conversationId, botId, `Bạn đã dùng hết ${limit} lượt hỏi PU AI hôm nay. Hẹn bạn ngày mai nhé!`, replyTo)
+      const text =
+        used < limit
+          ? `Research cần ${cost} lượt, bạn chỉ còn ${limit - used} lượt hôm nay. Tắt Research để hỏi thường nhé!`
+          : `Bạn đã dùng hết ${limit} lượt hỏi PU AI hôm nay. Hẹn bạn ngày mai nhé!`
+      await this.postFinal(conversationId, botId, text, replyTo)
       return
     }
 
@@ -82,7 +109,7 @@ export class PuaiService {
     const runId = await this.llm.startRun({
       requesterId,
       trigger: inGroup ? 'mention' : 'dm',
-      task: trigger.aiMode === 'ask' ? 'chat' : trigger.aiMode,
+      task: trigger.research ? RESEARCH_TASK : trigger.aiMode === 'ask' ? 'chat' : trigger.aiMode,
       source: { type: 'message', id: trigger.id },
       reply: { type: 'message', id: placeholder.id }
     })
@@ -95,7 +122,7 @@ export class PuaiService {
     }
 
     const question = stripPuaiMention(trigger.content)
-    const sources = await this.retrieval.retrieve(question, requesterId)
+    const sources = await this.gatherSources(trigger, question, requesterId)
     const messages = await this.buildMessages(conversationId, botId, trigger, question, sources)
 
     try {
@@ -128,9 +155,12 @@ export class PuaiService {
       if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
       if (finishReason === 'length') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
 
-      const citations: ChatCitation[] = sources.map((s) => ({ type: 'citation', ref: { type: s.type, id: s.id }, title: s.title }))
+      const citations: ChatCitation[] = sources
+        .filter(citable)
+        .map((s) => ({ type: 'citation', ref: { type: s.type as 'post' | 'document', id: s.id }, title: s.title }))
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', finishReason === 'length' || finishReason === 'content_filter' ? [] : followUps)
       await this.llm.finishRun(runId, { usage, startedAt: started })
+      if (!inGroup) this.memory.maybeSummarize(conversationId, botId)
     } catch (err) {
       const busy = this.llm.isBusyError(err)
       await this.finish(
@@ -147,28 +177,57 @@ export class PuaiService {
 
   private async loadTrigger(messageId: string): Promise<Trigger | null> {
     const res = await this.db.query(
-      `SELECT m.id, m.content, m.attachments, m.meta, c.type, u.display_name
+      `SELECT m.id, m.sender_id, m.content, m.attachments, m.meta, c.type, u.display_name
        FROM messages m JOIN conversations c ON c.id = m.conversation_id LEFT JOIN users u ON u.id = m.sender_id
        WHERE m.id = $1 AND m.deleted_at IS NULL`,
       [messageId]
     )
     const r = res.rows[0]
     if (!r) return null
+    const meta: ChatMessageMeta = r.meta || {}
     return {
       id: String(r.id),
+      senderId: r.sender_id,
       type: r.type,
       content: r.content || '',
       attachments: r.attachments,
-      aiMode: r.meta?.aiMode || 'ask',
-      senderName: r.display_name || 'Thành viên'
+      aiMode: meta.aiMode || 'ask',
+      senderName: r.display_name || 'Thành viên',
+      refs: meta.refs ?? [],
+      skillId: meta.skill?.id ?? null,
+      research: !!meta.research,
+      connectors: meta.connectors
     }
   }
 
-  // System prompt (+ chế độ học, + nhóm) → lịch sử → lượt hỏi hiện tại (nguồn + tệp đính kèm)
-  private async buildMessages(conversationId: string, botId: string, trigger: Trigger, question: string, sources: any[]): Promise<Msg[]> {
+  // Ngữ cảnh ghim (refs) trước, rồi nguồn truy xuất theo connector (bỏ trùng)
+  // Nhóm chat: chỉ Thư viện PU — không đưa tài liệu riêng của người hỏi cho cả nhóm
+  private async gatherSources(trigger: Trigger, question: string, requesterId: string): Promise<Source[]> {
+    const connectors: AiConnectorId[] | undefined = trigger.type === 'group' ? ['library'] : trigger.connectors
+    const [pinned, found] = await Promise.all([
+      this.refs.sources(requesterId, trigger.refs),
+      this.retrieval.retrieve(question, requesterId, { connectors, research: trigger.research })
+    ])
+    const seen = new Set(pinned.map((s) => `${s.type}:${s.id}`))
+    return [...pinned, ...found.filter((s) => !seen.has(`${s.type}:${s.id}`))]
+  }
+
+  // System prompt (+ nhóm, chế độ học, Research, skill, trí nhớ) → lịch sử → lượt hỏi hiện tại (nguồn + tệp đính kèm)
+  private async buildMessages(conversationId: string, botId: string, trigger: Trigger, question: string, sources: Source[]): Promise<Msg[]> {
     const inGroup = trigger.type === 'group'
-    const system = SYSTEM_PROMPT + (inGroup ? GROUP_PROMPT : '') + MODE_PROMPTS[trigger.aiMode] + (inGroup ? '' : FOLLOWUP_PROMPT)
-    const history = await this.loadHistory(conversationId, botId, trigger.id, inGroup)
+    const [history, skill, summary] = await Promise.all([
+      this.loadHistory(conversationId, botId, trigger.id, inGroup),
+      trigger.skillId ? this.skills.instructions(trigger.senderId, trigger.skillId) : null,
+      inGroup ? null : this.memory.summary(conversationId)
+    ])
+    const system =
+      SYSTEM_PROMPT +
+      (inGroup ? GROUP_PROMPT : '') +
+      MODE_PROMPTS[trigger.aiMode] +
+      (trigger.research ? RESEARCH_PROMPT : '') +
+      (skill ? skillPrompt(skill.name, skill.instructions) : '') +
+      (summary ? memoryPrompt(summary) : '') +
+      (inGroup ? '' : FOLLOWUP_PROMPT)
 
     const { parts, notes } = await attachmentParts(trigger.attachments)
     // Không gửi kèm tệp ⇒ dùng lại tài liệu gần nhất trong chủ đề (hỏi tiếp về cùng PDF/DOCX)
@@ -208,12 +267,13 @@ export class PuaiService {
   }
 
   // Lịch sử trước tin hiện tại ⇒ lượt user/assistant xen kẽ (gộp lượt liên tiếp cùng vai)
-  // AI riêng: từ mốc "Chủ đề mới" gần nhất; nhóm: vài tin gần nhất kèm tên người gửi
+  // AI riêng: sau mốc "Chủ đề mới" / phần đã tóm tắt; nhóm: vài tin gần nhất kèm tên người gửi
   private async loadHistory(conversationId: string, botId: string, beforeId: string, inGroup: boolean): Promise<Msg[]> {
     const res = await this.db.query(
-      `SELECT m.sender_id, m.content, m.attachments, u.display_name FROM messages m LEFT JOIN users u ON u.id = m.sender_id
+      `SELECT m.sender_id, m.content, m.attachments, u.display_name
+       FROM messages m JOIN conversations c ON c.id = m.conversation_id LEFT JOIN users u ON u.id = m.sender_id
        WHERE m.conversation_id = $1 AND m.id < $2 AND m.deleted_at IS NULL AND m.status = 'done' AND m.kind <> 'system'
-         AND m.id > COALESCE((SELECT MAX(id) FROM messages WHERE conversation_id = $1 AND kind = 'system' AND meta->>'event' = 'ai.reset'), 0)
+         AND m.id > ${AI_HISTORY_FLOOR}
        ORDER BY m.id DESC LIMIT $3`,
       [conversationId, beforeId, inGroup ? GROUP_HISTORY_LIMIT : AI_HISTORY_LIMIT]
     )

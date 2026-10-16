@@ -15,6 +15,7 @@ import {
   UpdateGroupBodySchema,
   type ListConversationsQuery
 } from '../dto/chat.dto'
+import { ChatMentionsService } from '../mentions/chat-mentions.service'
 import { ConversationsService } from './conversations.service'
 import { StudyGroupChatService } from './study-group-chat.service'
 
@@ -24,7 +25,8 @@ import { StudyGroupChatService } from './study-group-chat.service'
 export class ConversationsController {
   constructor(
     private readonly conversations: ConversationsService,
-    private readonly studyGroupChat: StudyGroupChatService
+    private readonly studyGroupChat: StudyGroupChatService,
+    private readonly mentions: ChatMentionsService
   ) {}
 
   // ?filter=all|unread|group&cursor=&limit= (keyset, mới nhất trước)
@@ -80,6 +82,12 @@ export class ConversationsController {
     @Req() req: Request
   ) {
     return this.conversations.updateSettings(requireUserId(req), id, body)
+  }
+
+  // Tin nhắc mình chưa đọc (nút "nhảy tới @"); ?after= mốc đã đọc lúc mở
+  @Get(':id/mentions')
+  unreadMentions(@Param('id', ParseUUIDPipe) id: string, @Query('after') after: string | undefined, @Req() req: Request) {
+    return this.mentions.unreadIds(requireUserId(req), id, after)
   }
 
   @Get(':id/members')

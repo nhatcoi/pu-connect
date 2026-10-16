@@ -71,6 +71,7 @@ export function mapSummaryRow(row: any): ConversationSummary {
     lastMessage: row.last_message ? mapMessageRow(row.last_message) : null,
     lastMessageAt: row.last_message_at ? new Date(row.last_message_at).toISOString() : null,
     unreadCount: row.unread_count,
+    unreadMentions: row.unread_mentions ?? 0,
     lastReadMessageId: String(row.last_read_message_id),
     readCursors: row.read_cursors || {},
     mutedUntil: muted ? new Date(row.muted_until).toISOString() : null,
@@ -100,6 +101,9 @@ export const SUMMARY_SELECT = `
          (SELECT COUNT(*) FROM messages um
           WHERE um.conversation_id = c.id AND um.id > me.last_read_message_id
             AND um.deleted_at IS NULL AND um.kind <> 'system' AND um.sender_id IS DISTINCT FROM me.user_id)::int AS unread_count,
+         (SELECT COUNT(*) FROM message_mentions mm JOIN messages mmsg ON mmsg.id = mm.message_id
+          WHERE mm.user_id = me.user_id AND mm.conversation_id = c.id AND mm.message_id > me.last_read_message_id
+            AND mmsg.deleted_at IS NULL)::int AS unread_mentions,
          COALESCE((SELECT json_agg(json_build_object('id', u.id, 'username', u.username, 'displayName', u.display_name,
                                                       'avatarUrl', u.avatar_url, 'isBot', u.account_type = 'bot'))
                    FROM (SELECT u.* FROM conversation_members o JOIN users u ON u.id = o.user_id

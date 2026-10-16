@@ -10,6 +10,15 @@ export const CHAT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
 export const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
 export type AiMode = (typeof AI_MODES)[number]
 
+// Ngữ cảnh gắn vào tin (chip trên ô soạn): server kiểm quyền rồi mới lưu meta.refs
+export const CHAT_MAX_REFS = 5
+export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
+export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
+
+// Nguồn PU AI được đọc (connector nội bộ); 'library' = mặc định
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups'] as const
+export type AiConnectorId = (typeof AI_CONNECTORS)[number]
+
 export const ChatAttachmentSchema = z.object({
   url: z.string().url(),
   key: z.string().min(1).max(500),
@@ -26,7 +35,11 @@ export const SendMessageSchema = z
     content: z.string().trim().max(4000, { message: 'Tin nhắn tối đa 4000 ký tự' }).default(''),
     replyToId: z.string().regex(/^\d+$/).optional(),
     attachments: z.array(ChatAttachmentSchema).max(CHAT_MAX_ATTACHMENTS).optional(),
-    aiMode: z.enum(AI_MODES).optional()
+    aiMode: z.enum(AI_MODES).optional(),
+    refs: z.array(z.object({ type: z.enum(CHAT_REF_TYPES), id: z.string().uuid() })).max(CHAT_MAX_REFS).optional(),
+    skillId: z.string().uuid().optional(),
+    research: z.boolean().optional(),
+    connectors: z.array(z.enum(AI_CONNECTORS)).max(AI_CONNECTORS.length).optional()
   })
   .refine((v) => v.content.length > 0 || (v.attachments?.length ?? 0) > 0, { message: 'Tin nhắn trống', path: ['content'] })
 export type SendMessageInput = z.infer<typeof SendMessageSchema>
@@ -107,8 +120,33 @@ export interface ChatReplyPreview {
 // Tin hệ thống (thêm/xóa thành viên, đổi tên nhóm, làm mới ngữ cảnh AI)
 export type ChatSystemEvent = 'group.created' | 'group.renamed' | 'member.added' | 'member.removed' | 'member.left' | 'group.avatar' | 'owner.transferred' | 'ai.reset'
 
+// Người được nhắc trong tin (client tô sáng @username khớp danh sách này)
+export interface ChatMentionedUser {
+  id: string
+  username: string
+}
+
+export interface ChatRef {
+  type: ChatRefType
+  id: string
+  title: string
+  code?: string // học phần: mã môn (dựng link /courses/[code])
+}
+
+export interface ChatSkillRef {
+  id: string
+  slug: string
+  name: string
+}
+
 export interface ChatMessageMeta {
   aiMode?: AiMode
+  mentions?: ChatMentionedUser[]
+  mentionAll?: boolean
+  refs?: ChatRef[]
+  skill?: ChatSkillRef
+  research?: boolean
+  connectors?: AiConnectorId[]
   event?: ChatSystemEvent
   actorName?: string
   targetNames?: string[]
@@ -147,6 +185,7 @@ export interface ConversationSummary {
   lastMessage: ChatMessage | null
   lastMessageAt: string | null
   unreadCount: number
+  unreadMentions: number // tin nhắc mình (hoặc @all) chưa đọc ⇒ badge "@"
   lastReadMessageId: string
   // Con trỏ đã đọc của người khác (hiện "Đã xem")
   readCursors: Record<string, string>
@@ -167,6 +206,64 @@ export interface ConversationsPage {
 export interface MessagesPage {
   data: ChatMessage[] // mới nhất trước
   nextCursor: string | null
+}
+
+// ── PU AI: nhiều hội thoại (thread), skill, connector, gợi ý ngữ cảnh ─────────
+
+export interface AiThread {
+  id: string
+  title: string | null
+  lastMessageAt: string | null
+  createdAt: string
+}
+export interface AiThreadsPage {
+  data: AiThread[]
+  nextCursor: string | null
+}
+
+export const AiThreadUpdateSchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
+export type AiThreadUpdateInput = z.infer<typeof AiThreadUpdateSchema>
+
+export const AI_SKILL_LIMIT = 30
+export const AiSkillInputSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9][a-z0-9-]{1,39}$/, { message: 'Lệnh 2–40 ký tự: chữ thường không dấu, số, dấu gạch ngang' }),
+  name: z.string().trim().min(1, { message: 'Nhập tên skill' }).max(60),
+  description: z.string().trim().max(200).default(''),
+  instructions: z.string().trim().min(10, { message: 'Chỉ dẫn tối thiểu 10 ký tự' }).max(4000, { message: 'Chỉ dẫn tối đa 4000 ký tự' }),
+  inputHint: z.string().trim().max(150).nullable().optional()
+})
+export type AiSkillInput = z.infer<typeof AiSkillInputSchema>
+
+// Danh sách nhẹ (không có instructions) — dùng cho menu "/"
+export interface AiSkill {
+  id: string
+  slug: string
+  name: string
+  description: string
+  inputHint: string | null
+  useCount: number
+}
+export interface AiSkillDetail extends AiSkill {
+  instructions: string
+}
+
+export interface AiConnectorInfo {
+  id: AiConnectorId | 'google_drive'
+  name: string
+  description: string
+  available: boolean // false = sắp có
+}
+
+export interface ChatRefSuggestion {
+  type: ChatRefType
+  id: string
+  title: string
+  subtitle: string | null
+  code?: string
 }
 
 export interface AiQuota {
