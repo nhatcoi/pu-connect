@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import type { ConnectorSource } from './google-drive.service'
+import type { ConnectorSource } from './connector-source'
 import { GoogleOAuthService } from './google-oauth.service'
 
 const EVENTS_API = 'https://www.googleapis.com/calendar/v3/calendars/primary/events'

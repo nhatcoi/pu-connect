@@ -34,10 +34,11 @@ export class FollowUpSplitter {
   }
 
   // Kết thúc luồng: phần còn giữ (không phải dấu mốc) + danh sách câu gợi ý
-  finish(): { rest: string; text: string; followUps: string[] } {
+  finish(): { rest: string; text: string; followUps: string[]; memories: string[] } {
     const rest = this.tail === null ? this.held : ''
     this.visible += rest
-    return { rest, text: this.visible, followUps: this.tail ? parseFollowUps(this.tail) : [] }
+    const tail = this.tail ?? ''
+    return { rest, text: this.visible, followUps: parseFollowUps(tail), memories: parseMemories(tail) }
   }
 
   private emit(text: string): string {
@@ -54,9 +55,22 @@ function partialMarkerSuffix(buf: string): number {
   return 0
 }
 
+// Dòng bộ nhớ sau dấu mốc: "[nhớ] <dữ kiện>"
+const MEMORY_LINE = /^\s*\[nhớ\]\s*/i
+
+export function parseMemories(raw: string): string[] {
+  return raw
+    .split('\n')
+    .filter((line) => MEMORY_LINE.test(line))
+    .map((line) => line.replace(MEMORY_LINE, '').trim())
+    .filter((line) => line.length >= 3)
+    .slice(0, 2)
+}
+
 export function parseFollowUps(raw: string): string[] {
   return raw
     .split('\n')
+    .filter((line) => !MEMORY_LINE.test(line))
     .map((line) =>
       line
         .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
@@ -67,3 +81,7 @@ export function parseFollowUps(raw: string): string[] {
     .filter((line) => line.length >= 4 && line.length <= MAX_FOLLOWUP_LENGTH)
     .slice(0, MAX_FOLLOWUPS)
 }
+
+// Bộ nhớ dài hạn (chỉ hội thoại riêng, khi người dùng bật): ghi trong cùng lượt, sau dấu mốc
+export const MEMORY_PROMPT = `
+Nếu trong lượt này người học vừa cho biết dữ kiện BỀN về bản thân (ngành, khóa, môn đang học, lịch thi, mục tiêu, cách học ưa thích) mà phần <user_profile> chưa có, viết thêm tối đa 2 dòng dạng "[nhớ] <dữ kiện ngắn gọn, ngôi thứ ba>" ngay sau dòng ${FOLLOWUP_MARKER}, trước các câu hỏi gợi ý. Không ghi thông tin nhạy cảm (sức khỏe, tài chính, mật khẩu, số giấy tờ) hay chi tiết chỉ đúng trong câu hỏi này.`

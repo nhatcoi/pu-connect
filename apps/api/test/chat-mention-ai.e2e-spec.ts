@@ -174,7 +174,7 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
     const list = (await agent.get('/api/ai/connectors').expect(200)).body.data
-    expect(list.map((c: { id: string }) => c.id)).toEqual(['library', 'my_documents', 'my_groups', 'google_drive', 'google_calendar'])
+    expect(list.map((c: { id: string }) => c.id)).toEqual(['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar'])
     expect(list.find((c: { id: string }) => c.id === 'google_drive')).toMatchObject({ requiresAuth: true, connected: false })
     await agent.delete('/api/ai/connectors/google-drive').expect(200)
     await agent.delete('/api/ai/connectors/dropbox').expect(400)

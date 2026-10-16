@@ -5,6 +5,7 @@ import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import { AiSkillBodySchema, SkillLibraryQuerySchema } from '../dto/chat.dto'
+import { AiSkillStateBodySchema } from '../dto/puai.dto'
 import { AiSkillsService } from './ai-skills.service'
 
 // Skill tự tạo cho PU AI (slash command)
@@ -33,6 +34,16 @@ export class AiSkillsController {
   @Post(':id/install')
   install(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     return this.skills.install(requireUserId(req), id)
+  }
+
+  // Bật/tắt, ghim
+  @Patch(':id/state')
+  setState(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new ZodValidationPipe(AiSkillStateBodySchema)) body: { enabled?: boolean; pinned?: boolean },
+    @Req() req: Request
+  ) {
+    return this.skills.setState(requireUserId(req), id, body)
   }
 
   @Get(':id')

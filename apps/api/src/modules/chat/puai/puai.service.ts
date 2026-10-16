@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import type { AiConnectorId, AiMode, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatRef } from '@pu/schemas'
+import type { AiConnectorId, AiMode, AiSettings, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatRef } from '@pu/schemas'
 import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripPuaiMention } from '../../ai/ai.constants'
 import { AiRetrieval, contextBlock, type Source } from '../../ai/ai.retrieval'
@@ -7,11 +7,13 @@ import { LlmService, MAX_OUTPUT_TOKENS, RESEARCH_COST, RESEARCH_TASK, type LlmMe
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
-import { AI_HISTORY_FLOOR, AiMemoryService } from './ai-memory.service'
+import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
+import { AiMemoriesService } from './ai-memories.service'
+import { AiSettingsService } from './ai-settings.service'
 import { AiSkillsService } from './ai-skills.service'
 import { attachmentParts, isReadableDoc } from './puai.attachments'
-import { FOLLOWUP_PROMPT, FollowUpSplitter } from './puai.followups'
-import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, memoryPrompt, skillPrompt } from './puai.prompts'
+import { FOLLOWUP_PROMPT, FollowUpSplitter, MEMORY_PROMPT } from './puai.followups'
+import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, profilePrompt, skillPrompt, summaryPrompt } from './puai.prompts'
 
 const AI_HISTORY_LIMIT = 20
 const GROUP_HISTORY_LIMIT = 12
@@ -30,6 +32,8 @@ type Trigger = {
   connectors: AiConnectorId[] | undefined
 }
 
+export type ReplyOutcome = 'done' | 'skipped' | 'error' // skipped = hết lượt hôm nay
+
 // Chỉ post / document có trang để trích nguồn
 const citable = (s: Source) => s.type === 'post' || s.type === 'document'
 
@@ -46,7 +50,9 @@ export class PuaiService {
     private readonly chatPush: ChatPushService,
     private readonly refs: ChatRefsService,
     private readonly skills: AiSkillsService,
-    private readonly memory: AiMemoryService
+    private readonly summaries: AiSummaryService,
+    private readonly settings: AiSettingsService,
+    private readonly memories: AiMemoriesService
   ) {}
 
   private get db() {
@@ -64,21 +70,24 @@ export class PuaiService {
     return message
   }
 
-  // Trả lời tin vừa gửi (chạy nền, không ném lỗi ra ngoài)
-  async reply(conversationId: string, requesterId: string, triggerId: string): Promise<void> {
+  // Trả lời tin vừa gửi (không ném lỗi ra ngoài); kết quả dùng cho tác vụ tự động (đếm lỗi, bỏ qua khi hết lượt)
+  async reply(conversationId: string, requesterId: string, triggerId: string): Promise<ReplyOutcome> {
     try {
-      await this.runReply(conversationId, requesterId, triggerId)
+      return await this.runReply(conversationId, requesterId, triggerId)
     } catch (err: any) {
       this.logger.error(`PU AI lỗi (conv ${conversationId}): ${err?.message}`)
+      return 'error'
     }
   }
 
-  private async runReply(conversationId: string, requesterId: string, triggerId: string) {
+  private async runReply(conversationId: string, requesterId: string, triggerId: string): Promise<ReplyOutcome> {
     const botId = await this.llm.getBotId()
     const started = Date.now()
     const trigger = await this.loadTrigger(triggerId)
-    if (!trigger) return
+    if (!trigger) return 'error'
     const inGroup = trigger.type === 'group'
+    // Nhóm chat: không dùng cài đặt / dữ liệu riêng của người hỏi
+    const settings = inGroup ? null : await this.settings.get(trigger.senderId)
     const replyTo = inGroup ? trigger.id : null
 
     // Research tốn 2 lượt ⇒ còn 1 lượt thì báo rõ thay vì "hết lượt"
@@ -91,7 +100,7 @@ export class PuaiService {
           ? `Research cần ${cost} lượt, bạn chỉ còn ${limit - used} lượt hôm nay. Tắt Research để hỏi thường nhé!`
           : `Bạn đã dùng hết ${limit} lượt hỏi PU AI hôm nay. Hẹn bạn ngày mai nhé!`
       await this.postFinal(conversationId, botId, text, replyTo)
-      return
+      return 'skipped'
     }
 
     // Tin trả lời tạm (status=streaming) để client hiện ngay và nối delta vào
@@ -118,12 +127,12 @@ export class PuaiService {
     if (!client) {
       await this.finish(placeholder.id, conversationId, 'Máy chủ bận', null, 'error')
       await this.llm.failRun(runId, 'disabled', started)
-      return
+      return 'error'
     }
 
     const question = stripPuaiMention(trigger.content)
-    const sources = await this.gatherSources(trigger, question, requesterId)
-    const messages = await this.buildMessages(conversationId, botId, trigger, question, sources)
+    const sources = await this.gatherSources(trigger, question, requesterId, settings)
+    const messages = await this.buildMessages(conversationId, botId, trigger, question, sources, settings)
 
     try {
       const stream = await client.chat.completions.create({
@@ -149,25 +158,25 @@ export class PuaiService {
         if (chunk.usage) usage = chunk.usage
       }
 
-      const { rest, text: answer, followUps } = splitter.finish()
+      const { rest, text: answer, followUps, memories } = splitter.finish()
       if (rest) emit(rest)
       let text = answer.trim()
       if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
       if (finishReason === 'length') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
 
+      // Bộ nhớ dài hạn: lưu dữ kiện PU AI vừa rút ra (chỉ khi người dùng bật)
+      const remembered =
+        settings?.memoryEnabled && memories.length ? await this.memories.saveFromReply(trigger.senderId, placeholder.id, memories).catch(() => []) : []
       const citations: ChatCitation[] = sources
         .filter(citable)
         .map((s) => ({ type: 'citation', ref: { type: s.type as 'post' | 'document', id: s.id }, title: s.title }))
-      await this.finish(
-        placeholder.id,
-        conversationId,
-        text,
-        citations.length ? citations : null,
-        'done',
-        finishReason === 'length' || finishReason === 'content_filter' ? [] : followUps
-      )
+      await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', {
+        ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
+        ...(remembered.length ? { memoryUpdated: remembered } : {})
+      })
       await this.llm.finishRun(runId, { usage, startedAt: started })
-      if (!inGroup) this.memory.maybeSummarize(conversationId, botId)
+      if (!inGroup) this.summaries.maybeSummarize(conversationId, botId)
+      return 'done'
     } catch (err) {
       const busy = this.llm.isBusyError(err)
       await this.finish(
@@ -209,8 +218,8 @@ export class PuaiService {
 
   // Ngữ cảnh ghim (refs) trước, rồi nguồn truy xuất theo connector (bỏ trùng)
   // Nhóm chat: chỉ Thư viện PU — không đưa tài liệu riêng của người hỏi cho cả nhóm
-  private async gatherSources(trigger: Trigger, question: string, requesterId: string): Promise<Source[]> {
-    const connectors: AiConnectorId[] | undefined = trigger.type === 'group' ? ['library'] : trigger.connectors
+  private async gatherSources(trigger: Trigger, question: string, requesterId: string, settings: AiSettings | null): Promise<Source[]> {
+    const connectors: AiConnectorId[] = settings ? (trigger.connectors ?? settings.defaultConnectors) : ['library']
     const [pinned, found] = await Promise.all([
       this.refs.sources(requesterId, trigger.refs),
       this.retrieval.retrieve(question, requesterId, { connectors, research: trigger.research })
@@ -220,12 +229,21 @@ export class PuaiService {
   }
 
   // System prompt (+ nhóm, chế độ học, Research, skill, trí nhớ) → lịch sử → lượt hỏi hiện tại (nguồn + tệp đính kèm)
-  private async buildMessages(conversationId: string, botId: string, trigger: Trigger, question: string, sources: Source[]): Promise<Msg[]> {
+  private async buildMessages(
+    conversationId: string,
+    botId: string,
+    trigger: Trigger,
+    question: string,
+    sources: Source[],
+    settings: AiSettings | null
+  ): Promise<Msg[]> {
     const inGroup = trigger.type === 'group'
-    const [history, skill, summary] = await Promise.all([
+    const memoryOn = !!settings?.memoryEnabled
+    const [history, skill, summary, profile] = await Promise.all([
       this.loadHistory(conversationId, botId, trigger.id, inGroup),
       trigger.skillId ? this.skills.instructions(trigger.senderId, trigger.skillId) : null,
-      inGroup ? null : this.memory.summary(conversationId)
+      inGroup ? null : this.summaries.summary(conversationId),
+      memoryOn ? this.memories.recall(trigger.senderId, question) : []
     ])
     const system =
       SYSTEM_PROMPT +
@@ -233,8 +251,9 @@ export class PuaiService {
       MODE_PROMPTS[trigger.aiMode] +
       (trigger.research ? RESEARCH_PROMPT : '') +
       (skill ? skillPrompt(skill.name, skill.instructions) : '') +
-      (summary ? memoryPrompt(summary) : '') +
-      (inGroup ? '' : FOLLOWUP_PROMPT)
+      (summary ? summaryPrompt(summary) : '') +
+      (profile.length ? profilePrompt(profile) : '') +
+      (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : ''))
 
     const { parts, notes } = await attachmentParts(trigger.attachments)
     // Không gửi kèm tệp ⇒ dùng lại tài liệu gần nhất trong chủ đề (hỏi tiếp về cùng PDF/DOCX)
@@ -318,14 +337,14 @@ export class PuaiService {
     text: string,
     blocks: ChatCitation[] | null,
     status: 'done' | 'error',
-    followUps: string[] = []
+    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated'> = {}
   ) {
-    // Gợi ý tiếp theo gộp vào meta (giữ aiMode sẵn có)
+    // Gợi ý tiếp theo / bộ nhớ vừa cập nhật gộp vào meta (giữ aiMode sẵn có)
     await this.db.query(
       `UPDATE messages SET content = $2, blocks = $3, status = $4,
          meta = CASE WHEN $5::jsonb IS NULL THEN meta ELSE COALESCE(meta, '{}'::jsonb) || $5::jsonb END
        WHERE id = $1`,
-      [messageId, text, blocks ? JSON.stringify(blocks) : null, status, followUps.length ? JSON.stringify({ followUps }) : null]
+      [messageId, text, blocks ? JSON.stringify(blocks) : null, status, Object.keys(extraMeta).length ? JSON.stringify(extraMeta) : null]
     )
     const message = await this.core.fetchMessage(this.db, messageId)
     await this.core.broadcast(conversationId, 'message.updated', message)

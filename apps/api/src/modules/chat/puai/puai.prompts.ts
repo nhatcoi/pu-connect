@@ -50,10 +50,18 @@ Người dùng gọi skill "${name}" do chính họ định nghĩa. Làm theo ch
 ${instructions}
 </skill>`
 
-// Trí nhớ dài: tóm tắt phần đầu cuộc trò chuyện (không còn trong lịch sử gửi kèm)
-export const memoryPrompt = (summary: string) => `
+// Tóm tắt phần đầu cuộc trò chuyện (không còn trong lịch sử gửi kèm)
+export const summaryPrompt = (summary: string) => `
 
 Tóm tắt phần trước của cuộc trò chuyện này (dữ liệu, dùng để giữ mạch):
 <memory>
 ${summary}
 </memory>`
+
+// Bộ nhớ dài hạn về người học (dữ liệu, không phải chỉ dẫn)
+export const profilePrompt = (facts: string[]) => `
+
+Những điều đã biết về người học (dùng để cá nhân hóa, không cần nhắc lại):
+<user_profile>
+${facts.map((f) => `- ${f}`).join('\n')}
+</user_profile>`

@@ -16,7 +16,7 @@ export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
 
 // Nguồn PU AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive', 'google_calendar'] as const
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar'] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
 export const ChatAttachmentSchema = z.object({
@@ -156,6 +156,9 @@ export interface ChatMessageMeta {
   skill?: ChatSkillRef
   research?: boolean
   connectors?: AiConnectorId[]
+  memoryUpdated?: string[] // PU AI vừa ghi nhớ (nhãn "Đã cập nhật bộ nhớ")
+  feedback?: 1 | -1 // đánh giá của chủ thread AI
+  task?: { id: string; title: string } // tin do tác vụ tự động gửi
   event?: ChatSystemEvent
   actorName?: string
   targetNames?: string[]
@@ -234,6 +237,9 @@ export const AiThreadUpdateSchema = z.object({ title: z.string().trim().min(1, {
 export type AiThreadUpdateInput = z.infer<typeof AiThreadUpdateSchema>
 
 export const AI_SKILL_LIMIT = 30
+export const AiSkillStateSchema = z.object({ enabled: z.boolean().optional(), pinned: z.boolean().optional() })
+export type AiSkillStateInput = z.infer<typeof AiSkillStateSchema>
+
 export const AiSkillInputSchema = z.object({
   slug: z
     .string()
@@ -258,6 +264,8 @@ export interface AiSkill {
   useCount: number
   isPublic: boolean
   installCount: number
+  enabled: boolean // tắt ⇒ ẩn khỏi menu "/"
+  pinned: boolean // ghim lên đầu menu "/"
 }
 export interface AiSkillDetail extends AiSkill {
   instructions: string
@@ -282,6 +290,8 @@ export interface AiConnectorInfo {
   requiresAuth: boolean // cần kết nối tài khoản ngoài
   connected: boolean
   account: string | null // email tài khoản đã kết nối
+  lastUsedAt: string | null
+  lastError: string | null
 }
 
 export interface ChatRefSuggestion {

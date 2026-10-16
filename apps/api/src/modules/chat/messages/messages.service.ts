@@ -9,7 +9,7 @@ import { ChatMentionsService, mentionMeta } from '../mentions/chat-mentions.serv
 import { ChatPushService } from '../notify/chat-push.service'
 import { AiSkillsService } from '../puai/ai-skills.service'
 import { deriveThreadTitle, mapThread } from '../puai/ai-threads.service'
-import { PuaiService } from '../puai/puai.service'
+import { PuaiService, type ReplyOutcome } from '../puai/puai.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
 import { PUAI_MENTION } from '../../ai/ai.constants'
 
@@ -53,9 +53,27 @@ export class MessagesService {
     return { data: rows.map(mapMessageRow), nextCursor: res.rows.length > lim ? String(rows[rows.length - 1].id) : null }
   }
 
-  // ACID: lưu tin + cập nhật tin cuối + read cursor người gửi + mention / ngữ cảnh / skill / tiêu đề thread AI
+  // Gửi tin của người dùng (giới hạn tốc độ) rồi để PU AI trả lời nền khi được hỏi
   async send(userId: string, conversationId: string, input: SendMessageInput): Promise<ChatMessage> {
     this.sendLimiter.consume(userId)
+    const { message, asksAi } = await this.persist(userId, conversationId, input)
+    if (asksAi) void this.puai.reply(conversationId, userId, message.id)
+    return message
+  }
+
+  // Tác vụ tự động: đăng câu hỏi thay người dùng (gắn meta.task) rồi chờ PU AI trả lời xong
+  async sendAsTask(userId: string, conversationId: string, input: SendMessageInput, task: { id: string; title: string }): Promise<ReplyOutcome> {
+    const { message } = await this.persist(userId, conversationId, input, { task })
+    return this.puai.reply(conversationId, userId, message.id)
+  }
+
+  // ACID: lưu tin + cập nhật tin cuối + read cursor người gửi + mention / ngữ cảnh / skill / tiêu đề thread AI; phát sự kiện sau commit
+  private async persist(
+    userId: string,
+    conversationId: string,
+    input: SendMessageInput,
+    extraMeta: ChatMessageMeta = {}
+  ): Promise<{ message: ChatMessage; asksAi: boolean }> {
     const attachments = this.checkAttachments(userId, input.attachments)
     const { message, type, created, mentioned, thread } = await this.db.transaction(async (client) => {
       const member = await this.core.membership(client, userId, conversationId)
@@ -66,7 +84,7 @@ export class MessagesService {
         const reply = await client.query(`SELECT 1 FROM messages WHERE id = $1 AND conversation_id = $2`, [input.replyToId, conversationId])
         if (!reply.rows[0]) throw new BadRequestException('Tin nhắn được trả lời không tồn tại')
       }
-      const meta = this.aiMeta(member.type, input)
+      const meta = { ...this.aiMeta(member.type, input), ...extraMeta }
 
       const ins = await client.query(
         `INSERT INTO messages (conversation_id, sender_id, client_msg_id, content, reply_to_id, attachments, meta)
@@ -102,13 +120,11 @@ export class MessagesService {
       return { message: await this.core.fetchMessage(client, messageId), type: member.type, created: true, mentioned, thread }
     })
 
-    if (created) {
-      await this.core.broadcast(conversationId, 'message.new', message)
-      if (thread) this.core.emitTo([userId], 'ai.thread.updated', thread)
-      void this.chatPush.onNewMessage(conversationId, userId, mentioned) // Web Push (trễ, gộp tin; bị nhắc ⇒ vượt tắt tiếng)
-      if (this.asksAi(type, input.content, message.meta)) void this.puai.reply(conversationId, userId, message.id)
-    }
-    return message
+    if (!created) return { message, asksAi: false }
+    await this.core.broadcast(conversationId, 'message.new', message)
+    if (thread) this.core.emitTo([userId], 'ai.thread.updated', thread)
+    void this.chatPush.onNewMessage(conversationId, userId, mentioned) // Web Push (trễ, gộp tin; bị nhắc ⇒ vượt tắt tiếng)
+    return { message, asksAi: this.asksAi(type, input.content, message.meta) }
   }
 
   // Chế độ học / Research / connector chỉ có nghĩa khi hỏi PU AI (thread AI hoặc nhóm)

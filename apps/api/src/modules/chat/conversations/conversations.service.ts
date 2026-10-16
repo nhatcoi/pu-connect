@@ -121,22 +121,30 @@ export class ConversationsService {
 
   // "Chat mới" với PU AI: dùng lại thread chưa có tin (bấm nhiều lần không sinh rác)
   async createAiThread(userId: string): Promise<ConversationSummary> {
-    const botId = await this.llm.getBotId()
     const id = await this.db.transaction(async (client) => {
       const empty = await client.query(
-        `SELECT id FROM conversations WHERE type = 'ai' AND created_by = $1 AND last_message_id IS NULL ORDER BY created_at DESC LIMIT 1`,
+        `SELECT id FROM conversations WHERE type = 'ai' AND created_by = $1 AND last_message_id IS NULL AND title IS NULL ORDER BY created_at DESC LIMIT 1`,
         [userId]
       )
-      if (empty.rows[0]) return empty.rows[0].id as string
-      const conv = await client.query(`INSERT INTO conversations (type, created_by) VALUES ('ai', $1) RETURNING id`, [userId])
-      await client.query(`INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'member')`, [
-        conv.rows[0].id,
-        userId,
-        botId
-      ])
-      return conv.rows[0].id as string
+      return (empty.rows[0]?.id as string | undefined) ?? this.insertAiConversation(client, userId, null)
     })
     return this.get(userId, id)
+  }
+
+  // Thread PU AI riêng cho 1 tác vụ tự động (có tiêu đề sẵn)
+  async createTaskThread(userId: string, title: string): Promise<string> {
+    return this.db.transaction((client) => this.insertAiConversation(client, userId, title))
+  }
+
+  private async insertAiConversation(client: PoolClient, userId: string, title: string | null): Promise<string> {
+    const botId = await this.llm.getBotId()
+    const conv = await client.query(`INSERT INTO conversations (type, created_by, title) VALUES ('ai', $1, $2) RETURNING id`, [userId, title])
+    await client.query(`INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'member')`, [
+      conv.rows[0].id,
+      userId,
+      botId
+    ])
+    return conv.rows[0].id as string
   }
 
   async createGroup(userId: string, input: CreateGroupChatInput): Promise<ConversationSummary> {

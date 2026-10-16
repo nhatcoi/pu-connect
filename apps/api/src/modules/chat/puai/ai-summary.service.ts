@@ -19,11 +19,11 @@ Gộp BẢN TÓM TẮT CŨ (nếu có) với ĐOẠN HỘI THOẠI MỚI thành 
 - Câu hỏi còn bỏ ngỏ, điều người học chưa hiểu
 Chỉ ghi dữ kiện; không thêm lời dẫn.`
 
-// Trí nhớ dài cho hội thoại PU AI riêng: tóm tắt cuộn (conversations.ai_summary), chạy nền sau mỗi câu trả lời
+// Tóm tắt cuộn (trí nhớ trong 1 thread) cho hội thoại PU AI riêng (conversations.ai_summary), chạy nền sau mỗi câu trả lời
 // Không tính quota người dùng (tác vụ nội bộ); mỗi hội thoại chỉ 1 lượt tóm tắt cùng lúc
 @Injectable()
-export class AiMemoryService {
-  private readonly logger = new Logger(AiMemoryService.name)
+export class AiSummaryService {
+  private readonly logger = new Logger(AiSummaryService.name)
   private readonly running = new Set<string>()
 
   constructor(

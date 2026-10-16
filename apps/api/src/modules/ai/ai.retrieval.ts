@@ -3,8 +3,9 @@ import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { GoogleCalendarService } from './connectors/google-calendar.service'
 import { GoogleDriveService } from './connectors/google-drive.service'
+import { WebReaderService } from './connectors/web-reader.service'
 
-export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive' | 'calendar'; id: string; title: string; body: string }
+export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive' | 'calendar' | 'web'; id: string; title: string; body: string }
 
 export interface RetrieveOptions {
   connectors?: AiConnectorId[] // mặc định: ['library']
@@ -34,7 +35,8 @@ export class AiRetrieval {
   constructor(
     private readonly db: DatabaseService,
     private readonly drive: GoogleDriveService,
-    private readonly calendar: GoogleCalendarService
+    private readonly calendar: GoogleCalendarService,
+    private readonly web: WebReaderService
   ) {}
 
   async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Source[]> {
@@ -45,8 +47,10 @@ export class AiRetrieval {
     if (connectors.has('library') && tsquery) tasks.push(this.safe('library', () => this.library(tsquery, requesterId, research)))
     if (connectors.has('my_documents') && tsquery) tasks.push(this.safe('my_documents', () => this.myDocuments(tsquery, requesterId, research)))
     if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
-    if (connectors.has('google_drive')) tasks.push(this.safe('google_drive', () => this.googleDrive(question, requesterId, research)))
-    if (connectors.has('google_calendar')) tasks.push(this.safe('google_calendar', () => this.googleCalendar(requesterId, research)))
+    if (connectors.has('web')) tasks.push(this.safe('web', () => this.webPages(question, research)))
+    if (connectors.has('web_search')) tasks.push(this.safe('web_search', () => this.webSearch(question, research)))
+    if (connectors.has('google_drive')) tasks.push(this.tracked('google_drive', requesterId, () => this.googleDrive(question, requesterId, research)))
+    if (connectors.has('google_calendar')) tasks.push(this.tracked('google_calendar', requesterId, () => this.googleCalendar(requesterId, research)))
     return (await Promise.all(tasks)).flat()
   }
 
@@ -58,6 +62,33 @@ export class AiRetrieval {
       this.logger.warn(`Truy xuất ${name} thất bại: ${err?.message}`)
       return []
     }
+  }
+
+  // Connector tài khoản ngoài: ghi lần dùng / lỗi gần nhất (trang Trình kết nối hiển thị)
+  private async tracked(provider: string, userId: string, fn: () => Promise<Source[]>): Promise<Source[]> {
+    try {
+      const sources = await fn()
+      await this.db.query(`UPDATE user_connectors SET last_used_at = NOW(), last_error = NULL WHERE user_id = $1 AND provider = $2`, [userId, provider])
+      return sources
+    } catch (err: any) {
+      this.logger.warn(`Truy xuất ${provider} thất bại: ${err?.message}`)
+      await this.db
+        .query(`UPDATE user_connectors SET last_error = $3 WHERE user_id = $1 AND provider = $2`, [userId, provider, String(err?.message ?? err).slice(0, 200)])
+        .catch(() => undefined)
+      return []
+    }
+  }
+
+  // Đọc trang web có URL trong câu hỏi
+  private async webPages(question: string, research: boolean): Promise<Source[]> {
+    const pages = await this.web.readUrls(question, research ? 8000 : 4000)
+    return pages.map((p) => ({ type: 'web' as const, id: p.id, title: p.title, body: p.body }))
+  }
+
+  // Tìm kiếm web (Tavily) — 3 kết quả, Research 5
+  private async webSearch(question: string, research: boolean): Promise<Source[]> {
+    const results = await this.web.search(question, research ? 5 : 3)
+    return results.map((r) => ({ type: 'web' as const, id: r.id, title: r.title, body: r.body }))
   }
 
   // Thư viện PU: full-text bài viết & tài liệu công khai (+ của mình), kèm lời giải đã duyệt

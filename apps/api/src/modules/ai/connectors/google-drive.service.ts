@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { bufferToText, isExtractableMime } from '../doc-text'
+import type { ConnectorSource } from './connector-source'
 import { GoogleOAuthService } from './google-oauth.service'
 
 const DRIVE_API = 'https://www.googleapis.com/drive/v3/files'
@@ -13,7 +14,6 @@ const EXPORT_MIME: Record<string, string> = {
   'application/vnd.google-apps.presentation': 'text/plain'
 }
 
-export type ConnectorSource = { id: string; title: string; body: string }
 type DriveFile = { id: string; name: string; mimeType: string; size?: string }
 
 // Hư từ / từ đệm hay gặp trong câu hỏi tiếng Việt ⇒ không dùng làm từ khóa tìm file

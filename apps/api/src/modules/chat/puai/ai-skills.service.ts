@@ -4,7 +4,7 @@ import { DatabaseService } from '../../../database/database.service'
 import type { Queryable } from '../chat-core.service'
 import { AI_SKILL_LIMIT } from '../dto/chat.dto'
 
-const LIST_COLUMNS = `id, slug, name, description, input_hint, use_count, is_public, install_count`
+const LIST_COLUMNS = `id, slug, name, description, input_hint, use_count, is_public, install_count, enabled, pinned`
 const LIBRARY_LIMIT = 30
 
 const mapSkill = (r: any): AiSkill => ({
@@ -15,7 +15,9 @@ const mapSkill = (r: any): AiSkill => ({
   inputHint: r.input_hint,
   useCount: r.use_count,
   isPublic: r.is_public,
-  installCount: r.install_count
+  installCount: r.install_count,
+  enabled: r.enabled,
+  pinned: r.pinned
 })
 
 // Lệnh còn trống: slug, slug-2 … (giữ ≤ 40 ký tự)
@@ -33,11 +35,12 @@ function freeSlug(base: string, taken: Set<string>): string {
 export class AiSkillsService {
   constructor(private readonly db: DatabaseService) {}
 
-  // Danh sách nhẹ cho menu "/" (không có instructions), hay dùng lên đầu
+  // Danh sách nhẹ cho menu "/" (không có instructions): ghim → hay dùng
   async list(userId: string): Promise<AiSkill[]> {
-    const res = await this.db.query(`SELECT ${LIST_COLUMNS} FROM ai_skills WHERE owner_id = $1 ORDER BY last_used_at DESC NULLS LAST, created_at DESC`, [
-      userId
-    ])
+    const res = await this.db.query(
+      `SELECT ${LIST_COLUMNS} FROM ai_skills WHERE owner_id = $1 ORDER BY pinned DESC, last_used_at DESC NULLS LAST, created_at DESC`,
+      [userId]
+    )
     return res.rows.map(mapSkill)
   }
 
@@ -127,6 +130,17 @@ export class AiSkillsService {
     })
   }
 
+  // Bật/tắt (ẩn khỏi menu "/") hoặc ghim lên đầu
+  async setState(userId: string, id: string, state: { enabled?: boolean; pinned?: boolean }): Promise<AiSkill> {
+    const res = await this.db.query(
+      `UPDATE ai_skills SET enabled = COALESCE($3, enabled), pinned = COALESCE($4, pinned), updated_at = NOW()
+       WHERE id = $1 AND owner_id = $2 RETURNING ${LIST_COLUMNS}`,
+      [id, userId, state.enabled ?? null, state.pinned ?? null]
+    )
+    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy skill')
+    return mapSkill(res.rows[0])
+  }
+
   async remove(userId: string, id: string): Promise<{ deleted: boolean }> {
     const res = await this.db.query(`DELETE FROM ai_skills WHERE id = $1 AND owner_id = $2 RETURNING 1`, [id, userId])
     if (!res.rows[0]) throw new NotFoundException('Không tìm thấy skill')
@@ -137,7 +151,7 @@ export class AiSkillsService {
   async useForMessage(client: Queryable, userId: string, id: string | undefined): Promise<ChatSkillRef | null> {
     if (!id) return null
     const res = await client.query(
-      `UPDATE ai_skills SET use_count = use_count + 1, last_used_at = NOW() WHERE id = $1 AND owner_id = $2 RETURNING id, slug, name`,
+      `UPDATE ai_skills SET use_count = use_count + 1, last_used_at = NOW() WHERE id = $1 AND owner_id = $2 AND enabled RETURNING id, slug, name`,
       [id, userId]
     )
     if (!res.rows[0]) throw new BadRequestException('Skill không tồn tại')
