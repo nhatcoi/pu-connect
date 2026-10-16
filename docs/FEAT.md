@@ -196,6 +196,12 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - Web: `hooks/use-new-posts.ts`, `components/social/new-posts-pill.tsx`, `hooks/use-posts.ts` (pageParam `{ offset, before }`), gắn ở `app/(app)/home/page.tsx`.
 - Giới hạn: mỗi lần bấm chèn tối đa 50 bài; bài của người lạ trong tab For You chỉ cập nhật theo polling (không fan-out).
 
+### 🧭 "Khám Phá Thêm" — Gợi Ý Theo Dõi (2026-10-16)
+- [x] Tab **Đang theo dõi**: cuộn hết bài ⇒ thẻ "Bạn đã xem hết bài từ người đang theo dõi" + nút **Khám phá thêm**; tab trống ⇒ nút "Khám phá người để theo dõi". Mở modal `FollowSuggestionsDialog`.
+- [x] API `GET /api/users/suggestions?limit=` (≤ 50, `users/follow-suggestions.service.ts`), 1 query chấm điểm: đang theo dõi bạn 6 · bạn chung 3/người (≤ 5) · cùng lớp 4 · sở thích/kỹ năng trùng 1.5/tag (≤ 3) · cùng khoa 2 · cùng khóa 1 · có bài trong 30 ngày 1 · giảng viên cùng khoa 1; hòa điểm ⇒ điểm uy tín. Loại chính mình, người đã theo dõi, bot, tài khoản không active, quan hệ chặn 2 chiều. Trả kèm lý do mạnh nhất (`reason`), ≤ 3 bạn chung (avatar) và tag trùng.
+- [x] Modal: avatar, tên + tích xanh/giảng viên, khoa, 1 dòng bio, dòng lý do ("Minh Tuấn và 2 người khác đang theo dõi", "Cùng lớp K16-CNTT1", "Cùng quan tâm React, AI"…), nút theo dõi ngay trong danh sách (người vừa theo dõi không biến mất — query key riêng `follow-suggestions`), nút Làm mới, đếm "Đã theo dõi N người". Đóng modal sau khi theo dõi ⇒ tải lại tab Đang theo dõi.
+- [x] Cột phải "Gợi ý theo dõi" dùng cùng thuật toán (REST thay GraphQL `suggestedUsers` xếp theo vai trò/uy tín), dòng phụ hiện lý do, thêm "Xem thêm" mở modal; bỏ 3 tài khoản giả khi không có dữ liệu (ẩn cả mục).
+
 ### ＠ Gợi Ý Mention, Sửa Bình Luận & Lưu Nháp (2026-10-16)
 - [x] **Mention picker** trong ô bình luận/trả lời: gõ `@` (đầu dòng hoặc sau khoảng trắng; bỏ qua email/URL như server) ⇒ popover dưới ô nhập. Thứ tự: **PU AI** ghim đầu (badge AI, "Hỏi PU AI về bài viết này") → **người trong bài** (tác giả, người đã bình luận; lấy từ cache client, hiện ngay) → kết quả server.
 - [x] API `GET /api/mentions/suggest?q=&postId=` (`mentions/mention-suggest.service.ts`): ≤ 8 người, xếp `username` khớp đầu > từ trong tên khớp đầu (bỏ dấu, dùng index trigram `idx_users_name_trgm`) > tác giả bài > người bình luận > đang theo dõi. Loại chính mình, bot, tài khoản không active, quan hệ chặn 2 chiều. `q` rỗng ⇒ chỉ người trong bài + đang theo dõi (không quét toàn bảng).
@@ -240,7 +246,9 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ---
 
-## 2b. Backlog bình luận (ghi chú 2026-10-16)
+## 2b. Backlog bình luận & gợi ý theo dõi (ghi chú 2026-10-16)
+
+- [ ] Gợi ý theo dõi: nút "Ẩn gợi ý này" (bảng `dismissed_suggestions`), cộng điểm theo `user_interests` của personalization, phân trang keyset nếu > 50.
 
 - [ ] Tô màu `@mention` hợp lệ ngay trong ô nhập (overlay), báo trước tên gõ sai sẽ không có thông báo.
 - [ ] Giới hạn `@puai` theo người (vd 5 lần/giờ) và chặn PU AI tự gọi lại trong luồng trả lời của chính nó.

@@ -100,6 +100,11 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
   ```json
   { "success": true, "data": { "featuredComment": false, "newPostsPill": true, "aiSummary": true } }
   ```
+* **`GET /api/users/suggestions?limit=20`** (cần đăng nhập, ≤ 50) — gợi ý theo dõi đã xếp hạng (bạn chung, đang theo dõi bạn, cùng lớp/khoa/khóa, sở thích trùng, hoạt động gần đây):
+  ```json
+  { "success": true, "data": [{ "id": "…", "username": "thutrang_ly", "displayName": "Lý Thu Trang", "role": "student", "faculty": "FBA", "className": "K17 TCNH 2", "isVerified": false, "bio": null, "avatarUrl": null, "reason": "mutual", "mutualCount": 7, "mutuals": [{ "username": "…", "displayName": "…", "avatarUrl": null }], "sharedTags": [] }] }
+  ```
+  `reason`: `follows_you` · `mutual` · `same_class` · `shared_interests` · `same_faculty` · `popular`.
 * `GET /api/auth/me` trả kèm `privacySettings` và `preferences`. `featuredComment: false` ⇒ `GET /api/posts` trả `featuredComment: null` cho mọi bài.
 
 ### 1.6. Gợi ý mention (`/api/mentions`)
