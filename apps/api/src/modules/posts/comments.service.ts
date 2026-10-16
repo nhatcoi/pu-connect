@@ -174,6 +174,7 @@ export class CommentsService {
         isLikedByMe: false,
         createdAt: commentRow.created_at.toISOString(),
         updatedAt: commentRow.updated_at ? commentRow.updated_at.toISOString() : undefined,
+        editedAt: null,
         author: {
           id: author.id,
           username: author.username,
@@ -337,6 +338,49 @@ export class CommentsService {
     })
   }
 
+  // Sửa nội dung + ghi mention mới trong cùng transaction
+  async update(
+    commentId: string,
+    currentUserId: string,
+    content: string
+  ): Promise<{ id: string; content: string; editedAt: string }> {
+    let mentioned: MentionedUser[] = []
+    const updated = await this.db.transaction(async (client) => {
+      const res = await client.query(
+        `SELECT post_id, author_id FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`,
+        [commentId]
+      )
+      const row = res.rows[0]
+      if (!row) throw new NotFoundException('Không tìm thấy bình luận')
+      if (row.author_id !== currentUserId) throw new ForbiddenException('Bạn chỉ sửa được bình luận của mình')
+
+      const upd = await client.query(
+        `UPDATE comments SET content = $2, edited_at = NOW(), updated_at = NOW()
+         WHERE id = $1 RETURNING content, edited_at`,
+        [commentId, content]
+      )
+      mentioned = await this.mentions.record(client, 'comment', commentId, currentUserId, content)
+      return {
+        id: commentId,
+        postId: row.post_id as string,
+        content: upd.rows[0].content as string,
+        editedAt: (upd.rows[0].edited_at as Date).toISOString()
+      }
+    })
+
+    void this.notifications.dispatch(
+      this.mentions.toNotifications(mentioned, {
+        sourceType: 'comment',
+        sourceId: commentId,
+        authorId: currentUserId,
+        postId: updated.postId,
+        commentId,
+        snippet: updated.content
+      })
+    )
+    return { id: updated.id, content: updated.content, editedAt: updated.editedAt }
+  }
+
   async delete(commentId: string, currentUserId: string, isAdmin = false): Promise<boolean> {
     return this.db.transaction(async (client) => {
       const commentRes = await client.query(
@@ -386,6 +430,7 @@ export class CommentsService {
       isLikedByMe: !!row.is_liked_by_me,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
+      editedAt: row.edited_at ? new Date(row.edited_at).toISOString() : null,
       author: {
         id: row.author_user_id || row.author_id,
         username: row.author_username || 'user',
