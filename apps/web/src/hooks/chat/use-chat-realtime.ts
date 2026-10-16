@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { ChatMessage, MessageDeltaEvent, ReadEvent, TypingEvent } from '@pu/schemas'
+import type { AiThread, ChatMessage, MessageDeltaEvent, ReadEvent, TypingEvent } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 import { getRealtimeSocket } from '@/lib/realtime'
 import { useAppStore } from '@/store'
 import { applyNewMessage, applyRead, applyUpdatedMessage, patchConversation, patchMessages, refreshConversationLists, syncPinned, upsertMessage } from './cache'
+import { bumpAiThread, removeAiThread, upsertAiThread } from './use-ai-threads'
 import { useTypingStore } from './use-typing'
 import { usePresenceRealtime } from './use-presence'
 
@@ -33,7 +34,10 @@ export function useChatRealtime() {
     // Người gửi đã thôi nhập
     if (msg.sender) useTypingStore.getState().set({ conversationId: msg.conversationId, userId: msg.sender.id, isTyping: false })
     if (msg.kind === 'ai' || msg.attachments) void qc.invalidateQueries({ queryKey: ['chat-media', msg.conversationId] })
+    bumpAiThread(qc, msg) // chỉ khớp khi là thread PU AI đã nằm trong lịch sử
   })
+  // Thread PU AI được đặt tên (tự động / đổi tên ở tab khác)
+  useRealtimeEvent<AiThread>('ai.thread.updated', (t) => upsertAiThread(qc, t))
   useRealtimeEvent<ChatMessage>('message.updated', (msg) => {
     upsertMessage(qc, msg)
     syncPinned(qc, msg)
@@ -58,6 +62,7 @@ export function useChatRealtime() {
   })
   useRealtimeEvent<{ conversationId: string }>('conv.removed', (e) => {
     refreshLists()
+    removeAiThread(qc, e.conversationId)
     qc.removeQueries({ queryKey: queryKeys.conversation(e.conversationId) })
   })
   useRealtimeEvent<TypingEvent>('typing', (e) => useTypingStore.getState().set(e))

@@ -1,6 +1,15 @@
 import type {
+  AiConnectorId,
+  AiConnectorInfo,
   AiMode,
   AiQuota,
+  AiSkill,
+  AiSkillDetail,
+  AiSkillInput,
+  AiThread,
+  AiThreadsPage,
+  ChatRefSuggestion,
+  ChatRefType,
   AiSuggestionsResponse,
   ChatAttachment,
   ChatMember,
@@ -26,7 +35,17 @@ export type SendBody = {
   replyToId?: string
   attachments?: ChatAttachment[]
   aiMode?: AiMode
+  refs?: { type: ChatRefType; id: string }[]
+  skillId?: string
+  research?: boolean
+  connectors?: AiConnectorId[]
 }
+
+const qs = (params: Record<string, string | number | null | undefined>) =>
+  Object.entries(params)
+    .filter(([, v]) => v !== null && v !== undefined && v !== '')
+    .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)
+    .join('&')
 
 // REST client nhắn tin (apps/api/src/modules/chat)
 export const chatApi = {
@@ -48,6 +67,9 @@ export const chatApi = {
   transferOwner: (id: string, userId: string) => unwrap(apiClient<Envelope<ChatMember[]>>(`/conversations/${id}/owner`, json('POST', { userId }))),
   leave: (id: string) => apiClient(`/conversations/${id}/leave`, json('POST')),
   read: (id: string, messageId: string) => apiClient(`/conversations/${id}/read`, json('POST', { messageId })),
+  unreadMentions: (id: string, after: string) => unwrap(apiClient<Envelope<string[]>>(`/conversations/${id}/mentions?${qs({ after })}`)),
+  refs: (q: string, types: ChatRefType[], signal?: AbortSignal) =>
+    unwrap(apiClient<Envelope<ChatRefSuggestion[]>>(`/chat/refs?${qs({ q, types: types.join(',') })}`, { signal })),
 
   messages: async (id: string, before?: string | null): Promise<MessagesPage> => {
     const res = await apiClient<MessagesPage & { success: boolean }>(`/conversations/${id}/messages?limit=30${before ? `&before=${before}` : ''}`)
@@ -66,5 +88,20 @@ export const chatApi = {
   aiQuota: () => unwrap(apiClient<Envelope<AiQuota>>('/ai/quota')),
   aiSuggestions: (mode: AiMode) => unwrap(apiClient<Envelope<AiSuggestionsResponse>>(`/ai/suggestions?mode=${mode}`)),
   presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),
-  aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST')))
+  aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST'))),
+  aiConnectors: () => unwrap(apiClient<Envelope<AiConnectorInfo[]>>('/ai/connectors')),
+
+  // PU AI nhiều hội thoại
+  aiThreads: (q: string, cursor: string | null, signal?: AbortSignal) =>
+    unwrap(apiClient<Envelope<AiThreadsPage>>(`/ai/threads?${qs({ q, cursor, limit: 20 })}`, { signal })),
+  createAiThread: () => unwrap(apiClient<Envelope<ConversationSummary>>('/ai/threads', json('POST'))),
+  renameAiThread: (id: string, title: string) => unwrap(apiClient<Envelope<AiThread>>(`/ai/threads/${id}`, json('PATCH', { title }))),
+  deleteAiThread: (id: string) => apiClient(`/ai/threads/${id}`, json('DELETE')),
+
+  // Skill tự tạo (slash command)
+  skills: () => unwrap(apiClient<Envelope<AiSkill[]>>('/ai/skills')),
+  skill: (id: string) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`)),
+  createSkill: (body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>('/ai/skills', json('POST', body))),
+  updateSkill: (id: string, body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`, json('PATCH', body))),
+  deleteSkill: (id: string) => apiClient(`/ai/skills/${id}`, json('DELETE'))
 }

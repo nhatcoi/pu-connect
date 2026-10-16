@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { BellOff, Pin } from 'lucide-react'
+import { AtSign, BellOff, Pin } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { conversationTitle } from '@/hooks/chat'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -29,6 +29,11 @@ export function ConversationItem({ conversation: c, myId }: { conversation: Conv
         </div>
         <div className="flex items-center gap-2">
           <p className={cn('text-xs truncate flex-1', unread ? 'text-foreground font-medium' : 'text-muted-foreground')}>{preview}</p>
+          {c.unreadMentions > 0 && (
+            <span className="h-5 w-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center shrink-0" title={`${c.unreadMentions} tin nhắc đến bạn`}>
+              <AtSign className="h-3 w-3" />
+            </span>
+          )}
           {unread && (
             <span
               className={cn(

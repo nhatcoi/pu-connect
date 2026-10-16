@@ -77,6 +77,9 @@ export function patchConversation(qc: QueryClient, id: string, fn: (c: Conversat
   qc.setQueryData<ConversationSummary>(queryKeys.conversation(id), (old) => (old ? fn(old) : old))
 }
 
+// Tin nhắc mình (server đã lọc thành viên ⇒ meta.mentions đáng tin)
+const mentionsMe = (msg: ChatMessage, myId: string | undefined) => !!msg.meta?.mentionAll || !!msg.meta?.mentions?.some((m) => m.id === myId)
+
 const bumpUnread = (qc: QueryClient, delta: number) => qc.setQueryData<number>(queryKeys.unreadMessages, (n) => (n === undefined ? n : Math.max(0, n + delta)))
 
 // Tin mới: cập nhật tin cuối + chưa đọc, đưa hội thoại lên đầu nhóm của nó
@@ -94,7 +97,8 @@ export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string 
 
   // Tin của mình (kể cả từ tab khác) ⇒ server đã coi như đã đọc hội thoại
   const unreadCount = mine ? 0 : found.unreadCount + (countsUnread ? 1 : 0)
-  const next: ConversationSummary = { ...found, lastMessage: msg, lastMessageAt: msg.createdAt, unreadCount }
+  const unreadMentions = mine ? 0 : found.unreadMentions + (countsUnread && mentionsMe(msg, myId) ? 1 : 0)
+  const next: ConversationSummary = { ...found, lastMessage: msg, lastMessageAt: msg.createdAt, unreadCount, unreadMentions }
   if (!isMuted(next)) bumpUnread(qc, Math.min(unreadCount, 99) - Math.min(found.unreadCount, 99))
   const belongs: Record<string, boolean> = { all: true, group: next.type === 'group', unread: next.unreadCount > 0 }
   let stale = false
@@ -112,7 +116,9 @@ export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string 
     pages[0] = { ...pages[0], data: at === -1 ? [...first, next] : [...first.slice(0, at), next, ...first.slice(at)] }
     return { ...data, pages }
   })
-  qc.setQueryData<ConversationSummary>(queryKeys.conversation(next.id), (old) => (old ? { ...old, lastMessage: msg, lastMessageAt: msg.createdAt, unreadCount } : old))
+  qc.setQueryData<ConversationSummary>(queryKeys.conversation(next.id), (old) =>
+    old ? { ...old, lastMessage: msg, lastMessageAt: msg.createdAt, unreadCount, unreadMentions } : old
+  )
   if (stale) void qc.invalidateQueries({ queryKey: queryKeys.conversationLists, refetchType: 'active' })
 }
 
@@ -126,8 +132,8 @@ export function applyRead(qc: QueryClient, conversationId: string) {
   const found = findConversation(qc, conversationId)?.conversation ?? qc.getQueryData<ConversationSummary>(queryKeys.conversation(conversationId))
   // Không có số liệu trong cache ⇒ hỏi lại server badge
   if (!found) return void qc.invalidateQueries({ queryKey: queryKeys.unreadMessages })
-  if (!found.unreadCount) return
-  patchConversation(qc, conversationId, (c) => ({ ...c, unreadCount: 0 }))
+  if (!found.unreadCount && !found.unreadMentions) return
+  patchConversation(qc, conversationId, (c) => ({ ...c, unreadCount: 0, unreadMentions: 0 }))
   if (!isMuted(found)) bumpUnread(qc, -Math.min(found.unreadCount, 99))
 }
 

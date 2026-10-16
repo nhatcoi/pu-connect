@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { AiMode, ChatAttachment, ChatMessage, ChatReaction } from '@pu/schemas'
+import type { AiConnectorId, AiMode, ChatAttachment, ChatMessage, ChatMessageMeta, ChatReaction, ChatRef, ChatSkillRef } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { useAppStore } from '@/store'
 import { chatApi } from './api'
@@ -14,6 +14,20 @@ export type Draft = {
   attachments?: ChatAttachment[]
   replyTo?: UiMessage | null
   aiMode?: AiMode
+  refs?: ChatRef[]
+  skill?: ChatSkillRef | null
+  research?: boolean
+  connectors?: AiConnectorId[]
+}
+
+// Meta hiển thị ngay cho tin lạc quan (server tính lại & trả bản chuẩn)
+function draftMeta(d: Draft): ChatMessageMeta | null {
+  const meta: ChatMessageMeta = {}
+  if (d.aiMode && d.aiMode !== 'ask') meta.aiMode = d.aiMode
+  if (d.refs?.length) meta.refs = d.refs
+  if (d.skill) meta.skill = d.skill
+  if (d.research) meta.research = true
+  return Object.keys(meta).length ? meta : null
 }
 
 // Bật/tắt cảm xúc của mình trên danh sách cảm xúc (dùng cho cập nhật lạc quan)
@@ -56,7 +70,7 @@ export function useMessages(conversationId: string) {
           ? { id: reply.id, senderName: reply.sender?.displayName ?? null, content: reply.content.slice(0, 160), hasAttachments: !!reply.attachments, deleted: false }
           : null,
         reactions: [],
-        meta: draft.aiMode && draft.aiMode !== 'ask' ? { aiMode: draft.aiMode } : null,
+        meta: draftMeta(draft),
         status: 'sending',
         deleted: false,
         editedAt: null,
@@ -70,7 +84,11 @@ export function useMessages(conversationId: string) {
           content: draft.content,
           replyToId: reply?.id,
           attachments: draft.attachments?.length ? draft.attachments : undefined,
-          aiMode: draft.aiMode
+          aiMode: draft.aiMode,
+          refs: draft.refs?.length ? draft.refs.map((r) => ({ type: r.type, id: r.id })) : undefined,
+          skillId: draft.skill?.id,
+          research: draft.research || undefined,
+          connectors: draft.connectors
         })
         upsertMessage(qc, saved) // danh sách hội thoại cập nhật qua sự kiện message.new
       } catch (err: any) {
@@ -89,7 +107,11 @@ export function useMessages(conversationId: string) {
           content: m.content,
           attachments: m.attachments ?? undefined,
           replyTo: m.replyToId ? ({ id: m.replyToId, sender: null, content: m.replyTo?.content ?? '', attachments: null } as UiMessage) : null,
-          aiMode: m.meta?.aiMode
+          aiMode: m.meta?.aiMode,
+          refs: m.meta?.refs,
+          skill: m.meta?.skill,
+          research: m.meta?.research,
+          connectors: m.meta?.connectors
         },
         m
       ),

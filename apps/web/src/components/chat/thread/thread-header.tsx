@@ -3,10 +3,10 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BellOff, Eraser, Info } from 'lucide-react'
+import { ArrowLeft, BellOff, Eraser, History, Info, Loader2, SquarePen } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
-import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
+import { conversationTitle, presenceLabel, useAiQuota, useAiThreadActions, useOnlineCount, usePresence } from '@/hooks/chat'
 import { ConversationAvatar } from '../conversation-avatar'
 import { OpenInN7AiButton } from '../ai/open-in-n7ai'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,6 +26,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
   const { data: quota } = useAiQuota(isAi)
   const otherPresence = usePresence(other?.id)
   const onlineInGroup = useOnlineCount(conv?.type === 'group' ? conv.members.map((m) => m.id) : [])
+  const { create: newThread } = useAiThreadActions()
 
   const subtitle =
     typingLabel ??
@@ -54,7 +55,8 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
               {conversationTitle(conv)}
             </Link>
           ) : (
-            <p className="text-sm font-semibold truncate">{conversationTitle(conv)}</p>
+            // Thread PU AI: hiện tiêu đề cuộc trò chuyện
+            <p className="text-sm font-semibold truncate">{isAi && conv.title ? conv.title : conversationTitle(conv)}</p>
           )}
           {conv?.mutedUntil && <BellOff className="h-3 w-3 text-muted-foreground shrink-0" />}
         </div>
@@ -62,13 +64,18 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
       </div>
       {isAi && <OpenInN7AiButton />}
       {isAi && (
-        <Button variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" onClick={onAiReset} title="PU AI quên các tin phía trên">
-          <Eraser className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Chủ đề mới</span>
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={onAiReset} title="Chủ đề mới — PU AI quên các tin phía trên" aria-label="Chủ đề mới">
+          <Eraser className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {isAi && (
+        <Button variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" disabled={newThread.isPending} onClick={() => newThread.mutate()} title="Cuộc trò chuyện mới">
+          {newThread.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SquarePen className="h-3.5 w-3.5" />} <span className="hidden sm:inline">Chat mới</span>
         </Button>
       )}
       {conv && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label="Thông tin hội thoại">
-          <Info className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label={isAi ? 'Lịch sử PU AI' : 'Thông tin hội thoại'}>
+          {isAi ? <History className="h-4 w-4" /> : <Info className="h-4 w-4" />}
         </Button>
       )}
     </div>

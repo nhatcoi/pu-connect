@@ -7,17 +7,29 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PageAside } from '@/components/layout/page-aside'
+import { AiThreadList } from '@/components/chat/ai/ai-thread-list'
 import { AiWelcome } from '@/components/chat/ai/ai-welcome'
-import { Composer, type ComposerHandle } from '@/components/chat/composer/composer'
+import { Composer, type ComposerCommand, type ComposerHandle } from '@/components/chat/composer/composer'
 import { BlockedComposer } from '@/components/chat/composer/blocked-composer'
 import { ConversationInfo } from '@/components/chat/info/conversation-info'
 import type { AiMode, AiSuggestion } from '@pu/schemas'
 import type { MessageHandlers } from '@/components/chat/thread/message-actions'
+import { MentionJump } from '@/components/chat/thread/mention-jump'
 import { MessageList } from '@/components/chat/thread/message-list'
 import { PinnedBanner } from '@/components/chat/thread/pinned-banner'
 import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ThreadHeader } from '@/components/chat/thread/thread-header'
-import { chatApi, setActiveConversation, trackSuggestionClick, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
+import {
+  chatApi,
+  setActiveConversation,
+  trackSuggestionClick,
+  useAiThreadActions,
+  useConversation,
+  useMarkRead,
+  useMessages,
+  useTypingLabel,
+  type UiMessage
+} from '@/hooks/chat'
 import { useAppStore } from '@/store'
 
 // Màn hội thoại: đầu trang + tin ghim + dòng tin + ô soạn; thông tin ở cột phải (desktop) / hộp thoại (mobile)
@@ -42,6 +54,7 @@ export default function ConversationPage() {
   const [infoOpen, setInfoOpen] = useState(false)
   const [aiMode, setAiMode] = useState<AiMode>('ask')
   const composer = useRef<ComposerHandle>(null)
+  const { create: newThread } = useAiThreadActions()
 
   const jump = useCallback((messageId: string) => {
     setInfoOpen(false)
@@ -79,6 +92,7 @@ export default function ConversationPage() {
 
   const isAi = conv?.type === 'ai'
   const resetAi = () => chatApi.aiReset(id).catch((err) => toast.error(err?.message || 'Không làm mới được'))
+  const runCommand = (command: ComposerCommand) => (command === 'new' ? newThread.mutate() : resetAi())
   // Gợi ý mở đầu ⇒ điền sẵn để sửa; câu hỏi tiếp theo ⇒ gửi ngay
   const pickStarter = (s: AiSuggestion) => {
     trackSuggestionClick('starter', s)
@@ -130,11 +144,13 @@ export default function ConversationPage() {
         <BlockedComposer conversation={conv} />
       ) : (
         <Composer
+          key={id} // đổi hội thoại ⇒ chip / nháp không mang sang
           handleRef={composer}
           conversationId={id}
-          isAi={isAi}
+          conversation={conv}
+          onCommand={runCommand}
           disabled={!conv}
-          placeholder={conv?.type === 'group' ? 'Nhắn tin… (gõ @puai để hỏi AI)' : 'Nhắn tin…'}
+          placeholder={conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi PU AI)' : 'Nhắn tin… (@ gắn ngữ cảnh)'}
           replyTo={replyTo}
           editing={editing}
           onCancelContext={() => {
@@ -149,14 +165,18 @@ export default function ConversationPage() {
         />
       )}
 
+      <MentionJump key={id} conversation={conv} onJump={jump} />
+
       {conv && (
         <>
           <PageAside>
+            {isAi && <AiThreadList activeId={id} />}
             <ConversationInfo conversation={conv} onJump={jump} />
           </PageAside>
           <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
             <DialogContent className="max-w-md p-0 gap-0 max-h-[90vh] overflow-y-auto">
-              <DialogTitle className="sr-only">Thông tin hội thoại</DialogTitle>
+              <DialogTitle className="sr-only">{isAi ? 'Lịch sử PU AI' : 'Thông tin hội thoại'}</DialogTitle>
+              {isAi && <AiThreadList activeId={id} onNavigate={() => setInfoOpen(false)} />}
               <ConversationInfo conversation={conv} onJump={jump} />
             </DialogContent>
           </Dialog>

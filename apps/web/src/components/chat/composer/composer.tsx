@@ -1,23 +1,32 @@
 'use client'
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { Loader2, Paperclip, Pencil, Reply, SendHorizontal, X } from 'lucide-react'
-import type { AiMode, AiSuggestion } from '@pu/schemas'
+import React, { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { Loader2, Pencil, Reply, SendHorizontal, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { CHAT_MAX_REFS, type AiMode, type AiSkill, type AiSuggestion, type ChatRef, type ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
-import { trackSuggestionClick, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
+import { isDefaultConnectors, trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
+import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
 import { messagePreview } from '../utils'
 import { AiModeBar } from './ai-mode-bar'
 import { AttachmentTray } from './attachment-tray'
+import { ContextChips } from './context-chips'
+import { PickerPopover, pickerOptionId } from './picker-popover'
+import { PlusMenu } from './plus-menu'
+import { SkillsDialog } from './skills-dialog'
 import { useAttachmentUpload } from './use-attachment-upload'
+import { useComposerPicker, type PickerItem } from './use-composer-picker'
 
 export type ComposerHandle = { prefill: (text: string) => void }
 
+export type ComposerCommand = 'new' | 'reset'
+
 interface ComposerProps {
   conversationId: string
-  isAi: boolean
+  conversation: ConversationSummary | undefined
   disabled?: boolean
   placeholder: string
   replyTo: UiMessage | null
@@ -30,12 +39,14 @@ interface ComposerProps {
   aiMode?: AiMode
   onAiModeChange?: (mode: AiMode) => void
   suggestOnModeChange?: boolean // đã có tin ⇒ chọn chế độ mở bảng gợi ý trên ô soạn
+  onCommand?: (command: ComposerCommand) => void // "/new", "/reset" (thread PU AI)
 }
 
-// Ô soạn tin: văn bản + đính kèm (chọn / dán / kéo thả), trả lời, sửa tin, chế độ học khi chat với PU AI
+// Ô soạn tin: văn bản + đính kèm (chọn / dán / kéo thả), trả lời, sửa tin
+// "@" nhắc tên / gắn ngữ cảnh · "/" chế độ học, skill, lệnh · "+" tệp, skill, connector, Research
 export function Composer({
   conversationId,
-  isAi,
+  conversation,
   disabled,
   placeholder,
   replyTo,
@@ -46,15 +57,76 @@ export function Composer({
   handleRef,
   aiMode = 'ask',
   onAiModeChange,
-  suggestOnModeChange
+  suggestOnModeChange,
+  onCommand
 }: ComposerProps) {
+  const isAi = conversation?.type === 'ai'
+  const aiTools = isAi || conversation?.type === 'group' // hỏi được PU AI
+  const myId = useAppStore((s) => s.user?.id)
   const [text, setText] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
   const [dragging, setDragging] = useState(false)
+  const [refs, setRefs] = useState<ChatRef[]>([])
+  const [skill, setSkill] = useState<AiSkill | null>(null)
+  const [groupMode, setGroupMode] = useState<AiMode | null>(null) // nhóm: chế độ qua "/" (1 lần)
+  const [research, setResearch] = useState(false)
+  const [skillsDialog, setSkillsDialog] = useState<{ open: boolean; create: boolean }>({ open: false, create: false })
+  const { connectors, toggle: toggleConnector } = useConnectorPrefs()
   const ref = useRef<HTMLTextAreaElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
+  const listId = useId()
   const typing = useTypingEmitter(conversationId)
   const uploads = useAttachmentUpload()
+
+  const addRef = useCallback(
+    (r: ChatRef) => {
+      if (refs.some((x) => x.type === r.type && x.id === r.id)) return
+      if (refs.length >= CHAT_MAX_REFS) return void toast.error(`Tối đa ${CHAT_MAX_REFS} ngữ cảnh mỗi tin`)
+      setRefs([...refs, r])
+    },
+    [refs]
+  )
+
+  const changeMode = useCallback(
+    (m: AiMode) => {
+      onAiModeChange?.(m)
+      setPanelOpen(!!suggestOnModeChange && m !== 'ask')
+    },
+    [onAiModeChange, suggestOnModeChange]
+  )
+
+  // Mục chọn từ menu "@" / "/" (trừ nhắc tên — đã chèn vào chữ)
+  const onPick = useCallback(
+    (item: Exclude<PickerItem, { kind: 'user' }>) => {
+      switch (item.kind) {
+        case 'ref':
+          return addRef({ type: item.ref.type, id: item.ref.id, title: item.ref.title, ...(item.ref.code ? { code: item.ref.code } : {}) })
+        case 'mode':
+          return isAi ? changeMode(item.mode) : setGroupMode(item.mode === 'ask' ? null : item.mode)
+        case 'skill':
+          return setSkill(item.skill)
+        case 'command':
+          return item.command === 'create-skill' ? setSkillsDialog({ open: true, create: true }) : onCommand?.(item.command)
+      }
+    },
+    [addRef, isAi, changeMode, onCommand]
+  )
+
+  const picker = useComposerPicker({ textareaRef: ref, text, setText, conversation, myId, chosenRefs: refs, onPick })
+
+  // "+ Gắn ngữ cảnh": chèn "@" tại con trỏ ⇒ mở menu gợi ý
+  const startContextPick = () => {
+    const el = ref.current
+    const caret = el?.selectionStart ?? text.length
+    const before = text.slice(0, caret)
+    const token = before && !/\s$/.test(before) ? ' @' : '@'
+    setText(before + token + text.slice(caret))
+    requestAnimationFrame(() => {
+      el?.focus()
+      el?.setSelectionRange(caret + token.length, caret + token.length)
+      picker.sync()
+    })
+  }
 
   React.useImperativeHandle(handleRef, () => ({
     prefill: (value) => {
@@ -85,18 +157,27 @@ export function Composer({
     if (editing) {
       if (content !== editing.content) onEdit(editing.id, content)
     } else {
-      onSend({ content, attachments: uploads.ready, replyTo, aiMode: isAi ? aiMode : undefined })
+      onSend({
+        content,
+        attachments: uploads.ready,
+        replyTo,
+        aiMode: isAi ? aiMode : (groupMode ?? undefined),
+        refs,
+        skill: skill && { id: skill.id, slug: skill.slug, name: skill.name },
+        research: aiTools && research,
+        connectors: isAi && !isDefaultConnectors(connectors) ? connectors : undefined // mặc định ⇒ server tự hiểu
+      })
       uploads.clear()
       setPanelOpen(false)
+      // Ngữ cảnh / skill dùng 1 lần; Research giữ trong thread AI (giống Claude), nhóm thì tắt
+      setRefs([])
+      setSkill(null)
+      setGroupMode(null)
+      if (!isAi) setResearch(false)
     }
     setText('')
     onCancelContext()
     typing.stop()
-  }
-
-  const changeMode = (m: AiMode) => {
-    onAiModeChange?.(m)
-    setPanelOpen(!!suggestOnModeChange && m !== 'ask')
   }
 
   // Bấm gợi ý trong bảng ⇒ gửi ngay theo chế độ của gợi ý
@@ -149,8 +230,23 @@ export function Composer({
         <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />
       )}
       {isAi && !editing && <AiModeBar value={aiMode} onChange={changeMode} />}
-      <div className={cn('rounded-2xl bg-card px-2.5 py-1.5 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
+      <div className={cn('relative rounded-2xl bg-card px-2.5 py-1.5 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
+        {picker.open && (
+          <PickerPopover id={listId} sections={picker.sections} index={picker.index} isLoading={picker.isLoading} onHover={picker.setIndex} onSelect={picker.select} />
+        )}
         {contextBar}
+        {!editing && (
+          <ContextChips
+            refs={refs}
+            onRemoveRef={(r) => setRefs((prev) => prev.filter((x) => !(x.type === r.type && x.id === r.id)))}
+            skill={skill}
+            onClearSkill={() => setSkill(null)}
+            mode={groupMode}
+            onClearMode={() => setGroupMode(null)}
+            research={aiTools && research}
+            onClearResearch={() => setResearch(false)}
+          />
+        )}
         <AttachmentTray files={uploads.files} onRemove={uploads.remove} />
         <div className="flex items-end gap-1.5">
           {!editing && (
@@ -166,17 +262,19 @@ export function Composer({
                   e.target.value = ''
                 }}
               />
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 rounded-full shrink-0 text-muted-foreground"
-                onClick={() => fileInput.current?.click()}
+              <PlusMenu
                 disabled={disabled}
-                aria-label="Đính kèm ảnh hoặc tệp"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
+                aiTools={aiTools}
+                connectorsEnabled={isAi}
+                onUpload={() => fileInput.current?.click()}
+                onAddContext={startContextPick}
+                onPickSkill={setSkill}
+                onManageSkills={() => setSkillsDialog({ open: true, create: false })}
+                connectors={connectors}
+                onToggleConnector={toggleConnector}
+                research={research}
+                onToggleResearch={() => setResearch((v) => !v)}
+              />
             </>
           )}
           <textarea
@@ -184,13 +282,21 @@ export function Composer({
             rows={1}
             value={text}
             maxLength={4000}
-            placeholder={isAi && !editing ? AI_MODE_META[aiMode].placeholder : placeholder}
+            placeholder={editing ? placeholder : (skill?.inputHint ?? (isAi ? AI_MODE_META[aiMode].placeholder : placeholder))}
             onPaste={onPaste}
             onChange={(e) => {
               setText(e.target.value)
               if (!isAi) typing.onInput()
             }}
+            onSelect={picker.sync}
+            onBlur={picker.close}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={picker.open}
+            aria-controls={picker.open ? listId : undefined}
+            aria-activedescendant={picker.open && picker.sections.length ? pickerOptionId(listId, picker.index) : undefined}
             onKeyDown={(e) => {
+              if (picker.onKeyDown(e)) return
               // Enter gửi, Shift+Enter xuống dòng (bỏ qua khi đang gõ dấu IME); Esc hủy trả lời/sửa
               if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault()
@@ -207,6 +313,7 @@ export function Composer({
           </Button>
         </div>
       </div>
+      <SkillsDialog open={skillsDialog.open} startWithCreate={skillsDialog.create} onOpenChange={(open) => setSkillsDialog((s) => ({ ...s, open }))} />
     </div>
   )
 }

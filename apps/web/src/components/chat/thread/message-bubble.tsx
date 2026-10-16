@@ -7,11 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import type { UiMessage } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
+import { useAppStore } from '@/store'
 import { AiMessageBody } from '../ai/ai-message-body'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { messagePreview, timeOf } from '../utils'
 import { AttachmentView } from './attachment-view'
 import { MessageActions, type MessageHandlers } from './message-actions'
+import { MessageAiBadges, MessageRefs, MessageText } from './message-text'
 import { ReactionsDialog } from './reactions-dialog'
 
 // Màn cảm ứng không có hover ⇒ chạm vào tin để hiện thanh thao tác
@@ -34,6 +36,7 @@ interface BubbleProps {
 export function MessageBubble({ message: m, mine, myId, continued, showAvatar, showName, seenLabel, highlighted, onJumpTo, onRetry, handlers }: BubbleProps) {
   const [actionsOpen, setActionsOpen] = useState(false)
   const [reactionsOpen, setReactionsOpen] = useState(false)
+  const myUsername = useAppStore((s) => s.user?.username)
   const reactionCount = m.reactions.reduce((n, r) => n + r.userIds.length, 0)
   const isAi = m.kind === 'ai'
   const interactive = !m.deleted && !m.id.startsWith('tmp-') && m.status !== 'streaming'
@@ -95,13 +98,15 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
                 )}
               >
                 {mode && !m.deleted && (
-                  <span className={cn('mb-1 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide', mine ? 'text-primary-foreground/80' : 'text-primary')}>
+                  <span className={cn('mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide', mine ? 'text-primary-foreground/80' : 'text-primary')}>
                     {React.createElement(AI_MODE_META[mode].icon, { className: 'h-3 w-3' })} {AI_MODE_META[mode].label}
                   </span>
                 )}
-                {m.deleted ? 'Tin nhắn đã thu hồi' : isAi ? <AiMessageBody message={m} /> : <div>{m.content}</div>}
+                {!m.deleted && <MessageAiBadges meta={m.meta} mine={mine} />}
+                {m.deleted ? 'Tin nhắn đã thu hồi' : isAi ? <AiMessageBody message={m} /> : <MessageText content={m.content} meta={m.meta} mine={mine} myUsername={myUsername} />}
               </div>
             )}
+            {!m.deleted && <MessageRefs meta={m.meta} mine={mine} />}
           </div>
           {interactive && <MessageActions message={m} mine={mine} visible={actionsOpen} handlers={handlers} />}
         </div>
