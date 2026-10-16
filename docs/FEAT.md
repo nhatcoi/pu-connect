@@ -222,6 +222,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - Web: `hooks/use-new-posts.ts`, `components/social/new-posts-pill.tsx`, `hooks/use-posts.ts` (pageParam `{ offset, before }`), gắn ở `app/(app)/home/page.tsx`.
 - Giới hạn: mỗi lần bấm chèn tối đa 50 bài; bài của người lạ trong tab For You chỉ cập nhật theo polling (không fan-out).
 
+### 🗂️ Tab Hoạt Động Trên Hồ Sơ & Thực Thi Quyền Riêng Tư (2026-10-17)
+- [x] Hồ sơ thêm tab **Bình luận · Đã thích · Đã lưu** (sau Bài viết · Hỏi đáp · Tài liệu; thanh tab cuộn ngang trên mobile). Chủ hồ sơ luôn thấy cả 3; tab đang ẩn với người khác có ổ khoá + dòng "Chỉ bạn thấy mục này · Đổi trong Cài đặt".
+- [x] Cài đặt → Quyền riêng tư → nhóm **Hoạt động trên hồ sơ**: `showCommentedPosts` (mặc định bật), `showLikedPosts`, `showSavedPosts` (mặc định tắt, như X). Lưu ngay qua `PATCH /api/users/privacy`.
+- [x] API `GET /api/users/:username/activity/:type` (`liked|saved|commented`, `limit/offset/before` như feed): dùng lại `PostsService.findAll` với `FeedOptions.activity` (lọc `EXISTS` + sắp theo thời điểm thích/lưu/bình luận gần nhất), vẫn ẩn bài bị admin ẩn và bài của người có quan hệ chặn với người xem. Mục không công khai ⇒ 403.
+- [x] `ProfileAccessService` (`users/profile-access.service.ts`): 1 query tính chủ hồ sơ / chặn 2 chiều / hồ sơ riêng tư (chưa theo dõi ⇒ khoá) / tab hoạt động; dùng chung cho REST và GraphQL.
+- [x] **Sửa lỗi quyền riêng tư (GraphQL):** `userProfile` trước đây trả email, MSSV, lớp bất kể cài đặt và không thực thi "Hồ sơ riêng tư". Nay lọc theo `privacySettings`; hồ sơ riêng tư mà người xem chưa theo dõi ⇒ không trả bài/tài liệu, field mới `isContentLocked` (web hiện "Tài khoản này ở chế độ riêng tư"), `activityTabs`. Danh sách người dùng (`userFollowers`, `userFollowing`, `suggestedUsers`) không còn trả email/MSSV/lớp.
+- Giới hạn: "Hồ sơ riêng tư" mới chặn ở trang hồ sơ; bài của tài khoản riêng tư vẫn hiện trên feed/tìm kiếm (xem Backlog).
+
 ### 🧭 "Khám Phá Thêm" — Gợi Ý Theo Dõi (2026-10-16)
 - [x] Tab **Đang theo dõi**: cuộn hết bài ⇒ thẻ "Bạn đã xem hết bài từ người đang theo dõi" + nút **Khám phá thêm**; tab trống ⇒ nút "Khám phá người để theo dõi". Mở modal `FollowSuggestionsDialog`.
 - [x] API `GET /api/users/suggestions?limit=` (≤ 50, `users/follow-suggestions.service.ts`), 1 query chấm điểm: đang theo dõi bạn 6 · bạn chung 3/người (≤ 5) · cùng lớp 4 · sở thích/kỹ năng trùng 1.5/tag (≤ 3) · cùng khoa 2 · cùng khóa 1 · có bài trong 30 ngày 1 · giảng viên cùng khoa 1; hòa điểm ⇒ điểm uy tín. Loại chính mình, người đã theo dõi, bot, tài khoản không active, quan hệ chặn 2 chiều. Trả kèm lý do mạnh nhất (`reason`), ≤ 3 bạn chung (avatar) và tag trùng.
@@ -276,6 +284,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 2b. Backlog bình luận & gợi ý theo dõi (ghi chú 2026-10-16)
 
+- [ ] Hồ sơ riêng tư: ẩn bài của tài khoản riêng tư khỏi feed For You / Hỏi đáp / tìm kiếm / cộng đồng với người chưa theo dõi (hiện chỉ khoá trang hồ sơ).
 - [ ] Gợi ý theo dõi: nút "Ẩn gợi ý này" (bảng `dismissed_suggestions`), cộng điểm theo `user_interests` của personalization, phân trang keyset nếu > 50.
 
 - [ ] Tô màu `@mention` hợp lệ ngay trong ô nhập (overlay), báo trước tên gõ sai sẽ không có thông báo.

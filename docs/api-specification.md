@@ -95,7 +95,9 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
 * **Cookie Action:** Xóa `pu_session` và vô hiệu hóa session trên máy chủ.
 
 ### 1.5. Quyền riêng tư & Tùy chọn tính năng (`/api/users`)
-* **`PATCH /api/users/privacy`** — body là một phần của `{ showEmail, showStudentId, showClass, isPrivateProfile, showActivityStatus, personalization }` (boolean, field lạ ⇒ 400). Trả về bộ đầy đủ. Tắt `personalization` ⇒ xóa dữ liệu hành vi.
+* **`PATCH /api/users/privacy`** — body là một phần của `{ showEmail, showStudentId, showClass, isPrivateProfile, showActivityStatus, personalization, showLikedPosts, showSavedPosts, showCommentedPosts }` (boolean, field lạ ⇒ 400). Trả về bộ đầy đủ. Tắt `personalization` ⇒ xóa dữ liệu hành vi.
+* **`GET /api/users/:username/activity/:type`** — `type` = `liked` · `saved` · `commented`; query `limit` (≤ 50), `offset`, `before` (snapshot). Response giống `GET /api/posts` (`data`, `total`, `hasMore`, `nextOffset`, `snapshotAt`), sắp theo thời điểm hoạt động mới nhất. Chủ hồ sơ luôn xem được; người khác cần cờ `show*Posts` tương ứng, không bị chặn và (nếu hồ sơ riêng tư) đang theo dõi ⇒ ngược lại 403. `type` lạ ⇒ 400.
+* GraphQL `userProfile` lọc `email` / `studentId` / `className` theo privacy, thêm `isContentLocked` và `activityTabs`.
 * **`PATCH /api/users/preferences`** — body là một phần của `{ featuredComment, newPostsPill, aiSummary }` (boolean, mặc định `true`, field lạ ⇒ 400). Gộp vào `users.preferences` rồi trả về bộ đầy đủ:
   ```json
   { "success": true, "data": { "featuredComment": false, "newPostsPill": true, "aiSummary": true } }

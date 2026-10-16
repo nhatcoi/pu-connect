@@ -80,7 +80,7 @@ flowchart TB
 | Module | Endpoint |
 |---|---|
 | Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/forgot-password` · `POST auth/reset-password` · `POST auth/resend-verification` · `POST auth/onboarding` |
-| Users | `GET users/suggestions` · `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `PATCH users/preferences` (feature plugs) · `POST users/verify-university` |
+| Users | `GET users/suggestions` · `GET users/:username/activity/:type` · `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `PATCH users/preferences` (feature plugs) · `POST users/verify-university` |
 | Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`, `before`/`after` = cửa sổ snapshot; mỗi bài kèm `featuredComment`) · `GET posts/new-since?since=` (pill "bài mới") · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` · `POST posts/:id/summary` (PU AI, có cache) |
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `PATCH comments/:id` · `DELETE comments/:id` |
 | Mentions | `GET mentions/suggest` |
@@ -131,6 +131,7 @@ flowchart TB
 - 2026-10-16 — `GoogleOAuthService` dùng chung + `GoogleCalendarService`; thư viện skill công khai (`ai/skills/library`, `install`); `ai/threads?q=` tìm cả nội dung; xóa thread dọn tệp R2 (`StorageService.deleteObjects`).
 - 2026-10-16 — AiModule: `AiConnectorsController` + `GoogleDriveService` (OAuth `drive.readonly`, token AES-256-GCM trong `user_connectors`), `AiRetrieval` thêm connector `google_drive`; `ai/doc-text.ts` dùng chung trích chữ PDF/DOCX/txt.
 - 2026-10-16 — Chat: `ChatMentionsService` (mention nhóm, `GET conversations/:id/mentions`), `ChatRefsController` `GET chat/refs`, `AiThreadsController` `ai/threads`, `AiSkillsController` `ai/skills`, `GET ai/connectors`, `AiMemoryService` (tóm tắt cuộn); event `ai.thread.updated`; `AiRetrieval` theo connector.
+- 2026-10-17 — Users → Posts: `GET users/:username/activity/:type` (`PostsService.findAll` + `FeedOptions.activity`); `ProfileAccessService` (Users, export) dùng chung cho SocialGraphQL `userProfile` (lọc privacy, `isContentLocked`, `activityTabs`).
 - 2026-10-16 — Users: `GET users/suggestions` (`FollowSuggestionsService`, chấm điểm bạn chung/lớp/khoa/sở thích); cột phải web chuyển từ GraphQL `suggestedUsers` sang endpoint này.
 - 2026-10-16 — Mentions: `MentionsController` `GET mentions/suggest` (`MentionSuggestService`); Comments: `PATCH comments/:id` (sửa, ghi mention mới, cột `comments.edited_at`).
 - 2026-10-16 — Users: `PATCH users/preferences` (cột `users.preferences`); `GET posts` bỏ query featured comment khi người xem tắt cờ.

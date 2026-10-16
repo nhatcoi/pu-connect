@@ -112,7 +112,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | `/` (LandingView khi chưa đăng nhập) | `auth/providers`, `auth/check-email`, `auth/login`, `auth/register`, `auth/me` | — | — |
 | `/` Bảng tin, PostCard (+ nút ✨ Tóm tắt) | `posts`, `posts/:id/*` (gồm `summary`), `posts/:postId/comments`, `comments/:id/*` (gồm `PATCH` sửa), `mentions/suggest` | `toggleFollow` (follow trên PostCard) | — |
 | RightSidebar | — | `suggestedUsers` | — |
-| `/[username]` (+ menu ⋯ Chặn) | `users/:username`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
+| `/[username]` (+ menu ⋯ Chặn, tab Bình luận / Đã thích / Đã lưu) | `users/:username`, `users/:username/activity/:type`, `users/profile`, `blocks`, `blocks/:userId` | `userProfile` (`blockState`, `isContentLocked`, `activityTabs`), `userFollowers`, `userFollowing` | `block.changed` (useBlocksRealtime trong AppLayout) |
 | Communities | `communities`, `communities/:slug/*` | — | — |
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
@@ -127,6 +127,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-17 — `/[username]`: tab hoạt động (`ProfileActivityTab`, `useProfileActivity`, key `['profile', username, 'activity', type]`), thông báo hồ sơ riêng tư; Cài đặt → Quyền riêng tư nhóm "Hoạt động trên hồ sơ".
 - 2026-10-17 — không gian PU AI `/puai` (`app/(app)/puai/*`, `components/puai/*`, `lib/puai-routes.ts`): `AppLayout` ẩn Sidebar & cột phải; thanh bên lịch sử + hồ sơ PU AI, ngăn kéo mobile (`ui/sheet.tsx`); `/puai/library`; `/settings/puai*` ⇒ `/puai/settings*`; `components/chat/conversation-view.tsx` dùng chung; Sidebar có mục PU AI.
 - 2026-10-16 — `/settings/puai` + `/settings/puai/[item]` (`components/settings/puai/*`, `lib/puai-settings-registry.ts`, `hooks/chat/use-puai-settings.ts`), `/ai-terms`; `AiMessageFooter` (👍/👎, nhãn bộ nhớ); admin tab PU AI; connector mặc định lấy từ server thay localStorage.
 - 2026-10-16 — bảng tin mặc định chuyển về `/` (`app/(app)/page.tsx`, chưa đăng nhập hiện `LandingView`); `/home` tự động chuyển về `/`. Thông báo & xem trước (`NotificationRow`, toast `useNotificationsSync`, `FeaturedCommentPreview`, `QuizCard`, `FlashcardDeck`) dựng qua `MarkdownPreview` (`inline` cho thông báo/bình luận nổi bật, hỗ trợ in đậm, code, KaTeX) + hiện avatar `N7AiMark` cho `@puai`; `DropdownMenu` mặc định `modal={false}` tránh CLS.
