@@ -20,9 +20,9 @@
 | "Chat mới" | `POST /ai/threads` dùng lại thread rỗng sẵn có | Bấm nhiều lần không sinh rác |
 | Tiêu đề thread | Tự đặt từ câu hỏi đầu (cắt 60 ký tự, trong transaction gửi tin), sửa được | Không tốn lượt/độ trễ LLM; model suy nghĩ ăn hết `max_tokens` nhỏ |
 | Trí nhớ dài | Tóm tắt cuộn `conversations.ai_summary` + `ai_summary_upto`; gửi LLM = tóm tắt + ≤ 20 tin sau mốc | Thread dài không quên phần đầu, prompt không phình |
-| Skill | Bảng `ai_skills` của từng người (≤ 30), chỉ chủ skill gọi được; list trả payload nhẹ, chi tiết mới có `instructions` | Prompt riêng tư; cache list lâu ở client |
+| Skill | Bảng `ai_skills` của từng người (≤ 30), chỉ chủ skill gọi được; list trả payload nhẹ, chi tiết mới có `instructions`. Chia sẻ công khai ⇒ người khác **cài = sao chép** (§8) | Prompt riêng tư mặc định; bản cài độc lập, chủ sửa/xóa không ảnh hưởng người đã cài |
 | Chế độ học | Giữ 6 `AiMode` (thanh chip + `/explain`…) — skill là lớp chỉ dẫn **cộng thêm** | Không phá quiz/flashcard đang render theo `aiMode` |
-| Connector | Thư viện PU (mặc định), Tài liệu của tôi (gồm riêng tư, đọc `document_chunks`), Nhóm học của tôi, **Google Drive** (OAuth riêng `drive.readonly`, xem §7) | Nguồn nội bộ không cần quyền thêm; Drive chỉ khi người dùng tự kết nối, token mã hóa |
+| Connector | Thư viện PU (mặc định), Tài liệu của tôi (gồm riêng tư, đọc `document_chunks`), Nhóm học của tôi, **Google Drive**, **Google Calendar** (OAuth riêng, scope chỉ đọc, xem §7) | Nguồn nội bộ không cần quyền thêm; Google chỉ khi người dùng tự kết nối, token mã hóa |
 | Research | Cờ theo tin: truy xuất sâu hơn (8 bài + 4 tài liệu, thân dài hơn) + prompt báo cáo; **tốn 2 lượt** (`ai_runs.task='research'`) | Chi phí token cao hơn |
 | Tùy chọn composer | Connector / Research nhớ ở `localStorage` (try/catch), gửi kèm từng tin, lưu `meta` | Không cần thêm bảng / endpoint cài đặt |
 
@@ -47,14 +47,15 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 | POST | `/conversations/:id/messages` | body thêm `refs[] (≤5)`, `skillId`, `research`, `connectors[]`. Nhóm: có `aiMode`/`skillId`/`research` ⇒ gọi PU AI như `@puai` |
 | GET | `/conversations/:id/mentions?after=` | id tin nhắc mình sau mốc `after` (mốc đã đọc lúc mở — web tự đánh dấu đã đọc ngay khi mở), ≤ 50 ⇒ nút "nhảy tới @" |
 | GET | `/chat/refs?q=&types=` | gợi ý ngữ cảnh: course / document / post / thread, 1 truy vấn `UNION ALL`, ≤ 4 mỗi loại; `q` rỗng ⇒ gần đây của mình |
-| GET | `/ai/threads?q=&cursor=&limit=` | keyset `(sort_at, id)`, payload `{id, title, lastMessageAt}` |
+| GET | `/ai/threads?q=&cursor=&limit=` | keyset `(sort_at, id)`, payload `{id, title, lastMessageAt}`; `q` khớp tiêu đề **hoặc nội dung tin** (chỉ quét thread của mình) |
 | POST | `/ai/threads` | tạo / dùng lại thread rỗng |
-| PATCH / DELETE | `/ai/threads/:id` | đổi tên / xóa (cascade tin) |
+| PATCH / DELETE | `/ai/threads/:id` | đổi tên / xóa (cascade tin; tệp đính kèm trên R2 `chat/{userId}/` bị xóa theo, best-effort) |
 | GET / POST | `/ai/skills` | list nhẹ / tạo |
 | GET / PATCH / DELETE | `/ai/skills/:id` | chi tiết có `instructions` / sửa / xóa |
 | GET | `/ai/connectors` | registry + `available` / `connected` / `account` của người xem |
-| GET | `/ai/connectors/google-drive/connect` · `/callback` | OAuth redirect flow (state trong session) ⇒ `/messages?drive=connected\|error` |
-| DELETE | `/ai/connectors/google-drive` | xóa token + revoke phía Google |
+| GET | `/ai/connectors/{google-drive\|google-calendar}/connect` · `/ai/connectors/google/callback` | OAuth redirect flow (state + provider trong session, 1 callback URI) ⇒ `/messages?connector=…&result=…` |
+| DELETE | `/ai/connectors/{google-drive\|google-calendar}` | xóa token + revoke phía Google |
+| GET / POST | `/ai/skills/library?q=` · `/ai/skills/:id/install` | thư viện skill công khai (cờ `installed`) · cài = sao chép |
 
 `ConversationSummary.unreadMentions` (badge `@`).
 
@@ -77,15 +78,25 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 
 ## 6. Backlog
 
-- Connector Google Calendar (cùng cơ chế Drive).
-- Chia sẻ skill công khai (thư viện skill trường).
-- Tìm thread theo nội dung tin (hiện: theo tiêu đề).
-- Xóa tệp R2 khi xóa thread AI.
+- Đã làm hết phần đề xuất ban đầu. Ý tưởng tiếp: index trigram cho `messages.content` nếu số tin AI mỗi người lớn; xác minh Google để mở connector cho mọi người.
 
-## 7. Connector Google Drive
+## 7. Connector Google (Drive · Calendar)
 
 - Migration `ai-connectors-upgrade.sql`: `user_connectors(user_id, provider, refresh_token_enc, account_email, scope, …, PK(user_id, provider))`.
-- `ai/connectors/`: `GoogleDriveService` (authorize URL, đổi code, làm mới access token có cache, tìm `fullText contains`, export Docs/Sheets/Slides, tải PDF/DOCX/txt ≤ 10 MB ⇒ `ai/doc-text.ts`), `TokenCipher` (AES-256-GCM), `AiConnectorsService` (registry + trạng thái), `AiConnectorsController`.
+- `ai/connectors/`: `GoogleOAuthService` (dùng chung: authorize URL, đổi code, kiểm scope, làm mới access token có cache, revoke, `invalid_grant` ⇒ xóa), `GoogleDriveService` (tìm `fullText contains`, export Docs/Sheets/Slides, tải PDF/DOCX/txt ≤ 10 MB ⇒ `ai/doc-text.ts`), `GoogleCalendarService` (sự kiện lịch chính N ngày tới), `TokenCipher` (AES-256-GCM), `AiConnectorsService` (registry + trạng thái), `AiConnectorsController` (`:provider/connect`, `google/callback`, `DELETE :provider`).
+- Thêm provider Google mới = 1 dòng `GOOGLE_PROVIDERS` + 1 service đọc dữ liệu + 1 nhánh trong `AiRetrieval`.
 - Token bị thu hồi (`invalid_grant`) ⇒ tự xóa kết nối; mọi lỗi Drive ⇒ PU AI bỏ qua nguồn này (`AiRetrieval.safe`).
-- Web: menu `+` › Connectors hiện "Kết nối" (điều hướng cả trang tới `/api/ai/connectors/google-drive/connect`), đã kết nối ⇒ bật/tắt như nguồn khác + email tài khoản + "Ngắt Google Drive"; `/messages?drive=` báo kết quả bằng toast.
+- Web: menu `+` › Connectors hiện "Kết nối" (điều hướng cả trang tới `/api/ai/connectors/<slug>/connect`), đã kết nối ⇒ bật/tắt như nguồn khác + email tài khoản + "Ngắt …"; `/messages?connector=&result=` báo kết quả bằng toast.
 - Cấu hình Google Console: [`docs/auth-google.md`](../auth-google.md#connector-google-drive-cho-pu-ai-tùy-chọn).
+
+## 8. Thư viện skill công khai
+
+- Migration `ai-skills-share-upgrade.sql`: `ai_skills.is_public`, `install_count`, `source_skill_id` (FK `ON DELETE SET NULL`), index một phần `WHERE is_public` theo lượt cài, unique `(owner_id, source_skill_id)` ⇒ mỗi người cài 1 skill gốc tối đa 1 lần.
+- `GET /ai/skills/library?q=`: skill công khai của người khác (tài khoản active), tìm không dấu theo tên/mô tả/lệnh, nhiều lượt cài trước, ≤ 30, kèm `installed`. Không trả `instructions`.
+- `POST /ai/skills/:id/install` (transaction): kiểm giới hạn 30, lệnh trùng ⇒ hậu tố `-2`, `-3`…; bản cài mặc định riêng tư; tăng `install_count` bản gốc.
+- Web: hộp thoại Skill có tab **Của bạn / Thư viện**, form có công tắc **Chia sẻ lên thư viện**.
+
+## 9. Chất lượng mã
+
+- ESLint flat config: `apps/web/eslint.config.mjs` (`next/core-web-vitals` + `next/typescript`), `apps/api/eslint.config.mjs` (`typescript-eslint` recommended). `pnpm lint`: API 0 cảnh báo; web 0 lỗi (cảnh báo còn lại ở code cũ: biến thừa, `any`, `<img>`).
+- `.prettierrc.json` khớp style repo; file của tính năng này đã format, code cũ không format lại hàng loạt (tránh diff lớn).

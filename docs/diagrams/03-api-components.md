@@ -51,7 +51,7 @@ flowchart TB
   chat --> ai
   posts -->|PostAiService: @puai trong bình luận · tóm tắt bài| ai
   ai -->|chat/completions| llm["LLM gateway"]
-  ai -->|AiConnectorsController · GoogleDriveService: OAuth + Drive API v3| gdrive["Google Drive"]
+  ai -->|AiConnectorsController · GoogleOAuth → Drive / Calendar| gdrive["Google Drive / Calendar"]
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
   others -->|StudyGroupChatService: đồng bộ thành viên| chat
   blocks -->|block.changed| rt
@@ -97,7 +97,7 @@ flowchart TB
 | Personalization | `POST events` (lô ≤ 50 sự kiện hành vi, 204) · `GET ai/suggestions?mode=` (`{ personalized, items[] }`) |
 | Presence | `GET presence` (`{ [userId]: { online, lastSeenAt } }` của người cùng hội thoại) |
 | Blocks | `GET blocks` (mình đã chặn ai) · `PUT blocks/:userId` (chặn, idempotent, hủy theo dõi 2 chiều) · `DELETE blocks/:userId` |
-| Chat | `GET conversations` (`filter`, `cursor`, `limit` → `{ data, nextCursor }`) · `GET conversations/unread-count` · `POST conversations/direct` · `POST conversations/ai` · `POST conversations` (nhóm) · `POST conversations/study-groups/:groupId` · `GET/PATCH conversations/:id` · `PATCH conversations/:id/settings` (tắt TB, ghim) · `GET/POST conversations/:id/members` · `DELETE conversations/:id/members/:userId` · `POST conversations/:id/owner` · `POST conversations/:id/read` · `POST conversations/:id/leave` · `GET/POST conversations/:id/messages` (keyset `before`, `clientMsgId` idempotent, `attachments`, `replyToId`, `aiMode`) · `GET conversations/:id/messages/search` · `GET conversations/:id/pinned` · `GET conversations/:id/attachments` · `PATCH/DELETE messages/:id` · `GET/POST messages/:id/reactions` · `POST messages/:id/pin` · `GET ai/quota` · `POST ai/conversations/:id/reset` · `GET conversations/:id/mentions?after=` · `GET chat/refs?q=&types=` · `GET/POST ai/threads` (keyset `q`, `cursor`) · `PATCH/DELETE ai/threads/:id` · `GET/POST ai/skills` · `GET/PATCH/DELETE ai/skills/:id` · `GET ai/connectors` (kèm `connected`, `account`) · `GET ai/connectors/google-drive/connect` (302 → Google) · `GET ai/connectors/google-drive/callback` (state trong session) · `DELETE ai/connectors/google-drive`. Body gửi tin thêm `refs[]`, `skillId`, `research`, `connectors[]` |
+| Chat | `GET conversations` (`filter`, `cursor`, `limit` → `{ data, nextCursor }`) · `GET conversations/unread-count` · `POST conversations/direct` · `POST conversations/ai` · `POST conversations` (nhóm) · `POST conversations/study-groups/:groupId` · `GET/PATCH conversations/:id` · `PATCH conversations/:id/settings` (tắt TB, ghim) · `GET/POST conversations/:id/members` · `DELETE conversations/:id/members/:userId` · `POST conversations/:id/owner` · `POST conversations/:id/read` · `POST conversations/:id/leave` · `GET/POST conversations/:id/messages` (keyset `before`, `clientMsgId` idempotent, `attachments`, `replyToId`, `aiMode`) · `GET conversations/:id/messages/search` · `GET conversations/:id/pinned` · `GET conversations/:id/attachments` · `PATCH/DELETE messages/:id` · `GET/POST messages/:id/reactions` · `POST messages/:id/pin` · `GET ai/quota` · `POST ai/conversations/:id/reset` · `GET conversations/:id/mentions?after=` · `GET chat/refs?q=&types=` · `GET/POST ai/threads` (keyset `q`, `cursor`) · `PATCH/DELETE ai/threads/:id` · `GET/POST ai/skills` · `GET/PATCH/DELETE ai/skills/:id` · `GET ai/connectors` (kèm `connected`, `account`) · `GET ai/connectors/:provider/connect` (google-drive · google-calendar, 302 → Google) · `GET ai/connectors/google/callback` (state + provider trong session) · `DELETE ai/connectors/:provider` · `GET ai/skills/library?q=` · `POST ai/skills/:id/install`. Body gửi tin thêm `refs[]`, `skillId`, `research`, `connectors[]` |
 
 ### GraphQL (`/graphql`)
 
@@ -125,6 +125,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-16 — `GoogleOAuthService` dùng chung + `GoogleCalendarService`; thư viện skill công khai (`ai/skills/library`, `install`); `ai/threads?q=` tìm cả nội dung; xóa thread dọn tệp R2 (`StorageService.deleteObjects`).
 - 2026-10-16 — AiModule: `AiConnectorsController` + `GoogleDriveService` (OAuth `drive.readonly`, token AES-256-GCM trong `user_connectors`), `AiRetrieval` thêm connector `google_drive`; `ai/doc-text.ts` dùng chung trích chữ PDF/DOCX/txt.
 - 2026-10-16 — Chat: `ChatMentionsService` (mention nhóm, `GET conversations/:id/mentions`), `ChatRefsController` `GET chat/refs`, `AiThreadsController` `ai/threads`, `AiSkillsController` `ai/skills`, `GET ai/connectors`, `AiMemoryService` (tóm tắt cuộn); event `ai.thread.updated`; `AiRetrieval` theo connector.
 - 2026-10-16 — Users: `GET users/suggestions` (`FollowSuggestionsService`, chấm điểm bạn chung/lớp/khoa/sở thích); cột phải web chuyển từ GraphQL `suggestedUsers` sang endpoint này.

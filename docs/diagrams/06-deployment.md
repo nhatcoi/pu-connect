@@ -80,6 +80,7 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 | `/etc/nginx/sites-available/pu-connector.conf` | Routing + SSL | Backup `/root/pu-connector.conf.bak.*` |
 
 **Changelog:**
+- 2026-10-16 — migration `ai-skills-share-upgrade.sql`; env `GOOGLE_DRIVE_CALLBACK_URL` đổi thành `GOOGLE_CONNECTOR_CALLBACK_URL` (callback chung `/api/ai/connectors/google/callback`).
 - 2026-10-16 — migration `ai-connectors-upgrade.sql`; env mới `GOOGLE_DRIVE_CALLBACK_URL` (tùy chọn), `CONNECTOR_ENCRYPTION_KEY` (khuyên đặt).
 - 2026-10-14 — Smoke check trước khi restart: `node -e "require('./dist/apps/api/src/app.module')"`; lỗi nạp module (vd. import giá trị runtime từ `@pu/schemas` — package chỉ dùng `import type` ở API) ⇒ dừng deploy, API cũ vẫn chạy.
 - 2026-10-13 — Build web nhẹ RAM: cache webpack dùng chung giữa slot, bỏ typecheck/lint trên VPS, nice/ionice.

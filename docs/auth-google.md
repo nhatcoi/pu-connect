@@ -60,15 +60,19 @@ Không đặt `SMTP_HOST`: API chỉ ghi link xác thực vào log (`[MailServic
 - Mọi thao tác ghi yêu cầu session (`requireUserId`), không có fallback sang tài khoản khác.
 
 
-## Connector Google Drive cho PU AI (tùy chọn)
-PU AI đọc được file trong Drive của người dùng **sau khi họ tự kết nối** (menu `+` › Connectors › Google Drive). Luồng OAuth riêng, tách khỏi đăng nhập:
+## Connector Google Drive & Google Calendar cho PU AI (tùy chọn)
+PU AI đọc được Drive / lịch của người dùng **sau khi họ tự kết nối** (menu `+` › Connectors). Luồng OAuth riêng, tách khỏi đăng nhập, mỗi connector 1 scope chỉ đọc:
 
-- `GET /api/ai/connectors/google-drive/connect` → Google (scope `openid email https://www.googleapis.com/auth/drive.readonly`, `access_type=offline`, `prompt=consent`, `state` lưu session) → `GET /api/ai/connectors/google-drive/callback` → `/messages?drive=connected|error`.
-- Refresh token mã hóa **AES-256-GCM** (khóa = SHA-256 của `CONNECTOR_ENCRYPTION_KEY`, mặc định `SESSION_SECRET`) trong bảng `user_connectors`; access token chỉ giữ trong bộ nhớ. Google trả `invalid_grant` (người dùng thu hồi) ⇒ tự xóa kết nối. Ngắt kết nối gọi `oauth2.googleapis.com/revoke`.
-- Khi hỏi: `files.list` với `fullText contains` (≤ 4 từ khóa) ⇒ đọc 2 file (Research: 4): Docs/Slides xuất `text/plain`, Sheets `text/csv`, PDF/DOCX/txt ≤ 10 MB trích chữ; ≤ 2 500 ký tự/file. Nhóm chat không dùng Drive.
+| Connector | Scope | PU AI dùng thế nào |
+|---|---|---|
+| Google Drive | `https://www.googleapis.com/auth/drive.readonly` | `files.list` với `fullText contains` (≤ 4 từ khóa) ⇒ đọc 2 file (Research: 4): Docs/Slides xuất `text/plain`, Sheets `text/csv`, PDF/DOCX/txt ≤ 10 MB trích chữ; ≤ 2 500 ký tự/file |
+| Google Calendar | `https://www.googleapis.com/auth/calendar.readonly` | sự kiện lịch chính 14 ngày tới (Research: 30 ngày), giờ Việt Nam ⇒ lập lộ trình ôn quanh lịch bận |
+
+- `GET /api/ai/connectors/{google-drive|google-calendar}/connect` → Google (`access_type=offline`, `prompt=consent`, `state` + provider lưu session) → **một** callback chung `GET /api/ai/connectors/google/callback` → `/messages?connector=…&result=connected|error`.
+- Refresh token mã hóa **AES-256-GCM** (khóa = SHA-256 của `CONNECTOR_ENCRYPTION_KEY`, mặc định `SESSION_SECRET`) trong bảng `user_connectors`; access token chỉ giữ trong bộ nhớ. Google trả `invalid_grant` (người dùng thu hồi) ⇒ tự xóa kết nối. Ngắt kết nối gọi `oauth2.googleapis.com/revoke`. Nhóm chat không dùng connector Google.
 
 Cấu hình thêm trên Google Cloud Console (cùng OAuth client):
-1. **APIs & Services → Library → Google Drive API → Enable**.
-2. **OAuth consent screen → Scopes**: thêm `.../auth/drive.readonly` (scope *restricted*: khi app ở chế độ *Testing* chỉ test user dùng được; mở cho mọi người cần Google xác minh app).
-3. **Credentials → OAuth client → Authorized redirect URIs**: thêm `https://puc.vnhat.dev/api/ai/connectors/google-drive/callback` (và bản `localhost` nếu chạy local).
-4. Env: đặt `CONNECTOR_ENCRYPTION_KEY` (chuỗi ngẫu nhiên dài); `GOOGLE_DRIVE_CALLBACK_URL` chỉ cần khi khác origin với `GOOGLE_CALLBACK_URL`.
+1. **APIs & Services → Library**: bật **Google Drive API** và **Google Calendar API**.
+2. **OAuth consent screen → Scopes**: thêm `.../auth/drive.readonly` (*restricted*) và `.../auth/calendar.readonly` (*sensitive*). Khi app ở chế độ *Testing* chỉ test user dùng được; mở cho mọi người cần Google xác minh app.
+3. **Credentials → OAuth client → Authorized redirect URIs**: thêm `https://puc.vnhat.dev/api/ai/connectors/google/callback` (và bản `localhost` nếu chạy local).
+4. Env: `CONNECTOR_ENCRYPTION_KEY` (chuỗi ngẫu nhiên dài; đổi khóa ⇒ người dùng phải kết nối lại); `GOOGLE_CONNECTOR_CALLBACK_URL` chỉ cần khi khác origin với `GOOGLE_CALLBACK_URL`.
