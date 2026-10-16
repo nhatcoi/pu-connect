@@ -15,8 +15,8 @@ export const CHAT_MAX_REFS = 5
 export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
 
-// Nguồn PU AI được đọc (connector nội bộ); 'library' = mặc định
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups'] as const
+// Nguồn PU AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive'] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
 export const ChatAttachmentSchema = z.object({
@@ -36,7 +36,10 @@ export const SendMessageSchema = z
     replyToId: z.string().regex(/^\d+$/).optional(),
     attachments: z.array(ChatAttachmentSchema).max(CHAT_MAX_ATTACHMENTS).optional(),
     aiMode: z.enum(AI_MODES).optional(),
-    refs: z.array(z.object({ type: z.enum(CHAT_REF_TYPES), id: z.string().uuid() })).max(CHAT_MAX_REFS).optional(),
+    refs: z
+      .array(z.object({ type: z.enum(CHAT_REF_TYPES), id: z.string().uuid() }))
+      .max(CHAT_MAX_REFS)
+      .optional(),
     skillId: z.string().uuid().optional(),
     research: z.boolean().optional(),
     connectors: z.array(z.enum(AI_CONNECTORS)).max(AI_CONNECTORS.length).optional()
@@ -70,7 +73,12 @@ export const AddMembersSchema = z.object({ userIds: z.array(z.string().uuid()).m
 
 // muted: số giờ tắt thông báo (0 = bật lại, -1 = đến khi bật lại)
 export const MemberSettingsSchema = z.object({
-  mutedHours: z.number().int().min(-1).max(24 * 30).optional(),
+  mutedHours: z
+    .number()
+    .int()
+    .min(-1)
+    .max(24 * 30)
+    .optional(),
   pinned: z.boolean().optional()
 })
 export type MemberSettingsInput = z.infer<typeof MemberSettingsSchema>
@@ -118,7 +126,8 @@ export interface ChatReplyPreview {
 }
 
 // Tin hệ thống (thêm/xóa thành viên, đổi tên nhóm, làm mới ngữ cảnh AI)
-export type ChatSystemEvent = 'group.created' | 'group.renamed' | 'member.added' | 'member.removed' | 'member.left' | 'group.avatar' | 'owner.transferred' | 'ai.reset'
+export type ChatSystemEvent =
+  'group.created' | 'group.renamed' | 'member.added' | 'member.removed' | 'member.left' | 'group.avatar' | 'owner.transferred' | 'ai.reset'
 
 // Người được nhắc trong tin (client tô sáng @username khớp danh sách này)
 export interface ChatMentionedUser {
@@ -252,10 +261,13 @@ export interface AiSkillDetail extends AiSkill {
 }
 
 export interface AiConnectorInfo {
-  id: AiConnectorId | 'google_drive'
+  id: AiConnectorId
   name: string
   description: string
-  available: boolean // false = sắp có
+  available: boolean // false = server chưa cấu hình
+  requiresAuth: boolean // cần kết nối tài khoản ngoài
+  connected: boolean
+  account: string | null // email tài khoản đã kết nối
 }
 
 export interface ChatRefSuggestion {
@@ -298,4 +310,3 @@ export type PresenceMap = Record<string, PresenceInfo>
 export interface PresenceUpdateEvent extends PresenceInfo {
   userId: string
 }
-

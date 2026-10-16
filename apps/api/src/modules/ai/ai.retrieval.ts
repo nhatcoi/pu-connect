@@ -1,25 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common'
-import type { AiConnectorId, AiConnectorInfo } from '@pu/schemas'
+import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { GoogleDriveService } from './connectors/google-drive.service'
 
-export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group'; id: string; title: string; body: string }
+export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive'; id: string; title: string; body: string }
 
 export interface RetrieveOptions {
   connectors?: AiConnectorId[] // mặc định: ['library']
   research?: boolean // truy xuất sâu hơn (nhiều nguồn, thân dài hơn)
 }
 
-// Connector nội bộ (registry hiển thị ở menu "+"); Google Drive cần OAuth riêng ⇒ sắp có
-export const AI_CONNECTOR_INFO: AiConnectorInfo[] = [
-  { id: 'library', name: 'Thư viện PU', description: 'Bài viết & tài liệu công khai, lời giải đã duyệt', available: true },
-  { id: 'my_documents', name: 'Tài liệu của tôi', description: 'Tài liệu bạn đã tải lên (kể cả riêng tư), đọc nội dung tệp', available: true },
-  { id: 'my_groups', name: 'Nhóm học của tôi', description: 'Tên, chủ đề, môn của các nhóm học bạn tham gia', available: true },
-  { id: 'google_drive', name: 'Google Drive', description: 'Sắp có', available: false }
-]
-
 // Bỏ dấu tiếng Việt (khớp cột search_tsv đã unaccent)
-const unaccent = (s: string) =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
+const unaccent = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
 // Từ khóa → tsquery OR tiền tố ('' nếu không có từ nào đủ dài)
 function toTsQuery(question: string): string {
@@ -38,7 +30,10 @@ function toTsQuery(question: string): string {
 export class AiRetrieval {
   private readonly logger = new Logger(AiRetrieval.name)
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly drive: GoogleDriveService
+  ) {}
 
   async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Source[]> {
     const connectors = new Set(opts.connectors?.length ? opts.connectors : ['library'])
@@ -48,6 +43,7 @@ export class AiRetrieval {
     if (connectors.has('library') && tsquery) tasks.push(this.safe('library', () => this.library(tsquery, requesterId, research)))
     if (connectors.has('my_documents') && tsquery) tasks.push(this.safe('my_documents', () => this.myDocuments(tsquery, requesterId, research)))
     if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
+    if (connectors.has('google_drive')) tasks.push(this.safe('google_drive', () => this.googleDrive(question, requesterId, research)))
     return (await Promise.all(tasks)).flat()
   }
 
@@ -110,6 +106,12 @@ export class AiRetrieval {
     return res.rows.map((r) => ({ type: 'document' as const, id: r.id, title: r.title, body: r.body }))
   }
 
+  // Google Drive (đã kết nối): file khớp từ khóa, đọc nội dung
+  private async googleDrive(question: string, requesterId: string, research: boolean): Promise<Source[]> {
+    const files = await this.drive.search(requesterId, question, research ? 4 : 2)
+    return files.map((f) => ({ type: 'drive' as const, id: f.id, title: f.title, body: f.body }))
+  }
+
   // Nhóm học của tôi: tóm tắt ngắn (không phụ thuộc câu hỏi, ≤ 5 nhóm)
   private async myGroups(requesterId: string): Promise<Source[]> {
     const res = await this.db.query(
@@ -129,8 +131,6 @@ export class AiRetrieval {
 // Gói nguồn vào khối <context> (dữ liệu, không phải chỉ dẫn)
 export function contextBlock(sources: Source[]): string {
   if (!sources.length) return ''
-  const body = sources
-    .map((s) => `<data source="${s.type}:${s.id}" title="${s.title.replace(/"/g, "'")}">\n${s.body}\n</data>`)
-    .join('\n')
+  const body = sources.map((s) => `<data source="${s.type}:${s.id}" title="${s.title.replace(/"/g, "'")}">\n${s.body}\n</data>`).join('\n')
   return `<context>\n${body}\n</context>\n\n`
 }

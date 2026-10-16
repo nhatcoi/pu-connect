@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, MessageCircle, PenSquare } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
@@ -13,6 +13,7 @@ import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
 import { chatApi, refreshConversationLists, useConversations } from '@/hooks/chat'
+import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import type { ConversationFilter as Filter } from '@pu/schemas'
@@ -31,6 +32,17 @@ export default function MessagesPage() {
   const [composing, setComposing] = useState(false)
   const [openingAi, setOpeningAi] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
+  const searchParams = useSearchParams()
+  const driveResult = searchParams.get('drive')
+
+  // Quay về từ màn đồng ý Google Drive ⇒ báo kết quả, làm mới connector, xóa tham số khỏi URL
+  useEffect(() => {
+    if (!driveResult) return
+    if (driveResult === 'connected') toast.success('Đã kết nối Google Drive — bật trong + › Connectors khi hỏi PU AI')
+    else toast.error('Không kết nối được Google Drive. Thử lại nhé!')
+    void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
+    router.replace('/messages')
+  }, [driveResult, qc, router])
   // Lọc ở server, mỗi bộ lọc 1 cache; 'all' dùng chung với hasAi (cùng query ⇒ không tải 2 lần)
   const { conversations: visible, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useConversations(filter)
   const { conversations: all, isPending: allPending } = useConversations('all')
@@ -108,7 +120,9 @@ export default function MessagesPage() {
       ) : visible.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground space-y-2">
           <MessageCircle className="h-10 w-10 mx-auto opacity-30 text-primary" />
-          <p className="text-sm font-medium">{filter === 'all' ? 'Chưa có hội thoại nào' : filter === 'unread' ? 'Đã đọc hết tin nhắn 🎉' : 'Chưa tham gia nhóm chat nào'}</p>
+          <p className="text-sm font-medium">
+            {filter === 'all' ? 'Chưa có hội thoại nào' : filter === 'unread' ? 'Đã đọc hết tin nhắn 🎉' : 'Chưa tham gia nhóm chat nào'}
+          </p>
           {filter !== 'unread' && <p className="text-xs">Bấm “Mới” để nhắn tin hoặc tạo nhóm học.</p>}
         </div>
       ) : (

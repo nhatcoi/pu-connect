@@ -23,7 +23,7 @@ import type {
   PresenceMap,
   UpdateGroupInput
 } from '@pu/schemas'
-import { apiClient } from '@/lib/api-client'
+import { API_BASE_URL, apiClient } from '@/lib/api-client'
 
 type Envelope<T> = { success: boolean; data: T }
 const unwrap = async <T>(p: Promise<Envelope<T>>) => (await p).data
@@ -56,11 +56,9 @@ export const chatApi = {
   openDirect: (userId: string) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/direct', json('POST', { userId }))),
   openStudyGroup: (groupId: string) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/study-groups/${groupId}`, json('POST'))),
   openAi: () => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/ai', json('POST'))),
-  createGroup: (title: string, memberIds: string[]) =>
-    unwrap(apiClient<Envelope<ConversationSummary>>('/conversations', json('POST', { title, memberIds }))),
+  createGroup: (title: string, memberIds: string[]) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations', json('POST', { title, memberIds }))),
   updateGroup: (id: string, body: UpdateGroupInput) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}`, json('PATCH', body))),
-  settings: (id: string, body: MemberSettingsInput) =>
-    unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}/settings`, json('PATCH', body))),
+  settings: (id: string, body: MemberSettingsInput) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}/settings`, json('PATCH', body))),
   members: (id: string) => unwrap(apiClient<Envelope<ChatMember[]>>(`/conversations/${id}/members`)),
   addMembers: (id: string, userIds: string[]) => unwrap(apiClient<Envelope<ChatMember[]>>(`/conversations/${id}/members`, json('POST', { userIds }))),
   removeMember: (id: string, userId: string) => apiClient(`/conversations/${id}/members/${userId}`, json('DELETE')),
@@ -90,6 +88,8 @@ export const chatApi = {
   presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),
   aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST'))),
   aiConnectors: () => unwrap(apiClient<Envelope<AiConnectorInfo[]>>('/ai/connectors')),
+  driveConnectUrl: `${API_BASE_URL}/ai/connectors/google-drive/connect`, // điều hướng cả trang (OAuth redirect)
+  disconnectDrive: () => apiClient('/ai/connectors/google-drive', json('DELETE')),
 
   // PU AI nhiều hội thoại
   aiThreads: (q: string, cursor: string | null, signal?: AbortSignal) =>

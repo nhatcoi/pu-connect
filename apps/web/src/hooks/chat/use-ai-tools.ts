@@ -38,9 +38,22 @@ export function useAiSkillActions() {
   return { create, update, remove }
 }
 
-// Registry connector (tĩnh phía server) ⇒ cache cả phiên
+// Registry connector + trạng thái kết nối (đổi khi kết nối / ngắt) ⇒ cache 5 phút
 export function useAiConnectors(enabled = true) {
-  return useQuery({ queryKey: queryKeys.aiConnectors, queryFn: chatApi.aiConnectors, staleTime: Infinity, enabled })
+  return useQuery({ queryKey: queryKeys.aiConnectors, queryFn: chatApi.aiConnectors, staleTime: 5 * 60 * 1000, enabled })
+}
+
+// Ngắt Google Drive ⇒ làm mới trạng thái connector
+export function useDisconnectDrive() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: chatApi.disconnectDrive,
+    onSuccess: () => {
+      toast.success('Đã ngắt kết nối Google Drive')
+      void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
+    },
+    onError: (err: Error) => toast.error(err.message || 'Không ngắt được kết nối')
+  })
 }
 
 const REF_DEBOUNCE_MS = 150
