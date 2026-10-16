@@ -15,6 +15,8 @@ import { PostCard } from '@/components/social/post-card'
 import { VirtualPostList } from '@/components/social/virtual-post-list'
 import { Button } from '@/components/ui/button'
 import { usePosts, prefetchFeed } from '@/hooks/use-posts'
+import { useNewPosts } from '@/hooks/use-new-posts'
+import { NewPostsPill } from '@/components/social/new-posts-pill'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
@@ -42,10 +44,13 @@ function HomeContent() {
     isLoading: isPostsLoading,
     isLoadingMore,
     hasMore,
-    fetchMore
+    fetchMore,
+    newSince
   } = usePosts({
     feedType: activeFeedTab
   })
+  // Pill "bài mới" (polling + socket)
+  const newPosts = useNewPosts(activeFeedTab, null, newSince)
   
   const queryClient = useQueryClient()
   const user = useAppStore((state) => state.user)
@@ -87,6 +92,13 @@ function HomeContent() {
           ]}
         />
       </div>
+
+      <NewPostsPill
+        count={newPosts.count}
+        authors={newPosts.authors}
+        isRevealing={newPosts.isRevealing}
+        onClick={() => void newPosts.reveal()}
+      />
 
       {/* Ô soạn bài dạng thẻ (Composer card) */}
       <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">

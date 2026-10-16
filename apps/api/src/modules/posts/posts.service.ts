@@ -6,6 +6,7 @@ import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import { interestBoostSql } from '../personalization/interest-profile.sql'
 import { featuredCommentsSql } from './featured-comment.sql'
+import { RealtimeGateway } from '../realtime/realtime.gateway'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment } from '@pu/schemas'
 
 export interface FeedResult {
@@ -13,6 +14,28 @@ export interface FeedResult {
   total: number
   hasMore: boolean
   nextOffset: number
+  // Mốc snapshot của trang; client gửi lại làm `before` cho trang sau
+  snapshotAt: string
+}
+
+// Cửa sổ thời gian của feed: before = mốc snapshot, after = chỉ lấy bài mới hơn (pill "bài mới")
+export interface FeedWindow {
+  before?: string
+  after?: string
+}
+
+export interface NewPostsSummary {
+  count: number
+  authors: { id: string; username: string; displayName: string; avatarUrl: string | null }[]
+}
+
+// Đếm tối đa N bài mới (pill hiển thị "N+")
+const NEW_POSTS_MAX = 50
+
+function parseIsoDate(value?: string): Date | null {
+  if (!value) return null
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
 }
 
 @Injectable()
@@ -22,7 +45,8 @@ export class PostsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly mentions: MentionsService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly realtime: RealtimeGateway
   ) {}
 
   async findAll(
@@ -31,20 +55,31 @@ export class PostsService {
     limit = 10,
     offset = 0,
     feedType = 'for_you',
-    courseCode?: string
+    courseCode?: string,
+    window: FeedWindow = {}
   ): Promise<FeedResult> {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
 
-    let scoreCalculation = `0.0`
-    let joins = ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id`
-
     const params: any[] = []
+    const filter = this.buildFeedFilter(params, currentUserId, tag, feedType, courseCode)
+    const { joins } = filter
+    let { whereClause } = filter
+    const { orderBy } = filter
 
+    // Mốc snapshot: trang sau chỉ lấy bài ≤ mốc ⇒ bài mới không đẩy lệch offset (pill "bài mới" lo phần > mốc)
+    // Snapshot window keeps offset pagination stable while new posts arrive
+    const snapshotAt = parseIsoDate(window.before) ?? new Date()
+    params.push(snapshotAt.toISOString())
+    whereClause += ` AND p.created_at <= $${params.length}`
+    const after = parseIsoDate(window.after)
+    if (after) {
+      params.push(after.toISOString())
+      whereClause += ` AND p.created_at > $${params.length}`
+    }
+
+    let scoreCalculation = `0.0`
     if (currentUserId) {
-      params.push(currentUserId)
-      joins += ` LEFT JOIN users cu ON cu.id = $1`
-
       scoreCalculation = `(
         (CASE WHEN u.faculty IS NOT NULL AND cu.faculty IS NOT NULL AND u.faculty = cu.faculty THEN 30.0 ELSE 0.0 END)
         + (CASE WHEN u.academic_year IS NOT NULL AND cu.academic_year IS NOT NULL AND u.academic_year = cu.academic_year THEN 15.0 ELSE 0.0 END)
@@ -62,40 +97,6 @@ export class PostsService {
         + (p.likes_count * 2.0 + p.comments_count * 5.0)
         - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
       )`
-    }
-
-    // Bài bị admin ẩn không xuất hiện trên bảng tin
-    let whereClause = ` WHERE p.hidden_at IS NULL`
-    // Ẩn bài của người có quan hệ chặn với mình
-    if (currentUserId) whereClause += ` AND NOT ${blockExistsSql('$1', 'p.author_id')}`
-
-    if (tag) {
-      params.push(tag)
-      whereClause += ` AND $${params.length} = ANY(p.tags)`
-    }
-
-    // Trang học phần: chỉ bài gắn môn đó (theo mã hoặc id)
-    if (courseCode) {
-      params.push(courseCode)
-      whereClause += ` AND (c.code ILIKE $${params.length} OR c.id::text = $${params.length})`
-    }
-
-    let orderBy = `ORDER BY recommendation_score DESC, p.created_at DESC`
-
-    if (feedType === 'following') {
-      if (currentUserId) {
-        whereClause += ` AND EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = p.author_id)`
-      } else {
-        whereClause += ` AND 1=0`
-      }
-      orderBy = `ORDER BY p.created_at DESC`
-    } else if (feedType === 'qa') {
-      whereClause += ` AND p.post_type = 'question'`
-    } else if (feedType === 'courses') {
-      whereClause += ` AND (p.course_id IS NOT NULL OR p.post_type IN ('question', 'resource_share'))`
-    } else if (feedType === 'bookmarks' && currentUserId) {
-      whereClause += ` AND EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1)`
-      orderBy = `ORDER BY p.created_at DESC`
     }
 
     // 1. Get total count
@@ -145,8 +146,100 @@ export class PostsService {
       data: items,
       total,
       hasMore: safeOffset + items.length < total,
-      nextOffset: safeOffset + items.length
+      nextOffset: safeOffset + items.length,
+      snapshotAt: snapshotAt.toISOString()
     }
+  }
+
+  // Đếm bài mới > since cho pill "bài mới" (cùng bộ lọc với feed); kèm ≤ 3 tác giả, ưu tiên người mình follow
+  // New-posts pill: count + up to 3 distinct authors, followed authors first
+  async countNewSince(
+    currentUserId: string | undefined,
+    query: { since?: string; tag?: string; feedType?: string; courseCode?: string }
+  ): Promise<NewPostsSummary> {
+    const since = parseIsoDate(query.since)
+    if (!since) return { count: 0, authors: [] }
+
+    const params: any[] = []
+    const { joins, whereClause } = this.buildFeedFilter(params, currentUserId, query.tag, query.feedType || 'for_you', query.courseCode)
+    params.push(since.toISOString())
+    let where = `${whereClause} AND p.created_at > $${params.length}`
+    // Bài của chính mình đã chèn sẵn (optimistic) ⇒ không đếm
+    if (currentUserId) where += ` AND p.author_id <> $1`
+
+    const followedSql = currentUserId
+      ? `EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = f.author_id) DESC,`
+      : ''
+    const res = await this.db.query(
+      `WITH fresh AS (
+         SELECT p.author_id, p.created_at ${joins} ${where}
+         ORDER BY p.created_at DESC LIMIT ${NEW_POSTS_MAX}
+       )
+       SELECT (SELECT COUNT(*)::int FROM fresh) AS count,
+              COALESCE((
+                SELECT json_agg(a) FROM (
+                  SELECT u.id, u.username, u.display_name AS "displayName", u.avatar_url AS "avatarUrl"
+                  FROM (SELECT author_id, MAX(created_at) AS last_at FROM fresh GROUP BY author_id) f
+                  JOIN users u ON u.id = f.author_id
+                  ORDER BY ${followedSql} f.last_at DESC
+                  LIMIT 3
+                ) a
+              ), '[]'::json) AS authors`,
+      params
+    )
+    return { count: res.rows[0]?.count || 0, authors: res.rows[0]?.authors || [] }
+  }
+
+  // Bộ lọc feed dùng chung (findAll + countNewSince). Viewer (nếu có) luôn là $1
+  // Shared feed filter; pushes viewer as $1 when present
+  private buildFeedFilter(
+    params: any[],
+    currentUserId: string | undefined,
+    tag: string | undefined,
+    feedType: string,
+    courseCode?: string
+  ): { joins: string; whereClause: string; orderBy: string } {
+    let joins = ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id`
+    if (currentUserId) {
+      params.push(currentUserId)
+      joins += ` LEFT JOIN users cu ON cu.id = $1`
+    }
+
+    // Bài bị admin ẩn không xuất hiện trên bảng tin
+    let whereClause = ` WHERE p.hidden_at IS NULL`
+    // Ẩn bài của người có quan hệ chặn với mình
+    if (currentUserId) whereClause += ` AND NOT ${blockExistsSql('$1', 'p.author_id')}`
+
+    if (tag) {
+      params.push(tag)
+      whereClause += ` AND $${params.length} = ANY(p.tags)`
+    }
+
+    // Trang học phần: chỉ bài gắn môn đó (theo mã hoặc id)
+    if (courseCode) {
+      params.push(courseCode)
+      whereClause += ` AND (c.code ILIKE $${params.length} OR c.id::text = $${params.length})`
+    }
+
+    let orderBy = `ORDER BY recommendation_score DESC, p.created_at DESC`
+
+    if (feedType === 'following') {
+      if (currentUserId) {
+        whereClause += ` AND EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = p.author_id)`
+      } else {
+        whereClause += ` AND 1=0`
+      }
+      orderBy = `ORDER BY p.created_at DESC`
+    } else if (feedType === 'qa') {
+      whereClause += ` AND p.post_type = 'question'`
+    } else if (feedType === 'courses') {
+      whereClause += ` AND (p.course_id IS NOT NULL OR p.post_type IN ('question', 'resource_share'))`
+    } else if (feedType === 'bookmarks' && currentUserId) {
+      whereClause += ` AND EXISTS(SELECT 1 FROM saved_posts sp WHERE sp.post_id = p.id AND sp.user_id = $1)`
+      orderBy = `ORDER BY p.created_at DESC`
+    }
+
+    return { joins, whereClause, orderBy }
   }
 
   async findOne(id: string, currentUserId?: string): Promise<PostItem> {
@@ -373,7 +466,23 @@ export class PostsService {
         snippet: created.title || created.content
       })
     )
+    void this.signalFollowers(authorId, created.id)
     return created
+  }
+
+  // Báo follower đang online "có bài mới" (chỉ là tín hiệu; client gọi /posts/new-since để lấy số thật)
+  // Lightweight hint — the new-since endpoint stays the source of truth (blocks, hidden, tab filters)
+  private async signalFollowers(authorId: string, postId: string): Promise<void> {
+    try {
+      const res = await this.db.query(`SELECT follower_id FROM user_follows WHERE following_id = $1`, [authorId])
+      this.realtime.emitToUsers(
+        res.rows.map((r) => r.follower_id),
+        'feed:new_post',
+        { postId, authorId }
+      )
+    } catch (err) {
+      this.logger.warn(`[FeedSignal] skipped: ${(err as Error).message}`)
+    }
   }
 
   async update(postId: string, userId: string, data: UpdatePostInput): Promise<PostItem> {

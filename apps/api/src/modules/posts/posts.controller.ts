@@ -39,6 +39,8 @@ export class PostsController {
     @Query('offset') offset: string | undefined,
     @Query('feedType') feedType: string | undefined,
     @Query('course') course: string | undefined,
+    @Query('before') before: string | undefined,
+    @Query('after') after: string | undefined,
     @Req() req: Request
   ) {
     const currentUserId = (req.user as any)?.id || null
@@ -50,15 +52,30 @@ export class PostsController {
       parsedLimit,
       parsedOffset,
       feedType || 'for_you',
-      course
+      course,
+      { before, after }
     )
     return {
       success: true,
       data: result.data,
       total: result.total,
       hasMore: result.hasMore,
-      nextOffset: result.nextOffset
+      nextOffset: result.nextOffset,
+      snapshotAt: result.snapshotAt
     }
+  }
+
+  // Pill "bài mới": số bài mới hơn `since` + ≤ 3 tác giả (đặt trước :id)
+  @Get('new-since')
+  async newSince(
+    @Query('since') since: string | undefined,
+    @Query('tag') tag: string | undefined,
+    @Query('feedType') feedType: string | undefined,
+    @Query('course') course: string | undefined,
+    @Req() req: Request
+  ) {
+    const currentUserId = (req.user as any)?.id || undefined
+    return this.postsService.countNewSince(currentUserId, { since, tag, feedType, courseCode: course })
   }
 
   @Get(':id')

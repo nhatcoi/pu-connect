@@ -179,6 +179,15 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] Web: `FeaturedCommentPreview` dưới hàng nút (avatar, nhãn "Nổi bật"/"Lời giải", 2 dòng plain-text, số tim/trả lời); bấm ⇒ mở khu bình luận; ẩn khi khu bình luận đang mở.
 - Giới hạn: relevance dùng `simple` config nên hư từ tiếng Việt ("mình", "là") làm điểm hơi cao; đủ để loại bình luận chỉ emoji/link, chưa phải độ tương đồng ngữ nghĩa.
 
+### ⬆️ Pill "Bài Mới" Trên Bảng Tin (2026-10-16)
+- [x] Kiểu X: pill nổi dưới thanh tab `↑ [≤3 avatar] N bài mới`, cùng bộ lọc tab đang xem (Dành cho bạn / Đang theo dõi / Hỏi đáp); avatar ưu tiên người mình follow; không đếm bài của mình.
+- [x] API `GET /posts/new-since?since=&feedType=&tag=` (`PostsService.countNewSince`, dùng chung `buildFeedFilter` với `findAll`, ≤ 50 bài).
+- [x] Cửa sổ snapshot cho phân trang: `GET /posts` trả `snapshotAt`; trang sau gửi `before=snapshotAt` ⇒ bài mới chen vào không làm lặp/nhảy bài khi cuộn vô hạn. `after=` lấy đúng phần bài mới khi bấm pill.
+- [x] Cập nhật số: polling 60s (dừng khi tab ẩn) + khi quay lại tab + tín hiệu socket `feed:new_post` (server fan-out tới follower qua `RealtimeGateway.emitToUsers` sau khi đăng bài; web debounce 3s rồi gọi lại `new-since`).
+- [x] Bấm pill: lấy bài mới, chèn lên đầu trang 0 (bỏ trùng, giữ bài đã tải và vị trí ảo hóa theo id), dời mốc `latestAt`, cuộn lên đầu. Wrapper sticky cao 0 ⇒ không gây layout shift.
+- Web: `hooks/use-new-posts.ts`, `components/social/new-posts-pill.tsx`, `hooks/use-posts.ts` (pageParam `{ offset, before }`), gắn ở `app/(app)/home/page.tsx`.
+- Giới hạn: mỗi lần bấm chèn tối đa 50 bài; bài của người lạ trong tab For You chỉ cập nhật theo polling (không fan-out).
+
 ### 🤖 `@puai` Trong Bình Luận (2026-10-14)
 - [x] Gõ `@puai` trong bình luận ⇒ PU AI trả lời thành bình luận con (`posts/post-ai.service.ts`), ngữ cảnh = bài viết + nhánh bình luận + nguồn liên quan; dùng chung quota/ngày với chat; người hỏi nhận thông báo "đã trả lời bình luận của bạn" và bình luận tự tải lại (socket `comments.changed`). Avatar N7AI cho bình luận của PU AI.
 - [x] Tách lõi AI dùng chung `modules/ai/` (`LlmService`, `AiRetrieval`, prompts) cho chat và bài viết. Chi tiết: [`core/06` §16](./core/06-messaging-and-ai.md).

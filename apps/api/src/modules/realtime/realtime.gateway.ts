@@ -136,6 +136,12 @@ export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     this.server?.to(this.userRoom(userId)).emit(event, payload)
   }
 
+  // Gửi 1 sự kiện tới nhiều user trong 1 lần emit (fan-out)
+  emitToUsers(userIds: string[], event: string, payload: unknown) {
+    if (!this.server || userIds.length === 0) return
+    this.server.to(userIds.map((id) => this.userRoom(id))).emit(event, payload)
+  }
+
   // Ngắt mọi socket của user (khi bị khóa tài khoản)
   disconnectUser(userId: string) {
     this.server?.in(this.userRoom(userId)).disconnectSockets(true)
