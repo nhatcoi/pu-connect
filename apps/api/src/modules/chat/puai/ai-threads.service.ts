@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import type { AiThread, AiThreadsPage } from '@pu/schemas'
+import { markdownToPlainText } from '../../notifications/notification.types'
 import { ChatCoreService } from '../chat-core.service'
 import type { ListAiThreadsQuery } from '../dto/chat.dto'
 
@@ -86,7 +87,12 @@ export class AiThreadsService {
 // Tiêu đề tự đặt từ câu hỏi đầu (dòng đầu, gọn khoảng trắng, ≤ 60 ký tự)
 // Chỉ có tệp ⇒ null (tin sau sẽ đặt tiêu đề)
 export function deriveThreadTitle(content: string): string | null {
-  const line = content.replace(/@puai\b/gi, '').split('\n').find((l) => l.trim())?.replace(/\s+/g, ' ').trim()
+  const line = content
+    .replace(/@puai\b/gi, '')
+    .split('\n')
+    .find((l) => l.trim())
+    ?.replace(/\s+/g, ' ')
+    .trim()
   if (!line) return null
   return line.length > 60 ? `${line.slice(0, 57).trimEnd()}…` : line
 }

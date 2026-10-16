@@ -76,11 +76,7 @@ export class ConversationsController {
 
   // Cài đặt riêng: tắt thông báo, ghim hội thoại
   @Patch(':id/settings')
-  settings(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(MemberSettingsBodySchema)) body: MemberSettingsInput,
-    @Req() req: Request
-  ) {
+  settings(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(MemberSettingsBodySchema)) body: MemberSettingsInput, @Req() req: Request) {
     return this.conversations.updateSettings(requireUserId(req), id, body)
   }
 

@@ -30,7 +30,12 @@ function detectTrigger(text: string, caret: number): Trigger | null {
   return slash ? { char: '/', start: 0, end: caret, query: slash[1] } : null
 }
 
-const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/gi, 'd').toLowerCase()
+const fold = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
 const hit = (q: string, ...fields: string[]) => !q || fields.some((f) => fold(f).includes(fold(q)))
 
 interface Options {

@@ -76,13 +76,24 @@ export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNa
     <div className="rounded-xl bg-card p-3 space-y-2.5">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold">Lịch sử PU AI</p>
-        <Button size="sm" variant="outline" className="h-7 rounded-full gap-1 text-xs" disabled={create.isPending} onClick={() => create.mutate(undefined, { onSuccess: onNavigate })}>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 rounded-full gap-1 text-xs"
+          disabled={create.isPending}
+          onClick={() => create.mutate(undefined, { onSuccess: onNavigate })}
+        >
           {create.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SquarePen className="h-3.5 w-3.5" />} Chat mới
         </Button>
       </div>
       <label className="flex items-center gap-2 rounded-full bg-muted px-3 h-8">
         <Search className="h-3.5 w-3.5 text-muted-foreground" />
-        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm cuộc trò chuyện…" className="flex-1 bg-transparent text-xs outline-none" />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm cuộc trò chuyện…"
+          className="flex-1 bg-transparent text-xs outline-none"
+        />
         {search && (
           <button type="button" onClick={() => setSearch('')} aria-label="Xóa tìm kiếm" className="cursor-pointer text-muted-foreground">
             <X className="h-3.5 w-3.5" />
@@ -138,7 +149,15 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
           save()
         }}
       >
-        <input autoFocus value={title} maxLength={150} onChange={(e) => setTitle(e.target.value)} onBlur={save} onKeyDown={(e) => e.key === 'Escape' && setEditing(false)} className="flex-1 bg-transparent text-xs outline-none" />
+        <input
+          autoFocus
+          value={title}
+          maxLength={150}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={save}
+          onKeyDown={(e) => e.key === 'Escape' && setEditing(false)}
+          className="flex-1 bg-transparent text-xs outline-none"
+        />
         <button type="submit" aria-label="Lưu tên" className="cursor-pointer text-primary">
           <Check className="h-3.5 w-3.5" />
         </button>
@@ -153,7 +172,10 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
       </Link>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button aria-label={`Tùy chọn cho ${thread.title || UNTITLED}`} className="p-1 rounded-full text-muted-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 hover:text-foreground cursor-pointer">
+          <button
+            aria-label={`Tùy chọn cho ${thread.title || UNTITLED}`}
+            className="p-1 rounded-full text-muted-foreground md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 data-[state=open]:opacity-100 hover:text-foreground cursor-pointer"
+          >
             <MoreHorizontal className="h-3.5 w-3.5" />
           </button>
         </DropdownMenuTrigger>

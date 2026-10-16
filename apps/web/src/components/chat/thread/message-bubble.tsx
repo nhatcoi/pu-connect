@@ -47,8 +47,9 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
     <div id={`msg-${m.id}`} className={cn('group flex gap-2 scroll-mt-24', mine ? 'flex-row-reverse' : 'flex-row', continued ? 'mt-0.5' : 'mt-3')}>
       {showAvatar && !mine && (
         <div className="w-7 shrink-0 self-end">
-          {!continued && m.sender && (
-            m.sender.isBot ? (
+          {!continued &&
+            m.sender &&
+            (m.sender.isBot ? (
               // Bot @puai: logo N7AI
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
                 <N7AiMark className="h-[70%] w-[70%]" />
@@ -60,8 +61,7 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
                   <AvatarFallback className="text-[9px] font-bold">{m.sender.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Link>
-            )
-          )}
+            ))}
         </div>
       )}
 
@@ -71,10 +71,15 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
         {m.replyTo && !m.deleted && (
           <button
             onClick={() => onJumpTo(m.replyTo!.id)}
-            className={cn('mb-[-6px] pb-2.5 pt-1.5 px-3 rounded-t-2xl bg-muted/70 text-left max-w-full cursor-pointer', mine ? 'rounded-bl-2xl' : 'rounded-br-2xl')}
+            className={cn(
+              'mb-[-6px] pb-2.5 pt-1.5 px-3 rounded-t-2xl bg-muted/70 text-left max-w-full cursor-pointer',
+              mine ? 'rounded-bl-2xl' : 'rounded-br-2xl'
+            )}
           >
             <span className="block text-[10px] font-semibold text-muted-foreground">↩ {m.replyTo.senderName ?? 'Tin nhắn'}</span>
-            <span className="block text-xs text-muted-foreground truncate max-w-64">{messagePreview({ content: m.replyTo.content, attachments: m.replyTo.hasAttachments ? [{ kind: 'file' }] : null, deleted: m.replyTo.deleted })}</span>
+            <span className="block text-xs text-muted-foreground truncate max-w-64">
+              {messagePreview({ content: m.replyTo.content, attachments: m.replyTo.hasAttachments ? [{ kind: 'file' }] : null, deleted: m.replyTo.deleted })}
+            </span>
           </button>
         )}
 
@@ -98,12 +103,23 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
                 )}
               >
                 {mode && !m.deleted && (
-                  <span className={cn('mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide', mine ? 'text-primary-foreground/80' : 'text-primary')}>
+                  <span
+                    className={cn(
+                      'mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide',
+                      mine ? 'text-primary-foreground/80' : 'text-primary'
+                    )}
+                  >
                     {React.createElement(AI_MODE_META[mode].icon, { className: 'h-3 w-3' })} {AI_MODE_META[mode].label}
                   </span>
                 )}
                 {!m.deleted && <MessageAiBadges meta={m.meta} mine={mine} />}
-                {m.deleted ? 'Tin nhắn đã thu hồi' : isAi ? <AiMessageBody message={m} /> : <MessageText content={m.content} meta={m.meta} mine={mine} myUsername={myUsername} />}
+                {m.deleted ? (
+                  'Tin nhắn đã thu hồi'
+                ) : isAi ? (
+                  <AiMessageBody message={m} />
+                ) : (
+                  <MessageText content={m.content} meta={m.meta} mine={mine} myUsername={myUsername} />
+                )}
               </div>
             )}
             {!m.deleted && <MessageRefs meta={m.meta} mine={mine} />}

@@ -26,13 +26,31 @@ export function ContextChips({ refs, onRemoveRef, skill, onClearSkill, mode, onC
       {skill && <Chip icon={Wand2} label={`/${skill.slug}`} title={skill.name} accent onRemove={onClearSkill} />}
       {research && <Chip icon={Telescope} label="Research · 2 lượt" accent onRemove={onClearResearch} />}
       {refs.map((r) => (
-        <Chip key={`${r.type}:${r.id}`} icon={REF_META[r.type].icon} label={r.title} title={`${REF_META[r.type].label}: ${r.title}`} onRemove={() => onRemoveRef(r)} />
+        <Chip
+          key={`${r.type}:${r.id}`}
+          icon={REF_META[r.type].icon}
+          label={r.title}
+          title={`${REF_META[r.type].label}: ${r.title}`}
+          onRemove={() => onRemoveRef(r)}
+        />
       ))}
     </div>
   )
 }
 
-function Chip({ icon: Icon, label, title, accent, onRemove }: { icon: React.ElementType; label: string; title?: string; accent?: boolean; onRemove: () => void }) {
+function Chip({
+  icon: Icon,
+  label,
+  title,
+  accent,
+  onRemove
+}: {
+  icon: React.ElementType
+  label: string
+  title?: string
+  accent?: boolean
+  onRemove: () => void
+}) {
   return (
     <span
       title={title ?? label}
@@ -43,7 +61,12 @@ function Chip({ icon: Icon, label, title, accent, onRemove }: { icon: React.Elem
     >
       <Icon className="h-3 w-3 shrink-0" />
       <span className="truncate">{label}</span>
-      <button type="button" onClick={onRemove} aria-label={`Bỏ ${label}`} className="rounded-full p-0.5 opacity-70 hover:opacity-100 hover:bg-background/60 cursor-pointer">
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`Bỏ ${label}`}
+        className="rounded-full p-0.5 opacity-70 hover:opacity-100 hover:bg-background/60 cursor-pointer"
+      >
         <X className="h-3 w-3" />
       </button>
     </span>

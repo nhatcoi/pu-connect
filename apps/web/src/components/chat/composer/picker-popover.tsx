@@ -60,7 +60,10 @@ export function PickerPopover({ id, sections, index, isLoading, onHover, onSelec
                   onMouseDown={(e) => e.preventDefault()} // giữ focus ở textarea
                   onMouseEnter={() => onHover(i)}
                   onClick={() => onSelect(item)}
-                  className={cn('flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors', i === index ? 'bg-muted' : 'hover:bg-muted/60')}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors',
+                    i === index ? 'bg-muted' : 'hover:bg-muted/60'
+                  )}
                 >
                   <ItemRow item={item} />
                 </div>
@@ -97,11 +100,23 @@ function ItemRow({ item }: { item: PickerItem }) {
     }
     case 'ref': {
       const meta = REF_META[item.ref.type]
-      return <Row icon={<IconBox>{React.createElement(meta.icon, { className: 'h-3.5 w-3.5' })}</IconBox>} title={item.ref.title} sub={[meta.label, item.ref.subtitle].filter(Boolean).join(' · ')} />
+      return (
+        <Row
+          icon={<IconBox>{React.createElement(meta.icon, { className: 'h-3.5 w-3.5' })}</IconBox>}
+          title={item.ref.title}
+          sub={[meta.label, item.ref.subtitle].filter(Boolean).join(' · ')}
+        />
+      )
     }
     case 'mode': {
       const meta = AI_MODE_META[item.mode]
-      return <Row icon={<IconBox>{React.createElement(meta.icon, { className: 'h-3.5 w-3.5 text-primary' })}</IconBox>} title={meta.label} sub={`/${item.mode} · ${meta.hint}`} />
+      return (
+        <Row
+          icon={<IconBox>{React.createElement(meta.icon, { className: 'h-3.5 w-3.5 text-primary' })}</IconBox>}
+          title={meta.label}
+          sub={`/${item.mode} · ${meta.hint}`}
+        />
+      )
     }
     case 'skill':
       return (
@@ -117,7 +132,9 @@ function ItemRow({ item }: { item: PickerItem }) {
       )
     case 'command': {
       const meta = COMMAND_LABEL[item.command]
-      return <Row icon={<IconBox>{React.createElement(COMMAND_ICON[item.command], { className: 'h-3.5 w-3.5' })}</IconBox>} title={meta.label} sub={meta.hint} />
+      return (
+        <Row icon={<IconBox>{React.createElement(COMMAND_ICON[item.command], { className: 'h-3.5 w-3.5' })}</IconBox>} title={meta.label} sub={meta.hint} />
+      )
     }
   }
 }

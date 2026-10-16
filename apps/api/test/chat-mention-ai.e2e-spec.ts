@@ -1,5 +1,6 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
+import { TokenCipher } from '../src/modules/ai/connectors/token-cipher'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
 // Mention trong nhóm, PU AI nhiều thread, skill, ngữ cảnh (docs/core/09-chat-mention-ai-threads-skills.md)
@@ -24,7 +25,12 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     const ownerAgent = await loginAgent(app, owner)
     const m1Agent = await loginAgent(app, m1)
     const m2Agent = await loginAgent(app, m2)
-    const conv = (await ownerAgent.post('/api/conversations').send({ title: 'Nhóm OOP', memberIds: [m1.id, m2.id] }).expect(201)).body.data
+    const conv = (
+      await ownerAgent
+        .post('/api/conversations')
+        .send({ title: 'Nhóm OOP', memberIds: [m1.id, m2.id] })
+        .expect(201)
+    ).body.data
 
     // Người ngoài nhóm không được ghi mention
     const sent = await ownerAgent
@@ -125,12 +131,39 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
       .expect(201)
     expect(msg.body.data.meta.refs).toEqual([{ type: 'course', id: course.rows[0].id, title: 'Cấu trúc dữ liệu kiểm thử', code }])
 
-    await agent.post(`/api/conversations/${conv.id}/messages`).send({ content: 'x', refs: [{ type: 'document', id: doc.rows[0].id }] }).expect(400)
+    await agent
+      .post(`/api/conversations/${conv.id}/messages`)
+      .send({ content: 'x', refs: [{ type: 'document', id: doc.rows[0].id }] })
+      .expect(400)
 
-    const group = (await agent.post('/api/conversations').send({ title: 'G', memberIds: [other.id] }).expect(201)).body.data
-    await agent.post(`/api/conversations/${group.id}/messages`).send({ content: 'x', refs: [{ type: 'thread', id: conv.id }] }).expect(400)
+    const group = (
+      await agent
+        .post('/api/conversations')
+        .send({ title: 'G', memberIds: [other.id] })
+        .expect(201)
+    ).body.data
+    await agent
+      .post(`/api/conversations/${group.id}/messages`)
+      .send({ content: 'x', refs: [{ type: 'thread', id: conv.id }] })
+      .expect(400)
+  })
 
-    const connectors = await agent.get('/api/ai/connectors').expect(200)
-    expect(connectors.body.data.map((c: { id: string }) => c.id)).toContain('my_documents')
+  it('connector: danh sách kèm trạng thái kết nối; Google Drive ngắt kết nối idempotent; token mã hóa', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const list = (await agent.get('/api/ai/connectors').expect(200)).body.data
+    expect(list.map((c: { id: string }) => c.id)).toEqual(['library', 'my_documents', 'my_groups', 'google_drive'])
+    expect(list.find((c: { id: string }) => c.id === 'google_drive')).toMatchObject({ requiresAuth: true, connected: false })
+    await agent.delete('/api/ai/connectors/google-drive').expect(200)
+
+    // Callback sai state ⇒ không lưu gì, về trang tin nhắn báo lỗi
+    const cb = await agent.get('/api/ai/connectors/google-drive/callback?code=x&state=forged').expect(302)
+    expect(cb.headers.location).toMatch(/\/messages\?drive=error$/)
+
+    const cipher = new TokenCipher('secret')
+    const enc = cipher.encrypt('refresh-token')
+    expect(enc).not.toContain('refresh-token')
+    expect(cipher.decrypt(enc)).toBe('refresh-token')
+    expect(() => new TokenCipher('other').decrypt(enc)).toThrow()
   })
 })

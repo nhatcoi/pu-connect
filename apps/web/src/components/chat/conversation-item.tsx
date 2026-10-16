@@ -14,7 +14,14 @@ export function ConversationItem({ conversation: c, myId }: { conversation: Conv
   const last = c.lastMessage
   const unread = c.unreadCount > 0
   const muted = !!c.mutedUntil
-  const prefix = !last || last.kind === 'system' || last.deleted ? '' : last.sender?.id === myId ? 'Bạn: ' : c.type === 'group' && last.sender ? `${last.sender.displayName}: ` : ''
+  const prefix =
+    !last || last.kind === 'system' || last.deleted
+      ? ''
+      : last.sender?.id === myId
+        ? 'Bạn: '
+        : c.type === 'group' && last.sender
+          ? `${last.sender.displayName}: `
+          : ''
   const preview = !last ? (c.type === 'ai' ? 'Giải thích, quiz, flashcard, lộ trình ôn…' : 'Bắt đầu cuộc trò chuyện') : `${prefix}${messagePreview(last)}`
 
   return (
@@ -30,7 +37,10 @@ export function ConversationItem({ conversation: c, myId }: { conversation: Conv
         <div className="flex items-center gap-2">
           <p className={cn('text-xs truncate flex-1', unread ? 'text-foreground font-medium' : 'text-muted-foreground')}>{preview}</p>
           {c.unreadMentions > 0 && (
-            <span className="h-5 w-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center shrink-0" title={`${c.unreadMentions} tin nhắc đến bạn`}>
+            <span
+              className="h-5 w-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center shrink-0"
+              title={`${c.unreadMentions} tin nhắc đến bạn`}
+            >
               <AtSign className="h-3 w-3" />
             </span>
           )}

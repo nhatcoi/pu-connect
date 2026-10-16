@@ -27,7 +27,8 @@ export const MIGRATIONS = [
   'post-title-cleanup.sql',
   'preferences-upgrade.sql',
   'comments-edit-upgrade.sql',
-  'chat-mention-ai-upgrade.sql'
+  'chat-mention-ai-upgrade.sql',
+  'ai-connectors-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

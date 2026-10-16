@@ -76,10 +76,7 @@ export class ChatPushProcessor extends WorkerHost {
     const name = s.type === 'group' ? s.title || 'Nhóm chat' : s.type === 'ai' ? 'PU AI' : sender
     const preview = this.preview(last)
     // Đánh dấu TRƯỚC khi gửi: đọc trong lúc gửi vẫn kích hoạt "đóng" (thừa 1 push im lặng còn hơn sót)
-    await this.db.query(`UPDATE conversation_members SET push_shown_at = NOW() WHERE conversation_id = $1 AND user_id = $2`, [
-      conversationId,
-      recipientId
-    ])
+    await this.db.query(`UPDATE conversation_members SET push_shown_at = NOW() WHERE conversation_id = $1 AND user_id = $2`, [conversationId, recipientId])
     const result = await this.push.sendToUser(
       recipientId,
       {

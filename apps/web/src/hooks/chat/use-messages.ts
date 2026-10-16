@@ -67,7 +67,13 @@ export function useMessages(conversationId: string) {
         attachments: draft.attachments?.length ? draft.attachments : null,
         replyToId: reply?.id ?? null,
         replyTo: reply
-          ? { id: reply.id, senderName: reply.sender?.displayName ?? null, content: reply.content.slice(0, 160), hasAttachments: !!reply.attachments, deleted: false }
+          ? {
+              id: reply.id,
+              senderName: reply.sender?.displayName ?? null,
+              content: reply.content.slice(0, 160),
+              hasAttachments: !!reply.attachments,
+              deleted: false
+            }
           : null,
         reactions: [],
         meta: draftMeta(draft),

@@ -25,7 +25,10 @@ export function MessageText({ content, meta, mine, myUsername }: { content: stri
       const at = match.index! + match[1].length
       out.push(content.slice(last, at))
       const isMe = username === myUsername?.toLowerCase() || ((username === 'all' || username === 'everyone') && !mine)
-      const cls = cn('rounded px-0.5 font-semibold', isMe ? 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/30 dark:text-amber-100' : mine ? 'underline underline-offset-2' : 'text-primary')
+      const cls = cn(
+        'rounded px-0.5 font-semibold',
+        isMe ? 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/30 dark:text-amber-100' : mine ? 'underline underline-offset-2' : 'text-primary'
+      )
       out.push(
         username === 'all' || username === 'everyone' || username === PUAI_USERNAME ? (
           <span key={at} className={cls}>
@@ -49,7 +52,10 @@ export function MessageText({ content, meta, mine, myUsername }: { content: stri
 // Nhãn skill / Research cạnh nhãn chế độ học
 export function MessageAiBadges({ meta, mine }: { meta: ChatMessageMeta | null; mine: boolean }) {
   if (!meta?.skill && !meta?.research) return null
-  const cls = cn('mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide', mine ? 'text-primary-foreground/80' : 'text-primary')
+  const cls = cn(
+    'mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide',
+    mine ? 'text-primary-foreground/80' : 'text-primary'
+  )
   return (
     <>
       {meta.skill && (

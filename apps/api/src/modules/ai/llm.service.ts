@@ -94,7 +94,13 @@ export class LlmService {
       `UPDATE ai_runs SET status = 'done', input_tokens = $2, output_tokens = $3, latency_ms = $4,
                           reply_ref = COALESCE($5, reply_ref), finished_at = NOW()
        WHERE id = $1`,
-      [runId, result.usage?.prompt_tokens ?? 0, result.usage?.completion_tokens ?? 0, Date.now() - result.startedAt, result.reply ? JSON.stringify(result.reply) : null]
+      [
+        runId,
+        result.usage?.prompt_tokens ?? 0,
+        result.usage?.completion_tokens ?? 0,
+        Date.now() - result.startedAt,
+        result.reply ? JSON.stringify(result.reply) : null
+      ]
     )
   }
 

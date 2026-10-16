@@ -36,9 +36,7 @@ export function decodeCursor(raw: string | undefined): ListCursor | null {
   try {
     const [rank, sortAt, id] = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'))
     const valid =
-      [0, 1, 2].includes(rank) &&
-      typeof sortAt === 'string' && !Number.isNaN(Date.parse(sortAt)) &&
-      typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)
+      [0, 1, 2].includes(rank) && typeof sortAt === 'string' && !Number.isNaN(Date.parse(sortAt)) && typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)
     if (valid) return { rank, sortAt, id }
   } catch {
     // rơi xuống lỗi bên dưới

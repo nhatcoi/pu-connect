@@ -37,7 +37,12 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
             {view.mode === 'edit' && (
-              <button type="button" onClick={() => setView({ mode: 'list' })} aria-label="Quay lại" className="p-1 -ml-1 rounded-full hover:bg-muted cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setView({ mode: 'list' })}
+                aria-label="Quay lại"
+                className="p-1 -ml-1 rounded-full hover:bg-muted cursor-pointer"
+              >
                 <ArrowLeft className="h-4 w-4" />
               </button>
             )}
@@ -47,7 +52,11 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
             Lưu chỉ dẫn hay dùng thành lệnh <code>/tên-lệnh</code> cho PU AI (ví dụ: chấm bài theo rubric, giải thích kiểu Feynman). Chỉ bạn thấy và dùng được.
           </DialogDescription>
         </DialogHeader>
-        {view.mode === 'list' ? <SkillList onEdit={(id) => setView({ mode: 'edit', id })} /> : <SkillForm id={view.id} onDone={() => setView({ mode: 'list' })} />}
+        {view.mode === 'list' ? (
+          <SkillList onEdit={(id) => setView({ mode: 'edit', id })} />
+        ) : (
+          <SkillForm id={view.id} onDone={() => setView({ mode: 'list' })} />
+        )}
       </DialogContent>
     </Dialog>
   )

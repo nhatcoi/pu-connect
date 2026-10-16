@@ -1,13 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { PoolClient } from 'pg'
-import type {
-  ChatMember,
-  ConversationSummary,
-  ConversationsPage,
-  CreateGroupChatInput,
-  MemberSettingsInput,
-  UpdateGroupInput
-} from '@pu/schemas'
+import type { ChatMember, ConversationSummary, ConversationsPage, CreateGroupChatInput, MemberSettingsInput, UpdateGroupInput } from '@pu/schemas'
 import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
@@ -58,7 +51,10 @@ export class ConversationsService {
     const rows = page.rows.slice(0, query.limit)
     const last = rows[rows.length - 1]
     return {
-      data: await this.summaries(userId, rows.map((r) => r.id)),
+      data: await this.summaries(
+        userId,
+        rows.map((r) => r.id)
+      ),
       nextCursor: page.rows.length > query.limit ? encodeCursor({ rank: last.rank, sortAt: last.sort_at, id: last.id }) : null
     }
   }
@@ -153,10 +149,7 @@ export class ConversationsService {
     const { id, system } = await this.db.transaction(async (client) => {
       const valid = await this.validUsers(client, userId, memberIds)
       if (valid.length === 0) throw new BadRequestException('Không có thành viên hợp lệ')
-      const conv = await client.query(`INSERT INTO conversations (type, title, created_by) VALUES ('group', $1, $2) RETURNING id`, [
-        input.title,
-        userId
-      ])
+      const conv = await client.query(`INSERT INTO conversations (type, title, created_by) VALUES ('group', $1, $2) RETURNING id`, [input.title, userId])
       const convId = conv.rows[0].id as string
       await client.query(
         `INSERT INTO conversation_members (conversation_id, user_id, role)
@@ -183,15 +176,20 @@ export class ConversationsService {
       if (input.title !== undefined) changes.push(['title', input.title])
       if (avatarUrl !== undefined) changes.push(['avatar_url', avatarUrl])
       if (!changes.length) return []
-      await client.query(
-        `UPDATE conversations SET ${changes.map(([col], i) => `${col} = $${i + 2}`).join(', ')} WHERE id = $1`,
-        [conversationId, ...changes.map(([, v]) => v)]
-      )
+      await client.query(`UPDATE conversations SET ${changes.map(([col], i) => `${col} = $${i + 2}`).join(', ')} WHERE id = $1`, [
+        conversationId,
+        ...changes.map(([, v]) => v)
+      ])
 
       const [actor] = await this.core.displayNames(client, [userId])
       const out = []
       if (input.title !== undefined) {
-        out.push(await this.core.insertSystem(client, conversationId, userId, `${actor} đã đổi tên nhóm thành "${input.title}"`, { event: 'group.renamed', actorName: actor }))
+        out.push(
+          await this.core.insertSystem(client, conversationId, userId, `${actor} đã đổi tên nhóm thành "${input.title}"`, {
+            event: 'group.renamed',
+            actorName: actor
+          })
+        )
       }
       if (avatarUrl !== undefined) {
         const text = avatarUrl ? `${actor} đã đổi ảnh nhóm` : `${actor} đã xóa ảnh nhóm`
@@ -232,10 +230,7 @@ export class ConversationsService {
         userId,
         userIds.filter((id) => id !== userId)
       )
-      const current = await client.query(
-        `SELECT user_id FROM conversation_members WHERE conversation_id = $1 AND left_at IS NULL`,
-        [conversationId]
-      )
+      const current = await client.query(`SELECT user_id FROM conversation_members WHERE conversation_id = $1 AND left_at IS NULL`, [conversationId])
       const existing = new Set(current.rows.map((r) => r.user_id))
       const added = valid.filter((id) => !existing.has(id))
       if (!added.length) throw new BadRequestException('Những người này đã ở trong nhóm')
@@ -417,4 +412,3 @@ export class ConversationsService {
     return found.rows[0].id
   }
 }
-

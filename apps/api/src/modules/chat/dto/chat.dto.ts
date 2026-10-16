@@ -13,7 +13,7 @@ import type {
 const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
 export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups'] as const
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'google_drive'] as const
 export const CHAT_MAX_REFS = 5
 export const AI_SKILL_LIMIT = 30
 
@@ -108,7 +108,12 @@ export const AddMembersBodySchema = z.object({ userIds: z.array(z.string().uuid(
 export const TransferOwnerBodySchema = z.object({ userId: z.string().uuid() })
 
 export const MemberSettingsBodySchema = z.object({
-  mutedHours: z.number().int().min(-1).max(24 * 30).optional(),
+  mutedHours: z
+    .number()
+    .int()
+    .min(-1)
+    .max(24 * 30)
+    .optional(),
   pinned: z.boolean().optional()
 })
 

@@ -50,7 +50,10 @@ export class ChatRefsService {
   // Gợi ý cho "@" / "+ Ngữ cảnh": 1 truy vấn UNION ALL, ≤ 4 mỗi loại
   // q rỗng ⇒ gần đây của mình (thread mới nhất, tài liệu của mình, môn của nhóm học, bài đã lưu)
   async suggest(userId: string, q: string, types: ChatRefType[]): Promise<ChatRefSuggestion[]> {
-    const term = q.trim().toLowerCase().replace(/[%_\\]/g, (c) => `\\${c}`)
+    const term = q
+      .trim()
+      .toLowerCase()
+      .replace(/[%_\\]/g, (c) => `\\${c}`)
     const like = (col: string) => `immutable_unaccent(lower(${col})) LIKE '%' || immutable_unaccent($2) || '%'`
     // Mọi nhánh cùng tên cột (nhánh đầu UNION quyết định tên)
     const cols = (type: ChatRefType, title: string, subtitle = 'NULL', code = 'NULL') =>

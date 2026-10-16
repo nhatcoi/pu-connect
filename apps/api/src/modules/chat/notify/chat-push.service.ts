@@ -3,14 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq'
 import type { Queue } from 'bullmq'
 import { DatabaseService } from '../../../database/database.service'
 import { PushService } from '../../push/push.service'
-import {
-  CHAT_PUSH_DELAY_MS,
-  CHAT_PUSH_QUEUE,
-  chatClearJobId,
-  chatPushJobId,
-  type ChatPushJobData,
-  type ChatPushJobName
-} from './chat-push.constants'
+import { CHAT_PUSH_DELAY_MS, CHAT_PUSH_QUEUE, chatClearJobId, chatPushJobId, type ChatPushJobData, type ChatPushJobName } from './chat-push.constants'
 
 // Xếp hàng Web Push cho tin nhắn mới; worker (ChatPushProcessor) quyết định gửi hay bỏ lúc chạy
 @Injectable()

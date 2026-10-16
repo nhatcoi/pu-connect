@@ -22,10 +22,9 @@ export class AiSkillsService {
 
   // Danh sách nhẹ cho menu "/" (không có instructions), hay dùng lên đầu
   async list(userId: string): Promise<AiSkill[]> {
-    const res = await this.db.query(
-      `SELECT ${LIST_COLUMNS} FROM ai_skills WHERE owner_id = $1 ORDER BY last_used_at DESC NULLS LAST, created_at DESC`,
-      [userId]
-    )
+    const res = await this.db.query(`SELECT ${LIST_COLUMNS} FROM ai_skills WHERE owner_id = $1 ORDER BY last_used_at DESC NULLS LAST, created_at DESC`, [
+      userId
+    ])
     return res.rows.map(mapSkill)
   }
 

@@ -196,7 +196,11 @@ export function Composer({
   }
 
   const contextBar = editing ? (
-    <ContextBar icon={<Pencil className="h-3.5 w-3.5" />} title="Đang sửa tin nhắn" body={messagePreview(editing)} onClose={() => {
+    <ContextBar
+      icon={<Pencil className="h-3.5 w-3.5" />}
+      title="Đang sửa tin nhắn"
+      body={messagePreview(editing)}
+      onClose={() => {
         setText('')
         onCancelContext()
       }}
@@ -226,13 +230,18 @@ export function Composer({
         uploads.add(e.dataTransfer.files)
       }}
     >
-      {isAi && !editing && panelOpen && (
-        <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />
-      )}
+      {isAi && !editing && panelOpen && <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />}
       {isAi && !editing && <AiModeBar value={aiMode} onChange={changeMode} />}
       <div className={cn('relative rounded-2xl bg-card px-2.5 py-1.5 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
         {picker.open && (
-          <PickerPopover id={listId} sections={picker.sections} index={picker.index} isLoading={picker.isLoading} onHover={picker.setIndex} onSelect={picker.select} />
+          <PickerPopover
+            id={listId}
+            sections={picker.sections}
+            index={picker.index}
+            isLoading={picker.isLoading}
+            onHover={picker.setIndex}
+            onSelect={picker.select}
+          />
         )}
         {contextBar}
         {!editing && (

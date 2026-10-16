@@ -158,7 +158,14 @@ export class PuaiService {
       const citations: ChatCitation[] = sources
         .filter(citable)
         .map((s) => ({ type: 'citation', ref: { type: s.type as 'post' | 'document', id: s.id }, title: s.title }))
-      await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', finishReason === 'length' || finishReason === 'content_filter' ? [] : followUps)
+      await this.finish(
+        placeholder.id,
+        conversationId,
+        text,
+        citations.length ? citations : null,
+        'done',
+        finishReason === 'length' || finishReason === 'content_filter' ? [] : followUps
+      )
       await this.llm.finishRun(runId, { usage, startedAt: started })
       if (!inGroup) this.memory.maybeSummarize(conversationId, botId)
     } catch (err) {

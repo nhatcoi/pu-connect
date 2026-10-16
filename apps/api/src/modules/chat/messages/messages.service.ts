@@ -1,15 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { PoolClient } from 'pg'
-import type {
-  AiThread,
-  ChatAttachment,
-  ChatMessage,
-  ChatMessageMeta,
-  ChatReactionDetail,
-  EditMessageInput,
-  MessagesPage,
-  SendMessageInput
-} from '@pu/schemas'
+import type { AiThread, ChatAttachment, ChatMessage, ChatMessageMeta, ChatReactionDetail, EditMessageInput, MessagesPage, SendMessageInput } from '@pu/schemas'
 import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
@@ -162,10 +153,10 @@ export class MessagesService {
   private async autoTitle(client: PoolClient, conversationId: string, content: string): Promise<AiThread | null> {
     const title = deriveThreadTitle(content)
     if (!title) return null
-    const res = await client.query(
-      `UPDATE conversations SET title = $2 WHERE id = $1 AND title IS NULL RETURNING id, title, last_message_at, created_at`,
-      [conversationId, title]
-    )
+    const res = await client.query(`UPDATE conversations SET title = $2 WHERE id = $1 AND title IS NULL RETURNING id, title, last_message_at, created_at`, [
+      conversationId,
+      title
+    ])
     return res.rows[0] ? mapThread(res.rows[0]) : null
   }
 
@@ -228,11 +219,7 @@ export class MessagesService {
         emoji
       ])
       if (!del.rows[0]) {
-        await client.query(`INSERT INTO message_reactions (message_id, user_id, emoji) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [
-          messageId,
-          userId,
-          emoji
-        ])
+        await client.query(`INSERT INTO message_reactions (message_id, user_id, emoji) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [messageId, userId, emoji])
       }
     })
     return this.publishUpdate(conversationId, messageId)

@@ -37,7 +37,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
       : conv?.type === 'group'
         ? `${conv.memberCount} thành viên${onlineInGroup ? ` · ${onlineInGroup} đang hoạt động` : ''}`
         : other
-          ? ((conv?.blockState === 'none' && presenceLabel(otherPresence)) || `@${other.username}`)
+          ? (conv?.blockState === 'none' && presenceLabel(otherPresence)) || `@${other.username}`
           : '')
 
   return (
@@ -64,17 +64,38 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
       </div>
       {isAi && <OpenInN7AiButton />}
       {isAi && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={onAiReset} title="Chủ đề mới — PU AI quên các tin phía trên" aria-label="Chủ đề mới">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full shrink-0"
+          onClick={onAiReset}
+          title="Chủ đề mới — PU AI quên các tin phía trên"
+          aria-label="Chủ đề mới"
+        >
           <Eraser className="h-3.5 w-3.5" />
         </Button>
       )}
       {isAi && (
-        <Button variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" disabled={newThread.isPending} onClick={() => newThread.mutate()} title="Cuộc trò chuyện mới">
-          {newThread.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SquarePen className="h-3.5 w-3.5" />} <span className="hidden sm:inline">Chat mới</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 rounded-full gap-1.5 text-xs"
+          disabled={newThread.isPending}
+          onClick={() => newThread.mutate()}
+          title="Cuộc trò chuyện mới"
+        >
+          {newThread.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SquarePen className="h-3.5 w-3.5" />}{' '}
+          <span className="hidden sm:inline">Chat mới</span>
         </Button>
       )}
       {conv && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label={isAi ? 'Lịch sử PU AI' : 'Thông tin hội thoại'}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 rounded-full shrink-0 lg:hidden"
+          onClick={onInfo}
+          aria-label={isAi ? 'Lịch sử PU AI' : 'Thông tin hội thoại'}
+        >
           {isAi ? <History className="h-4 w-4" /> : <Info className="h-4 w-4" />}
         </Button>
       )}

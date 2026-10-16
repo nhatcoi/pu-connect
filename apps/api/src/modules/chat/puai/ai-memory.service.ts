@@ -59,9 +59,7 @@ export class AiMemoryService {
     )
     if (res.rows.length <= SUMMARY_TRIGGER) return
     const old = res.rows.slice(0, res.rows.length - KEEP_RECENT)
-    let transcript = old
-      .map((r) => `${r.sender_id === botId ? 'PU AI' : 'Sinh viên'}: ${(r.content || '').slice(0, 1500)}`)
-      .join('\n\n')
+    let transcript = old.map((r) => `${r.sender_id === botId ? 'PU AI' : 'Sinh viên'}: ${(r.content || '').slice(0, 1500)}`).join('\n\n')
     if (transcript.length > MAX_INPUT_CHARS) transcript = transcript.slice(-MAX_INPUT_CHARS)
     const prev = res.rows[0].ai_summary as string | null
 
@@ -74,9 +72,11 @@ export class AiMemoryService {
     )
     if (!text) return
     // Chỉ ghi khi không ai đổi mốc trong lúc chờ LLM (Chủ đề mới / lượt tóm tắt khác)
-    await this.core.db.query(
-      `UPDATE conversations SET ai_summary = $2, ai_summary_upto = $3 WHERE id = $1 AND COALESCE(ai_summary_upto, 0) = $4`,
-      [conversationId, text, old[old.length - 1].id, res.rows[0].upto]
-    )
+    await this.core.db.query(`UPDATE conversations SET ai_summary = $2, ai_summary_upto = $3 WHERE id = $1 AND COALESCE(ai_summary_upto, 0) = $4`, [
+      conversationId,
+      text,
+      old[old.length - 1].id,
+      res.rows[0].upto
+    ])
   }
 }
