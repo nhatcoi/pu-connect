@@ -2,14 +2,7 @@
 
 import React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import {
-  Home,
-  Search,
-  GraduationCap,
-  FileText,
-  Compass,
-  MessageCircle
-} from 'lucide-react'
+import { Home, Search, GraduationCap, FileText, Compass, MessageCircle } from 'lucide-react'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { useUnreadMessages } from '@/hooks/chat'
 import { FEATURES } from '@/lib/features'
@@ -20,7 +13,7 @@ export function MobileBottomNav() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const unreadMessages = useUnreadMessages()
-  
+
   // High-performance scroll state for fade/dimming on scroll
   const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
   const isDimmed = !isAtTop && (!isHeaderVisible || isScrolling)
@@ -55,13 +48,17 @@ export function MobileBottomNav() {
       isActive: pathname === '/messages' || pathname.startsWith('/messages/'),
       unread: unreadMessages
     },
-    ...(FEATURES.categoryShortcuts ? [{
-      id: 'documents',
-      label: 'Tài liệu',
-      icon: FileText,
-      path: '/search?type=documents',
-      isActive: pathname === '/search' && searchParams.get('type') === 'documents'
-    }] : []),
+    ...(FEATURES.categoryShortcuts
+      ? [
+          {
+            id: 'documents',
+            label: 'Tài liệu',
+            icon: FileText,
+            path: '/search?type=documents',
+            isActive: pathname === '/search' && searchParams.get('type') === 'documents'
+          }
+        ]
+      : []),
     {
       id: 'communities',
       label: 'Cộng đồng',
@@ -94,18 +91,11 @@ export function MobileBottomNav() {
               onClick={() => router.push(item.path)}
               className={cn(
                 'relative flex flex-1 flex-col items-center justify-center py-1 text-[10px] font-medium transition-colors cursor-pointer',
-                isActive
-                  ? 'text-foreground font-bold'
-                  : 'text-muted-foreground hover:text-foreground'
+                isActive ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'
               )}
             >
               <div className="relative flex items-center justify-center">
-                <Icon
-                  className={cn(
-                    'h-5 w-5 transition-transform duration-150',
-                    isActive ? 'scale-110 stroke-[2.5] text-primary' : 'stroke-[1.75]'
-                  )}
-                />
+                <Icon className={cn('h-5 w-5 transition-transform duration-150', isActive ? 'scale-110 stroke-[2.5] text-primary' : 'stroke-[1.75]')} />
                 {'unread' in item && !!item.unread ? (
                   <span className="absolute -top-1.5 -right-2.5 min-w-4 h-4 px-1 rounded-full bg-brand-orange text-[9px] font-bold text-white flex items-center justify-center">
                     {item.unread > 9 ? '9+' : item.unread}

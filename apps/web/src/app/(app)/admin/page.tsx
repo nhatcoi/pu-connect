@@ -23,8 +23,7 @@ type Tab = 'reports' | 'users' | 'searches' | 'logs'
 type Envelope<T> = { success: boolean; data: T }
 
 const get = async <T,>(path: string) => (await apiClient<Envelope<T>>(path)).data
-const post = <T,>(path: string, body: unknown = {}) =>
-  apiClient<Envelope<T>>(path, { method: 'POST', body: JSON.stringify(body) })
+const post = <T,>(path: string, body: unknown = {}) => apiClient<Envelope<T>>(path, { method: 'POST', body: JSON.stringify(body) })
 
 const REASON_LABELS: Record<string, string> = {
   // Khớp lý do trong report-post-dialog
@@ -233,7 +232,9 @@ function ReportRow({
       {report.details.length > 0 && (
         <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
           {report.details.map((d, i) => (
-            <li key={i} className="line-clamp-2">{d}</li>
+            <li key={i} className="line-clamp-2">
+              {d}
+            </li>
           ))}
         </ul>
       )}
@@ -373,15 +374,14 @@ function UserRow({
           <p className="text-[11px] text-muted-foreground truncate">
             @{user.username} · {user.email} · {user.postCount} bài · {user.reportCount} lượt bị báo cáo
           </p>
-          {suspended && user.suspendedReason && (
-            <p className="text-[11px] text-destructive truncate">Lý do: {user.suspendedReason}</p>
-          )}
+          {suspended && user.suspendedReason && <p className="text-[11px] text-destructive truncate">Lý do: {user.suspendedReason}</p>}
         </div>
         <Button size="icon" variant="ghost" className="h-8 w-8 shrink-0" title="Dữ liệu cá nhân hóa" aria-label="Dữ liệu cá nhân hóa" onClick={onInsight}>
           <Activity className="h-3.5 w-3.5" />
         </Button>
-        {!protectedAccount && !confirm && (
-          suspended ? (
+        {!protectedAccount &&
+          !confirm &&
+          (suspended ? (
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" disabled={busy} onClick={() => onAction('unsuspend')}>
               <LockOpen className="h-3.5 w-3.5" /> Mở khóa
             </Button>
@@ -389,8 +389,7 @@ function UserRow({
             <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5 text-destructive" disabled={busy} onClick={() => setConfirm(true)}>
               <Lock className="h-3.5 w-3.5" /> Khóa
             </Button>
-          )
-        )}
+          ))}
       </div>
       {confirm && (
         <div className="flex items-center gap-1.5">
@@ -485,7 +484,9 @@ function AuditLogTab() {
             <p className="text-muted-foreground">
               bởi @{log.admin?.username || 'không rõ'} ·{' '}
               {log.targetType === 'post' ? (
-                <Link href={`/post/${log.targetId}`} className="hover:underline">bài viết</Link>
+                <Link href={`/post/${log.targetId}`} className="hover:underline">
+                  bài viết
+                </Link>
               ) : (
                 'người dùng'
               )}{' '}

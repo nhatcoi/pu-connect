@@ -7,18 +7,13 @@ import {
   Home,
   Search,
   FileText,
-  Bookmark,
   Hash,
-  Users,
   User,
   Settings,
   GraduationCap,
-  Building2,
   HelpCircle,
   LogOut,
-  Plus,
   MoreHorizontal,
-  Sparkles,
   Compass,
   Bell,
   MessageCircle,
@@ -27,13 +22,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store'
 import { useLogout } from '@/hooks/use-logout'
 import { FEATURES } from '@/lib/features'
@@ -41,7 +30,8 @@ import { useNotificationsStore } from '@/hooks/use-notifications'
 import { useUnreadMessages } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 
-export type NavTabType = 'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa' | 'messages' | 'admin'
+export type NavTabType =
+  'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa' | 'messages' | 'admin'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -75,9 +65,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
       icon: Bell,
       badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined
     },
-    ...(user?.username
-      ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ', icon: User }]
-      : []),
+    ...(user?.username ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ', icon: User }] : []),
     ...(user?.role === 'admin' ? [{ id: 'admin' as const, path: '/admin', label: 'Quản trị', icon: ShieldCheck }] : []),
     // Lối tắt danh mục: ẩn tới khi /search hỗ trợ lọc theo type không cần từ khóa
     ...(FEATURES.categoryShortcuts
@@ -88,22 +76,15 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
       : [])
   ] as { id: NavTabType; path: string; label: string; icon: React.ElementType; badge?: string }[]
 
-  const hotCourses = [
-    'IT101 - Cấu trúc dữ liệu',
-    'MATH201 - Giải tích 2',
-    'PHY102 - Vật lý đại cương'
-  ]
+  const hotCourses = ['IT101 - Cấu trúc dữ liệu', 'MATH201 - Giải tích 2', 'PHY102 - Vật lý đại cương']
 
-  const userInitials = (user?.displayName || (user as any)?.display_name || user?.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
+  const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   return (
     <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full">
       <div className="space-y-6">
         {/* 1. Điều hướng chính (icon-only on md, full on xl) */}
         <div className="space-y-0.5 flex flex-col items-center xl:items-stretch">
-
           {/* Highlight trượt theo chuột (animate-ui, giống menu dropdown) */}
           <Highlight
             hover
@@ -111,85 +92,77 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
             className="inset-0 rounded-full xl:rounded-xl bg-muted/80"
             transition={{ type: 'spring', stiffness: 500, damping: 38 }}
           >
-          {navItems.map((item) => {
-            const Icon = item.icon
-            // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
-            const isActive = currentTab
-              ? currentTab === item.id
-              : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
+            {navItems.map((item) => {
+              const Icon = item.icon
+              // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
+              const isActive = currentTab
+                ? currentTab === item.id
+                : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
 
-            return (
-              <HighlightItem key={item.id} value={item.id} disabled={isActive} className="xl:w-full">
-              <button
-                type="button"
-                onClick={() => {
-                  if (onTabChange) {
-                    onTabChange(item.id)
-                  } else {
-                    router.push(item.path)
-                  }
-                }}
-                className={cn(
-                  'group flex items-center rounded-full xl:rounded-xl transition-colors cursor-pointer select-none',
-                  'w-10 h-10 xl:w-full xl:h-9 justify-center xl:justify-between px-0 xl:px-3 text-[13px] font-medium',
-                  isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-                title={item.label}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon
+              return (
+                <HighlightItem key={item.id} value={item.id} disabled={isActive} className="xl:w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onTabChange) {
+                        onTabChange(item.id)
+                      } else {
+                        router.push(item.path)
+                      }
+                    }}
                     className={cn(
-                      'h-[18px] w-[18px] shrink-0',
-                      isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
+                      'group flex items-center rounded-full xl:rounded-xl transition-colors cursor-pointer select-none',
+                      'w-10 h-10 xl:w-full xl:h-9 justify-center xl:justify-between px-0 xl:px-3 text-[13px] font-medium',
+                      isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
                     )}
-                  />
-                  <span className="hidden xl:inline truncate">{item.label}</span>
-                </div>
-
-                {item.badge && (
-                  <span
-                    className={cn(
-                      'hidden xl:inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange'
-                    )}
+                    title={item.label}
                   >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-              </HighlightItem>
-            )
-          })}
-          </Highlight>
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className={cn(
+                          'h-[18px] w-[18px] shrink-0',
+                          isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
+                        )}
+                      />
+                      <span className="hidden xl:inline truncate">{item.label}</span>
+                    </div>
 
+                    {item.badge && (
+                      <span
+                        className={cn(
+                          'hidden xl:inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange'
+                        )}
+                      >
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                </HighlightItem>
+              )
+            })}
+          </Highlight>
         </div>
 
         {/* 2. Môn học sôi nổi (Desktop xl: only) — ẩn: dữ liệu cứng */}
         {FEATURES.hotCourses && (
-        <div className="hidden xl:block space-y-1">
-          <p className="px-3 pb-1 text-[11px] font-medium text-muted-foreground/80 uppercase tracking-wider">
-            Môn học sôi nổi
-          </p>
-          <div className="space-y-0.5">
-            {hotCourses.map((course) => (
-              <div
-                key={course}
-                onClick={() => router.push(`/courses/${course.split(' ')[0]}`)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/60 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />
-                <span className="truncate">{course}</span>
-              </div>
-            ))}
-            <Link
-              href="/search?type=courses"
-              className="block px-3 py-1.5 text-xs font-medium text-primary hover:underline"
-            >
-              Xem tất cả ›
-            </Link>
+          <div className="hidden xl:block space-y-1">
+            <p className="px-3 pb-1 text-[11px] font-medium text-muted-foreground/80 uppercase tracking-wider">Môn học sôi nổi</p>
+            <div className="space-y-0.5">
+              {hotCourses.map((course) => (
+                <div
+                  key={course}
+                  onClick={() => router.push(`/courses/${course.split(' ')[0]}`)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-muted/60 cursor-pointer text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Hash className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                  <span className="truncate">{course}</span>
+                </div>
+              ))}
+              <Link href="/search?type=courses" className="block px-3 py-1.5 text-xs font-medium text-primary hover:underline">
+                Xem tất cả ›
+              </Link>
+            </div>
           </div>
-        </div>
         )}
       </div>
 
@@ -205,17 +178,13 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Avatar className="h-8 w-8 shrink-0">
                     <AvatarImage src={user.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {userInitials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
                   </Avatar>
                   <div className="hidden xl:flex flex-col text-left min-w-0">
                     <span className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                      {user.displayName || (user as any).display_name || user.username}
+                      {user.displayName || user.username}
                     </span>
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      @{user.username}
-                    </span>
+                    <span className="text-[11px] text-muted-foreground truncate">@{user.username}</span>
                   </div>
                 </div>
                 <MoreHorizontal className="hidden xl:block h-4 w-4 text-muted-foreground shrink-0" />
@@ -249,12 +218,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
           </DropdownMenu>
         ) : (
           <div className="flex justify-center xl:block">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/')}
-              className="w-10 h-10 xl:w-full xl:h-9 rounded-full text-xs font-semibold"
-            >
+            <Button size="sm" variant="outline" onClick={() => router.push('/')} className="w-10 h-10 xl:w-full xl:h-9 rounded-full text-xs font-semibold">
               <User className="h-4 w-4 xl:mr-1.5" />
               <span className="hidden xl:inline">Đăng nhập</span>
             </Button>

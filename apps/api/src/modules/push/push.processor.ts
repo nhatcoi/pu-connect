@@ -54,10 +54,7 @@ export class PushProcessor extends WorkerHost {
     )
     if ((recent.rows[0]?.c || 0) >= PUSH_RATE_LIMIT_PER_HOUR) return 'skip:rate-limited'
 
-    const unread = await this.db.query(
-      `SELECT COUNT(*)::int AS c FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`,
-      [recipientId]
-    )
+    const unread = await this.db.query(`SELECT COUNT(*)::int AS c FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`, [recipientId])
     const link = n.link || (n.entity_type === 'post' && n.entity_id ? `/post/${n.entity_id}` : '/notifications')
     const result = await this.push.sendToUser(
       recipientId,

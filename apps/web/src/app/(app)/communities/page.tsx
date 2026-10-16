@@ -8,23 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { prefetchCommunity } from '@/hooks/use-community'
 import type { Community } from '@pu/schemas'
-import {
-  Compass,
-  Search,
-  Users,
-  MessageSquare,
-  ArrowRight,
-  Sparkles,
-  Loader2,
-  Check,
-  UserPlus,
-  Flame,
-  ArrowLeft
-} from 'lucide-react'
+import { Compass, Search, Users, MessageSquare, ArrowRight, Loader2, Check, UserPlus, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CommunityCardsSkeleton } from '@/components/skeletons/catalog-skeleton'
@@ -69,18 +57,15 @@ export default function CommunitiesDirectoryPage() {
   const handleToggleJoin = async (slug: string) => {
     setJoiningSlug(slug)
     try {
-      const res = await apiClient<{ isMember: boolean; membersCount: number; message: string }>(
-        `/communities/${slug}/join`,
-        { method: 'POST' }
-      )
+      const res = await apiClient<{ isMember: boolean; membersCount: number; message: string }>(`/communities/${slug}/join`, { method: 'POST' })
       // Cập nhật mọi danh sách cộng đồng đã cache + trang chi tiết cộng đồng
       queryClient.setQueriesData<Community[]>({ queryKey: queryKeys.communities }, (prev) =>
         prev?.map((c) => (c.slug === slug ? { ...c, isMember: res.isMember, membersCount: res.membersCount } : c))
       )
       queryClient.invalidateQueries({ queryKey: queryKeys.communityAll(slug) })
       toast.success(res.message)
-    } catch (err: any) {
-      toast.error(err.message || 'Thao tác không thành công')
+    } catch (err) {
+      toast.error(errorMessage(err, 'Thao tác không thành công'))
     } finally {
       setJoiningSlug(null)
     }
@@ -91,12 +76,7 @@ export default function CommunitiesDirectoryPage() {
       {/* Header */}
       <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer shrink-0"
-            onClick={() => router.push('/')}
-          >
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer shrink-0" onClick={() => router.push('/')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -104,9 +84,7 @@ export default function CommunitiesDirectoryPage() {
               <Compass className="h-4 w-4 text-primary" />
               Cộng Đồng & Diễn Đàn Phenikaa
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              Khám phá và tham gia các tiểu cộng đồng theo khoa, sở thích và đồ án
-            </p>
+            <p className="text-xs text-muted-foreground mt-1">Khám phá và tham gia các tiểu cộng đồng theo khoa, sở thích và đồ án</p>
           </div>
         </div>
       </div>
@@ -131,9 +109,7 @@ export default function CommunitiesDirectoryPage() {
               onClick={() => setSelectedType(cat.id)}
               className={cn(
                 'px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer',
-                selectedType === cat.id
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+                selectedType === cat.id ? 'bg-primary text-primary-foreground' : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
               )}
             >
               {cat.label}
@@ -160,11 +136,8 @@ export default function CommunitiesDirectoryPage() {
             >
               <div className="relative h-24 w-full bg-muted overflow-hidden">
                 {comm.bannerUrl ? (
-                  <img
-                    src={comm.bannerUrl}
-                    alt={comm.name}
-                    className="w-full h-full object-cover"
-                  />
+                  // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa/icon cộng đồng từ R2, kích thước động
+                  <img src={comm.bannerUrl} alt={comm.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-r from-primary/20 via-accent/20 to-background" />
                 )}
@@ -175,11 +148,8 @@ export default function CommunitiesDirectoryPage() {
                 <div className="flex items-end justify-between -mt-8 sm:-mt-10 mb-3">
                   <div className="relative h-16 w-16 sm:h-18 sm:w-18 rounded-2xl overflow-hidden border-3 border-background bg-card shadow-md shrink-0">
                     {comm.avatarUrl ? (
-                      <img
-                        src={comm.avatarUrl}
-                        alt={comm.name}
-                        className="w-full h-full object-cover"
-                      />
+                      // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa/icon cộng đồng từ R2, kích thước động
+                      <img src={comm.avatarUrl} alt={comm.name} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary font-bold text-xl">
                         {comm.slug.slice(0, 2).toUpperCase()}
@@ -229,9 +199,7 @@ export default function CommunitiesDirectoryPage() {
                     </Badge>
                   </div>
 
-                  <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">
-                    {comm.description}
-                  </p>
+                  <p className="text-[13px] text-muted-foreground line-clamp-2 leading-relaxed">{comm.description}</p>
 
                   <div className="flex items-center justify-between pt-1 text-xs text-muted-foreground">
                     <div className="flex items-center gap-4">

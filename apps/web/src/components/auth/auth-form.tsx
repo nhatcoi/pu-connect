@@ -11,7 +11,7 @@ import { toast } from 'sonner'
 import { Button } from '@/components/animate-ui/primitives/buttons/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/store'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 
 // Luồng: nhập email → kiểm tra → hiện mật khẩu (đăng nhập) hoặc họ tên + mật khẩu (đăng ký)
@@ -32,24 +32,20 @@ function GoogleIcon() {
   return (
     <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      />
     </svg>
   )
 }
 
-function Field({
-  id,
-  label,
-  error,
-  children
-}: {
-  id: string
-  label: string
-  error?: string
-  children: React.ReactNode
-}) {
+function Field({ id, label, error, children }: { id: string; label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <label htmlFor={id} className="text-[13px] font-medium text-foreground">
@@ -151,14 +147,14 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     setErrors({})
     setIsBusy(true)
     try {
-      const res = await apiClient<{ success: boolean; data: { exists: boolean; hasPassword: boolean } }>(
-        '/auth/check-email',
-        { method: 'POST', body: JSON.stringify({ email: value }) }
-      )
+      const res = await apiClient<{ success: boolean; data: { exists: boolean; hasPassword: boolean } }>('/auth/check-email', {
+        method: 'POST',
+        body: JSON.stringify({ email: value })
+      })
       if (!res.data.exists) setStep('register')
       else setStep(res.data.hasPassword ? 'login' : 'google-only')
-    } catch (err: any) {
-      setErrors({ email: err.message || 'Không thể kiểm tra email, vui lòng thử lại' })
+    } catch (err) {
+      setErrors({ email: errorMessage(err, 'Không thể kiểm tra email, vui lòng thử lại') })
     } finally {
       setIsBusy(false)
     }
@@ -167,9 +163,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
   // Bước 2: đăng nhập hoặc tạo tài khoản
   const handleSubmit = async () => {
     const isRegister = step === 'register'
-    const parsed = isRegister
-      ? RegisterSchema.safeParse({ displayName, email, password })
-      : LoginSchema.safeParse({ emailOrUsername: email, password })
+    const parsed = isRegister ? RegisterSchema.safeParse({ displayName, email, password }) : LoginSchema.safeParse({ emailOrUsername: email, password })
 
     if (!parsed.success) {
       const next: FieldErrors = {}
@@ -184,22 +178,18 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     setErrors({})
     setIsBusy(true)
     try {
-      const res = await apiClient<{ success: boolean; data: UserProfile }>(
-        isRegister ? '/auth/register' : '/auth/login',
-        { method: 'POST', body: JSON.stringify(parsed.data) }
-      )
+      const res = await apiClient<{ success: boolean; data: UserProfile }>(isRegister ? '/auth/register' : '/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(parsed.data)
+      })
       if (res.data) {
         setAuth(res.data)
-        toast.success(
-          isRegister
-            ? 'Tạo tài khoản thành công! Hãy kiểm tra email để xác thực tài khoản.'
-            : `Chào mừng ${res.data.displayName} quay lại!`
-        )
+        toast.success(isRegister ? 'Tạo tài khoản thành công! Hãy kiểm tra email để xác thực tài khoản.' : `Chào mừng ${res.data.displayName} quay lại!`)
         onSuccess?.()
         router.replace('/')
       }
-    } catch (err: any) {
-      setErrors({ password: err.message || 'Có lỗi xảy ra, vui lòng thử lại' })
+    } catch (err) {
+      setErrors({ password: errorMessage(err, 'Có lỗi xảy ra, vui lòng thử lại') })
     } finally {
       setIsBusy(false)
     }
@@ -212,8 +202,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
     else if (step === 'login' || step === 'register') void handleSubmit()
   }
 
-  const inputClass = (hasError?: string) =>
-    cn('h-10 rounded-lg text-[13px]', hasError && 'border-destructive focus-visible:ring-destructive')
+  const inputClass = (hasError?: string) => cn('h-10 rounded-lg text-[13px]', hasError && 'border-destructive focus-visible:ring-destructive')
 
   const emailLocked = step !== 'email'
   const emailError = errors.email || errors.emailOrUsername
@@ -334,15 +323,7 @@ export function AuthForm({ onSuccess }: AuthFormProps) {
             disabled={isBusy}
             className="inline-flex items-center justify-center w-full rounded-full h-10 bg-primary text-primary-foreground text-[13px] font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors cursor-pointer"
           >
-            {isBusy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : step === 'register' ? (
-              'Tạo tài khoản'
-            ) : step === 'login' ? (
-              'Đăng nhập'
-            ) : (
-              'Tiếp tục'
-            )}
+            {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : step === 'register' ? 'Tạo tài khoản' : step === 'login' ? 'Đăng nhập' : 'Tiếp tục'}
           </Button>
         )}
       </form>

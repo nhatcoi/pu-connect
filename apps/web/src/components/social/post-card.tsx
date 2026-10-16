@@ -3,7 +3,7 @@
 import { FEATURES } from '@/lib/features'
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import type { PostItem } from '@pu/schemas'
 import {
   Heart,
@@ -34,14 +34,7 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AcademicBadge } from '@/components/ui/academic-badge'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { PostPollCard } from './post-poll-card'
@@ -70,12 +63,6 @@ function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolea
   // Bài gắn học phần ⇒ link sang trang học phần
   if (post.courseCode) {
     return { label: post.courseCode, isFaculty: false, href: `/courses/${encodeURIComponent(post.courseCode)}` }
-  }
-  if ((post as any).course) {
-    return {
-      label: `${(post as any).course.code} • ${(post as any).course.name}`,
-      isFaculty: false
-    }
   }
 
   if (post.courseId) {
@@ -146,7 +133,6 @@ export function PostCard({
   defaultCommentsOpen = false,
   highlightCommentId
 }: PostCardProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const [post, setPost] = useState<PostItem>(initialPost)
   const [isCommentsOpen, setIsCommentsOpen] = useState(defaultCommentsOpen)
@@ -200,7 +186,6 @@ export function PostCard({
 
   // Check if current user is owner or admin
   const isOwner = user?.id && post.author?.id && String(user.id) === String(post.author.id)
-  const isAdmin = user?.role === 'admin'
 
   // Optimistic Like Toggle
   const handleLike = async () => {
@@ -251,11 +236,7 @@ export function PostCard({
       await apiClient(`/posts/${post.id}/bookmark`, { method: 'POST' })
       // Tab "Đã lưu" tải lại khi mở
       queryClient.invalidateQueries({ queryKey: ['feed', 'bookmarks'] })
-      toast.success(
-        newIsBookmarked
-          ? 'Đã lưu bài viết vào mục Đã lưu'
-          : 'Đã bỏ lưu bài viết'
-      )
+      toast.success(newIsBookmarked ? 'Đã lưu bài viết vào mục Đã lưu' : 'Đã bỏ lưu bài viết')
     } catch {
       setPost((prev) => ({
         ...prev,
@@ -315,11 +296,7 @@ export function PostCard({
         patchAuthorFollowed(queryClient, post.author.id, data.toggleFollow.isFollowing)
         invalidateFollowRelated(queryClient, post.author.username)
       }
-      toast.success(
-        nextState
-          ? `Đã theo dõi @${post.author?.username || 'user'}`
-          : `Đã hủy theo dõi @${post.author?.username || 'user'}`
-      )
+      toast.success(nextState ? `Đã theo dõi @${post.author?.username || 'user'}` : `Đã hủy theo dõi @${post.author?.username || 'user'}`)
     } catch {
       setIsFollowing(previousState)
       patchAuthorFollowed(queryClient, post.author.id, previousState)
@@ -363,9 +340,7 @@ export function PostCard({
     toast.success('Đã chia sẻ bài viết vào phòng chat')
   }
 
-  const authorInitials = (post.author?.displayName || post.author?.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
+  const authorInitials = (post.author?.displayName || post.author?.username || 'PU').slice(0, 2).toUpperCase()
 
   const courseBadge = getCleanCourseBadge(post)
   const viewsCount = (post.likesCount || 0) * 8 + (post.commentsCount || 0) * 15 + 42
@@ -415,7 +390,6 @@ export function PostCard({
 
         {/* ── 2-Column Flex Layout (Signature X Twitter Architecture) ── */}
         <div className="flex items-start gap-3">
-          
           {/* 1. Left Column: Author Avatar */}
           <div className="shrink-0 pt-0.5">
             <Link
@@ -425,16 +399,13 @@ export function PostCard({
             >
               <Avatar className="h-9 w-9 transition-transform group-hover:scale-105">
                 <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.displayName || ''} />
-                <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                  {authorInitials}
-                </AvatarFallback>
+                <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{authorInitials}</AvatarFallback>
               </Avatar>
             </Link>
           </div>
 
           {/* 2. Right Column: Main Content (Indented aligned with author name) */}
           <div className="flex-1 min-w-0 space-y-2">
-            
             {/* Header row: Author Name + Handle + Time + Badges + More Dropdown */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center space-x-1.5 flex-wrap min-w-0">
@@ -448,17 +419,20 @@ export function PostCard({
                 <span className="text-xs text-muted-foreground truncate">@{post.author?.username || 'student'}</span>
                 <span className="text-xs text-muted-foreground">·</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">{formatRelativeTime(post.createdAt)}</span>
-                
+
                 {/* Academic Role Badge */}
-                <AcademicBadge
-                  role={post.author?.role}
-                />
+                <AcademicBadge role={post.author?.role} />
               </div>
 
               {/* Right: Badges & More dropdown */}
               <div className="flex items-center space-x-1.5 shrink-0">
                 {post.postType === 'qa' && (
-                  <span className={cn('inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium', post.isResolved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-primary/10 text-primary')}>
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium',
+                      post.isResolved ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-primary/10 text-primary'
+                    )}
+                  >
                     <HelpCircle className="h-3 w-3" />
                     <span>{post.isResolved ? 'Đã giải quyết' : 'Hỏi đáp'}</span>
                   </span>
@@ -501,11 +475,7 @@ export function PostCard({
 
                 {courseBadge && !courseBadge.href && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground max-w-[120px] truncate">
-                    {courseBadge.isFaculty ? (
-                      <Building2 className="h-3 w-3 shrink-0" />
-                    ) : (
-                      <GraduationCap className="h-3 w-3 shrink-0" />
-                    )}
+                    {courseBadge.isFaculty ? <Building2 className="h-3 w-3 shrink-0" /> : <GraduationCap className="h-3 w-3 shrink-0" />}
                     <span className="truncate">{courseBadge.label}</span>
                   </span>
                 )}
@@ -513,18 +483,11 @@ export function PostCard({
                 {/* ── Signature 3-Dots Dropdown Menu (Clean, Simple & Essential) ── */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground cursor-pointer -mr-1"
-                    >
+                    <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground cursor-pointer -mr-1">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align="end"
-                    className="w-56 p-1.5 rounded-2xl shadow-xl border border-border/80 bg-popover/95 backdrop-blur-md"
-                  >
+                  <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-2xl shadow-xl border border-border/80 bg-popover/95 backdrop-blur-md">
                     {!isOwner ? (
                       <>
                         {/* 1. Follow / Unfollow User */}
@@ -612,36 +575,30 @@ export function PostCard({
             </div>
 
             {/* Post Title (if any) */}
-            {post.title && (
-              <h2 className="text-[15px] font-semibold tracking-tight text-foreground leading-snug">
-                {post.title}
-              </h2>
-            )}
+            {post.title && <h2 className="text-[15px] font-semibold tracking-tight text-foreground leading-snug">{post.title}</h2>}
 
             {/* Post Content (Markdown Preview) */}
             <div className="relative">
               <div
                 ref={contentRef}
-                className={cn(
-                  'text-[13px] sm:text-sm text-foreground/90 leading-relaxed break-words',
-                  isOverflowing && !isExpanded && 'overflow-hidden'
-                )}
+                className={cn('text-[13px] sm:text-sm text-foreground/90 leading-relaxed break-words', isOverflowing && !isExpanded && 'overflow-hidden')}
                 style={isOverflowing && !isExpanded ? { maxHeight: COLLAPSED_MAX_HEIGHT } : undefined}
               >
                 <MarkdownPreview content={post.content} />
               </div>
               {/* Fade mờ cuối đoạn khi thu gọn */}
               {isOverflowing && !isExpanded && (
-                <div className={cn('pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t to-transparent', variant === 'card' ? 'from-card' : 'from-background')} />
+                <div
+                  className={cn(
+                    'pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t to-transparent',
+                    variant === 'card' ? 'from-card' : 'from-background'
+                  )}
+                />
               )}
             </div>
             {isOverflowing && (
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded((v) => !v)}
-                  className="text-xs font-medium text-primary hover:underline cursor-pointer"
-                >
+                <button type="button" onClick={() => setIsExpanded((v) => !v)} className="text-xs font-medium text-primary hover:underline cursor-pointer">
                   {isExpanded ? 'Thu gọn' : 'Xem thêm'}
                 </button>
                 {/* Bài dài: tóm tắt bằng PU AI (cần đăng nhập) */}
@@ -662,11 +619,7 @@ export function PostCard({
 
             {/* Student Poll */}
             {post.poll && (
-              <PostPollCard
-                postId={post.id}
-                poll={post.poll}
-                onPollUpdated={(updatedPoll) => setPost((prev) => ({ ...prev, poll: updatedPoll }))}
-              />
+              <PostPollCard postId={post.id} poll={post.poll} onPollUpdated={(updatedPoll) => setPost((prev) => ({ ...prev, poll: updatedPoll }))} />
             )}
 
             {/* Media Gallery */}
@@ -680,11 +633,7 @@ export function PostCard({
             {post.tags && post.tags.length > 0 && (
               <div className="flex flex-wrap gap-x-2 gap-y-1 pt-1">
                 {post.tags.map((tag) => (
-                  <Link
-                    key={tag}
-                    href={`/search?q=${encodeURIComponent(tag)}`}
-                    className="text-xs font-medium text-primary hover:underline transition-colors"
-                  >
+                  <Link key={tag} href={`/search?q=${encodeURIComponent(tag)}`} className="text-xs font-medium text-primary hover:underline transition-colors">
                     #{tag}
                   </Link>
                 ))}
@@ -701,7 +650,6 @@ export function PostCard({
 
             {/* ── Actions Footer Row: Tym -> Bình luận -> Lưu -> Thống kê -> Share ── */}
             <div className="flex items-center justify-between pt-2 -ml-2 text-muted-foreground max-w-xl sm:max-w-2xl">
-              
               {/* 1. Tym (Like) */}
               <button
                 type="button"
@@ -713,10 +661,7 @@ export function PostCard({
                 title={post.isLikedByMe ? 'Bỏ thích' : 'Thích bài viết'}
               >
                 <Heart
-                  className={cn(
-                    'h-4 w-4 transition-transform active:scale-125 group-hover:text-rose-500',
-                    post.isLikedByMe && 'fill-current text-rose-500'
-                  )}
+                  className={cn('h-4 w-4 transition-transform active:scale-125 group-hover:text-rose-500', post.isLikedByMe && 'fill-current text-rose-500')}
                 />
                 <span className="text-xs">{post.likesCount || 0}</span>
               </button>
@@ -755,15 +700,15 @@ export function PostCard({
 
               {/* 4. Thống kê (ẩn: lượt xem tự tính, chưa tracking) */}
               {FEATURES.postAnalytics && (
-              <button
-                type="button"
-                onClick={() => setIsAnalyticsOpen(true)}
-                className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-sky-500/10 hover:text-sky-500 text-xs text-muted-foreground transition-colors cursor-pointer group"
-                title="Xem phân tích & số liệu bài viết"
-              >
-                <BarChart2 className="h-4 w-4 group-hover:text-sky-500" />
-                <span className="text-xs">{viewsCount}</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAnalyticsOpen(true)}
+                  className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-sky-500/10 hover:text-sky-500 text-xs text-muted-foreground transition-colors cursor-pointer group"
+                  title="Xem phân tích & số liệu bài viết"
+                >
+                  <BarChart2 className="h-4 w-4 group-hover:text-sky-500" />
+                  <span className="text-xs">{viewsCount}</span>
+                </button>
               )}
 
               {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Chia sẻ X) */}
@@ -787,13 +732,13 @@ export function PostCard({
                   </DropdownMenuItem>
 
                   {FEATURES.directMessage && (
-                  <DropdownMenuItem
-                    onClick={handleShareViaChat}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
-                  >
-                    <Send className="h-4 w-4 text-muted-foreground" />
-                    <span>Gửi tin nhắn</span>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={handleShareViaChat}
+                      className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
+                    >
+                      <Send className="h-4 w-4 text-muted-foreground" />
+                      <span>Gửi tin nhắn</span>
+                    </DropdownMenuItem>
                   )}
 
                   <DropdownMenuItem
@@ -819,12 +764,7 @@ export function PostCard({
         </div>
 
         {/* Expandable Comments & Discussion Section */}
-        <PostCommentsSection
-          post={post}
-          isOpen={isCommentsOpen}
-          highlightCommentId={highlightCommentId}
-          onCountChange={handleCommentsCount}
-        />
+        <PostCommentsSection post={post} isOpen={isCommentsOpen} highlightCommentId={highlightCommentId} onCountChange={handleCommentsCount} />
       </article>
 
       {/* Edit Post Dialog */}
@@ -841,22 +781,10 @@ export function PostCard({
       )}
 
       {/* Report Post Dialog */}
-      {isReportDialogOpen && (
-        <ReportPostDialog
-          postId={post.id}
-          open={isReportDialogOpen}
-          onOpenChange={setIsReportDialogOpen}
-        />
-      )}
+      {isReportDialogOpen && <ReportPostDialog postId={post.id} open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen} />}
 
       {/* Post Analytics Dialog */}
-      {isAnalyticsOpen && (
-        <PostAnalyticsDialog
-          post={post}
-          open={isAnalyticsOpen}
-          onOpenChange={setIsAnalyticsOpen}
-        />
-      )}
+      {isAnalyticsOpen && <PostAnalyticsDialog post={post} open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen} />}
     </>
   )
 }

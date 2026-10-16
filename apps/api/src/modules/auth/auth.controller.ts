@@ -1,15 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Req,
-  Res,
-  Inject,
-  UseGuards,
-  HttpCode,
-  HttpStatus
-} from '@nestjs/common'
+import { Controller, Post, Get, Body, Req, Res, Inject, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 import { AuthenticatedGuard } from './guards/authenticated.guard'
@@ -28,10 +17,7 @@ const ForgotPasswordSchema = z.object({ email: z.string().trim().toLowerCase().e
 const ResetPasswordSchema = z.object({
   token: z.string().min(1, { message: 'Thiếu mã đặt lại mật khẩu' }),
   // bcrypt chỉ dùng 72 byte đầu
-  password: z
-    .string()
-    .min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
-    .max(72, { message: 'Mật khẩu tối đa 72 ký tự' })
+  password: z.string().min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' }).max(72, { message: 'Mật khẩu tối đa 72 ký tự' })
 })
 const VerifyEmailSchema = z.object({ token: z.string().min(1, { message: 'Thiếu mã xác thực' }) })
 
@@ -82,10 +68,7 @@ export class AuthController {
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  async resetPassword(
-    @Body(new ZodValidationPipe(ResetPasswordSchema)) body: { token: string; password: string },
-    @Req() req: Request
-  ) {
+  async resetPassword(@Body(new ZodValidationPipe(ResetPasswordSchema)) body: { token: string; password: string }, @Req() req: Request) {
     this.resetLimiter.consume(req.ip || 'unknown')
     await this.authService.resetPassword(body.token, body.password)
     return { success: true }

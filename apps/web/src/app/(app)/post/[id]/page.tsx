@@ -21,7 +21,11 @@ function PostDetail() {
   const queryClient = useQueryClient()
 
   // Cache ['post', id]; nếu bài đã có trong feed/cộng đồng thì hiện ngay (initialData) rồi làm mới ngầm
-  const { data: post, isPending, isError } = useQuery({
+  const {
+    data: post,
+    isPending,
+    isError
+  } = useQuery({
     queryKey: queryKeys.post(id),
     queryFn: async () => (await apiClient<{ success: boolean; data: PostItem }>(`/posts/${id}`)).data,
     initialData: () => findCachedPost(queryClient, id),

@@ -2,12 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
-import {
-  Loader2,
-  CheckCircle2,
-  MessageSquarePlus,
-  Compass
-} from 'lucide-react'
+import { Loader2, CheckCircle2, MessageSquarePlus, Compass } from 'lucide-react'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
@@ -29,7 +24,7 @@ function HomeContent() {
   const tabParam = searchParams.get('tab')
 
   const [activeFeedTab, setActiveFeedTab] = useState<HomeFeedTab>('for_you')
-  
+
   useEffect(() => {
     if (tabParam === 'following') {
       setActiveFeedTab('following')
@@ -53,7 +48,7 @@ function HomeContent() {
   // Pill "bài mới" (polling + socket); tắt trong Cài đặt ⇒ since = null ⇒ dừng polling
   const showNewPostsPill = useFeatureEnabled('newPostsPill')
   const newPosts = useNewPosts(activeFeedTab, null, showNewPostsPill ? newSince : null)
-  
+
   const queryClient = useQueryClient()
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   // Modal "Khám phá thêm" (gợi ý theo dõi) — mở từ cuối / trạng thái trống của tab Đang theo dõi
@@ -98,12 +93,7 @@ function HomeContent() {
       </div>
 
       {showNewPostsPill && (
-        <NewPostsPill
-          count={newPosts.count}
-          authors={newPosts.authors}
-          isRevealing={newPosts.isRevealing}
-          onClick={() => void newPosts.reveal()}
-        />
+        <NewPostsPill count={newPosts.count} authors={newPosts.authors} isRevealing={newPosts.isRevealing} onClick={() => void newPosts.reveal()} />
       )}
 
       {/* Ô soạn bài dạng thẻ (Composer card) */}
@@ -118,11 +108,7 @@ function HomeContent() {
         ) : posts.length > 0 ? (
           <>
             {/* Ảo hóa: chỉ các bài gần màn hình nằm trong DOM */}
-            <VirtualPostList
-              posts={posts}
-              cacheKey={`feed:${activeFeedTab}`}
-              renderPost={(post) => <PostCard post={post} variant="card" />}
-            />
+            <VirtualPostList posts={posts} cacheKey={`feed:${activeFeedTab}`} renderPost={(post) => <PostCard post={post} variant="card" />} />
 
             {/* Infinite Scroll Bottom Sentinel */}
             <div ref={sentinelRef} className="py-6 text-center">
@@ -138,11 +124,7 @@ function HomeContent() {
                     <p className="text-sm font-semibold text-foreground">Bạn đã xem hết bài từ người đang theo dõi</p>
                     <p className="text-xs text-muted-foreground">Theo dõi thêm bạn cùng lớp, cùng khoa để bảng tin phong phú hơn.</p>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => setExploreOpen(true)}
-                    className="h-9 gap-1.5 rounded-full px-5 text-xs font-semibold cursor-pointer"
-                  >
+                  <Button size="sm" onClick={() => setExploreOpen(true)} className="h-9 gap-1.5 rounded-full px-5 text-xs font-semibold cursor-pointer">
                     <Compass className="h-4 w-4" />
                     Khám phá thêm
                   </Button>
@@ -182,11 +164,7 @@ function HomeContent() {
                 Khám phá người để theo dõi
               </Button>
             ) : (
-              <Button
-                size="sm"
-                onClick={() => setCreatePostOpen(true)}
-                className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer"
-              >
+              <Button size="sm" onClick={() => setCreatePostOpen(true)} className="bg-primary text-primary-foreground font-bold rounded-full cursor-pointer">
                 {activeFeedTab === 'qa' ? 'Đặt câu hỏi ngay' : 'Tạo bài viết mới'}
               </Button>
             )}

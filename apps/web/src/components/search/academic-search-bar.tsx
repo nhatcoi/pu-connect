@@ -2,19 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Search,
-  X,
-  Clock,
-  TrendingUp,
-  BookOpen,
-  FileText,
-  MessageSquare,
-  User,
-  Users,
-  ArrowRight,
-  Loader2
-} from 'lucide-react'
+import { Search, X, Clock, TrendingUp, BookOpen, FileText, MessageSquare, User, ArrowRight, Loader2 } from 'lucide-react'
 import { apiClient } from '@/lib/api-client'
 import { markdownToPlainText } from '@/lib/plain-text'
 import type { SearchResult } from '@pu/schemas'
@@ -72,9 +60,7 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
     setIsLoading(true)
     const timeoutId = setTimeout(async () => {
       try {
-        const res = await apiClient<{ success: boolean; data: SearchResult }>(
-          `/search?q=${encodeURIComponent(query.trim())}&limit=3`
-        )
+        const res = await apiClient<{ success: boolean; data: SearchResult }>(`/search?q=${encodeURIComponent(query.trim())}&limit=3`)
         if (res && res.data) {
           setPreviewResult(res.data)
         }
@@ -134,9 +120,7 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
       <div
         className={cn(
           'flex items-center gap-2.5 rounded-full px-4 py-2 transition-all duration-200',
-          isOpen
-            ? 'border border-primary/50 bg-background shadow-sm ring-2 ring-primary/10'
-            : 'border border-transparent bg-muted/50 hover:bg-muted/70'
+          isOpen ? 'border border-primary/50 bg-background shadow-sm ring-2 ring-primary/10' : 'border border-transparent bg-muted/50 hover:bg-muted/70'
         )}
       >
         <Search className={cn('h-4 w-4 shrink-0 transition-colors', isOpen ? 'text-primary' : 'text-muted-foreground')} />

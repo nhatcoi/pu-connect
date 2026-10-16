@@ -5,35 +5,12 @@ import { VerifyEmailBanner } from '@/components/auth/verify-email-banner'
 import React, { useEffect, useState } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import {
-  Search,
-  X,
-  Plus,
-  Moon,
-  Sun,
-  Laptop,
-  GraduationCap,
-  Users,
-  User,
-  Sparkles,
-  LogIn,
-  LogOut,
-  Bookmark,
-  ArrowLeft,
-  Settings,
-  SlidersHorizontal
-} from 'lucide-react'
+import { Search, X, Plus, Moon, Sun, Laptop, GraduationCap, Users, User, LogIn, LogOut, Bookmark, ArrowLeft, Settings } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useLogout } from '@/hooks/use-logout'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store'
 import { CommandPalette } from '@/components/navigation/command-palette'
 import { AuthDialog } from '@/components/auth/auth-dialog'
@@ -49,8 +26,8 @@ export function Header() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const queryParam = searchParams.get('q') || ''
-  
-  const { theme, setTheme } = useTheme()
+
+  const { setTheme } = useTheme()
   const user = useAppStore((state) => state.user)
   const { logout, isLoggingOut } = useLogout()
   const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
@@ -68,9 +45,7 @@ export function Header() {
   // Phiên đăng nhập dùng chung cache ['me'] (không gọi lại /auth/me mỗi trang)
   useSession()
 
-  const userInitials = (user?.displayName || (user as any)?.display_name || user?.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
+  const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   const isSearchPage = pathname === '/search'
   const isSearchActive = isSearchPage && !!queryParam.trim()
@@ -97,12 +72,8 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
             <PuMark className="h-9 w-9 group-hover:scale-105 transition-transform" />
             <div className="flex flex-col">
-              <span className="font-extrabold text-base tracking-tight leading-none text-foreground">
-                PU Connector
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase">
-                Phenikaa University
-              </span>
+              <span className="font-extrabold text-base tracking-tight leading-none text-foreground">PU Connector</span>
+              <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase">Phenikaa University</span>
             </div>
           </Link>
 
@@ -159,9 +130,7 @@ export function Header() {
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 border border-border cursor-pointer">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {userInitials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
@@ -169,26 +138,19 @@ export function Header() {
                 <div className="flex items-center justify-start gap-2.5 p-2">
                   <Avatar className="h-9 w-9 border border-border">
                     <AvatarImage src={user.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {userInitials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col space-y-0.5 leading-tight min-w-0">
-                    <p className="font-bold text-xs text-foreground truncate">
-                      {user.displayName || (user as any).display_name || user.username}
-                    </p>
+                    <p className="font-bold text-xs text-foreground truncate">{user.displayName || user.username}</p>
                     <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => router.push(`/${user.username}`)}
-                  className="cursor-pointer font-medium text-xs rounded-xl"
-                >
+                <DropdownMenuItem onClick={() => router.push(`/${user.username}`)} className="cursor-pointer font-medium text-xs rounded-xl">
                   <User className="mr-2 h-4 w-4 text-primary" /> Trang cá nhân của tôi
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-xs rounded-xl">
-                  <GraduationCap className="mr-2 h-4 w-4 text-muted-foreground" /> Mã SV: {user.studentId || (user as any).student_id || 'N/A'}
+                  <GraduationCap className="mr-2 h-4 w-4 text-muted-foreground" /> Mã SV: {user.studentId || 'N/A'}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/communities')} className="text-xs rounded-xl cursor-pointer">
                   <Users className="mr-2 h-4 w-4 text-muted-foreground" /> Cộng đồng & Diễn đàn
@@ -197,7 +159,11 @@ export function Header() {
                   <Settings className="mr-2 h-4 w-4 text-muted-foreground" /> Cài đặt
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl hover:bg-destructive/10">
+                <DropdownMenuItem
+                  onClick={logout}
+                  disabled={isLoggingOut}
+                  className="text-destructive cursor-pointer text-xs rounded-xl hover:bg-destructive/10"
+                >
                   <LogOut className="mr-2 h-4 w-4" /> {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -218,7 +184,6 @@ export function Header() {
 
       {/* ── 2. Unified Signature Mobile Responsive Top Header (Pixel-Perfect Alignment) (md:hidden) ── */}
       <div className="flex md:hidden h-13 items-center justify-between px-3.5 relative w-full">
-        
         {/* ── A. Left Anchor Slot (Fixed w-8 h-8 at exact left: 14px on ALL pages) ── */}
         <div className="w-8 h-8 shrink-0 flex items-center justify-center">
           {isSearchActive ? (
@@ -242,9 +207,7 @@ export function Header() {
                 >
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {userInitials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
                   </Avatar>
                 </button>
               </DropdownMenuTrigger>
@@ -252,22 +215,15 @@ export function Header() {
                 <div className="flex items-center gap-2.5 p-1.5">
                   <Avatar className="h-10 w-10 border border-border">
                     <AvatarImage src={user.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                      {userInitials}
-                    </AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col min-w-0">
-                    <p className="font-bold text-xs text-foreground truncate">
-                      {user.displayName || (user as any).display_name || user.username}
-                    </p>
+                    <p className="font-bold text-xs text-foreground truncate">{user.displayName || user.username}</p>
                     <p className="text-[11px] text-muted-foreground truncate">@{user.username}</p>
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => router.push(`/${user.username}`)}
-                  className="cursor-pointer font-medium text-xs rounded-xl"
-                >
+                <DropdownMenuItem onClick={() => router.push(`/${user.username}`)} className="cursor-pointer font-medium text-xs rounded-xl">
                   <User className="mr-2 h-4 w-4 text-primary" /> Hồ sơ cá nhân
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => router.push('/?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">

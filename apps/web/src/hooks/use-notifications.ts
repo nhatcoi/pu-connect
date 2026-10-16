@@ -9,14 +9,7 @@ import { useAppStore } from '@/store'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 
 export type NotificationType =
-  | 'post_like'
-  | 'post_comment'
-  | 'comment_reply'
-  | 'user_mention'
-  | 'user_follow'
-  | 'accepted_solution'
-  | 'account_verified'
-  | 'ai_reply'
+  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'ai_reply'
 
 export interface NotificationItem {
   id: string
@@ -66,8 +59,7 @@ export const useNotificationsStore = create<NotificationsState>()((set) => ({
   unreadCount: 0,
   loaded: false,
   // Thông báo gộp có cùng id ⇒ thay thế và đưa lên đầu
-  upsert: (item, unreadCount) =>
-    set((s) => ({ items: [item, ...s.items.filter((n) => n.id !== item.id)].slice(0, 30), unreadCount })),
+  upsert: (item, unreadCount) => set((s) => ({ items: [item, ...s.items.filter((n) => n.id !== item.id)].slice(0, 30), unreadCount })),
   setList: (items, unreadCount) => set({ items, unreadCount, loaded: true }),
   markRead: (ids, unreadCount) =>
     set((s) => ({
@@ -85,8 +77,7 @@ export const notificationsApi = {
     if (params.type) q.set('type', params.type)
     return apiClient<ListResponse>(`/notifications?${q.toString()}`)
   },
-  markRead: (id: string) =>
-    apiClient<{ data: { unreadCount: number } }>(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markRead: (id: string) => apiClient<{ data: { unreadCount: number } }>(`/notifications/${id}/read`, { method: 'PATCH' }),
   markAllRead: () => apiClient<{ data: { unreadCount: number } }>('/notifications/read-all', { method: 'PATCH' }),
   getSettings: () => apiClient<{ data: NotificationSettings }>('/notifications/settings'),
   updateSettings: (patch: NotificationSettingsPatch) =>
@@ -130,9 +121,7 @@ export function useNotificationsSync(onNavigate: (link: string) => void) {
             className: 'line-clamp-2 text-xs text-muted-foreground'
           })
         : undefined,
-      action: notification.link
-        ? { label: 'Xem', onClick: () => onNavigate(notification.link as string) }
-        : undefined
+      action: notification.link ? { label: 'Xem', onClick: () => onNavigate(notification.link as string) } : undefined
     })
   })
 

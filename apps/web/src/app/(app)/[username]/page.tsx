@@ -16,11 +16,7 @@ import { ProfileSkeleton } from '@/components/skeletons/profile-skeleton'
 
 type TabType = 'posts' | 'documents' | 'questions'
 
-export default function ProfilePage({
-  params
-}: {
-  params: Promise<{ username: string }>
-}) {
+export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
   const router = useRouter()
   const { profile, isLoading, error, refetch } = useProfile(username)
@@ -35,12 +31,7 @@ export default function ProfilePage({
     <>
       {/* Sticky Topbar with Back Button (Natural Scroll on Mobile, Sticky on Desktop) */}
       <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer"
-          onClick={() => router.push('/')}
-        >
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer" onClick={() => router.push('/')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0">
@@ -51,9 +42,7 @@ export default function ProfilePage({
             </div>
           ) : (
             <>
-              <h2 className="text-[15px] font-semibold tracking-tight text-foreground truncate leading-none">
-                {profile?.displayName || `@${username}`}
-              </h2>
+              <h2 className="text-[15px] font-semibold tracking-tight text-foreground truncate leading-none">{profile?.displayName || `@${username}`}</h2>
               <p className="text-xs text-muted-foreground mt-1">{profile?.posts?.length || 0} bài viết</p>
             </>
           )}
@@ -69,12 +58,8 @@ export default function ProfilePage({
           <div className="h-14 w-14 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mb-4">
             <AlertCircle className="h-7 w-7" />
           </div>
-          <h3 className="text-lg font-bold text-foreground mb-1">
-            Không tìm thấy người dùng
-          </h3>
-          <p className="text-sm text-muted-foreground max-w-md mb-6">
-            Tài khoản @{username} không tồn tại hoặc đã được thay đổi.
-          </p>
+          <h3 className="text-lg font-bold text-foreground mb-1">Không tìm thấy người dùng</h3>
+          <p className="text-sm text-muted-foreground max-w-md mb-6">Tài khoản @{username} không tồn tại hoặc đã được thay đổi.</p>
           <Button onClick={() => router.push('/')} className="rounded-full cursor-pointer">
             Quay lại Bảng tin
           </Button>
@@ -98,9 +83,7 @@ export default function ProfilePage({
               <div
                 className={cn(
                   'sticky z-20 mb-2.5 bg-surface/90 backdrop-blur-md px-4 sm:px-1 transition-all duration-300 ease-in-out',
-                  isHeaderVisible
-                    ? 'top-[102px] md:top-[109px]'
-                    : 'top-0 md:top-[109px]'
+                  isHeaderVisible ? 'top-[102px] md:top-[109px]' : 'top-0 md:top-[109px]'
                 )}
               >
                 <SlidingTabs
@@ -118,21 +101,12 @@ export default function ProfilePage({
               {activeTab === 'posts' && (
                 <div className="space-y-2.5 px-2 sm:px-0">
                   {profile.posts && profile.posts.length > 0 ? (
-                    profile.posts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLikeToggle={() => {}}
-                        variant="card"
-                      />
-                    ))
+                    profile.posts.map((post) => <PostCard key={post.id} post={post} onLikeToggle={() => {}} variant="card" />)
                   ) : (
                     <div className="py-16 text-center text-muted-foreground">
                       <FileText className="h-10 w-10 mx-auto mb-2.5 opacity-30" />
                       <p className="text-sm font-medium">Chưa có bài viết nào</p>
-                      <p className="text-xs mt-1">
-                        @{profile.username} chưa đăng câu hỏi hoặc chia sẻ nào trên diễn đàn.
-                      </p>
+                      <p className="text-xs mt-1">@{profile.username} chưa đăng câu hỏi hoặc chia sẻ nào trên diễn đàn.</p>
                     </div>
                   )}
                 </div>
@@ -144,19 +118,14 @@ export default function ProfilePage({
                   {profile.documents && profile.documents.length > 0 ? (
                     <div className="grid grid-cols-1 gap-3">
                       {profile.documents.map((doc) => (
-                        <DocumentCard
-                          key={doc.id}
-                          document={doc}
-                        />
+                        <DocumentCard key={doc.id} document={doc} />
                       ))}
                     </div>
                   ) : (
                     <div className="py-16 text-center text-muted-foreground">
                       <BookOpen className="h-10 w-10 mx-auto mb-2.5 opacity-30" />
                       <p className="text-sm font-medium">Chưa đóng góp tài liệu nào</p>
-                      <p className="text-xs mt-1">
-                        Kho đề thi và slide bài giảng của @{profile.username} đang trống.
-                      </p>
+                      <p className="text-xs mt-1">Kho đề thi và slide bài giảng của @{profile.username} đang trống.</p>
                     </div>
                   )}
                 </div>
@@ -166,21 +135,12 @@ export default function ProfilePage({
               {activeTab === 'questions' && (
                 <div className="space-y-2.5 px-2 sm:px-0">
                   {questionPosts.length > 0 ? (
-                    questionPosts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLikeToggle={() => {}}
-                        variant="card"
-                      />
-                    ))
+                    questionPosts.map((post) => <PostCard key={post.id} post={post} onLikeToggle={() => {}} variant="card" />)
                   ) : (
                     <div className="py-16 text-center text-muted-foreground">
                       <HelpCircle className="h-10 w-10 mx-auto mb-2.5 opacity-30" />
                       <p className="text-sm font-medium">Chưa có câu hỏi thảo luận nào</p>
-                      <p className="text-xs mt-1">
-                        Sinh viên chưa đặt câu hỏi Q&A nào liên quan đến môn học hoặc bài tập.
-                      </p>
+                      <p className="text-xs mt-1">Sinh viên chưa đặt câu hỏi Q&A nào liên quan đến môn học hoặc bài tập.</p>
                     </div>
                   )}
                 </div>

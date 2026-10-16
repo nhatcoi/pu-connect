@@ -6,7 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react'
 import type { UserProfile } from '@pu/schemas'
 import { PuLogo } from '@/components/brand/pu-logo'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { useAppStore } from '@/store'
 
 type Status = 'loading' | 'success' | 'error'
@@ -36,9 +36,9 @@ function VerifyEmailContent() {
         // Cập nhật phiên hiện tại nếu đúng tài khoản đang đăng nhập
         if (currentUser && res.data && currentUser.id === res.data.id) setUser(res.data)
       })
-      .catch((err: any) => {
+      .catch((err) => {
         setStatus('error')
-        setMessage(err.message || 'Không thể xác thực email.')
+        setMessage(errorMessage(err, 'Không thể xác thực email.'))
       })
   }, [token, currentUser, setUser])
 
@@ -61,9 +61,7 @@ function VerifyEmailContent() {
         <>
           <XCircle className="mx-auto h-10 w-10 text-destructive" />
           <h1 className="text-lg font-semibold">Không thể xác thực</h1>
-          <p className="text-[13px] text-muted-foreground">
-            {message} Đăng nhập và bấm &ldquo;Gửi lại email&rdquo; để nhận liên kết mới.
-          </p>
+          <p className="text-[13px] text-muted-foreground">{message} Đăng nhập và bấm &ldquo;Gửi lại email&rdquo; để nhận liên kết mới.</p>
         </>
       )}
       {status !== 'loading' && (

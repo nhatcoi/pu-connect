@@ -56,11 +56,7 @@ export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPrevi
           <span className="shrink-0">{formatRelativeTime(comment.createdAt)}</span>
         </div>
 
-        <MarkdownPreview
-          content={comment.content}
-          inline
-          className="line-clamp-2 text-[13px] leading-snug text-foreground/90 break-words"
-        />
+        <MarkdownPreview content={comment.content} inline className="line-clamp-2 text-[13px] leading-snug text-foreground/90 break-words" />
 
         {(comment.likesCount > 0 || comment.repliesCount > 0) && (
           <div className="flex items-center gap-3 pt-0.5 text-[11px] text-muted-foreground">
