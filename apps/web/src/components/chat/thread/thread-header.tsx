@@ -3,10 +3,11 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BellOff, Eraser, History, Info, Loader2, SquarePen } from 'lucide-react'
+import { ArrowLeft, BellOff, Eraser, Info, Menu, SquarePen } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
-import { conversationTitle, presenceLabel, useAiQuota, useAiThreadActions, useOnlineCount, usePresence } from '@/hooks/chat'
+import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
+import { PUAI_HOME } from '@/lib/puai-routes'
 import { ConversationAvatar } from '../conversation-avatar'
 import { OpenInN7AiButton } from '../ai/open-in-n7ai'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -14,19 +15,21 @@ import { Skeleton } from '@/components/ui/skeleton'
 interface ThreadHeaderProps {
   conversation: ConversationSummary | undefined
   typingLabel: string | null
+  backHref: string
   onInfo: () => void
+  // Không gian PU AI (mobile): mở ngăn lịch sử thay cho nút quay lại
+  onOpenNav?: () => void
   onAiReset: () => void
 }
 
-// Đầu hội thoại: quay lại, tên + trạng thái (đang nhập / hoạt động / lượt AI / số thành viên), thông tin
-export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiReset }: ThreadHeaderProps) {
+// Đầu hội thoại: quay lại / mở lịch sử, tên + trạng thái (đang nhập / hoạt động / lượt AI / số thành viên), thông tin
+export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo, onOpenNav, onAiReset }: ThreadHeaderProps) {
   const router = useRouter()
   const isAi = conv?.type === 'ai'
   const other = conv?.type === 'direct' ? conv.members[0] : null
   const { data: quota } = useAiQuota(isAi)
   const otherPresence = usePresence(other?.id)
   const onlineInGroup = useOnlineCount(conv?.type === 'group' ? conv.members.map((m) => m.id) : [])
-  const { create: newThread } = useAiThreadActions()
 
   const subtitle =
     typingLabel ??
@@ -42,9 +45,15 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
 
   return (
     <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-3 py-2.5 flex items-center gap-2.5">
-      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={() => router.push('/messages')} aria-label="Về tin nhắn">
-        <ArrowLeft className="h-4 w-4" />
-      </Button>
+      {onOpenNav ? (
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 md:hidden" onClick={onOpenNav} aria-label="Lịch sử PU AI">
+          <Menu className="h-4 w-4" />
+        </Button>
+      ) : (
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={() => router.push(backHref)} aria-label="Quay lại">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+      )}
       {conv ? <ConversationAvatar conversation={conv} className="h-9 w-9" /> : <Skeleton className="h-9 w-9 shrink-0 rounded-full" />}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
@@ -76,27 +85,15 @@ export function ThreadHeader({ conversation: conv, typingLabel, onInfo, onAiRese
         </Button>
       )}
       {isAi && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 rounded-full gap-1.5 text-xs"
-          disabled={newThread.isPending}
-          onClick={() => newThread.mutate()}
-          title="Cuộc trò chuyện mới"
-        >
-          {newThread.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SquarePen className="h-3.5 w-3.5" />}{' '}
-          <span className="hidden sm:inline">Chat mới</span>
+        <Button asChild variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" title="Cuộc trò chuyện mới">
+          <Link href={PUAI_HOME}>
+            <SquarePen className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Chat mới</span>
+          </Link>
         </Button>
       )}
-      {conv && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full shrink-0 lg:hidden"
-          onClick={onInfo}
-          aria-label={isAi ? 'Lịch sử PU AI' : 'Thông tin hội thoại'}
-        >
-          {isAi ? <History className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+      {conv && !isAi && (
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label="Thông tin hội thoại">
+          <Info className="h-4 w-4" />
         </Button>
       )}
     </div>

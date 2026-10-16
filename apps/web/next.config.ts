@@ -20,7 +20,10 @@ const nextConfig: NextConfig = {
     // /home và trang onboarding cũ /get-started chuyển thẳng về bảng tin mặc định /
     return [
       { source: '/home', destination: '/', permanent: false },
-      { source: '/get-started', destination: '/', permanent: false }
+      { source: '/get-started', destination: '/', permanent: false },
+      // Cài đặt PU AI chuyển vào không gian /puai
+      { source: '/settings/puai', destination: '/puai/settings', permanent: true },
+      { source: '/settings/puai/:item', destination: '/puai/settings/:item', permanent: true }
     ]
   },
   async rewrites() {

@@ -17,7 +17,7 @@ import {
   Compass,
   Bell,
   MessageCircle,
-  ShieldCheck
+  Sparkles
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
@@ -28,10 +28,23 @@ import { useLogout } from '@/hooks/use-logout'
 import { FEATURES } from '@/lib/features'
 import { useNotificationsStore } from '@/hooks/use-notifications'
 import { useUnreadMessages } from '@/hooks/chat'
+import { PUAI_HOME } from '@/lib/puai-routes'
 import { cn } from '@/lib/utils'
 
 export type NavTabType =
-  'feed' | 'search' | 'communities' | 'notifications' | 'profile' | 'documents' | 'courses' | 'groups' | 'campus' | 'bookmarks' | 'qa' | 'messages' | 'admin'
+  | 'feed'
+  | 'search'
+  | 'communities'
+  | 'notifications'
+  | 'profile'
+  | 'documents'
+  | 'courses'
+  | 'groups'
+  | 'campus'
+  | 'bookmarks'
+  | 'qa'
+  | 'messages'
+  | 'puai'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -58,6 +71,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
       icon: MessageCircle,
       badge: unreadMessages > 0 ? (unreadMessages > 99 ? '99+' : String(unreadMessages)) : undefined
     },
+    { id: 'puai' as const, path: PUAI_HOME, label: 'PU AI', icon: Sparkles },
     {
       id: 'notifications' as const,
       path: '/notifications',
@@ -66,7 +80,6 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
       badge: unreadCount > 0 ? (unreadCount > 99 ? '99+' : String(unreadCount)) : undefined
     },
     ...(user?.username ? [{ id: 'profile' as const, path: `/${user.username}`, label: 'Hồ sơ', icon: User }] : []),
-    ...(user?.role === 'admin' ? [{ id: 'admin' as const, path: '/admin', label: 'Quản trị', icon: ShieldCheck }] : []),
     // Lối tắt danh mục: ẩn tới khi /search hỗ trợ lọc theo type không cần từ khóa
     ...(FEATURES.categoryShortcuts
       ? [

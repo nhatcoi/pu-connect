@@ -1,16 +1,41 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ExternalLink, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { AiConnectorInfo } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { chatApi, useAiConnectors, useConnectorPrefs, useDisconnectConnector } from '@/hooks/chat'
+import { queryKeys } from '@/lib/query-keys'
 import { formatRelativeTime } from '@/lib/utils'
 import { SettingsGroup } from '../settings-ui'
 
+const CONNECTOR_NAMES: Record<string, string> = { 'google-drive': 'Google Drive', 'google-calendar': 'Google Calendar' }
+
+// Quay về từ màn đồng ý Google (?connector=&result=) ⇒ báo kết quả, làm mới danh sách, xóa tham số khỏi URL
+function useConnectResultToast() {
+  const params = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const qc = useQueryClient()
+  const connector = params.get('connector')
+  const result = params.get('result')
+  useEffect(() => {
+    if (!connector || !result) return
+    const name = CONNECTOR_NAMES[connector] ?? 'Google'
+    if (result === 'connected') toast.success(`Đã kết nối ${name} — bật trong + › Connectors khi hỏi PU AI`)
+    else toast.error(`Không kết nối được ${name}. Thử lại nhé!`)
+    void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
+    router.replace(pathname)
+  }, [connector, result, qc, router, pathname])
+}
+
 // Trình kết nối: nguồn PU AI đọc khi trả lời; công tắc = bật mặc định (đồng bộ mọi thiết bị)
 export function ConnectorsPanel() {
+  useConnectResultToast()
   const { data, isPending } = useAiConnectors()
   const { connectors: enabled, toggle } = useConnectorPrefs()
   const disconnect = useDisconnectConnector()

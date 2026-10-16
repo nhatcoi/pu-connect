@@ -1,12 +1,10 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { useInfiniteQuery, useMutation, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { AiThread, AiThreadsPage, ChatMessage } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
-import { refreshConversationLists } from './cache'
 
 type ThreadData = InfiniteData<AiThreadsPage, string | null>
 
@@ -59,20 +57,28 @@ export function removeAiThread(qc: QueryClient, id: string) {
   mapThreadLists(qc, (data) => without(data, id))
 }
 
-// Chat mới · đổi tên · xóa
+// Trang chủ /puai: thread rỗng cho "Chat mới" (server dùng lại thread rỗng ⇒ gọi lặp vô hại)
+// gcTime 0 ⇒ mỗi lần vào lại /puai đều hỏi server (thread cũ đã có tin thì nhận thread mới)
+export function useAiDraftThread() {
+  const qc = useQueryClient()
+  return useQuery({
+    queryKey: queryKeys.aiDraftThread,
+    queryFn: async () => {
+      const c = await chatApi.createAiThread()
+      qc.setQueryData(queryKeys.conversation(c.id), c)
+      return c
+    },
+    staleTime: Infinity,
+    gcTime: 0,
+    refetchOnWindowFocus: false
+  })
+}
+
+// Đổi tên · xóa (chat mới = điều hướng tới /puai)
 export function useAiThreadActions() {
   const qc = useQueryClient()
-  const router = useRouter()
   const onError = (err: Error) => toast.error(err.message || 'Thao tác thất bại')
 
-  const create = useMutation({
-    mutationFn: chatApi.createAiThread,
-    onSuccess: (c) => {
-      qc.setQueryData(queryKeys.conversation(c.id), c)
-      router.push(`/messages/${c.id}`)
-    },
-    onError
-  })
   const rename = useMutation({
     mutationFn: ({ id, title }: { id: string; title: string }) => chatApi.renameAiThread(id, title),
     onSuccess: (t) => upsertAiThread(qc, t),
@@ -84,9 +90,8 @@ export function useAiThreadActions() {
       removeAiThread(qc, id)
       qc.removeQueries({ queryKey: queryKeys.conversation(id) })
       qc.removeQueries({ queryKey: queryKeys.messages(id) })
-      refreshConversationLists(qc) // thread đại diện ở danh sách chính có thể đổi
     },
     onError
   })
-  return { create, rename, remove }
+  return { rename, remove }
 }

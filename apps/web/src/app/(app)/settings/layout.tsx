@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { useParams, usePathname } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import { PageAside } from '@/components/layout/page-aside'
 import { SettingsNav } from '@/components/settings/settings-ui'
 import { findSettingsSection } from '@/lib/settings-registry'
@@ -9,9 +9,7 @@ import { findSettingsSection } from '@/lib/settings-registry'
 // Khung Cài đặt: cột giữa = nội dung; desktop (lg+) có menu mục ở cột phải khi đang ở trang con
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ section?: string }>()
-  const pathname = usePathname()
-  // /settings/puai/[item] là trang con của mục PU AI
-  const active = pathname.startsWith('/settings/puai') ? 'puai' : params.section ? findSettingsSection(params.section)?.id : undefined
+  const active = params.section ? findSettingsSection(params.section)?.id : undefined
 
   return (
     <div className="pt-3">

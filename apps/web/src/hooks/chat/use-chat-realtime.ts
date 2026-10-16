@@ -7,7 +7,17 @@ import { queryKeys } from '@/lib/query-keys'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 import { getRealtimeSocket } from '@/lib/realtime'
 import { useAppStore } from '@/store'
-import { applyNewMessage, applyRead, applyUpdatedMessage, patchConversation, patchMessages, refreshConversationLists, syncPinned, upsertMessage } from './cache'
+import {
+  applyNewMessage,
+  applyRead,
+  applyUpdatedMessage,
+  isAiConversation,
+  patchConversation,
+  patchMessages,
+  refreshConversationLists,
+  syncPinned,
+  upsertMessage
+} from './cache'
 import { bumpAiThread, removeAiThread, upsertAiThread } from './use-ai-threads'
 import { useTypingStore } from './use-typing'
 import { usePresenceRealtime } from './use-presence'
@@ -34,6 +44,7 @@ export function useChatRealtime() {
     // Người gửi đã thôi nhập
     if (msg.sender) useTypingStore.getState().set({ conversationId: msg.conversationId, userId: msg.sender.id, isTyping: false })
     if (msg.kind === 'ai' || msg.attachments) void qc.invalidateQueries({ queryKey: ['chat-media', msg.conversationId] })
+    if (msg.attachments && isAiConversation(qc, msg.conversationId)) void qc.invalidateQueries({ queryKey: queryKeys.aiLibraryAll })
     bumpAiThread(qc, msg) // chỉ khớp khi là thread PU AI đã nằm trong lịch sử
   })
   // Thread PU AI được đặt tên (tự động / đổi tên ở tab khác)
@@ -42,7 +53,11 @@ export function useChatRealtime() {
     upsertMessage(qc, msg)
     syncPinned(qc, msg)
     applyUpdatedMessage(qc, msg)
-    if (msg.kind === 'ai' && msg.status !== 'streaming') void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
+    if (msg.kind === 'ai' && msg.status !== 'streaming') {
+      void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
+      // Câu trả lời có quiz / flashcard ⇒ Thư viện › Học liệu
+      if (/```(quiz|flashcards)/.test(msg.content)) void qc.invalidateQueries({ queryKey: queryKeys.aiLibrary('study') })
+    }
   })
   // AI trả lời dần: nối delta vào nội dung tin đang streaming
   useRealtimeEvent<MessageDeltaEvent>('message.delta', (e) => {

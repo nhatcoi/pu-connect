@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useAiConnectors, useAiSkills, useAiTasks } from '@/hooks/chat'
+import { puaiThreadHref } from '@/lib/puai-routes'
 import { formatRelativeTime } from '@/lib/utils'
 
 const WEEKDAYS = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7']
@@ -92,7 +93,7 @@ export function TasksPanel() {
             </Button>
             {t.conversationId && (
               <Button size="sm" variant="ghost" className="h-7 rounded-full text-xs" asChild>
-                <Link href={`/messages/${t.conversationId}`}>Xem kết quả</Link>
+                <Link href={puaiThreadHref(t.conversationId)}>Xem kết quả</Link>
               </Button>
             )}
             <Button size="sm" variant="ghost" className="h-7 rounded-full gap-1 text-xs" onClick={() => setEditing({ id: t.id, input: toInput(t) })}>

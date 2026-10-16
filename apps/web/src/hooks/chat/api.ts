@@ -1,4 +1,6 @@
 import type {
+  AiLibraryKind,
+  AiLibraryPage,
   AiFeedbackInput,
   AiMemory,
   AiSettings,
@@ -65,7 +67,6 @@ export const chatApi = {
   unread: async () => (await unwrap(apiClient<Envelope<{ total: number }>>('/conversations/unread-count'))).total,
   openDirect: (userId: string) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/direct', json('POST', { userId }))),
   openStudyGroup: (groupId: string) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/study-groups/${groupId}`, json('POST'))),
-  openAi: () => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/ai', json('POST'))),
   createGroup: (title: string, memberIds: string[]) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations', json('POST', { title, memberIds }))),
   updateGroup: (id: string, body: UpdateGroupInput) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}`, json('PATCH', body))),
   settings: (id: string, body: MemberSettingsInput) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}/settings`, json('PATCH', body))),
@@ -108,6 +109,8 @@ export const chatApi = {
   createAiThread: () => unwrap(apiClient<Envelope<ConversationSummary>>('/ai/threads', json('POST'))),
   renameAiThread: (id: string, title: string) => unwrap(apiClient<Envelope<AiThread>>(`/ai/threads/${id}`, json('PATCH', { title }))),
   deleteAiThread: (id: string) => apiClient(`/ai/threads/${id}`, json('DELETE')),
+  aiLibrary: (kind: AiLibraryKind, cursor: string | null, signal?: AbortSignal) =>
+    unwrap(apiClient<Envelope<AiLibraryPage>>(`/ai/library?${qs({ kind, cursor })}`, { signal })),
 
   // Skill tự tạo (slash command)
   skills: () => unwrap(apiClient<Envelope<AiSkill[]>>('/ai/skills')),

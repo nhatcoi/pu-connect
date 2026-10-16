@@ -3,6 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
+import { puaiSettingsHref } from '@/lib/puai-routes'
 import { PUAI_SETTINGS_ITEMS, type PuaiSettingsItem } from '@/lib/puai-settings-registry'
 
 const GROUPS: { id: PuaiSettingsItem['group']; label: string }[] = [
@@ -10,7 +11,7 @@ const GROUPS: { id: PuaiSettingsItem['group']; label: string }[] = [
   { id: 'support', label: 'Hỗ trợ & pháp lý' }
 ]
 
-// Cài đặt › PU AI: danh sách mục chia 2 nhóm (giống app di động)
+// /puai/settings: danh sách mục chia 2 nhóm (giống app di động)
 export function PuaiMenu() {
   return (
     <div className="space-y-3 px-3 pb-4 sm:px-4">
@@ -23,7 +24,7 @@ export function PuaiMenu() {
               return (
                 <Link
                   key={item.id}
-                  href={item.href ?? `/settings/puai/${item.id}`}
+                  href={item.href ?? puaiSettingsHref(item.id)}
                   className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0 text-foreground" />

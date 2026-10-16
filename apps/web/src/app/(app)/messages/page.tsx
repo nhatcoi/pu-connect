@@ -1,19 +1,17 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { Loader2, MessageCircle, PenSquare } from 'lucide-react'
+import Link from 'next/link'
+import { ChevronRight, Loader2, MessageCircle, PenSquare } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
-import { toast } from 'sonner'
 import { PageAside } from '@/components/layout/page-aside'
 import { AiStudyCard } from '@/components/chat/ai/ai-study-card'
 import { ConversationListSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
-import { chatApi, refreshConversationLists, useConversations } from '@/hooks/chat'
-import { queryKeys } from '@/lib/query-keys'
+import { useConversations } from '@/hooks/chat'
+import { PUAI_HOME } from '@/lib/puai-routes'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import type { ConversationFilter as Filter } from '@pu/schemas'
@@ -24,33 +22,13 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'group', label: 'Nhóm' }
 ]
 
-const CONNECTOR_NAMES: Record<string, string> = { 'google-drive': 'Google Drive', 'google-calendar': 'Google Calendar' }
-
-// Danh sách hội thoại (mobile & desktop đều tách 2 màn: /messages và /messages/[id])
+// Danh sách DM & nhóm (mobile & desktop đều tách 2 màn: /messages và /messages/[id]); PU AI ở không gian /puai
 export default function MessagesPage() {
-  const router = useRouter()
-  const qc = useQueryClient()
   const myId = useAppStore((s) => s.user?.id)
   const [composing, setComposing] = useState(false)
-  const [openingAi, setOpeningAi] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
-  const searchParams = useSearchParams()
-  const connector = searchParams.get('connector')
-  const connectResult = searchParams.get('result')
-
-  // Quay về từ màn đồng ý Google (Drive / Calendar) ⇒ báo kết quả, làm mới connector, xóa tham số khỏi URL
-  useEffect(() => {
-    if (!connector || !connectResult) return
-    const name = CONNECTOR_NAMES[connector] ?? 'Google'
-    if (connectResult === 'connected') toast.success(`Đã kết nối ${name} — bật trong + › Connectors khi hỏi PU AI`)
-    else toast.error(`Không kết nối được ${name}. Thử lại nhé!`)
-    void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
-    router.replace('/messages')
-  }, [connector, connectResult, qc, router])
-  // Lọc ở server, mỗi bộ lọc 1 cache; 'all' dùng chung với hasAi (cùng query ⇒ không tải 2 lần)
+  // Lọc ở server, mỗi bộ lọc 1 cache
   const { conversations: visible, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useConversations(filter)
-  const { conversations: all, isPending: allPending } = useConversations('all')
-  const hasAi = all.some((c) => c.type === 'ai')
 
   // Cuộn gần cuối ⇒ tải trang tiếp
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -61,18 +39,6 @@ export default function MessagesPage() {
     observer.observe(el)
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
-
-  const openAi = async () => {
-    setOpeningAi(true)
-    try {
-      const conv = await chatApi.openAi()
-      refreshConversationLists(qc)
-      router.push(`/messages/${conv.id}`)
-    } catch (err) {
-      toast.error((err as Error)?.message || 'Không mở được PU AI')
-      setOpeningAi(false)
-    }
-  }
 
   return (
     <>
@@ -103,21 +69,20 @@ export default function MessagesPage() {
 
       {composing && <NewChatPanel onClose={() => setComposing(false)} />}
 
-      {!hasAi && !allPending && (
-        <button
-          onClick={openAi}
-          disabled={openingAi}
-          className="mx-2 sm:mx-0 mb-2.5 w-[calc(100%-1rem)] sm:w-full rounded-xl bg-gradient-to-r from-primary/10 to-brand-orange/10 hover:from-primary/15 hover:to-brand-orange/15 p-4 flex items-center gap-3 text-left cursor-pointer"
-        >
-          <div className="h-10 w-10 rounded-full bg-card text-primary flex items-center justify-center shrink-0">
-            {openingAi ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <N7AiMark className="h-7 w-7" />}
-          </div>
-          <div>
-            <p className="text-sm font-semibold">Học cùng PU AI</p>
-            <p className="text-xs text-muted-foreground">Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi.</p>
-          </div>
-        </button>
-      )}
+      {/* Lối vào không gian PU AI (mobile không có cột phải) */}
+      <Link
+        href={PUAI_HOME}
+        className="lg:hidden mx-2 sm:mx-0 mb-2.5 rounded-xl bg-gradient-to-r from-primary/10 to-brand-orange/10 hover:from-primary/15 hover:to-brand-orange/15 p-4 flex items-center gap-3"
+      >
+        <div className="h-10 w-10 rounded-full bg-card flex items-center justify-center shrink-0">
+          <N7AiMark className="h-7 w-7" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">Học cùng PU AI</p>
+          <p className="text-xs text-muted-foreground">Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi.</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+      </Link>
 
       {isPending ? (
         <ConversationListSkeleton />
@@ -144,7 +109,7 @@ export default function MessagesPage() {
       )}
 
       <PageAside>
-        <AiStudyCard onOpen={openAi} opening={openingAi} />
+        <AiStudyCard />
       </PageAside>
     </>
   )

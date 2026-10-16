@@ -1,14 +1,15 @@
 'use client'
 
 import React from 'react'
-import { Loader2 } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { useAiQuota } from '@/hooks/chat'
+import { PUAI_HOME } from '@/lib/puai-routes'
 import { AI_MODE_META, AI_MODE_ORDER } from './ai-modes'
 
-// Thẻ giới thiệu PU AI học tập (cột phải trang /messages)
-export function AiStudyCard({ onOpen, opening }: { onOpen: () => void; opening: boolean }) {
+// Thẻ giới thiệu PU AI học tập (cột phải trang /messages) ⇒ không gian /puai
+export function AiStudyCard() {
   const { data: quota } = useAiQuota()
   return (
     <div className="rounded-2xl bg-card p-4 space-y-3">
@@ -39,8 +40,8 @@ export function AiStudyCard({ onOpen, opening }: { onOpen: () => void; opening: 
       <p className="text-[11px] text-muted-foreground">
         Trong nhóm chat, gõ <span className="font-semibold text-foreground">@puai</span> để cả nhóm cùng hỏi.
       </p>
-      <Button size="sm" className="w-full rounded-full" onClick={onOpen} disabled={opening}>
-        {opening ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mở PU AI'}
+      <Button asChild size="sm" className="w-full rounded-full">
+        <Link href={PUAI_HOME}>Mở PU AI</Link>
       </Button>
     </div>
   )

@@ -15,6 +15,7 @@ import { UserListDialog } from './user-list-dialog'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { BlockUserControl } from './block-user-control'
 import { errorMessage } from '@/lib/api-client'
+import { conversationHref } from '@/lib/puai-routes'
 
 interface ProfileHeaderProps {
   profile: UserProfileData
@@ -146,7 +147,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             ) : (
               <>
                 <BlockUserControl userId={profile.id} username={profile.username} blockState={blockState} />
-                {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển sang /messages/{id} */}
+                {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển tới hội thoại (bot PU AI ⇒ /puai) */}
                 <Button
                   variant="outline"
                   size="icon"
@@ -155,7 +156,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                   onClick={async () => {
                     try {
                       const conv = await chatApi.openDirect(profile.id)
-                      router.push(`/messages/${conv.id}`)
+                      router.push(conversationHref(conv))
                     } catch (err) {
                       toast.error(errorMessage(err, 'Không thể mở hội thoại'))
                     }

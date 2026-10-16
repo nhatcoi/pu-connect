@@ -1,5 +1,5 @@
 import type { InfiniteData, QueryClient } from '@tanstack/react-query'
-import type { ChatMessage, ConversationSummary, ConversationsPage } from '@pu/schemas'
+import type { AiThreadsPage, ChatMessage, ConversationSummary, ConversationsPage } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 
 // Tin gửi lạc quan (chưa có id thật) mang trạng thái 'sending' / 'failed'
@@ -46,8 +46,16 @@ export function syncPinned(qc: QueryClient, msg: ChatMessage) {
 export type ConversationListData = InfiniteData<ConversationsPage, string | null>
 
 const isMuted = (c: ConversationSummary) => !!c.mutedUntil && new Date(c.mutedUntil).getTime() > Date.now()
-// Nhóm thứ tự giống server: PU AI → đã ghim → còn lại
-const rankOf = (c: ConversationSummary) => (c.type === 'ai' ? 2 : c.pinnedAt ? 1 : 0)
+// Nhóm thứ tự giống server: đã ghim → còn lại
+const rankOf = (c: ConversationSummary) => (c.pinnedAt ? 1 : 0)
+
+// Thread PU AI (đang mở / trong lịch sử) — không thuộc danh sách Tin nhắn & badge
+export function isAiConversation(qc: QueryClient, id: string): boolean {
+  if (qc.getQueryData<ConversationSummary>(queryKeys.conversation(id))?.type === 'ai') return true
+  return qc
+    .getQueriesData<InfiniteData<AiThreadsPage>>({ queryKey: queryKeys.aiThreadsAll })
+    .some(([, d]) => d?.pages.some((p) => p.data.some((t) => t.id === id)))
+}
 
 // Hội thoại đang mở & đang nhìn thấy ⇒ tin mới không tính chưa đọc (useMarkRead sẽ báo đã đọc)
 let activeConversationId: string | null = null
@@ -85,6 +93,7 @@ const bumpUnread = (qc: QueryClient, delta: number) => qc.setQueryData<number>(q
 // Tin mới: cập nhật tin cuối + chưa đọc, đưa hội thoại lên đầu nhóm của nó
 // Không có trong cache (hội thoại mới / ở trang chưa tải) ⇒ tải lại danh sách đang mở
 export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string | undefined) {
+  if (isAiConversation(qc, msg.conversationId)) return
   const mine = msg.sender?.id === myId
   const countsUnread = !mine && msg.kind !== 'system' && !isViewing(msg.conversationId)
   const found = findConversation(qc, msg.conversationId)?.conversation
@@ -108,7 +117,7 @@ export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string 
       stale ||= !!belongs[filter]
       return data
     }
-    // PU AI / đã ghim: giữ vị trí; còn lại: lên đầu nhóm "thường"
+    // Đã ghim: giữ vị trí; còn lại: lên đầu nhóm "thường"
     if (rankOf(next) > 0) return { ...data, pages: data.pages.map((p) => ({ ...p, data: p.data.map((c) => (c.id === next.id ? next : c)) })) }
     const pages = data.pages.map((p) => ({ ...p, data: p.data.filter((c) => c.id !== next.id) }))
     const first = pages[0].data

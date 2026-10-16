@@ -9,7 +9,7 @@ import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
-import { chatApi, conversationTitle, useAiQuota, useConversationActions } from '@/hooks/chat'
+import { chatApi, conversationTitle, useConversationActions } from '@/hooks/chat'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 import { ConversationAvatar } from '../conversation-avatar'
@@ -28,18 +28,16 @@ const MUTE_OPTIONS = [
   { hours: -1, label: 'Cho đến khi bật lại' }
 ]
 
-// Bảng thông tin hội thoại (cột phải trên desktop, hộp thoại trên mobile)
+// Bảng thông tin DM / nhóm (cột phải trên desktop, hộp thoại trên mobile); thread PU AI dùng thanh bên /puai
 export function ConversationInfo({ conversation: c, onJump }: { conversation: ConversationSummary; onJump: (id: string) => void }) {
   const router = useRouter()
   const isGroup = c.type === 'group'
-  const isAi = c.type === 'ai'
-  // DM/AI mở tab "Đã ghim" (dùng lại cache của thanh tin ghim) ⇒ ảnh/tệp chỉ tải khi bấm tab
+  // DM mở tab "Đã ghim" (dùng lại cache của thanh tin ghim) ⇒ ảnh/tệp chỉ tải khi bấm tab
   const [tab, setTab] = useState<Tab>(isGroup ? 'members' : 'pinned')
   const [renaming, setRenaming] = useState(false)
   const [title, setTitle] = useState(c.title ?? '')
   const { settings, rename, leave } = useConversationActions(c.id)
   const other = c.type === 'direct' ? c.members[0] : null
-  const { data: quota } = useAiQuota(isAi)
 
   const tabs: { id: Tab; label: string }[] = [
     ...(isGroup ? [{ id: 'members' as const, label: 'Thành viên' }] : []),
@@ -79,53 +77,47 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
           </div>
         )}
         <p className="text-xs text-muted-foreground -mt-1">
-          {isAi
-            ? quota
-              ? `Còn ${Math.max(0, quota.limit - quota.used)}/${quota.limit} lượt hỏi hôm nay`
-              : 'Trợ lý học tập'
-            : isGroup
-              ? `${c.studyGroupId ? 'Nhóm học' : 'Nhóm'} · ${c.memberCount} thành viên`
-              : other && (
-                  <Link href={`/${other.username}`} className="hover:underline">
-                    @{other.username}
-                  </Link>
-                )}
+          {isGroup
+            ? `${c.studyGroupId ? 'Nhóm học' : 'Nhóm'} · ${c.memberCount} thành viên`
+            : other && (
+                <Link href={`/${other.username}`} className="hover:underline">
+                  @{other.username}
+                </Link>
+              )}
         </p>
       </div>
 
-      {!isAi && (
-        <div className="grid grid-cols-2 gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9 rounded-xl gap-1.5 text-xs">
-                {c.mutedUntil ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
-                {c.mutedUntil ? 'Đang tắt' : 'Tắt thông báo'}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 p-1 rounded-xl">
-              {c.mutedUntil ? (
-                <DropdownMenuItem className="text-xs px-3 py-2 rounded-lg cursor-pointer" onClick={() => settings.mutate({ mutedHours: 0 })}>
-                  Bật lại thông báo
+      <div className="grid grid-cols-2 gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9 rounded-xl gap-1.5 text-xs">
+              {c.mutedUntil ? <BellOff className="h-3.5 w-3.5" /> : <Bell className="h-3.5 w-3.5" />}
+              {c.mutedUntil ? 'Đang tắt' : 'Tắt thông báo'}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-48 p-1 rounded-xl">
+            {c.mutedUntil ? (
+              <DropdownMenuItem className="text-xs px-3 py-2 rounded-lg cursor-pointer" onClick={() => settings.mutate({ mutedHours: 0 })}>
+                Bật lại thông báo
+              </DropdownMenuItem>
+            ) : (
+              MUTE_OPTIONS.map((o) => (
+                <DropdownMenuItem
+                  key={o.hours}
+                  className="text-xs px-3 py-2 rounded-lg cursor-pointer"
+                  onClick={() => settings.mutate({ mutedHours: o.hours })}
+                >
+                  {o.label}
                 </DropdownMenuItem>
-              ) : (
-                MUTE_OPTIONS.map((o) => (
-                  <DropdownMenuItem
-                    key={o.hours}
-                    className="text-xs px-3 py-2 rounded-lg cursor-pointer"
-                    onClick={() => settings.mutate({ mutedHours: o.hours })}
-                  >
-                    {o.label}
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button variant="outline" size="sm" className="h-9 rounded-xl gap-1.5 text-xs" onClick={() => settings.mutate({ pinned: !c.pinnedAt })}>
-            {c.pinnedAt ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-            {c.pinnedAt ? 'Bỏ ghim' : 'Ghim lên đầu'}
-          </Button>
-        </div>
-      )}
+              ))
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button variant="outline" size="sm" className="h-9 rounded-xl gap-1.5 text-xs" onClick={() => settings.mutate({ pinned: !c.pinnedAt })}>
+          {c.pinnedAt ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          {c.pinnedAt ? 'Bỏ ghim' : 'Ghim lên đầu'}
+        </Button>
+      </div>
 
       <MessageSearch conversationId={c.id} onJump={onJump} />
 

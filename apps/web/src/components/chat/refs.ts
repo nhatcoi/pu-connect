@@ -1,5 +1,6 @@
 import { FileText, GraduationCap, MessageSquare, MessagesSquare, type LucideIcon } from 'lucide-react'
 import type { ChatRef, ChatRefType } from '@pu/schemas'
+import { puaiThreadHref } from '@/lib/puai-routes'
 
 // Ngữ cảnh gắn vào tin: biểu tượng, nhãn, đường dẫn (dùng chung chip ô soạn, menu gợi ý, bong bóng tin)
 export const REF_META: Record<ChatRefType, { icon: LucideIcon; label: string }> = {
@@ -16,7 +17,7 @@ export function refHref(ref: Pick<ChatRef, 'type' | 'id' | 'title' | 'code'>): s
     case 'post':
       return `/post/${ref.id}`
     case 'thread':
-      return `/messages/${ref.id}`
+      return puaiThreadHref(ref.id)
     default:
       return `/search?q=${encodeURIComponent(ref.title)}&type=documents`
   }

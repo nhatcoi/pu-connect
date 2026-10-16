@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { AI_FEEDBACK_REASONS, type AiFeedbackInput, type ChatMessageMeta } from '@pu/schemas'
 import { chatApi } from '@/hooks/chat'
 import { errorMessage } from '@/lib/api-client'
+import { puaiSettingsHref } from '@/lib/puai-routes'
 import { cn } from '@/lib/utils'
 
 const REASON_LABEL: Record<(typeof AI_FEEDBACK_REASONS)[number], string> = {
@@ -70,7 +71,7 @@ export function AiMessageFooter({ messageId, meta }: { messageId: string; meta: 
         ))}
       {meta?.memoryUpdated?.length ? (
         <Link
-          href="/settings/puai/memory"
+          href={puaiSettingsHref('memory')}
           title={meta.memoryUpdated.join(' · ')}
           className="ml-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 h-6 text-[11px] font-medium text-primary"
         >

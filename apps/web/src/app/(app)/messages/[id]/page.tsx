@@ -1,187 +1,21 @@
 'use client'
 
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { MessageSquare } from 'lucide-react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { PageAside } from '@/components/layout/page-aside'
-import { AiThreadList } from '@/components/chat/ai/ai-thread-list'
-import { AiWelcome } from '@/components/chat/ai/ai-welcome'
-import { Composer, type ComposerCommand, type ComposerHandle } from '@/components/chat/composer/composer'
-import { BlockedComposer } from '@/components/chat/composer/blocked-composer'
-import { ConversationInfo } from '@/components/chat/info/conversation-info'
-import type { AiMode, AiSuggestion } from '@pu/schemas'
-import type { MessageHandlers } from '@/components/chat/thread/message-actions'
-import { MentionJump } from '@/components/chat/thread/mention-jump'
-import { MessageList } from '@/components/chat/thread/message-list'
-import { PinnedBanner } from '@/components/chat/thread/pinned-banner'
-import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
-import { ThreadHeader } from '@/components/chat/thread/thread-header'
-import {
-  chatApi,
-  setActiveConversation,
-  trackSuggestionClick,
-  useAiThreadActions,
-  useConversation,
-  useMarkRead,
-  useMessages,
-  useTypingLabel,
-  type UiMessage
-} from '@/hooks/chat'
-import { useAppStore } from '@/store'
+import { ConversationView } from '@/components/chat/conversation-view'
+import { useConversation } from '@/hooks/chat'
+import { puaiThreadHref } from '@/lib/puai-routes'
 
-// Màn hội thoại: đầu trang + tin ghim + dòng tin + ô soạn; thông tin ở cột phải (desktop) / hộp thoại (mobile)
+// /messages/[id]: DM & nhóm; thread PU AI (link / thông báo cũ) ⇒ chuyển sang không gian /puai
 export default function ConversationPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
-  const me = useAppStore((s) => s.user)
-  const { data: conv, isError } = useConversation(id)
-  const chat = useMessages(id)
-  const typingLabel = useTypingLabel(id, conv?.members ?? [], me?.id)
-  const latest = chat.messages[chat.messages.length - 1]
-  useMarkRead(id, latest, me?.id)
-  // Tin đến hội thoại đang mở không tính "chưa đọc"
-  useEffect(() => {
-    setActiveConversation(id)
-    return () => setActiveConversation(null)
-  }, [id])
-
-  const [replyTo, setReplyTo] = useState<UiMessage | null>(null)
-  const [editing, setEditing] = useState<UiMessage | null>(null)
-  const [jumpTo, setJumpTo] = useState<string | null>(null)
-  const [infoOpen, setInfoOpen] = useState(false)
-  const [aiMode, setAiMode] = useState<AiMode>('ask')
-  const composer = useRef<ComposerHandle>(null)
-  const { create: newThread } = useAiThreadActions()
-
-  const jump = useCallback((messageId: string) => {
-    setInfoOpen(false)
-    setJumpTo(messageId)
-  }, [])
-  const clearJump = useCallback(() => setJumpTo(null), [])
-
-  const handlers: MessageHandlers = {
-    onReply: (m) => {
-      setEditing(null)
-      setReplyTo(m)
-    },
-    onEdit: (m) => {
-      setReplyTo(null)
-      setEditing(m)
-    },
-    onReact: chat.react,
-    onPin: (m) => chat.pin(m.id),
-    onDelete: (m) => {
-      if (window.confirm('Thu hồi tin nhắn này với mọi người?')) chat.remove(m.id)
-    }
-  }
-
-  if (isError) {
-    return (
-      <div className="py-24 text-center space-y-3 text-muted-foreground">
-        <MessageSquare className="h-10 w-10 mx-auto opacity-30" />
-        <p className="text-sm font-medium">Không mở được hội thoại này.</p>
-        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/messages')}>
-          Về tin nhắn
-        </Button>
-      </div>
-    )
-  }
-
+  const { data: conv } = useConversation(id)
   const isAi = conv?.type === 'ai'
-  const resetAi = () => chatApi.aiReset(id).catch((err) => toast.error(err?.message || 'Không làm mới được'))
-  const runCommand = (command: ComposerCommand) => (command === 'new' ? newThread.mutate() : resetAi())
-  // Gợi ý mở đầu ⇒ điền sẵn để sửa; câu hỏi tiếp theo ⇒ gửi ngay
-  const pickStarter = (s: AiSuggestion) => {
-    trackSuggestionClick('starter', s)
-    setAiMode(s.mode)
-    composer.current?.prefill(s.text)
-  }
-  const sendFollowUp = (text: string) => {
-    trackSuggestionClick('followup')
-    chat.send({ content: text, aiMode: 'ask' })
-  }
+  useEffect(() => {
+    if (isAi) router.replace(puaiThreadHref(id))
+  }, [isAi, id, router])
 
-  return (
-    <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
-      <ThreadHeader conversation={conv} typingLabel={typingLabel} onInfo={() => setInfoOpen(true)} onAiReset={resetAi} />
-      <PinnedBanner conversationId={id} onJump={jump} />
-
-      {chat.isLoading ? (
-        <MessageThreadSkeleton />
-      ) : chat.messages.length === 0 ? (
-        <div className="flex-1">
-          {isAi ? (
-            <AiWelcome mode={aiMode} onPick={pickStarter} />
-          ) : (
-            <div className="py-16 text-center text-muted-foreground space-y-2">
-              <MessageSquare className="h-9 w-9 mx-auto opacity-30" />
-              <p className="text-sm">Gửi lời chào đầu tiên 👋</p>
-              {conv?.type === 'group' && <p className="text-xs">Gõ @puai trong tin để hỏi PU AI cùng cả nhóm.</p>}
-            </div>
-          )}
-        </div>
-      ) : (
-        <MessageList
-          conversation={conv}
-          messages={chat.messages}
-          myId={me?.id}
-          hasOlder={chat.hasOlder}
-          isLoadingOlder={chat.isLoadingOlder}
-          loadOlder={chat.loadOlder}
-          jumpTo={jumpTo}
-          onJumpHandled={clearJump}
-          onJump={jump}
-          onRetry={chat.retry}
-          handlers={handlers}
-          onFollowUp={isAi ? sendFollowUp : undefined}
-        />
-      )}
-
-      {conv && (conv.blockState ?? 'none') !== 'none' ? (
-        <BlockedComposer conversation={conv} />
-      ) : (
-        <Composer
-          key={id} // đổi hội thoại ⇒ chip / nháp không mang sang
-          handleRef={composer}
-          conversationId={id}
-          conversation={conv}
-          onCommand={runCommand}
-          disabled={!conv}
-          placeholder={conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi PU AI)' : 'Nhắn tin… (@ gắn ngữ cảnh)'}
-          replyTo={replyTo}
-          editing={editing}
-          onCancelContext={() => {
-            setReplyTo(null)
-            setEditing(null)
-          }}
-          onSend={chat.send}
-          onEdit={chat.edit}
-          aiMode={aiMode}
-          onAiModeChange={setAiMode}
-          suggestOnModeChange={chat.messages.length > 0}
-        />
-      )}
-
-      <MentionJump key={id} conversation={conv} onJump={jump} />
-
-      {conv && (
-        <>
-          <PageAside>
-            {isAi && <AiThreadList activeId={id} />}
-            <ConversationInfo conversation={conv} onJump={jump} />
-          </PageAside>
-          <Dialog open={infoOpen} onOpenChange={setInfoOpen}>
-            <DialogContent className="max-w-md p-0 gap-0 max-h-[90vh] overflow-y-auto">
-              <DialogTitle className="sr-only">{isAi ? 'Lịch sử PU AI' : 'Thông tin hội thoại'}</DialogTitle>
-              {isAi && <AiThreadList activeId={id} onNavigate={() => setInfoOpen(false)} />}
-              <ConversationInfo conversation={conv} onJump={jump} />
-            </DialogContent>
-          </Dialog>
-        </>
-      )}
-    </div>
-  )
+  if (isAi) return null
+  return <ConversationView id={id} backHref="/messages" />
 }

@@ -1,6 +1,6 @@
 import { BookOpenText, Brain, CalendarClock, CircleHelp, Globe, Handshake, Plug, ShieldCheck, Wand2, type LucideIcon } from 'lucide-react'
 
-// Các mục trong Cài đặt › PU AI (/settings/puai/[item]); href ⇒ mở trang khác thay vì trang con
+// Các mục cài đặt PU AI (/puai/settings/[item]); href ⇒ mở trang khác thay vì trang con
 export interface PuaiSettingsItem {
   id: string
   label: string

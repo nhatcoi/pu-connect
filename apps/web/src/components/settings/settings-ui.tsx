@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
-import { SETTINGS_SECTIONS, type SettingsSectionId } from '@/lib/settings-registry'
+import { SETTINGS_SECTIONS, sectionHref, type SettingsSectionId } from '@/lib/settings-registry'
 import { cn } from '@/lib/utils'
 
 // Tiêu đề trang con: nút quay lại danh sách + tên mục
@@ -91,7 +91,7 @@ export function SettingsNav({ active, compact = false }: { active?: SettingsSect
         return (
           <Link
             key={s.id}
-            href={`/settings/${s.id}`}
+            href={sectionHref(s)}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
               'group flex items-center gap-3 transition-colors',

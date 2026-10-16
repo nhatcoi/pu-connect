@@ -4,12 +4,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2, MoreHorizontal, Pencil, Search, SquarePen, Trash2, X } from 'lucide-react'
+import { Check, Loader2, MoreHorizontal, Pencil, Search, Trash2, X } from 'lucide-react'
 import type { AiThread } from '@pu/schemas'
-import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { chatApi, useAiThreadActions, useAiThreads, type UiPage } from '@/hooks/chat'
+import { PUAI_HOME, puaiThreadHref } from '@/lib/puai-routes'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +28,7 @@ function groupLabel(iso: string | null, now: Date): string {
   return 'Cũ hơn'
 }
 
-// Lịch sử hội thoại PU AI: chat mới, tìm theo tiêu đề, cuộn tải thêm, đổi tên / xóa; rê chuột ⇒ tải trước tin
+// Lịch sử hội thoại PU AI (thanh bên /puai): tìm theo tiêu đề / nội dung, cuộn tải thêm, đổi tên / xóa; rê chuột ⇒ tải trước tin
 export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNavigate?: () => void }) {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -39,7 +39,6 @@ export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNa
   }, [search])
 
   const { threads, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useAiThreads(q)
-  const { create } = useAiThreadActions()
 
   const groups = useMemo(() => {
     const now = new Date()
@@ -73,20 +72,8 @@ export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNa
     })
 
   return (
-    <div className="rounded-xl bg-card p-3 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold">Lịch sử PU AI</p>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 rounded-full gap-1 text-xs"
-          disabled={create.isPending}
-          onClick={() => create.mutate(undefined, { onSuccess: onNavigate })}
-        >
-          {create.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SquarePen className="h-3.5 w-3.5" />} Chat mới
-        </Button>
-      </div>
-      <label className="flex items-center gap-2 rounded-full bg-muted px-3 h-8">
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <label className="flex items-center gap-2 rounded-full bg-muted px-3 h-8 shrink-0">
         <Search className="h-3.5 w-3.5 text-muted-foreground" />
         <input
           value={search}
@@ -101,7 +88,7 @@ export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNa
         )}
       </label>
 
-      <div className="max-h-[60vh] overflow-y-auto -mx-1 px-1 space-y-2">
+      <div className="min-h-0 flex-1 overflow-y-auto no-scrollbar -mx-1 px-1 space-y-2">
         {isPending ? (
           Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-8 rounded-lg" />)
         ) : !threads.length ? (
@@ -126,10 +113,10 @@ export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNa
 function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; active: boolean; onHover: () => void; onNavigate?: () => void }) {
   const router = useRouter()
   const { rename, remove } = useAiThreadActions()
-  // Xóa thread đang mở ⇒ về danh sách tin nhắn
+  // Xóa thread đang mở ⇒ về trang chat mới
   const destroy = () => {
     if (!window.confirm('Xóa cuộc trò chuyện này? Không thể hoàn tác.')) return
-    remove.mutate(thread.id, { onSuccess: () => active && router.replace('/messages') })
+    remove.mutate(thread.id, { onSuccess: () => active && router.replace(PUAI_HOME) })
   }
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(thread.title ?? '')
@@ -167,7 +154,7 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
 
   return (
     <div className={cn('group flex items-center rounded-lg h-8 pr-1', active ? 'bg-primary/10 text-primary' : 'hover:bg-muted')}>
-      <Link href={`/messages/${thread.id}`} onMouseEnter={onHover} onClick={onNavigate} className="flex-1 min-w-0 px-2 text-xs truncate">
+      <Link href={puaiThreadHref(thread.id)} onMouseEnter={onHover} onClick={onNavigate} className="flex-1 min-w-0 px-2 text-xs truncate">
         {thread.title || UNTITLED}
       </Link>
       <DropdownMenu>
