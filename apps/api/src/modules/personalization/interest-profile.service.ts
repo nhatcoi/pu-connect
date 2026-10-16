@@ -52,10 +52,7 @@ export class InterestProfileService {
         this.logger.warn(`Tính hồ sơ quan tâm thất bại (${userId}): ${err?.message}`) // vẫn dùng hồ sơ cũ
       }
     }
-    const res = await this.db.query(
-      `SELECT kind, key, label, score FROM user_interests WHERE user_id = $1 ORDER BY score DESC LIMIT $2`,
-      [userId, limit]
-    )
+    const res = await this.db.query(`SELECT kind, key, label, score FROM user_interests WHERE user_id = $1 ORDER BY score DESC LIMIT $2`, [userId, limit])
     return res.rows
   }
 

@@ -49,7 +49,12 @@ Lời khuyên: trước khi train bất cứ gì, hãy dành một buổi chỉ 
     saves: 15,
     comments: [
       { by: 'khanhvy_mkt', text: 'How Brands Grow đọc xong đúng là "vỡ mộng" vài điều thật cô ạ 😆', after: 60, likes: 4 },
-      { by: 'thutrang_ly', text: 'Em lưu lại, thư viện trường có Positioning bản tiếng Việt không cô?', after: 120, replies: [{ by: 'nguyenthuha', text: 'Có em, tầng 2 khu sách kinh tế nhé.', after: 40 }] }
+      {
+        by: 'thutrang_ly',
+        text: 'Em lưu lại, thư viện trường có Positioning bản tiếng Việt không cô?',
+        after: 120,
+        replies: [{ by: 'nguyenthuha', text: 'Có em, tầng 2 khu sách kinh tế nhé.', after: 40 }]
+      }
     ]
   },
   {
@@ -74,7 +79,12 @@ Không cần kinh nghiệm, chỉ cần nhiệt tình. Ai không đi được v�
       { by: 'anhthu_phan', text: 'Tham gia – K17 QTDL, mình chụp ảnh cho chuyến đi được nha', after: 15, likes: 4 },
       { by: 'giabao_runs', text: 'Tham gia – K17 Ô tô. Cần người khuân vác thì gọi mình 💪', after: 30, likes: 3 },
       { by: 'ngocanh_med', text: 'Tham gia – K18 Y khoa, mình mang theo túi sơ cứu cơ bản được ạ', after: 45, likes: 5 },
-      { by: 'vannam2k8', text: 'Em góp sách lớp 1–5 của em gái được không chị?', after: 70, replies: [{ by: 'tranngocdiep', text: 'Được luôn em, quý lắm đó!', after: 10 }] }
+      {
+        by: 'vannam2k8',
+        text: 'Em góp sách lớp 1–5 của em gái được không chị?',
+        after: 70,
+        replies: [{ by: 'tranngocdiep', text: 'Được luôn em, quý lắm đó!', after: 10 }]
+      }
     ]
   },
   {
@@ -89,9 +99,7 @@ Chỉ cần nhớ vậy thôi là đủ cho 90% bài thuyết trình trên lớp
     images: [534],
     likes: 14,
     saves: 9,
-    comments: [
-      { by: 'thuydung05', text: 'slide của mình đang có 7 màu, chắc là 7 màu chủ đạo 🌈', after: 20, likes: 7 }
-    ]
+    comments: [{ by: 'thuydung05', text: 'slide của mình đang có 7 màu, chắc là 7 màu chủ đạo 🌈', after: 20, likes: 7 }]
   },
   {
     key: 'more-thu-motorbike',
@@ -139,7 +147,12 @@ Vài lưu ý:
     tags: ['Podcast', 'TuHoc', 'KinhDoanh'],
     likes: 11,
     comments: [
-      { by: 'khanhvy_mkt', text: 'Recommend vài tập đi Huy', after: 40, replies: [{ by: 'quochuy_dang', text: 'Mình hay nghe "How I Built This", có nhiều tập về founder thất bại rồi làm lại', after: 15 }] }
+      {
+        by: 'khanhvy_mkt',
+        text: 'Recommend vài tập đi Huy',
+        after: 40,
+        replies: [{ by: 'quochuy_dang', text: 'Mình hay nghe "How I Built This", có nhiều tập về founder thất bại rồi làm lại', after: 15 }]
+      }
     ]
   },
   {
@@ -152,9 +165,7 @@ Vài lưu ý:
 Hôm nay thấy một hãng mì đổi bao bì mà mình không nhận ra luôn. Hiểu ngay cái case study cô Hà cho làm tuần trước 😂`,
     tags: ['Marketing', 'Branding'],
     likes: 13,
-    comments: [
-      { by: 'nguyenthuha', text: 'Đây là lúc lý thuyết gặp thực tế đó em 😄', after: 90, likes: 5 }
-    ]
+    comments: [{ by: 'nguyenthuha', text: 'Đây là lúc lý thuyết gặp thực tế đó em 😄', after: 90, likes: 5 }]
   },
   {
     key: 'more-anh-flashcard',
@@ -168,9 +179,7 @@ Ai học Y mà buổi sáng không ôn được thì thử ôn trong lúc chờ 
     course: 'FMS102',
     images: [691],
     likes: 12,
-    comments: [
-      { by: 'thao_ielts', text: 'Kỷ luật dễ sợ. Mình 6h30 vẫn đang ngủ 😅', after: 60 }
-    ]
+    comments: [{ by: 'thao_ielts', text: 'Kỷ luật dễ sợ. Mình 6h30 vẫn đang ngủ 😅', after: 60 }]
   },
   {
     key: 'more-bao-ev-visit',
@@ -255,9 +264,7 @@ Ngày mai mình sẽ viết thêm test. Chắc chắn. Lần này thật đấy.
     tags: ['DemKhuya'],
     images: [195],
     likes: 12,
-    comments: [
-      { by: 'anhthu_phan', text: 'ảnh có màu đèn vàng đẹp ghê', after: 30 }
-    ]
+    comments: [{ by: 'anhthu_phan', text: 'ảnh có màu đèn vàng đẹp ghê', after: 30 }]
   },
   {
     key: 'more-trang-excel',
@@ -322,7 +329,19 @@ Ai có câu hỏi trước thì đăng lên đây, gắn #IT101 để mình gom 
     community: 'fit',
     likes: 12,
     comments: [
-      { by: 'vannam2k8', text: 'Em hỏi trước: xóa nút có 2 con thì sao lại lấy nút nhỏ nhất bên phải ạ?', after: 30, replies: [{ by: 'phamduclong', text: 'Vì nút đó lớn hơn mọi nút bên trái và nhỏ hơn mọi nút còn lại bên phải, thay vào vẫn giữ đúng tính chất BST. Tối thứ 4 mình vẽ hình giải thích kỹ nhé.', after: 25, likes: 4 }] }
+      {
+        by: 'vannam2k8',
+        text: 'Em hỏi trước: xóa nút có 2 con thì sao lại lấy nút nhỏ nhất bên phải ạ?',
+        after: 30,
+        replies: [
+          {
+            by: 'phamduclong',
+            text: 'Vì nút đó lớn hơn mọi nút bên trái và nhỏ hơn mọi nút còn lại bên phải, thay vào vẫn giữ đúng tính chất BST. Tối thứ 4 mình vẽ hình giải thích kỹ nhé.',
+            after: 25,
+            likes: 4
+          }
+        ]
+      }
     ]
   },
   {
@@ -386,7 +405,12 @@ Ai đi lần đầu cứ đến, không cần đăng ký 😊`,
     likes: 13,
     comments: [
       { by: 'ngocanh_med', text: 'Chủ đề tuần này hợp với dân Y quá, tụi mình học 7h sáng mỗi ngày 😭', after: 40, likes: 4 },
-      { by: 'vannam2k8', text: 'Em nói tiếng Anh dở lắm có đi được không chị', after: 60, replies: [{ by: 'thao_ielts', text: 'Được chứ! CLB lập ra cho mấy bạn như em mà 😊', after: 10 }] }
+      {
+        by: 'vannam2k8',
+        text: 'Em nói tiếng Anh dở lắm có đi được không chị',
+        after: 60,
+        replies: [{ by: 'thao_ielts', text: 'Được chứ! CLB lập ra cho mấy bạn như em mà 😊', after: 10 }]
+      }
     ]
   },
   {
@@ -400,9 +424,7 @@ Ai đi lần đầu cứ đến, không cần đăng ký 😊`,
     tags: ['FBA101', 'NhanXet'],
     course: 'FBA101',
     likes: 14,
-    comments: [
-      { by: 'khanhvy_mkt', text: '"Vậy brand nên làm gì vào thứ Hai tới", câu này cô nói hoài mà tụi em vẫn quên 😅', after: 60, likes: 5 }
-    ]
+    comments: [{ by: 'khanhvy_mkt', text: '"Vậy brand nên làm gì vào thứ Hai tới", câu này cô nói hoài mà tụi em vẫn quên 😅', after: 60, likes: 5 }]
   },
   {
     key: 'more-ducanh-defense',
@@ -449,7 +471,12 @@ Tháng sau có cuộc thi khác, lần này chuẩn bị kỹ hơn 💪`,
     images: [452],
     likes: 15,
     comments: [
-      { by: 'nguyenthuha', text: 'Câu hỏi "ai trả tiền và vì sao" là câu hỏi quan trọng nhất của mọi mô hình kinh doanh. Cô tin lần sau team sẽ làm tốt hơn.', after: 120, likes: 6 },
+      {
+        by: 'nguyenthuha',
+        text: 'Câu hỏi "ai trả tiền và vì sao" là câu hỏi quan trọng nhất của mọi mô hình kinh doanh. Cô tin lần sau team sẽ làm tốt hơn.',
+        after: 120,
+        likes: 6
+      },
       { by: 'khanhvy_mkt', text: 'Cần người làm slide gọn 6 trang thì gọi mình nhé 😎', after: 50 }
     ]
   }

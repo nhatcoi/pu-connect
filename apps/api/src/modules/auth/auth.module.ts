@@ -10,7 +10,6 @@ import { MailService } from './mail.service'
 import { GOOGLE_AUTH_ENABLED } from './auth.constants'
 import { NotificationsModule } from '../notifications/notifications.module'
 
-
 @Module({
   imports: [PassportModule.register({ session: true }), NotificationsModule],
   controllers: [AuthController],
@@ -22,12 +21,7 @@ import { NotificationsModule } from '../notifications/notifications.module'
     {
       provide: GOOGLE_AUTH_ENABLED,
       inject: [ConfigService],
-      useFactory: (config: ConfigService) =>
-        !!(
-          config.get('GOOGLE_CLIENT_ID') &&
-          config.get('GOOGLE_CLIENT_SECRET') &&
-          config.get('GOOGLE_CALLBACK_URL')
-        )
+      useFactory: (config: ConfigService) => !!(config.get('GOOGLE_CLIENT_ID') && config.get('GOOGLE_CLIENT_SECRET') && config.get('GOOGLE_CALLBACK_URL'))
     },
     {
       provide: GoogleStrategy,

@@ -2,12 +2,7 @@
 
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SlidersHorizontal } from 'lucide-react'
@@ -33,12 +28,7 @@ const FACULTIES = [
   { code: 'FAS', name: 'Khoa Vật liệu & Công nghệ cao (FAS)' }
 ]
 
-export function AdvancedSearchDialog({
-  open,
-  onOpenChange,
-  initialQuery = '',
-  initialFaculty = 'ALL'
-}: AdvancedSearchDialogProps) {
+export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', initialFaculty = 'ALL' }: AdvancedSearchDialogProps) {
   const router = useRouter()
   const [exactWords, setExactWords] = useState(initialQuery)
   const [tag, setTag] = useState('')
@@ -57,7 +47,7 @@ export function AdvancedSearchDialog({
 
     const facultyParam = faculty !== 'ALL' ? `&faculty=${faculty}` : ''
     const typeParam = searchType !== 'all' ? `&type=${searchType}` : ''
-    
+
     onOpenChange(false)
     router.push(`/search?q=${encodeURIComponent(q)}${typeParam}${facultyParam}`)
   }
@@ -75,9 +65,7 @@ export function AdvancedSearchDialog({
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Exact phrase / keywords */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Từ khóa hoặc tiêu đề
-            </label>
+            <label className="text-xs font-semibold text-foreground">Từ khóa hoặc tiêu đề</label>
             <Input
               value={exactWords}
               onChange={(e) => setExactWords(e.target.value)}
@@ -88,22 +76,13 @@ export function AdvancedSearchDialog({
 
           {/* Tag search */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Thẻ chủ đề / Mã học phần (Hashtag)
-            </label>
-            <Input
-              value={tag}
-              onChange={(e) => setTag(e.target.value)}
-              placeholder="ví dụ: #IT101, #DoAnTotNghiep, #FIT"
-              className="rounded-xl h-10 text-xs"
-            />
+            <label className="text-xs font-semibold text-foreground">Thẻ chủ đề / Mã học phần (Hashtag)</label>
+            <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="ví dụ: #IT101, #DoAnTotNghiep, #FIT" className="rounded-xl h-10 text-xs" />
           </div>
 
           {/* Faculty select */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Khoa / Viện đào tạo
-            </label>
+            <label className="text-xs font-semibold text-foreground">Khoa / Viện đào tạo</label>
             <select
               value={faculty}
               onChange={(e) => setFaculty(e.target.value)}
@@ -119,9 +98,7 @@ export function AdvancedSearchDialog({
 
           {/* Search Category */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">
-              Phân loại nội dung tìm kiếm
-            </label>
+            <label className="text-xs font-semibold text-foreground">Phân loại nội dung tìm kiếm</label>
             <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'all', label: 'Tất cả' },
@@ -148,18 +125,10 @@ export function AdvancedSearchDialog({
 
           {/* Action buttons */}
           <div className="flex justify-end gap-2 pt-2 border-t border-border mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="rounded-full text-xs font-semibold"
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-full text-xs font-semibold">
               Hủy
             </Button>
-            <Button
-              type="submit"
-              className="rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90"
-            >
+            <Button type="submit" className="rounded-full text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90">
               Tìm kiếm
             </Button>
           </div>

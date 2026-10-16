@@ -11,12 +11,7 @@ export type PushStatus =
 const SW_URL = '/sw.js'
 
 export function isPushSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window
-  )
+  return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 }
 
 // iOS chỉ hỗ trợ Web Push khi web đã được thêm vào Màn hình chính (chạy standalone)

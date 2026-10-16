@@ -30,11 +30,7 @@ export class AdminController {
 
   @Post('posts/:id/hide')
   @HttpCode(HttpStatus.OK)
-  hidePost(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(AdminReasonBodySchema)) body: AdminReasonInput,
-    @Req() req: Request
-  ) {
+  hidePost(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AdminReasonBodySchema)) body: AdminReasonInput, @Req() req: Request) {
     return this.admin.hidePost(requireUserId(req), id, body.reason)
   }
 
@@ -63,11 +59,7 @@ export class AdminController {
 
   @Post('users/:id/suspend')
   @HttpCode(HttpStatus.OK)
-  suspend(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body(new ZodValidationPipe(AdminReasonBodySchema)) body: AdminReasonInput,
-    @Req() req: Request
-  ) {
+  suspend(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AdminReasonBodySchema)) body: AdminReasonInput, @Req() req: Request) {
     return this.admin.suspendUser(requireUserId(req), id, body.reason)
   }
 

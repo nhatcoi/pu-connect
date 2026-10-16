@@ -62,9 +62,7 @@ export function useCourse(code: string) {
   const addPost = useCallback(
     (post: PostItem) => {
       queryClient.setQueryData<InfiniteData<OffsetPage<PostItem>>>(queryKeys.coursePosts(key), (old) =>
-        old && old.pages.length
-          ? { ...old, pages: [{ ...old.pages[0], items: [post, ...old.pages[0].items] }, ...old.pages.slice(1)] }
-          : old
+        old && old.pages.length ? { ...old, pages: [{ ...old.pages[0], items: [post, ...old.pages[0].items] }, ...old.pages.slice(1)] } : old
       )
       void queryClient.invalidateQueries({ queryKey: queryKeys.course(key) })
     },
@@ -74,9 +72,7 @@ export function useCourse(code: string) {
   const joinGroup = useCallback(
     async (groupId: string) => {
       const res = await apiClient<Envelope<StudyGroup>>(`/study-groups/${groupId}/join`, { method: 'POST' })
-      queryClient.setQueryData<StudyGroup[]>(queryKeys.courseGroups(key), (old) =>
-        old?.map((g) => (g.id === groupId ? res.data : g))
-      )
+      queryClient.setQueryData<StudyGroup[]>(queryKeys.courseGroups(key), (old) => old?.map((g) => (g.id === groupId ? res.data : g)))
       return res.data
     },
     [queryClient, key]

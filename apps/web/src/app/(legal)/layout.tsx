@@ -21,9 +21,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
       <div className="flex-1">{children}</div>
-      <footer className="border-t border-border py-6 text-center text-[12px] text-muted-foreground">
-        © 2026 PU Connector · Phenikaa University
-      </footer>
+      <footer className="border-t border-border py-6 text-center text-[12px] text-muted-foreground">© 2026 PU Connector · Phenikaa University</footer>
     </div>
   )
 }

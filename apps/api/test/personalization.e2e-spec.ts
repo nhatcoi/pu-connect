@@ -25,12 +25,20 @@ describe('Cá nhân hóa (e2e)', () => {
     expect(empty.body.data.personalized).toBe(false)
     expect(empty.body.data.items).toHaveLength(4)
 
-    const post = await agentB.post('/api/posts').send({ content: 'Thuật toán Dijkstra trên đồ thị có trọng số', tags: ['Lý thuyết đồ thị'] }).expect(201)
+    const post = await agentB
+      .post('/api/posts')
+      .send({ content: 'Thuật toán Dijkstra trên đồ thị có trọng số', tags: ['Lý thuyết đồ thị'] })
+      .expect(201)
     const postId = post.body.data.id
     await db.query(`INSERT INTO saved_posts (user_id, post_id) VALUES ($1, $2)`, [a.id, postId])
     await agentA
       .post('/api/events')
-      .send({ events: [{ type: 'post_view', targetType: 'post', targetId: postId }, { type: 'search', meta: { q: 'dijkstra', type: 'all' } }] })
+      .send({
+        events: [
+          { type: 'post_view', targetType: 'post', targetId: postId },
+          { type: 'search', meta: { q: 'dijkstra', type: 'all' } }
+        ]
+      })
       .expect(204)
 
     // Hồ sơ cũ (đã tính lúc rỗng) ⇒ ép tính lại
@@ -47,7 +55,10 @@ describe('Cá nhân hóa (e2e)', () => {
 
     // Tắt ⇒ xóa sự kiện & hồ sơ, không ghi thêm, quay về gợi ý mặc định
     await agentA.patch('/api/users/privacy').send({ personalization: false }).expect(200)
-    await agentA.post('/api/events').send({ events: [{ type: 'post_open', targetType: 'post', targetId: postId }] }).expect(204)
+    await agentA
+      .post('/api/events')
+      .send({ events: [{ type: 'post_open', targetType: 'post', targetId: postId }] })
+      .expect(204)
     const left = await db.query(
       `SELECT (SELECT COUNT(*) FROM user_events WHERE user_id = $1)::int AS events,
               (SELECT COUNT(*) FROM user_interests WHERE user_id = $1)::int AS interests`,
@@ -64,8 +75,14 @@ describe('Cá nhân hóa (e2e)', () => {
     const agentAdmin = await loginAgent(app, admin)
     const agentTarget = await loginAgent(app, target)
 
-    const post = await agentTarget.post('/api/posts').send({ content: 'Ôn tập cây AVL', tags: ['CTDL'] }).expect(201)
-    await agentTarget.post('/api/events').send({ events: [{ type: 'post_open', targetType: 'post', targetId: post.body.data.id }] }).expect(204)
+    const post = await agentTarget
+      .post('/api/posts')
+      .send({ content: 'Ôn tập cây AVL', tags: ['CTDL'] })
+      .expect(201)
+    await agentTarget
+      .post('/api/events')
+      .send({ events: [{ type: 'post_open', targetType: 'post', targetId: post.body.data.id }] })
+      .expect(204)
     await agentTarget.get('/api/ai/suggestions').expect(200) // tính hồ sơ
 
     await agentTarget.get(`/api/admin/users/${target.id}/insight`).expect(403)
@@ -87,8 +104,14 @@ describe('Cá nhân hóa (e2e)', () => {
   it('từ chối sự kiện không hợp lệ', async () => {
     const a = await createUser(db)
     const agentA = await loginAgent(app, a)
-    await agentA.post('/api/events').send({ events: [{ type: 'keylog' }] }).expect(400)
-    await agentA.post('/api/events').send({ events: [{ type: 'post_view', targetType: 'post', targetId: 'x' }] }).expect(400)
+    await agentA
+      .post('/api/events')
+      .send({ events: [{ type: 'keylog' }] })
+      .expect(400)
+    await agentA
+      .post('/api/events')
+      .send({ events: [{ type: 'post_view', targetType: 'post', targetId: 'x' }] })
+      .expect(400)
     await agentA.post('/api/events').send({ events: [] }).expect(400)
   })
 })

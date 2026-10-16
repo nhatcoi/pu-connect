@@ -16,5 +16,5 @@ export const FEATURES = {
   // Chia sẻ bài viết vào chat (cần bộ chọn hội thoại; DM từ hồ sơ đã bật)
   directMessage: false,
   // Composer: chọn đối tượng xem (backend chưa lưu)
-  postAudience: false,
+  postAudience: false
 } as const

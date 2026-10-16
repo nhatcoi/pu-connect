@@ -3,19 +3,7 @@
 import React, { use, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import {
-  ArrowLeft,
-  BookOpen,
-  CheckCircle2,
-  FileText,
-  HelpCircle,
-  Loader2,
-  MessagesSquare,
-  Plus,
-  Share2,
-  Star,
-  Users
-} from 'lucide-react'
+import { ArrowLeft, BookOpen, CheckCircle2, FileText, HelpCircle, Loader2, MessagesSquare, Plus, Share2, Star, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
@@ -82,12 +70,8 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="min-w-0">
-            <h1 className="text-[15px] font-semibold tracking-tight truncate leading-none">
-              {course ? `${course.code} · ${course.name}` : courseCode}
-            </h1>
-            <p className="text-xs text-muted-foreground mt-1">
-              {course ? `${course.credits} tín chỉ · ${course.departmentName}` : 'Học phần'}
-            </p>
+            <h1 className="text-[15px] font-semibold tracking-tight truncate leading-none">{course ? `${course.code} · ${course.name}` : courseCode}</h1>
+            <p className="text-xs text-muted-foreground mt-1">{course ? `${course.credits} tín chỉ · ${course.departmentName}` : 'Học phần'}</p>
           </div>
         </div>
         <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs font-semibold" onClick={handleShare}>
@@ -106,13 +90,9 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
           <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card p-4 sm:p-5 space-y-4">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1.5 min-w-0">
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-xs text-primary font-mono">
-                  {course.code}
-                </span>
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-xs text-primary font-mono">{course.code}</span>
                 <h2 className="text-lg sm:text-xl font-bold tracking-tight">{course.name}</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {course.description || 'Chưa có mô tả cho học phần này.'}
-                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{course.description || 'Chưa có mô tả cho học phần này.'}</p>
               </div>
               <div className="flex items-center gap-1 text-xs font-semibold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0">
                 <Star className="h-3 w-3 fill-amber-500" />
@@ -149,11 +129,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
                 <Empty icon={MessagesSquare} title="Chưa có thảo luận nào" hint={`Đặt câu hỏi đầu tiên cho ${course.code}!`} />
               ) : (
                 <div className="px-2 sm:px-0">
-                  <VirtualPostList
-                    posts={c.posts}
-                    cacheKey={`course:${course.code}`}
-                    renderPost={(post) => <PostCard post={post} variant="card" />}
-                  />
+                  <VirtualPostList posts={c.posts} cacheKey={`course:${course.code}`} renderPost={(post) => <PostCard post={post} variant="card" />} />
                 </div>
               )}
               <div ref={sentinelRef} className="h-10 flex items-center justify-center">

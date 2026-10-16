@@ -20,7 +20,8 @@ export function AiWelcome({ mode, onPick }: { mode: AiMode; onPick: (s: AiSugges
         </div>
         <p className="text-[15px] font-semibold">PU AI — trợ lý học tập</p>
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-          Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi. Gửi kèm ảnh chụp đề bài, tệp PDF, Word hoặc .txt để PU AI đọc — hỏi tiếp không cần gửi lại.
+          Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi. Gửi kèm ảnh chụp đề bài, tệp PDF, Word hoặc .txt để PU AI đọc — hỏi tiếp
+          không cần gửi lại.
         </p>
       </div>
       <div className="max-w-lg mx-auto text-left space-y-2">

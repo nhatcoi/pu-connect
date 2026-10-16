@@ -9,11 +9,7 @@ interface ComposerProgressRingProps {
   className?: string
 }
 
-export function ComposerProgressRing({
-  currentLength,
-  maxLength = 1000,
-  className
-}: ComposerProgressRingProps) {
+export function ComposerProgressRing({ currentLength, maxLength = 1000, className }: ComposerProgressRingProps) {
   if (currentLength === 0) return null
 
   const size = 24
@@ -37,19 +33,9 @@ export function ComposerProgressRing({
   return (
     <div className={cn('flex items-center gap-1.5', className)}>
       <div className="relative flex items-center justify-center">
-        <svg
-          width={size}
-          height={size}
-          className="-rotate-90 transform"
-        >
+        <svg width={size} height={size} className="-rotate-90 transform">
           {/* Background circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            strokeWidth={strokeWidth}
-            className="stroke-muted fill-none"
-          />
+          <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={strokeWidth} className="stroke-muted fill-none" />
           {/* Progress circle */}
           <circle
             cx={size / 2}
@@ -64,16 +50,7 @@ export function ComposerProgressRing({
         </svg>
       </div>
 
-      {remaining <= 50 && (
-        <span
-          className={cn(
-            'text-[10px] font-bold',
-            isOverLimit ? 'text-destructive' : 'text-amber-500'
-          )}
-        >
-          {remaining}
-        </span>
-      )}
+      {remaining <= 50 && <span className={cn('text-[10px] font-bold', isOverLimit ? 'text-destructive' : 'text-amber-500')}>{remaining}</span>}
     </div>
   )
 }

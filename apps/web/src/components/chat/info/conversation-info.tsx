@@ -109,7 +109,11 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
                 </DropdownMenuItem>
               ) : (
                 MUTE_OPTIONS.map((o) => (
-                  <DropdownMenuItem key={o.hours} className="text-xs px-3 py-2 rounded-lg cursor-pointer" onClick={() => settings.mutate({ mutedHours: o.hours })}>
+                  <DropdownMenuItem
+                    key={o.hours}
+                    className="text-xs px-3 py-2 rounded-lg cursor-pointer"
+                    onClick={() => settings.mutate({ mutedHours: o.hours })}
+                  >
                     {o.label}
                   </DropdownMenuItem>
                 ))

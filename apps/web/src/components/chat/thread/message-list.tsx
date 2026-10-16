@@ -25,7 +25,20 @@ interface MessageListProps {
 }
 
 // Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", tự cuộn xuống khi có tin mới, cuộn lên tải tin cũ
-export function MessageList({ conversation, messages, myId, hasOlder, isLoadingOlder, loadOlder, jumpTo, onJumpHandled, onJump, onRetry, handlers, onFollowUp }: MessageListProps) {
+export function MessageList({
+  conversation,
+  messages,
+  myId,
+  hasOlder,
+  isLoadingOlder,
+  loadOlder,
+  jumpTo,
+  onJumpHandled,
+  onJump,
+  onRetry,
+  handlers,
+  onFollowUp
+}: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
   const isGroup = conversation?.type === 'group'
@@ -121,7 +134,9 @@ export function MessageList({ conversation, messages, myId, hasOlder, isLoadingO
               </div>
             )}
             {m.kind === 'system' ? (
-              <p id={`msg-${m.id}`} className="my-3 text-center text-[11px] text-muted-foreground px-6">{m.content}</p>
+              <p id={`msg-${m.id}`} className="my-3 text-center text-[11px] text-muted-foreground px-6">
+                {m.content}
+              </p>
             ) : (
               <MessageBubble
                 message={m}

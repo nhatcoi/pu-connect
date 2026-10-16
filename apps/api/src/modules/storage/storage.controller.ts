@@ -1,21 +1,10 @@
-import {
-  Controller,
-  Post,
-  UseInterceptors,
-  UploadedFile,
-  UploadedFiles,
-  BadRequestException,
-  UseGuards,
-  Req,
-  Query
-} from '@nestjs/common'
+import { Controller, Post, UseInterceptors, UploadedFile, UploadedFiles, BadRequestException, UseGuards, Req, Query } from '@nestjs/common'
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { StorageService, type UploadFolder } from './storage.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import type { Request } from 'express'
 import 'multer'
 import { requireUserId } from '../../common/http/current-user'
-
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif']
 const DOCUMENT_TYPES = [
@@ -62,11 +51,7 @@ export class StorageController {
 
   @Post('file')
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
-  async uploadSingleFile(
-    @UploadedFile() file: Express.Multer.File,
-    @Query('folder') folder?: UploadFolder,
-    @Req() req?: Request
-  ) {
+  async uploadSingleFile(@UploadedFile() file: Express.Multer.File, @Query('folder') folder?: UploadFolder, @Req() req?: Request) {
     if (!file) {
       throw new BadRequestException('Vui lòng chọn tệp để tải lên')
     }
@@ -83,20 +68,14 @@ export class StorageController {
 
   @Post('multiple')
   @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 50 * 1024 * 1024 } }))
-  async uploadMultipleFiles(
-    @UploadedFiles() files: Express.Multer.File[],
-    @Query('folder') folder?: UploadFolder,
-    @Req() req?: Request
-  ) {
+  async uploadMultipleFiles(@UploadedFiles() files: Express.Multer.File[], @Query('folder') folder?: UploadFolder, @Req() req?: Request) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Vui lòng chọn ít nhất một tệp để tải lên')
     }
 
     const userId = requireUserId(req as Request)
     const target = validateUpload(folder, files)
-    const uploadPromises = files.map((file) =>
-      this.storageService.uploadFile(file.buffer, file.originalname, file.mimetype, target, userId)
-    )
+    const uploadPromises = files.map((file) => this.storageService.uploadFile(file.buffer, file.originalname, file.mimetype, target, userId))
 
     const results = await Promise.all(uploadPromises)
 

@@ -8,8 +8,7 @@ import { Input } from '@/components/ui/input'
 import { CourseListSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 // Bỏ dấu tiếng Việt để tìm "giai tich" khớp "Giải tích"
-const normalize = (s: string) =>
-  s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
+const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
 // Danh mục học phần: tìm theo mã / tên, mở trang học phần
 export default function CoursesPage() {
@@ -52,9 +51,7 @@ export default function CoursesPage() {
               className="block rounded-xl bg-card px-4 py-3 hover:bg-muted/40 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-xs text-primary font-mono">
-                  {course.code}
-                </span>
+                <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-xs text-primary font-mono">{course.code}</span>
                 <span className="text-[11px] text-muted-foreground">
                   {course.credits} tín chỉ · {course.departmentName}
                 </span>

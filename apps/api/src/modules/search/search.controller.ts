@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Req,
-  BadRequestException
-} from '@nestjs/common'
+import { Controller, Get, Query, Req, BadRequestException } from '@nestjs/common'
 import type { Request } from 'express'
 import { SearchService } from './search.service'
 import type { SearchResult, SearchType } from '@pu/schemas'

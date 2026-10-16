@@ -34,12 +34,7 @@ export function VerifyEmailBanner() {
         <span className="text-foreground">
           Xác thực email <b>{user.email}</b> để hoàn tất tài khoản.
         </span>
-        <button
-          type="button"
-          onClick={resend}
-          disabled={isSending}
-          className="font-semibold text-primary hover:underline disabled:opacity-60 cursor-pointer"
-        >
+        <button type="button" onClick={resend} disabled={isSending} className="font-semibold text-primary hover:underline disabled:opacity-60 cursor-pointer">
           {isSending ? 'Đang gửi…' : 'Gửi lại email'}
         </button>
       </div>

@@ -2,15 +2,7 @@
 
 import React, { useEffect } from 'react'
 import { Command } from 'cmdk'
-import {
-  Search,
-  FileText,
-  GraduationCap,
-  Users,
-  Flame,
-  Sparkles,
-  Plus
-} from 'lucide-react'
+import { Search, FileText, GraduationCap, Users, Flame, Sparkles, Plus } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 
@@ -49,9 +41,7 @@ export function CommandPalette({ open, onOpenChange, onSelectTab }: CommandPalet
           </div>
 
           <Command.List className="max-h-[300px] overflow-y-auto p-2 text-xs">
-            <Command.Empty className="py-6 text-center text-xs text-muted-foreground">
-              Không tìm thấy kết quả nào phù hợp.
-            </Command.Empty>
+            <Command.Empty className="py-6 text-center text-xs text-muted-foreground">Không tìm thấy kết quả nào phù hợp.</Command.Empty>
 
             <Command.Group heading="Hành động nhanh" className="px-2 py-1.5 text-[11px] font-bold text-muted-foreground">
               <Command.Item

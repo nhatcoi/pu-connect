@@ -1,17 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  Req,
-  HttpCode,
-  HttpStatus,
-  ParseUUIDPipe
-} from '@nestjs/common'
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common'
 import { PostsService } from './posts.service'
 import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
@@ -95,11 +82,7 @@ export class PostsController {
   }
 
   @Patch(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() body: UpdatePostInput,
-    @Req() req: Request
-  ) {
+  async update(@Param('id') id: string, @Body() body: UpdatePostInput, @Req() req: Request) {
     const userId = await this.resolveUserId(req)
     const updated = await this.postsService.update(id, userId, body)
     return {
@@ -127,11 +110,7 @@ export class PostsController {
   }
 
   @Post(':id/vote-poll')
-  async votePoll(
-    @Param('id') id: string,
-    @Body() body: VotePollInput,
-    @Req() req: Request
-  ) {
+  async votePoll(@Param('id') id: string, @Body() body: VotePollInput, @Req() req: Request) {
     const userId = await this.resolveUserId(req)
     const updatedPoll = await this.postsService.votePoll(id, userId, body.optionId)
     return {
@@ -160,11 +139,7 @@ export class PostsController {
   }
 
   @Post(':id/report')
-  async report(
-    @Param('id') id: string,
-    @Body() body: ReportPostInput,
-    @Req() req: Request
-  ) {
+  async report(@Param('id') id: string, @Body() body: ReportPostInput, @Req() req: Request) {
     const userId = await this.resolveUserId(req)
     return this.postsService.report(id, userId, body)
   }

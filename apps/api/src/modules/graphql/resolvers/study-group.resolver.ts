@@ -88,19 +88,13 @@ export class StudyGroupResolver {
   }
 
   @Mutation(() => Boolean)
-  async joinStudyGroup(
-    @Args('groupId', { type: () => ID }) groupId: string,
-    @Context() context: any
-  ): Promise<boolean> {
+  async joinStudyGroup(@Args('groupId', { type: () => ID }) groupId: string, @Context() context: any): Promise<boolean> {
     const user = context?.req?.user
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập để tham gia nhóm')
     }
 
-    const groupRes = await this.db.query(
-      `SELECT * FROM study_groups WHERE id = $1`,
-      [groupId]
-    )
+    const groupRes = await this.db.query(`SELECT * FROM study_groups WHERE id = $1`, [groupId])
     if (groupRes.rows.length === 0) {
       throw new NotFoundException('Không tìm thấy nhóm học tập')
     }
@@ -114,19 +108,13 @@ export class StudyGroupResolver {
       throw new BadRequestException('Nhóm đã đủ thành viên')
     }
 
-    const memberCheck = await this.db.query(
-      `SELECT * FROM study_group_members WHERE group_id = $1 AND user_id = $2`,
-      [groupId, user.id]
-    )
+    const memberCheck = await this.db.query(`SELECT * FROM study_group_members WHERE group_id = $1 AND user_id = $2`, [groupId, user.id])
 
     if (memberCheck.rows.length > 0) {
       return true // Already a member
     }
 
-    await this.db.query(
-      `INSERT INTO study_group_members (group_id, user_id, role) VALUES ($1, $2, 'member')`,
-      [groupId, user.id]
-    )
+    await this.db.query(`INSERT INTO study_group_members (group_id, user_id, role) VALUES ($1, $2, 'member')`, [groupId, user.id])
 
     await this.db.query(
       `UPDATE study_groups 
@@ -140,19 +128,13 @@ export class StudyGroupResolver {
   }
 
   @Mutation(() => Boolean)
-  async leaveStudyGroup(
-    @Args('groupId', { type: () => ID }) groupId: string,
-    @Context() context: any
-  ): Promise<boolean> {
+  async leaveStudyGroup(@Args('groupId', { type: () => ID }) groupId: string, @Context() context: any): Promise<boolean> {
     const user = context?.req?.user
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập')
     }
 
-    const groupRes = await this.db.query(
-      `SELECT * FROM study_groups WHERE id = $1`,
-      [groupId]
-    )
+    const groupRes = await this.db.query(`SELECT * FROM study_groups WHERE id = $1`, [groupId])
     if (groupRes.rows.length === 0) {
       throw new NotFoundException('Không tìm thấy nhóm học tập')
     }
@@ -162,10 +144,7 @@ export class StudyGroupResolver {
       throw new BadRequestException('Trưởng nhóm không thể rời nhóm (có thể giải tán nhóm)')
     }
 
-    const deleteRes = await this.db.query(
-      `DELETE FROM study_group_members WHERE group_id = $1 AND user_id = $2`,
-      [groupId, user.id]
-    )
+    const deleteRes = await this.db.query(`DELETE FROM study_group_members WHERE group_id = $1 AND user_id = $2`, [groupId, user.id])
 
     if (deleteRes.rowCount && deleteRes.rowCount > 0) {
       await this.db.query(

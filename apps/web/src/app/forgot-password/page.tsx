@@ -39,8 +39,8 @@ function ForgotPasswordContent() {
         <MailCheck className="mx-auto h-10 w-10 text-primary" />
         <h1 className="text-lg font-semibold">Kiểm tra email của bạn</h1>
         <p className="text-[13px] text-muted-foreground">
-          Nếu <b className="text-foreground">{email.trim()}</b> có tài khoản, chúng tôi đã gửi liên kết đặt lại mật khẩu
-          (hết hạn sau 30 phút). Nhớ xem cả mục thư rác.
+          Nếu <b className="text-foreground">{email.trim()}</b> có tài khoản, chúng tôi đã gửi liên kết đặt lại mật khẩu (hết hạn sau 30 phút). Nhớ xem cả mục
+          thư rác.
         </p>
         <Link href="/" className="inline-block text-[13px] font-semibold text-primary hover:underline">
           Quay lại đăng nhập
@@ -53,9 +53,7 @@ function ForgotPasswordContent() {
     <form onSubmit={submit} noValidate className="w-full max-w-sm rounded-2xl bg-card p-8 shadow-sm space-y-4">
       <div className="space-y-1">
         <h1 className="text-lg font-semibold">Quên mật khẩu</h1>
-        <p className="text-[13px] text-muted-foreground">
-          Nhập email tài khoản, chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.
-        </p>
+        <p className="text-[13px] text-muted-foreground">Nhập email tài khoản, chúng tôi sẽ gửi liên kết để đặt mật khẩu mới.</p>
       </div>
       <div className="space-y-1.5">
         <label htmlFor="email" className="text-[13px] font-medium">

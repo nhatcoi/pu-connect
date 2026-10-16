@@ -2,27 +2,10 @@
 
 import React from 'react'
 import type { PostItem } from '@pu/schemas'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import {
-  BarChart2,
-  Eye,
-  Heart,
-  MessageCircle,
-  Bookmark,
-  Repeat2,
-  Award,
-  TrendingUp,
-  GraduationCap,
-  Sparkles
-} from 'lucide-react'
+import { BarChart2, Eye, Heart, MessageCircle, Bookmark, Repeat2, Award, TrendingUp, GraduationCap, Sparkles } from 'lucide-react'
 import { formatRelativeTime } from '@/lib/utils'
 import { markdownToPlainText } from '@/lib/plain-text'
 
@@ -35,18 +18,11 @@ interface PostAnalyticsDialogProps {
 export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsDialogProps) {
   // Approximate impressions/views
   const viewsCount = (post.likesCount || 0) * 8 + (post.commentsCount || 0) * 15 + 42
-  const totalEngagements =
-    (post.likesCount || 0) +
-    (post.commentsCount || 0) +
-    (post.sharesCount || 0) +
-    (post.isBookmarkedByMe ? 1 : 0)
+  const totalEngagements = (post.likesCount || 0) + (post.commentsCount || 0) + (post.sharesCount || 0) + (post.isBookmarkedByMe ? 1 : 0)
 
-  const engagementRate =
-    viewsCount > 0 ? ((totalEngagements / viewsCount) * 100).toFixed(1) : '0.0'
+  const engagementRate = viewsCount > 0 ? ((totalEngagements / viewsCount) * 100).toFixed(1) : '0.0'
 
-  const authorInitials = (post.author?.displayName || post.author?.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
+  const authorInitials = (post.author?.displayName || post.author?.username || 'PU').slice(0, 2).toUpperCase()
 
   // Calculate percentages for progress bars
   const totalActionPoints = Math.max(1, totalEngagements)
@@ -63,9 +39,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
           <DialogHeader className="space-y-1 text-left">
             <div className="flex items-center gap-2 text-primary font-bold text-sm">
               <BarChart2 className="h-5 w-5" />
-              <DialogTitle className="text-base font-bold text-foreground">
-                Số liệu & Phân tích bài viết
-              </DialogTitle>
+              <DialogTitle className="text-base font-bold text-foreground">Số liệu & Phân tích bài viết</DialogTitle>
             </div>
             <DialogDescription className="text-xs text-muted-foreground">
               Thống kê tương tác thời gian thực và độ lan tỏa học thuật trong mạng lưới Phenikaa.
@@ -76,9 +50,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
           <div className="mt-3 flex items-center gap-3 p-2.5 rounded-xl bg-background/80 border border-border/60 text-xs">
             <Avatar className="h-8 w-8 shrink-0 border border-border/50">
               <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.displayName || ''} />
-              <AvatarFallback className="bg-primary/10 text-primary font-bold text-[10px]">
-                {authorInitials}
-              </AvatarFallback>
+              <AvatarFallback className="bg-primary/10 text-primary font-bold text-[10px]">{authorInitials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 font-semibold text-foreground truncate">
@@ -87,9 +59,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
                   @{post.author?.username || 'user'} · {formatRelativeTime(post.createdAt)}
                 </span>
               </div>
-              <p className="text-muted-foreground truncate text-[11px]">
-                {post.title || markdownToPlainText(post.content).slice(0, 70)}
-              </p>
+              <p className="text-muted-foreground truncate text-[11px]">{post.title || markdownToPlainText(post.content).slice(0, 70)}</p>
             </div>
           </div>
         </div>
@@ -151,39 +121,21 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
 
           {/* Detailed Actions Breakdown */}
           <div className="space-y-3">
-            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">
-              Chi tiết phân bổ tương tác
-            </h4>
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Chi tiết phân bổ tương tác</h4>
 
             {/* Multi-segment Progress Bar */}
             <div className="h-2 w-full rounded-full bg-muted overflow-hidden flex">
               {likesPercent > 0 && (
-                <div
-                  style={{ width: `${likesPercent}%` }}
-                  className="bg-rose-500 transition-all duration-500"
-                  title={`Lượt thích: ${likesPercent}%`}
-                />
+                <div style={{ width: `${likesPercent}%` }} className="bg-rose-500 transition-all duration-500" title={`Lượt thích: ${likesPercent}%`} />
               )}
               {commentsPercent > 0 && (
-                <div
-                  style={{ width: `${commentsPercent}%` }}
-                  className="bg-sky-500 transition-all duration-500"
-                  title={`Thảo luận: ${commentsPercent}%`}
-                />
+                <div style={{ width: `${commentsPercent}%` }} className="bg-sky-500 transition-all duration-500" title={`Thảo luận: ${commentsPercent}%`} />
               )}
               {sharesPercent > 0 && (
-                <div
-                  style={{ width: `${sharesPercent}%` }}
-                  className="bg-emerald-500 transition-all duration-500"
-                  title={`Gửi nhóm PBL: ${sharesPercent}%`}
-                />
+                <div style={{ width: `${sharesPercent}%` }} className="bg-emerald-500 transition-all duration-500" title={`Gửi nhóm PBL: ${sharesPercent}%`} />
               )}
               {bookmarksPercent > 0 && (
-                <div
-                  style={{ width: `${bookmarksPercent}%` }}
-                  className="bg-amber-500 transition-all duration-500"
-                  title={`Lưu trữ: ${bookmarksPercent}%`}
-                />
+                <div style={{ width: `${bookmarksPercent}%` }} className="bg-amber-500 transition-all duration-500" title={`Lưu trữ: ${bookmarksPercent}%`} />
               )}
             </div>
 
@@ -235,21 +187,14 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Bài viết đã được thuật toán phân phối ưu tiên tới sinh viên cùng{' '}
-              <strong className="text-foreground">
-                {post.facultyCode || post.author?.faculty || 'Khoa Công nghệ Thông tin'}
-              </strong>
+              <strong className="text-foreground">{post.facultyCode || post.author?.faculty || 'Khoa Công nghệ Thông tin'}</strong>
               {post.courseCode ? ` và học phần ${post.courseCode}` : ''}.
             </p>
           </div>
         </div>
 
         <div className="p-4 border-t border-border/60 bg-muted/10 flex items-center justify-end">
-          <Button
-            type="button"
-            variant="default"
-            onClick={() => onOpenChange(false)}
-            className="rounded-full font-bold text-xs px-6 cursor-pointer"
-          >
+          <Button type="button" variant="default" onClick={() => onOpenChange(false)} className="rounded-full font-bold text-xs px-6 cursor-pointer">
             Đã hiểu
           </Button>
         </div>

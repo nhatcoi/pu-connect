@@ -41,7 +41,7 @@ export function AppearanceSection() {
   // Tránh lệch SSR: chỉ biết theme sau khi mount
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
-  const current = mounted ? theme ?? 'system' : null
+  const current = mounted ? (theme ?? 'system') : null
 
   return (
     <SettingsGroup label="Chủ đề" hint="Lưu trên trình duyệt này.">

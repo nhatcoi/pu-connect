@@ -33,7 +33,12 @@ Ai biết quán nào ngon nữa tag mình nha, mình đi thử rồi update 🍜
     saves: 17,
     comments: [
       { by: 'giabao_runs', text: 'Số 1 chuẩn, mỗi tội xếp hàng hơi lâu 😂', after: 20, likes: 4 },
-      { by: 'vannam2k8', text: 'Chị ơi cơm rang dưa bò ở ngõ nào ạ, em mới lên chưa biết đường 🥲', after: 35, replies: [{ by: 'khanhlinh_eat', text: 'Ngõ đối diện cổng chính, đi vào tầm 50m bên tay trái, biển xanh to lắm em', after: 10 }] },
+      {
+        by: 'vannam2k8',
+        text: 'Chị ơi cơm rang dưa bò ở ngõ nào ạ, em mới lên chưa biết đường 🥲',
+        after: 35,
+        replies: [{ by: 'khanhlinh_eat', text: 'Ngõ đối diện cổng chính, đi vào tầm 50m bên tay trái, biển xanh to lắm em', after: 10 }]
+      },
       { by: 'thuydung05', text: 'bài review có tâm nhất năm, mình xin lưu', after: 60 },
       { by: 'tiendat_ngo', text: 'thiếu quán bún đậu cuối ngõ nhé, 30k mà mắm tôm đỉnh', after: 90, likes: 6 }
     ]
@@ -66,7 +71,12 @@ Album đầy đủ để ở dưới, ảnh chụp bằng máy film nên màu h�
     likes: 20,
     saves: 14,
     comments: [
-      { by: 'khanhlinh_eat', text: 'Màu film đẹp quá trời, máy gì vậy Thư?', after: 15, replies: [{ by: 'anhthu_phan', text: 'Olympus mju II của bố mình đó 😆', after: 8 }] },
+      {
+        by: 'khanhlinh_eat',
+        text: 'Màu film đẹp quá trời, máy gì vậy Thư?',
+        after: 15,
+        replies: [{ by: 'anhthu_phan', text: 'Olympus mju II của bố mình đó 😆', after: 8 }]
+      },
       { by: 'thao_ielts', text: 'Chi phí rẻ hơn mình nghĩ nhiều. Lưu lại cho chuyến cuối kỳ!', after: 50 },
       { by: 'giabao_runs', text: 'Đèo Mã Pí Lèng mà chạy bộ chắc đứt hơi 😂', after: 95 }
     ]
@@ -86,7 +96,12 @@ Tháng thứ 3 chạy đều mỗi sáng. Ngủ ngon hơn, ít cà phê hơn, h�
     comments: [
       { by: 'ngocanh_med', text: 'Ủng hộ! Nhớ khởi động kỹ cổ chân với đầu gối nha, mùa này sáng lạnh dễ chấn thương', after: 40, likes: 4 },
       { by: 'tiendat_ngo', text: '5h sáng là giờ mình đi ngủ', after: 120, likes: 10 },
-      { by: 'thutrang_ly', text: 'Thứ 3 tới mình đi thử nha, chạy 2km thôi được không 🥲', after: 200, replies: [{ by: 'giabao_runs', text: 'Được luôn, có nhóm đi bộ nhanh nữa á', after: 15 }] }
+      {
+        by: 'thutrang_ly',
+        text: 'Thứ 3 tới mình đi thử nha, chạy 2km thôi được không 🥲',
+        after: 200,
+        replies: [{ by: 'giabao_runs', text: 'Được luôn, có nhóm đi bộ nhanh nữa á', after: 15 }]
+      }
     ]
   },
   {
@@ -222,7 +237,12 @@ Ai cần công thức nước lẩu chua cay "chuẩn sinh viên" thì comment, 
     images: [367, 1073],
     likes: 13,
     comments: [
-      { by: 'nguyenthuha', text: 'Cuộc sống tuyệt nhất là như vậy em ạ. Mấy cuốn gì thế?', after: 90, replies: [{ by: 'thao_ielts', text: 'Dạ Norwegian Wood, Klara and the Sun với một cuốn của Nguyễn Ngọc Tư ạ 😊', after: 30 }] }
+      {
+        by: 'nguyenthuha',
+        text: 'Cuộc sống tuyệt nhất là như vậy em ạ. Mấy cuốn gì thế?',
+        after: 90,
+        replies: [{ by: 'thao_ielts', text: 'Dạ Norwegian Wood, Klara and the Sun với một cuốn của Nguyễn Ngọc Tư ạ 😊', after: 30 }]
+      }
     ]
   },
   {

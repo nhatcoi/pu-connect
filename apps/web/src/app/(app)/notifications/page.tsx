@@ -8,12 +8,7 @@ import { BellOff, CheckCheck, Loader2, Settings2 } from 'lucide-react'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { NotificationRow } from '@/components/notifications/notification-row'
 import { NotificationSettingsPanel } from '@/components/notifications/notification-settings-panel'
-import {
-  notificationsApi,
-  openNotification,
-  useNotificationsStore,
-  type NotificationItem
-} from '@/hooks/use-notifications'
+import { notificationsApi, openNotification, useNotificationsStore, type NotificationItem } from '@/hooks/use-notifications'
 import { cn } from '@/lib/utils'
 import { NotificationListSkeleton } from '@/components/skeletons/notification-skeleton'
 
@@ -74,15 +69,13 @@ export default function NotificationsPage() {
 
   // Đánh dấu đã đọc trong mọi danh sách thông báo đã cache
   const markReadInCache = (predicate: (n: NotificationItem) => boolean) => {
-    queryClient.setQueriesData<InfiniteData<{ data: NotificationItem[]; nextCursor: string | null }>>(
-      { queryKey: ['notifications'] },
-      (old) =>
-        old
-          ? {
-              ...old,
-              pages: old.pages.map((p) => ({ ...p, data: p.data.map((n) => (predicate(n) ? { ...n, isRead: true } : n)) }))
-            }
-          : old
+    queryClient.setQueriesData<InfiniteData<{ data: NotificationItem[]; nextCursor: string | null }>>({ queryKey: ['notifications'] }, (old) =>
+      old
+        ? {
+            ...old,
+            pages: old.pages.map((p) => ({ ...p, data: p.data.map((n) => (predicate(n) ? { ...n, isRead: true } : n)) }))
+          }
+        : old
     )
   }
 
@@ -147,9 +140,7 @@ export default function NotificationsPage() {
           ) : items.length === 0 ? (
             <div className="flex flex-col items-center gap-2 py-14 text-center text-muted-foreground">
               <BellOff className="h-8 w-8 opacity-60" />
-              <p className="text-sm">
-                {filter === 'unread' ? 'Bạn đã đọc hết thông báo' : 'Chưa có thông báo nào'}
-              </p>
+              <p className="text-sm">{filter === 'unread' ? 'Bạn đã đọc hết thông báo' : 'Chưa có thông báo nào'}</p>
             </div>
           ) : (
             <>

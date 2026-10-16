@@ -36,7 +36,10 @@ export function MemberList({ conversation }: { conversation: ConversationSummary
 
   return (
     <div className="space-y-1">
-      <button onClick={() => setAdding(true)} className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 cursor-pointer">
+      <button
+        onClick={() => setAdding(true)}
+        className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/5 cursor-pointer"
+      >
         <span className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
           <UserPlus className="h-4 w-4" />
         </span>

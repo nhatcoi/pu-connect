@@ -13,10 +13,7 @@ export class SessionSerializer extends PassportSerializer {
     done(null, { id: user.id })
   }
 
-  async deserializeUser(
-    payload: { id: string },
-    done: (err: Error | null, user: UserProfile | false) => void
-  ) {
+  async deserializeUser(payload: { id: string }, done: (err: Error | null, user: UserProfile | false) => void) {
     try {
       const user = await this.authService.findById(payload.id)
       // Không tồn tại hoặc bị khóa ⇒ phiên hết hiệu lực (HTTP lẫn socket handshake)

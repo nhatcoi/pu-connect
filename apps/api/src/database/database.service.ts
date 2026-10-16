@@ -7,9 +7,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private pool: Pool
 
   constructor() {
-    const connectionString =
-      process.env.DATABASE_URL ||
-      'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
+    const connectionString = process.env.DATABASE_URL || 'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
 
     this.pool = new Pool({
       connectionString,
@@ -33,10 +31,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     await this.pool.end()
   }
 
-  async query<T extends QueryResultRow = any>(
-    text: string,
-    params?: any[]
-  ): Promise<QueryResult<T>> {
+  async query<T extends QueryResultRow = any>(text: string, params?: any[]): Promise<QueryResult<T>> {
     const start = Date.now()
     const res = await this.pool.query<T>(text, params)
     const duration = Date.now() - start
@@ -49,9 +44,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   /**
    * Execute multiple operations within an atomic ACID transaction
    */
-  async transaction<T>(
-    callback: (client: PoolClient) => Promise<T>
-  ): Promise<T> {
+  async transaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await this.pool.connect()
     const start = Date.now()
     try {

@@ -47,9 +47,7 @@ export function FollowSuggestionsDialog({ open, onOpenChange }: FollowSuggestion
       <DialogContent className="flex max-h-[85vh] max-w-md flex-col gap-0 overflow-hidden p-0">
         <DialogHeader className="border-b border-border/60 px-5 pt-5 pb-4 text-left">
           <DialogTitle className="text-base">Khám phá thêm</DialogTitle>
-          <DialogDescription className="text-xs">
-            Gợi ý dựa trên người bạn theo dõi, lớp, khoa và sở thích chung.
-          </DialogDescription>
+          <DialogDescription className="text-xs">Gợi ý dựa trên người bạn theo dõi, lớp, khoa và sở thích chung.</DialogDescription>
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
@@ -96,28 +94,16 @@ export function FollowSuggestionsDialog({ open, onOpenChange }: FollowSuggestion
   )
 }
 
-function SuggestionRow({
-  suggestion: s,
-  onFollowChange
-}: {
-  suggestion: FollowSuggestion
-  onFollowChange: (isFollowing: boolean) => void
-}) {
+function SuggestionRow({ suggestion: s, onFollowChange }: { suggestion: FollowSuggestion; onFollowChange: (isFollowing: boolean) => void }) {
   const queryClient = useQueryClient()
   const showMutualAvatars = s.reason === 'mutual' && s.mutuals.length > 0
 
   return (
     <li className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/40">
-      <Link
-        href={`/${s.username}`}
-        onMouseEnter={() => prefetchProfile(queryClient, s.username)}
-        className="flex min-w-0 flex-1 items-start gap-3"
-      >
+      <Link href={`/${s.username}`} onMouseEnter={() => prefetchProfile(queryClient, s.username)} className="flex min-w-0 flex-1 items-start gap-3">
         <Avatar className="h-10 w-10 shrink-0">
           <AvatarImage src={s.avatarUrl || ''} alt="" />
-          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
-            {s.displayName.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">{s.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
         </Avatar>
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1">

@@ -20,8 +20,7 @@ export class GoogleAuthGuard extends AuthGuard('google') {
       const googleError = typeof req.query?.error === 'string' ? req.query.error : undefined
       const detail = err?.oauthError?.data ? ` | oauth: ${String(err.oauthError.data).slice(0, 300)}` : ''
       this.logger.warn(
-        `Google OAuth thất bại: ${err?.name || 'Error'}: ${err?.message || 'unknown'}` +
-          `${googleError ? ` | google_error=${googleError}` : ''}${detail}`
+        `Google OAuth thất bại: ${err?.name || 'Error'}: ${err?.message || 'unknown'}` + `${googleError ? ` | google_error=${googleError}` : ''}${detail}`
       )
       return true
     }

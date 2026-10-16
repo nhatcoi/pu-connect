@@ -11,11 +11,7 @@ export class MentionsController {
   // Gợi ý @mention khi gõ (debounce phía client)
   @Get('suggest')
   @UseGuards(AuthenticatedGuard)
-  async suggest(
-    @Req() req: Request,
-    @Query('q') q?: string,
-    @Query('postId', new ParseUUIDPipe({ optional: true })) postId?: string
-  ) {
+  async suggest(@Req() req: Request, @Query('q') q?: string, @Query('postId', new ParseUUIDPipe({ optional: true })) postId?: string) {
     return this.suggestService.suggest(requireUserId(req), normalizeMentionQuery(q), postId ?? null)
   }
 }

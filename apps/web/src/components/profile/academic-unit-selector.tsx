@@ -1,19 +1,8 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import {
-  searchAcademicUnits,
-  inferAcademicHierarchy,
-  PHENIKAA_ACADEMIC_YEARS,
-  type AcademicUnitItem
-} from '@pu/schemas'
-import {
-  GraduationCap,
-  Search,
-  Check,
-  X,
-  ChevronDown
-} from 'lucide-react'
+import { searchAcademicUnits, inferAcademicHierarchy, PHENIKAA_ACADEMIC_YEARS, type AcademicUnitItem } from '@pu/schemas'
+import { GraduationCap, Search, Check, X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface AcademicUnitSelectorProps {
@@ -22,23 +11,10 @@ interface AcademicUnitSelectorProps {
   major?: string | null
   academicYear?: string | null
   className?: string | null
-  onChange: (values: {
-    school: string | null
-    faculty: string | null
-    major: string | null
-    academicYear: string | null
-    className: string | null
-  }) => void
+  onChange: (values: { school: string | null; faculty: string | null; major: string | null; academicYear: string | null; className: string | null }) => void
 }
 
-export function AcademicUnitSelector({
-  school,
-  faculty,
-  major,
-  academicYear,
-  className,
-  onChange
-}: AcademicUnitSelectorProps) {
+export function AcademicUnitSelector({ school, faculty, major, academicYear, className, onChange }: AcademicUnitSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [isCustomMode, setIsCustomMode] = useState(false)
@@ -123,13 +99,9 @@ export function AcademicUnitSelector({
               {currentPrimaryTitle ? (
                 <div className="flex-1 min-w-0 pr-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-sm text-foreground truncate">
-                      {currentPrimaryTitle}
-                    </span>
+                    <span className="font-semibold text-sm text-foreground truncate">{currentPrimaryTitle}</span>
                   </div>
-                  <div className="text-[11px] text-muted-foreground truncate">
-                    {[school, faculty].filter(Boolean).join(' • ') || 'Đại học Phenikaa'}
-                  </div>
+                  <div className="text-[11px] text-muted-foreground truncate">{[school, faculty].filter(Boolean).join(' • ') || 'Đại học Phenikaa'}</div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground/70 text-sm">
@@ -138,12 +110,7 @@ export function AcademicUnitSelector({
                 </div>
               )}
 
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 text-muted-foreground transition-transform shrink-0',
-                  isOpen && 'rotate-180 text-foreground'
-                )}
-              />
+              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform shrink-0', isOpen && 'rotate-180 text-foreground')} />
             </div>
 
             {/* Dropdown danh sách kết quả */}
@@ -161,11 +128,7 @@ export function AcademicUnitSelector({
                     className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none"
                   />
                   {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="p-1 hover:bg-muted rounded text-muted-foreground"
-                    >
+                    <button type="button" onClick={() => setSearchQuery('')} className="p-1 hover:bg-muted rounded text-muted-foreground">
                       <X className="h-3 w-3" />
                     </button>
                   )}
@@ -175,8 +138,7 @@ export function AcademicUnitSelector({
                 <div className="max-h-60 overflow-y-auto p-1.5 space-y-1 divide-y divide-border/40">
                   {searchResults.length > 0 ? (
                     searchResults.map((item) => {
-                      const isSelected =
-                        item.name === major || item.name === faculty || item.name === school
+                      const isSelected = item.name === major || item.name === faculty || item.name === school
 
                       return (
                         <button
@@ -185,9 +147,7 @@ export function AcademicUnitSelector({
                           onClick={() => handleSelectUnit(item)}
                           className={cn(
                             'w-full text-left p-2 rounded-lg transition-colors flex items-start justify-between gap-2 cursor-pointer pt-1.5',
-                            isSelected
-                              ? 'bg-primary/10 text-primary font-medium'
-                              : 'hover:bg-muted/70 text-foreground'
+                            isSelected ? 'bg-primary/10 text-primary font-medium' : 'hover:bg-muted/70 text-foreground'
                           )}
                         >
                           <div className="min-w-0 flex-1">
@@ -220,8 +180,7 @@ export function AcademicUnitSelector({
                               )}
                             </div>
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                              {[item.schoolName, item.facultyName].filter(Boolean).join(' • ') ||
-                                'Đơn vị trực thuộc Đại học Phenikaa'}
+                              {[item.schoolName, item.facultyName].filter(Boolean).join(' • ') || 'Đơn vị trực thuộc Đại học Phenikaa'}
                             </p>
                           </div>
                           {isSelected && <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />}
@@ -229,9 +188,7 @@ export function AcademicUnitSelector({
                       )
                     })
                   ) : (
-                    <div className="py-4 text-center text-xs text-muted-foreground">
-                      Không tìm thấy kết quả phù hợp
-                    </div>
+                    <div className="py-4 text-center text-xs text-muted-foreground">Không tìm thấy kết quả phù hợp</div>
                   )}
 
                   {/* Nút chuyển sang nhập tự do nếu là ngành/đơn vị đặc biệt */}
@@ -255,14 +212,8 @@ export function AcademicUnitSelector({
           /* Chế độ nhập tự do (Custom Mode) */
           <div className="space-y-2 p-3 bg-muted/30 rounded-xl border border-border animate-in fade-in duration-150">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground">
-                Nhập thông tin đào tạo tùy chỉnh:
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsCustomMode(false)}
-                className="text-xs text-primary hover:underline cursor-pointer"
-              >
+              <span className="text-xs font-semibold text-foreground">Nhập thông tin đào tạo tùy chỉnh:</span>
+              <button type="button" onClick={() => setIsCustomMode(false)} className="text-xs text-primary hover:underline cursor-pointer">
                 Quay lại danh mục chuẩn
               </button>
             </div>
@@ -350,9 +301,7 @@ export function AcademicUnitSelector({
 
         {/* Lớp sinh hoạt */}
         <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3 pt-2 pb-1.5 transition-all">
-          <label className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">
-            Lớp sinh hoạt (Class)
-          </label>
+          <label className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">Lớp sinh hoạt (Class)</label>
           <input
             type="text"
             value={className || ''}
@@ -365,11 +314,7 @@ export function AcademicUnitSelector({
                 className: e.target.value || null
               })
             }
-            placeholder={
-              major && academicYear
-                ? `VD: ${academicYear}-${major.slice(0, 4).toUpperCase()}1`
-                : 'VD: K17-KTPM1...'
-            }
+            placeholder={major && academicYear ? `VD: ${academicYear}-${major.slice(0, 4).toUpperCase()}1` : 'VD: K17-KTPM1...'}
             className="w-full bg-transparent p-0 text-sm text-foreground focus:outline-none border-none placeholder:text-muted-foreground/50"
           />
         </div>

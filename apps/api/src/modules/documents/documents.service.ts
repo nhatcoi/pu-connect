@@ -86,10 +86,7 @@ export class DocumentsService {
   }
 
   async incrementDownload(id: string): Promise<{ downloadUrl: string }> {
-    const res = await this.db.query(
-      `UPDATE documents SET download_count = download_count + 1 WHERE id::text = $1 RETURNING file_url`,
-      [id]
-    )
+    const res = await this.db.query(`UPDATE documents SET download_count = download_count + 1 WHERE id::text = $1 RETURNING file_url`, [id])
     if (res.rows.length === 0) {
       throw new NotFoundException('Tài liệu không tồn tại')
     }
@@ -123,4 +120,3 @@ export class DocumentsService {
     }
   }
 }
-

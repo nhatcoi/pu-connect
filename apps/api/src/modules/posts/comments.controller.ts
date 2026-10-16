@@ -1,15 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  Query,
-  Req,
-  UnauthorizedException
-} from '@nestjs/common'
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, UnauthorizedException } from '@nestjs/common'
 import { CommentsService } from './comments.service'
 import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
@@ -37,12 +26,7 @@ export class CommentsController {
     const currentUserId = (req.user as any)?.id || null
     const parsedLimit = limit ? parseInt(limit, 10) : 5
     const parsedOffset = offset ? parseInt(offset, 10) : 0
-    const result = await this.commentsService.findByPost(
-      postId,
-      currentUserId,
-      parsedLimit,
-      parsedOffset
-    )
+    const result = await this.commentsService.findByPost(postId, currentUserId, parsedLimit, parsedOffset)
     return {
       success: true,
       data: result.data,
@@ -54,11 +38,7 @@ export class CommentsController {
   }
 
   @Post('posts/:postId/comments')
-  async create(
-    @Param('postId') postId: string,
-    @Body() body: Omit<CreateCommentInput, 'postId'>,
-    @Req() req: Request
-  ) {
+  async create(@Param('postId') postId: string, @Body() body: Omit<CreateCommentInput, 'postId'>, @Req() req: Request) {
     const authorId = requireUserId(req, 'Vui lòng đăng nhập để bình luận')
 
     const comment = await this.commentsService.create(authorId, {
@@ -89,11 +69,7 @@ export class CommentsController {
 
   // Sửa bình luận (chỉ tác giả); chỉ báo người MỚI được @mention
   @Patch('comments/:id')
-  async update(
-    @Param('id') id: string,
-    @Body(new ZodValidationPipe(UpdateCommentBodySchema)) body: UpdateCommentBody,
-    @Req() req: Request
-  ) {
+  async update(@Param('id') id: string, @Body(new ZodValidationPipe(UpdateCommentBodySchema)) body: UpdateCommentBody, @Req() req: Request) {
     const userId = requireUserId(req, 'Vui lòng đăng nhập')
     return { success: true, data: await this.commentsService.update(id, userId, body.content) }
   }

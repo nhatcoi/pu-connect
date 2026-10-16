@@ -2,7 +2,15 @@ import { cn } from '@/lib/utils'
 import { LoadingRegion, Skeleton, SkeletonRepeat } from '@/components/ui/skeleton'
 
 // Hàng người dùng: avatar + tên + @username (+ nút) — gợi ý theo dõi, thành viên, danh sách follow
-export function UserRowSkeleton({ avatarClassName = 'h-8 w-8', action = false, className }: { avatarClassName?: string; action?: boolean; className?: string }) {
+export function UserRowSkeleton({
+  avatarClassName = 'h-8 w-8',
+  action = false,
+  className
+}: {
+  avatarClassName?: string
+  action?: boolean
+  className?: string
+}) {
   return (
     <div className={cn('flex items-center gap-2.5 px-2 py-1.5', className)}>
       <Skeleton className={cn('shrink-0 rounded-full', avatarClassName)} />

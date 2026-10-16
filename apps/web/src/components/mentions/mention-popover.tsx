@@ -73,18 +73,14 @@ export function MentionPopover({ id, items, index, isLoading, onHover, onSelect,
               ) : (
                 <Avatar className="h-7 w-7 shrink-0 border border-border">
                   <AvatarImage src={c.avatarUrl || ''} alt="" />
-                  <AvatarFallback className="bg-muted text-[10px] font-bold">
-                    {c.displayName.slice(0, 2).toUpperCase()}
-                  </AvatarFallback>
+                  <AvatarFallback className="bg-muted text-[10px] font-bold">{c.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
               )}
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1 text-xs font-semibold">
                   <span className="truncate">{c.displayName}</span>
                   {c.isVerified && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-blue-500" />}
-                  {isAi && (
-                    <span className="rounded bg-primary/10 px-1 py-px text-[9px] font-bold tracking-wide text-primary">AI</span>
-                  )}
+                  {isAi && <span className="rounded bg-primary/10 px-1 py-px text-[9px] font-bold tracking-wide text-primary">AI</span>}
                 </span>
                 <span className="block truncate text-[11px] text-muted-foreground">
                   @{c.username}

@@ -8,19 +8,7 @@ import { NotificationsModule } from '../notifications/notifications.module'
 
 @Module({
   imports: [NotificationsModule],
-  providers: [
-    FeedResolver,
-    UserResolver,
-    DocumentResolver,
-    StudyGroupResolver,
-    CommentResolver
-  ],
-  exports: [
-    FeedResolver,
-    UserResolver,
-    DocumentResolver,
-    StudyGroupResolver,
-    CommentResolver
-  ]
+  providers: [FeedResolver, UserResolver, DocumentResolver, StudyGroupResolver, CommentResolver],
+  exports: [FeedResolver, UserResolver, DocumentResolver, StudyGroupResolver, CommentResolver]
 })
 export class SocialGraphQLModule {}

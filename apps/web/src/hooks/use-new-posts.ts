@@ -53,9 +53,12 @@ export function useNewPosts(feedType: FeedType, tag: string | null, since: strin
       void queryClient.invalidateQueries({ queryKey: ['feed-new', feedType, tag] })
     }, SIGNAL_DEBOUNCE_MS)
   })
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current)
-  }, [])
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current)
+    },
+    []
+  )
 
   // Chèn bài mới lên đầu trang 0 (giữ các bài đã tải), dời mốc pill, cuộn lên đầu
   const reveal = useCallback(async () => {
@@ -73,10 +76,7 @@ export function useNewPosts(feedType: FeedType, tag: string | null, since: strin
         const fresh = page.items.filter((p) => !loaded.has(p.id))
         return {
           ...old,
-          pages: [
-            { ...first, items: [...fresh, ...first.items], meta: { ...first.meta, latestAt: page.meta?.snapshotAt ?? since } },
-            ...rest
-          ]
+          pages: [{ ...first, items: [...fresh, ...first.items], meta: { ...first.meta, latestAt: page.meta?.snapshotAt ?? since } }, ...rest]
         }
       })
       window.scrollTo({ top: 0, behavior: 'smooth' })

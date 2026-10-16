@@ -28,7 +28,11 @@ export const CommunitySchema = z.object({
 export type Community = z.infer<typeof CommunitySchema>
 
 export const CreateCommunitySchema = z.object({
-  slug: z.string().min(3).max(50).regex(/^[a-z0-9-]+$/, 'Slug chỉ gồm chữ thường, số và dấu gạch ngang'),
+  slug: z
+    .string()
+    .min(3)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/, 'Slug chỉ gồm chữ thường, số và dấu gạch ngang'),
   name: z.string().min(3).max(100),
   description: z.string().min(10).max(500),
   communityType: CommunityTypeEnum.default('academic'),

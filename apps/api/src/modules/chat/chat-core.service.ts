@@ -17,10 +17,10 @@ export class ChatCoreService {
   ) {}
 
   async isMember(userId: string, conversationId: string): Promise<boolean> {
-    const res = await this.db.query(
-      `SELECT 1 FROM conversation_members WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL`,
-      [conversationId, userId]
-    )
+    const res = await this.db.query(`SELECT 1 FROM conversation_members WHERE conversation_id = $1 AND user_id = $2 AND left_at IS NULL`, [
+      conversationId,
+      userId
+    ])
     return res.rows.length > 0
   }
 
@@ -78,10 +78,12 @@ export class ChatCoreService {
 
   // Tin hệ thống (vd. "A đã thêm B") — gọi trong transaction, phát sự kiện sau khi commit
   async insertSystem(client: Queryable, conversationId: string, actorId: string | null, content: string, meta: ChatMessageMeta): Promise<ChatMessage> {
-    const ins = await client.query(
-      `INSERT INTO messages (conversation_id, sender_id, kind, content, meta) VALUES ($1, $2, 'system', $3, $4) RETURNING id`,
-      [conversationId, actorId, content, JSON.stringify(meta)]
-    )
+    const ins = await client.query(`INSERT INTO messages (conversation_id, sender_id, kind, content, meta) VALUES ($1, $2, 'system', $3, $4) RETURNING id`, [
+      conversationId,
+      actorId,
+      content,
+      JSON.stringify(meta)
+    ])
     await this.touchConversation(client, conversationId, ins.rows[0].id)
     return this.fetchMessage(client, ins.rows[0].id)
   }

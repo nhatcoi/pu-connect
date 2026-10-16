@@ -1,14 +1,6 @@
 import { z } from 'zod'
 
-export const DocumentTypeSchema = z.enum([
-  'pdf',
-  'markdown',
-  'code',
-  'doc',
-  'sheet',
-  'slides',
-  'other'
-])
+export const DocumentTypeSchema = z.enum(['pdf', 'markdown', 'code', 'doc', 'sheet', 'slides', 'other'])
 
 export const CreateDocumentSchema = z.object({
   title: z.string().min(1, { message: 'Tiêu đề tài liệu không được để trống' }).max(200),

@@ -1,10 +1,6 @@
-import {
-  LoadingRegion,
-  Skeleton,
-  SkeletonRepeat,
-} from "@/components/ui/skeleton";
-import { PuMark } from "@/components/brand/pu-logo";
-import { PostCardSkeleton } from "./post-card-skeleton";
+import { LoadingRegion, Skeleton, SkeletonRepeat } from '@/components/ui/skeleton'
+import { PuMark } from '@/components/brand/pu-logo'
+import { PostCardSkeleton } from './post-card-skeleton'
 import { cn } from '@/lib/utils'
 import { SHELL_WIDTH, MAIN_WIDTH } from '@/lib/layout'
 
@@ -35,9 +31,7 @@ export function AppShellSkeleton() {
             </SkeletonRepeat>
           </div>
           <main className={cn('flex-1 w-full min-w-0 space-y-3 py-3 sm:py-4', MAIN_WIDTH)}>
-            <SkeletonRepeat count={3}>
-              {(i) => <PostCardSkeleton variant="card" index={i} />}
-            </SkeletonRepeat>
+            <SkeletonRepeat count={3}>{(i) => <PostCardSkeleton variant="card" index={i} />}</SkeletonRepeat>
           </main>
           <aside className="hidden lg:block w-64 xl:w-72 shrink-0 py-4 space-y-3">
             <Skeleton className="h-48 w-full rounded-xl" />
@@ -46,5 +40,5 @@ export function AppShellSkeleton() {
         </div>
       </LoadingRegion>
     </div>
-  );
+  )
 }

@@ -16,4 +16,3 @@ import { PostAiService } from './post-ai.service'
   exports: [PostsService, CommentsService]
 })
 export class PostsModule {}
-

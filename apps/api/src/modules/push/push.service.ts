@@ -4,15 +4,7 @@ import { InjectQueue } from '@nestjs/bullmq'
 import type { Queue } from 'bullmq'
 import * as webpush from 'web-push'
 import { DatabaseService } from '../../database/database.service'
-import {
-  APPLE_PUSH_ORIGIN,
-  PUSH_DELAY_MS,
-  PUSH_QUEUE,
-  PUSH_TTL_SECONDS,
-  type PushJobData,
-  type PushPayload,
-  type SilentPushPayload
-} from './push.constants'
+import { APPLE_PUSH_ORIGIN, PUSH_DELAY_MS, PUSH_QUEUE, PUSH_TTL_SECONDS, type PushJobData, type PushPayload, type SilentPushPayload } from './push.constants'
 
 export interface SubscriptionInput {
   endpoint: string
@@ -96,10 +88,9 @@ export class PushService implements OnModuleInit {
       }
     )
     // Redis lỗi không được làm treo luồng thông báo in-app
-    await Promise.race([
-      add,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('enqueue timeout')), 3000))
-    ]).catch((err) => this.logger.warn(`Push enqueue failed (${notificationId}): ${err?.message}`))
+    await Promise.race([add, new Promise((_, reject) => setTimeout(() => reject(new Error('enqueue timeout')), 3000))]).catch((err) =>
+      this.logger.warn(`Push enqueue failed (${notificationId}): ${err?.message}`)
+    )
   }
 
   // ── Gửi ──────────────────────────────────────────────────────────
@@ -112,10 +103,10 @@ export class PushService implements OnModuleInit {
   // Push "im lặng" (SW xử lý, không hiện thông báo), vd. đóng thông báo đã đọc ở thiết bị khác
   // Bỏ qua Apple: Safari thu hồi đăng ký nếu push không hiện thông báo. Cùng `topic` ⇒ thay push cũ chưa giao
   async sendSilent(userId: string, payload: SilentPushPayload): Promise<SendResult> {
-    const subs = await this.db.query(
-      `SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1 AND endpoint NOT LIKE $2`,
-      [userId, `${APPLE_PUSH_ORIGIN}%`]
-    )
+    const subs = await this.db.query(`SELECT id, endpoint, p256dh, auth FROM push_subscriptions WHERE user_id = $1 AND endpoint NOT LIKE $2`, [
+      userId,
+      `${APPLE_PUSH_ORIGIN}%`
+    ])
     return this.deliver(subs.rows, JSON.stringify(payload), 'normal', payload.tag)
   }
 
@@ -126,16 +117,13 @@ export class PushService implements OnModuleInit {
     await Promise.all(
       subs.map(async (sub) => {
         try {
-          await webpush.sendNotification(
-            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
-            body,
-            { TTL: PUSH_TTL_SECONDS, urgency, topic }
-          )
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, body, {
+            TTL: PUSH_TTL_SECONDS,
+            urgency,
+            topic
+          })
           result.sent++
-          await this.db.query(
-            `UPDATE push_subscriptions SET last_used_at = NOW(), failure_count = 0 WHERE id = $1`,
-            [sub.id]
-          )
+          await this.db.query(`UPDATE push_subscriptions SET last_used_at = NOW(), failure_count = 0 WHERE id = $1`, [sub.id])
         } catch (err: any) {
           // 404/410: đăng ký đã hết hạn hoặc người dùng thu hồi quyền ⇒ xóa
           if (err?.statusCode === 404 || err?.statusCode === 410) {
@@ -143,10 +131,7 @@ export class PushService implements OnModuleInit {
             await this.db.query(`DELETE FROM push_subscriptions WHERE id = $1`, [sub.id])
           } else {
             result.failed++
-            await this.db.query(
-              `UPDATE push_subscriptions SET failure_count = failure_count + 1 WHERE id = $1`,
-              [sub.id]
-            )
+            await this.db.query(`UPDATE push_subscriptions SET failure_count = failure_count + 1 WHERE id = $1`, [sub.id])
             this.logger.warn(`Push failed (${err?.statusCode || 'network'}): ${err?.body || err?.message}`)
           }
         }

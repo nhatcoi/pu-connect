@@ -12,7 +12,9 @@ export class LoginRateLimitGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<Request>()
     const ip = req.ip || 'unknown'
-    const account = String((req.body as { emailOrUsername?: string })?.emailOrUsername || '').toLowerCase().trim()
+    const account = String((req.body as { emailOrUsername?: string })?.emailOrUsername || '')
+      .toLowerCase()
+      .trim()
     perIp.consume(ip)
     perAccount.consume(`${ip}|${account}`)
     return true

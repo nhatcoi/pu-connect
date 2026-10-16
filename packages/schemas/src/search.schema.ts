@@ -4,14 +4,7 @@ import { DocumentItemSchema, type DocumentItem } from './document.schema'
 import { PostItemSchema, type PostItem } from './post.schema'
 import { StudyGroupSchema, type StudyGroup } from './study-group.schema'
 
-export const SearchTypeSchema = z.enum([
-  'all',
-  'courses',
-  'documents',
-  'posts',
-  'users',
-  'groups'
-])
+export const SearchTypeSchema = z.enum(['all', 'courses', 'documents', 'posts', 'users', 'groups'])
 
 export type SearchType = z.infer<typeof SearchTypeSchema>
 

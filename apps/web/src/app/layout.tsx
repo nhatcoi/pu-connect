@@ -17,31 +17,15 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'PU Connector — Mạng xã hội & Trao đổi học thuật sinh viên',
-  description:
-    'Nền tảng mạng xã hội kết nối sinh viên, chia sẻ tài liệu học phần, công thức toán học, và ghép nhóm đồ án Phenikaa.'
+  description: 'Nền tảng mạng xã hội kết nối sinh viên, chia sẻ tài liệu học phần, công thức toán học, và ghép nhóm đồ án Phenikaa.'
 }
 
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="vi"
-      suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
-        />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
       </head>
       <body
         suppressHydrationWarning

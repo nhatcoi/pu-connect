@@ -10,17 +10,16 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const require = createRequire(path.join(root, 'apps/api/package.json'))
 const { Client } = require('pg')
 
-const DATABASE_URL =
-  process.env.DATABASE_URL || 'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
+const DATABASE_URL = process.env.DATABASE_URL || 'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
 const OUT = path.join(root, 'docs/diagrams/04-erd.md')
 
 // Nhóm bảng theo domain để vẽ sơ đồ con dễ đọc
 const DOMAINS = {
   'Identity & Social graph': ['users', 'user_follows', 'user_sessions', 'mentions', 'notifications'],
   'Feed & Q&A': ['posts', 'comments', 'post_reactions', 'saved_posts', 'post_reports', 'post_polls', 'post_poll_options', 'post_poll_votes'],
-  'Communities': ['communities', 'community_members'],
-  'Academic': ['faculties', 'courses', 'documents', 'document_chunks', 'study_groups', 'study_group_members', 'campus_events'],
-  'Personalization': ['user_events', 'user_interests']
+  Communities: ['communities', 'community_members'],
+  Academic: ['faculties', 'courses', 'documents', 'document_chunks', 'study_groups', 'study_group_members', 'campus_events'],
+  Personalization: ['user_events', 'user_interests']
 }
 
 function shortType(col) {
@@ -102,7 +101,9 @@ async function main() {
   lines.push('> ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**')
   lines.push('> Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.')
   lines.push('')
-  lines.push(`Tổng: **${tables.length} bảng**, **${fks.length} khóa ngoại**. Ký hiệu: \`PK\` khóa chính · \`FK\` khóa ngoại · \`UK\` unique · \`||\` bắt buộc · \`|o\` có thể NULL.`)
+  lines.push(
+    `Tổng: **${tables.length} bảng**, **${fks.length} khóa ngoại**. Ký hiệu: \`PK\` khóa chính · \`FK\` khóa ngoại · \`UK\` unique · \`||\` bắt buộc · \`|o\` có thể NULL.`
+  )
   lines.push('')
   lines.push('## 1. Tổng quan quan hệ')
   lines.push('')

@@ -63,11 +63,7 @@ export function PostMediaGallery({ mediaUrls, className }: PostMediaGalleryProps
           {selectedImage && (
             <div className="relative max-h-[85vh] w-full flex items-center justify-center p-2">
               {/* eslint-disable-next-line @next/next/no-img-element -- ảnh bài viết từ R2, tỉ lệ động */}
-              <img
-                src={selectedImage}
-                alt="Full size attachment"
-                className="max-h-[80vh] w-auto max-w-full rounded-xl object-contain shadow-2xl"
-              />
+              <img src={selectedImage} alt="Full size attachment" className="max-h-[80vh] w-auto max-w-full rounded-xl object-contain shadow-2xl" />
             </div>
           )}
         </DialogContent>

@@ -9,11 +9,7 @@ export class CommentResolver {
   constructor(private readonly db: DatabaseService) {}
 
   @Query(() => [CommentType], { name: 'comments' })
-  async getComments(
-    @Args('postId', { type: () => ID }) postId: string,
-    @Context() _context?: any
-  ): Promise<CommentType[]> {
-
+  async getComments(@Args('postId', { type: () => ID }) postId: string, @Context() _context?: any): Promise<CommentType[]> {
     const sql = `
       SELECT c.*,
              u.id as author_id, u.email as author_email, u.username as author_username,
@@ -52,10 +48,7 @@ export class CommentResolver {
   }
 
   @Mutation(() => CommentType)
-  async createComment(
-    @Args('input') input: CreateCommentInput,
-    @Context() context: any
-  ): Promise<CommentType> {
+  async createComment(@Args('input') input: CreateCommentInput, @Context() context: any): Promise<CommentType> {
     const user = context?.req?.user
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập để bình luận')
@@ -69,10 +62,7 @@ export class CommentResolver {
     )
 
     // Increment post comments count
-    await this.db.query(
-      `UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`,
-      [input.postId]
-    )
+    await this.db.query(`UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`, [input.postId])
 
     const row = insertRes.rows[0]
 
@@ -91,19 +81,13 @@ export class CommentResolver {
   }
 
   @Mutation(() => Boolean)
-  async deleteComment(
-    @Args('id', { type: () => ID }) id: string,
-    @Context() context: any
-  ): Promise<boolean> {
+  async deleteComment(@Args('id', { type: () => ID }) id: string, @Context() context: any): Promise<boolean> {
     const user = context?.req?.user
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập')
     }
 
-    const commentRes = await this.db.query(
-      `SELECT post_id, author_id FROM comments WHERE id = $1`,
-      [id]
-    )
+    const commentRes = await this.db.query(`SELECT post_id, author_id FROM comments WHERE id = $1`, [id])
 
     if (commentRes.rows.length === 0) {
       throw new NotFoundException('Không tìm thấy bình luận')
@@ -115,10 +99,7 @@ export class CommentResolver {
     }
 
     await this.db.query(`DELETE FROM comments WHERE id = $1`, [id])
-    await this.db.query(
-      `UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = $1`,
-      [comment.post_id]
-    )
+    await this.db.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = $1`, [comment.post_id])
 
     return true
   }

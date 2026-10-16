@@ -36,7 +36,9 @@ export function LegalDocument({ title, intro, sections }: { title: string; intro
             <h2 className="text-xl font-bold tracking-tight">
               {i + 1}. {s.title}
             </h2>
-            <div className="space-y-3 text-[15px] leading-relaxed text-foreground/90 [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">{s.body}</div>
+            <div className="space-y-3 text-[15px] leading-relaxed text-foreground/90 [&_a]:text-primary [&_a]:underline [&_strong]:font-semibold [&_strong]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5">
+              {s.body}
+            </div>
           </section>
         ))}
       </div>

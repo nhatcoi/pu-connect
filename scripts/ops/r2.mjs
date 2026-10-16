@@ -8,8 +8,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(path.resolve(here, '../../apps/api/package.json'))
-const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand } =
-  require('@aws-sdk/client-s3')
+const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3')
 
 const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT } = process.env
 const Bucket = process.env.R2_BUCKET_NAME || 'pu-connector'
@@ -24,7 +23,14 @@ const s3 = new S3Client({
 })
 
 // Kiểu nội dung theo đuôi tệp ⇒ ảnh hiển thị thẳng trên trình duyệt / Content type from extension
-const CONTENT_TYPES = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf' }
+const CONTENT_TYPES = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.pdf': 'application/pdf'
+}
 const contentType = (file) => CONTENT_TYPES[path.extname(file).toLowerCase()] || 'application/octet-stream'
 
 const [cmd, a, b] = process.argv.slice(2)

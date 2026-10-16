@@ -37,9 +37,7 @@ function patchCommunity(qc: QueryClient, slug: string, patch: (c: Community) => 
   qc.setQueriesData<InfiniteData<CommunityPage>>({ queryKey: queryKeys.communityAll(slug) }, (old) =>
     old ? { ...old, pages: old.pages.map((p) => (p.meta ? { ...p, meta: patch(p.meta) } : p)) } : old
   )
-  qc.setQueriesData<Community[]>({ queryKey: queryKeys.communities }, (old) =>
-    old?.map((c) => (c.slug === slug ? patch(c) : c))
-  )
+  qc.setQueriesData<Community[]>({ queryKey: queryKeys.communities }, (old) => old?.map((c) => (c.slug === slug ? patch(c) : c)))
 }
 
 export function useCommunity(slug: string, initialSort: CommunitySort = 'hot') {
@@ -62,10 +60,7 @@ export function useCommunity(slug: string, initialSort: CommunitySort = 'hot') {
     if (!community || isJoining) return
     setIsJoining(true)
     try {
-      const res = await apiClient<{ isMember: boolean; membersCount: number; message: string }>(
-        `/communities/${slug}/join`,
-        { method: 'POST' }
-      )
+      const res = await apiClient<{ isMember: boolean; membersCount: number; message: string }>(`/communities/${slug}/join`, { method: 'POST' })
       patchCommunity(queryClient, slug, (c) => ({ ...c, isMember: res.isMember, membersCount: res.membersCount }))
       toast.success(res.message)
     } catch (err) {

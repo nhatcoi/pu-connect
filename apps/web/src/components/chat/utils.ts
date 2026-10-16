@@ -11,7 +11,12 @@ export function dayLabel(iso: string): string {
   const diff = Math.round((startOf(today) - startOf(d)) / 86_400_000)
   if (diff === 0) return 'Hôm nay'
   if (diff === 1) return 'Hôm qua'
-  return d.toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' })
+  return d.toLocaleDateString('vi-VN', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric'
+  })
 }
 
 export const sameDay = (a: string, b: string) => new Date(a).toDateString() === new Date(b).toDateString()

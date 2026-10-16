@@ -30,8 +30,25 @@ Ai đang tìm chỗ intern frontend cứ hỏi, biết gì mình chia sẻ hết
     likes: 19,
     saves: 11,
     comments: [
-      { by: 'vannam2k8', text: 'Anh ơi năm nhất thì nên học gì trước để năm 3 đi intern được ạ? Em mới biết C++ cơ bản 🥲', after: 20, replies: [{ by: 'minhtuan_dev', text: 'Năm nhất cứ học chắc C++ với cấu trúc dữ liệu đã em. Hè năm nhất học HTML/CSS/JS, năm 2 lên React. Đừng vội, nền tốt thì học framework nhanh lắm.', after: 18, likes: 6 }] },
-      { by: 'haiyen_ux', text: 'Ý số 3 đúng quá. Design trên Figma đẹp lung linh, lên máy thật của user Android 3 triệu là thấy khác liền 😂', after: 55, likes: 4 },
+      {
+        by: 'vannam2k8',
+        text: 'Anh ơi năm nhất thì nên học gì trước để năm 3 đi intern được ạ? Em mới biết C++ cơ bản 🥲',
+        after: 20,
+        replies: [
+          {
+            by: 'minhtuan_dev',
+            text: 'Năm nhất cứ học chắc C++ với cấu trúc dữ liệu đã em. Hè năm nhất học HTML/CSS/JS, năm 2 lên React. Đừng vội, nền tốt thì học framework nhanh lắm.',
+            after: 18,
+            likes: 6
+          }
+        ]
+      },
+      {
+        by: 'haiyen_ux',
+        text: 'Ý số 3 đúng quá. Design trên Figma đẹp lung linh, lên máy thật của user Android 3 triệu là thấy khác liền 😂',
+        after: 55,
+        likes: 4
+      },
       { by: 'phamduclong', text: 'PR 1.200 dòng thì đúng là tội reviewer thật 😆 Bài hay, mình share cho lớp IT102.', after: 90 },
       { by: 'quochuy_dang', text: 'Chỗ team mình đang cần 1 bạn intern FE part-time, inbox mình nha ai quan tâm', after: 140 }
     ]
@@ -65,7 +82,12 @@ Rút ra:
     likes: 17,
     saves: 13,
     comments: [
-      { by: 'dovanquang', text: 'Kết quả hợp lý. Em nên báo thêm khoảng tin cậy hoặc ít nhất số câu mỗi loại, 150 câu thì chênh 5–7% có thể chưa có ý nghĩa thống kê. Phần phân tích lỗi OCR rất đáng đưa vào luận văn.', after: 480, likes: 6 },
+      {
+        by: 'dovanquang',
+        text: 'Kết quả hợp lý. Em nên báo thêm khoảng tin cậy hoặc ít nhất số câu mỗi loại, 150 câu thì chênh 5–7% có thể chưa có ý nghĩa thống kê. Phần phân tích lỗi OCR rất đáng đưa vào luận văn.',
+        after: 480,
+        likes: 6
+      },
       { by: 'ducanh_ai', text: 'Dạ em cảm ơn thầy, em sẽ bootstrap để ra khoảng tin cậy ạ.', after: 30 },
       { by: 'minhtuan_dev', text: 'Đọc không hiểu hết nhưng thấy bảng là thấy xịn rồi 😂', after: 520, likes: 5 }
     ]
@@ -124,7 +146,18 @@ Ai cần mình build hộ thì cứ inbox, lấy công tượng trưng 1 ly trà
     likes: 13,
     saves: 7,
     comments: [
-      { by: 'vannam2k8', text: 'Anh ơi 10 triệu thì nên bỏ bớt gì ạ 🥹', after: 15, replies: [{ by: 'minhquan_gg', text: 'Hạ xuống RAM 16GB + SSD 512GB, VGA lấy cũ đời trước. Còn không thì laptop cũ ThinkPad + học trên Colab cũng ổn em.', after: 25 }] },
+      {
+        by: 'vannam2k8',
+        text: 'Anh ơi 10 triệu thì nên bỏ bớt gì ạ 🥹',
+        after: 15,
+        replies: [
+          {
+            by: 'minhquan_gg',
+            text: 'Hạ xuống RAM 16GB + SSD 512GB, VGA lấy cũ đời trước. Còn không thì laptop cũ ThinkPad + học trên Colab cũng ổn em.',
+            after: 25
+          }
+        ]
+      },
       { by: 'tiendat_ngo', text: 'PSU 650W cho 4060 thì hơi dư nhưng an tâm, đồng ý với ông', after: 60 },
       { by: 'giabao_runs', text: 'Nhận 1 ly trà sữa là thấy hời cho người thuê rồi 😂', after: 110, likes: 3 }
     ]
@@ -197,7 +230,12 @@ Ai muốn lập nhóm đọc paper mỗi tối thứ 5 thì comment, đủ 5 ng�
     saves: 10,
     comments: [
       { by: 'phamduclong', text: 'Cho mình 1 slot nhé', after: 12 },
-      { by: 'ngocanh_med', text: 'Bên Y cũng đọc paper kiểu này, bước 2 "ghi 5 dòng" cực kỳ hiệu quả. Cho mình tham gia ké được không 😆', after: 45, replies: [{ by: 'ducanh_ai', text: 'Được chứ! Góc nhìn khác ngành càng vui', after: 8 }] },
+      {
+        by: 'ngocanh_med',
+        text: 'Bên Y cũng đọc paper kiểu này, bước 2 "ghi 5 dòng" cực kỳ hiệu quả. Cho mình tham gia ké được không 😆',
+        after: 45,
+        replies: [{ by: 'ducanh_ai', text: 'Được chứ! Góc nhìn khác ngành càng vui', after: 8 }]
+      },
       { by: 'vannam2k8', text: 'Em xin 1 vé dự thính ạ', after: 80 }
     ]
   },
@@ -257,7 +295,12 @@ Mọi người góp ý giúp mình phần trình bày case study với ạ, nh�
     images: [529, 1, 445],
     likes: 16,
     comments: [
-      { by: 'nguyenthuha', text: 'Phần đo thời gian trước/sau rất tốt. Em nên thêm 1–2 câu trích dẫn thật từ người được phỏng vấn, người đọc sẽ tin hơn nhiều.', after: 120, likes: 5 },
+      {
+        by: 'nguyenthuha',
+        text: 'Phần đo thời gian trước/sau rất tốt. Em nên thêm 1–2 câu trích dẫn thật từ người được phỏng vấn, người đọc sẽ tin hơn nhiều.',
+        after: 120,
+        likes: 5
+      },
       { by: 'minhtuan_dev', text: 'Ảnh mockup đẹp. Nếu thêm phần "những gì mình bỏ đi và vì sao" thì nhìn rất senior', after: 60, likes: 4 },
       { by: 'haiyen_ux', text: 'Dạ em cảm ơn cô và anh, em sửa liền 🥹', after: 30 }
     ]
@@ -364,8 +407,18 @@ Còn mọi người nghĩ sao?`,
     community: 'fit',
     likes: 17,
     comments: [
-      { by: 'ducanh_ai', text: 'Đồng ý. Mô hình viết code đúng 80% nhưng 20% sai mới là phần nguy hiểm, mà không có nền thì không biết nó sai.', after: 25, likes: 6 },
-      { by: 'quochuy_dang', text: 'Từ phía người tuyển: mình hỏi ứng viên giải thích code họ nộp. Ai trả lời được thì AI hay không không quan trọng.', after: 50, likes: 8 },
+      {
+        by: 'ducanh_ai',
+        text: 'Đồng ý. Mô hình viết code đúng 80% nhưng 20% sai mới là phần nguy hiểm, mà không có nền thì không biết nó sai.',
+        after: 25,
+        likes: 6
+      },
+      {
+        by: 'quochuy_dang',
+        text: 'Từ phía người tuyển: mình hỏi ứng viên giải thích code họ nộp. Ai trả lời được thì AI hay không không quan trọng.',
+        after: 50,
+        likes: 8
+      },
       { by: 'vannam2k8', text: 'Đọc xong yên tâm học tiếp C++ 😌', after: 160 }
     ]
   }

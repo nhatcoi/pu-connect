@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Query,
-  Req
-} from '@nestjs/common'
+import { Controller, Get, Post, Param, Query, Req } from '@nestjs/common'
 import { CommunitiesService } from './communities.service'
 import { DatabaseService } from '../../database/database.service'
 import type { Request } from 'express'
@@ -23,11 +16,7 @@ export class CommunitiesController {
   }
 
   @Get()
-  async findAll(
-    @Query('type') type: string | undefined,
-    @Query('search') search: string | undefined,
-    @Req() req: Request
-  ) {
+  async findAll(@Query('type') type: string | undefined, @Query('search') search: string | undefined, @Req() req: Request) {
     const currentUserId = (req.user as any)?.id || null
     const data = await this.communitiesService.findAll(type, search, currentUserId)
     return {
@@ -63,13 +52,7 @@ export class CommunitiesController {
     const currentUserId = (req.user as any)?.id || null
     const parsedLimit = limit ? parseInt(limit, 10) : 10
     const parsedOffset = offset ? parseInt(offset, 10) : 0
-    const result = await this.communitiesService.getCommunityPosts(
-      slug,
-      currentUserId,
-      parsedLimit,
-      parsedOffset,
-      sort || 'hot'
-    )
+    const result = await this.communitiesService.getCommunityPosts(slug, currentUserId, parsedLimit, parsedOffset, sort || 'hot')
     return {
       success: true,
       data: result.posts,

@@ -52,9 +52,7 @@ export function FollowButton({
   }, [initialIsFollowing])
 
   // Không hiển thị nút follow nếu là chính mình
-  const isMe =
-    (currentUser?.id && currentUser.id === targetUserId) ||
-    (currentUser?.username && targetUsername && currentUser.username === targetUsername)
+  const isMe = (currentUser?.id && currentUser.id === targetUserId) || (currentUser?.username && targetUsername && currentUser.username === targetUsername)
 
   if (isMe) {
     return null

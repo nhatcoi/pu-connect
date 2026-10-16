@@ -8,9 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatRelativeTime(dateInput?: string | Date | number | null): string {
   if (!dateInput) return ''
 
-  const date = typeof dateInput === 'string' || typeof dateInput === 'number'
-    ? new Date(dateInput)
-    : dateInput
+  const date = typeof dateInput === 'string' || typeof dateInput === 'number' ? new Date(dateInput) : dateInput
 
   if (isNaN(date.getTime())) return String(dateInput)
 

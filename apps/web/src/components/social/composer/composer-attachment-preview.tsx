@@ -20,12 +20,7 @@ interface ComposerAttachmentPreviewProps {
   onRemoveTag: (tag: string) => void
 }
 
-export function ComposerAttachmentPreview({
-  files,
-  tags,
-  onRemoveFile,
-  onRemoveTag
-}: ComposerAttachmentPreviewProps) {
+export function ComposerAttachmentPreview({ files, tags, onRemoveFile, onRemoveTag }: ComposerAttachmentPreviewProps) {
   const images = files.filter((f) => f.type === 'image')
   const docs = files.filter((f) => f.type === 'document')
 
@@ -59,11 +54,7 @@ export function ComposerAttachmentPreview({
               >
                 {/* Image element */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- xem trước tệp vừa chọn (blob URL) */}
-                <img
-                  src={img.url}
-                  alt={img.name}
-                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.01]"
-                />
+                <img src={img.url} alt={img.name} className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.01]" />
 
                 {/* Top-Left Edit Button */}
                 <div className="absolute top-2.5 left-2.5">
@@ -90,17 +81,11 @@ export function ComposerAttachmentPreview({
 
           {/* Sub-actions below image (Tag people / Add description) */}
           <div className="flex items-center gap-4 text-xs text-muted-foreground px-1">
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
-            >
+            <button type="button" className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
               <UserPlus className="h-3.5 w-3.5" />
               <span>Gắn thẻ người khác</span>
             </button>
-            <button
-              type="button"
-              className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
-            >
+            <button type="button" className="inline-flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
               <AlignLeft className="h-3.5 w-3.5" />
               <span>Mô tả ảnh</span>
             </button>
@@ -112,20 +97,13 @@ export function ComposerAttachmentPreview({
       {docs.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {docs.map((doc) => (
-            <div
-              key={doc.id}
-              className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-foreground shadow-xs"
-            >
+            <div key={doc.id} className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-foreground shadow-xs">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-background border border-border text-foreground">
                 <FileText className="h-4 w-4" />
               </div>
               <div className="flex flex-col min-w-0 max-w-[200px]">
-                <span className="truncate font-semibold text-[11px] leading-tight text-foreground">
-                  {doc.name}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {(doc.size / 1024).toFixed(1)} KB
-                </span>
+                <span className="truncate font-semibold text-[11px] leading-tight text-foreground">{doc.name}</span>
+                <span className="text-[10px] text-muted-foreground">{(doc.size / 1024).toFixed(1)} KB</span>
               </div>
               <button
                 type="button"

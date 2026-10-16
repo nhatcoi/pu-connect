@@ -1,12 +1,7 @@
 'use client'
 
 import React from 'react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Globe2, Building2, BookOpen, Users, ChevronDown, Check } from 'lucide-react'
 import type { TargetAudience } from '@pu/schemas'
 
@@ -17,10 +12,7 @@ interface ComposerAudienceMenuProps {
   courseCode?: string
 }
 
-export const AUDIENCE_CONFIG: Record<
-  TargetAudience,
-  { label: string; icon: React.ElementType; description: string }
-> = {
+export const AUDIENCE_CONFIG: Record<TargetAudience, { label: string; icon: React.ElementType; description: string }> = {
   everyone: {
     label: 'Toàn trường có thể trả lời',
     icon: Globe2,
@@ -43,12 +35,7 @@ export const AUDIENCE_CONFIG: Record<
   }
 }
 
-export function ComposerAudienceMenu({
-  value,
-  onChange,
-  facultyCode,
-  courseCode
-}: ComposerAudienceMenuProps) {
+export function ComposerAudienceMenu({ value, onChange, facultyCode, courseCode }: ComposerAudienceMenuProps) {
   const current = AUDIENCE_CONFIG[value] || AUDIENCE_CONFIG.everyone
   const Icon = current.icon
 
@@ -65,20 +52,14 @@ export function ComposerAudienceMenu({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-72 p-1.5 space-y-1 rounded-2xl shadow-xl border border-border">
-        <div className="px-2 py-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-          Ai có thể thảo luận và trả lời?
-        </div>
+        <div className="px-2 py-1 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Ai có thể thảo luận và trả lời?</div>
         {(Object.keys(AUDIENCE_CONFIG) as TargetAudience[]).map((key) => {
           const item = AUDIENCE_CONFIG[key]
           const ItemIcon = item.icon
           const isSelected = value === key
 
           return (
-            <DropdownMenuItem
-              key={key}
-              onClick={() => onChange(key)}
-              className="flex items-start gap-2.5 p-2 rounded-xl cursor-pointer transition-colors"
-            >
+            <DropdownMenuItem key={key} onClick={() => onChange(key)} className="flex items-start gap-2.5 p-2 rounded-xl cursor-pointer transition-colors">
               <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-primary">
                 <ItemIcon className="h-3.5 w-3.5" />
               </div>
@@ -91,8 +72,8 @@ export function ComposerAudienceMenu({
                   {key === 'faculty' && facultyCode
                     ? `Chỉ thành viên thuộc Khoa ${facultyCode}`
                     : key === 'course_members' && courseCode
-                    ? `Chỉ thành viên môn ${courseCode}`
-                    : item.description}
+                      ? `Chỉ thành viên môn ${courseCode}`
+                      : item.description}
                 </p>
               </div>
             </DropdownMenuItem>

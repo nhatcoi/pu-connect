@@ -20,9 +20,7 @@ export class MailService {
           host,
           port,
           secure: port === 465,
-          auth: config.get('SMTP_USER')
-            ? { user: config.get<string>('SMTP_USER'), pass: config.get<string>('SMTP_PASS') }
-            : undefined
+          auth: config.get('SMTP_USER') ? { user: config.get<string>('SMTP_USER'), pass: config.get<string>('SMTP_PASS') } : undefined
         })
       : null
     if (!this.transporter) {

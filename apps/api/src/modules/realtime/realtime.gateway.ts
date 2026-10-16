@@ -43,13 +43,11 @@ function onlyForHandshake(middleware: RequestHandler) {
   path: REALTIME_PATH,
   addTrailingSlash: false, // Next.js rewrite bỏ dấu "/" cuối (308) ⇒ dùng path không slash
   cors: {
-    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) =>
-      cb(null, isAllowedOrigin(origin)),
+    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => cb(null, isAllowedOrigin(origin)),
     credentials: true
   },
   // Chặn Cross-Site WebSocket Hijacking (CORS không áp dụng cho transport websocket)
-  allowRequest: (req: IncomingMessage, cb: (err: string | null | undefined, ok: boolean) => void) =>
-    cb(null, isAllowedOrigin(req.headers.origin))
+  allowRequest: (req: IncomingMessage, cb: (err: string | null | undefined, ok: boolean) => void) => cb(null, isAllowedOrigin(req.headers.origin))
 })
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()

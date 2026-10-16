@@ -35,12 +35,22 @@ export function insertMention(text: string, active: ActiveMention, username: str
 }
 
 // So khớp phía client (bỏ dấu): tiền tố username hoặc tiền tố một từ trong tên
-const fold = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').replace(/đ/gi, 'd').toLowerCase()
+const fold = (s: string) =>
+  s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
 
 export function matchesCandidate(c: MentionCandidate, query: string): boolean {
   if (!query) return true
   const q = fold(query)
-  return fold(c.username).startsWith(q) || fold(c.displayName).split(/\s+/).some((w) => w.startsWith(q))
+  return (
+    fold(c.username).startsWith(q) ||
+    fold(c.displayName)
+      .split(/\s+/)
+      .some((w) => w.startsWith(q))
+  )
 }
 
 export const MENTION_REASON_LABEL: Record<MentionCandidate['reason'], string | null> = {

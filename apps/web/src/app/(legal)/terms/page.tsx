@@ -13,8 +13,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Chấp nhận điều khoản',
     body: (
       <p>
-        Khi tạo tài khoản hoặc sử dụng PU Connector, bạn đồng ý với Điều khoản này và{' '}
-        <Link href="/privacy-policy">Chính sách bảo mật</Link>. Nếu không đồng ý, vui lòng ngừng sử dụng dịch vụ.
+        Khi tạo tài khoản hoặc sử dụng PU Connector, bạn đồng ý với Điều khoản này và <Link href="/privacy-policy">Chính sách bảo mật</Link>. Nếu không đồng ý,
+        vui lòng ngừng sử dụng dịch vụ.
       </p>
     )
   },
@@ -36,13 +36,12 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Bạn giữ quyền sở hữu với bài viết, bình luận, tài liệu và tin nhắn mình tạo. Khi đăng lên, bạn cho phép PU
-          Connector lưu trữ, hiển thị và phân phối nội dung đó tới những người có quyền xem, chỉ nhằm mục đích vận hành
-          dịch vụ.
+          Bạn giữ quyền sở hữu với bài viết, bình luận, tài liệu và tin nhắn mình tạo. Khi đăng lên, bạn cho phép PU Connector lưu trữ, hiển thị và phân phối
+          nội dung đó tới những người có quyền xem, chỉ nhằm mục đích vận hành dịch vụ.
         </p>
         <p>
-          Bạn cam kết có quyền chia sẻ nội dung mình đăng. Với giáo trình, đề thi, slide bài giảng, hãy tôn trọng bản quyền
-          của tác giả và quy định của nhà trường.
+          Bạn cam kết có quyền chia sẻ nội dung mình đăng. Với giáo trình, đề thi, slide bài giảng, hãy tôn trọng bản quyền của tác giả và quy định của nhà
+          trường.
         </p>
       </>
     )
@@ -69,9 +68,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Báo cáo và xử lý vi phạm',
     body: (
       <p>
-        Bạn có thể báo cáo nội dung vi phạm ngay trong ứng dụng. Ban quản trị có quyền ẩn nội dung, hạn chế tính năng
-        hoặc tạm khóa tài khoản vi phạm, có hoặc không cần báo trước tùy mức độ. Nếu cho rằng quyết định chưa đúng, bạn
-        có thể liên hệ ban quản trị để được xem xét lại.
+        Bạn có thể báo cáo nội dung vi phạm ngay trong ứng dụng. Ban quản trị có quyền ẩn nội dung, hạn chế tính năng hoặc tạm khóa tài khoản vi phạm, có hoặc
+        không cần báo trước tùy mức độ. Nếu cho rằng quyết định chưa đúng, bạn có thể liên hệ ban quản trị để được xem xét lại.
       </p>
     )
   },
@@ -80,10 +78,7 @@ const SECTIONS: LegalSection[] = [
     title: 'Trợ lý PU AI',
     body: (
       <ul>
-        <li>
-          Câu trả lời của PU AI do mô hình ngôn ngữ tạo ra, có thể sai hoặc chưa đầy đủ. Hãy kiểm tra lại với giáo trình
-          và giảng viên trước khi dùng.
-        </li>
+        <li>Câu trả lời của PU AI do mô hình ngôn ngữ tạo ra, có thể sai hoặc chưa đầy đủ. Hãy kiểm tra lại với giáo trình và giảng viên trước khi dùng.</li>
         <li>PU AI hỗ trợ học tập, không thay thế bài làm của bạn. Bạn chịu trách nhiệm về liêm chính học thuật.</li>
         <li>Mỗi tài khoản có giới hạn lượt dùng PU AI mỗi ngày, có thể thay đổi theo thời gian.</li>
       </ul>
@@ -94,9 +89,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Giới hạn trách nhiệm',
     body: (
       <p>
-        PU Connector được cung cấp theo hiện trạng và đang trong giai đoạn phát triển. Chúng tôi không bảo đảm dịch vụ
-        luôn hoạt động liên tục, không lỗi, và không chịu trách nhiệm về nội dung do người dùng đăng tải. Chúng tôi có
-        thể thay đổi, tạm ngừng hoặc dừng một tính năng mà không cần báo trước.
+        PU Connector được cung cấp theo hiện trạng và đang trong giai đoạn phát triển. Chúng tôi không bảo đảm dịch vụ luôn hoạt động liên tục, không lỗi, và
+        không chịu trách nhiệm về nội dung do người dùng đăng tải. Chúng tôi có thể thay đổi, tạm ngừng hoặc dừng một tính năng mà không cần báo trước.
       </p>
     )
   },
@@ -105,8 +99,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Chấm dứt sử dụng',
     body: (
       <p>
-        Bạn có thể ngừng sử dụng và yêu cầu xóa tài khoản bất cứ lúc nào. Chúng tôi có thể chấm dứt tài khoản vi phạm
-        nghiêm trọng hoặc lặp lại các Điều khoản này.
+        Bạn có thể ngừng sử dụng và yêu cầu xóa tài khoản bất cứ lúc nào. Chúng tôi có thể chấm dứt tài khoản vi phạm nghiêm trọng hoặc lặp lại các Điều khoản
+        này.
       </p>
     )
   },
@@ -120,8 +114,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Thay đổi điều khoản',
     body: (
       <p>
-        Chúng tôi có thể cập nhật Điều khoản và sẽ ghi ngày cập nhật ở đầu trang. Tiếp tục sử dụng dịch vụ sau thời điểm
-        cập nhật nghĩa là bạn đồng ý với phiên bản mới.
+        Chúng tôi có thể cập nhật Điều khoản và sẽ ghi ngày cập nhật ở đầu trang. Tiếp tục sử dụng dịch vụ sau thời điểm cập nhật nghĩa là bạn đồng ý với phiên
+        bản mới.
       </p>
     )
   }
@@ -133,8 +127,8 @@ export default function TermsPage() {
       title="Điều khoản dịch vụ"
       intro={
         <p>
-          PU Connector là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Các điều khoản dưới đây giúp cộng
-          đồng an toàn, tôn trọng và hữu ích cho việc học.
+          PU Connector là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Các điều khoản dưới đây giúp cộng đồng an toàn, tôn trọng và hữu ích cho
+          việc học.
         </p>
       }
       sections={SECTIONS}

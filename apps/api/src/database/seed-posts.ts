@@ -1,9 +1,7 @@
 import { Pool } from 'pg'
 
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
+  connectionString: process.env.DATABASE_URL || 'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
 })
 
 interface FacultyData {
@@ -92,36 +90,246 @@ const facultiesData: FacultyData[] = [
 ]
 
 const coursesData: CourseData[] = [
-  { code: 'IT101', name: 'Cấu trúc dữ liệu và Giải thuật', credits: 3, faculty_code: 'FIT', description: 'Cây nhị phân, đồ thị, thuật toán tìm kiếm và sắp xếp nâng cao.', rating_avg: 4.8 },
-  { code: 'IT102', name: 'Lập trình Web Nâng cao (React & NestJS)', credits: 3, faculty_code: 'FIT', description: 'Kiến trúc Fullstack hiện đại, REST, GraphQL và Clean Architecture.', rating_avg: 4.9 },
-  { code: 'IT103', name: 'Hệ quản trị Cơ sở Dữ liệu & SQL', credits: 3, faculty_code: 'FIT', description: 'PostgreSQL, thiết kế quan hệ, đánh chỉ mục và tối ưu hóa query.', rating_avg: 4.7 },
-  { code: 'IT104', name: 'Lập trình Hướng đối tượng OOP C++/Java', credits: 3, faculty_code: 'FIT', description: 'Tính đa hình, đóng gói, kế thừa và các Design Patterns phổ biến.', rating_avg: 4.6 },
-  { code: 'IT105', name: 'Lập trình Ứng dụng Di động (Flutter/React Native)', credits: 3, faculty_code: 'FIT', description: 'Xây dựng ứng dụng di động đa nền tảng kết nối API backend.', rating_avg: 4.8 },
-  { code: 'IT106', name: 'Điện toán Đám mây & DevOps Thực chiến', credits: 3, faculty_code: 'FIT', description: 'Docker, CI/CD, Kubernetes, Microservices và Nginx.', rating_avg: 4.9 },
-  { code: 'CS201', name: 'Trí tuệ Nhân tạo & Học máy Cơ bản', credits: 3, faculty_code: 'FCS', description: 'Hồi quy tuyến tính, cây quyết định, SVM và mạng nơ-ron cơ bản.', rating_avg: 4.8 },
-  { code: 'CS202', name: 'Xử lý Ngôn ngữ Tự nhiên & LLM', credits: 3, faculty_code: 'FCS', description: 'Transformer, BERT, GPT, fine-tuning mô hình ngôn ngữ lớn.', rating_avg: 4.9 },
-  { code: 'CS203', name: 'Thị giác Máy tính (Computer Vision)', credits: 3, faculty_code: 'FCS', description: 'Xử lý ảnh số, CNN, YOLOv8 nhận diện vật thể thời gian thực.', rating_avg: 4.7 },
-  { code: 'CS204', name: 'Khai phá Dữ liệu & Big Data Analytics', credits: 3, faculty_code: 'FCS', description: 'Xử lý dữ liệu lớn với Spark, phân cụm và trích xuất tri thức.', rating_avg: 4.6 },
-  { code: 'EE201', name: 'Kỹ thuật Điện tử Tương tự & Số', credits: 3, faculty_code: 'FEE', description: 'Mạch khuếch đại thuật toán, Flip-Flop, vi điều khiển logic.', rating_avg: 4.5 },
-  { code: 'EE202', name: 'Hệ thống Nhúng & IoT Thông minh', credits: 3, faculty_code: 'FEE', description: 'Lập trình STM32, ESP32, FreeRTOS và giao thức MQTT.', rating_avg: 4.9 },
-  { code: 'EE203', name: 'Kỹ thuật Robot & Điều khiển Tự động', credits: 3, faculty_code: 'FEE', description: 'Thuật toán PID, động học robot và thiết kế xe Robocon.', rating_avg: 4.8 },
-  { code: 'FAE101', name: 'Nguyên lý Động cơ Đốt trong & Khung gầm', credits: 3, faculty_code: 'FAE', description: 'Chu trình nhiệt động lực, hệ thống treo và truyền lực ô tô.', rating_avg: 4.6 },
-  { code: 'FAE102', name: 'Kỹ thuật Xe điện EV & Pin Lithium', credits: 3, faculty_code: 'FAE', description: 'Hệ thống truyền động điện, BMS và sạc xe điện thông minh.', rating_avg: 4.9 },
-  { code: 'FAE103', name: 'Công nghệ Xe tự hành (Phenikaa-X)', credits: 3, faculty_code: 'FAE', description: 'Định vị GPS-RTK, LiDAR, camera fusion và lập kế hoạch đường đi.', rating_avg: 5.0 },
-  { code: 'FBA101', name: 'Nguyên lý Marketing & Quản trị Thương hiệu', credits: 3, faculty_code: 'FBA', description: 'Nghiên cứu thị trường, định vị thương hiệu và hành vi người tiêu dùng.', rating_avg: 4.7 },
-  { code: 'FBA102', name: 'Tài chính Tiền tệ & Ngân hàng', credits: 3, faculty_code: 'FBA', description: 'Thị trường vốn, lãi suất, phân tích báo cáo tài chính doanh nghiệp.', rating_avg: 4.6 },
-  { code: 'FBA103', name: 'Quản trị Chuỗi Cung ứng & Logistics', credits: 3, faculty_code: 'FBA', description: 'Quản trị kho bãi, mô hình EOQ và tối ưu hóa vận tải giao nhận.', rating_avg: 4.8 },
-  { code: 'FBA104', name: 'Thương mại Điện tử & Kinh doanh Số', credits: 3, faculty_code: 'FBA', description: 'Mô hình kinh doanh sàn TMĐT, phễu chuyển đổi và Digital Ads.', rating_avg: 4.8 },
-  { code: 'FEL101', name: 'Tiếng Anh Học thuật & Luyện thi IELTS', credits: 3, faculty_code: 'FEL', description: 'Chiến thuật Academic Writing, Reading Comprehension và Speaking.', rating_avg: 4.8 },
-  { code: 'FEL102', name: 'Tiếng Anh Chuyên ngành Kỹ thuật', credits: 2, faculty_code: 'FEL', description: 'Thuật ngữ kỹ thuật, viết Abstract và thuyết trình báo cáo khoa học.', rating_avg: 4.6 },
-  { code: 'FEL103', name: 'Tiếng Trung Giao tiếp & Thương mại', credits: 3, faculty_code: 'FEL', description: 'Luyện nghe nói HSK 4-5 và đàm phán thương mại quốc tế.', rating_avg: 4.7 },
-  { code: 'FAS101', name: 'Khoa học Vật liệu Tiên tiến & Công nghệ Nano', credits: 3, faculty_code: 'FAS', description: 'Cấu trúc tinh thể, màng mỏng oxit và hạt nano ứng dụng.', rating_avg: 4.7 },
-  { code: 'FAS102', name: 'Pin Năng lượng Mặt trời & Bán dẫn', credits: 3, faculty_code: 'FAS', description: 'Vật liệu Perovskite, hiệu suất quang điện và kiểm thử độ bền.', rating_avg: 4.8 },
-  { code: 'FMS101', name: 'Giải phẫu học & Sinh lý học Y khoa', credits: 4, faculty_code: 'FMS', description: 'Hệ tim mạch, hô hấp, thần kinh và thực hành tại bệnh viện.', rating_avg: 4.9 },
-  { code: 'FMS102', name: 'Dược lý học & Hóa dược Lâm sàng', credits: 3, faculty_code: 'FMS', description: 'Cơ chế tác dụng thuốc, dược động học và tương tác thuốc.', rating_avg: 4.8 },
-  { code: 'MATH101', name: 'Đại số Tuyến tính & Hình học Không gian', credits: 3, faculty_code: 'FIT', description: 'Ma trận, định thức, không gian vector và phép biến đổi tuyến tính.', rating_avg: 4.5 },
-  { code: 'MATH201', name: 'Giải tích 1 & Giải tích 2', credits: 4, faculty_code: 'FIT', description: 'Tích phân vi phân nhiều biến, chuỗi số, tích phân đường và mặt.', rating_avg: 4.6 },
-  { code: 'PHY102', name: 'Vật lý Đại cương 1 & 2', credits: 3, faculty_code: 'FEE', description: 'Cơ học chất điểm, nhiệt động học và điện từ trường.', rating_avg: 4.4 }
+  {
+    code: 'IT101',
+    name: 'Cấu trúc dữ liệu và Giải thuật',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'Cây nhị phân, đồ thị, thuật toán tìm kiếm và sắp xếp nâng cao.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'IT102',
+    name: 'Lập trình Web Nâng cao (React & NestJS)',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'Kiến trúc Fullstack hiện đại, REST, GraphQL và Clean Architecture.',
+    rating_avg: 4.9
+  },
+  {
+    code: 'IT103',
+    name: 'Hệ quản trị Cơ sở Dữ liệu & SQL',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'PostgreSQL, thiết kế quan hệ, đánh chỉ mục và tối ưu hóa query.',
+    rating_avg: 4.7
+  },
+  {
+    code: 'IT104',
+    name: 'Lập trình Hướng đối tượng OOP C++/Java',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'Tính đa hình, đóng gói, kế thừa và các Design Patterns phổ biến.',
+    rating_avg: 4.6
+  },
+  {
+    code: 'IT105',
+    name: 'Lập trình Ứng dụng Di động (Flutter/React Native)',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'Xây dựng ứng dụng di động đa nền tảng kết nối API backend.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'IT106',
+    name: 'Điện toán Đám mây & DevOps Thực chiến',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'Docker, CI/CD, Kubernetes, Microservices và Nginx.',
+    rating_avg: 4.9
+  },
+  {
+    code: 'CS201',
+    name: 'Trí tuệ Nhân tạo & Học máy Cơ bản',
+    credits: 3,
+    faculty_code: 'FCS',
+    description: 'Hồi quy tuyến tính, cây quyết định, SVM và mạng nơ-ron cơ bản.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'CS202',
+    name: 'Xử lý Ngôn ngữ Tự nhiên & LLM',
+    credits: 3,
+    faculty_code: 'FCS',
+    description: 'Transformer, BERT, GPT, fine-tuning mô hình ngôn ngữ lớn.',
+    rating_avg: 4.9
+  },
+  {
+    code: 'CS203',
+    name: 'Thị giác Máy tính (Computer Vision)',
+    credits: 3,
+    faculty_code: 'FCS',
+    description: 'Xử lý ảnh số, CNN, YOLOv8 nhận diện vật thể thời gian thực.',
+    rating_avg: 4.7
+  },
+  {
+    code: 'CS204',
+    name: 'Khai phá Dữ liệu & Big Data Analytics',
+    credits: 3,
+    faculty_code: 'FCS',
+    description: 'Xử lý dữ liệu lớn với Spark, phân cụm và trích xuất tri thức.',
+    rating_avg: 4.6
+  },
+  {
+    code: 'EE201',
+    name: 'Kỹ thuật Điện tử Tương tự & Số',
+    credits: 3,
+    faculty_code: 'FEE',
+    description: 'Mạch khuếch đại thuật toán, Flip-Flop, vi điều khiển logic.',
+    rating_avg: 4.5
+  },
+  {
+    code: 'EE202',
+    name: 'Hệ thống Nhúng & IoT Thông minh',
+    credits: 3,
+    faculty_code: 'FEE',
+    description: 'Lập trình STM32, ESP32, FreeRTOS và giao thức MQTT.',
+    rating_avg: 4.9
+  },
+  {
+    code: 'EE203',
+    name: 'Kỹ thuật Robot & Điều khiển Tự động',
+    credits: 3,
+    faculty_code: 'FEE',
+    description: 'Thuật toán PID, động học robot và thiết kế xe Robocon.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'FAE101',
+    name: 'Nguyên lý Động cơ Đốt trong & Khung gầm',
+    credits: 3,
+    faculty_code: 'FAE',
+    description: 'Chu trình nhiệt động lực, hệ thống treo và truyền lực ô tô.',
+    rating_avg: 4.6
+  },
+  {
+    code: 'FAE102',
+    name: 'Kỹ thuật Xe điện EV & Pin Lithium',
+    credits: 3,
+    faculty_code: 'FAE',
+    description: 'Hệ thống truyền động điện, BMS và sạc xe điện thông minh.',
+    rating_avg: 4.9
+  },
+  {
+    code: 'FAE103',
+    name: 'Công nghệ Xe tự hành (Phenikaa-X)',
+    credits: 3,
+    faculty_code: 'FAE',
+    description: 'Định vị GPS-RTK, LiDAR, camera fusion và lập kế hoạch đường đi.',
+    rating_avg: 5.0
+  },
+  {
+    code: 'FBA101',
+    name: 'Nguyên lý Marketing & Quản trị Thương hiệu',
+    credits: 3,
+    faculty_code: 'FBA',
+    description: 'Nghiên cứu thị trường, định vị thương hiệu và hành vi người tiêu dùng.',
+    rating_avg: 4.7
+  },
+  {
+    code: 'FBA102',
+    name: 'Tài chính Tiền tệ & Ngân hàng',
+    credits: 3,
+    faculty_code: 'FBA',
+    description: 'Thị trường vốn, lãi suất, phân tích báo cáo tài chính doanh nghiệp.',
+    rating_avg: 4.6
+  },
+  {
+    code: 'FBA103',
+    name: 'Quản trị Chuỗi Cung ứng & Logistics',
+    credits: 3,
+    faculty_code: 'FBA',
+    description: 'Quản trị kho bãi, mô hình EOQ và tối ưu hóa vận tải giao nhận.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'FBA104',
+    name: 'Thương mại Điện tử & Kinh doanh Số',
+    credits: 3,
+    faculty_code: 'FBA',
+    description: 'Mô hình kinh doanh sàn TMĐT, phễu chuyển đổi và Digital Ads.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'FEL101',
+    name: 'Tiếng Anh Học thuật & Luyện thi IELTS',
+    credits: 3,
+    faculty_code: 'FEL',
+    description: 'Chiến thuật Academic Writing, Reading Comprehension và Speaking.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'FEL102',
+    name: 'Tiếng Anh Chuyên ngành Kỹ thuật',
+    credits: 2,
+    faculty_code: 'FEL',
+    description: 'Thuật ngữ kỹ thuật, viết Abstract và thuyết trình báo cáo khoa học.',
+    rating_avg: 4.6
+  },
+  {
+    code: 'FEL103',
+    name: 'Tiếng Trung Giao tiếp & Thương mại',
+    credits: 3,
+    faculty_code: 'FEL',
+    description: 'Luyện nghe nói HSK 4-5 và đàm phán thương mại quốc tế.',
+    rating_avg: 4.7
+  },
+  {
+    code: 'FAS101',
+    name: 'Khoa học Vật liệu Tiên tiến & Công nghệ Nano',
+    credits: 3,
+    faculty_code: 'FAS',
+    description: 'Cấu trúc tinh thể, màng mỏng oxit và hạt nano ứng dụng.',
+    rating_avg: 4.7
+  },
+  {
+    code: 'FAS102',
+    name: 'Pin Năng lượng Mặt trời & Bán dẫn',
+    credits: 3,
+    faculty_code: 'FAS',
+    description: 'Vật liệu Perovskite, hiệu suất quang điện và kiểm thử độ bền.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'FMS101',
+    name: 'Giải phẫu học & Sinh lý học Y khoa',
+    credits: 4,
+    faculty_code: 'FMS',
+    description: 'Hệ tim mạch, hô hấp, thần kinh và thực hành tại bệnh viện.',
+    rating_avg: 4.9
+  },
+  {
+    code: 'FMS102',
+    name: 'Dược lý học & Hóa dược Lâm sàng',
+    credits: 3,
+    faculty_code: 'FMS',
+    description: 'Cơ chế tác dụng thuốc, dược động học và tương tác thuốc.',
+    rating_avg: 4.8
+  },
+  {
+    code: 'MATH101',
+    name: 'Đại số Tuyến tính & Hình học Không gian',
+    credits: 3,
+    faculty_code: 'FIT',
+    description: 'Ma trận, định thức, không gian vector và phép biến đổi tuyến tính.',
+    rating_avg: 4.5
+  },
+  {
+    code: 'MATH201',
+    name: 'Giải tích 1 & Giải tích 2',
+    credits: 4,
+    faculty_code: 'FIT',
+    description: 'Tích phân vi phân nhiều biến, chuỗi số, tích phân đường và mặt.',
+    rating_avg: 4.6
+  },
+  {
+    code: 'PHY102',
+    name: 'Vật lý Đại cương 1 & 2',
+    credits: 3,
+    faculty_code: 'FEE',
+    description: 'Cơ học chất điểm, nhiệt động học và điện từ trường.',
+    rating_avg: 4.4
+  }
 ]
 
 function slugify(text: string, idSuffix: string): string {
@@ -202,9 +410,7 @@ async function main() {
   }
 
   // 3. Load Users
-  const userRes = await pool.query(
-    'SELECT id, username, display_name, role, faculty, student_id FROM users'
-  )
+  const userRes = await pool.query('SELECT id, username, display_name, role, faculty, student_id FROM users')
   const users = userRes.rows
   if (users.length === 0) {
     console.error('❌ No users found in database! Please run seed-users.sql first.')
@@ -271,7 +477,8 @@ async function main() {
         {
           authorUsername: 'ta_phamthanhbinh',
           authorRole: 'ta',
-          content: 'Chào Nam! Với tỷ lệ 90% Read / 10% Write, **AVL Tree** là lựa chọn tối ưu hơn nhé. Chiều cao cây AVL luôn được duy trì tối thiểu nên số lần so sánh con trỏ ít hơn. Red-Black Tree chỉ thực sự vượt trội khi hệ thống có tần suất Insert/Delete liên tục như trong `std::map` của C++.',
+          content:
+            'Chào Nam! Với tỷ lệ 90% Read / 10% Write, **AVL Tree** là lựa chọn tối ưu hơn nhé. Chiều cao cây AVL luôn được duy trì tối thiểu nên số lần so sánh con trỏ ít hơn. Red-Black Tree chỉ thực sự vượt trội khi hệ thống có tần suất Insert/Delete liên tục như trong `std::map` của C++.',
           isSolution: true,
           likesCount: 15,
           replies: [
@@ -287,7 +494,8 @@ async function main() {
         },
         {
           authorUsername: 'dothanhtung',
-          content: 'K15 cũng từng làm đề tài này. Nhớ chú ý hàm xoay kép Left-Right (LR) và Right-Left (RL), rất dễ bị rò rỉ bộ nhớ (memory leak) nếu không giải phóng đúng cách.',
+          content:
+            'K15 cũng từng làm đề tài này. Nhớ chú ý hàm xoay kép Left-Right (LR) và Right-Left (RL), rất dễ bị rò rỉ bộ nhớ (memory leak) nếu không giải phóng đúng cách.',
           likesCount: 8
         }
       ]
@@ -310,7 +518,8 @@ async function main() {
         {
           authorUsername: 'gv_nguyenvanha',
           authorRole: 'lecturer',
-          content: 'Rất hoan nghênh tinh thần chia sẻ kiến thức của em Đức. Thầy sẽ gửi link template này cho các bạn K17 tham khảo trong môn Lập trình Web nâng cao.',
+          content:
+            'Rất hoan nghênh tinh thần chia sẻ kiến thức của em Đức. Thầy sẽ gửi link template này cho các bạn K17 tham khảo trong môn Lập trình Web nâng cao.',
           likesCount: 24,
           isSolution: true
         }
@@ -350,14 +559,16 @@ async function main() {
       comments: [
         {
           authorUsername: 'nguyenducthong',
-          content: 'Linh bật `use_gradient_checkpointing = "unsloth"` và dùng `Flash Attention 2` là giảm được gần 3GB VRAM đấy. Ngoài ra nhớ set `optim = "adamw_8bit"` thay vì adamw mặc định nhé!',
+          content:
+            'Linh bật `use_gradient_checkpointing = "unsloth"` và dùng `Flash Attention 2` là giảm được gần 3GB VRAM đấy. Ngoài ra nhớ set `optim = "adamw_8bit"` thay vì adamw mặc định nhé!',
           isSolution: true,
           likesCount: 14
         },
         {
           authorUsername: 'gv_tranthithu',
           authorRole: 'lecturer',
-          content: 'Phòng Lab AI của khoa hiện có cụm GPU Server A100 80GB phục vụ NCKH. Nhóm nghiên cứu của em có thể đăng ký tài khoản qua email khoa để train nhé.',
+          content:
+            'Phòng Lab AI của khoa hiện có cụm GPU Server A100 80GB phục vụ NCKH. Nhóm nghiên cứu của em có thể đăng ký tài khoản qua email khoa để train nhé.',
           likesCount: 30
         }
       ]
@@ -429,7 +640,8 @@ async function main() {
       comments: [
         {
           authorUsername: 'tranquocbao',
-          content: 'Long thử giảm voxel size xuống 0.2m khi downsample pointcloud bằng VoxelGrid filter xem sao. Với lại nhớ filter bớt các điểm phản xạ động từ tán cây trước khi đưa vào NDT nhé.',
+          content:
+            'Long thử giảm voxel size xuống 0.2m khi downsample pointcloud bằng VoxelGrid filter xem sao. Với lại nhớ filter bớt các điểm phản xạ động từ tán cây trước khi đưa vào NDT nhé.',
           likesCount: 11
         },
         {
@@ -476,7 +688,8 @@ async function main() {
       comments: [
         {
           authorUsername: 'nguyenquangdat',
-          content: 'Thảo tính $TC = (D \\times P) + \\left(\\frac{D}{Q} \\times S\\right) + \\left(\\frac{Q}{2} \\times H\\right)$. So sánh $TC(Q=775)$ với $TC(Q=1000, P=95000)$. Phần tiết kiệm 5% giá mua $(12000 \\times 5000 = 60 \\text{ triệu})$ lớn hơn nhiều so với phần tăng chi phí lưu kho, nên nhận chiết khấu sẽ có lợi hơn nhé!',
+          content:
+            'Thảo tính $TC = (D \\times P) + \\left(\\frac{D}{Q} \\times S\\right) + \\left(\\frac{Q}{2} \\times H\\right)$. So sánh $TC(Q=775)$ với $TC(Q=1000, P=95000)$. Phần tiết kiệm 5% giá mua $(12000 \\times 5000 = 60 \\text{ triệu})$ lớn hơn nhiều so với phần tăng chi phí lưu kho, nên nhận chiết khấu sẽ có lợi hơn nhé!',
           isSolution: true,
           likesCount: 16
         }
@@ -520,7 +733,8 @@ async function main() {
       comments: [
         {
           authorUsername: 'buivanloc',
-          content: 'Với hình ảnh ST chênh lên ở thành dưới (DII, DIII, aVF) kèm ST chênh ở DIII > DII và ST chênh xuống ở DI, aVL thì khả năng cao $> 90\\%$ là tắc **Động mạch vành phải (RCA)** nhé Đại. Cần đo thêm các chuyển đạo V3R, V4R để loại trừ nhồi máu thất phải đi kèm trước khi chỉ định Nitroglycerin.',
+          content:
+            'Với hình ảnh ST chênh lên ở thành dưới (DII, DIII, aVF) kèm ST chênh ở DIII > DII và ST chênh xuống ở DI, aVL thì khả năng cao $> 90\\%$ là tắc **Động mạch vành phải (RCA)** nhé Đại. Cần đo thêm các chuyển đạo V3R, V4R để loại trừ nhồi máu thất phải đi kèm trước khi chỉ định Nitroglycerin.',
           isSolution: true,
           likesCount: 22
         },
@@ -605,7 +819,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['IT101', 'Recursion', 'Backtracking', 'Cpp'],
       titleGen: (n: number) => `Cách khử đệ quy cho bài toán Tháp Hà Nội và Quay lui N-Queens (Mã môn IT101 - Bài #${n})`,
-      contentGen: () => `Mọi người cho mình hỏi về cách chuyển đổi hàm đệ quy sang sử dụng cấu trúc \`std::stack\` thủ công để tránh lỗi tràn ngăn xếp (Stack Overflow) khi $N > 30$. Nhờ thầy cô và các bạn cho ý kiến tối ưu memory.`
+      contentGen: () =>
+        `Mọi người cho mình hỏi về cách chuyển đổi hàm đệ quy sang sử dụng cấu trúc \`std::stack\` thủ công để tránh lỗi tràn ngăn xếp (Stack Overflow) khi $N > 30$. Nhờ thầy cô và các bạn cho ý kiến tối ưu memory.`
     },
     {
       faculty: 'FIT',
@@ -613,7 +828,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['IT102', 'TailwindCSS', 'React', 'Frontend'],
       titleGen: (n: number) => `Bộ Component UI mẫu chuẩn Accessibility (a11y) bằng Radix UI & Tailwind cho đồ án Web #${n}`,
-      contentGen: () => `Chia sẻ cho các bạn K16, K17 bộ UI Kit gồm Dialog, Dropdown, Accordion, Toast thông báo đã tối ưu tương thích bàn phím và Screen Reader. Có hỗ trợ Dark/Light Theme đồng bộ.`
+      contentGen: () =>
+        `Chia sẻ cho các bạn K16, K17 bộ UI Kit gồm Dialog, Dropdown, Accordion, Toast thông báo đã tối ưu tương thích bàn phím và Screen Reader. Có hỗ trợ Dark/Light Theme đồng bộ.`
     },
     {
       faculty: 'FIT',
@@ -621,7 +837,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['IT103', 'PostgreSQL', 'Index', 'Database'],
       titleGen: (n: number) => `Phân tích hiệu năng Query Execution Plan: Seq Scan vs Index Scan trong PostgreSQL #${n}`,
-      contentGen: () => `Khi bảng có hơn 500,000 dòng, truy vấn \`EXPLAIN ANALYZE SELECT * FROM users WHERE faculty = 'FIT'\` vẫn chọn Sequential Scan thay vì dùng Index. Mọi người giải thích giúp mình tại sao Cost ước lượng của Planner lại ưu tiên Seq Scan trong trường hợp này?`
+      contentGen: () =>
+        `Khi bảng có hơn 500,000 dòng, truy vấn \`EXPLAIN ANALYZE SELECT * FROM users WHERE faculty = 'FIT'\` vẫn chọn Sequential Scan thay vì dùng Index. Mọi người giải thích giúp mình tại sao Cost ước lượng của Planner lại ưu tiên Seq Scan trong trường hợp này?`
     },
     {
       faculty: 'FIT',
@@ -629,7 +846,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['IT104', 'OOP', 'Java', 'DesignPatterns'],
       titleGen: (n: number) => `Ứng dụng Factory Pattern và Singleton Pattern trong bài tập quản lý tài khoản ngân hàng #${n}`,
-      contentGen: () => `Nhóm mình đang thiết kế các lớp đối tượng theo nguyên lý SOLID. Cho mình hỏi khi nào nên áp dụng Abstract Factory thay vì Simple Factory trong mô hình nạp rút tiền đa cổng thanh toán?`
+      contentGen: () =>
+        `Nhóm mình đang thiết kế các lớp đối tượng theo nguyên lý SOLID. Cho mình hỏi khi nào nên áp dụng Abstract Factory thay vì Simple Factory trong mô hình nạp rút tiền đa cổng thanh toán?`
     },
     {
       faculty: 'FIT',
@@ -637,7 +855,8 @@ async function main() {
       type: 'pbl_recruitment' as const,
       tagSet: ['IT105', 'Mobile', 'Flutter', 'PBL', 'TuyenThanhVien'],
       titleGen: (n: number) => `[Tuyển Team] Tìm bạn làm Mobile App Flutter kết nối Firebase & Socket.IO cho dự án Smart Campus #${n}`,
-      contentGen: () => `Nhóm K16 đã có Backend NestJS và thiết kế Figma hoàn chỉnh. Cần tuyển 01 bạn làm Mobile Flutter phụ trách module Chat thời gian thực và Push Notification qua Expo/FCM.`
+      contentGen: () =>
+        `Nhóm K16 đã có Backend NestJS và thiết kế Figma hoàn chỉnh. Cần tuyển 01 bạn làm Mobile Flutter phụ trách module Chat thời gian thực và Push Notification qua Expo/FCM.`
     },
     {
       faculty: 'FIT',
@@ -645,7 +864,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['IT106', 'Docker', 'DevOps', 'Nginx', 'CI_CD'],
       titleGen: (n: number) => `Hướng dẫn cấu hình Docker Multi-stage Build tối ưu dung lượng Node.js Container từ 1.2GB xuống 140MB #${n}`,
-      contentGen: () => `Chia sẻ file \`Dockerfile\` tối ưu dùng \`node:20-alpine\`, tách riêng giai đoạn \`deps\`, \`builder\`, và \`runner\` giúp giảm thời gian build image trên GitHub Actions từ 6 phút xuống còn 45 giây.`
+      contentGen: () =>
+        `Chia sẻ file \`Dockerfile\` tối ưu dùng \`node:20-alpine\`, tách riêng giai đoạn \`deps\`, \`builder\`, và \`runner\` giúp giảm thời gian build image trên GitHub Actions từ 6 phút xuống còn 45 giây.`
     },
     {
       faculty: 'FCS',
@@ -653,7 +873,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['CS201', 'MachineLearning', 'Python', 'ScikitLearn'],
       titleGen: (n: number) => `Hiện tượng Overfitting khi huấn luyện mô hình Random Forest trên tập dữ liệu nhỏ #${n}`,
-      contentGen: () => `Mô hình của mình đạt accuracy 99% trên tập Train nhưng chỉ được 72% trên tập Test. Mình đã thử điều chỉnh \`max_depth=10\`, \`min_samples_split=5\` và dùng K-Fold Cross Validation. Có thêm phương pháp nào như Regularization hay Data Augmentation hiệu quả hơn không ạ?`
+      contentGen: () =>
+        `Mô hình của mình đạt accuracy 99% trên tập Train nhưng chỉ được 72% trên tập Test. Mình đã thử điều chỉnh \`max_depth=10\`, \`min_samples_split=5\` và dùng K-Fold Cross Validation. Có thêm phương pháp nào như Regularization hay Data Augmentation hiệu quả hơn không ạ?`
     },
     {
       faculty: 'FCS',
@@ -661,7 +882,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['CS202', 'NLP', 'BERT', 'Transformer', 'HuggingFace'],
       titleGen: (n: number) => `Tổng hợp tập dữ liệu và mã nguồn phân loại sắc thái bình luận tiếng Việt (PhoBERT) #${n}`,
-      contentGen: () => `Bộ code mẫu dùng thư viện HuggingFace Transformers kết hợp PhoBERT tiền huấn luyện để phân loại cảm xúc tích cực/tiêu cực từ 20,000 đánh giá sản phẩm. Đạt F1-score 91.4%.`
+      contentGen: () =>
+        `Bộ code mẫu dùng thư viện HuggingFace Transformers kết hợp PhoBERT tiền huấn luyện để phân loại cảm xúc tích cực/tiêu cực từ 20,000 đánh giá sản phẩm. Đạt F1-score 91.4%.`
     },
     {
       faculty: 'FCS',
@@ -669,7 +891,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['CS203', 'ComputerVision', 'OpenCV', 'YOLOv8'],
       titleGen: (n: number) => `Cách tăng FPS khi chạy mô hình nhận diện khuôn mặt YOLOv8n trên vi máy tính Raspberry Pi 4 #${n}`,
-      contentGen: () => `Hiện tại khi chạy OpenCV trên Raspberry Pi 4 chỉ đạt khoảng 6-8 FPS. Nếu xuất mô hình sang định dạng ONNX Runtime hoặc NCNN thì có thể đạt mức 20-25 FPS thời gian thực không ạ?`
+      contentGen: () =>
+        `Hiện tại khi chạy OpenCV trên Raspberry Pi 4 chỉ đạt khoảng 6-8 FPS. Nếu xuất mô hình sang định dạng ONNX Runtime hoặc NCNN thì có thể đạt mức 20-25 FPS thời gian thực không ạ?`
     },
     {
       faculty: 'FCS',
@@ -677,7 +900,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['CS204', 'BigData', 'PySpark', 'DataMining'],
       titleGen: (n: number) => `Cheat Sheet PySpark DataFrame API & Thuật toán phân cụm K-Means phân tích dữ liệu lớn #${n}`,
-      contentGen: () => `Tài liệu tổng hợp các thao tác chuyển đổi \`groupBy\`, \`agg\`, \`window function\` và xây dựng Pipeline tiền xử lý dữ liệu với \`VectorAssembler\` trong Apache Spark.`
+      contentGen: () =>
+        `Tài liệu tổng hợp các thao tác chuyển đổi \`groupBy\`, \`agg\`, \`window function\` và xây dựng Pipeline tiền xử lý dữ liệu với \`VectorAssembler\` trong Apache Spark.`
     },
 
     // FEE & FAE (Robotics, IoT, Automotive)
@@ -687,7 +911,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['EE201', 'Electronics', 'OpAmp', 'Circuit'],
       titleGen: (n: number) => `Tính toán độ lợi khuếch đại mạch vi sai dùng Op-Amp LM358 và lọc thông thấp #${n}`,
-      contentGen: () => `Mọi người cho mình hỏi về công thức xác định tần số cắt $f_c = \\frac{1}{2\\pi R C}$ khi tín hiệu cảm biến sinh học bị nhiễu sóng 50Hz từ lưới điện xoay chiều. Cần chọn giá trị R và C như thế nào để vừa khử nhiễu vừa không làm méo biên độ tín hiệu?`
+      contentGen: () =>
+        `Mọi người cho mình hỏi về công thức xác định tần số cắt $f_c = \\frac{1}{2\\pi R C}$ khi tín hiệu cảm biến sinh học bị nhiễu sóng 50Hz từ lưới điện xoay chiều. Cần chọn giá trị R và C như thế nào để vừa khử nhiễu vừa không làm méo biên độ tín hiệu?`
     },
     {
       faculty: 'FEE',
@@ -695,7 +920,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['EE202', 'IoT', 'ESP32', 'FreeRTOS', 'MQTT'],
       titleGen: (n: number) => `Thư viện kết nối ESP32 với AWS IoT Core và MQTT Broker có mã hóa TLS 1.2 #${n}`,
-      contentGen: () => `Chia sẻ mã nguồn C++ cho ESP32 tự động reconnect khi mất mạng WiFi, lưu trữ dữ liệu cảm biến vào bộ nhớ SPIFFS khi offline và tự đồng bộ khi có kết nối trở lại.`
+      contentGen: () =>
+        `Chia sẻ mã nguồn C++ cho ESP32 tự động reconnect khi mất mạng WiFi, lưu trữ dữ liệu cảm biến vào bộ nhớ SPIFFS khi offline và tự đồng bộ khi có kết nối trở lại.`
     },
     {
       faculty: 'FEE',
@@ -703,7 +929,8 @@ async function main() {
       type: 'pbl_recruitment' as const,
       tagSet: ['EE203', 'Robocon', 'PBL', 'Hardware', 'FEE'],
       titleGen: (n: number) => `[Đội Robocon Phenikaa] Tuyển thành viên cơ khí và điều khiển tay gắp tự động #${n}`,
-      contentGen: () => `CLB Robocon đang chế tạo mẫu robot cơ động mới cho cuộc thi sắp tới. Cần tuyển 02 bạn chuyên ngành Cơ điện tử / Tự động hóa biết vẽ SolidWorks và lập trình STM32.`
+      contentGen: () =>
+        `CLB Robocon đang chế tạo mẫu robot cơ động mới cho cuộc thi sắp tới. Cần tuyển 02 bạn chuyên ngành Cơ điện tử / Tự động hóa biết vẽ SolidWorks và lập trình STM32.`
     },
     {
       faculty: 'FAE',
@@ -711,7 +938,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['FAE101', 'Automotive', 'Engine', 'Chassis'],
       titleGen: (n: number) => `Phân tích ưu nhược điểm của hệ thống phun xăng trực tiếp GDI so với phun đa điểm MPI #${n}`,
-      contentGen: () => `Em đang làm chuyên đề môn Động cơ đốt trong. Thầy cô và các anh chị cho em hỏi về vấn đề bám muội than trên van nạp của động cơ GDI và các giải pháp kỹ thuật hiện đại của các hãng xe để khắc phục hiện tượng này ạ?`
+      contentGen: () =>
+        `Em đang làm chuyên đề môn Động cơ đốt trong. Thầy cô và các anh chị cho em hỏi về vấn đề bám muội than trên van nạp của động cơ GDI và các giải pháp kỹ thuật hiện đại của các hãng xe để khắc phục hiện tượng này ạ?`
     },
     {
       faculty: 'FAE',
@@ -719,7 +947,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FAE102', 'ElectricVehicle', 'BMS', 'Battery', 'EV'],
       titleGen: (n: number) => `Tài liệu mô hình hóa suy giảm dung lượng Pin Lithium-ion (NMC vs LFP) theo chu kỳ sạc xả #${n}`,
-      contentGen: () => `Chia sẻ bài báo khoa học và file mô phỏng Matlab Simulink về thuật toán ước lượng trạng thái sạc SOC (State of Charge) sử dụng Extended Kalman Filter.`
+      contentGen: () =>
+        `Chia sẻ bài báo khoa học và file mô phỏng Matlab Simulink về thuật toán ước lượng trạng thái sạc SOC (State of Charge) sử dụng Extended Kalman Filter.`
     },
     {
       faculty: 'FAE',
@@ -727,7 +956,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FAE103', 'PhenikaaX', 'SelfDriving', 'CANBus'],
       titleGen: (n: number) => `Hướng dẫn đọc và giải mã gói tin mạng truyền thông CAN Bus trên hệ thống lái ô tô điện #${n}`,
-      contentGen: () => `Tài liệu hướng dẫn dùng vi điều khiển STM32 kết hợp IC thu phát TJA1050 để bắt dữ liệu tốc độ bánh xe, góc lái vô lăng và nhiệt độ pack pin.`
+      contentGen: () =>
+        `Tài liệu hướng dẫn dùng vi điều khiển STM32 kết hợp IC thu phát TJA1050 để bắt dữ liệu tốc độ bánh xe, góc lái vô lăng và nhiệt độ pack pin.`
     },
 
     // FBA (Business, Marketing, Finance, Logistics)
@@ -737,7 +967,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FBA101', 'Marketing', 'DigitalMarketing', 'SEO', 'TikTok'],
       titleGen: (n: number) => `Bí quyết xây dựng nội dung ngắn (Short-form Video) thu hút triệu view cho các thương hiệu F&B #${n}`,
-      contentGen: () => `Phân tích thuật toán đề xuất video, kỹ thuật Hook 3 giây đầu tiên và cách gắn CTA chuyển đổi đơn hàng hiệu quả cho các bạn sinh viên khởi nghiệp.`
+      contentGen: () =>
+        `Phân tích thuật toán đề xuất video, kỹ thuật Hook 3 giây đầu tiên và cách gắn CTA chuyển đổi đơn hàng hiệu quả cho các bạn sinh viên khởi nghiệp.`
     },
     {
       faculty: 'FBA',
@@ -745,7 +976,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['FBA102', 'Finance', 'StockMarket', 'Valuation'],
       titleGen: (n: number) => `Phương pháp định giá cổ phiếu DCF (Discounted Cash Flow) so với phương pháp P/E, P/B #${n}`,
-      contentGen: () => `Cho mình hỏi khi chi phí vốn bình quân gia quyền (WACC) thay đổi $1\\%$, giá trị nội tại ước tính của doanh nghiệp biến động như thế nào? Cách chọn tốc độ tăng trưởng dài hạn g hợp lý cho nền kinh tế đang phát triển?`
+      contentGen: () =>
+        `Cho mình hỏi khi chi phí vốn bình quân gia quyền (WACC) thay đổi $1\\%$, giá trị nội tại ước tính của doanh nghiệp biến động như thế nào? Cách chọn tốc độ tăng trưởng dài hạn g hợp lý cho nền kinh tế đang phát triển?`
     },
     {
       faculty: 'FBA',
@@ -753,7 +985,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FBA103', 'Logistics', 'Warehouse', 'ERP'],
       titleGen: (n: number) => `Tổng hợp quy trình quản lý kho hàng WMS theo nguyên tắc FIFO và mã vạch Barcode/RFID #${n}`,
-      contentGen: () => `Chia sẻ sơ đồ luồng nhập hàng, kiểm đếm, lưu kho và xuất hàng chuẩn hóa dành cho sinh viên làm đề tài thực tập tại các trung tâm phân phối logistics.`
+      contentGen: () =>
+        `Chia sẻ sơ đồ luồng nhập hàng, kiểm đếm, lưu kho và xuất hàng chuẩn hóa dành cho sinh viên làm đề tài thực tập tại các trung tâm phân phối logistics.`
     },
     {
       faculty: 'FBA',
@@ -761,7 +994,8 @@ async function main() {
       type: 'pbl_recruitment' as const,
       tagSet: ['FBA104', 'Ecommerce', 'Startup', 'Innovation', 'PBL'],
       titleGen: (n: number) => `[Dự án Khởi nghiệp] Tìm đồng đội xây dựng nền tảng trao đổi giáo trình cũ trong khuôn viên Phenikaa #${n}`,
-      contentGen: () => `Nhóm cần tuyển 01 bạn chuyên ngành Thương mại điện tử phụ trách kế hoạch kinh doanh và 01 bạn Marketing chạy truyền thông nội bộ trường.`
+      contentGen: () =>
+        `Nhóm cần tuyển 01 bạn chuyên ngành Thương mại điện tử phụ trách kế hoạch kinh doanh và 01 bạn Marketing chạy truyền thông nội bộ trường.`
     },
 
     // FEL (Languages, English, Chinese)
@@ -771,7 +1005,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FEL101', 'IELTS', 'Writing', 'Vocabulary'],
       titleGen: (n: number) => `50 Cụm từ nâng cấp Band điểm từ 6.0 lên 7.5 trong bài thi IELTS Writing Task 2 #${n}`,
-      contentGen: () => `Tổng hợp các cấu trúc câu phức, từ nối học thuật (Cohesive Devices) và các Collocation chuyên sâu theo từng chủ đề: Environment, Technology, Education và Health.`
+      contentGen: () =>
+        `Tổng hợp các cấu trúc câu phức, từ nối học thuật (Cohesive Devices) và các Collocation chuyên sâu theo từng chủ đề: Environment, Technology, Education và Health.`
     },
     {
       faculty: 'FEL',
@@ -779,7 +1014,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FEL102', 'EnglishForTech', 'Research', 'IEEE'],
       titleGen: (n: number) => `Cấu trúc chuẩn và các mẫu câu thông dụng khi viết bài báo NCKH bằng tiếng Anh #${n}`,
-      contentGen: () => `Hướng dẫn chi tiết cách viết phần Abstract, Methodology, Results and Discussion chuẩn format IEEE/Elsevier không bị lỗi ngữ pháp hay từ ngữ văn nói.`
+      contentGen: () =>
+        `Hướng dẫn chi tiết cách viết phần Abstract, Methodology, Results and Discussion chuẩn format IEEE/Elsevier không bị lỗi ngữ pháp hay từ ngữ văn nói.`
     },
     {
       faculty: 'FEL',
@@ -797,7 +1033,8 @@ async function main() {
       type: 'resource_share' as const,
       tagSet: ['FAS101', 'NanoTechnology', 'Materials', 'Chemistry'],
       titleGen: (n: number) => `Tổng hợp phương pháp tổng hợp hạt nano oxit kẽm (ZnO) kháng khuẩn ứng dụng trong bao bì y tế #${n}`,
-      contentGen: () => `Báo cáo nghiên cứu tổng hợp hạt nano ZnO kích thước trung bình 25nm bằng phương pháp kết tủa hóa học, kiểm tra hoạt tính diệt khuẩn trên chủng E. coli.`
+      contentGen: () =>
+        `Báo cáo nghiên cứu tổng hợp hạt nano ZnO kích thước trung bình 25nm bằng phương pháp kết tủa hóa học, kiểm tra hoạt tính diệt khuẩn trên chủng E. coli.`
     },
     {
       faculty: 'FAS',
@@ -805,7 +1042,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['FAS102', 'SolarCell', 'Perovskite', 'Semiconductor'],
       titleGen: (n: number) => `Nguyên nhân suy giảm hiệu suất quang điện của pin mặt trời Perovskite dưới tác động của độ ẩm #${n}`,
-      contentGen: () => `Khi tiếp xúc với độ ẩm không khí $> 60\\%$, lớp hấp thụ ánh sáng bị phân hủy thành $PbI_2$. Có những vật liệu đóng gói kỵ nước nào giúp kéo dài tuổi thọ pin trên 10 năm không ạ?`
+      contentGen: () =>
+        `Khi tiếp xúc với độ ẩm không khí $> 60\\%$, lớp hấp thụ ánh sáng bị phân hủy thành $PbI_2$. Có những vật liệu đóng gói kỵ nước nào giúp kéo dài tuổi thọ pin trên 10 năm không ạ?`
     },
     {
       faculty: 'FMS',
@@ -821,7 +1059,8 @@ async function main() {
       type: 'question' as const,
       tagSet: ['FMS102', 'Pharmacology', 'Antibiotics', 'Pharmacy'],
       titleGen: (n: number) => `Cơ chế kháng thuốc của vi khuẩn đối với nhóm kháng sinh Beta-lactam và giải pháp ức chế enzyme Beta-lactamase #${n}`,
-      contentGen: () => `Cho mình hỏi về phối hợp kháng sinh Amoxicillin + Acid Clavulanic: Tỷ lệ phối hợp tối ưu là bao nhiêu để hạn chế tối đa tác dụng phụ trên đường tiêu hóa của bệnh nhân?`
+      contentGen: () =>
+        `Cho mình hỏi về phối hợp kháng sinh Amoxicillin + Acid Clavulanic: Tỷ lệ phối hợp tối ưu là bao nhiêu để hạn chế tối đa tác dụng phụ trên đường tiêu hóa của bệnh nhân?`
     },
 
     // General, Campus Life, Food, Bus, Dorm
@@ -830,28 +1069,32 @@ async function main() {
       type: 'general' as const,
       tagSet: ['CampusLife', 'Library', 'Phenikaa', 'StudySpace'],
       titleGen: (n: number) => `Góc review: Top những vị trí tự học yên tĩnh và nhiều ổ cắm nhất Thư viện Tòa A2 #${n}`,
-      contentGen: () => `Chia sẻ kinh nghiệm cày deadline cho anh em: Tầng 3 khu vực bàn sát cửa kính hướng hồ điều hòa có điều hòa mát, wifi căng đét và rất ít người qua lại.`
+      contentGen: () =>
+        `Chia sẻ kinh nghiệm cày deadline cho anh em: Tầng 3 khu vực bàn sát cửa kính hướng hồ điều hòa có điều hòa mát, wifi căng đét và rất ít người qua lại.`
     },
     {
       faculty: 'FEE',
       type: 'general' as const,
       tagSet: ['CampusLife', 'Food', 'YenNghia', 'SinhVien'],
       titleGen: (n: number) => `Review các quán ăn ngon - bổ - rẻ xung quanh cổng trường Phenikaa cho tân sinh viên #${n}`,
-      contentGen: () => `Tổng hợp danh sách các quán cơm tấm, bún chả, bánh mì chảo và quán trà sữa ruột của sinh viên trường mình. Giá chỉ từ 25k - 35k/suất no căng bụng.`
+      contentGen: () =>
+        `Tổng hợp danh sách các quán cơm tấm, bún chả, bánh mì chảo và quán trà sữa ruột của sinh viên trường mình. Giá chỉ từ 25k - 35k/suất no căng bụng.`
     },
     {
       faculty: 'FAE',
       type: 'general' as const,
       tagSet: ['Sports', 'Football', 'PhenikaaCup', 'CampusLife'],
       titleGen: (n: number) => `Tổng hợp kết quả vòng bảng Giải bóng đá Sinh viên Phenikaa Cup 2026 #${n}`,
-      contentGen: () => `Trận cầu nảy lửa giữa Đội tuyển Khoa CNTT và Khoa Kỹ thuật Ô tô đã khép lại với tỷ số 3-2. Chúc mừng các chàng thủ đã cống hiến những pha bóng mãn nhãn!`
+      contentGen: () =>
+        `Trận cầu nảy lửa giữa Đội tuyển Khoa CNTT và Khoa Kỹ thuật Ô tô đã khép lại với tỷ số 3-2. Chúc mừng các chàng thủ đã cống hiến những pha bóng mãn nhãn!`
     },
     {
       faculty: 'FBA',
       type: 'general' as const,
       tagSet: ['Hostel', 'YenNghia', 'HaDong', 'TroSinhVien'],
       titleGen: (n: number) => `Kinh nghiệm tìm phòng trọ khu vực Yên Nghĩa, Đồng Mai gần trường Phenikaa #${n}`,
-      contentGen: () => `Một số lưu ý quan trọng khi ký hợp đồng thuê trọ: Giá điện nước sinh hoạt, tiền cọc, giờ giấc đóng cổng và an ninh khu trọ. Chúc các bạn tìm được phòng ưng ý.`
+      contentGen: () =>
+        `Một số lưu ý quan trọng khi ký hợp đồng thuê trọ: Giá điện nước sinh hoạt, tiền cọc, giờ giấc đóng cổng và an ninh khu trọ. Chúc các bạn tìm được phòng ưng ý.`
     }
   ]
 
@@ -985,16 +1228,7 @@ async function main() {
              post_id, author_id, parent_id, content, likes_count, is_solution, created_at, updated_at
            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
            RETURNING id`,
-          [
-            postId,
-            commentAuthor.id,
-            null,
-            c.content,
-            c.likesCount || getRandomInt(1, 10),
-            c.isSolution || false,
-            commentCreatedAt,
-            commentCreatedAt
-          ]
+          [postId, commentAuthor.id, null, c.content, c.likesCount || getRandomInt(1, 10), c.isSolution || false, commentCreatedAt, commentCreatedAt]
         )
         const commentId = commentRes.rows[0].id
         currentPostCommentCount++
@@ -1015,16 +1249,7 @@ async function main() {
               `INSERT INTO comments (
                  post_id, author_id, parent_id, content, likes_count, is_solution, created_at, updated_at
                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-              [
-                postId,
-                replyAuthor.id,
-                commentId,
-                r.content,
-                getRandomInt(0, 5),
-                false,
-                replyCreatedAt,
-                replyCreatedAt
-              ]
+              [postId, replyAuthor.id, commentId, r.content, getRandomInt(0, 5), false, replyCreatedAt, replyCreatedAt]
             )
             currentPostCommentCount++
             commentCount++
@@ -1052,10 +1277,7 @@ async function main() {
     }
 
     // Update counts on post
-    await pool.query(
-      `UPDATE posts SET likes_count = $1, comments_count = $2 WHERE id = $3`,
-      [reactionUsers.length, currentPostCommentCount, postId]
-    )
+    await pool.query(`UPDATE posts SET likes_count = $1, comments_count = $2 WHERE id = $3`, [reactionUsers.length, currentPostCommentCount, postId])
   }
 
   // 6. Seed User Follows

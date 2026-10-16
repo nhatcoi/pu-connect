@@ -1,14 +1,7 @@
 import { z } from 'zod'
 
 // Lý do gợi ý theo dõi (ưu tiên từ trên xuống)
-export const FollowSuggestionReasonSchema = z.enum([
-  'follows_you',
-  'mutual',
-  'same_class',
-  'shared_interests',
-  'same_faculty',
-  'popular'
-])
+export const FollowSuggestionReasonSchema = z.enum(['follows_you', 'mutual', 'same_class', 'shared_interests', 'same_faculty', 'popular'])
 
 export const FollowSuggestionSchema = z.object({
   id: z.string(),

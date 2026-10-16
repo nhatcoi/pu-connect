@@ -47,9 +47,7 @@ export function PostPollCard({ postId, poll: initialPoll, onPollUpdated }: PostP
           <BarChart2 className="h-4 w-4 text-primary" />
           <span>{poll.question}</span>
         </div>
-        <span className="text-[11px] text-muted-foreground font-medium">
-          {totalVotes} lượt bình chọn
-        </span>
+        <span className="text-[11px] text-muted-foreground font-medium">{totalVotes} lượt bình chọn</span>
       </div>
 
       <div className="space-y-2">
@@ -72,10 +70,7 @@ export function PostPollCard({ postId, poll: initialPoll, onPollUpdated }: PostP
               {/* Progress bar fill if voted or someone voted */}
               {hasVoted && (
                 <div
-                  className={cn(
-                    'absolute top-0 bottom-0 left-0 transition-all duration-500',
-                    isSelected ? 'bg-primary/20' : 'bg-muted/80'
-                  )}
+                  className={cn('absolute top-0 bottom-0 left-0 transition-all duration-500', isSelected ? 'bg-primary/20' : 'bg-muted/80')}
                   style={{ width: `${percentage}%` }}
                 />
               )}

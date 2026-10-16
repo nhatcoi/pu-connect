@@ -14,6 +14,5 @@ export const createStudyGroupSlice: StateCreator<StudyGroupSlice, [], [], StudyG
   isCreateGroupOpen: false,
   setStudyGroups: (studyGroups) => set({ studyGroups }),
   setCreateGroupOpen: (isCreateGroupOpen) => set({ isCreateGroupOpen }),
-  addStudyGroup: (group) =>
-    set((state) => ({ studyGroups: [group, ...state.studyGroups] }))
+  addStudyGroup: (group) => set((state) => ({ studyGroups: [group, ...state.studyGroups] }))
 })

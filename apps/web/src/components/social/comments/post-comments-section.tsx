@@ -60,7 +60,10 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   // Người trong bài cho gợi ý @mention: tác giả trước, rồi người bình luận (mới nhất trước)
   const mentionContext = useMemo<MentionCandidate[]>(() => {
     const out = new Map<string, MentionCandidate>()
-    const add = (a: { id: string; username: string; displayName?: string | null; avatarUrl?: string | null } | undefined, reason: MentionCandidate['reason']) => {
+    const add = (
+      a: { id: string; username: string; displayName?: string | null; avatarUrl?: string | null } | undefined,
+      reason: MentionCandidate['reason']
+    ) => {
       if (!a?.username || a.id === user?.id || a.username === PUAI_USERNAME || out.has(a.username)) return
       out.set(a.username, { id: a.id, username: a.username, displayName: a.displayName || a.username, avatarUrl: a.avatarUrl, reason })
     }
@@ -106,7 +109,6 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   const isPostAuthor = user?.id === post.authorId || user?.id === post.author?.id
   const isQaPost = post.postType === 'qa'
 
-
   const toggleReplies = (commentId: string) => {
     setExpandedReplies((prev) => ({
       ...prev,
@@ -122,11 +124,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
         postId={post.id}
         mentionContext={mentionContext}
         draftKey={`comment:${post.id}`}
-        placeholder={
-          isQaPost
-            ? 'Nhập lời giải hoặc gợi ý giải bài tập...'
-            : 'Viết câu trả lời hoặc thảo luận của bạn...'
-        }
+        placeholder={isQaPost ? 'Nhập lời giải hoặc gợi ý giải bài tập...' : 'Viết câu trả lời hoặc thảo luận của bạn...'}
       />
 
       {/* Comments List */}
@@ -163,14 +161,8 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
                         onClick={() => toggleReplies(comment.id)}
                         className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
                       >
-                        <ChevronDown
-                          className={`h-3.5 w-3.5 transition-transform ${areRepliesExpanded ? 'rotate-180' : ''}`}
-                        />
-                        <span>
-                          {areRepliesExpanded
-                            ? 'Thu gọn phản hồi'
-                            : `Xem ${replies.length} phản hồi`}
-                        </span>
+                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${areRepliesExpanded ? 'rotate-180' : ''}`} />
+                        <span>{areRepliesExpanded ? 'Thu gọn phản hồi' : `Xem ${replies.length} phản hồi`}</span>
                       </button>
 
                       {/* Render nested replies if expanded */}

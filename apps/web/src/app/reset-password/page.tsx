@@ -35,9 +35,7 @@ function ResetPasswordContent() {
       <div className="w-full max-w-sm rounded-2xl bg-card p-8 text-center shadow-sm space-y-4">
         <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-500" />
         <h1 className="text-lg font-semibold">Đã đổi mật khẩu</h1>
-        <p className="text-[13px] text-muted-foreground">
-          Mọi phiên đăng nhập cũ đã bị đăng xuất. Hãy đăng nhập lại bằng mật khẩu mới.
-        </p>
+        <p className="text-[13px] text-muted-foreground">Mọi phiên đăng nhập cũ đã bị đăng xuất. Hãy đăng nhập lại bằng mật khẩu mới.</p>
         <Link
           href="/"
           className="inline-block rounded-full bg-primary px-6 py-2 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"

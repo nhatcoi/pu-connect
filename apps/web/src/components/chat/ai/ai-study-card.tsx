@@ -36,7 +36,9 @@ export function AiStudyCard({ onOpen, opening }: { onOpen: () => void; opening: 
           )
         })}
       </ul>
-      <p className="text-[11px] text-muted-foreground">Trong nhóm chat, gõ <span className="font-semibold text-foreground">@puai</span> để cả nhóm cùng hỏi.</p>
+      <p className="text-[11px] text-muted-foreground">
+        Trong nhóm chat, gõ <span className="font-semibold text-foreground">@puai</span> để cả nhóm cùng hỏi.
+      </p>
       <Button size="sm" className="w-full rounded-full" onClick={onOpen} disabled={opening}>
         {opening ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Mở PU AI'}
       </Button>

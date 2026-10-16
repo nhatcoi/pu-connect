@@ -14,9 +14,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Phạm vi áp dụng',
     body: (
       <p>
-        Chính sách này áp dụng cho website PU Connector và mọi tính năng đi kèm: bảng tin, cộng đồng, học phần, tài
-        liệu, nhóm học, tin nhắn và trợ lý PU AI. Khi dùng dịch vụ, bạn đồng ý với cách xử lý dữ liệu mô tả dưới đây,
-        cùng với <Link href="/terms">Điều khoản dịch vụ</Link>.
+        Chính sách này áp dụng cho website PU Connector và mọi tính năng đi kèm: bảng tin, cộng đồng, học phần, tài liệu, nhóm học, tin nhắn và trợ lý PU AI.
+        Khi dùng dịch vụ, bạn đồng ý với cách xử lý dữ liệu mô tả dưới đây, cùng với <Link href="/terms">Điều khoản dịch vụ</Link>.
       </p>
     )
   },
@@ -26,22 +25,19 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          <strong>Thông tin tài khoản.</strong> Email, tên người dùng, tên hiển thị và mật khẩu. Mật khẩu được băm một
-          chiều, chúng tôi không lưu và không thể xem mật khẩu gốc. Nếu đăng nhập bằng Google, chúng tôi nhận mã định danh
-          Google, email, tên và ảnh đại diện từ tài khoản Google của bạn.
+          <strong>Thông tin tài khoản.</strong> Email, tên người dùng, tên hiển thị và mật khẩu. Mật khẩu được băm một chiều, chúng tôi không lưu và không thể
+          xem mật khẩu gốc. Nếu đăng nhập bằng Google, chúng tôi nhận mã định danh Google, email, tên và ảnh đại diện từ tài khoản Google của bạn.
         </p>
         <p>
-          <strong>Thông tin hồ sơ (tự nguyện).</strong> Mã sinh viên, trường, khoa, ngành, lớp, khóa học, ngày sinh, nơi
-          ở, website, giới thiệu, kỹ năng, sở thích, ảnh đại diện và ảnh bìa. Bạn có thể bỏ trống hoặc sửa các trường này
-          bất cứ lúc nào.
+          <strong>Thông tin hồ sơ (tự nguyện).</strong> Mã sinh viên, trường, khoa, ngành, lớp, khóa học, ngày sinh, nơi ở, website, giới thiệu, kỹ năng, sở
+          thích, ảnh đại diện và ảnh bìa. Bạn có thể bỏ trống hoặc sửa các trường này bất cứ lúc nào.
         </p>
         <p>
-          <strong>Nội dung bạn tạo.</strong> Bài viết, bình luận, bình chọn, cảm xúc, tài liệu, tin nhắn, tệp và ảnh đính
-          kèm, nhóm học bạn tạo hoặc tham gia.
+          <strong>Nội dung bạn tạo.</strong> Bài viết, bình luận, bình chọn, cảm xúc, tài liệu, tin nhắn, tệp và ảnh đính kèm, nhóm học bạn tạo hoặc tham gia.
         </p>
         <p>
-          <strong>Dữ liệu kỹ thuật.</strong> Cookie phiên đăng nhập, trạng thái trực tuyến, tin nhắn đã đọc, cài đặt thông
-          báo và quyền riêng tư, cùng địa chỉ đăng ký thông báo đẩy của trình duyệt nếu bạn bật thông báo đẩy.
+          <strong>Dữ liệu kỹ thuật.</strong> Cookie phiên đăng nhập, trạng thái trực tuyến, tin nhắn đã đọc, cài đặt thông báo và quyền riêng tư, cùng địa chỉ
+          đăng ký thông báo đẩy của trình duyệt nếu bạn bật thông báo đẩy.
         </p>
       </>
     )
@@ -65,13 +61,12 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Khi bạn trò chuyện với PU AI hoặc nhắc PU AI trong nhóm chat, nội dung cần thiết để trả lời gồm tin nhắn, ngữ
-          cảnh hội thoại gần nhất, ảnh và nội dung tệp PDF, DOCX, TXT bạn gửi kèm sẽ được chuyển tới dịch vụ mô hình ngôn
-          ngữ để tạo câu trả lời. Câu trả lời được lưu như một tin nhắn trong hội thoại.
+          Khi bạn trò chuyện với PU AI hoặc nhắc PU AI trong nhóm chat, nội dung cần thiết để trả lời gồm tin nhắn, ngữ cảnh hội thoại gần nhất, ảnh và nội dung
+          tệp PDF, DOCX, TXT bạn gửi kèm sẽ được chuyển tới dịch vụ mô hình ngôn ngữ để tạo câu trả lời. Câu trả lời được lưu như một tin nhắn trong hội thoại.
         </p>
         <p>
-          Không gửi cho PU AI mật khẩu, số giấy tờ tùy thân, thông tin tài chính hay dữ liệu nhạy cảm của người khác. Mỗi
-          tài khoản có giới hạn số lượt dùng PU AI mỗi ngày.
+          Không gửi cho PU AI mật khẩu, số giấy tờ tùy thân, thông tin tài chính hay dữ liệu nhạy cảm của người khác. Mỗi tài khoản có giới hạn số lượt dùng PU
+          AI mỗi ngày.
         </p>
       </>
     )
@@ -82,8 +77,8 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          <strong>Chúng tôi không bán dữ liệu cá nhân.</strong> Dữ liệu chỉ được chia sẻ với các nhà cung cấp cần thiết để
-          vận hành dịch vụ, trong phạm vi cần cho từng chức năng:
+          <strong>Chúng tôi không bán dữ liệu cá nhân.</strong> Dữ liệu chỉ được chia sẻ với các nhà cung cấp cần thiết để vận hành dịch vụ, trong phạm vi cần
+          cho từng chức năng:
         </p>
         <ul>
           <li>Google: khi bạn chọn đăng nhập bằng Google.</li>
@@ -114,12 +109,12 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Kết nối được mã hóa bằng HTTPS. Cookie phiên chỉ dùng để duy trì đăng nhập, không đọc được từ JavaScript và hết
-          hạn sau 7 ngày. Liên kết đặt lại mật khẩu chỉ dùng được một lần, hết hạn sau 30 phút, và đặt lại mật khẩu sẽ đăng xuất mọi phiên đăng nhập cũ.
+          Kết nối được mã hóa bằng HTTPS. Cookie phiên chỉ dùng để duy trì đăng nhập, không đọc được từ JavaScript và hết hạn sau 7 ngày. Liên kết đặt lại mật
+          khẩu chỉ dùng được một lần, hết hạn sau 30 phút, và đặt lại mật khẩu sẽ đăng xuất mọi phiên đăng nhập cũ.
         </p>
         <p>
-          Dữ liệu được lưu khi tài khoản còn hoạt động. Tin nhắn bị thu hồi hay bài viết bị xóa không còn hiển thị với
-          người khác. Không có hệ thống nào an toàn tuyệt đối, vì vậy hãy dùng mật khẩu mạnh và không chia sẻ tài khoản.
+          Dữ liệu được lưu khi tài khoản còn hoạt động. Tin nhắn bị thu hồi hay bài viết bị xóa không còn hiển thị với người khác. Không có hệ thống nào an toàn
+          tuyệt đối, vì vậy hãy dùng mật khẩu mạnh và không chia sẻ tài khoản.
         </p>
       </>
     )
@@ -130,8 +125,8 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân, bạn có quyền được biết, truy cập, chỉnh sửa, rút lại sự
-          đồng ý, yêu cầu xóa và hạn chế xử lý dữ liệu của mình. Trong ứng dụng, bạn có thể:
+          Theo Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân, bạn có quyền được biết, truy cập, chỉnh sửa, rút lại sự đồng ý, yêu cầu xóa và hạn chế xử lý
+          dữ liệu của mình. Trong ứng dụng, bạn có thể:
         </p>
         <ul>
           <li>Sửa hoặc xóa thông tin hồ sơ, ảnh đại diện, ảnh bìa.</li>
@@ -140,8 +135,7 @@ const SECTIONS: LegalSection[] = [
           <li>Xóa bài viết, thu hồi tin nhắn, rời nhóm chat và nhóm học.</li>
         </ul>
         <p>
-          Để yêu cầu xóa tài khoản hoặc nhận bản sao dữ liệu, hãy liên hệ ban quản trị theo mục bên dưới. Chúng tôi phản
-          hồi trong thời hạn pháp luật quy định.
+          Để yêu cầu xóa tài khoản hoặc nhận bản sao dữ liệu, hãy liên hệ ban quản trị theo mục bên dưới. Chúng tôi phản hồi trong thời hạn pháp luật quy định.
         </p>
       </>
     )
@@ -151,8 +145,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Thay đổi chính sách',
     body: (
       <p>
-        Khi chính sách thay đổi, chúng tôi cập nhật ngày ở đầu trang và thông báo trong ứng dụng nếu thay đổi quan trọng.
-        Tiếp tục sử dụng dịch vụ sau thời điểm cập nhật nghĩa là bạn đồng ý với phiên bản mới.
+        Khi chính sách thay đổi, chúng tôi cập nhật ngày ở đầu trang và thông báo trong ứng dụng nếu thay đổi quan trọng. Tiếp tục sử dụng dịch vụ sau thời điểm
+        cập nhật nghĩa là bạn đồng ý với phiên bản mới.
       </p>
     )
   },
@@ -161,8 +155,8 @@ const SECTIONS: LegalSection[] = [
     title: 'Liên hệ',
     body: (
       <p>
-        Mọi câu hỏi hoặc yêu cầu về dữ liệu cá nhân, vui lòng gửi tới ban quản trị PU Connector qua email đã đăng ký tài
-        khoản, hoặc dùng tính năng báo cáo trong ứng dụng.
+        Mọi câu hỏi hoặc yêu cầu về dữ liệu cá nhân, vui lòng gửi tới ban quản trị PU Connector qua email đã đăng ký tài khoản, hoặc dùng tính năng báo cáo
+        trong ứng dụng.
       </p>
     )
   }
@@ -174,8 +168,8 @@ export default function PrivacyPolicyPage() {
       title="Chính sách bảo mật"
       intro={
         <p>
-          PU Connector là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Chúng tôi chỉ thu thập dữ liệu cần
-          thiết để vận hành dịch vụ và không bán dữ liệu của bạn.
+          PU Connector là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Chúng tôi chỉ thu thập dữ liệu cần thiết để vận hành dịch vụ và không bán
+          dữ liệu của bạn.
         </p>
       }
       sections={SECTIONS}

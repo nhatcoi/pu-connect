@@ -11,8 +11,7 @@ function makeQueryClient() {
         gcTime: 10 * 60 * 1000,
         refetchOnWindowFocus: false,
         // Không thử lại lỗi 4xx (thiếu quyền, không tồn tại); lỗi mạng/5xx thử lại 1 lần
-        retry: (failureCount, error) =>
-          !(error instanceof ApiError && error.status >= 400 && error.status < 500) && failureCount < 1
+        retry: (failureCount, error) => !(error instanceof ApiError && error.status >= 400 && error.status < 500) && failureCount < 1
       },
       mutations: { retry: false }
     }

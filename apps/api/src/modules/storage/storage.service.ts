@@ -15,17 +15,13 @@ export class StorageService {
     const accountId = process.env.R2_ACCOUNT_ID || ''
     const accessKeyId = process.env.R2_ACCESS_KEY_ID || ''
     const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || ''
-    const endpoint =
-      process.env.R2_ENDPOINT ||
-      `https://${accountId}.r2.cloudflarestorage.com`
+    const endpoint = process.env.R2_ENDPOINT || `https://${accountId}.r2.cloudflarestorage.com`
     if (!accessKeyId || !secretAccessKey) {
       this.logger.warn('R2 credentials missing (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY) — upload sẽ lỗi')
     }
 
     this.bucketName = process.env.R2_BUCKET_NAME || 'pu-connector'
-    this.publicUrl =
-      process.env.R2_PUBLIC_URL ||
-      'https://pub-66e8a07080a74cb697df1ffbf74a4ecb.r2.dev'
+    this.publicUrl = process.env.R2_PUBLIC_URL || 'https://pub-66e8a07080a74cb697df1ffbf74a4ecb.r2.dev'
 
     this.s3Client = new S3Client({
       region: 'auto',

@@ -23,11 +23,7 @@ export function PrivacySection() {
       </SettingsGroup>
 
       <SettingsGroup label="Ai thấy bạn">
-        <SwitchRow
-          {...bind('isPrivateProfile')}
-          label="Hồ sơ riêng tư"
-          description="Chỉ người đang theo dõi bạn mới xem được bài viết của bạn"
-        />
+        <SwitchRow {...bind('isPrivateProfile')} label="Hồ sơ riêng tư" description="Chỉ người đang theo dõi bạn mới xem được bài viết của bạn" />
         <SwitchRow
           {...bind('showActivityStatus')}
           label="Trạng thái hoạt động"
@@ -36,11 +32,7 @@ export function PrivacySection() {
       </SettingsGroup>
 
       <SettingsGroup label="Dữ liệu & gợi ý" hint="Tắt cá nhân hóa sẽ xóa ngay dữ liệu hành vi đã lưu.">
-        <SwitchRow
-          {...bind('personalization')}
-          label="Cá nhân hóa gợi ý"
-          description="Dùng bài bạn xem, tìm kiếm và tương tác để gợi ý bảng tin và PU AI"
-        />
+        <SwitchRow {...bind('personalization')} label="Cá nhân hóa gợi ý" description="Dùng bài bạn xem, tìm kiếm và tương tác để gợi ý bảng tin và PU AI" />
       </SettingsGroup>
     </>
   )

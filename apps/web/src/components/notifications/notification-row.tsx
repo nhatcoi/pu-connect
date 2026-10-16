@@ -63,15 +63,9 @@ export function NotificationRow({ item, onClick, compact }: NotificationRowProps
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className={cn('leading-snug text-foreground', compact ? 'text-xs' : 'text-[13px]', !item.isRead && 'font-semibold')}>
-          {item.title}
-        </p>
+        <p className={cn('leading-snug text-foreground', compact ? 'text-xs' : 'text-[13px]', !item.isRead && 'font-semibold')}>{item.title}</p>
         {item.message && (
-          <MarkdownPreview
-            content={item.message}
-            inline
-            className={cn('mt-0.5 line-clamp-2 text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')}
-          />
+          <MarkdownPreview content={item.message} inline className={cn('mt-0.5 line-clamp-2 text-muted-foreground', compact ? 'text-[11px]' : 'text-xs')} />
         )}
         <p className="mt-1 text-[10px] font-medium text-muted-foreground">{formatRelativeTime(item.updatedAt)}</p>
       </div>

@@ -85,10 +85,7 @@ export class CommunitiesService {
   async toggleJoin(slug: string, userId: string): Promise<{ isMember: boolean; membersCount: number; message: string }> {
     return this.db.transaction(async (client) => {
       // 1. Check community existence with lock
-      const commRes = await client.query(
-        `SELECT id, name, members_count FROM communities WHERE slug = $1 LIMIT 1 FOR UPDATE`,
-        [slug.toLowerCase().trim()]
-      )
+      const commRes = await client.query(`SELECT id, name, members_count FROM communities WHERE slug = $1 LIMIT 1 FOR UPDATE`, [slug.toLowerCase().trim()])
 
       if (commRes.rows.length === 0) {
         throw new NotFoundException(`Không tìm thấy cộng đồng c/${slug}`)
@@ -97,19 +94,13 @@ export class CommunitiesService {
       const community = commRes.rows[0]
 
       // 2. Check if already member
-      const memberRes = await client.query(
-        `SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2 LIMIT 1`,
-        [community.id, userId]
-      )
+      const memberRes = await client.query(`SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2 LIMIT 1`, [community.id, userId])
 
       const isCurrentlyMember = memberRes.rows.length > 0
 
       if (isCurrentlyMember) {
         // Leave community
-        await client.query(
-          `DELETE FROM community_members WHERE community_id = $1 AND user_id = $2`,
-          [community.id, userId]
-        )
+        await client.query(`DELETE FROM community_members WHERE community_id = $1 AND user_id = $2`, [community.id, userId])
         const updatedRes = await client.query(
           `UPDATE communities SET members_count = GREATEST(0, members_count - 1), updated_at = NOW() WHERE id = $1 RETURNING members_count`,
           [community.id]
@@ -123,10 +114,7 @@ export class CommunitiesService {
         }
       } else {
         // Join community
-        await client.query(
-          `INSERT INTO community_members (community_id, user_id, role) VALUES ($1, $2, 'member')`,
-          [community.id, userId]
-        )
+        await client.query(`INSERT INTO community_members (community_id, user_id, role) VALUES ($1, $2, 'member')`, [community.id, userId])
         const updatedRes = await client.query(
           `UPDATE communities SET members_count = members_count + 1, updated_at = NOW() WHERE id = $1 RETURNING members_count`,
           [community.id]
@@ -145,13 +133,7 @@ export class CommunitiesService {
   /**
    * Lấy bài viết trong cộng đồng kèm phân trang & sắp xếp
    */
-  async getCommunityPosts(
-    slug: string,
-    currentUserId?: string,
-    limit = 10,
-    offset = 0,
-    sort: 'hot' | 'new' | 'top' = 'hot'
-  ): Promise<CommunityPostsResult> {
+  async getCommunityPosts(slug: string, currentUserId?: string, limit = 10, offset = 0, sort: 'hot' | 'new' | 'top' = 'hot'): Promise<CommunityPostsResult> {
     const community = await this.findBySlug(slug, currentUserId)
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)

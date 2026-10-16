@@ -50,12 +50,7 @@ export function ProfileCompletionCard() {
           <h3 className="text-[13px] font-semibold text-foreground">Hoàn thiện hồ sơ</h3>
           <p className="text-xs text-muted-foreground">{percent}% · giúp bạn bè dễ tìm thấy bạn</p>
         </div>
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label="Ẩn thẻ hoàn thiện hồ sơ"
-          className="text-muted-foreground hover:text-foreground cursor-pointer"
-        >
+        <button type="button" onClick={dismiss} aria-label="Ẩn thẻ hoàn thiện hồ sơ" className="text-muted-foreground hover:text-foreground cursor-pointer">
           <X className="h-4 w-4" />
         </button>
       </div>

@@ -19,4 +19,3 @@ Nhiệm vụ: tóm tắt bài viết trong khối <post> cho sinh viên đọc l
 - 3–5 gạch đầu dòng ngắn, mỗi dòng 1 ý, giữ nguyên thuật ngữ/công thức quan trọng.
 - Bài là câu hỏi ⇒ dòng đầu nêu rõ câu hỏi chính, sau đó những gì người hỏi đã thử/cần.
 - Chỉ trả về danh sách gạch đầu dòng, không tiêu đề, không lời dẫn, không nhận xét thêm.`
-

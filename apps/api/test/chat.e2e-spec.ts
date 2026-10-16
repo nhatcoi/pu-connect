@@ -58,7 +58,10 @@ describe('Chat (e2e)', () => {
     const m1 = await createUser(db)
     const m2 = await createUser(db)
     const agent = await loginAgent(app, owner)
-    const conv = await agent.post('/api/conversations').send({ title: 'Nhóm đồ án', memberIds: [m1.id, m2.id] }).expect(201)
+    const conv = await agent
+      .post('/api/conversations')
+      .send({ title: 'Nhóm đồ án', memberIds: [m1.id, m2.id] })
+      .expect(201)
     expect(conv.body.data.memberCount).toBe(3)
 
     const msg = await agent.post(`/api/conversations/${conv.body.data.id}/messages`).send({ content: 'Họp lúc 8h' }).expect(201)

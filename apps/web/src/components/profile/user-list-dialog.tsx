@@ -1,12 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { FollowButton } from './follow-button'
 import { graphqlClient } from '@/lib/graphql-client'
@@ -63,13 +58,7 @@ const GET_FOLLOWING_QUERY = `
   }
 `
 
-export function UserListDialog({
-  userId,
-  username,
-  type,
-  open,
-  onOpenChange
-}: UserListDialogProps) {
+export function UserListDialog({ userId, username, type, open, onOpenChange }: UserListDialogProps) {
   const [users, setUsers] = useState<UserListItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -116,33 +105,16 @@ export function UserListDialog({
             <UserListSkeleton count={4} avatarClassName="h-10 w-10" action rowClassName="p-3.5 border-b border-border/40 last:border-b-0" />
           ) : users.length > 0 ? (
             users.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-3.5 hover:bg-muted/30 transition-colors"
-              >
-                <Link
-                  href={`/${item.username}`}
-                  onClick={() => onOpenChange(false)}
-                  className="flex items-center gap-3 min-w-0 flex-1 group"
-                >
+              <div key={item.id} className="flex items-center justify-between p-3.5 hover:bg-muted/30 transition-colors">
+                <Link href={`/${item.username}`} onClick={() => onOpenChange(false)} className="flex items-center gap-3 min-w-0 flex-1 group">
                   <Avatar className="h-10 w-10 border border-border shrink-0">
-                    <AvatarImage
-                      src={
-                        item.avatarUrl ||
-                        `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username}`
-                      }
-                      alt={item.displayName}
-                    />
+                    <AvatarImage src={item.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${item.username}`} alt={item.displayName} />
                     <AvatarFallback>{item.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 truncate">
-                      <span className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors truncate">
-                        {item.displayName}
-                      </span>
-                      {item.role === 'lecturer' && (
-                        <ShieldCheck className="h-3.5 w-3.5 text-accent shrink-0" />
-                      )}
+                      <span className="font-semibold text-xs text-foreground group-hover:text-primary transition-colors truncate">{item.displayName}</span>
+                      {item.role === 'lecturer' && <ShieldCheck className="h-3.5 w-3.5 text-accent shrink-0" />}
                     </div>
                     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
                       <span>@{item.username}</span>
@@ -172,11 +144,7 @@ export function UserListDialog({
             <div className="py-12 text-center text-muted-foreground text-xs space-y-1">
               <Users className="h-8 w-8 mx-auto opacity-30 mb-2" />
               <p className="font-medium">Chưa có người dùng nào</p>
-              <p className="text-[11px] opacity-80">
-                {type === 'followers'
-                  ? 'Chưa có ai theo dõi tài khoản này.'
-                  : 'Tài khoản này chưa theo dõi ai.'}
-              </p>
+              <p className="text-[11px] opacity-80">{type === 'followers' ? 'Chưa có ai theo dõi tài khoản này.' : 'Tài khoản này chưa theo dõi ai.'}</p>
             </div>
           )}
         </div>

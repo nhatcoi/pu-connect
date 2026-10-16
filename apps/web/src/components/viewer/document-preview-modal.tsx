@@ -1,12 +1,7 @@
 'use client'
 
 import React from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { PdfViewer } from './pdf-viewer'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import type { DocumentItem } from '@pu/schemas'
@@ -18,11 +13,7 @@ interface DocumentPreviewModalProps {
   onOpenChange: (open: boolean) => void
 }
 
-export function DocumentPreviewModal({
-  document,
-  open,
-  onOpenChange
-}: DocumentPreviewModalProps) {
+export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentPreviewModalProps) {
   if (!document) return null
 
   const isPdf = document.type === 'pdf'
@@ -36,9 +27,7 @@ export function DocumentPreviewModal({
             <Eye className="h-4 w-4 text-primary shrink-0" />
             <span className="truncate">{document.title}</span>
           </DialogTitle>
-          {document.description && (
-            <p className="text-xs text-muted-foreground mt-0.5">{document.description}</p>
-          )}
+          {document.description && <p className="text-xs text-muted-foreground mt-0.5">{document.description}</p>}
         </DialogHeader>
 
         <div className="py-2">

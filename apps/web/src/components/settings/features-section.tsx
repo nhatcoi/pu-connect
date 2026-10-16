@@ -36,9 +36,7 @@ export function FeaturesSection() {
           ))}
         </SettingsGroup>
       ))}
-      <p className="px-4 pb-4 text-[11px] text-muted-foreground sm:px-5">
-        Cài đặt áp dụng cho tài khoản của bạn trên mọi thiết bị.
-      </p>
+      <p className="px-4 pb-4 text-[11px] text-muted-foreground sm:px-5">Cài đặt áp dụng cho tài khoản của bạn trên mọi thiết bị.</p>
     </>
   )
 }

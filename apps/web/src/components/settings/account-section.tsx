@@ -44,27 +44,16 @@ export function AccountSection() {
     <>
       {/* Xác thực sinh viên Phenikaa */}
       <div className="px-4 pt-2 pb-1 sm:px-5">
-        <div
-          className={
-            user.isVerified
-              ? 'flex items-start gap-3 rounded-xl bg-blue-500/[0.06] p-3.5'
-              : 'flex items-start gap-3 rounded-xl bg-muted/50 p-3.5'
-          }
-        >
-          <BadgeCheck
-            className={user.isVerified ? 'mt-0.5 h-5 w-5 shrink-0 text-blue-500' : 'mt-0.5 h-5 w-5 shrink-0 text-muted-foreground'}
-          />
+        <div className={user.isVerified ? 'flex items-start gap-3 rounded-xl bg-blue-500/[0.06] p-3.5' : 'flex items-start gap-3 rounded-xl bg-muted/50 p-3.5'}>
+          <BadgeCheck className={user.isVerified ? 'mt-0.5 h-5 w-5 shrink-0 text-blue-500' : 'mt-0.5 h-5 w-5 shrink-0 text-muted-foreground'} />
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-semibold">
-              {user.isVerified ? 'Đã xác thực sinh viên Phenikaa' : 'Xác thực sinh viên Phenikaa'}
-            </p>
+            <p className="text-[13px] font-semibold">{user.isVerified ? 'Đã xác thực sinh viên Phenikaa' : 'Xác thực sinh viên Phenikaa'}</p>
             <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
               {user.isVerified ? (
                 'Hồ sơ của bạn hiển thị Tích Xanh sinh viên chính thức.'
               ) : (
                 <>
-                  Tài khoản dùng email <span className="font-mono text-[11px] text-primary">@phenikaa-uni.edu.vn</span> sẽ
-                  nhận Tích Xanh chính thức.
+                  Tài khoản dùng email <span className="font-mono text-[11px] text-primary">@phenikaa-uni.edu.vn</span> sẽ nhận Tích Xanh chính thức.
                 </>
               )}
             </p>

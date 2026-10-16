@@ -21,7 +21,14 @@ function parseQuiz(raw: unknown): QuizData | null {
   const d = raw as QuizData
   if (!d || !Array.isArray(d.questions)) return null
   const questions = d.questions.filter(
-    (q) => q && typeof q.q === 'string' && Array.isArray(q.options) && q.options.length >= 2 && Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length
+    (q) =>
+      q &&
+      typeof q.q === 'string' &&
+      Array.isArray(q.options) &&
+      q.options.length >= 2 &&
+      Number.isInteger(q.answer) &&
+      q.answer >= 0 &&
+      q.answer < q.options.length
   )
   return questions.length ? { title: d.title, questions } : null
 }

@@ -1,8 +1,8 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import * as React from 'react'
+import { X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
   Dialog as DialogPrimitive,
   DialogTrigger as DialogTriggerPrimitive,
@@ -23,43 +23,33 @@ import {
   type DialogHeaderProps as DialogHeaderPrimitiveProps,
   type DialogFooterProps as DialogFooterPrimitiveProps,
   type DialogTitleProps as DialogTitlePrimitiveProps,
-  type DialogDescriptionProps as DialogDescriptionPrimitiveProps,
-} from '@/components/animate-ui/primitives/radix/dialog';
+  type DialogDescriptionProps as DialogDescriptionPrimitiveProps
+} from '@/components/animate-ui/primitives/radix/dialog'
 
-const Dialog = DialogPrimitive;
-const DialogTrigger = DialogTriggerPrimitive;
-const DialogPortal = DialogPortalPrimitive;
-const DialogClose = DialogClosePrimitive;
+const Dialog = DialogPrimitive
+const DialogTrigger = DialogTriggerPrimitive
+const DialogPortal = DialogPortalPrimitive
+const DialogClose = DialogClosePrimitive
 
-export type DialogProps = DialogPrimitiveProps;
-export type DialogTriggerProps = DialogTriggerPrimitiveProps;
-export type DialogPortalProps = DialogPortalPrimitiveProps;
-export type DialogOverlayProps = DialogOverlayPrimitiveProps;
-export type DialogCloseProps = DialogClosePrimitiveProps;
-export type DialogHeaderProps = DialogHeaderPrimitiveProps;
-export type DialogFooterProps = DialogFooterPrimitiveProps;
-export type DialogTitleProps = DialogTitlePrimitiveProps;
-export type DialogDescriptionProps = DialogDescriptionPrimitiveProps;
+export type DialogProps = DialogPrimitiveProps
+export type DialogTriggerProps = DialogTriggerPrimitiveProps
+export type DialogPortalProps = DialogPortalPrimitiveProps
+export type DialogOverlayProps = DialogOverlayPrimitiveProps
+export type DialogCloseProps = DialogClosePrimitiveProps
+export type DialogHeaderProps = DialogHeaderPrimitiveProps
+export type DialogFooterProps = DialogFooterPrimitiveProps
+export type DialogTitleProps = DialogTitlePrimitiveProps
+export type DialogDescriptionProps = DialogDescriptionPrimitiveProps
 
 function DialogOverlay({ className, ...props }: DialogOverlayProps) {
-  return (
-    <DialogOverlayPrimitive
-      className={cn('fixed inset-0 z-50 bg-black/60 backdrop-blur-xs', className)}
-      {...props}
-    />
-  );
+  return <DialogOverlayPrimitive className={cn('fixed inset-0 z-50 bg-black/60 backdrop-blur-xs', className)} {...props} />
 }
 
 export type DialogContentProps = DialogContentPrimitiveProps & {
-  showCloseButton?: boolean;
-};
+  showCloseButton?: boolean
+}
 
-function DialogContent({
-  className,
-  children,
-  showCloseButton = true,
-  ...props
-}: DialogContentProps) {
+function DialogContent({ className, children, showCloseButton = true, ...props }: DialogContentProps) {
   return (
     <DialogPortalPrimitive>
       <DialogOverlay />
@@ -79,66 +69,23 @@ function DialogContent({
         )}
       </DialogContentPrimitive>
     </DialogPortalPrimitive>
-  );
+  )
 }
 
-function DialogHeader({
-  className,
-  ...props
-}: DialogHeaderProps) {
-  return (
-    <DialogHeaderPrimitive
-      className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)}
-      {...props}
-    />
-  );
+function DialogHeader({ className, ...props }: DialogHeaderProps) {
+  return <DialogHeaderPrimitive className={cn('flex flex-col space-y-1.5 text-center sm:text-left', className)} {...props} />
 }
 
-function DialogFooter({
-  className,
-  ...props
-}: DialogFooterProps) {
-  return (
-    <DialogFooterPrimitive
-      className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)}
-      {...props}
-    />
-  );
+function DialogFooter({ className, ...props }: DialogFooterProps) {
+  return <DialogFooterPrimitive className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2', className)} {...props} />
 }
 
-function DialogTitle({
-  className,
-  ...props
-}: DialogTitleProps) {
-  return (
-    <DialogTitlePrimitive
-      className={cn('text-lg font-semibold leading-none tracking-tight text-foreground', className)}
-      {...props}
-    />
-  );
+function DialogTitle({ className, ...props }: DialogTitleProps) {
+  return <DialogTitlePrimitive className={cn('text-lg font-semibold leading-none tracking-tight text-foreground', className)} {...props} />
 }
 
-function DialogDescription({
-  className,
-  ...props
-}: DialogDescriptionProps) {
-  return (
-    <DialogDescriptionPrimitive
-      className={cn('text-sm text-muted-foreground', className)}
-      {...props}
-    />
-  );
+function DialogDescription({ className, ...props }: DialogDescriptionProps) {
+  return <DialogDescriptionPrimitive className={cn('text-sm text-muted-foreground', className)} {...props} />
 }
 
-export {
-  Dialog,
-  DialogPortal,
-  DialogOverlay,
-  DialogClose,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
-  DialogDescription,
-};
+export { Dialog, DialogPortal, DialogOverlay, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription }

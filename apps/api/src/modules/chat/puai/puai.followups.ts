@@ -57,7 +57,13 @@ function partialMarkerSuffix(buf: string): number {
 export function parseFollowUps(raw: string): string[] {
   return raw
     .split('\n')
-    .map((line) => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '').replace(/^["“]|["”]$/g, '').replace(/\*\*/g, '').trim())
+    .map((line) =>
+      line
+        .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
+        .replace(/^["“]|["”]$/g, '')
+        .replace(/\*\*/g, '')
+        .trim()
+    )
     .filter((line) => line.length >= 4 && line.length <= MAX_FOLLOWUP_LENGTH)
     .slice(0, MAX_FOLLOWUPS)
 }

@@ -22,10 +22,10 @@ export class BlocksService {
 
     await this.db.transaction(async (client) => {
       await client.query(`INSERT INTO user_blocks (blocker_id, blocked_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userId, targetId])
-      await client.query(
-        `DELETE FROM user_follows WHERE (follower_id = $1 AND following_id = $2) OR (follower_id = $2 AND following_id = $1)`,
-        [userId, targetId]
-      )
+      await client.query(`DELETE FROM user_follows WHERE (follower_id = $1 AND following_id = $2) OR (follower_id = $2 AND following_id = $1)`, [
+        userId,
+        targetId
+      ])
     })
     this.notifyChanged(userId, targetId)
   }

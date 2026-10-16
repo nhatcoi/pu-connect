@@ -68,10 +68,7 @@ export class FeedResolver {
   }
 
   @Query(() => PostType, { name: 'post', nullable: true })
-  async getPost(
-    @Args('id', { type: () => String }) id: string,
-    @Context() context?: any
-  ): Promise<PostType | null> {
+  async getPost(@Args('id', { type: () => String }) id: string, @Context() context?: any): Promise<PostType | null> {
     const currentUserId = context?.req?.user?.id || null
 
     let sql = `
@@ -98,10 +95,7 @@ export class FeedResolver {
   }
 
   @Mutation(() => PostType)
-  async createPost(
-    @Args('input') input: CreatePostInput,
-    @Context() context: any
-  ): Promise<PostType> {
+  async createPost(@Args('input') input: CreatePostInput, @Context() context: any): Promise<PostType> {
     const user = context?.req?.user
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập để đăng bài viết')
@@ -133,39 +127,21 @@ export class FeedResolver {
   }
 
   @Mutation(() => Boolean)
-  async toggleLikePost(
-    @Args('postId') postId: string,
-    @Context() context: any
-  ): Promise<boolean> {
+  async toggleLikePost(@Args('postId') postId: string, @Context() context: any): Promise<boolean> {
     const user = context?.req?.user
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập để tương tác bài viết')
     }
 
-    const check = await this.db.query(
-      `SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1`,
-      [postId, user.id]
-    )
+    const check = await this.db.query(`SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1`, [postId, user.id])
 
     if (check.rows.length > 0) {
-      await this.db.query(
-        `DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`,
-        [postId, user.id]
-      )
-      await this.db.query(
-        `UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1`,
-        [postId]
-      )
+      await this.db.query(`DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`, [postId, user.id])
+      await this.db.query(`UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1`, [postId])
       return false
     } else {
-      await this.db.query(
-        `INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`,
-        [postId, user.id]
-      )
-      await this.db.query(
-        `UPDATE posts SET likes_count = likes_count + 1 WHERE id = $1`,
-        [postId]
-      )
+      await this.db.query(`INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`, [postId, user.id])
+      await this.db.query(`UPDATE posts SET likes_count = likes_count + 1 WHERE id = $1`, [postId])
       return true
     }
   }

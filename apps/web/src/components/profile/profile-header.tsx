@@ -6,19 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Calendar,
-  MapPin,
-  IdCard,
-  GraduationCap,
-  Edit3,
-  Mail,
-  CheckCircle2,
-  Settings,
-  BookOpen,
-  School,
-  Globe
-} from 'lucide-react'
+import { Calendar, MapPin, IdCard, GraduationCap, Edit3, Mail, CheckCircle2, Settings, BookOpen, School, Globe } from 'lucide-react'
 import { useAppStore } from '@/store'
 import type { UserProfileData } from '@/hooks/use-profile'
 import { toast } from 'sonner'
@@ -36,9 +24,7 @@ interface ProfileHeaderProps {
 export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
   const router = useRouter()
   const currentUser = useAppStore((state) => state.user)
-  const isOwnProfile =
-    currentUser?.username?.toLowerCase() === profile.username?.toLowerCase() ||
-    currentUser?.id === profile.id
+  const isOwnProfile = currentUser?.username?.toLowerCase() === profile.username?.toLowerCase() || currentUser?.id === profile.id
 
   const blockState = profile.blockState ?? 'none'
   const [followersCount, setFollowersCount] = useState(profile.followersCount || 0)
@@ -62,14 +48,10 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
     }
   }, [isOwnProfile, searchParams])
 
-  const initials = (profile.displayName || profile.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
+  const initials = (profile.displayName || profile.username || 'PU').slice(0, 2).toUpperCase()
 
   const formattedDate = profile.createdAt
-    ? new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(
-        new Date(profile.createdAt)
-      )
+    ? new Intl.DateTimeFormat('vi-VN', { month: 'long', year: 'numeric' }).format(new Date(profile.createdAt))
     : 'tháng 08/2026'
 
   return (
@@ -110,11 +92,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
       <div className="relative h-36 sm:h-44 w-full bg-gradient-to-br from-[#0B3D91] via-[#0A3380] to-[#072A6B] overflow-hidden">
         {profile.bannerUrl && (
           // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa người dùng từ R2, kích thước động
-          <img
-            src={profile.bannerUrl}
-            alt="Cover banner"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          <img src={profile.bannerUrl} alt="Cover banner" className="absolute inset-0 w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
         <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2.5 py-1 rounded-full text-xs text-white/90 border border-white/10 font-medium z-10">
@@ -130,15 +108,10 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
           <div className="relative">
             <Avatar className="h-24 w-24 sm:h-28 sm:w-28 rounded-full border-4 border-card shadow-lg bg-muted ring-2 ring-primary/20">
               <AvatarImage src={profile.avatarUrl || ''} alt={profile.displayName} />
-              <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl sm:text-2xl">
-                {initials}
-              </AvatarFallback>
+              <AvatarFallback className="bg-primary/20 text-primary font-bold text-xl sm:text-2xl">{initials}</AvatarFallback>
             </Avatar>
             {profile.isVerified && (
-              <div
-                className="absolute bottom-1 right-1 bg-card rounded-full p-0.5 shadow-md"
-                title="Tài khoản sinh viên chính quy Phenikaa đã xác thực"
-              >
+              <div className="absolute bottom-1 right-1 bg-card rounded-full p-0.5 shadow-md" title="Tài khoản sinh viên chính quy Phenikaa đã xác thực">
                 <CheckCircle2 className="h-5 w-5 text-blue-500 fill-blue-500/20" />
               </div>
             )}
@@ -175,21 +148,21 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                 <BlockUserControl userId={profile.id} username={profile.username} blockState={blockState} />
                 {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển sang /messages/{id} */}
                 <Button
-                    variant="outline"
-                    size="icon"
-                    className="rounded-full h-8 w-8 border-border"
-                    title={`Nhắn tin cho ${profile.displayName}`}
-                    onClick={async () => {
-                      try {
-                        const conv = await chatApi.openDirect(profile.id)
-                        router.push(`/messages/${conv.id}`)
-                      } catch (err) {
-                        toast.error(errorMessage(err, 'Không thể mở hội thoại'))
-                      }
-                    }}
-                  >
-                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full h-8 w-8 border-border"
+                  title={`Nhắn tin cho ${profile.displayName}`}
+                  onClick={async () => {
+                    try {
+                      const conv = await chatApi.openDirect(profile.id)
+                      router.push(`/messages/${conv.id}`)
+                    } catch (err) {
+                      toast.error(errorMessage(err, 'Không thể mở hội thoại'))
+                    }
+                  }}
+                >
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
                 <FollowButton
                   targetUserId={profile.id}
                   targetUsername={profile.username}
@@ -222,17 +195,11 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             </h1>
 
             {profile.role === 'lecturer' ? (
-              <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-[11px] font-medium py-0">
-                Giảng viên
-              </Badge>
+              <Badge className="bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 text-[11px] font-medium py-0">Giảng viên</Badge>
             ) : profile.role === 'admin' ? (
-              <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 text-[11px] font-medium py-0">
-                Quản trị viên
-              </Badge>
+              <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 text-[11px] font-medium py-0">Quản trị viên</Badge>
             ) : (
-              <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-medium py-0">
-                Sinh viên
-              </Badge>
+              <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[11px] font-medium py-0">Sinh viên</Badge>
             )}
           </div>
 
@@ -257,7 +224,11 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             {profile.faculty && profile.faculty !== profile.school && (
               <div className="flex items-center gap-1 font-medium text-foreground/80">
                 <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                <span>{profile.faculty.startsWith('Khoa') || profile.faculty.startsWith('Viện') || profile.faculty.startsWith('Trung tâm') ? profile.faculty : `Khoa ${profile.faculty}`}</span>
+                <span>
+                  {profile.faculty.startsWith('Khoa') || profile.faculty.startsWith('Viện') || profile.faculty.startsWith('Trung tâm')
+                    ? profile.faculty
+                    : `Khoa ${profile.faculty}`}
+                </span>
               </div>
             )}
 
@@ -280,11 +251,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
         </div>
 
         {/* Bio */}
-        {profile.bio && (
-          <p className="mt-2.5 text-xs sm:text-sm text-foreground/90 leading-relaxed">
-            {profile.bio}
-          </p>
-        )}
+        {profile.bio && <p className="mt-2.5 text-xs sm:text-sm text-foreground/90 leading-relaxed">{profile.bio}</p>}
 
         {/* Metadata Details */}
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3 text-xs text-muted-foreground">
@@ -320,9 +287,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             onClick={() => setListDialog({ open: true, type: 'following' })}
             className="flex items-center gap-1.5 hover:underline cursor-pointer group"
           >
-            <span className="font-bold text-foreground group-hover:text-primary transition-colors">
-              {followingCount}
-            </span>
+            <span className="font-bold text-foreground group-hover:text-primary transition-colors">{followingCount}</span>
             <span className="text-muted-foreground">Đang theo dõi</span>
           </button>
           <button
@@ -330,9 +295,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             onClick={() => setListDialog({ open: true, type: 'followers' })}
             className="flex items-center gap-1.5 hover:underline cursor-pointer group"
           >
-            <span className="font-bold text-foreground group-hover:text-primary transition-colors">
-              {followersCount}
-            </span>
+            <span className="font-bold text-foreground group-hover:text-primary transition-colors">{followersCount}</span>
             <span className="text-muted-foreground">Người theo dõi</span>
           </button>
         </div>

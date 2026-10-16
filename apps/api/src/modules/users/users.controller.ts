@@ -1,16 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Post,
-  Param,
-  Body,
-  Query,
-  Req,
-  UseGuards,
-  HttpCode,
-  HttpStatus
-} from '@nestjs/common'
+import { Controller, Get, Patch, Post, Param, Body, Query, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
 import { UsersService } from './users.service'
 import { FollowSuggestionsService } from './follow-suggestions.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'

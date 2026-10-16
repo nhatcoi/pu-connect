@@ -21,14 +21,7 @@ interface SlidingTabsProps<T extends string> {
 }
 
 // Tab gạch chân trượt mượt khi đổi tab (animate-ui Highlight, layoutId)
-export function SlidingTabs<T extends string>({
-  items,
-  value,
-  onChange,
-  onItemHover,
-  className,
-  tabClassName
-}: SlidingTabsProps<T>) {
+export function SlidingTabs<T extends string>({ items, value, onChange, onItemHover, className, tabClassName }: SlidingTabsProps<T>) {
   return (
     <div role="tablist" className={cn('flex items-center gap-6 text-[13px] font-medium', className)}>
       <Highlight

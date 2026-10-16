@@ -90,9 +90,25 @@ async function upsertPersonas(client: PoolClient, now: number): Promise<Map<stri
          password_hash = COALESCE(EXCLUDED.password_hash, users.password_hash), updated_at = NOW()
        RETURNING id, created_at`,
       [
-        `${p.username}@${SEED_EMAIL_DOMAIN}`, p.username, passwordHash, p.displayName, p.role, new Date(joinedAt), p.faculty, p.major,
-        p.className ?? null, p.academicYear ?? null, p.studentId ?? null, p.bio, p.skills, p.interests, p.location ?? null,
-        asset.avatar(p.avatar), asset.banner(p.banner), p.verified, new Date(now - Math.floor(rngFor(p.username)() * 20) * 3600_000)
+        `${p.username}@${SEED_EMAIL_DOMAIN}`,
+        p.username,
+        passwordHash,
+        p.displayName,
+        p.role,
+        new Date(joinedAt),
+        p.faculty,
+        p.major,
+        p.className ?? null,
+        p.academicYear ?? null,
+        p.studentId ?? null,
+        p.bio,
+        p.skills,
+        p.interests,
+        p.location ?? null,
+        asset.avatar(p.avatar),
+        asset.banner(p.banner),
+        p.verified,
+        new Date(now - Math.floor(rngFor(p.username)() * 20) * 3600_000)
       ]
     )
     ids.set(p.username, { id: res.rows[0].id, joinedAt: new Date(res.rows[0].created_at).getTime() })
@@ -128,8 +144,19 @@ async function insertPost(
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
      ON CONFLICT (slug) DO NOTHING RETURNING id`,
     [
-      authorRef.id, courseId ?? null, communityId ?? null, post.type ?? 'general', post.title ?? '', SLUG_PREFIX + post.key,
-      post.content, post.tags ?? [], (post.images ?? []).map(asset.image), !!post.pinned, !!post.resolved, views, new Date(createdAt)
+      authorRef.id,
+      courseId ?? null,
+      communityId ?? null,
+      post.type ?? 'general',
+      post.title ?? '',
+      SLUG_PREFIX + post.key,
+      post.content,
+      post.tags ?? [],
+      (post.images ?? []).map(asset.image),
+      !!post.pinned,
+      !!post.resolved,
+      views,
+      new Date(createdAt)
     ]
   )
   if (!rows[0]) return false // đã có ⇒ bỏ qua
@@ -140,13 +167,18 @@ async function insertPost(
     const ref = users.get(u.username)!
     const at = clampTime(createdAt + rnd() * 2 * DAY_MS, ref.joinedAt, now)
     await client.query(`INSERT INTO post_reactions (post_id, user_id, reaction, created_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`, [
-      postId, ref.id, reactionFor(post.type, rnd), new Date(at)
+      postId,
+      ref.id,
+      reactionFor(post.type, rnd),
+      new Date(at)
     ])
   }
   for (const u of pickUsers(PERSONAS, author, post.saves ?? 0, rnd)) {
     const ref = users.get(u.username)!
     await client.query(`INSERT INTO saved_posts (user_id, post_id, saved_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [
-      ref.id, postId, new Date(clampTime(createdAt + rnd() * 3 * DAY_MS, ref.joinedAt, now))
+      ref.id,
+      postId,
+      new Date(clampTime(createdAt + rnd() * 3 * DAY_MS, ref.joinedAt, now))
     ])
   }
 
@@ -203,14 +235,19 @@ async function insertPoll(
   const voters = [...PERSONAS].sort(() => rnd() - 0.5)
   let cursor = 0
   for (const [i, text] of poll.options.entries()) {
-    const opt = await client.query(
-      `INSERT INTO post_poll_options (poll_id, option_text, votes_count, display_order) VALUES ($1, $2, $3, $4) RETURNING id`,
-      [pollId, text, poll.votes[i] ?? 0, i]
-    )
+    const opt = await client.query(`INSERT INTO post_poll_options (poll_id, option_text, votes_count, display_order) VALUES ($1, $2, $3, $4) RETURNING id`, [
+      pollId,
+      text,
+      poll.votes[i] ?? 0,
+      i
+    ])
     for (let k = 0; k < (poll.votes[i] ?? 0) && cursor < voters.length; k++, cursor++) {
       const ref = users.get(voters[cursor].username)!
       await client.query(`INSERT INTO post_poll_votes (poll_id, option_id, user_id, voted_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`, [
-        pollId, opt.rows[0].id, ref.id, new Date(clampTime(createdAt + rnd() * DAY_MS, ref.joinedAt, Math.min(now, expiresAt)))
+        pollId,
+        opt.rows[0].id,
+        ref.id,
+        new Date(clampTime(createdAt + rnd() * DAY_MS, ref.joinedAt, Math.min(now, expiresAt)))
       ])
     }
   }
@@ -228,10 +265,11 @@ async function seedFollows(client: PoolClient, users: Map<string, { id: string; 
         const ra = users.get(a.username)!
         const rb = users.get(b.username)!
         const at = clampTime(Math.max(ra.joinedAt, rb.joinedAt) + rnd() * 10 * DAY_MS, 0, now)
-        await client.query(
-          `INSERT INTO user_follows (follower_id, following_id, created_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
-          [ra.id, rb.id, new Date(at)]
-        )
+        await client.query(`INSERT INTO user_follows (follower_id, following_id, created_at) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`, [
+          ra.id,
+          rb.id,
+          new Date(at)
+        ])
       }
     }
   }
@@ -244,10 +282,12 @@ async function seedCommunityMembers(client: PoolClient, users: Map<string, { id:
       const posts = ALL_POSTS.some((x) => x.by === p.username && x.community === slug)
       if (!posts && slug !== 'phenikaa' && rnd() > 0.45) continue
       const role = p.role === 'admin' ? 'admin' : p.role === 'lecturer' || p.role === 'ta' ? 'moderator' : 'member'
-      await client.query(
-        `INSERT INTO community_members (community_id, user_id, role, joined_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
-        [communityId, users.get(p.username)!.id, role, new Date(users.get(p.username)!.joinedAt + DAY_MS)]
-      )
+      await client.query(`INSERT INTO community_members (community_id, user_id, role, joined_at) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`, [
+        communityId,
+        users.get(p.username)!.id,
+        role,
+        new Date(users.get(p.username)!.joinedAt + DAY_MS)
+      ])
     }
   }
 }

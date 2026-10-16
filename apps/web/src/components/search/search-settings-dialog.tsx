@@ -1,11 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Check } from 'lucide-react'
 import { toast } from 'sonner'
@@ -66,31 +62,22 @@ export function SearchSettingsDialog({ open, onOpenChange }: SearchSettingsDialo
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
-          <DialogTitle className="text-base font-bold text-foreground">
-            Cài đặt tìm kiếm (Search settings)
-          </DialogTitle>
+          <DialogTitle className="text-base font-bold text-foreground">Cài đặt tìm kiếm (Search settings)</DialogTitle>
         </div>
 
         {/* Content list */}
         <div className="p-4 space-y-6">
           {/* Option 1: Hide sensitive content */}
-          <div
-            onClick={() => handleToggle('hideSensitive')}
-            className="flex items-start justify-between gap-4 cursor-pointer select-none group"
-          >
+          <div onClick={() => handleToggle('hideSensitive')} className="flex items-start justify-between gap-4 cursor-pointer select-none group">
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                Ẩn nội dung nhạy cảm
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Ẩn nội dung nhạy cảm</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Ngăn bài viết có nội dung chưa được kiểm duyệt hoặc nhạy cảm xuất hiện trong kết quả tìm kiếm học thuật.
               </p>
             </div>
             <div
               className={`h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
-                settings.hideSensitive
-                  ? 'bg-primary border-primary text-primary-foreground'
-                  : 'border-muted-foreground/50 bg-background'
+                settings.hideSensitive ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/50 bg-background'
               }`}
             >
               {settings.hideSensitive && <Check className="h-3.5 w-3.5 stroke-[3]" />}
@@ -98,23 +85,16 @@ export function SearchSettingsDialog({ open, onOpenChange }: SearchSettingsDialo
           </div>
 
           {/* Option 2: Remove blocked and muted accounts */}
-          <div
-            onClick={() => handleToggle('removeBlocked')}
-            className="flex items-start justify-between gap-4 cursor-pointer select-none group"
-          >
+          <div onClick={() => handleToggle('removeBlocked')} className="flex items-start justify-between gap-4 cursor-pointer select-none group">
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                Loại bỏ tài khoản đã chặn và ẩn
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Loại bỏ tài khoản đã chặn và ẩn</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Tự động loại trừ kết quả từ các tài khoản bạn đã đưa vào danh sách chặn hoặc tắt tiếng.
               </p>
             </div>
             <div
               className={`h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
-                settings.removeBlocked
-                  ? 'bg-primary border-primary text-primary-foreground'
-                  : 'border-muted-foreground/50 bg-background'
+                settings.removeBlocked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/50 bg-background'
               }`}
             >
               {settings.removeBlocked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
@@ -122,23 +102,16 @@ export function SearchSettingsDialog({ open, onOpenChange }: SearchSettingsDialo
           </div>
 
           {/* Option 3: Prioritize your faculty */}
-          <div
-            onClick={() => handleToggle('prioritizeFaculty')}
-            className="flex items-start justify-between gap-4 cursor-pointer select-none group"
-          >
+          <div onClick={() => handleToggle('prioritizeFaculty')} className="flex items-start justify-between gap-4 cursor-pointer select-none group">
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                Ưu tiên kết quả cùng Khoa / Viện của bạn
-              </h4>
+              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Ưu tiên kết quả cùng Khoa / Viện của bạn</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Tự động đưa các học phần, đề thi và bài thảo luận thuộc Khoa / Viện của bạn lên vị trí ưu tiên.
               </p>
             </div>
             <div
               className={`h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
-                settings.prioritizeFaculty
-                  ? 'bg-primary border-primary text-primary-foreground'
-                  : 'border-muted-foreground/50 bg-background'
+                settings.prioritizeFaculty ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/50 bg-background'
               }`}
             >
               {settings.prioritizeFaculty && <Check className="h-3.5 w-3.5 stroke-[3]" />}
@@ -148,11 +121,7 @@ export function SearchSettingsDialog({ open, onOpenChange }: SearchSettingsDialo
 
         {/* Footer */}
         <div className="px-4 py-3 bg-muted/40 border-t border-border flex justify-end">
-          <Button
-            size="sm"
-            onClick={() => onOpenChange(false)}
-            className="rounded-full px-5 text-xs font-semibold cursor-pointer"
-          >
+          <Button size="sm" onClick={() => onOpenChange(false)} className="rounded-full px-5 text-xs font-semibold cursor-pointer">
             Hoàn tất
           </Button>
         </div>

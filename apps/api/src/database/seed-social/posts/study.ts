@@ -78,8 +78,18 @@ Ai muốn mình chữa bài thì đăng đề + bài viết vào cộng đồng 
     saves: 19,
     comments: [
       { by: 'khanhvy_mkt', text: 'Ý 3 đúng quá, mình học thuộc cả list mở bài xong bị chấm 6.0 😂', after: 40, likes: 5 },
-      { by: 'ngocanh_med', text: 'Cho mình đăng ký 1 suất chữa bài nhé Thảo, mình cần 7.0 để xét học bổng', after: 80, replies: [{ by: 'thao_ielts', text: 'Ok luôn, gửi mình tối nay nha!', after: 20 }] },
-      { by: 'vannam2k8', text: 'Em mới 5.0 có nên học Writing luôn không chị, hay học Reading trước ạ?', after: 200, replies: [{ by: 'thao_ielts', text: 'Em làm Reading + Listening trước 1–2 tháng cho quen từ vựng, rồi mới vào Writing sẽ đỡ hơn nhiều.', after: 35 }] }
+      {
+        by: 'ngocanh_med',
+        text: 'Cho mình đăng ký 1 suất chữa bài nhé Thảo, mình cần 7.0 để xét học bổng',
+        after: 80,
+        replies: [{ by: 'thao_ielts', text: 'Ok luôn, gửi mình tối nay nha!', after: 20 }]
+      },
+      {
+        by: 'vannam2k8',
+        text: 'Em mới 5.0 có nên học Writing luôn không chị, hay học Reading trước ạ?',
+        after: 200,
+        replies: [{ by: 'thao_ielts', text: 'Em làm Reading + Listening trước 1–2 tháng cho quen từ vựng, rồi mới vào Writing sẽ đỡ hơn nhiều.', after: 35 }]
+      }
     ]
   },
   {
@@ -111,7 +121,12 @@ $$= 3 \\cdot \\lim_{t \\to 0} \\frac{\\sin t}{t} = 3 \\cdot 1 = 3$$
 Mẹo: tổng quát $\\lim_{x \\to 0} \\frac{\\sin ax}{bx} = \\frac{a}{b}$.`
       },
       { by: 'vannam2k8', text: 'À nhân chia 3, hiểu rồi ạ. Em cảm ơn chị 🙏', after: 10 },
-      { by: 'phamduclong', text: 'Trang giải hay. Em làm thêm bài $\\lim_{x \\to 0} \\frac{\\tan 2x}{\\sin 5x}$ để luyện nhé, đáp án 2/5.', after: 60, likes: 3 }
+      {
+        by: 'phamduclong',
+        text: 'Trang giải hay. Em làm thêm bài $\\lim_{x \\to 0} \\frac{\\tan 2x}{\\sin 5x}$ để luyện nhé, đáp án 2/5.',
+        after: 60,
+        likes: 3
+      }
     ]
   },
   {
@@ -149,7 +164,14 @@ Câu 2 các bạn tự làm rồi comment đáp án nhé, mình chữa vào tố
     likes: 14,
     saves: 13,
     comments: [
-      { by: 'minhquan_gg', text: 'Câu 2: cần bảng courses rồi LEFT JOIN enrollments, GROUP BY course_code, COUNT(e.student_id). Đúng không anh?', after: 120, replies: [{ by: 'phamduclong', text: 'Chuẩn. Nhớ COUNT(e.student_id) chứ không phải COUNT(*), không thì môn trống vẫn đếm ra 1 👍', after: 40, likes: 5 }] },
+      {
+        by: 'minhquan_gg',
+        text: 'Câu 2: cần bảng courses rồi LEFT JOIN enrollments, GROUP BY course_code, COUNT(e.student_id). Đúng không anh?',
+        after: 120,
+        replies: [
+          { by: 'phamduclong', text: 'Chuẩn. Nhớ COUNT(e.student_id) chứ không phải COUNT(*), không thì môn trống vẫn đếm ra 1 👍', after: 40, likes: 5 }
+        ]
+      },
       { by: 'vannam2k8', text: 'Em lưu lại để năm 2 học ạ', after: 300 }
     ]
   },
@@ -218,7 +240,12 @@ Chép chính tả 2 phút thôi nhưng sẽ lộ ra hết chỗ mình nghe nhầ
     likes: 15,
     saves: 11,
     comments: [
-      { by: 'thuydung05', text: 'podcast gì vậy Thảo, cho xin tên với', after: 20, replies: [{ by: 'thao_ielts', text: '6 Minute English của BBC cho người mới, quen rồi thì chuyển sang podcast mình thích nhé', after: 15 }] }
+      {
+        by: 'thuydung05',
+        text: 'podcast gì vậy Thảo, cho xin tên với',
+        after: 20,
+        replies: [{ by: 'thao_ielts', text: '6 Minute English của BBC cho người mới, quen rồi thì chuyển sang podcast mình thích nhé', after: 15 }]
+      }
     ]
   },
   {

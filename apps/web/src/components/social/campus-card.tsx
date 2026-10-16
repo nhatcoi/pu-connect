@@ -13,20 +13,16 @@ export function CampusEventCard({ event }: { event: CampusEvent }) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-accent/15 px-2 py-0.5 font-bold text-[10px] text-accent">
-                {event.organizer}
-              </span>
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 font-bold text-[10px] text-accent">{event.organizer}</span>
             </div>
-            <h3 className="font-bold text-sm mt-1.5 text-foreground leading-snug">
-              {event.title}
-            </h3>
+            <h3 className="font-bold text-sm mt-1.5 text-foreground leading-snug">{event.title}</h3>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="p-4 pt-1 pb-3 text-xs text-muted-foreground space-y-2">
         <p className="line-clamp-2">{event.description}</p>
-        
+
         <div className="space-y-1 pt-1 text-[11px]">
           <div className="flex items-center gap-1.5 text-foreground">
             <Calendar className="h-3.5 w-3.5 text-primary" />

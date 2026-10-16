@@ -1,7 +1,7 @@
 /**
  * @file academic-structure.ts
  * @description Mô hình cây tổ chức học thuật chuẩn hóa của Đại học Phenikaa (PU Master Data)
- * 
+ *
  * Cấu trúc phân cấp:
  * University (Đại học Phenikaa)
  *   ├── School (Trường thành viên)
@@ -13,13 +13,7 @@
  *   └── Center (Trung tâm)
  */
 
-export type AcademicUnitType =
-  | 'university'
-  | 'school'
-  | 'faculty'
-  | 'major'
-  | 'institute'
-  | 'center'
+export type AcademicUnitType = 'university' | 'school' | 'faculty' | 'major' | 'institute' | 'center'
 
 export interface AcademicUnitItem {
   id: string
@@ -752,10 +746,7 @@ export function inferAcademicHierarchy(unitNameOrId: string): {
 } {
   const normalized = unitNameOrId.trim().toLowerCase()
   const found = ACADEMIC_UNITS_DATA.find(
-    (u) =>
-      u.id.toLowerCase() === normalized ||
-      u.name.toLowerCase() === normalized ||
-      (u.shortName && u.shortName.toLowerCase() === normalized)
+    (u) => u.id.toLowerCase() === normalized || u.name.toLowerCase() === normalized || (u.shortName && u.shortName.toLowerCase() === normalized)
   )
 
   if (!found) {

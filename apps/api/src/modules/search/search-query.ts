@@ -16,18 +16,11 @@ const MAX_TOKENS = 8
 
 // Từ nối tiếng Việt (so khớp trên dạng CÓ DẤU: bỏ dấu trước sẽ nhầm "đề"→"de", "ôn"→"on")
 // Lọc để câu tự nhiên ("tài liệu của môn giải tích") vẫn ra kết quả khi AND các từ
-const STOPWORDS = new Set([
-  'của', 'và', 'là', 'các', 'những', 'cho', 'với', 'có', 'không', 'một', 'trong', 'được', 'này', 'để', 'ở', 'thì', 'mà'
-])
+const STOPWORDS = new Set(['của', 'và', 'là', 'các', 'những', 'cho', 'với', 'có', 'không', 'một', 'trong', 'được', 'này', 'để', 'ở', 'thì', 'mà'])
 
 // Bỏ dấu tiếng Việt: NFD + xóa dấu kết hợp + đ→d (khớp hành vi unaccent trong Postgres)
 export function foldVietnamese(input: string): string {
-  return input
-    .normalize('NFD')
-    .replace(/\p{M}/gu, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
-    .toLowerCase()
+  return input.normalize('NFD').replace(/\p{M}/gu, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 }
 
 export function parseQuery(input: string): ParsedQuery {
@@ -43,7 +36,10 @@ export function parseQuery(input: string): ParsedQuery {
     return { plain: tag ?? '', tsquery: null, tag, isEmpty: !tag }
   }
 
-  const meaningful = words.filter((w) => !STOPWORDS.has(w)).map(fold).filter(Boolean)
+  const meaningful = words
+    .filter((w) => !STOPWORDS.has(w))
+    .map(fold)
+    .filter(Boolean)
   const used = meaningful.length > 0 ? meaningful : words.map(fold).filter(Boolean)
   // 1 ký tự khớp gần như mọi thứ ⇒ coi là chưa đủ để tìm
   if (used.join('').length < 2) return { plain: '', tsquery: null, tag: null, isEmpty: true }

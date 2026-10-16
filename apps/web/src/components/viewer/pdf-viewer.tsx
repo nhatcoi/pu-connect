@@ -1,14 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  FileText,
-  Download,
-  ZoomIn,
-  ZoomOut,
-  ExternalLink,
-  Loader2
-} from 'lucide-react'
+import { FileText, Download, ZoomIn, ZoomOut, ExternalLink, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface PdfViewerProps {
@@ -43,12 +36,7 @@ export function PdfViewer({ url, title }: PdfViewerProps) {
 
           <div className="mx-1.5 h-4 w-px bg-border" />
 
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 gap-1.5 text-xs"
-            onClick={() => window.open(url, '_blank')}
-          >
+          <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs" onClick={() => window.open(url, '_blank')}>
             <ExternalLink className="h-3.5 w-3.5" />
             <span>Mở tab mới</span>
           </Button>

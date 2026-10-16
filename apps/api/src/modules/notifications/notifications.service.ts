@@ -41,9 +41,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     for (const input of inputs) {
       if (seen.has(input.recipientId)) continue
       seen.add(input.recipientId)
-      await this.notify(input).catch((err) =>
-        this.logger.error(`notify ${input.type} → ${input.recipientId} failed: ${err?.message}`)
-      )
+      await this.notify(input).catch((err) => this.logger.error(`notify ${input.type} → ${input.recipientId} failed: ${err?.message}`))
     }
   }
 
@@ -62,9 +60,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     if (!isInAppEnabled(row.notification_settings, input.type)) return // người dùng đã tắt loại này
 
     const actorName = input.actorId ? await this.actorName(input.actorId) : null
-    const saved = input.groupKey
-      ? await this.upsertGrouped(input, actorName)
-      : await this.insertSingle(input, actorName)
+    const saved = input.groupKey ? await this.upsertGrouped(input, actorName) : await this.insertSingle(input, actorName)
     if (!saved) return // actor đã có trong nhóm (ví dụ bỏ thích rồi thích lại) ⇒ không báo lại
 
     const item = await this.findOneItem(saved)
@@ -133,10 +129,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     if (res.rows.length === 0) return null
     const { id, actors_count } = res.rows[0]
     if (actors_count > 1) {
-      await this.db.query(`UPDATE notifications SET title = $1 WHERE id = $2`, [
-        this.buildTitle(actorName, actors_count, input.verb),
-        id
-      ])
+      await this.db.query(`UPDATE notifications SET title = $1 WHERE id = $2`, [this.buildTitle(actorName, actors_count, input.verb), id])
     }
     return id
   }
@@ -186,26 +179,17 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async unreadCount(recipientId: string): Promise<number> {
-    const res = await this.db.query(
-      `SELECT COUNT(*)::int AS count FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`,
-      [recipientId]
-    )
+    const res = await this.db.query(`SELECT COUNT(*)::int AS count FROM notifications WHERE recipient_id = $1 AND is_read = FALSE`, [recipientId])
     return res.rows[0]?.count || 0
   }
 
   async markAsRead(id: string, recipientId: string): Promise<{ success: boolean; unreadCount: number }> {
-    await this.db.query(
-      `UPDATE notifications SET is_read = TRUE WHERE id = $1 AND recipient_id = $2 AND is_read = FALSE`,
-      [id, recipientId]
-    )
+    await this.db.query(`UPDATE notifications SET is_read = TRUE WHERE id = $1 AND recipient_id = $2 AND is_read = FALSE`, [id, recipientId])
     return this.afterRead(recipientId, { ids: [id] })
   }
 
   async markAllAsRead(recipientId: string): Promise<{ success: boolean; unreadCount: number }> {
-    await this.db.query(
-      `UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1 AND is_read = FALSE`,
-      [recipientId]
-    )
+    await this.db.query(`UPDATE notifications SET is_read = TRUE WHERE recipient_id = $1 AND is_read = FALSE`, [recipientId])
     return this.afterRead(recipientId, { all: true })
   }
 
@@ -278,9 +262,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
 
   private async cleanup() {
     try {
-      const res = await this.db.query(
-        `DELETE FROM notifications WHERE is_read = TRUE AND updated_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`
-      )
+      const res = await this.db.query(`DELETE FROM notifications WHERE is_read = TRUE AND updated_at < NOW() - INTERVAL '${RETENTION_DAYS} days'`)
       if (res.rowCount) this.logger.log(`Retention cleanup: removed ${res.rowCount} notifications`)
     } catch (err: any) {
       this.logger.error(`Retention cleanup failed: ${err?.message}`)

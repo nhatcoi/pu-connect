@@ -30,7 +30,8 @@ export function UserPicker({
 
   const results = useQuery({
     queryKey: ['chat-user-search', debounced],
-    queryFn: async () => (await apiClient<{ success: boolean; data: SearchResult }>(`/search?q=${encodeURIComponent(debounced)}&type=users&limit=8`)).data.users,
+    queryFn: async () =>
+      (await apiClient<{ success: boolean; data: SearchResult }>(`/search?q=${encodeURIComponent(debounced)}&type=users&limit=8`)).data.users,
     enabled: debounced.length >= 2,
     staleTime: 60 * 1000
   })
@@ -43,7 +44,11 @@ export function UserPicker({
       {selected.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {selected.map((u) => (
-            <button key={u.id} onClick={() => toggle(u)} className="flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium cursor-pointer">
+            <button
+              key={u.id}
+              onClick={() => toggle(u)}
+              className="flex items-center gap-1 rounded-full bg-primary/10 text-primary px-2.5 py-1 text-xs font-medium cursor-pointer"
+            >
               {u.displayName} <X className="h-3 w-3" />
             </button>
           ))}

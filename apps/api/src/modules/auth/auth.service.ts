@@ -102,9 +102,7 @@ export class AuthService {
       throw new ConflictException('Email hoặc Tên đăng nhập đã tồn tại trong hệ thống')
     }
 
-    const usernameLower = data.username
-      ? data.username.toLowerCase().trim()
-      : await this.generateUniqueUsername(emailLower.split('@')[0])
+    const usernameLower = data.username ? data.username.toLowerCase().trim() : await this.generateUniqueUsername(emailLower.split('@')[0])
 
     const salt = await bcrypt.genSalt(12)
     const passwordHash = await bcrypt.hash(data.password, salt)
@@ -142,9 +140,7 @@ export class AuthService {
 
   // Kiểm tra email đã có tài khoản chưa (dùng cho luồng nhập email trước)
   async checkEmail(email: string): Promise<{ exists: boolean; hasPassword: boolean }> {
-    const res = await this.db.query(`SELECT password_hash FROM users WHERE email = $1 LIMIT 1`, [
-      email.toLowerCase().trim()
-    ])
+    const res = await this.db.query(`SELECT password_hash FROM users WHERE email = $1 LIMIT 1`, [email.toLowerCase().trim()])
     if (res.rows.length === 0) return { exists: false, hasPassword: false }
     return { exists: true, hasPassword: !!res.rows[0].password_hash }
   }
@@ -167,10 +163,7 @@ export class AuthService {
 
   // Gửi lại email xác thực (giới hạn 1 lần / 60 giây)
   async resendVerification(userId: string): Promise<{ sent: boolean }> {
-    const res = await this.db.query(
-      `SELECT email, display_name, email_verified, verify_sent_at FROM users WHERE id = $1 LIMIT 1`,
-      [userId]
-    )
+    const res = await this.db.query(`SELECT email, display_name, email_verified, verify_sent_at FROM users WHERE id = $1 LIMIT 1`, [userId])
     const row = res.rows[0]
     if (!row) throw new NotFoundException('Người dùng không tồn tại')
     if (row.email_verified) return { sent: false }
@@ -237,10 +230,9 @@ export class AuthService {
     if (!token || !/^[a-f0-9]{64}$/.test(token)) {
       throw new BadRequestException('Liên kết xác thực không hợp lệ')
     }
-    const res = await this.db.query(
-      `SELECT id, email FROM users WHERE verify_token_hash = $1 AND verify_token_expires > NOW() LIMIT 1`,
-      [this.hashToken(token)]
-    )
+    const res = await this.db.query(`SELECT id, email FROM users WHERE verify_token_hash = $1 AND verify_token_expires > NOW() LIMIT 1`, [
+      this.hashToken(token)
+    ])
     if (res.rows.length === 0) {
       throw new BadRequestException('Liên kết xác thực không hợp lệ hoặc đã hết hạn')
     }
@@ -278,7 +270,12 @@ export class AuthService {
 
   // Tạo username hợp lệ (a-z0-9_, 3-30 ký tự) và chưa tồn tại
   private async generateUniqueUsername(seed: string): Promise<string> {
-    const base = (seed.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24) || 'user').padEnd(3, '0')
+    const base = (
+      seed
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '')
+        .slice(0, 24) || 'user'
+    ).padEnd(3, '0')
     let candidate = base
     for (let i = 0; i < 10; i++) {
       const taken = await this.db.query(`SELECT 1 FROM users WHERE username = $1 LIMIT 1`, [candidate])
@@ -299,10 +296,7 @@ export class AuthService {
   }): Promise<UserProfile> {
     const email = profile.email.toLowerCase().trim()
 
-    const byGoogle = await this.db.query(
-      `SELECT id FROM users WHERE google_id = $1 AND account_type = 'human' LIMIT 1`,
-      [profile.googleId]
-    )
+    const byGoogle = await this.db.query(`SELECT id FROM users WHERE google_id = $1 AND account_type = 'human' LIMIT 1`, [profile.googleId])
     if (byGoogle.rows.length > 0) {
       return (await this.findById(byGoogle.rows[0].id)) as UserProfile
     }
@@ -344,8 +338,7 @@ export class AuthService {
         email,
         username,
         profile.displayName.trim().slice(0, 100) || username,
-        profile.avatarUrl ||
-          `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(username)}`,
+        profile.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(username)}`,
         isPhenikaa,
         isPhenikaa ? new Date() : null,
         profile.googleId,
@@ -404,21 +397,12 @@ export class AuthService {
       for (const target of data.followUserIds) {
         if (!target) continue
         try {
-          const targetUser = await this.db.query(
-            `SELECT id FROM users WHERE id::text = $1 OR username = $1 LIMIT 1`,
-            [target]
-          )
+          const targetUser = await this.db.query(`SELECT id FROM users WHERE id::text = $1 OR username = $1 LIMIT 1`, [target])
           if (targetUser.rows.length > 0 && targetUser.rows[0].id !== userId) {
             const followedId = targetUser.rows[0].id
-            const existingFollow = await this.db.query(
-              `SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2 LIMIT 1`,
-              [userId, followedId]
-            )
+            const existingFollow = await this.db.query(`SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2 LIMIT 1`, [userId, followedId])
             if (existingFollow.rows.length === 0) {
-              await this.db.query(
-                `INSERT INTO user_follows (follower_id, following_id) VALUES ($1, $2)`,
-                [userId, followedId]
-              )
+              await this.db.query(`INSERT INTO user_follows (follower_id, following_id) VALUES ($1, $2)`, [userId, followedId])
             }
           }
         } catch {

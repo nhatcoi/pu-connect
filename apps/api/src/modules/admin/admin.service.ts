@@ -1,13 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { PoolClient } from 'pg'
-import type {
-  AdminAuditLog,
-  AdminReportedPost,
-  AdminStats,
-  AdminUserRow,
-  UserInsight,
-  ZeroResultQuery
-} from '@pu/schemas'
+import type { AdminAuditLog, AdminReportedPost, AdminStats, AdminUserRow, UserInsight, ZeroResultQuery } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { UserInsightService } from '../personalization/user-insight.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
@@ -101,10 +94,7 @@ export class AdminService {
 
   async unhidePost(adminId: string, postId: string): Promise<{ hidden: boolean }> {
     await this.db.transaction(async (client) => {
-      const res = await client.query(
-        `UPDATE posts SET hidden_at = NULL, hidden_by = NULL, hidden_reason = NULL WHERE id = $1 RETURNING id`,
-        [postId]
-      )
+      const res = await client.query(`UPDATE posts SET hidden_at = NULL, hidden_by = NULL, hidden_reason = NULL WHERE id = $1 RETURNING id`, [postId])
       if (res.rowCount === 0) throw new NotFoundException('Bài viết không tồn tại')
       await this.audit(client, adminId, { action: 'post.unhide', targetType: 'post', targetId: postId })
     })
@@ -169,10 +159,10 @@ export class AdminService {
       if (target.rows[0].role === 'admin' || target.rows[0].account_type !== 'human') {
         throw new ForbiddenException('Không thể khóa tài khoản quản trị hoặc tài khoản hệ thống')
       }
-      await client.query(
-        `UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = $2, updated_at = NOW() WHERE id = $1`,
-        [userId, reason || null]
-      )
+      await client.query(`UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = $2, updated_at = NOW() WHERE id = $1`, [
+        userId,
+        reason || null
+      ])
       await client.query(`DELETE FROM user_sessions WHERE sess::jsonb #>> '{passport,user,id}' = $1`, [userId])
       await this.audit(client, adminId, { action: 'user.suspend', targetType: 'user', targetId: userId, details: { reason } })
     })
@@ -249,9 +239,12 @@ export class AdminService {
   }
 
   private async audit(client: PoolClient, adminId: string, entry: AuditEntry) {
-    await client.query(
-      `INSERT INTO admin_audit_logs (admin_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)`,
-      [adminId, entry.action, entry.targetType, entry.targetId, entry.details ? JSON.stringify(entry.details) : null]
-    )
+    await client.query(`INSERT INTO admin_audit_logs (admin_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)`, [
+      adminId,
+      entry.action,
+      entry.targetType,
+      entry.targetId,
+      entry.details ? JSON.stringify(entry.details) : null
+    ])
   }
 }

@@ -1,22 +1,10 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import {
-  Dialog,
-  DialogContent
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
-import {
-  X,
-  Camera,
-  Image as ImageIcon,
-  ChevronRight,
-  Loader2,
-  Check,
-  RotateCcw,
-  Palette
-} from 'lucide-react'
+import { X, Camera, Image as ImageIcon, ChevronRight, Loader2, Check, RotateCcw, Palette } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AcademicUnitSelector } from './academic-unit-selector'
 import { errorMessage } from '@/lib/api-client'
@@ -74,12 +62,7 @@ const uploadErrorDetail = (err: unknown) => {
   return msg && msg !== 'upload failed' ? `: ${msg}` : ''
 }
 
-export function EditProfileDialog({
-  open,
-  onOpenChange,
-  initialData,
-  onSuccess
-}: EditProfileDialogProps) {
+export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }: EditProfileDialogProps) {
   // State form fields
   const [displayName, setDisplayName] = useState(initialData.displayName || '')
   const [bio, setBio] = useState(initialData.bio || '')
@@ -252,22 +235,8 @@ export function EditProfileDialog({
         className="p-0 max-w-[600px] w-full max-h-[90vh] bg-card text-card-foreground border border-border rounded-2xl overflow-hidden flex flex-col shadow-2xl transition-colors duration-200"
       >
         {/* Hidden File Inputs */}
-        <input
-          type="file"
-          ref={avatarInputRef}
-          onChange={handleAvatarUpload}
-          accept="image/*"
-          className="hidden"
-          aria-hidden="true"
-        />
-        <input
-          type="file"
-          ref={bannerInputRef}
-          onChange={handleBannerUpload}
-          accept="image/*"
-          className="hidden"
-          aria-hidden="true"
-        />
+        <input type="file" ref={avatarInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" aria-hidden="true" />
+        <input type="file" ref={bannerInputRef} onChange={handleBannerUpload} accept="image/*" className="hidden" aria-hidden="true" />
 
         {/* 1. Header Bar (Linh hoạt Theme: Light & Dark) */}
         <div className="sticky top-0 z-30 flex items-center justify-between px-4 h-14 bg-card/85 backdrop-blur-md border-b border-border shrink-0 transition-colors">
@@ -280,9 +249,7 @@ export function EditProfileDialog({
             >
               <X className="h-5 w-5" />
             </button>
-            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">
-              Edit profile
-            </h3>
+            <h3 className="text-lg sm:text-xl font-bold tracking-tight text-foreground">Edit profile</h3>
           </div>
 
           <button
@@ -308,11 +275,7 @@ export function EditProfileDialog({
           <div className="relative h-32 sm:h-44 w-full bg-muted flex items-center justify-center overflow-hidden group/banner">
             {bannerUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- xem trước ảnh vừa chọn (blob URL)
-              <img
-                src={bannerUrl}
-                alt="Ảnh bìa hồ sơ"
-                className="absolute inset-0 w-full h-full object-cover transition-transform duration-300"
-              />
+              <img src={bannerUrl} alt="Ảnh bìa hồ sơ" className="absolute inset-0 w-full h-full object-cover transition-transform duration-300" />
             ) : (
               <div className="absolute inset-0 bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-800 dark:from-blue-950 dark:via-indigo-950 dark:to-slate-950">
                 <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
@@ -330,11 +293,7 @@ export function EditProfileDialog({
                 className="h-10 w-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer hover:scale-105 shadow-md border border-white/20"
                 aria-label="Thay đổi ảnh bìa"
               >
-                {isUploadingBanner ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-white" />
-                ) : (
-                  <Camera className="h-5 w-5" />
-                )}
+                {isUploadingBanner ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Camera className="h-5 w-5" />}
               </button>
 
               {/* Nút chọn ảnh bìa mẫu */}
@@ -364,9 +323,7 @@ export function EditProfileDialog({
             {showBannerPresets && (
               <div className="absolute inset-x-3 bottom-3 z-20 p-2.5 bg-card/95 backdrop-blur-md rounded-xl border border-border shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200">
                 <div className="flex items-center justify-between mb-2 px-1">
-                  <span className="text-xs font-semibold text-foreground">
-                    Chọn ảnh bìa học thuật:
-                  </span>
+                  <span className="text-xs font-semibold text-foreground">Chọn ảnh bìa học thuật:</span>
                   <button
                     type="button"
                     onClick={() => setShowBannerPresets(false)}
@@ -384,14 +341,8 @@ export function EditProfileDialog({
                       className="group/preset relative h-12 rounded-lg overflow-hidden border border-border/80 hover:border-primary transition-all cursor-pointer"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element -- xem trước ảnh vừa chọn (blob URL) */}
-                      <img
-                        src={preset.url}
-                        alt={preset.name}
-                        className="w-full h-full object-cover group-hover/preset:scale-105 transition-transform"
-                      />
-                      <span className="absolute inset-x-0 bottom-0 bg-black/60 text-[10px] text-white truncate px-1 py-0.5 text-center">
-                        {preset.name}
-                      </span>
+                      <img src={preset.url} alt={preset.name} className="w-full h-full object-cover group-hover/preset:scale-105 transition-transform" />
+                      <span className="absolute inset-x-0 bottom-0 bg-black/60 text-[10px] text-white truncate px-1 py-0.5 text-center">{preset.name}</span>
                     </button>
                   ))}
                 </div>
@@ -417,23 +368,15 @@ export function EditProfileDialog({
                 className="absolute inset-0 m-auto h-9 w-9 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition-all cursor-pointer hover:scale-105 border border-white/20 shadow-md"
                 aria-label="Đổi ảnh đại diện"
               >
-                {isUploadingAvatar ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-white" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}
+                {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Camera className="h-4 w-4" />}
               </button>
             </div>
 
             {/* Thẻ quảng bá Imagine (Theme Adaptive) */}
             <div className="flex-1 flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-muted/50 dark:bg-neutral-900/80 border border-border/80 shadow-xs min-w-0 transition-colors">
               <div className="space-y-0.5 min-w-0 pr-2">
-                <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">
-                  Edit your photo with Imagine
-                </h4>
-                <p className="text-[11px] sm:text-xs text-muted-foreground truncate">
-                  Customize yourself in seconds
-                </p>
+                <h4 className="text-xs sm:text-sm font-bold text-foreground truncate">Edit your photo with Imagine</h4>
+                <p className="text-[11px] sm:text-xs text-muted-foreground truncate">Customize yourself in seconds</p>
               </div>
 
               <button
@@ -452,15 +395,10 @@ export function EditProfileDialog({
             {/* Name Input */}
             <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3.5 pt-2 pb-1.5 transition-all">
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="name"
-                  className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors"
-                >
+                <label htmlFor="name" className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">
                   Name
                 </label>
-                <span className="text-[11px] text-muted-foreground/80 font-mono hidden group-focus-within:inline-block">
-                  {displayName.length} / 50
-                </span>
+                <span className="text-[11px] text-muted-foreground/80 font-mono hidden group-focus-within:inline-block">{displayName.length} / 50</span>
               </div>
               <input
                 id="name"
@@ -476,15 +414,10 @@ export function EditProfileDialog({
             {/* Bio Textarea */}
             <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3.5 pt-2 pb-2 transition-all min-h-[90px]">
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="bio"
-                  className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors"
-                >
+                <label htmlFor="bio" className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">
                   Bio
                 </label>
-                <span className="text-[11px] text-muted-foreground/80 font-mono hidden group-focus-within:inline-block">
-                  {bio.length} / 250
-                </span>
+                <span className="text-[11px] text-muted-foreground/80 font-mono hidden group-focus-within:inline-block">{bio.length} / 250</span>
               </div>
               <textarea
                 id="bio"
@@ -499,10 +432,7 @@ export function EditProfileDialog({
 
             {/* Location Input */}
             <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3.5 pt-2 pb-1.5 transition-all">
-              <label
-                htmlFor="location"
-                className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors"
-              >
+              <label htmlFor="location" className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">
                 Location
               </label>
               <input
@@ -517,10 +447,7 @@ export function EditProfileDialog({
 
             {/* Website Input */}
             <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3.5 pt-2 pb-1.5 transition-all">
-              <label
-                htmlFor="website"
-                className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors"
-              >
+              <label htmlFor="website" className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">
                 Website
               </label>
               <input
@@ -558,12 +485,8 @@ export function EditProfileDialog({
                 aria-expanded={isEditingBirthDate}
               >
                 <div>
-                  <span className="block text-xs text-muted-foreground font-normal">
-                    Birth date
-                  </span>
-                  <span className="text-sm font-medium text-foreground">
-                    {birthDate || 'Chưa cập nhật'}
-                  </span>
+                  <span className="block text-xs text-muted-foreground font-normal">Birth date</span>
+                  <span className="text-sm font-medium text-foreground">{birthDate || 'Chưa cập nhật'}</span>
                 </div>
                 <ChevronRight
                   className={cn(

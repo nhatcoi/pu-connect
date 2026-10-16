@@ -64,10 +64,7 @@ export function MessageActions({ message: m, mine, visible, handlers }: { messag
         </DropdownMenuTrigger>
         <DropdownMenuContent align={mine ? 'end' : 'start'} className="w-44 p-1 rounded-xl">
           {m.content && (
-            <DropdownMenuItem
-              className={itemCls}
-              onClick={() => navigator.clipboard.writeText(m.content).then(() => toast.success('Đã chép tin nhắn'))}
-            >
+            <DropdownMenuItem className={itemCls} onClick={() => navigator.clipboard.writeText(m.content).then(() => toast.success('Đã chép tin nhắn'))}>
               <Copy className="h-3.5 w-3.5" /> Sao chép
             </DropdownMenuItem>
           )}
@@ -95,7 +92,14 @@ export function MessageActions({ message: m, mine, visible, handlers }: { messag
 
 const IconButton = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string }>(
   ({ label, children, ...props }, ref) => (
-    <button ref={ref} type="button" aria-label={label} title={label} className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center cursor-pointer" {...props}>
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      title={label}
+      className="h-7 w-7 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted flex items-center justify-center cursor-pointer"
+      {...props}
+    >
       {children}
     </button>
   )

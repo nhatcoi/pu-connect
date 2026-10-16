@@ -16,7 +16,12 @@ export function AttachmentView({ attachments, mine }: { attachments: ChatAttachm
   return (
     <div className={cn('flex flex-col gap-1', mine ? 'items-end' : 'items-start')}>
       {images.length > 0 && (
-        <div className={cn('grid gap-1 rounded-2xl overflow-hidden max-w-[320px]', images.length === 1 ? 'grid-cols-1' : images.length === 2 || images.length === 4 ? 'grid-cols-2' : 'grid-cols-3')}>
+        <div
+          className={cn(
+            'grid gap-1 rounded-2xl overflow-hidden max-w-[320px]',
+            images.length === 1 ? 'grid-cols-1' : images.length === 2 || images.length === 4 ? 'grid-cols-2' : 'grid-cols-3'
+          )}
+        >
           {images.map((img, i) => (
             <button key={img.key} onClick={() => setOpen(i)} className="relative block bg-muted cursor-zoom-in">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -47,7 +52,9 @@ export function FileCard({ file, className }: { file: ChatAttachment; className?
       download={file.name}
       className={cn('flex items-center gap-2.5 rounded-xl bg-card border px-3 py-2 w-64 max-w-full hover:bg-muted/60 transition-colors', className)}
     >
-      <span className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">{fileExt(file.name)}</span>
+      <span className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
+        {fileExt(file.name)}
+      </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-medium truncate">{file.name}</span>
         <span className="block text-[11px] text-muted-foreground">{fileSize(file.size)}</span>
@@ -86,10 +93,21 @@ export function ImageLightbox({ images, index, onIndex }: { images: ChatAttachme
             </>
           )}
           <div className="absolute top-2 right-2 flex gap-1.5">
-            <a href={img.url} target="_blank" rel="noopener noreferrer" download={img.name} className="h-9 w-9 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25" aria-label="Tải ảnh">
+            <a
+              href={img.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={img.name}
+              className="h-9 w-9 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25"
+              aria-label="Tải ảnh"
+            >
               <Download className="h-4 w-4" />
             </a>
-            <button onClick={() => onIndex(null)} className="h-9 w-9 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 cursor-pointer" aria-label="Đóng">
+            <button
+              onClick={() => onIndex(null)}
+              className="h-9 w-9 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 cursor-pointer"
+              aria-label="Đóng"
+            >
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -106,7 +124,14 @@ export function ImageLightbox({ images, index, onIndex }: { images: ChatAttachme
 
 function LightboxButton({ className, onClick, label, children }: { className: string; onClick: () => void; label: string; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} aria-label={label} className={cn('absolute top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 cursor-pointer', className)}>
+    <button
+      onClick={onClick}
+      aria-label={label}
+      className={cn(
+        'absolute top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/15 text-white flex items-center justify-center hover:bg-white/25 cursor-pointer',
+        className
+      )}
+    >
       {children}
     </button>
   )

@@ -19,7 +19,10 @@ const EventSchema = z
     targetType: z.enum(['post', 'document']).optional(),
     targetId: z.string().uuid().optional(),
     // Chỉ chuỗi ngắn (từ khóa, nguồn gợi ý…) — không nhận dữ liệu tùy ý
-    meta: z.record(z.string().max(40), z.string().max(120)).refine((m) => Object.keys(m).length <= 6).optional()
+    meta: z
+      .record(z.string().max(40), z.string().max(120))
+      .refine((m) => Object.keys(m).length <= 6)
+      .optional()
   })
   .strict()
 

@@ -38,14 +38,7 @@ function normalizeInlineMarkdown(text: string): string {
   return out
 }
 
-function CodeBlock({
-  className,
-  children,
-  ...props
-}: {
-  className?: string
-  children?: React.ReactNode
-}) {
+function CodeBlock({ className, children, ...props }: { className?: string; children?: React.ReactNode }) {
   const [copied, setCopied] = useState(false)
   const match = /language-(\w+)/.exec(className || '')
   const language = match ? match[1] : ''
@@ -65,12 +58,7 @@ function CodeBlock({
     <div className="group relative my-3 rounded-lg border bg-muted/40 font-mono text-sm overflow-hidden">
       <div className="flex items-center justify-between border-b bg-muted/70 px-3 py-1.5 text-xs text-muted-foreground">
         <span>{language || 'text'}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          className="h-6 px-2 text-xs hover:bg-background cursor-pointer"
-        >
+        <Button variant="ghost" size="sm" onClick={handleCopy} className="h-6 px-2 text-xs hover:bg-background cursor-pointer">
           {copied ? (
             <>
               <Check className="mr-1 h-3 w-3 text-green-500" />
@@ -103,20 +91,19 @@ function enhanceMentionsAndTags(text: string): string {
   return parts
     .map((part) => {
       if (part.startsWith('```')) return part
-      return part
-        // @username -> [@username](/username)
-        .replace(/(^|[\s(])@([a-zA-Z0-9_]{3,30})/g, '$1[@$2](/$2)')
-        // #tag -> [#tag](/search?q=tag) (exclude Markdown # Headings with space)
-        .replace(/(^|[\s(])#([a-zA-Z0-9_]{2,40})/g, '$1[#$2](/search?q=$2)')
+      return (
+        part
+          // @username -> [@username](/username)
+          .replace(/(^|[\s(])@([a-zA-Z0-9_]{3,30})/g, '$1[@$2](/$2)')
+          // #tag -> [#tag](/search?q=tag) (exclude Markdown # Headings with space)
+          .replace(/(^|[\s(])#([a-zA-Z0-9_]{2,40})/g, '$1[#$2](/search?q=$2)')
+      )
     })
     .join('')
 }
 
 export function MarkdownPreview({ content, className, inline = false }: MarkdownPreviewProps) {
-  const processedContent = useMemo(
-    () => (inline ? normalizeInlineMarkdown(content || '') : enhanceMentionsAndTags(content || '')),
-    [content, inline]
-  )
+  const processedContent = useMemo(() => (inline ? normalizeInlineMarkdown(content || '') : enhanceMentionsAndTags(content || '')), [content, inline])
 
   const components: Components = {
     ...(inline
@@ -142,13 +129,7 @@ export function MarkdownPreview({ content, className, inline = false }: Markdown
 
       if (isInline) {
         return (
-          <code
-            className={cn(
-              'rounded bg-muted font-mono text-foreground',
-              inline ? 'px-1 py-0.5 text-[0.92em]' : 'px-1.5 py-0.5 text-xs'
-            )}
-            {...props}
-          >
+          <code className={cn('rounded bg-muted font-mono text-foreground', inline ? 'px-1 py-0.5 text-[0.92em]' : 'px-1.5 py-0.5 text-xs')} {...props}>
             {children}
           </code>
         )
@@ -170,11 +151,7 @@ export function MarkdownPreview({ content, className, inline = false }: Markdown
     },
     th({ children }) {
       if (inline) return <strong className="font-semibold">{children} </strong>
-      return (
-        <th className="border bg-muted px-3 py-2 text-left font-semibold text-foreground">
-          {children}
-        </th>
-      )
+      return <th className="border bg-muted px-3 py-2 text-left font-semibold text-foreground">{children}</th>
     },
     td({ children }) {
       if (inline) return <span>{children} </span>
@@ -187,22 +164,14 @@ export function MarkdownPreview({ content, className, inline = false }: Markdown
       const isInternal = href?.startsWith('/') || href?.startsWith('#')
       if (isInternal && href) {
         return (
-          <Link
-            href={href}
-            className="font-semibold text-primary hover:underline hover:text-primary/90 transition-colors"
-          >
+          <Link href={href} className="font-semibold text-primary hover:underline hover:text-primary/90 transition-colors">
             {children}
           </Link>
         )
       }
 
       return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-primary underline underline-offset-4 hover:opacity-80"
-        >
+        <a href={href} target="_blank" rel="noopener noreferrer" className="font-medium text-primary underline underline-offset-4 hover:opacity-80">
           {children}
         </a>
       )

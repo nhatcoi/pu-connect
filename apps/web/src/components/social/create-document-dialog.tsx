@@ -1,13 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAppStore } from '@/store'
@@ -136,12 +130,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
 
           <div>
             <label className="font-semibold block mb-1 text-foreground">Đường dẫn tệp</label>
-            <Input
-              placeholder="https://..."
-              value={fileUrl}
-              onChange={(e) => setFileUrl(e.target.value)}
-              className="bg-background text-foreground"
-            />
+            <Input placeholder="https://..." value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} className="bg-background text-foreground" />
           </div>
         </div>
 

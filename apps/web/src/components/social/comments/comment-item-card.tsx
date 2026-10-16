@@ -47,13 +47,7 @@ export function CommentItemCard({
   const [isEditing, setIsEditing] = useState(false)
   const queryClient = useQueryClient()
 
-  const authorInitials = (
-    comment.author?.displayName ||
-    comment.author?.username ||
-    'PU'
-  )
-    .slice(0, 2)
-    .toUpperCase()
+  const authorInitials = (comment.author?.displayName || comment.author?.username || 'PU').slice(0, 2).toUpperCase()
 
   const isMyComment = currentUserId === comment.authorId
 
@@ -63,9 +57,7 @@ export function CommentItemCard({
       className={cn(
         'group relative rounded-xl transition-all duration-150 p-3 space-y-2 scroll-mt-28',
         isHighlighted && 'ring-2 ring-brand-orange/60 bg-brand-orange/5',
-        comment.isSolution
-          ? 'bg-emerald-500/5 border border-emerald-500/30'
-          : 'hover:bg-muted/30 border border-transparent hover:border-border/50'
+        comment.isSolution ? 'bg-emerald-500/5 border border-emerald-500/30' : 'hover:bg-muted/30 border border-transparent hover:border-border/50'
       )}
     >
       {/* Solution Banner */}
@@ -91,26 +83,17 @@ export function CommentItemCard({
           ) : (
             <Avatar className="h-7 w-7 border border-border select-none shadow-xs">
               <AvatarImage src={comment.author?.avatarUrl || ''} alt={comment.author?.displayName || ''} />
-              <AvatarFallback className="bg-muted text-foreground font-bold text-[10px]">
-                {authorInitials}
-              </AvatarFallback>
+              <AvatarFallback className="bg-muted text-foreground font-bold text-[10px]">{authorInitials}</AvatarFallback>
             </Avatar>
           )}
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-xs text-foreground group-hover/author:underline">
-              {comment.author?.displayName || 'Sinh viên Phenikaa'}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              @{comment.author?.username || 'student'}
-            </span>
+            <span className="font-bold text-xs text-foreground group-hover/author:underline">{comment.author?.displayName || 'Sinh viên Phenikaa'}</span>
+            <span className="text-[11px] text-muted-foreground">@{comment.author?.username || 'student'}</span>
             <span className="text-muted-foreground text-[10px]">•</span>
             <span className="text-[10px] text-muted-foreground">{formatRelativeTime(comment.createdAt)}</span>
             {comment.editedAt && (
-              <span
-                className="text-[10px] text-muted-foreground"
-                title={`Sửa lúc ${new Date(comment.editedAt).toLocaleString('vi-VN')}`}
-              >
+              <span className="text-[10px] text-muted-foreground" title={`Sửa lúc ${new Date(comment.editedAt).toLocaleString('vi-VN')}`}>
                 · đã chỉnh sửa
               </span>
             )}
@@ -183,26 +166,16 @@ export function CommentItemCard({
           <MarkdownPreview content={comment.content} className="text-xs leading-relaxed" />
         )}
 
-        {comment.mediaUrls && comment.mediaUrls.length > 0 && (
-          <PostMediaGallery mediaUrls={comment.mediaUrls} className="mt-1" />
-        )}
+        {comment.mediaUrls && comment.mediaUrls.length > 0 && <PostMediaGallery mediaUrls={comment.mediaUrls} className="mt-1" />}
 
         {/* Actions bar: Like, Reply */}
         <div className="flex items-center gap-4 pt-1 text-xs text-muted-foreground">
           <button
             type="button"
             onClick={() => onLikeToggle(comment.id)}
-            className={cn(
-              'flex items-center gap-1 transition-colors cursor-pointer hover:text-rose-500',
-              comment.isLikedByMe && 'text-rose-500 font-semibold'
-            )}
+            className={cn('flex items-center gap-1 transition-colors cursor-pointer hover:text-rose-500', comment.isLikedByMe && 'text-rose-500 font-semibold')}
           >
-            <Heart
-              className={cn(
-                'h-3.5 w-3.5 transition-transform active:scale-125',
-                comment.isLikedByMe && 'fill-current text-rose-500'
-              )}
-            />
+            <Heart className={cn('h-3.5 w-3.5 transition-transform active:scale-125', comment.isLikedByMe && 'fill-current text-rose-500')} />
             <span>{comment.likesCount || 0}</span>
           </button>
 

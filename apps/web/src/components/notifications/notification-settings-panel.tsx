@@ -5,19 +5,8 @@ import { BellRing, Loader2, Moon, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import {
-  notificationsApi,
-  type NotificationSettings,
-  type NotificationSettingsPatch
-} from '@/hooks/use-notifications'
-import {
-  disablePush,
-  enablePush,
-  getPushStatus,
-  isIosNeedingInstall,
-  sendTestPush,
-  type PushStatus
-} from '@/lib/push'
+import { notificationsApi, type NotificationSettings, type NotificationSettingsPatch } from '@/hooks/use-notifications'
+import { disablePush, enablePush, getPushStatus, isIosNeedingInstall, sendTestPush, type PushStatus } from '@/lib/push'
 import { SettingsListSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -43,8 +32,13 @@ export function NotificationSettingsPanel() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    notificationsApi.getSettings().then((r) => setSettings(r.data)).catch(() => undefined)
-    getPushStatus().then(setPushStatus).catch(() => setPushStatus('unsupported'))
+    notificationsApi
+      .getSettings()
+      .then((r) => setSettings(r.data))
+      .catch(() => undefined)
+    getPushStatus()
+      .then(setPushStatus)
+      .catch(() => setPushStatus('unsupported'))
   }, [])
 
   // Cập nhật lạc quan; lỗi ⇒ tải lại từ server
@@ -54,7 +48,10 @@ export function NotificationSettingsPanel() {
       setSettings((await notificationsApi.updateSettings(patch)).data)
     } catch {
       toast.error('Không lưu được cài đặt')
-      notificationsApi.getSettings().then((r) => setSettings(r.data)).catch(() => undefined)
+      notificationsApi
+        .getSettings()
+        .then((r) => setSettings(r.data))
+        .catch(() => undefined)
     }
   }
 
@@ -118,13 +115,7 @@ export function NotificationSettingsPanel() {
                 <Send className="mr-1 h-3.5 w-3.5" /> Gửi thử
               </Button>
             )}
-            <Button
-              size="sm"
-              variant={pushOn ? 'outline' : 'default'}
-              onClick={togglePush}
-              disabled={busy}
-              className="h-8 rounded-full px-3 text-xs"
-            >
+            <Button size="sm" variant={pushOn ? 'outline' : 'default'} onClick={togglePush} disabled={busy} className="h-8 rounded-full px-3 text-xs">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : pushOn ? 'Tắt' : 'Bật'}
             </Button>
           </div>
@@ -158,9 +149,7 @@ export function NotificationSettingsPanel() {
                   <Switch
                     checked={inApp}
                     aria-label={`${label} — trong app`}
-                    onCheckedChange={(v) =>
-                      save({ inApp: { [type]: v } }, { ...settings, inApp: { ...settings.inApp, [type]: v } })
-                    }
+                    onCheckedChange={(v) => save({ inApp: { [type]: v } }, { ...settings, inApp: { ...settings.inApp, [type]: v } })}
                   />
                 </span>
                 <span className="flex w-14 justify-center">
@@ -168,18 +157,14 @@ export function NotificationSettingsPanel() {
                     checked={push}
                     disabled={!inApp || !pushOn}
                     aria-label={`${label} — trình duyệt`}
-                    onCheckedChange={(v) =>
-                      save({ push: { [type]: v } }, { ...settings, push: { ...settings.push, [type]: v } })
-                    }
+                    onCheckedChange={(v) => save({ push: { [type]: v } }, { ...settings, push: { ...settings.push, [type]: v } })}
                   />
                 </span>
               </React.Fragment>
             )
           })}
         </div>
-        {!pushOn && (
-          <p className="mt-2 text-[11px] text-muted-foreground">Bật thông báo trên trình duyệt để chọn cột “Trình duyệt”.</p>
-        )}
+        {!pushOn && <p className="mt-2 text-[11px] text-muted-foreground">Bật thông báo trên trình duyệt để chọn cột “Trình duyệt”.</p>}
       </div>
 
       {/* Giờ yên tĩnh (giờ Việt Nam) */}
@@ -189,9 +174,7 @@ export function NotificationSettingsPanel() {
         <Switch
           checked={settings.quietHours.enabled}
           aria-label="Bật giờ yên tĩnh"
-          onCheckedChange={(v) =>
-            save({ quietHours: { enabled: v } }, { ...settings, quietHours: { ...settings.quietHours, enabled: v } })
-          }
+          onCheckedChange={(v) => save({ quietHours: { enabled: v } }, { ...settings, quietHours: { ...settings.quietHours, enabled: v } })}
         />
         {settings.quietHours.enabled && (
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -199,24 +182,14 @@ export function NotificationSettingsPanel() {
             <input
               type="time"
               value={settings.quietHours.start}
-              onChange={(e) =>
-                save(
-                  { quietHours: { start: e.target.value } },
-                  { ...settings, quietHours: { ...settings.quietHours, start: e.target.value } }
-                )
-              }
+              onChange={(e) => save({ quietHours: { start: e.target.value } }, { ...settings, quietHours: { ...settings.quietHours, start: e.target.value } })}
               className="rounded-md border border-border bg-background px-1.5 py-0.5 text-foreground"
             />
             đến
             <input
               type="time"
               value={settings.quietHours.end}
-              onChange={(e) =>
-                save(
-                  { quietHours: { end: e.target.value } },
-                  { ...settings, quietHours: { ...settings.quietHours, end: e.target.value } }
-                )
-              }
+              onChange={(e) => save({ quietHours: { end: e.target.value } }, { ...settings, quietHours: { ...settings.quietHours, end: e.target.value } })}
               className="rounded-md border border-border bg-background px-1.5 py-0.5 text-foreground"
             />
           </span>

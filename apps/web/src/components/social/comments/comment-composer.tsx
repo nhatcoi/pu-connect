@@ -78,13 +78,7 @@ export function CommentComposer({
     }
   }, [autoFocus])
 
-  const userInitials = (
-    user?.displayName ||
-    user?.username ||
-    'PU'
-  )
-    .slice(0, 2)
-    .toUpperCase()
+  const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   const handleInsertText = (snippet: string) => {
     if (!textareaRef.current) {
@@ -168,9 +162,7 @@ export function CommentComposer({
     <div className="flex gap-3 items-start">
       <Avatar className="h-8 w-8 shrink-0 rounded-full border border-border select-none shadow-xs mt-0.5">
         <AvatarImage src={user?.avatarUrl || ''} alt={user?.displayName || 'User'} />
-        <AvatarFallback className="bg-primary text-primary-foreground font-bold text-[10px]">
-          {userInitials}
-        </AvatarFallback>
+        <AvatarFallback className="bg-primary text-primary-foreground font-bold text-[10px]">{userInitials}</AvatarFallback>
       </Avatar>
 
       <div className="relative flex-1 min-w-0 rounded-2xl border border-border/80 bg-card p-2.5 space-y-2 shadow-2xs focus-within:border-primary/60 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
@@ -234,24 +226,17 @@ export function CommentComposer({
         <div className="flex items-center justify-between pt-1 border-t border-border/40">
           <div className="flex items-center gap-1">
             {!isEdit && (
-            <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
-              title="Đính kèm ảnh"
-            >
-              <ImageIcon className="h-3.5 w-3.5" />
-            </button>
-            </>
+              <>
+                <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer"
+                  title="Đính kèm ảnh"
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                </button>
+              </>
             )}
 
             <button
@@ -294,11 +279,7 @@ export function CommentComposer({
               disabled={(!content.trim() && attachedImages.length === 0) || isSubmitting}
               className="h-7 px-3 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs rounded-full gap-1"
             >
-              {isSubmitting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <span>{isEdit ? 'Lưu' : parentId ? 'Trả lời' : 'Bình luận'}</span>
-              )}
+              {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <span>{isEdit ? 'Lưu' : parentId ? 'Trả lời' : 'Bình luận'}</span>}
             </Button>
           </div>
         </div>

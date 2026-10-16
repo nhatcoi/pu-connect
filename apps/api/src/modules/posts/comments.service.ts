@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-  ForbiddenException,
-  Logger
-} from '@nestjs/common'
+import { Injectable, NotFoundException, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -32,12 +26,7 @@ export class CommentsService {
   ) {}
 
   // Phân trang theo bình luận gốc; kèm toàn bộ phản hồi của các gốc trong trang (2 cấp)
-  async findByPost(
-    postId: string,
-    currentUserId?: string,
-    limit = 5,
-    offset = 0
-  ): Promise<CommentsResult> {
+  async findByPost(postId: string, currentUserId?: string, limit = 5, offset = 0): Promise<CommentsResult> {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
 
@@ -97,10 +86,7 @@ export class CommentsService {
     let parentAuthorId: string | null = null
     const created = await this.db.transaction(async (client) => {
       // 1. Check if post exists with row-level lock
-      const postRes = await client.query(
-        `SELECT id, author_id FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`,
-        [data.postId]
-      )
+      const postRes = await client.query(`SELECT id, author_id FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [data.postId])
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
       }
@@ -132,10 +118,9 @@ export class CommentsService {
       if (blocked.rows.length) throw new ForbiddenException('Bạn không thể bình luận ở đây')
 
       // 2. Fetch author details
-      const userRes = await client.query(
-        `SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`,
-        [authorId]
-      )
+      const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
+        authorId
+      ])
       if (userRes.rows.length === 0) {
         throw new NotFoundException('Người dùng không tồn tại')
       }
@@ -155,10 +140,7 @@ export class CommentsService {
       mentioned = await this.mentions.record(client, 'comment', commentRow.id, authorId, data.content)
 
       // 4. Atomically update post comments count
-      await client.query(
-        `UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`,
-        [data.postId]
-      )
+      await client.query(`UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`, [data.postId])
 
       this.logger.log(`[CommentCreated] User ${authorId} commented on post ${data.postId}.`)
 
@@ -230,10 +212,7 @@ export class CommentsService {
     return created
   }
 
-  async acceptSolution(
-    commentId: string,
-    currentUserId: string
-  ): Promise<{ isSolution: boolean; message: string }> {
+  async acceptSolution(commentId: string, currentUserId: string): Promise<{ isSolution: boolean; message: string }> {
     let accepted: { authorId: string; postId: string; content: string } | null = null
     const result = await this.db.transaction(async (client) => {
       // Find comment and post with locks
@@ -258,23 +237,14 @@ export class CommentsService {
 
       // Reset previous solutions on this post if marking new one
       if (newStatus) {
-        await client.query(
-          `UPDATE comments SET is_solution = FALSE WHERE post_id = $1`,
-          [row.post_id]
-        )
+        await client.query(`UPDATE comments SET is_solution = FALSE WHERE post_id = $1`, [row.post_id])
       }
 
       // Update target comment
-      await client.query(
-        `UPDATE comments SET is_solution = $1 WHERE id = $2`,
-        [newStatus, commentId]
-      )
+      await client.query(`UPDATE comments SET is_solution = $1 WHERE id = $2`, [newStatus, commentId])
 
       // Update post is_resolved status
-      await client.query(
-        `UPDATE posts SET is_resolved = $1 WHERE id = $2`,
-        [newStatus, row.post_id]
-      )
+      await client.query(`UPDATE posts SET is_resolved = $1 WHERE id = $2`, [newStatus, row.post_id])
 
       if (newStatus) {
         accepted = { authorId: row.comment_author_id, postId: row.post_id, content: row.content }
@@ -306,32 +276,17 @@ export class CommentsService {
 
   async toggleLike(commentId: string, userId: string): Promise<{ isLiked: boolean; likesCount: number }> {
     return this.db.transaction(async (client) => {
-      const check = await client.query(
-        `SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
-        [commentId, userId]
-      )
+      const check = await client.query(`SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`, [commentId, userId])
 
       let isLiked = false
       if (check.rows.length > 0) {
-        await client.query(
-          `DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`,
-          [commentId, userId]
-        )
-        const res = await client.query(
-          `UPDATE comments SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1 RETURNING likes_count`,
-          [commentId]
-        )
+        await client.query(`DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`, [commentId, userId])
+        const res = await client.query(`UPDATE comments SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1 RETURNING likes_count`, [commentId])
         isLiked = false
         return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
       } else {
-        await client.query(
-          `INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`,
-          [commentId, userId]
-        )
-        const res = await client.query(
-          `UPDATE comments SET likes_count = likes_count + 1 WHERE id = $1 RETURNING likes_count`,
-          [commentId]
-        )
+        await client.query(`INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`, [commentId, userId])
+        const res = await client.query(`UPDATE comments SET likes_count = likes_count + 1 WHERE id = $1 RETURNING likes_count`, [commentId])
         isLiked = true
         return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
       }
@@ -339,17 +294,10 @@ export class CommentsService {
   }
 
   // Sửa nội dung + ghi mention mới trong cùng transaction
-  async update(
-    commentId: string,
-    currentUserId: string,
-    content: string
-  ): Promise<{ id: string; content: string; editedAt: string }> {
+  async update(commentId: string, currentUserId: string, content: string): Promise<{ id: string; content: string; editedAt: string }> {
     let mentioned: MentionedUser[] = []
     const updated = await this.db.transaction(async (client) => {
-      const res = await client.query(
-        `SELECT post_id, author_id FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`,
-        [commentId]
-      )
+      const res = await client.query(`SELECT post_id, author_id FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`, [commentId])
       const row = res.rows[0]
       if (!row) throw new NotFoundException('Không tìm thấy bình luận')
       if (row.author_id !== currentUserId) throw new ForbiddenException('Bạn chỉ sửa được bình luận của mình')
@@ -383,10 +331,7 @@ export class CommentsService {
 
   async delete(commentId: string, currentUserId: string, isAdmin = false): Promise<boolean> {
     return this.db.transaction(async (client) => {
-      const commentRes = await client.query(
-        `SELECT post_id, author_id FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`,
-        [commentId]
-      )
+      const commentRes = await client.query(`SELECT post_id, author_id FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`, [commentId])
 
       if (commentRes.rows.length === 0) {
         throw new NotFoundException('Không tìm thấy bình luận')
@@ -408,10 +353,7 @@ export class CommentsService {
         [commentId]
       )
       await client.query(`DELETE FROM comments WHERE id = $1`, [commentId])
-      await client.query(
-        `UPDATE posts SET comments_count = GREATEST(0, comments_count - $2) WHERE id = $1`,
-        [comment.post_id, removed.rows[0]?.c || 1]
-      )
+      await client.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - $2) WHERE id = $1`, [comment.post_id, removed.rows[0]?.c || 1])
 
       return true
     })

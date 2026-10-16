@@ -5,13 +5,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { MentionCandidate } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
-import {
-  PUAI_CANDIDATE,
-  getActiveMention,
-  insertMention,
-  matchesCandidate,
-  type ActiveMention
-} from '@/lib/mention'
+import { PUAI_CANDIDATE, getActiveMention, insertMention, matchesCandidate, type ActiveMention } from '@/lib/mention'
 
 const MAX_ITEMS = 8
 const DEBOUNCE_MS = 150
@@ -55,11 +49,7 @@ export function useMentionPicker({ textareaRef, value, setValue, postId, context
   const remote = useQuery({
     queryKey: queryKeys.mentionSuggest(debounced ?? '', postId ?? null),
     queryFn: async () =>
-      (
-        await apiClient<{ data: MentionCandidate[] }>(
-          `/mentions/suggest?q=${encodeURIComponent(debounced ?? '')}${postId ? `&postId=${postId}` : ''}`
-        )
-      ).data,
+      (await apiClient<{ data: MentionCandidate[] }>(`/mentions/suggest?q=${encodeURIComponent(debounced ?? '')}${postId ? `&postId=${postId}` : ''}`)).data,
     enabled: open && debounced !== null,
     placeholderData: keepPreviousData,
     staleTime: 60 * 1000

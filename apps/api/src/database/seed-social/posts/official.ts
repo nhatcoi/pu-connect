@@ -28,7 +28,12 @@ Chúc K20 một năm đầu thật vui và đừng trượt Giải tích 1 🙏`
     likes: 18,
     saves: 6,
     comments: [
-      { by: 'vannam2k8', text: 'Em K20 đây ạ, cảm ơn chị nhiều 🥹 Cho em hỏi PU AI có miễn phí không ạ?', after: 25, replies: [{ by: 'tranngocdiep', text: 'Miễn phí nha em, mỗi ngày có giới hạn lượt hỏi thôi. Hỏi bài thì cứ thoải mái!', after: 12 }] },
+      {
+        by: 'vannam2k8',
+        text: 'Em K20 đây ạ, cảm ơn chị nhiều 🥹 Cho em hỏi PU AI có miễn phí không ạ?',
+        after: 25,
+        replies: [{ by: 'tranngocdiep', text: 'Miễn phí nha em, mỗi ngày có giới hạn lượt hỏi thôi. Hỏi bài thì cứ thoải mái!', after: 12 }]
+      },
       { by: 'thuydung05', text: '"Đừng trượt Giải tích 1" là lời chúc chân thành nhất mình từng nghe 😭', after: 60, likes: 7 },
       { by: 'lehoangphuc', text: 'Bổ sung: app có dark mode ở góc trên bên phải, học đêm đỡ chói mắt 🌙', after: 95 }
     ]
@@ -61,8 +66,19 @@ Ai gặp lỗi thì comment dưới đây hoặc nhắn mình, kèm ảnh chụp
     saves: 2,
     comments: [
       { by: 'minhtuan_dev', text: 'Feed load nhanh hơn hẳn anh ơi. Mà nút "Xem thêm" giờ đúng chỗ hơn rồi 👍', after: 40 },
-      { by: 'haiyen_ux', text: 'Chip gợi ý của PU AI xinh ghê, nhưng trên mobile hơi sát mép phải anh xem lại giúp em nha', after: 75, replies: [{ by: 'lehoangphuc', text: 'Ok em, mai anh chỉnh padding. Cảm ơn em!', after: 20 }] },
-      { by: 'tiendat_ngo', text: 'bao giờ có tính năng gửi sticker hả anh', after: 130, likes: 4, replies: [{ by: 'lehoangphuc', text: 'Đang nằm trong backlog rồi nhé 😂', after: 15 }] }
+      {
+        by: 'haiyen_ux',
+        text: 'Chip gợi ý của PU AI xinh ghê, nhưng trên mobile hơi sát mép phải anh xem lại giúp em nha',
+        after: 75,
+        replies: [{ by: 'lehoangphuc', text: 'Ok em, mai anh chỉnh padding. Cảm ơn em!', after: 20 }]
+      },
+      {
+        by: 'tiendat_ngo',
+        text: 'bao giờ có tính năng gửi sticker hả anh',
+        after: 130,
+        likes: 4,
+        replies: [{ by: 'lehoangphuc', text: 'Đang nằm trong backlog rồi nhé 😂', after: 15 }]
+      }
     ]
   },
   {
@@ -111,7 +127,18 @@ Tài liệu tham khảo nhập môn NLP rất dễ đọc: https://huggingface.c
     likes: 14,
     saves: 9,
     comments: [
-      { by: 'ducanh_ai', text: 'Thầy ơi nhóm em làm RAG thì đánh giá bằng bộ câu hỏi tự tạo có được không ạ, hay phải có bộ chuẩn?', after: 50, replies: [{ by: 'dovanquang', text: 'Tự tạo được, nhưng phải có người gán nhãn độc lập với người viết hệ thống, và mô tả rõ cách tạo câu hỏi. Khoảng 100–200 câu là đủ cho bài môn học.', after: 140 }] },
+      {
+        by: 'ducanh_ai',
+        text: 'Thầy ơi nhóm em làm RAG thì đánh giá bằng bộ câu hỏi tự tạo có được không ạ, hay phải có bộ chuẩn?',
+        after: 50,
+        replies: [
+          {
+            by: 'dovanquang',
+            text: 'Tự tạo được, nhưng phải có người gán nhãn độc lập với người viết hệ thống, và mô tả rõ cách tạo câu hỏi. Khoảng 100–200 câu là đủ cho bài môn học.',
+            after: 140
+          }
+        ]
+      },
       { by: 'vannam2k8', text: 'Em năm nhất đọc mà thấy hay quá, năm 3 em sẽ học thầy ạ 😆', after: 300, likes: 3 }
     ]
   },
@@ -136,7 +163,12 @@ Không cần đăng ký trước, đến sớm để có chỗ ngồi nhé. Ai c
     images: [513],
     likes: 13,
     comments: [
-      { by: 'khanhvy_mkt', text: 'Cô ơi em muốn hỏi: brand team đo hiệu quả chiến dịch awareness thế nào khi không bán hàng trực tiếp ạ?', after: 35, likes: 3 },
+      {
+        by: 'khanhvy_mkt',
+        text: 'Cô ơi em muốn hỏi: brand team đo hiệu quả chiến dịch awareness thế nào khi không bán hàng trực tiếp ạ?',
+        after: 35,
+        likes: 3
+      },
       { by: 'quochuy_dang', text: 'Hỏi giúp em: nên vào agency trước rồi mới sang client, hay vào client luôn từ đầu ạ?', after: 80 },
       { by: 'nguyenthuha', text: 'Cô ghi lại hết rồi nhé, câu của Vy và Huy đều rất đúng trọng tâm 👍', after: 200 }
     ]

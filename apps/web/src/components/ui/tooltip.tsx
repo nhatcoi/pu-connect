@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 import {
   Tooltip as TooltipPrimitive,
   TooltipTrigger as TooltipTriggerPrimitive,
@@ -12,28 +12,20 @@ import {
   type TooltipProps as TooltipPrimitiveProps,
   type TooltipTriggerProps as TooltipTriggerPrimitiveProps,
   type TooltipContentProps as TooltipContentPrimitiveProps,
-  type TooltipProviderProps as TooltipProviderPrimitiveProps,
-} from '@/components/animate-ui/primitives/radix/tooltip';
+  type TooltipProviderProps as TooltipProviderPrimitiveProps
+} from '@/components/animate-ui/primitives/radix/tooltip'
 
-function TooltipProvider({
-  delayDuration = 100,
-  ...props
-}: TooltipProviderPrimitiveProps) {
-  return <TooltipProviderPrimitive delayDuration={delayDuration} {...props} />;
+function TooltipProvider({ delayDuration = 100, ...props }: TooltipProviderPrimitiveProps) {
+  return <TooltipProviderPrimitive delayDuration={delayDuration} {...props} />
 }
 
 function Tooltip(props: TooltipPrimitiveProps) {
-  return <TooltipPrimitive {...props} />;
+  return <TooltipPrimitive {...props} />
 }
 
-const TooltipTrigger = TooltipTriggerPrimitive;
+const TooltipTrigger = TooltipTriggerPrimitive
 
-function TooltipContent({
-  className,
-  sideOffset = 4,
-  children,
-  ...props
-}: TooltipContentPrimitiveProps) {
+function TooltipContent({ className, sideOffset = 4, children, ...props }: TooltipContentPrimitiveProps) {
   return (
     <TooltipPortalPrimitive>
       <TooltipContentPrimitive
@@ -47,7 +39,7 @@ function TooltipContent({
         {children}
       </TooltipContentPrimitive>
     </TooltipPortalPrimitive>
-  );
+  )
 }
 
 export {
@@ -60,5 +52,5 @@ export {
   type TooltipPrimitiveProps as TooltipProps,
   type TooltipTriggerPrimitiveProps as TooltipTriggerProps,
   type TooltipContentPrimitiveProps as TooltipContentProps,
-  type TooltipProviderPrimitiveProps as TooltipProviderProps,
-};
+  type TooltipProviderPrimitiveProps as TooltipProviderProps
+}

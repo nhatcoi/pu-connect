@@ -1,74 +1,50 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import * as PopoverPrimitive from '@radix-ui/react-popover';
-import { AnimatePresence, motion, type HTMLMotionProps } from 'motion/react';
+import * as React from 'react'
+import * as PopoverPrimitive from '@radix-ui/react-popover'
+import { AnimatePresence, motion, type HTMLMotionProps } from 'motion/react'
 
-import { getStrictContext } from '@/lib/get-strict-context';
-import { useControlledState } from '@/hooks/use-controlled-state';
+import { getStrictContext } from '@/lib/get-strict-context'
+import { useControlledState } from '@/hooks/use-controlled-state'
 
 export type PopoverContextType = {
-  isOpen: boolean;
-  setIsOpen: (isOpen: boolean) => void;
-};
+  isOpen: boolean
+  setIsOpen: (isOpen: boolean) => void
+}
 
-const [PopoverProvider, usePopover] =
-  getStrictContext<PopoverContextType>('PopoverContext');
+const [PopoverProvider, usePopover] = getStrictContext<PopoverContextType>('PopoverContext')
 
-export type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Root>;
+export type PopoverProps = React.ComponentProps<typeof PopoverPrimitive.Root>
 
 export function Popover(props: PopoverProps) {
   const [isOpen, setIsOpen] = useControlledState({
     value: props?.open,
     defaultValue: props?.defaultOpen,
-    onChange: props?.onOpenChange,
-  });
+    onChange: props?.onOpenChange
+  })
 
   return (
     <PopoverProvider value={{ isOpen, setIsOpen }}>
-      <PopoverPrimitive.Root
-        data-slot="popover"
-        {...props}
-        onOpenChange={setIsOpen}
-      />
+      <PopoverPrimitive.Root data-slot="popover" {...props} onOpenChange={setIsOpen} />
     </PopoverProvider>
-  );
+  )
 }
 
-export type PopoverTriggerProps = React.ComponentProps<
-  typeof PopoverPrimitive.Trigger
->;
+export type PopoverTriggerProps = React.ComponentProps<typeof PopoverPrimitive.Trigger>
 
 export function PopoverTrigger(props: PopoverTriggerProps) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 }
 
-export type PopoverPortalProps = Omit<
-  React.ComponentProps<typeof PopoverPrimitive.Portal>,
-  'forceMount'
->;
+export type PopoverPortalProps = Omit<React.ComponentProps<typeof PopoverPrimitive.Portal>, 'forceMount'>
 
 export function PopoverPortal(props: PopoverPortalProps) {
-  const { isOpen } = usePopover();
+  const { isOpen } = usePopover()
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <PopoverPrimitive.Portal
-          forceMount
-          data-slot="popover-portal"
-          {...props}
-        />
-      )}
-    </AnimatePresence>
-  );
+  return <AnimatePresence>{isOpen && <PopoverPrimitive.Portal forceMount data-slot="popover-portal" {...props} />}</AnimatePresence>
 }
 
-export type PopoverContentProps = Omit<
-  React.ComponentProps<typeof PopoverPrimitive.Content>,
-  'forceMount' | 'asChild'
-> &
-  HTMLMotionProps<'div'>;
+export type PopoverContentProps = Omit<React.ComponentProps<typeof PopoverPrimitive.Content>, 'forceMount' | 'asChild'> & HTMLMotionProps<'div'>
 
 export function PopoverContent({
   onOpenAutoFocus,
@@ -121,25 +97,25 @@ export function PopoverContent({
         {...props}
       />
     </PopoverPrimitive.Content>
-  );
+  )
 }
 
-export type PopoverAnchorProps = React.ComponentProps<typeof PopoverPrimitive.Anchor>;
+export type PopoverAnchorProps = React.ComponentProps<typeof PopoverPrimitive.Anchor>
 
 export function PopoverAnchor({ ...props }: PopoverAnchorProps) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
 }
 
-export type PopoverArrowProps = React.ComponentProps<typeof PopoverPrimitive.Arrow>;
+export type PopoverArrowProps = React.ComponentProps<typeof PopoverPrimitive.Arrow>
 
 export function PopoverArrow(props: PopoverArrowProps) {
-  return <PopoverPrimitive.Arrow data-slot="popover-arrow" {...props} />;
+  return <PopoverPrimitive.Arrow data-slot="popover-arrow" {...props} />
 }
 
-export type PopoverCloseProps = React.ComponentProps<typeof PopoverPrimitive.Close>;
+export type PopoverCloseProps = React.ComponentProps<typeof PopoverPrimitive.Close>
 
 export function PopoverClose(props: PopoverCloseProps) {
-  return <PopoverPrimitive.Close data-slot="popover-close" {...props} />;
+  return <PopoverPrimitive.Close data-slot="popover-close" {...props} />
 }
 
-export { usePopover };
+export { usePopover }

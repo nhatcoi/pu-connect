@@ -42,24 +42,14 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              {group.courseCode && (
-                <span className="rounded bg-primary/10 px-1.5 py-0.5 font-bold text-[11px] text-primary font-mono">
-                  {group.courseCode}
-                </span>
-              )}
-              <span className="text-xs font-semibold text-accent">
-                {group.topic}
-              </span>
+              {group.courseCode && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-bold text-[11px] text-primary font-mono">{group.courseCode}</span>}
+              <span className="text-xs font-semibold text-accent">{group.topic}</span>
             </div>
-            <h3 className="font-bold text-sm mt-1 text-foreground leading-snug">
-              {group.name}
-            </h3>
+            <h3 className="font-bold text-sm mt-1 text-foreground leading-snug">{group.name}</h3>
           </div>
           <span
             className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-              isFull
-                ? 'bg-muted text-muted-foreground'
-                : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+              isFull ? 'bg-muted text-muted-foreground' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
             }`}
           >
             {isFull ? 'Đã đủ người' : 'Đang tuyển'}
@@ -69,15 +59,12 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
 
       <CardContent className="p-4 pt-1 pb-3 text-xs text-muted-foreground space-y-2.5">
         <p className="line-clamp-2">{group.description}</p>
-        
+
         {group.techStack && group.techStack.length > 0 && (
           <div className="flex flex-wrap gap-1 items-center">
             <Code className="h-3.5 w-3.5 text-muted-foreground mr-0.5" />
             {group.techStack.map((tech) => (
-              <span
-                key={tech}
-                className="rounded border bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-foreground"
-              >
+              <span key={tech} className="rounded border bg-muted/30 px-1.5 py-0.5 text-[10px] font-medium text-foreground">
                 {tech}
               </span>
             ))}
@@ -85,7 +72,9 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
         )}
 
         <div className="flex items-center justify-between text-[11px] pt-2 border-t text-muted-foreground">
-          <span>Trưởng nhóm: <strong className="text-foreground">{group.leaderName}</strong></span>
+          <span>
+            Trưởng nhóm: <strong className="text-foreground">{group.leaderName}</strong>
+          </span>
           <span className="flex items-center gap-1 font-semibold text-foreground">
             <Users className="h-3.5 w-3.5 text-primary" />
             {group.currentMembersCount}/{group.maxMembers} thành viên
@@ -96,13 +85,7 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
       <CardFooter className="p-4 pt-0">
         {isMember ? (
           // Thành viên ⇒ vào nhóm chat của nhóm học
-          <Button
-            size="sm"
-            variant="secondary"
-            disabled={openChat.isPending}
-            onClick={() => openChat.mutate(group.id)}
-            className="w-full text-xs gap-1.5"
-          >
+          <Button size="sm" variant="secondary" disabled={openChat.isPending} onClick={() => openChat.mutate(group.id)} className="w-full text-xs gap-1.5">
             {openChat.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
             <span>Mở nhóm chat</span>
           </Button>

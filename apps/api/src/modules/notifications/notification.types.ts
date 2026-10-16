@@ -12,14 +12,7 @@ export const NOTIFICATION_TYPES = [
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
 // Loại người dùng được tắt/bật trong Cài đặt thông báo
-export const CONFIGURABLE_TYPES: NotificationType[] = [
-  'post_like',
-  'post_comment',
-  'comment_reply',
-  'user_mention',
-  'user_follow',
-  'accepted_solution'
-]
+export const CONFIGURABLE_TYPES: NotificationType[] = ['post_like', 'post_comment', 'comment_reply', 'user_mention', 'user_follow', 'accepted_solution']
 
 // Kênh chỉ có push (không tạo bản ghi notifications): tin nhắn chat — in-app đã có badge "Tin nhắn"
 export const PUSH_ONLY_CHANNELS = ['chat_message'] as const
@@ -58,24 +51,22 @@ const FENCE_LABELS: Record<string, string> = { quiz: '📝 Quiz', flashcards: '�
 
 // Markdown → văn bản thuần 1 dòng cho Web Push hệ điều hành & tiêu đề tự động
 export function markdownToPlainText(md: string): string {
-  return (
-    md
-      .replace(/```(\w+)?[^\n]*\n?[\s\S]*?(```|$)/g, (_, lang?: string) => ` ${(lang && FENCE_LABELS[lang]) || '[code]'} `)
-      .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
-      .replace(/!\[([^\]]*)\]\([^)]*\)/g, (_, alt: string) => alt || '🖼️')
-      .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-      .replace(/<[^>]+>/g, '')
-      .replace(/^\s{0,3}(#{1,6}|>+|[-*+]|\d+[.)])\s+/gm, '')
-      .replace(/^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-*:?\s*$/gm, '')
-      .replace(/\|/g, ' ')
-      .replace(/(\*\*|__|~~)(.+?)\1/g, '$2')
-      .replace(/(^|[^\w*])[*_](?!\s)([^*_\n]+?)[*_](?=[^\w*]|$)/g, '$1$2')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/\$([^$\n]+)\$/g, '$1')
-      .replace(/\\%/g, '%')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
+  return md
+    .replace(/```(\w+)?[^\n]*\n?[\s\S]*?(```|$)/g, (_, lang?: string) => ` ${(lang && FENCE_LABELS[lang]) || '[code]'} `)
+    .replace(/\$\$([\s\S]*?)\$\$/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, (_, alt: string) => alt || '🖼️')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/<[^>]+>/g, '')
+    .replace(/^\s{0,3}(#{1,6}|>+|[-*+]|\d+[.)])\s+/gm, '')
+    .replace(/^\s*\|?(\s*:?-{3,}:?\s*\|)+\s*:?-*:?\s*$/gm, '')
+    .replace(/\|/g, ' ')
+    .replace(/(\*\*|__|~~)(.+?)\1/g, '$2')
+    .replace(/(^|[^\w*])[*_](?!\s)([^*_\n]+?)[*_](?=[^\w*]|$)/g, '$1$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\$([^$\n]+)\$/g, '$1')
+    .replace(/\\%/g, '%')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 export function snippet(text: string | null | undefined, max = 120): string {
@@ -85,5 +76,3 @@ export function snippet(text: string | null | undefined, max = 120): string {
     .trim()
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean
 }
-
-

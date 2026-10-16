@@ -29,7 +29,11 @@ export function NewChatPanel({ onClose }: { onClose: () => void }) {
         selected.length === 1
           ? await chatApi.openDirect(selected[0].id)
           : await chatApi.createGroup(
-              title.trim() || selected.map((u) => u.displayName).join(', ').slice(0, 150),
+              title.trim() ||
+                selected
+                  .map((u) => u.displayName)
+                  .join(', ')
+                  .slice(0, 150),
               selected.map((u) => u.id)
             )
       refreshConversationLists(qc)
@@ -53,7 +57,13 @@ export function NewChatPanel({ onClose }: { onClose: () => void }) {
       </div>
       <UserPicker selected={selected} onChange={setSelected} excludeIds={myId ? [myId] : []} />
       {selected.length > 1 && (
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tên nhóm, vd. Nhóm ôn Giải tích 2" maxLength={150} className="h-9 text-sm" />
+        <Input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Tên nhóm, vd. Nhóm ôn Giải tích 2"
+          maxLength={150}
+          className="h-9 text-sm"
+        />
       )}
       <Button className="w-full rounded-full" disabled={!selected.length || busy} onClick={start}>
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : selected.length > 1 ? `Tạo nhóm (${selected.length + 1} người)` : 'Nhắn tin'}

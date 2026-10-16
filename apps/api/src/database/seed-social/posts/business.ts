@@ -24,7 +24,12 @@ Ai đang có ý tưởng muốn nói chuyện thì cứ inbox, mình không bán
     saves: 9,
     comments: [
       { by: 'khanhvy_mkt', text: '"Code thứ mình thích chứ không phải thứ họ cần" đọc mà nhột ghê 😅', after: 30, likes: 7 },
-      { by: 'nguyenthuha', text: 'Bài viết rất thật. Cô sẽ dùng câu chuyện app phòng trọ làm ví dụ cho lớp về product-market fit, nếu em đồng ý nhé.', after: 300, replies: [{ by: 'quochuy_dang', text: 'Dạ em đồng ý ạ, vinh dự quá cô ơi 🙏', after: 15 }] },
+      {
+        by: 'nguyenthuha',
+        text: 'Bài viết rất thật. Cô sẽ dùng câu chuyện app phòng trọ làm ví dụ cho lớp về product-market fit, nếu em đồng ý nhé.',
+        after: 300,
+        replies: [{ by: 'quochuy_dang', text: 'Dạ em đồng ý ạ, vinh dự quá cô ơi 🙏', after: 15 }]
+      },
       { by: 'minhtuan_dev', text: 'Lần 3 cần FE thì gọi tui nha', after: 120 }
     ]
   },
@@ -124,7 +129,12 @@ Trả lời ngắn gọn, có lập luận. Câu trả lời tốt nhất cô s�
 2. Trước khi đổi: xác định yếu tố nào khách dùng để nhận ra sản phẩm (khảo sát + eye-tracking/test trên kệ thật), giữ lại những yếu tố đó, test A/B ở vài cửa hàng trước khi đổi toàn bộ.
 3. Không nên quay lại hoàn toàn, vì lại gây nhiễu lần nữa. Nên đưa lại các yếu tố nhận diện cũ (màu chủ đạo, hình trái cây) lên bao bì mới, kèm truyền thông tại điểm bán "bao bì mới, vị như cũ".`
       },
-      { by: 'thutrang_ly', text: 'Em nghĩ thêm: cần xem doanh số giảm đều mọi kênh hay chỉ ở siêu thị. Nếu online không giảm thì đúng là vấn đề nhận diện trên kệ ạ.', after: 210, likes: 3 },
+      {
+        by: 'thutrang_ly',
+        text: 'Em nghĩ thêm: cần xem doanh số giảm đều mọi kênh hay chỉ ở siêu thị. Nếu online không giảm thì đúng là vấn đề nhận diện trên kệ ạ.',
+        after: 210,
+        likes: 3
+      },
       { by: 'nguyenthuha', text: 'Vy trả lời đầy đủ và có hành động cụ thể. Ý của Trang về tách kênh để kiểm chứng giả thuyết cũng rất tốt 👏', after: 400 }
     ]
   },
@@ -141,7 +151,12 @@ Tự thưởng 1 ly bạc xỉu, số còn lại chia 50% tiết kiệm, 30% g�
     likes: 20,
     comments: [
       { by: 'anhthu_phan', text: 'Gửi mẹ 30% làm mình xúc động ghê 🥲', after: 20, likes: 5 },
-      { by: 'khanhlinh_eat', text: 'quán nào vậy bà, cuối tuần qua ủng hộ', after: 45, replies: [{ by: 'thutrang_ly', text: 'quán nhỏ trong ngõ gần cổng phụ á, qua mình mời bạc xỉu 😆', after: 10 }] }
+      {
+        by: 'khanhlinh_eat',
+        text: 'quán nào vậy bà, cuối tuần qua ủng hộ',
+        after: 45,
+        replies: [{ by: 'thutrang_ly', text: 'quán nhỏ trong ngõ gần cổng phụ á, qua mình mời bạc xỉu 😆', after: 10 }]
+      }
     ]
   },
   {
@@ -169,7 +184,12 @@ Không cần CV đẹp, gửi mình 1 thứ bạn đã làm (repo, bài giải, 
     likes: 12,
     saves: 6,
     comments: [
-      { by: 'vannam2k8', text: 'Em năm nhất có làm CTV được không anh, em Giải tích 1 được A ạ 😳', after: 35, replies: [{ by: 'quochuy_dang', text: 'Được em, inbox anh gửi 2 bài em giải nhé!', after: 20 }] },
+      {
+        by: 'vannam2k8',
+        text: 'Em năm nhất có làm CTV được không anh, em Giải tích 1 được A ạ 😳',
+        after: 35,
+        replies: [{ by: 'quochuy_dang', text: 'Được em, inbox anh gửi 2 bài em giải nhé!', after: 20 }]
+      },
       { by: 'minhquan_gg', text: 'Backend có nhận Java Spring không anh 👀', after: 80 }
     ]
   },

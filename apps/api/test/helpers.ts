@@ -19,10 +19,7 @@ export async function createTestApp(): Promise<{ app: NestExpressApplication; db
 export type TestUser = { id: string; username: string; email: string }
 
 // Tạo user trực tiếp trong DB (tránh rate limit đăng ký)
-export async function createUser(
-  db: DatabaseService,
-  opts: { role?: string; status?: string } = {}
-): Promise<TestUser> {
+export async function createUser(db: DatabaseService, opts: { role?: string; status?: string } = {}): Promise<TestUser> {
   const suffix = randomBytes(4).toString('hex')
   const username = `u_${suffix}`
   const email = `${username}@example.com`

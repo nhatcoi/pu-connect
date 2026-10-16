@@ -1,13 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -103,11 +97,7 @@ export function CreatePostDialog() {
               />
             </TabsContent>
             <TabsContent value="preview" className="mt-3 min-h-[160px] rounded-lg border border-border bg-card p-4">
-              {content ? (
-                <MarkdownPreview content={content} />
-              ) : (
-                <p className="text-xs text-muted-foreground italic">Chưa có nội dung để xem trước...</p>
-              )}
+              {content ? <MarkdownPreview content={content} /> : <p className="text-xs text-muted-foreground italic">Chưa có nội dung để xem trước...</p>}
             </TabsContent>
           </Tabs>
 

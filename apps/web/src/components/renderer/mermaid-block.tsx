@@ -57,10 +57,5 @@ export function MermaidBlock({ content, isDark = false }: MermaidBlockProps) {
     )
   }
 
-  return (
-    <div
-      ref={containerRef}
-      className="my-4 flex justify-center overflow-x-auto rounded-lg border bg-card p-4 shadow-xs"
-    />
-  )
+  return <div ref={containerRef} className="my-4 flex justify-center overflow-x-auto rounded-lg border bg-card p-4 shadow-xs" />
 }

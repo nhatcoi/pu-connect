@@ -1,12 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Search, Check, X, GraduationCap } from 'lucide-react'
 import { useAppStore } from '@/store'
 
@@ -28,10 +23,7 @@ const DEFAULT_COURSES = [
   { id: 'PBL3', code: 'PBL3', name: 'Đồ án PBL Chuyên ngành', faculty: 'FIT' }
 ]
 
-export function ComposerCoursePicker({
-  selectedCourseId,
-  onChange
-}: ComposerCoursePickerProps) {
+export function ComposerCoursePicker({ selectedCourseId, onChange }: ComposerCoursePickerProps) {
   const storeCourses = useAppStore((state) => state.courses)
   const [search, setSearch] = useState('')
 
@@ -45,11 +37,7 @@ export function ComposerCoursePicker({
   const filteredCourses = useMemo(() => {
     if (!search.trim()) return courseList
     const query = search.toLowerCase()
-    return courseList.filter(
-      (c) =>
-        c.code.toLowerCase().includes(query) ||
-        c.name.toLowerCase().includes(query)
-    )
+    return courseList.filter((c) => c.code.toLowerCase().includes(query) || c.name.toLowerCase().includes(query))
   }, [courseList, search])
 
   const selectedCourse = courseList.find((c) => c.id === selectedCourseId || c.code === selectedCourseId)
@@ -67,9 +55,7 @@ export function ComposerCoursePicker({
             }`}
           >
             <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">
-              {selectedCourse ? `${selectedCourse.code} - ${selectedCourse.name}` : 'Gắn môn học'}
-            </span>
+            <span className="truncate">{selectedCourse ? `${selectedCourse.code} - ${selectedCourse.name}` : 'Gắn môn học'}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-72 p-2 space-y-2 rounded-2xl shadow-xl border border-border">
@@ -96,21 +82,15 @@ export function ComposerCoursePicker({
                     className="flex items-center justify-between p-2 rounded-xl cursor-pointer text-xs"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
-                      <span className="font-bold text-foreground truncate">
-                        {course.code}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground truncate">
-                        {course.name}
-                      </span>
+                      <span className="font-bold text-foreground truncate">{course.code}</span>
+                      <span className="text-[11px] text-muted-foreground truncate">{course.name}</span>
                     </div>
                     {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                   </DropdownMenuItem>
                 )
               })
             ) : (
-              <div className="p-3 text-center text-xs text-muted-foreground">
-                Không tìm thấy học phần phù hợp
-              </div>
+              <div className="p-3 text-center text-xs text-muted-foreground">Không tìm thấy học phần phù hợp</div>
             )}
           </div>
         </DropdownMenuContent>

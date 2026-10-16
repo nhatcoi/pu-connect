@@ -25,10 +25,7 @@ describe('Posts & accepted solution (e2e)', () => {
     const authorAgent = await loginAgent(app, author)
     const answererAgent = await loginAgent(app, answerer)
 
-    const post = await authorAgent
-      .post('/api/posts')
-      .send({ title: 'Hỏi về đệ quy', content: 'Đệ quy đuôi là gì?', postType: 'qa' })
-      .expect(201)
+    const post = await authorAgent.post('/api/posts').send({ title: 'Hỏi về đệ quy', content: 'Đệ quy đuôi là gì?', postType: 'qa' }).expect(201)
     const postId = post.body.data.id
     expect(postId).toBeTruthy()
 

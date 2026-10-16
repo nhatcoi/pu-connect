@@ -51,7 +51,9 @@ export function UserInsightDialog({ userId, onClose }: { userId: string | null; 
         </DialogTitle>
         {isPending ? (
           <div className="p-5 space-y-3">
-            {Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+            {Array.from({ length: 5 }, (_, i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-xl" />
+            ))}
           </div>
         ) : isError ? (
           <p className="p-5 text-sm text-destructive">{(error as Error).message}</p>
@@ -79,7 +81,11 @@ function InsightBody({ insight: d }: { insight: UserInsight }) {
           <Field label="Kỹ năng">{d.user.skills.join(', ') || '—'}</Field>
           <Field label="Hoạt động">{d.user.lastSeenAt ? formatRelativeTime(d.user.lastSeenAt) : '—'}</Field>
           <Field label="Cá nhân hóa">
-            {d.personalization ? <span className="text-primary font-semibold">Bật</span> : <span className="text-destructive font-semibold">Tắt (đã xóa dữ liệu)</span>}
+            {d.personalization ? (
+              <span className="text-primary font-semibold">Bật</span>
+            ) : (
+              <span className="text-destructive font-semibold">Tắt (đã xóa dữ liệu)</span>
+            )}
           </Field>
           <Field label="Tính hồ sơ">
             {d.profileUpdatedAt ? formatRelativeTime(d.profileUpdatedAt) : 'Chưa tính'}
@@ -123,7 +129,9 @@ function InsightBody({ insight: d }: { insight: UserInsight }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {SIGNALS.map((x) => (
             <div key={x.key} className="rounded-lg bg-muted/40 px-2.5 py-1.5">
-              <p className="text-[10px] text-muted-foreground">{x.label} ({x.weight})</p>
+              <p className="text-[10px] text-muted-foreground">
+                {x.label} ({x.weight})
+              </p>
               <p className="text-sm font-bold tabular-nums">{d.signals[x.key]}</p>
             </div>
           ))}

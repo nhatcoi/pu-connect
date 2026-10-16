@@ -41,9 +41,7 @@ export function resolveSettings(stored: any): NotificationSettings {
   const qh = raw.quiet_hours || {}
   return {
     inApp: Object.fromEntries(CONFIGURABLE_TYPES.map((t) => [t, raw[t] !== false])),
-    push: Object.fromEntries(
-      PUSH_CHANNELS.map((t) => [t, typeof raw.push?.[t] === 'boolean' ? raw.push[t] : PUSH_DEFAULTS[t]])
-    ),
+    push: Object.fromEntries(PUSH_CHANNELS.map((t) => [t, typeof raw.push?.[t] === 'boolean' ? raw.push[t] : PUSH_DEFAULTS[t]])),
     quietHours: {
       enabled: typeof qh.enabled === 'boolean' ? qh.enabled : DEFAULT_QUIET_HOURS.enabled,
       start: HHMM.test(qh.start) ? qh.start : DEFAULT_QUIET_HOURS.start,
@@ -59,7 +57,7 @@ export function isInAppEnabled(stored: any, type: NotificationType): boolean {
 export function isPushEnabled(stored: any, type: PushChannel): boolean {
   if (!isPushOnly(type) && !isInAppEnabled(stored, type as NotificationType)) return false // tắt in-app ⇒ tắt luôn push
   const value = stored?.push?.[type]
-  return typeof value === 'boolean' ? value : PUSH_DEFAULTS[type] ?? false
+  return typeof value === 'boolean' ? value : (PUSH_DEFAULTS[type] ?? false)
 }
 
 // Chuyển patch từ API ({ inApp, push, quietHours }) thành JSON lưu trữ; bỏ key/giá trị không hợp lệ
@@ -68,9 +66,7 @@ export function buildStoragePatch(patch: any): Record<string, unknown> {
   const valid = (k: string) => (CONFIGURABLE_TYPES as string[]).includes(k)
   const validPush = (k: string) => (PUSH_CHANNELS as string[]).includes(k)
   for (const [k, v] of Object.entries(patch?.inApp || {})) if (valid(k) && typeof v === 'boolean') out[k] = v
-  const push = Object.fromEntries(
-    Object.entries(patch?.push || {}).filter(([k, v]) => validPush(k) && typeof v === 'boolean')
-  )
+  const push = Object.fromEntries(Object.entries(patch?.push || {}).filter(([k, v]) => validPush(k) && typeof v === 'boolean'))
   if (Object.keys(push).length) out.push = push
   const qh = patch?.quietHours
   if (qh && typeof qh === 'object') {

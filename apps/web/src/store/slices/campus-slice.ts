@@ -10,6 +10,5 @@ export interface CampusSlice {
 export const createCampusSlice: StateCreator<CampusSlice, [], [], CampusSlice> = (set) => ({
   campusEvents: [],
   setCampusEvents: (campusEvents) => set({ campusEvents }),
-  addCampusEvent: (event) =>
-    set((state) => ({ campusEvents: [event, ...state.campusEvents] }))
+  addCampusEvent: (event) => set((state) => ({ campusEvents: [event, ...state.campusEvents] }))
 })

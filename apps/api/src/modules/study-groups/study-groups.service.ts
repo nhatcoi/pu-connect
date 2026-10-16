@@ -32,10 +32,7 @@ export class StudyGroupsService {
       params.push(course)
       where += ` AND (g.course_id::text = $1 OR g.course_code ILIKE $1)`
     }
-    const res = await this.db.query(
-      `${GROUP_SELECT} ${where} ORDER BY (g.status = 'recruiting') DESC, g.created_at DESC LIMIT 50`,
-      params
-    )
+    const res = await this.db.query(`${GROUP_SELECT} ${where} ORDER BY (g.status = 'recruiting') DESC, g.created_at DESC LIMIT 50`, params)
     return res.rows.map((row) => this.mapRow(row))
   }
 
@@ -74,19 +71,16 @@ export class StudyGroupsService {
   // ACID: khóa hàng nhóm ⇒ không vượt quá số thành viên khi nhiều người cùng tham gia
   async join(groupId: string, userId: string, _displayName: string): Promise<StudyGroup> {
     await this.db.transaction(async (client) => {
-      const g = await client.query(
-        `SELECT id, max_members, current_members, status FROM study_groups WHERE id::text = $1 FOR UPDATE`,
-        [groupId]
-      )
+      const g = await client.query(`SELECT id, max_members, current_members, status FROM study_groups WHERE id::text = $1 FOR UPDATE`, [groupId])
       const group = g.rows[0]
       if (!group) throw new NotFoundException('Không tìm thấy nhóm học')
       if (group.status !== 'recruiting' || group.current_members >= group.max_members) {
         throw new BadRequestException('Nhóm đã đủ thành viên')
       }
-      const ins = await client.query(
-        `INSERT INTO study_group_members (group_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING`,
-        [group.id, userId]
-      )
+      const ins = await client.query(`INSERT INTO study_group_members (group_id, user_id, role) VALUES ($1, $2, 'member') ON CONFLICT DO NOTHING`, [
+        group.id,
+        userId
+      ])
       if (ins.rowCount === 0) throw new BadRequestException('Bạn đã tham gia nhóm này rồi')
       await client.query(
         `UPDATE study_groups SET current_members = current_members + 1,

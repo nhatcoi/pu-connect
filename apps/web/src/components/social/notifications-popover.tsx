@@ -8,13 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { NotificationRow } from '@/components/notifications/notification-row'
 import { NotificationListSkeleton } from '@/components/skeletons/notification-skeleton'
-import {
-  notificationsApi,
-  openNotification,
-  useNotificationsStore,
-  useNotificationsSync,
-  type NotificationItem
-} from '@/hooks/use-notifications'
+import { notificationsApi, openNotification, useNotificationsStore, useNotificationsSync, type NotificationItem } from '@/hooks/use-notifications'
 
 export function NotificationsPopover() {
   const router = useRouter()
@@ -74,9 +68,7 @@ export function NotificationsPopover() {
           ) : items.length === 0 ? (
             <div className="py-10 text-center text-xs text-muted-foreground">Chưa có thông báo nào</div>
           ) : (
-            items.slice(0, 10).map((item) => (
-              <NotificationRow key={item.id} item={item} onClick={handleItemClick} compact />
-            ))
+            items.slice(0, 10).map((item) => <NotificationRow key={item.id} item={item} onClick={handleItemClick} compact />)
           )}
         </div>
 

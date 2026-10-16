@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import * as React from 'react';
-import { cn } from '@/lib/utils';
+import * as React from 'react'
+import { cn } from '@/lib/utils'
 import {
   Tabs as TabsPrimitive,
   TabsList as TabsListPrimitive,
@@ -12,35 +12,27 @@ import {
   type TabsProps as TabsPrimitiveProps,
   type TabsListProps as TabsListPrimitiveProps,
   type TabsTriggerProps as TabsTriggerPrimitiveProps,
-  type TabsContentProps as TabsContentPrimitiveProps,
-} from '@/components/animate-ui/primitives/radix/tabs';
+  type TabsContentProps as TabsContentPrimitiveProps
+} from '@/components/animate-ui/primitives/radix/tabs'
 
-export type TabsProps = TabsPrimitiveProps;
-export type TabsListProps = TabsListPrimitiveProps;
-export type TabsTriggerProps = TabsTriggerPrimitiveProps;
-export type TabsContentProps = TabsContentPrimitiveProps;
+export type TabsProps = TabsPrimitiveProps
+export type TabsListProps = TabsListPrimitiveProps
+export type TabsTriggerProps = TabsTriggerPrimitiveProps
+export type TabsContentProps = TabsContentPrimitiveProps
 
 function Tabs({ className, ...props }: TabsProps) {
-  return (
-    <TabsPrimitive
-      className={cn('flex flex-col gap-2', className)}
-      {...props}
-    />
-  );
+  return <TabsPrimitive className={cn('flex flex-col gap-2', className)} {...props} />
 }
 
 function TabsList({ className, ...props }: TabsListProps) {
   return (
     <TabsHighlightPrimitive className="absolute z-0 inset-0 border border-transparent rounded-md bg-background dark:border-input dark:bg-input/30 shadow-xs">
       <TabsListPrimitive
-        className={cn(
-          'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]',
-          className
-        )}
+        className={cn('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]', className)}
         {...props}
       />
     </TabsHighlightPrimitive>
-  );
+  )
 }
 
 function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
@@ -55,21 +47,11 @@ function TabsTrigger({ className, value, ...props }: TabsTriggerProps) {
         {...props}
       />
     </TabsHighlightItemPrimitive>
-  );
+  )
 }
 
 function TabsContent({ className, ...props }: TabsContentProps) {
-  return (
-    <TabsContentPrimitive
-      className={cn('mt-2 ring-offset-background focus-visible:outline-none', className)}
-      {...props}
-    />
-  );
+  return <TabsContentPrimitive className={cn('mt-2 ring-offset-background focus-visible:outline-none', className)} {...props} />
 }
 
-export {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-};
+export { Tabs, TabsList, TabsTrigger, TabsContent }

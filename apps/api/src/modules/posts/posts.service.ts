@@ -135,14 +135,12 @@ export class PostsService {
     sql += ` ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`
 
     const res = await this.db.query(sql, params)
-    
+
     // 3. Batch fetch polls + bình luận nổi bật cho các bài trong trang
     const postIds = res.rows.map((r) => r.id)
     const [pollsMap, featuredMap] = await Promise.all([
       this.fetchPollsForPosts(postIds, currentUserId),
-      window.featuredComment === false
-        ? new Map<string, FeaturedComment>()
-        : this.fetchFeaturedComments(postIds, currentUserId)
+      window.featuredComment === false ? new Map<string, FeaturedComment>() : this.fetchFeaturedComments(postIds, currentUserId)
     ])
 
     const items = res.rows.map((row) => ({
@@ -175,9 +173,7 @@ export class PostsService {
     // Bài của chính mình đã chèn sẵn (optimistic) ⇒ không đếm
     if (currentUserId) where += ` AND p.author_id <> $1`
 
-    const followedSql = currentUserId
-      ? `EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = f.author_id) DESC,`
-      : ''
+    const followedSql = currentUserId ? `EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = f.author_id) DESC,` : ''
     const res = await this.db.query(
       `WITH fresh AS (
          SELECT p.author_id, p.created_at ${joins} ${where}
@@ -286,10 +282,9 @@ export class PostsService {
     let mentioned: MentionedUser[] = []
     const created = await this.db.transaction(async (client) => {
       // 1. Resolve author details
-      const userRes = await client.query(
-        `SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`,
-        [authorId]
-      )
+      const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
+        authorId
+      ])
 
       if (userRes.rows.length === 0) {
         throw new NotFoundException('Tài khoản người dùng không tồn tại')
@@ -302,10 +297,7 @@ export class PostsService {
       let courseName: string | null = null
 
       if (data.courseId) {
-        const courseRes = await client.query(
-          `SELECT id, code, name FROM courses WHERE id::text = $1 OR code ILIKE $1 LIMIT 1`,
-          [data.courseId]
-        )
+        const courseRes = await client.query(`SELECT id, code, name FROM courses WHERE id::text = $1 OR code ILIKE $1 LIMIT 1`, [data.courseId])
         if (courseRes.rows.length > 0) {
           courseUuid = courseRes.rows[0].id
           courseCode = courseRes.rows[0].code
@@ -320,10 +312,7 @@ export class PostsService {
 
       if (data.communityId || data.communitySlug) {
         const commTarget = data.communityId || data.communitySlug
-        const commRes = await client.query(
-          `SELECT id, slug, name FROM communities WHERE id::text = $1 OR slug = $1 LIMIT 1`,
-          [commTarget]
-        )
+        const commRes = await client.query(`SELECT id, slug, name FROM communities WHERE id::text = $1 OR slug = $1 LIMIT 1`, [commTarget])
         if (commRes.rows.length > 0) {
           communityUuid = commRes.rows[0].id
           communitySlug = commRes.rows[0].slug
@@ -371,10 +360,10 @@ export class PostsService {
       // 5. Create Poll if provided
       let pollData: PollData | null = null
       if (data.pollQuestion && data.pollOptions && data.pollOptions.length >= 2) {
-        const pollRes = await client.query(
-          `INSERT INTO post_polls (post_id, question, total_votes) VALUES ($1, $2, 0) RETURNING *`,
-          [postRow.id, data.pollQuestion]
-        )
+        const pollRes = await client.query(`INSERT INTO post_polls (post_id, question, total_votes) VALUES ($1, $2, 0) RETURNING *`, [
+          postRow.id,
+          data.pollQuestion
+        ])
         const pollRow = pollRes.rows[0]
         const optionsList: any[] = []
 
@@ -405,21 +394,14 @@ export class PostsService {
         }
       }
 
-
       // 7. Increment post_count for course
       if (courseUuid) {
-        await client.query(
-          `UPDATE courses SET post_count = post_count + 1 WHERE id = $1`,
-          [courseUuid]
-        )
+        await client.query(`UPDATE courses SET post_count = post_count + 1 WHERE id = $1`, [courseUuid])
       }
 
       // 8. Increment posts_count for community
       if (communityUuid) {
-        await client.query(
-          `UPDATE communities SET posts_count = posts_count + 1 WHERE id = $1`,
-          [communityUuid]
-        )
+        await client.query(`UPDATE communities SET posts_count = posts_count + 1 WHERE id = $1`, [communityUuid])
       }
 
       return {
@@ -496,10 +478,7 @@ export class PostsService {
   async update(postId: string, userId: string, data: UpdatePostInput): Promise<PostItem> {
     let mentioned: MentionedUser[] = []
     const updated = await this.db.transaction(async (client) => {
-      const postRes = await client.query(
-        `SELECT p.*, u.role as author_role FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 LIMIT 1`,
-        [postId]
-      )
+      const postRes = await client.query(`SELECT p.*, u.role as author_role FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 LIMIT 1`, [postId])
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
       }
@@ -516,10 +495,7 @@ export class PostsService {
       const newContent = data.content !== undefined ? data.content : post.content
       const newTags = data.tags !== undefined ? data.tags : post.tags
 
-      await client.query(
-        `UPDATE posts SET title = $1, content = $2, tags = $3, updated_at = NOW() WHERE id = $4`,
-        [newTitle, newContent, newTags, postId]
-      )
+      await client.query(`UPDATE posts SET title = $1, content = $2, tags = $3, updated_at = NOW() WHERE id = $4`, [newTitle, newContent, newTags, postId])
 
       // Chỉ người mới được nhắc mới nhận thông báo
       mentioned = await this.mentions.record(client, 'post', postId, userId, newTitle, newContent)
@@ -541,10 +517,7 @@ export class PostsService {
 
   async delete(postId: string, userId: string): Promise<{ success: boolean }> {
     return this.db.transaction(async (client) => {
-      const postRes = await client.query(
-        `SELECT author_id, course_id FROM posts WHERE id = $1 LIMIT 1`,
-        [postId]
-      )
+      const postRes = await client.query(`SELECT author_id, course_id FROM posts WHERE id = $1 LIMIT 1`, [postId])
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
       }
@@ -560,10 +533,7 @@ export class PostsService {
       await client.query(`DELETE FROM posts WHERE id = $1`, [postId])
 
       if (post.course_id) {
-        await client.query(
-          `UPDATE courses SET post_count = GREATEST(0, post_count - 1) WHERE id = $1`,
-          [post.course_id]
-        )
+        await client.query(`UPDATE courses SET post_count = GREATEST(0, post_count - 1) WHERE id = $1`, [post.course_id])
       }
 
       return { success: true }
@@ -577,32 +547,17 @@ export class PostsService {
       post = postRes.rows[0]
       if (!post) throw new NotFoundException('Bài viết không tồn tại')
 
-      const check = await client.query(
-        `SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
-        [postId, userId]
-      )
+      const check = await client.query(`SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`, [postId, userId])
 
       let isLiked = false
       if (check.rows.length > 0) {
-        await client.query(
-          `DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`,
-          [postId, userId]
-        )
-        const res = await client.query(
-          `UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1 RETURNING likes_count`,
-          [postId]
-        )
+        await client.query(`DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`, [postId, userId])
+        const res = await client.query(`UPDATE posts SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1 RETURNING likes_count`, [postId])
         isLiked = false
         return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
       } else {
-        await client.query(
-          `INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`,
-          [postId, userId]
-        )
-        const res = await client.query(
-          `UPDATE posts SET likes_count = likes_count + 1 WHERE id = $1 RETURNING likes_count`,
-          [postId]
-        )
+        await client.query(`INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`, [postId, userId])
+        const res = await client.query(`UPDATE posts SET likes_count = likes_count + 1 WHERE id = $1 RETURNING likes_count`, [postId])
         isLiked = true
         return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
       }
@@ -629,22 +584,13 @@ export class PostsService {
 
   async toggleBookmark(postId: string, userId: string): Promise<{ isBookmarked: boolean }> {
     return this.db.transaction(async (client) => {
-      const check = await client.query(
-        `SELECT 1 FROM saved_posts WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
-        [postId, userId]
-      )
+      const check = await client.query(`SELECT 1 FROM saved_posts WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`, [postId, userId])
 
       if (check.rows.length > 0) {
-        await client.query(
-          `DELETE FROM saved_posts WHERE post_id = $1 AND user_id = $2`,
-          [postId, userId]
-        )
+        await client.query(`DELETE FROM saved_posts WHERE post_id = $1 AND user_id = $2`, [postId, userId])
         return { isBookmarked: false }
       } else {
-        await client.query(
-          `INSERT INTO saved_posts (post_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
-          [postId, userId]
-        )
+        await client.query(`INSERT INTO saved_posts (post_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [postId, userId])
         return { isBookmarked: true }
       }
     })
@@ -658,19 +604,13 @@ export class PostsService {
       }
       const pollId = pollRes.rows[0].id
 
-      const optRes = await client.query(
-        `SELECT id FROM post_poll_options WHERE id = $1 AND poll_id = $2 LIMIT 1`,
-        [optionId, pollId]
-      )
+      const optRes = await client.query(`SELECT id FROM post_poll_options WHERE id = $1 AND poll_id = $2 LIMIT 1`, [optionId, pollId])
       if (optRes.rows.length === 0) {
         throw new BadRequestException('Phương án bình chọn không hợp lệ')
       }
 
       // Check existing vote
-      const voteCheck = await client.query(
-        `SELECT option_id FROM post_poll_votes WHERE poll_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`,
-        [pollId, userId]
-      )
+      const voteCheck = await client.query(`SELECT option_id FROM post_poll_votes WHERE poll_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`, [pollId, userId])
 
       if (voteCheck.rows.length > 0) {
         const prevOptId = voteCheck.rows[0].option_id
@@ -678,33 +618,15 @@ export class PostsService {
           // Already voted this option
         } else {
           // Change vote
-          await client.query(
-            `UPDATE post_poll_options SET votes_count = GREATEST(0, votes_count - 1) WHERE id = $1`,
-            [prevOptId]
-          )
-          await client.query(
-            `UPDATE post_poll_options SET votes_count = votes_count + 1 WHERE id = $1`,
-            [optionId]
-          )
-          await client.query(
-            `UPDATE post_poll_votes SET option_id = $1, voted_at = NOW() WHERE poll_id = $2 AND user_id = $3`,
-            [optionId, pollId, userId]
-          )
+          await client.query(`UPDATE post_poll_options SET votes_count = GREATEST(0, votes_count - 1) WHERE id = $1`, [prevOptId])
+          await client.query(`UPDATE post_poll_options SET votes_count = votes_count + 1 WHERE id = $1`, [optionId])
+          await client.query(`UPDATE post_poll_votes SET option_id = $1, voted_at = NOW() WHERE poll_id = $2 AND user_id = $3`, [optionId, pollId, userId])
         }
       } else {
         // New vote
-        await client.query(
-          `INSERT INTO post_poll_votes (poll_id, option_id, user_id) VALUES ($1, $2, $3)`,
-          [pollId, optionId, userId]
-        )
-        await client.query(
-          `UPDATE post_poll_options SET votes_count = votes_count + 1 WHERE id = $1`,
-          [optionId]
-        )
-        await client.query(
-          `UPDATE post_polls SET total_votes = total_votes + 1 WHERE id = $1`,
-          [pollId]
-        )
+        await client.query(`INSERT INTO post_poll_votes (poll_id, option_id, user_id) VALUES ($1, $2, $3)`, [pollId, optionId, userId])
+        await client.query(`UPDATE post_poll_options SET votes_count = votes_count + 1 WHERE id = $1`, [optionId])
+        await client.query(`UPDATE post_polls SET total_votes = total_votes + 1 WHERE id = $1`, [pollId])
       }
 
       const map = await this.fetchPollsForPosts([postId], userId)
@@ -718,10 +640,7 @@ export class PostsService {
 
   async togglePin(postId: string, userId: string): Promise<{ isPinned: boolean }> {
     return this.db.transaction(async (client) => {
-      const postRes = await client.query(
-        `SELECT author_id, is_pinned FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`,
-        [postId]
-      )
+      const postRes = await client.query(`SELECT author_id, is_pinned FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [postId])
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
       }
@@ -735,10 +654,7 @@ export class PostsService {
       }
 
       const nextIsPinned = !post.is_pinned
-      await client.query(`UPDATE posts SET is_pinned = $1, updated_at = NOW() WHERE id = $2`, [
-        nextIsPinned,
-        postId
-      ])
+      await client.query(`UPDATE posts SET is_pinned = $1, updated_at = NOW() WHERE id = $2`, [nextIsPinned, postId])
 
       return { isPinned: nextIsPinned }
     })
@@ -746,10 +662,7 @@ export class PostsService {
 
   async toggleResolve(postId: string, userId: string): Promise<{ isResolved: boolean }> {
     return this.db.transaction(async (client) => {
-      const postRes = await client.query(
-        `SELECT author_id, is_resolved FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`,
-        [postId]
-      )
+      const postRes = await client.query(`SELECT author_id, is_resolved FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [postId])
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
       }
@@ -763,20 +676,19 @@ export class PostsService {
       }
 
       const nextIsResolved = !post.is_resolved
-      await client.query(`UPDATE posts SET is_resolved = $1, updated_at = NOW() WHERE id = $2`, [
-        nextIsResolved,
-        postId
-      ])
+      await client.query(`UPDATE posts SET is_resolved = $1, updated_at = NOW() WHERE id = $2`, [nextIsResolved, postId])
 
       return { isResolved: nextIsResolved }
     })
   }
 
   async report(postId: string, reporterId: string, data: ReportPostInput): Promise<{ success: boolean }> {
-    await this.db.query(
-      `INSERT INTO post_reports (post_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)`,
-      [postId, reporterId, data.reason, data.details || null]
-    )
+    await this.db.query(`INSERT INTO post_reports (post_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)`, [
+      postId,
+      reporterId,
+      data.reason,
+      data.details || null
+    ])
     return { success: true }
   }
 
@@ -798,10 +710,10 @@ export class PostsService {
     if (currentUserId) {
       const pollIds = Array.from(new Set(pollsRes.rows.map((r) => r.poll_id)))
       if (pollIds.length > 0) {
-        const votesRes = await this.db.query(
-          `SELECT poll_id, option_id FROM post_poll_votes WHERE user_id = $1 AND poll_id = ANY($2)`,
-          [currentUserId, pollIds]
-        )
+        const votesRes = await this.db.query(`SELECT poll_id, option_id FROM post_poll_votes WHERE user_id = $1 AND poll_id = ANY($2)`, [
+          currentUserId,
+          pollIds
+        ])
         for (const row of votesRes.rows) {
           myVotesMap.set(row.poll_id, row.option_id)
         }

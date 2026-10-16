@@ -1,15 +1,11 @@
-const GRAPHQL_ENDPOINT =
-  process.env.NEXT_PUBLIC_GRAPHQL_URL || '/graphql'
+const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || '/graphql'
 
 interface GraphQLResponse<T> {
   data?: T
   errors?: Array<{ message: string; locations?: unknown[]; path?: string[] }>
 }
 
-export async function graphqlClient<T>(
-  query: string,
-  variables: Record<string, unknown> = {}
-): Promise<T> {
+export async function graphqlClient<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
   const response = await fetch(GRAPHQL_ENDPOINT, {
     method: 'POST',
     credentials: 'include', // Automatically send pu_session cookie

@@ -1,14 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { apiClient } from '@/lib/api-client'
@@ -94,21 +87,11 @@ export function ReportPostDialog({ postId, open, onOpenChange }: ReportPostDialo
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Mô tả chi tiết (Tùy chọn)</label>
-            <Textarea
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              rows={3}
-              placeholder="Cung cấp thêm ngữ cảnh cho Ban Quản trị..."
-            />
+            <Textarea value={details} onChange={(e) => setDetails(e.target.value)} rows={3} placeholder="Cung cấp thêm ngữ cảnh cho Ban Quản trị..." />
           </div>
 
           <DialogFooter className="pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Hủy
             </Button>
             <Button type="submit" variant="destructive" disabled={isSubmitting} className="gap-2">

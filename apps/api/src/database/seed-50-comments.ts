@@ -1,9 +1,7 @@
 import { Pool } from 'pg'
 
 const pool = new Pool({
-  connectionString:
-    process.env.DATABASE_URL ||
-    'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
+  connectionString: process.env.DATABASE_URL || 'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
 })
 
 const targetPostId = 'ff05f219-2405-4954-b530-2122d65925a6'
@@ -114,10 +112,7 @@ async function seedComments() {
     }
 
     // Update post comments_count
-    await client.query(
-      'UPDATE posts SET comments_count = $1, is_resolved = TRUE WHERE id = $2',
-      [insertedIds.length, targetPostId]
-    )
+    await client.query('UPDATE posts SET comments_count = $1, is_resolved = TRUE WHERE id = $2', [insertedIds.length, targetPostId])
 
     console.log(`✅ Successfully seeded ${insertedIds.length} comments for post ${targetPostId}!`)
   } catch (err: any) {

@@ -31,12 +31,7 @@ interface AcademicPostComposerProps {
   defaultCourseId?: string
 }
 
-export function AcademicPostComposer({
-  onPostCreated,
-  defaultCommunityId,
-  defaultCommunitySlug,
-  defaultCourseId
-}: AcademicPostComposerProps = {}) {
+export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaultCommunitySlug, defaultCourseId }: AcademicPostComposerProps = {}) {
   const user = useAppStore((state) => state.user)
   const queryClient = useQueryClient()
 
@@ -77,13 +72,7 @@ export function AcademicPostComposer({
   useEffect(() => {
     const handleDocumentClick = (e: MouseEvent) => {
       if (composerRef.current && !composerRef.current.contains(e.target as Node)) {
-        if (
-          !content.trim() &&
-          !title.trim() &&
-          attachedFiles.length === 0 &&
-          tags.length === 0 &&
-          !showPollCreator
-        ) {
+        if (!content.trim() && !title.trim() && attachedFiles.length === 0 && tags.length === 0 && !showPollCreator) {
           setIsExpanded(false)
           setIsPreviewMode(false)
           setShowTagInput(false)
@@ -267,35 +256,24 @@ export function AcademicPostComposer({
     }
   }
 
-  const userInitials = (
-    user?.displayName ||
-    user?.username ||
-    'PU'
-  )
-    .slice(0, 2)
-    .toUpperCase()
+  const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   const placeholderText =
     postType === 'qa'
       ? 'Bạn đang thắc mắc bài tập hoặc đề thi học phần nào?...'
       : postType === 'document'
-      ? 'Chia sẻ đề cương, tài liệu tham khảo hoặc slide bài giảng...'
-      : postType === 'group_recruit'
-      ? 'Mô tả đề tài đồ án, các kỹ năng cần thiết và số lượng thành viên...'
-      : 'Có gì mới? Chia sẻ thắc mắc học tập, kinh nghiệm môn học...'
+        ? 'Chia sẻ đề cương, tài liệu tham khảo hoặc slide bài giảng...'
+        : postType === 'group_recruit'
+          ? 'Mô tả đề tài đồ án, các kỹ năng cần thiết và số lượng thành viên...'
+          : 'Có gì mới? Chia sẻ thắc mắc học tập, kinh nghiệm môn học...'
 
   return (
-    <div
-      ref={composerRef}
-      className="transition-all duration-200"
-    >
+    <div ref={composerRef} className="transition-all duration-200">
       <div className="flex gap-3 items-start">
         {/* Left User Personal Avatar */}
         <Avatar className="h-9 w-9 shrink-0 rounded-full border border-border/40 select-none">
           <AvatarImage src={user?.avatarUrl || ''} alt={user?.displayName || 'User'} />
-          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-            {userInitials}
-          </AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
         </Avatar>
 
         {/* Right Composer Body */}
@@ -311,10 +289,7 @@ export function AcademicPostComposer({
                   </span>
                 )}
               </div>
-              <ComposerCoursePicker
-                selectedCourseId={selectedCourseId}
-                onChange={setSelectedCourseId}
-              />
+              <ComposerCoursePicker selectedCourseId={selectedCourseId} onChange={setSelectedCourseId} />
             </div>
           )}
 
@@ -326,8 +301,8 @@ export function AcademicPostComposer({
                   postType === 'qa'
                     ? 'Tiêu đề câu hỏi (Ví dụ: Cần giải thích giải thuật Dijkstra...)'
                     : postType === 'document'
-                    ? 'Tên tài liệu / đề thi (Ví dụ: Đề thi Cuối kỳ Giải tích 1 năm 2024)'
-                    : 'Tên đề tài đồ án PBL (Ví dụ: Xây dựng App Mobile với React Native)'
+                      ? 'Tên tài liệu / đề thi (Ví dụ: Đề thi Cuối kỳ Giải tích 1 năm 2024)'
+                      : 'Tên đề tài đồ án PBL (Ví dụ: Xây dựng App Mobile với React Native)'
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -375,11 +350,7 @@ export function AcademicPostComposer({
                   <BarChart2 className="h-4 w-4" />
                   <span>Tạo Khảo sát / Bình chọn sinh viên</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPollCreator(false)}
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                >
+                <button type="button" onClick={() => setShowPollCreator(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -432,13 +403,7 @@ export function AcademicPostComposer({
           <div className="relative">
             {isPreviewMode ? (
               <div className="min-h-[90px] max-h-[280px] overflow-y-auto rounded-xl border border-border/40 bg-muted/20 p-3 text-xs">
-                {content ? (
-                  <MarkdownPreview content={content} />
-                ) : (
-                  <span className="text-muted-foreground italic">
-                    Chưa có nội dung để xem trước...
-                  </span>
-                )}
+                {content ? <MarkdownPreview content={content} /> : <span className="text-muted-foreground italic">Chưa có nội dung để xem trước...</span>}
               </div>
             ) : (
               <div className="flex items-center justify-between gap-3">
@@ -466,12 +431,7 @@ export function AcademicPostComposer({
           </div>
 
           {/* Attachment Preview Chips */}
-          <ComposerAttachmentPreview
-            files={attachedFiles}
-            tags={tags}
-            onRemoveFile={handleRemoveFile}
-            onRemoveTag={handleRemoveTag}
-          />
+          <ComposerAttachmentPreview files={attachedFiles} tags={tags} onRemoveFile={handleRemoveFile} onRemoveTag={handleRemoveTag} />
 
           {/* Expanded Inline Tag Input */}
           {isExpanded && showTagInput && (
@@ -507,9 +467,7 @@ export function AcademicPostComposer({
                 <ComposerProgressRing currentLength={content.length} maxLength={MAX_CHAR_LIMIT} />
 
                 {/* Audience Menu */}
-                {FEATURES.postAudience && (
-                  <ComposerAudienceMenu value={targetAudience} onChange={setTargetAudience} />
-                )}
+                {FEATURES.postAudience && <ComposerAudienceMenu value={targetAudience} onChange={setTargetAudience} />}
 
                 {/* Submit Button */}
                 <Button

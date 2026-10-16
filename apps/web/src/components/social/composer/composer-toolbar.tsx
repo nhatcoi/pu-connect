@@ -1,17 +1,7 @@
 'use client'
 
 import React, { useRef } from 'react'
-import {
-  Image as ImageIcon,
-  FileText,
-  Binary,
-  Code2,
-  GitBranch,
-  Eye,
-  EyeOff,
-  Hash,
-  BarChart2
-} from 'lucide-react'
+import { Image as ImageIcon, FileText, Binary, Code2, GitBranch, Eye, EyeOff, Hash, BarChart2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface ComposerToolbarProps {
@@ -68,22 +58,8 @@ export function ComposerToolbar({
   return (
     <div className="flex items-center gap-0.5 text-primary overflow-x-auto no-scrollbar py-0.5 max-w-full">
       {/* Hidden File Inputs */}
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/*"
-        multiple
-        className="hidden"
-        onChange={handleFileChange}
-      />
-      <input
-        ref={docInputRef}
-        type="file"
-        accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar"
-        multiple
-        className="hidden"
-        onChange={handleFileChange}
-      />
+      <input ref={imageInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleFileChange} />
+      <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar" multiple className="hidden" onChange={handleFileChange} />
 
       {/* Action Icons */}
       <button
@@ -136,9 +112,7 @@ export function ComposerToolbar({
         onClick={onToggleTagInput}
         className={cn(
           'flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-colors cursor-pointer shrink-0',
-          showTagInput
-            ? 'bg-primary/10 text-primary'
-            : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+          showTagInput ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
         )}
         title="Gắn thẻ chủ đề (#hashtag)"
       >
@@ -151,9 +125,7 @@ export function ComposerToolbar({
           onClick={onTogglePoll}
           className={cn(
             'flex h-7.5 w-7.5 sm:h-8 sm:w-8 items-center justify-center rounded-full transition-colors cursor-pointer shrink-0',
-            showPoll
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+            showPoll ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
           )}
           title="Tạo khảo sát bình chọn sinh viên"
         >
@@ -167,9 +139,7 @@ export function ComposerToolbar({
         onClick={onTogglePreview}
         className={cn(
           'flex h-7.5 sm:h-8 items-center gap-1 px-2 rounded-full text-xs font-semibold transition-colors cursor-pointer shrink-0 ml-0.5',
-          isPreviewMode
-            ? 'bg-primary text-primary-foreground'
-            : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
+          isPreviewMode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-primary/10 hover:text-primary'
         )}
         title="Xem trước kết quả định dạng"
       >

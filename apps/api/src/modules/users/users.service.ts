@@ -70,7 +70,10 @@ export class UsersService {
    */
   async updateProfile(userId: string, data: UpdateProfileInput): Promise<UserProfile> {
     // Chỉ nhận ảnh https hoặc đường dẫn nội bộ (chặn blob:/data:/javascript:)
-    for (const [field, url] of [['avatarUrl', data.avatarUrl], ['bannerUrl', data.bannerUrl]] as const) {
+    for (const [field, url] of [
+      ['avatarUrl', data.avatarUrl],
+      ['bannerUrl', data.bannerUrl]
+    ] as const) {
       if (url && !/^(https:\/\/|\/(?!\/))/i.test(url)) {
         throw new BadRequestException(`${field} phải là URL https đã tải lên`)
       }
@@ -203,10 +206,7 @@ export class UsersService {
     const changes = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined))
     const updatedPrivacy = resolvePrivacySettings({ ...resolvePrivacySettings(existing.rows[0].privacy_settings), ...changes })
 
-    await this.db.query(
-      `UPDATE users SET privacy_settings = $1::jsonb, updated_at = NOW() WHERE id = $2`,
-      [JSON.stringify(updatedPrivacy), userId]
-    )
+    await this.db.query(`UPDATE users SET privacy_settings = $1::jsonb, updated_at = NOW() WHERE id = $2`, [JSON.stringify(updatedPrivacy), userId])
 
     // Tắt cá nhân hóa ⇒ xóa hành vi đã ghi & hồ sơ quan tâm
     if (changes.personalization === false) await this.userEvents.forget(userId)
@@ -246,16 +246,14 @@ export class UsersService {
     const isPhenikaa = emailLower.endsWith('@phenikaa-uni.edu.vn') || emailLower.endsWith('@st.phenikaa-uni.edu.vn')
 
     if (isPhenikaa) {
-      await this.db.query(
-        `UPDATE users SET is_verified = TRUE, verified_at = NOW(), updated_at = NOW() WHERE id = $1`,
-        [userId]
-      )
+      await this.db.query(`UPDATE users SET is_verified = TRUE, verified_at = NOW(), updated_at = NOW() WHERE id = $1`, [userId])
       return { isVerified: true, message: 'Xác thực thành công! Tài khoản của bạn đã nhận Huy hiệu Tích Xanh sinh viên Phenikaa' }
     }
 
     return {
       isVerified: false,
-      message: 'Email đăng ký không thuộc tên miền chính quy (@phenikaa-uni.edu.vn / @st.phenikaa-uni.edu.vn). Vui lòng cập nhật email trường để nhận Tích Xanh.'
+      message:
+        'Email đăng ký không thuộc tên miền chính quy (@phenikaa-uni.edu.vn / @st.phenikaa-uni.edu.vn). Vui lòng cập nhật email trường để nhận Tích Xanh.'
     }
   }
 }

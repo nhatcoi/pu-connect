@@ -33,11 +33,7 @@ export function useWriteSessionUser() {
 
 // Công tắc lưu ngay: cập nhật lạc quan, lỗi ⇒ trả lại giá trị cũ
 // Optimistic toggle with rollback; server merges partial patches so rapid toggles are safe
-function useSettingsPatch<T extends object>(
-  field: 'privacySettings' | 'preferences',
-  endpoint: string,
-  resolve: (raw: unknown) => T
-) {
+function useSettingsPatch<T extends object>(field: 'privacySettings' | 'preferences', endpoint: string, resolve: (raw: unknown) => T) {
   const writeUser = useWriteSessionUser()
   return useCallback(
     async (patch: Partial<T>) => {

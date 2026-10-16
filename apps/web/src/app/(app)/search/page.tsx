@@ -20,26 +20,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { apiClient } from '@/lib/api-client'
-import type {
-  SearchResult,
-  SearchType,
-  Course,
-  UserSummary
-} from '@pu/schemas'
-import {
-  Search,
-  X,
-  ArrowLeft,
-  Settings,
-  MoreHorizontal,
-  SlidersHorizontal,
-  FileText,
-  User,
-  Users,
-  Filter,
-  GraduationCap,
-  Flame
-} from 'lucide-react'
+import type { SearchResult, SearchType, Course, UserSummary } from '@pu/schemas'
+import { Search, X, ArrowLeft, Settings, MoreHorizontal, SlidersHorizontal, FileText, User, Users, Filter, GraduationCap, Flame } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
 
@@ -139,7 +121,6 @@ function SearchContent() {
   const [isOptionsOpen, setIsOptionsOpen] = useState(false)
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
 
-
   // Sync input query with URL
   useEffect(() => {
     setInputQuery(queryParam)
@@ -197,7 +178,6 @@ function SearchContent() {
     router.push(`/search?q=${encodeURIComponent(tag)}&type=all`)
   }
 
-
   const totalCount = searchResult?.counts?.total || 0
   const isSearchActive = !!queryParam.trim()
 
@@ -212,15 +192,8 @@ function SearchContent() {
         onOpenFilters={() => setIsAdvancedOpen(true)}
         onOpenAdvanced={() => setIsAdvancedOpen(true)}
       />
-      <AdvancedSearchDialog
-        open={isAdvancedOpen}
-        onOpenChange={setIsAdvancedOpen}
-        initialQuery={inputQuery}
-        initialFaculty={selectedFaculty}
-      />
+      <AdvancedSearchDialog open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen} initialQuery={inputQuery} initialFaculty={selectedFaculty} />
 
-
-      
       {/* ── A. SEARCH TOP BAR & CATEGORY TABS ── */}
       <div className="sticky top-0 md:top-14 z-30 mb-2.5 bg-surface/90 backdrop-blur-md px-2 sm:px-0 py-2">
         {/* Desktop-only Search Input Row (Mobile search input is unified in Header) */}
@@ -327,18 +300,12 @@ function SearchContent() {
               <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto text-muted-foreground">
                 <Search className="h-6 w-6" />
               </div>
-              <h3 className="text-base font-bold text-foreground">
-                Không tìm thấy kết quả cho &ldquo;{queryParam}&rdquo;
-              </h3>
+              <h3 className="text-base font-bold text-foreground">Không tìm thấy kết quả cho &ldquo;{queryParam}&rdquo;</h3>
               <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                Hãy thử tìm kiếm với từ khóa khác, mã học phần ngắn gọn (ví dụ: <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono">IT101</code>) hoặc sử dụng tính năng Tìm kiếm nâng cao.
+                Hãy thử tìm kiếm với từ khóa khác, mã học phần ngắn gọn (ví dụ:{' '}
+                <code className="bg-muted px-1.5 py-0.5 rounded text-foreground font-mono">IT101</code>) hoặc sử dụng tính năng Tìm kiếm nâng cao.
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIsAdvancedOpen(true)}
-                className="rounded-full text-xs font-semibold mt-2 cursor-pointer"
-              >
+              <Button size="sm" variant="outline" onClick={() => setIsAdvancedOpen(true)} className="rounded-full text-xs font-semibold mt-2 cursor-pointer">
                 <SlidersHorizontal className="h-3.5 w-3.5 mr-1.5" />
                 Tìm kiếm nâng cao
               </Button>
@@ -446,9 +413,7 @@ function SearchContent() {
         <div className="space-y-2.5 px-2 sm:px-0">
           {/* Section 1: Today's Academic News (Image 1) */}
           <div className="rounded-xl bg-card p-4 space-y-3">
-            <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
-              Tin nổi bật Phenikaa (Today&apos;s Highlights)
-            </h2>
+            <h2 className="text-[15px] font-semibold tracking-tight text-foreground">Tin nổi bật Phenikaa (Today&apos;s Highlights)</h2>
             <div className="space-y-3">
               {ACADEMIC_STORIES.map((story) => (
                 <div
@@ -456,9 +421,7 @@ function SearchContent() {
                   onClick={() => handleTrendingClick(story.title.split(' ')[0])}
                   className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 transition-colors cursor-pointer space-y-1.5"
                 >
-                  <h3 className="text-[13px] font-semibold text-foreground leading-snug hover:underline">
-                    {story.title}
-                  </h3>
+                  <h3 className="text-[13px] font-semibold text-foreground leading-snug hover:underline">{story.title}</h3>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span className="font-medium">{story.timeAgo}</span>
                     <span>•</span>
@@ -491,16 +454,10 @@ function SearchContent() {
 
             <div className="divide-y divide-border/40">
               {TRENDING_TOPICS.map((topic, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => handleTrendingClick(topic.tag)}
-                  className="py-3 flex items-start justify-between group cursor-pointer"
-                >
+                <div key={idx} onClick={() => handleTrendingClick(topic.tag)} className="py-3 flex items-start justify-between group cursor-pointer">
                   <div className="space-y-0.5 min-w-0 pr-2">
                     <p className="text-[11px] text-muted-foreground">{topic.category}</p>
-                    <p className="text-[13px] font-semibold text-foreground group-hover:underline truncate">
-                      {topic.title}
-                    </p>
+                    <p className="text-[13px] font-semibold text-foreground group-hover:underline truncate">{topic.title}</p>
                     <p className="text-xs text-muted-foreground">{topic.postsCount}</p>
                   </div>
                   <button
@@ -537,14 +494,10 @@ function SearchContent() {
                   className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-left transition-all cursor-pointer space-y-1.5 group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-                      {course.code}
-                    </span>
+                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">{course.code}</span>
                     <span className="text-[10px] text-muted-foreground font-medium">{course.credits} tín chỉ</span>
                   </div>
-                  <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">
-                    {course.name}
-                  </p>
+                  <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">{course.name}</p>
                 </button>
               ))}
             </div>
@@ -552,56 +505,56 @@ function SearchContent() {
         </div>
       )}
       <PageAside>
-            {/* Faculty Filter Card */}
-            <Card className="border-0 bg-card shadow-none rounded-xl">
-              <CardHeader className="pb-1">
-                <div className="flex items-center gap-2 text-xs font-bold text-foreground">
-                  <Filter className="h-4 w-4 text-primary" />
-                  <span>Lọc theo Khoa / Viện</span>
-                </div>
-              </CardHeader>
-              <CardContent className="p-2 space-y-0.5">
-                {FACULTIES.map((fac) => {
-                  const isSelected = selectedFaculty === fac.code
-                  return (
-                    <button
-                      key={fac.code}
-                      onClick={() => handleFacultyChange(fac.code)}
+        {/* Faculty Filter Card */}
+        <Card className="border-0 bg-card shadow-none rounded-xl">
+          <CardHeader className="pb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <Filter className="h-4 w-4 text-primary" />
+              <span>Lọc theo Khoa / Viện</span>
+            </div>
+          </CardHeader>
+          <CardContent className="p-2 space-y-0.5">
+            {FACULTIES.map((fac) => {
+              const isSelected = selectedFaculty === fac.code
+              return (
+                <button
+                  key={fac.code}
+                  onClick={() => handleFacultyChange(fac.code)}
+                  className={cn(
+                    'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer text-left',
+                    isSelected ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  <span className="truncate">{fac.name}</span>
+                  {fac.code !== 'ALL' && (
+                    <span
                       className={cn(
-                        'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer text-left',
-                        isSelected
-                          ? 'bg-primary/10 text-primary font-semibold'
-                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0',
+                        isSelected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
                       )}
                     >
-                      <span className="truncate">{fac.name}</span>
-                      {fac.code !== 'ALL' && (
-                        <span
-                          className={cn(
-                            'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0',
-                            isSelected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
-                          )}
-                        >
-                          {fac.code}
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </CardContent>
-            </Card>
+                      {fac.code}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </CardContent>
+        </Card>
 
-            {/* Search Tips */}
-            <Card className="border-0 bg-card shadow-none p-3.5 space-y-2 text-xs rounded-xl">
-              <span className="font-bold text-foreground flex items-center gap-1.5">
-                💡 Mẹo tìm kiếm thông minh
-              </span>
-              <ul className="text-muted-foreground space-y-1.5 text-[11px] list-disc list-inside">
-                <li>Tìm mã môn chính xác: <code className="bg-muted px-1 py-0.5 rounded text-foreground">IT101</code></li>
-                <li>Tìm theo thẻ hashtag: <code className="bg-muted px-1 py-0.5 rounded text-foreground">#DoAnTotNghiep</code></li>
-                <li>Tìm tài liệu theo khoa: Chọn bộ lọc ở trên.</li>
-              </ul>
-            </Card>
+        {/* Search Tips */}
+        <Card className="border-0 bg-card shadow-none p-3.5 space-y-2 text-xs rounded-xl">
+          <span className="font-bold text-foreground flex items-center gap-1.5">💡 Mẹo tìm kiếm thông minh</span>
+          <ul className="text-muted-foreground space-y-1.5 text-[11px] list-disc list-inside">
+            <li>
+              Tìm mã môn chính xác: <code className="bg-muted px-1 py-0.5 rounded text-foreground">IT101</code>
+            </li>
+            <li>
+              Tìm theo thẻ hashtag: <code className="bg-muted px-1 py-0.5 rounded text-foreground">#DoAnTotNghiep</code>
+            </li>
+            <li>Tìm tài liệu theo khoa: Chọn bộ lọc ở trên.</li>
+          </ul>
+        </Card>
       </PageAside>
     </>
   )
@@ -615,66 +568,37 @@ function CourseCardItem({ course }: { course: Course }) {
       className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-card-foreground transition-all cursor-pointer space-y-1.5"
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">
-          {course.code}
-        </span>
-        <span className="text-[10px] font-medium text-muted-foreground">
-          {course.credits} tín chỉ
-        </span>
+        <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">{course.code}</span>
+        <span className="text-[10px] font-medium text-muted-foreground">{course.credits} tín chỉ</span>
       </div>
-      <h4 className="font-bold text-xs text-foreground line-clamp-1">
-        {course.name}
-      </h4>
-      {course.description && (
-        <p className="text-[11px] text-muted-foreground line-clamp-2">
-          {course.description}
-        </p>
-      )}
+      <h4 className="font-bold text-xs text-foreground line-clamp-1">{course.name}</h4>
+      {course.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{course.description}</p>}
     </div>
   )
 }
 
 function UserCardItem({ userItem }: { userItem: UserSummary }) {
   const router = useRouter()
-  const initials = (userItem.displayName || userItem.username || 'PU')
-    .slice(0, 2)
-    .toUpperCase()
+  const initials = (userItem.displayName || userItem.username || 'PU').slice(0, 2).toUpperCase()
 
   return (
     <div className="flex items-center justify-between p-3 hover:bg-muted/30 transition-colors">
-      <div
-        onClick={() => router.push(`/${userItem.username}`)}
-        className="flex items-center gap-3 cursor-pointer min-w-0"
-      >
+      <div onClick={() => router.push(`/${userItem.username}`)} className="flex items-center gap-3 cursor-pointer min-w-0">
         <Avatar className="h-10 w-10 border border-border">
           <AvatarImage src={userItem.avatarUrl || ''} />
-          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-            {initials}
-          </AvatarFallback>
+          <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{initials}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 space-y-0.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-bold text-xs text-foreground hover:underline truncate">
-              {userItem.displayName || userItem.username}
-            </span>
-            <AcademicBadge
-              role={userItem.role}
-              reputationPoints={userItem.reputationPoints}
-            />
+            <span className="font-bold text-xs text-foreground hover:underline truncate">{userItem.displayName || userItem.username}</span>
+            <AcademicBadge role={userItem.role} reputationPoints={userItem.reputationPoints} />
           </div>
-          <p className="text-[11px] text-muted-foreground truncate">
-            @{userItem.username}
-          </p>
+          <p className="text-[11px] text-muted-foreground truncate">@{userItem.username}</p>
         </div>
       </div>
 
       <div className="shrink-0 ml-3">
-        <FollowButton
-          targetUserId={userItem.id}
-          targetUsername={userItem.username}
-          initialIsFollowing={userItem.isFollowedByMe ?? false}
-          size="sm"
-        />
+        <FollowButton targetUserId={userItem.id} targetUsername={userItem.username} initialIsFollowing={userItem.isFollowedByMe ?? false} size="sm" />
       </div>
     </div>
   )

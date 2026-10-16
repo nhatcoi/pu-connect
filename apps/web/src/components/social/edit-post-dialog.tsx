@@ -1,13 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -74,40 +68,21 @@ export function EditPostDialog({ post, open, onOpenChange, onSuccess }: EditPost
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Tiêu đề (Tùy chọn)</label>
-            <Input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Tiêu đề tóm tắt..."
-            />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Tiêu đề tóm tắt..." />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Nội dung bài viết *</label>
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={6}
-              placeholder="Chia sẻ kiến thức, bài tập hoặc câu hỏi..."
-              required
-            />
+            <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={6} placeholder="Chia sẻ kiến thức, bài tập hoặc câu hỏi..." required />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground">Tags (Cách nhau bằng dấu phẩy)</label>
-            <Input
-              value={tagsInput}
-              onChange={(e) => setTagsInput(e.target.value)}
-              placeholder="IT101, PostgreSQL, OOP"
-            />
+            <Input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="IT101, PostgreSQL, OOP" />
           </div>
 
           <DialogFooter className="pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
               Hủy
             </Button>
             <Button type="submit" disabled={isSubmitting} className="gap-2">

@@ -97,9 +97,7 @@ Hôm nay mình đã hiểu cảm giác của cá hồi bơi ngược dòng 🐟`
     content: `Học tiếng Hàn 2 năm, kết quả: xem phim vẫn phải bật phụ đề nhưng giờ mình biết phụ đề dịch sai chỗ nào 🙂`,
     tags: ['TiengHan', 'Kdrama'],
     likes: 15,
-    comments: [
-      { by: 'thao_ielts', text: 'level cao nhất của học ngoại ngữ là cáu phụ đề 😂', after: 20, likes: 7 }
-    ]
+    comments: [{ by: 'thao_ielts', text: 'level cao nhất của học ngoại ngữ là cáu phụ đề 😂', after: 20, likes: 7 }]
   },
   {
     key: 'fun-dat-rain',
@@ -163,9 +161,7 @@ Nhìn chung vẫn thấy vui, đại học xịn hơn em nghĩ 🥹`,
     content: `hôm nay mặc áo trái cả buổi sáng mà không ai nói. mình nên vui vì không ai để ý hay buồn vì không ai để ý`,
     tags: ['NghiVuVo'],
     likes: 9,
-    comments: [
-      { by: 'thuydung05', text: 'mình thấy nhưng tưởng là phong cách 😭', after: 12, likes: 7 }
-    ]
+    comments: [{ by: 'thuydung05', text: 'mình thấy nhưng tưởng là phong cách 😭', after: 12, likes: 7 }]
   },
   {
     key: 'fun-quan-keyboard',

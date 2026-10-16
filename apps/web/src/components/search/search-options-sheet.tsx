@@ -1,11 +1,7 @@
 'use client'
 
 import React from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Settings, SlidersHorizontal, Search } from 'lucide-react'
 
@@ -17,13 +13,7 @@ interface SearchOptionsSheetProps {
   onOpenAdvanced: () => void
 }
 
-export function SearchOptionsSheet({
-  open,
-  onOpenChange,
-  onOpenSettings,
-  onOpenFilters,
-  onOpenAdvanced
-}: SearchOptionsSheetProps) {
+export function SearchOptionsSheet({ open, onOpenChange, onOpenSettings, onOpenFilters, onOpenAdvanced }: SearchOptionsSheetProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm p-2 rounded-3xl border-border bg-card shadow-2xl">

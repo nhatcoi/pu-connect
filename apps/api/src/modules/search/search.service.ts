@@ -2,15 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { DatabaseService } from '../../database/database.service'
 import { parseQuery, type ParsedQuery } from './search-query'
 import { blockExistsSql } from '../blocks/blocks.sql'
-import type {
-  SearchQueryInput,
-  SearchResult,
-  Course,
-  DocumentItem,
-  PostItem,
-  UserSummary,
-  StudyGroup
-} from '@pu/schemas'
+import type { SearchQueryInput, SearchResult, Course, DocumentItem, PostItem, UserSummary, StudyGroup } from '@pu/schemas'
 
 type Queryable = { query: (sql: string, params?: any[]) => Promise<{ rows: any[] }> }
 type Mode = 'fts' | 'fuzzy'
@@ -41,9 +33,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
 
   private async cleanupLogs() {
     try {
-      await this.db.query(`DELETE FROM search_logs WHERE created_at < NOW() - make_interval(days => $1)`, [
-        LOG_RETENTION_DAYS
-      ])
+      await this.db.query(`DELETE FROM search_logs WHERE created_at < NOW() - make_interval(days => $1)`, [LOG_RETENTION_DAYS])
     } catch (err: any) {
       this.logger.warn(`Dọn search_logs thất bại: ${err?.message}`)
     }
@@ -64,9 +54,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
     if (!parsed.isEmpty) {
       ;[courses, documents, posts, users, groups] = await Promise.all([
         all || type === 'courses' ? this.searchCourses(parsed, faculty, all ? 4 : limit, offset) : [],
-        all || type === 'documents'
-          ? this.searchDocuments(parsed, faculty, all ? 5 : limit, offset, currentUserId)
-          : [],
+        all || type === 'documents' ? this.searchDocuments(parsed, faculty, all ? 5 : limit, offset, currentUserId) : [],
         all || type === 'posts' ? this.searchPosts(parsed, faculty, all ? 6 : limit, offset, currentUserId) : [],
         all || type === 'users' ? this.searchUsers(parsed, faculty, all ? 4 : limit, offset, currentUserId) : [],
         all || type === 'groups' ? this.searchGroups(parsed, faculty, all ? 4 : limit, offset) : []
@@ -93,11 +81,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   private logQuery(parsed: ParsedQuery, type: string, resultCount: number) {
     const norm = (parsed.tag ? `#${parsed.tag}` : parsed.plain).slice(0, 100)
     void this.db
-      .query(`INSERT INTO search_logs (q_norm, search_type, result_count) VALUES ($1, $2, $3)`, [
-        norm,
-        type,
-        resultCount
-      ])
+      .query(`INSERT INTO search_logs (q_norm, search_type, result_count) VALUES ($1, $2, $3)`, [norm, type, resultCount])
       .catch((err) => this.logger.warn(`Ghi search_logs thất bại: ${err?.message}`))
   }
 
@@ -114,13 +98,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
    *  fuzzy : word_similarity (trigram) cho lỗi gõ sai, loại bản ghi fts đã có
    *  #tag  : chỉ khớp chính xác tag
    */
-  private match(
-    alias: string,
-    nameExpr: string,
-    tagExpr: string | undefined,
-    q: ParsedQuery,
-    mode: Mode
-  ): { where: string; score: string } | null {
+  private match(alias: string, nameExpr: string, tagExpr: string | undefined, q: ParsedQuery, mode: Mode): { where: string; score: string } | null {
     // Gán kiểu cho cả 3 tham số cố định (Postgres không suy ra kiểu của tham số không dùng)
     const typed = `$1::text IS NOT NULL AND $2::text IS NOT NULL AND $3::text IS NOT NULL`
     if (q.tag) {
@@ -204,13 +182,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 2. Tài liệu & đề thi ─────────────────────────────────────────
-  private searchDocuments(
-    q: ParsedQuery,
-    faculty: string | undefined,
-    limit: number,
-    offset: number,
-    currentUserId?: string
-  ): Promise<DocumentItem[]> {
+  private searchDocuments(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<DocumentItem[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('d', `immutable_unaccent(lower(d.title))`, 'd.tags', q, mode)
       if (!m) return []
@@ -268,13 +240,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 3. Bài viết & hỏi đáp ────────────────────────────────────────
-  private searchPosts(
-    q: ParsedQuery,
-    faculty: string | undefined,
-    limit: number,
-    offset: number,
-    currentUserId?: string
-  ): Promise<PostItem[]> {
+  private searchPosts(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<PostItem[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('p', `immutable_unaccent(lower(p.title))`, 'p.tags', q, mode)
       if (!m) return []
@@ -351,13 +317,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 4. Người dùng ────────────────────────────────────────────────
-  private searchUsers(
-    q: ParsedQuery,
-    faculty: string | undefined,
-    limit: number,
-    offset: number,
-    currentUserId?: string
-  ): Promise<UserSummary[]> {
+  private searchUsers(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<UserSummary[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('u', `immutable_unaccent(lower(u.display_name || ' ' || u.username))`, '(u.skills || u.interests)', q, mode)
       if (!m) return []
@@ -402,12 +362,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 5. Nhóm đồ án (PBL) ──────────────────────────────────────────
-  private searchGroups(
-    q: ParsedQuery,
-    faculty: string | undefined,
-    limit: number,
-    offset: number
-  ): Promise<StudyGroup[]> {
+  private searchGroups(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number): Promise<StudyGroup[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('g', `immutable_unaccent(lower(g.name))`, 'g.tech_stack', q, mode)
       if (!m) return []

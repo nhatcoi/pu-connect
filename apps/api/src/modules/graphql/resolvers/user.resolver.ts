@@ -18,9 +18,7 @@ export class UserResolver {
   ) {}
 
   @Query(() => UserType, { name: 'userProfile', nullable: true })
-  async getUserProfile(
-    @Args('username', { type: () => String }) username: string
-  ): Promise<UserType | null> {
+  async getUserProfile(@Args('username', { type: () => String }) username: string): Promise<UserType | null> {
     const res = await this.db.query(
       `SELECT id, email, username, display_name, student_id, faculty, academic_year, major, class_name, is_verified, avatar_url, bio, role, reputation_points, created_at
        FROM users
@@ -43,10 +41,7 @@ export class UserResolver {
   }
 
   @Query(() => [UserType], { name: 'suggestedUsers' })
-  async getSuggestedUsers(
-    @Args('limit', { type: () => Int, nullable: true, defaultValue: 5 }) limit: number,
-    @Context() context: any
-  ): Promise<UserType[]> {
+  async getSuggestedUsers(@Args('limit', { type: () => Int, nullable: true, defaultValue: 5 }) limit: number, @Context() context: any): Promise<UserType[]> {
     const currentUserId = context?.req?.user?.id || context?.req?.session?.passport?.user?.id
 
     let sql = `
@@ -72,9 +67,7 @@ export class UserResolver {
   }
 
   @Query(() => [UserType], { name: 'userFollowers' })
-  async getUserFollowers(
-    @Args('userId', { type: () => ID }) userId: string
-  ): Promise<UserType[]> {
+  async getUserFollowers(@Args('userId', { type: () => ID }) userId: string): Promise<UserType[]> {
     const res = await this.db.query(
       `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
               u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
@@ -89,9 +82,7 @@ export class UserResolver {
   }
 
   @Query(() => [UserType], { name: 'userFollowing' })
-  async getUserFollowing(
-    @Args('userId', { type: () => ID }) userId: string
-  ): Promise<UserType[]> {
+  async getUserFollowing(@Args('userId', { type: () => ID }) userId: string): Promise<UserType[]> {
     const res = await this.db.query(
       `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
               u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
@@ -106,10 +97,7 @@ export class UserResolver {
   }
 
   @Mutation(() => FollowResultType, { name: 'toggleFollow' })
-  async toggleFollow(
-    @Args('targetUserId', { type: () => ID }) targetUserId: string,
-    @Context() context: any
-  ): Promise<FollowResultType> {
+  async toggleFollow(@Args('targetUserId', { type: () => ID }) targetUserId: string, @Context() context: any): Promise<FollowResultType> {
     const currentUserId = context?.req?.user?.id || context?.req?.session?.passport?.user?.id
     if (!currentUserId) {
       throw new UnauthorizedException('Vui lòng đăng nhập để thực hiện theo dõi')
@@ -126,25 +114,16 @@ export class UserResolver {
     }
 
     // Check if already follows
-    const existCheck = await this.db.query(
-      `SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2`,
-      [currentUserId, targetUserId]
-    )
+    const existCheck = await this.db.query(`SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2`, [currentUserId, targetUserId])
 
     let isFollowing = false
     if (existCheck.rows.length > 0) {
-      await this.db.query(
-        `DELETE FROM user_follows WHERE follower_id = $1 AND following_id = $2`,
-        [currentUserId, targetUserId]
-      )
+      await this.db.query(`DELETE FROM user_follows WHERE follower_id = $1 AND following_id = $2`, [currentUserId, targetUserId])
       isFollowing = false
     } else {
       const blocked = await this.db.query(`SELECT ${blockExistsSql('$1::uuid', '$2::uuid')} AS blocked`, [currentUserId, targetUserId])
       if (blocked.rows[0].blocked) throw new ForbiddenException('Không thể theo dõi người dùng này')
-      await this.db.query(
-        `INSERT INTO user_follows (follower_id, following_id) VALUES ($1, $2)`,
-        [currentUserId, targetUserId]
-      )
+      await this.db.query(`INSERT INTO user_follows (follower_id, following_id) VALUES ($1, $2)`, [currentUserId, targetUserId])
       isFollowing = true
 
       // Gộp: "A và N người khác đã bắt đầu theo dõi bạn"
@@ -163,14 +142,8 @@ export class UserResolver {
       ])
     }
 
-    const followersRes = await this.db.query(
-      `SELECT COUNT(*)::int as count FROM user_follows WHERE following_id = $1`,
-      [targetUserId]
-    )
-    const followingRes = await this.db.query(
-      `SELECT COUNT(*)::int as count FROM user_follows WHERE follower_id = $1`,
-      [currentUserId]
-    )
+    const followersRes = await this.db.query(`SELECT COUNT(*)::int as count FROM user_follows WHERE following_id = $1`, [targetUserId])
+    const followingRes = await this.db.query(`SELECT COUNT(*)::int as count FROM user_follows WHERE follower_id = $1`, [currentUserId])
 
     return {
       isFollowing,
@@ -181,19 +154,13 @@ export class UserResolver {
 
   @ResolveField(() => Int, { name: 'followersCount' })
   async getFollowersCount(@Parent() user: UserType): Promise<number> {
-    const res = await this.db.query(
-      `SELECT COUNT(*)::int as count FROM user_follows WHERE following_id = $1`,
-      [user.id]
-    )
+    const res = await this.db.query(`SELECT COUNT(*)::int as count FROM user_follows WHERE following_id = $1`, [user.id])
     return res.rows[0]?.count || 0
   }
 
   @ResolveField(() => Int, { name: 'followingCount' })
   async getFollowingCount(@Parent() user: UserType): Promise<number> {
-    const res = await this.db.query(
-      `SELECT COUNT(*)::int as count FROM user_follows WHERE follower_id = $1`,
-      [user.id]
-    )
+    const res = await this.db.query(`SELECT COUNT(*)::int as count FROM user_follows WHERE follower_id = $1`, [user.id])
     return res.rows[0]?.count || 0
   }
 
@@ -203,10 +170,7 @@ export class UserResolver {
     if (!currentUserId || currentUserId === user.id) {
       return false
     }
-    const res = await this.db.query(
-      `SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2 LIMIT 1`,
-      [currentUserId, user.id]
-    )
+    const res = await this.db.query(`SELECT 1 FROM user_follows WHERE follower_id = $1 AND following_id = $2 LIMIT 1`, [currentUserId, user.id])
     return res.rows.length > 0
   }
 

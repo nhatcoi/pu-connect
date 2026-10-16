@@ -27,15 +27,7 @@ export function SettingsHeader({ title, description }: { title: string; descript
 }
 
 // Nhóm cài đặt: nhãn nhỏ + danh sách dòng ngăn bằng đường kẻ
-export function SettingsGroup({
-  label,
-  hint,
-  children
-}: {
-  label?: string
-  hint?: string
-  children: React.ReactNode
-}) {
+export function SettingsGroup({ label, hint, children }: { label?: string; hint?: string; children: React.ReactNode }) {
   return (
     <section className="px-4 py-3 sm:px-5">
       {label && <h2 className="pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</h2>}

@@ -62,10 +62,7 @@ describe('Admin (e2e)', () => {
 
     await adminAgent.post(`/api/admin/users/${target.id}/suspend`).send({ reason: 'spam' }).expect(200)
     await targetAgent.get('/api/auth/me').expect(401)
-    await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ emailOrUsername: target.email, password: PASSWORD })
-      .expect(403)
+    await request(app.getHttpServer()).post('/api/auth/login').send({ emailOrUsername: target.email, password: PASSWORD }).expect(403)
 
     await adminAgent.post(`/api/admin/users/${target.id}/unsuspend`).expect(200)
     await loginAgent(app, target)

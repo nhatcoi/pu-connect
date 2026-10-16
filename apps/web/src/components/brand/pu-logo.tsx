@@ -18,25 +18,13 @@ export function N7AiMark({ className }: { className?: string }) {
 }
 
 // Lockup ngang: mark + tên
-export function PuLogo({
-  className,
-  markClassName,
-  showTagline = false,
-}: {
-  className?: string
-  markClassName?: string
-  showTagline?: boolean
-}) {
+export function PuLogo({ className, markClassName, showTagline = false }: { className?: string; markClassName?: string; showTagline?: boolean }) {
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <PuMark className={markClassName} />
       <span className="flex flex-col">
         <span className="font-extrabold text-base tracking-tight leading-none text-foreground">PU Connector</span>
-        {showTagline && (
-          <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase mt-1">
-            Phenikaa University
-          </span>
-        )}
+        {showTagline && <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase mt-1">Phenikaa University</span>}
       </span>
     </span>
   )

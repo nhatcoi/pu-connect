@@ -162,10 +162,7 @@ export function useComments(postId: string, initialOpen = false) {
   const acceptSolution = useCallback(
     async (commentId: string) => {
       try {
-        const res = await apiClient<{ isSolution: boolean; message: string }>(
-          `/comments/${commentId}/accept-solution`,
-          { method: 'POST' }
-        )
+        const res = await apiClient<{ isSolution: boolean; message: string }>(`/comments/${commentId}/accept-solution`, { method: 'POST' })
         if (res) {
           update((items) => items.map((c) => ({ ...c, isSolution: c.id === commentId ? res.isSolution : false })))
           toast.success(res.message)
@@ -181,10 +178,10 @@ export function useComments(postId: string, initialOpen = false) {
   const editComment = useCallback(
     async (commentId: string, content: string) => {
       try {
-        const res = await apiClient<{ data: { id: string; content: string; editedAt: string } }>(
-          `/comments/${commentId}`,
-          { method: 'PATCH', body: JSON.stringify({ content }) }
-        )
+        const res = await apiClient<{ data: { id: string; content: string; editedAt: string } }>(`/comments/${commentId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ content })
+        })
         const { content: saved, editedAt } = res.data
         update((items) => items.map((c) => (c.id === commentId ? { ...c, content: saved, editedAt } : c)))
         return true

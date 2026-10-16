@@ -2,14 +2,7 @@
 
 import React from 'react'
 import type { DocumentItem } from '@pu/schemas'
-import {
-  FileText,
-  FileCode,
-  FileSpreadsheet,
-  Download,
-  Eye,
-  Share2
-} from 'lucide-react'
+import { FileText, FileCode, FileSpreadsheet, Download, Eye, Share2 } from 'lucide-react'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -48,18 +41,14 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
 
   const rawTags = Array.isArray(item.tags) ? item.tags : []
   const courseCode = item.courseCode
-  const displayTags = rawTags.length > 0
-    ? rawTags
-    : courseCode ? [courseCode] : []
+  const displayTags = rawTags.length > 0 ? rawTags : courseCode ? [courseCode] : []
 
   return (
     <Card data-track-doc={item.id} className="flex flex-col justify-between transition-all duration-200 hover:border-border/80 hover:shadow-sm">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">
-              {getDocumentIcon(item.type)}
-            </div>
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-muted">{getDocumentIcon(item.type)}</div>
             <div>
               <h3 className="font-semibold text-sm line-clamp-1 leading-snug">{item.title}</h3>
               <p className="text-xs text-muted-foreground">
@@ -74,11 +63,7 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
       </CardHeader>
 
       <CardContent className="space-y-3 pb-3">
-        {item.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-            {item.description}
-          </p>
-        )}
+        {item.description && <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{item.description}</p>}
 
         {displayTags.length > 0 && (
           <div className="flex flex-wrap gap-1">

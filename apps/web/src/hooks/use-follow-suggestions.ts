@@ -5,8 +5,7 @@ import type { FollowSuggestion } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 
-const fetchSuggestions = async (limit: number) =>
-  (await apiClient<{ data: FollowSuggestion[] }>(`/users/suggestions?limit=${limit}`)).data ?? []
+const fetchSuggestions = async (limit: number) => (await apiClient<{ data: FollowSuggestion[] }>(`/users/suggestions?limit=${limit}`)).data ?? []
 
 // Cột phải: 3 gợi ý, làm mới sau mỗi lần theo dõi (invalidateFollowRelated)
 export function useSidebarSuggestions(enabled: boolean) {

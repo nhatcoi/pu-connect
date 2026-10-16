@@ -58,10 +58,11 @@ export class StudyGroupChatService {
 
   // Tạo nhóm chat + thêm toàn bộ thành viên nhóm học (trưởng nhóm học = trưởng nhóm chat)
   private async create(client: PoolClient, group: { id: string; name: string; leader_id: string }): Promise<{ id: string; system: ChatMessage }> {
-    const conv = await client.query(
-      `INSERT INTO conversations (type, title, created_by, study_group_id) VALUES ('group', $1, $2, $3) RETURNING id`,
-      [group.name, group.leader_id, group.id]
-    )
+    const conv = await client.query(`INSERT INTO conversations (type, title, created_by, study_group_id) VALUES ('group', $1, $2, $3) RETURNING id`, [
+      group.name,
+      group.leader_id,
+      group.id
+    ])
     const id = conv.rows[0].id as string
     await client.query(
       `INSERT INTO conversation_members (conversation_id, user_id, role)

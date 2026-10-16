@@ -64,12 +64,7 @@ export function MemberActions({ conversationId, member }: { conversationId: stri
               <Button variant="outline" className="rounded-full" disabled={mutation.isPending} onClick={() => setAction(null)}>
                 Hủy
               </Button>
-              <Button
-                variant={action === 'remove' ? 'destructive' : 'default'}
-                className="rounded-full"
-                disabled={mutation.isPending}
-                onClick={confirm}
-              >
+              <Button variant={action === 'remove' ? 'destructive' : 'default'} className="rounded-full" disabled={mutation.isPending} onClick={confirm}>
                 {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : copy.confirm}
               </Button>
             </DialogFooter>
