@@ -46,6 +46,10 @@ export const queryKeys = {
   aiSkill: (id: string) => ['ai-skills', id] as const,
   aiSkillLibrary: (q: string) => ['ai-skill-library', q.trim().toLowerCase()] as const,
   aiConnectors: ['ai-connectors'] as const,
+  aiSettings: ['ai-settings'] as const,
+  aiMemories: ['ai-memories'] as const,
+  aiTasks: ['ai-tasks'] as const,
+  aiUsage: ['ai-usage'] as const,
   aiSuggestions: (mode: string) => ['ai-suggestions', mode] as const,
   presence: ['presence'] as const,
   admin: (section: string, ...args: unknown[]) => ['admin', section, ...args] as const

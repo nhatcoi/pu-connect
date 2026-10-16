@@ -94,7 +94,7 @@ export function useComposerPicker({ textareaRef, text, setText, conversation, my
     if (slash) {
       const modes = AI_MODE_ORDER.filter((m) => hit(q, m, AI_MODE_META[m].label))
       if (modes.length) out.push({ title: 'Chế độ học PU AI', items: modes.map((mode) => ({ kind: 'mode', key: `m:${mode}`, mode })) })
-      const own = (skills ?? []).filter((s) => hit(q, s.slug, s.name)).slice(0, MAX_PER_SECTION)
+      const own = (skills ?? []).filter((s) => s.enabled && hit(q, s.slug, s.name)).slice(0, MAX_PER_SECTION)
       out.push({ title: 'Skill của bạn', items: own.map((skill) => ({ kind: 'skill', key: `s:${skill.id}`, skill })) })
       const commands: PickerCommand[] = kind === 'ai' ? ['new', 'reset', 'create-skill'] : ['create-skill']
       const cmdItems = commands.filter((c) => hit(q, c, COMMAND_LABEL[c].label))

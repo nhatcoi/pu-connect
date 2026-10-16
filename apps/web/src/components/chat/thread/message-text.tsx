@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react'
 import Link from 'next/link'
-import { Telescope, Wand2 } from 'lucide-react'
+import { CalendarClock, Telescope, Wand2 } from 'lucide-react'
 import type { ChatMessageMeta } from '@pu/schemas'
 import { PUAI_USERNAME } from '@/lib/mention'
 import { cn } from '@/lib/utils'
@@ -51,7 +51,7 @@ export function MessageText({ content, meta, mine, myUsername }: { content: stri
 
 // Nhãn skill / Research cạnh nhãn chế độ học
 export function MessageAiBadges({ meta, mine }: { meta: ChatMessageMeta | null; mine: boolean }) {
-  if (!meta?.skill && !meta?.research) return null
+  if (!meta?.skill && !meta?.research && !meta?.task) return null
   const cls = cn(
     'mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide',
     mine ? 'text-primary-foreground/80' : 'text-primary'
@@ -61,6 +61,11 @@ export function MessageAiBadges({ meta, mine }: { meta: ChatMessageMeta | null; 
       {meta.skill && (
         <span className={cls} title={meta.skill.name}>
           <Wand2 className="h-3 w-3" /> /{meta.skill.slug}
+        </span>
+      )}
+      {meta.task && (
+        <span className={cls}>
+          <CalendarClock className="h-3 w-3" /> Tác vụ: {meta.task.title}
         </span>
       )}
       {meta.research && (

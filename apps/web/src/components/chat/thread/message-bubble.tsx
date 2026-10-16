@@ -9,6 +9,7 @@ import type { UiMessage } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { AiMessageBody } from '../ai/ai-message-body'
+import { AiMessageFooter } from '../ai/ai-message-footer'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { messagePreview, timeOf } from '../utils'
 import { AttachmentView } from './attachment-view'
@@ -123,6 +124,7 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
               </div>
             )}
             {!m.deleted && <MessageRefs meta={m.meta} mine={mine} />}
+            {isAi && !m.deleted && m.status === 'done' && interactive && <AiMessageFooter messageId={m.id} meta={m.meta} />}
           </div>
           {interactive && <MessageActions message={m} mine={mine} visible={actionsOpen} handlers={handlers} />}
         </div>

@@ -1,4 +1,4 @@
-import { Ban, Bell, Lock, Palette, Puzzle, UserRound, type LucideIcon } from 'lucide-react'
+import { Ban, Bell, Lock, Palette, Puzzle, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
 import type { FeaturePreferenceKey } from '@pu/schemas'
 
 // Các mục của trang Cài đặt (/settings/[section])
@@ -6,6 +6,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'account', label: 'Tài khoản', description: 'Xác thực sinh viên, email, mật khẩu', icon: UserRound },
   { id: 'privacy', label: 'Quyền riêng tư', description: 'Thông tin hiển thị, hồ sơ riêng tư, dữ liệu gợi ý', icon: Lock },
   { id: 'features', label: 'Tính năng', description: 'Bật/tắt tiện ích bảng tin và PU AI', icon: Puzzle },
+  { id: 'puai', label: 'PU AI', description: 'Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu', icon: Sparkles },
   { id: 'notifications', label: 'Thông báo', description: 'Loại thông báo, trình duyệt, giờ yên tĩnh', icon: Bell },
   { id: 'appearance', label: 'Giao diện', description: 'Sáng, tối hoặc theo hệ thống', icon: Palette },
   { id: 'blocked', label: 'Chặn & An toàn', description: 'Tài khoản bạn đã chặn', icon: Ban }

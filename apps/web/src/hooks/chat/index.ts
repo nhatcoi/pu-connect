@@ -18,7 +18,6 @@ export { trackSuggestionClick, useAiQuota, useAiSuggestions } from './use-ai'
 export { presenceLabel, useOnlineCount, usePresence } from './use-presence'
 export { bumpAiThread, removeAiThread, upsertAiThread, useAiThreadActions, useAiThreads } from './use-ai-threads'
 export {
-  isDefaultConnectors,
   useAiConnectors,
   useAiSkill,
   useAiSkillActions,
@@ -28,3 +27,4 @@ export {
   useRefSuggestions,
   useSkillLibrary
 } from './use-ai-tools'
+export { useAiMemories, useAiSettings, useAiTasks, useAiUsage, useSkillState } from './use-puai-settings'

@@ -9,6 +9,7 @@ import { FeaturesSection } from '@/components/settings/features-section'
 import { AppearanceSection } from '@/components/settings/appearance-section'
 import { BlockedSection } from '@/components/settings/blocked-section'
 import { NotificationSettingsPanel } from '@/components/notifications/notification-settings-panel'
+import { PuaiMenu } from '@/components/settings/puai/puai-menu'
 import { findSettingsSection, type SettingsSectionId } from '@/lib/settings-registry'
 
 function NotificationsSection() {
@@ -23,6 +24,7 @@ const SECTIONS: Record<SettingsSectionId, React.ComponentType> = {
   account: AccountSection,
   privacy: PrivacySection,
   features: FeaturesSection,
+  puai: PuaiMenu,
   notifications: NotificationsSection,
   appearance: AppearanceSection,
   blocked: BlockedSection

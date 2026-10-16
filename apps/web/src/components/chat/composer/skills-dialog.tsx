@@ -1,18 +1,18 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Check, Download, Loader2, Pencil, Plus, Trash2, Wand2 } from 'lucide-react'
+import { ArrowLeft, Check, Download, Loader2, Pencil, Pin, PinOff, Plus, Trash2, Wand2 } from 'lucide-react'
 import { AI_SKILL_LIMIT, AiSkillInputSchema, type AiSkillInput } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { useAiSkill, useAiSkillActions, useAiSkills, useSkillLibrary } from '@/hooks/chat'
+import { useAiSkill, useAiSkillActions, useAiSkills, useSkillLibrary, useSkillState } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 
 type View = { mode: 'list' } | { mode: 'library' } | { mode: 'edit'; id: string | null }
-const TITLE = { list: 'Skill của bạn', library: 'Thư viện skill' }
+const TITLE = { list: 'Của bạn', library: 'Thư viện' }
 
 const EMPTY: AiSkillInput = { slug: '', name: '', description: '', instructions: '', inputHint: '', isPublic: false }
 
@@ -27,79 +27,100 @@ const toSlug = (s: string) =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 40)
 
-// Quản lý skill tự tạo: danh sách ⇄ form tạo / sửa (chỉ dẫn tải khi mở form)
+// Hộp thoại quản lý skill (mở từ "+" / "/" trong ô soạn tin)
 export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: boolean; onOpenChange: (v: boolean) => void; startWithCreate?: boolean }) {
-  const [view, setView] = useState<View>({ mode: 'list' })
-  useEffect(() => {
-    if (open) setView(startWithCreate ? { mode: 'edit', id: null } : { mode: 'list' })
-  }, [open, startWithCreate])
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg p-5 gap-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
-            {view.mode === 'edit' && (
-              <button
-                type="button"
-                onClick={() => setView({ mode: 'list' })}
-                aria-label="Quay lại"
-                className="p-1 -ml-1 rounded-full hover:bg-muted cursor-pointer"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </button>
-            )}
-            <Wand2 className="h-4 w-4 text-primary" /> {view.mode === 'edit' ? (view.id ? 'Sửa skill' : 'Tạo skill') : TITLE[view.mode]}
+            <Wand2 className="h-4 w-4 text-primary" /> Skill PU AI
           </DialogTitle>
           <DialogDescription className="text-xs">
             Lưu chỉ dẫn hay dùng thành lệnh <code>/tên-lệnh</code> cho PU AI (ví dụ: chấm bài theo rubric, giải thích kiểu Feynman). Bật “Chia sẻ” để người khác
             cài từ thư viện.
           </DialogDescription>
         </DialogHeader>
-        {view.mode !== 'edit' && (
-          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 text-xs font-medium">
-            {(['list', 'library'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setView({ mode: m })}
-                className={cn('h-7 rounded-full cursor-pointer', view.mode === m ? 'bg-background shadow-xs' : 'text-muted-foreground')}
-              >
-                {m === 'list' ? 'Của bạn' : 'Thư viện'}
-              </button>
-            ))}
-          </div>
-        )}
-        {view.mode === 'list' ? (
-          <SkillList onEdit={(id) => setView({ mode: 'edit', id })} />
-        ) : view.mode === 'library' ? (
-          <SkillLibrary />
-        ) : (
-          <SkillForm id={view.id} onDone={() => setView({ mode: 'list' })} />
-        )}
+        {open && <SkillsManager startWithCreate={startWithCreate} />}
       </DialogContent>
     </Dialog>
+  )
+}
+
+// Quản lý skill: tab Của bạn / Thư viện ⇄ form tạo / sửa (chỉ dẫn tải khi mở form) — dùng ở hộp thoại & trang Cài đặt
+export function SkillsManager({ startWithCreate }: { startWithCreate?: boolean }) {
+  const [view, setView] = useState<View>(startWithCreate ? { mode: 'edit', id: null } : { mode: 'list' })
+  if (view.mode === 'edit') {
+    return (
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setView({ mode: 'list' })}
+          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> {view.id ? 'Sửa skill' : 'Tạo skill'}
+        </button>
+        <SkillForm id={view.id} onDone={() => setView({ mode: 'list' })} />
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1 text-xs font-medium">
+        {(['list', 'library'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setView({ mode: m })}
+            className={cn('h-7 rounded-full cursor-pointer', view.mode === m ? 'bg-background shadow-xs' : 'text-muted-foreground')}
+          >
+            {TITLE[m]}
+          </button>
+        ))}
+      </div>
+      {view.mode === 'list' ? <SkillList onEdit={(id) => setView({ mode: 'edit', id })} /> : <SkillLibrary />}
+    </div>
   )
 }
 
 function SkillList({ onEdit }: { onEdit: (id: string | null) => void }) {
   const { data: skills, isPending } = useAiSkills()
   const { remove } = useAiSkillActions()
+  const state = useSkillState()
   if (isPending) return <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
   return (
     <div className="space-y-2">
       {skills?.length ? (
         <ul className="divide-y divide-border/60 rounded-xl border">
           {skills.map((s) => (
-            <li key={s.id} className="flex items-center gap-2 px-3 py-2">
+            <li key={s.id} className={cn('flex items-center gap-2 px-3 py-2', !s.enabled && 'opacity-60')}>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{s.name}</span>
+                <span className="block truncate text-sm font-medium">
+                  {s.pinned && <Pin className="mr-1 inline h-3 w-3 text-primary" />}
+                  {s.name}
+                </span>
                 <span className="block truncate text-[11px] text-muted-foreground">
                   /{s.slug}
                   {s.useCount > 0 && ` · đã dùng ${s.useCount} lần`}
                   {s.isPublic && ` · công khai, ${s.installCount} lượt cài`}
                 </span>
               </span>
+              <Button
+                size="icon"
+                variant="ghost"
+                className={cn('h-7 w-7 rounded-full', s.pinned && 'text-primary')}
+                onClick={() => state.mutate({ id: s.id, pinned: !s.pinned })}
+                aria-label={s.pinned ? `Bỏ ghim ${s.name}` : `Ghim ${s.name} lên đầu menu /`}
+                title={s.pinned ? 'Bỏ ghim' : 'Ghim lên đầu menu /'}
+              >
+                {s.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+              </Button>
+              <Switch
+                checked={s.enabled}
+                onCheckedChange={(enabled) => state.mutate({ id: s.id, enabled })}
+                aria-label={s.enabled ? `Tắt ${s.name}` : `Bật ${s.name}`}
+                title={s.enabled ? 'Đang bật — hiện trong menu /' : 'Đã tắt — ẩn khỏi menu /'}
+              />
               <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => onEdit(s.id)} aria-label={`Sửa ${s.name}`}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

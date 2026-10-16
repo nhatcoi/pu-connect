@@ -1,4 +1,11 @@
 import type {
+  AiFeedbackInput,
+  AiMemory,
+  AiSettings,
+  AiSupportInput,
+  AiTask,
+  AiTaskInput,
+  AiUsage,
   AiConnectorId,
   AiConnectorInfo,
   AiMode,
@@ -109,5 +116,26 @@ export const chatApi = {
   updateSkill: (id: string, body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`, json('PATCH', body))),
   deleteSkill: (id: string) => apiClient(`/ai/skills/${id}`, json('DELETE')),
   skillLibrary: (q: string, signal?: AbortSignal) => unwrap(apiClient<Envelope<AiPublicSkill[]>>(`/ai/skills/library?${qs({ q })}`, { signal })),
-  installSkill: (id: string) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}/install`, json('POST')))
+  installSkill: (id: string) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}/install`, json('POST'))),
+  skillState: (id: string, state: { enabled?: boolean; pinned?: boolean }) =>
+    unwrap(apiClient<Envelope<AiSkill>>(`/ai/skills/${id}/state`, json('PATCH', state))),
+
+  // Cài đặt PU AI (docs/core/10-puai-settings.md)
+  aiSettings: () => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings')),
+  updateAiSettings: (patch: Partial<AiSettings>) => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings', json('PATCH', patch))),
+  memories: () => unwrap(apiClient<Envelope<AiMemory[]>>('/ai/memories')),
+  createMemory: (content: string) => unwrap(apiClient<Envelope<AiMemory>>('/ai/memories', json('POST', { content }))),
+  updateMemory: (id: string, content: string) => unwrap(apiClient<Envelope<AiMemory>>(`/ai/memories/${id}`, json('PATCH', { content }))),
+  deleteMemory: (id: string) => apiClient(`/ai/memories/${id}`, json('DELETE')),
+  clearMemories: () => apiClient('/ai/memories', json('DELETE')),
+  tasks: () => unwrap(apiClient<Envelope<AiTask[]>>('/ai/tasks')),
+  createTask: (body: AiTaskInput) => unwrap(apiClient<Envelope<AiTask>>('/ai/tasks', json('POST', body))),
+  updateTask: (id: string, body: AiTaskInput) => unwrap(apiClient<Envelope<AiTask>>(`/ai/tasks/${id}`, json('PATCH', body))),
+  deleteTask: (id: string) => apiClient(`/ai/tasks/${id}`, json('DELETE')),
+  runTask: (id: string) => unwrap(apiClient<Envelope<AiTask>>(`/ai/tasks/${id}/run`, json('POST'))),
+  rateMessage: (id: string, body: AiFeedbackInput) => unwrap(apiClient<Envelope<{ rating: 1 | -1 }>>(`/ai/messages/${id}/feedback`, json('POST', body))),
+  support: (body: AiSupportInput) => unwrap(apiClient<Envelope<{ id: string }>>('/ai/support', json('POST', body))),
+  aiUsage: () => unwrap(apiClient<Envelope<AiUsage>>('/ai/usage')),
+  exportAiData: () => unwrap(apiClient<Envelope<unknown>>('/ai/data/export')),
+  deleteAiData: () => unwrap(apiClient<Envelope<{ threads: number }>>('/ai/data', json('DELETE')))
 }

@@ -5,7 +5,7 @@ import { Loader2, Pencil, Reply, SendHorizontal, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { CHAT_MAX_REFS, type AiMode, type AiSkill, type AiSuggestion, type ChatRef, type ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
-import { isDefaultConnectors, trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
+import { trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META } from '../ai/ai-modes'
@@ -164,8 +164,7 @@ export function Composer({
         aiMode: isAi ? aiMode : (groupMode ?? undefined),
         refs,
         skill: skill && { id: skill.id, slug: skill.slug, name: skill.name },
-        research: aiTools && research,
-        connectors: isAi && !isDefaultConnectors(connectors) ? connectors : undefined // mặc định ⇒ server tự hiểu
+        research: aiTools && research
       })
       uploads.clear()
       setPanelOpen(false)

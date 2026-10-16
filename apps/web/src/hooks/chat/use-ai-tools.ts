@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import type { AiConnectorId, AiConnectorInfo, AiSkill, AiSkillDetail, AiSkillInput, ChatRefType } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
+import { useAiSettings } from './use-puai-settings'
 
 // Công cụ ô soạn tin: skill (menu "/"), connector (menu "+"), gợi ý ngữ cảnh ("@")
 
@@ -97,31 +98,13 @@ export function useRefSuggestions(q: string | null, types: ChatRefType[]) {
   })
 }
 
-// Connector đã bật: tiện ích riêng từng người xem ⇒ localStorage (lỗi / chế độ riêng tư ⇒ mặc định)
-const CONNECTORS_KEY = 'pu.ai.connectors'
-const DEFAULT_CONNECTORS: AiConnectorId[] = ['library']
-export const isDefaultConnectors = (list: AiConnectorId[]) => list.length === 1 && list[0] === DEFAULT_CONNECTORS[0]
-
+// Connector mặc định của PU AI: lưu ở server (ai_settings) ⇒ đồng bộ mọi thiết bị; luôn giữ ≥ 1 nguồn
 export function useConnectorPrefs() {
-  const [connectors, setConnectors] = useState<AiConnectorId[]>(DEFAULT_CONNECTORS)
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(CONNECTORS_KEY) || 'null')
-      if (Array.isArray(saved) && saved.length) setConnectors(saved)
-    } catch {
-      // giữ mặc định
-    }
-  }, [])
-  // Luôn giữ ≥ 1 nguồn (tắt hết = PU AI không có gì để tra)
+  const { settings, update } = useAiSettings()
+  const connectors: AiConnectorId[] = settings?.defaultConnectors ?? ['library', 'web']
   const toggle = (id: AiConnectorId) => {
     const next = connectors.includes(id) ? connectors.filter((c) => c !== id) : [...connectors, id]
-    if (!next.length) return
-    setConnectors(next)
-    try {
-      localStorage.setItem(CONNECTORS_KEY, JSON.stringify(next))
-    } catch {
-      // không lưu được vẫn dùng trong phiên
-    }
+    if (next.length) update.mutate({ defaultConnectors: next })
   }
   return { connectors, toggle }
 }

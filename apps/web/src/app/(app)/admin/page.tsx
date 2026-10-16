@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Activity, EyeOff, Eye, Loader2, Lock, LockOpen, SearchX, ShieldCheck, X } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AdminAuditLog, AdminReportedPost, AdminStats, AdminUserRow, ZeroResultQuery } from '@pu/schemas'
+import type { AdminAuditLog, AdminReportedPost, AdminStats, AdminUserRow, ZeroResultQuery, AiFeedbackStats } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
 import { markdownToPlainText } from '@/lib/plain-text'
 import { queryKeys } from '@/lib/query-keys'
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { CardListSkeleton } from '@/components/skeletons/catalog-skeleton'
 import { UserInsightDialog } from '@/components/admin/user-insight-dialog'
 
-type Tab = 'reports' | 'users' | 'searches' | 'logs'
+type Tab = 'reports' | 'users' | 'searches' | 'ai' | 'logs'
 type Envelope<T> = { success: boolean; data: T }
 
 const get = async <T,>(path: string) => (await apiClient<Envelope<T>>(path)).data
@@ -93,6 +93,7 @@ export default function AdminPage() {
             { id: 'reports', label: 'Báo cáo', badge: s?.pendingReports || undefined },
             { id: 'users', label: 'Người dùng' },
             { id: 'searches', label: 'Tìm không ra' },
+            { id: 'ai', label: 'PU AI' },
             { id: 'logs', label: 'Nhật ký' }
           ]}
         />
@@ -102,6 +103,7 @@ export default function AdminPage() {
         {tab === 'reports' && <ReportsTab />}
         {tab === 'users' && <UsersTab currentUserId={user.id} />}
         {tab === 'searches' && <ZeroResultsTab />}
+        {tab === 'ai' && <AiFeedbackTab />}
         {tab === 'logs' && <AuditLogTab />}
       </div>
     </>
@@ -419,6 +421,50 @@ function UserRow({
         </div>
       )}
     </div>
+  )
+}
+
+// PU AI: tỉ lệ 👍/👎 30 ngày, lý do 👎, yêu cầu hỗ trợ mới nhất
+const REASON_LABEL: Record<string, string> = { wrong: 'Sai kiến thức', unhelpful: 'Không hữu ích', unsafe: 'Không phù hợp', too_long: 'Quá dài', other: 'Khác' }
+
+function AiFeedbackTab() {
+  const data = useQuery({ queryKey: queryKeys.admin('ai-feedback'), queryFn: () => get<AiFeedbackStats>('/admin/ai-feedback') })
+  if (data.isPending) return <Loading />
+  const s = data.data
+  if (!s) return <EmptyState text="Không tải được thống kê." />
+  const total = s.up + s.down
+  return (
+    <>
+      <div className="grid grid-cols-3 gap-2">
+        <Stat label="👍 (30 ngày)" value={s.up} />
+        <Stat label="👎 (30 ngày)" value={s.down} />
+        <Stat label="Hài lòng (%)" value={total ? Math.round((s.up / total) * 100) : 0} />
+      </div>
+      {Object.keys(s.byReason).length > 0 && (
+        <div className="rounded-xl bg-card px-4 py-3 text-xs space-y-1">
+          {Object.entries(s.byReason).map(([reason, n]) => (
+            <div key={reason} className="flex justify-between">
+              <span>{REASON_LABEL[reason] ?? reason}</span>
+              <span className="font-bold tabular-nums">{n}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {s.tickets.length === 0 ? (
+        <EmptyState text="Chưa có yêu cầu hỗ trợ PU AI." />
+      ) : (
+        <div className="rounded-xl bg-card divide-y divide-border/60">
+          {s.tickets.map((t) => (
+            <div key={t.id} className="px-4 py-2.5 space-y-0.5">
+              <p className="text-[11px] text-muted-foreground">
+                {t.category} · @{t.user ?? 'ẩn danh'} · {formatRelativeTime(t.createdAt)}
+              </p>
+              <p className="text-sm">{t.message}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   )
 }
 
