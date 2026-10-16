@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { usePosts, prefetchFeed } from '@/hooks/use-posts'
 import { useNewPosts } from '@/hooks/use-new-posts'
 import { NewPostsPill } from '@/components/social/new-posts-pill'
+import { useFeatureEnabled } from '@/hooks/use-settings'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
@@ -49,8 +50,9 @@ function HomeContent() {
   } = usePosts({
     feedType: activeFeedTab
   })
-  // Pill "bài mới" (polling + socket)
-  const newPosts = useNewPosts(activeFeedTab, null, newSince)
+  // Pill "bài mới" (polling + socket); tắt trong Cài đặt ⇒ since = null ⇒ dừng polling
+  const showNewPostsPill = useFeatureEnabled('newPostsPill')
+  const newPosts = useNewPosts(activeFeedTab, null, showNewPostsPill ? newSince : null)
   
   const queryClient = useQueryClient()
   const user = useAppStore((state) => state.user)
@@ -93,12 +95,14 @@ function HomeContent() {
         />
       </div>
 
-      <NewPostsPill
-        count={newPosts.count}
-        authors={newPosts.authors}
-        isRevealing={newPosts.isRevealing}
-        onClick={() => void newPosts.reveal()}
-      />
+      {showNewPostsPill && (
+        <NewPostsPill
+          count={newPosts.count}
+          authors={newPosts.authors}
+          isRevealing={newPosts.isRevealing}
+          onClick={() => void newPosts.reveal()}
+        />
+      )}
 
       {/* Ô soạn bài dạng thẻ (Composer card) */}
       <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">

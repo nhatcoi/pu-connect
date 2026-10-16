@@ -53,6 +53,7 @@ import { PostCommentsSection } from './comments/post-comments-section'
 import { FeaturedCommentPreview } from './comments/featured-comment-preview'
 import { PostSummary } from './post-summary'
 import { useAppStore } from '@/store'
+import { useFeatureEnabled } from '@/hooks/use-settings'
 import { apiClient } from '@/lib/api-client'
 import { graphqlClient } from '@/lib/graphql-client'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -184,6 +185,9 @@ export function PostCard({
   const [isFollowing, setIsFollowing] = useState(initialPost.isAuthorFollowedByMe || false)
 
   const user = useAppStore((state) => state.user)
+  // Feature plugs (Cài đặt → Tính năng)
+  const showFeaturedComment = useFeatureEnabled('featuredComment')
+  const showAiSummary = useFeatureEnabled('aiSummary')
   // Cập nhật bài này ở mọi danh sách đang cache (feed, cộng đồng, hồ sơ, search, chi tiết)
   const patchEverywhere = (updater: (p: PostItem) => PostItem) => patchPostEverywhere(queryClient, post.id, updater)
 
@@ -640,7 +644,7 @@ export function PostCard({
                   {isExpanded ? 'Thu gọn' : 'Xem thêm'}
                 </button>
                 {/* Bài dài: tóm tắt bằng PU AI (cần đăng nhập) */}
-                {user && (
+                {user && showAiSummary && (
                   <button
                     type="button"
                     onClick={() => setIsSummaryOpen((v) => !v)}
@@ -653,7 +657,7 @@ export function PostCard({
                 )}
               </div>
             )}
-            {isSummaryOpen && <PostSummary postId={post.id} />}
+            {isSummaryOpen && showAiSummary && <PostSummary postId={post.id} />}
 
             {/* Student Poll */}
             {post.poll && (
@@ -807,7 +811,7 @@ export function PostCard({
             </div>
 
             {/* Bình luận nổi bật (ẩn khi đã mở khu bình luận) */}
-            {!isCommentsOpen && post.featuredComment && (post.commentsCount || 0) > 0 && (
+            {!isCommentsOpen && showFeaturedComment && post.featuredComment && (post.commentsCount || 0) > 0 && (
               <FeaturedCommentPreview comment={post.featuredComment} onOpen={() => setIsCommentsOpen(true)} />
             )}
           </div>

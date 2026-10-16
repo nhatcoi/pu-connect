@@ -193,6 +193,9 @@ export function Header() {
                 <DropdownMenuItem onClick={() => router.push('/communities')} className="text-xs rounded-xl cursor-pointer">
                   <Users className="mr-2 h-4 w-4 text-muted-foreground" /> Cộng đồng & Diễn đàn
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/settings')} className="text-xs rounded-xl cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4 text-muted-foreground" /> Cài đặt
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} disabled={isLoggingOut} className="text-destructive cursor-pointer text-xs rounded-xl hover:bg-destructive/10">
                   <LogOut className="mr-2 h-4 w-4" /> {isLoggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}

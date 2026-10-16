@@ -11,6 +11,7 @@ import {
   Hash,
   Users,
   User,
+  Settings,
   GraduationCap,
   Building2,
   HelpCircle,
@@ -227,6 +228,13 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
               >
                 <User className="h-4 w-4 text-primary" />
                 <span>Trang cá nhân @{user.username}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push('/settings')}
+                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold cursor-pointer rounded-xl"
+              >
+                <Settings className="h-4 w-4 text-muted-foreground" />
+                <span>Cài đặt</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

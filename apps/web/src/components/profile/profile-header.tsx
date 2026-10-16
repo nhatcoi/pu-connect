@@ -25,7 +25,6 @@ import { toast } from 'sonner'
 import { FollowButton } from './follow-button'
 import { UserListDialog } from './user-list-dialog'
 import { EditProfileDialog } from './edit-profile-dialog'
-import { PrivacySettingsDialog } from './privacy-settings-dialog'
 import { BlockUserControl } from './block-user-control'
 
 interface ProfileHeaderProps {
@@ -52,7 +51,6 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
   })
 
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false)
 
   // Mở sẵn hộp chỉnh sửa khi vào từ thẻ "Hoàn thiện hồ sơ" (?edit=1)
   const searchParams = useSearchParams()
@@ -102,17 +100,6 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
           website: profile.website,
           birthDate: profile.birthDate
         }}
-        onSuccess={() => {
-          if (onRefetch) onRefetch()
-        }}
-      />
-
-      {/* Privacy Settings Dialog */}
-      <PrivacySettingsDialog
-        open={isPrivacyOpen}
-        onOpenChange={setIsPrivacyOpen}
-        isVerified={profile.isVerified}
-        email={profile.email}
         onSuccess={() => {
           if (onRefetch) onRefetch()
         }}
@@ -171,8 +158,9 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                   variant="ghost"
                   size="icon"
                   className="rounded-full h-8 w-8 text-muted-foreground hover:text-foreground"
-                  onClick={() => setIsPrivacyOpen(true)}
-                  title="Cài đặt quyền riêng tư"
+                  onClick={() => router.push('/settings')}
+                  title="Cài đặt"
+                  aria-label="Cài đặt"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
