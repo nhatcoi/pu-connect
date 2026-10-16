@@ -233,6 +233,21 @@ export interface AiThreadsPage {
   nextCursor: string | null
 }
 
+// Thư viện PU AI (/puai/library): ảnh, tệp đã gửi & học liệu (quiz / flashcard) trong mọi thread của mình
+export type AiLibraryKind = 'image' | 'file' | 'study'
+export interface AiLibraryItem {
+  messageId: string
+  threadId: string
+  threadTitle: string | null
+  createdAt: string
+  attachments: ChatAttachment[] // image / file: chỉ tệp đúng loại
+  content: string | null // study: câu trả lời chứa khối ```quiz / ```flashcards
+}
+export interface AiLibraryPage {
+  data: AiLibraryItem[]
+  nextCursor: string | null
+}
+
 export const AiThreadUpdateSchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
 export type AiThreadUpdateInput = z.infer<typeof AiThreadUpdateSchema>
 

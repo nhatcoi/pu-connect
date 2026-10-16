@@ -62,6 +62,13 @@ export const ListAiThreadsQuerySchema = z.object({
 })
 export type ListAiThreadsQuery = z.infer<typeof ListAiThreadsQuerySchema>
 
+export const AiLibraryQuerySchema = z.object({
+  kind: z.enum(['image', 'file', 'study']),
+  cursor: z.string().regex(/^\d+$/).optional(), // id tin cuối trang trước
+  limit: z.coerce.number().int().min(1).max(60).default(30)
+})
+export type AiLibraryQuery = z.infer<typeof AiLibraryQuerySchema>
+
 export const AiThreadUpdateBodySchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
 
 export const AiSkillBodySchema = z.object({

@@ -75,7 +75,7 @@ describe('Google connectors (e2e, Google API giả lập)', () => {
     const agent = await loginAgent(app, user)
 
     const cb = await connect(agent, 'google-drive', DRIVE_SCOPE)
-    expect(cb.headers.location).toBe('/messages?connector=google-drive&result=connected')
+    expect(cb.headers.location).toBe('/puai/settings/connectors?connector=google-drive&result=connected')
     const row = await db.query(`SELECT refresh_token_enc, account_email FROM user_connectors WHERE user_id = $1 AND provider = 'google_drive'`, [user.id])
     expect(row.rows[0].account_email).toBe('sv@x.edu.vn')
     expect(row.rows[0].refresh_token_enc).not.toContain('rt-secret')
@@ -121,7 +121,7 @@ describe('Google connectors (e2e, Google API giả lập)', () => {
     const state = new URL(start.headers.location).searchParams.get('state')
     tokenResponse = () => json({ access_token: 'at', refresh_token: 'rt', scope: 'openid email' })
     const cb = await agent.get(`/api/auth/google/callback?code=c&state=${state}`).expect(302)
-    expect(cb.headers.location).toBe('/messages?connector=google-drive&result=error')
+    expect(cb.headers.location).toBe('/puai/settings/connectors?connector=google-drive&result=error')
     expect((await db.query(`SELECT 1 FROM user_connectors WHERE user_id = $1`, [user.id])).rows).toHaveLength(0)
   })
 })

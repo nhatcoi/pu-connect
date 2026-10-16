@@ -82,7 +82,7 @@ export class ChatPushProcessor extends WorkerHost {
       {
         title: s.mentioned ? `${name} · có người nhắc đến bạn` : s.unread > 1 ? `${name} · ${s.unread} tin mới` : name,
         body: s.type === 'group' ? `${sender}: ${preview}` : preview,
-        url: `/messages/${conversationId}`,
+        url: s.type === 'ai' ? `/puai/${conversationId}` : `/messages/${conversationId}`, // PU AI có không gian riêng
         tag: chatNotificationTag(conversationId), // tin sau thay thế thông báo trước của cùng hội thoại
         type: 'chat_message'
       },

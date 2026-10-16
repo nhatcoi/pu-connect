@@ -25,7 +25,7 @@ export async function completeConnectorOAuth(req: Request, oauth: GoogleOAuthSer
     }
   }
   const slug = pending ? GOOGLE_PROVIDERS[pending.provider].slug : 'google'
-  return `${appUrl}/messages?connector=${slug}&result=${result}`
+  return `${appUrl}/puai/settings/connectors?connector=${slug}&result=${result}`
 }
 
 // Connector dùng chung redirect URI với đăng nhập Google (không phải khai báo URI mới trên Google Console):

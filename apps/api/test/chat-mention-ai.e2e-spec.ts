@@ -70,11 +70,11 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     expect(fresh.id).not.toBe(first.id)
     expect((await agent.post('/api/ai/threads').expect(200)).body.data.id).toBe(fresh.id) // thread rỗng được dùng lại
 
-    // Thread rỗng không nằm trong lịch sử; danh sách chính chỉ 1 PU AI (thread có tin)
+    // Thread rỗng không nằm trong lịch sử; Tin nhắn không gồm thread AI (không gian /puai riêng)
     const list = await agent.get('/api/ai/threads').expect(200)
     expect(list.body.data.data).toEqual([expect.objectContaining({ id: first.id, title: 'Giải thích đệ quy' })])
     const main = await agent.get('/api/conversations').expect(200)
-    expect(main.body.data.data.filter((c: { type: string }) => c.type === 'ai').map((c: { id: string }) => c.id)).toEqual([first.id])
+    expect(main.body.data.data.filter((c: { type: string }) => c.type === 'ai')).toEqual([])
 
     expect((await agent.get(`/api/ai/threads?q=${encodeURIComponent('de quy')}`).expect(200)).body.data.data).toHaveLength(1)
     expect((await agent.get('/api/ai/threads?q=khong-co').expect(200)).body.data.data).toHaveLength(0)
@@ -179,9 +179,9 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     await agent.delete('/api/ai/connectors/google-drive').expect(200)
     await agent.delete('/api/ai/connectors/dropbox').expect(400)
 
-    // Callback không có state trong session ⇒ không lưu gì, về trang tin nhắn báo lỗi
+    // Callback không có state trong session ⇒ không lưu gì, về Cài đặt › Trình kết nối báo lỗi
     const cb = await agent.get('/api/ai/connectors/google/callback?code=x&state=forged').expect(302)
-    expect(cb.headers.location).toMatch(/\/messages\?connector=google&result=error$/)
+    expect(cb.headers.location).toMatch(/\/puai\/settings\/connectors\?connector=google&result=error$/)
 
     const cipher = new TokenCipher('secret')
     const enc = cipher.encrypt('refresh-token')

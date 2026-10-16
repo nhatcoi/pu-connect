@@ -17,6 +17,8 @@ import { ChatMentionsService } from './mentions/chat-mentions.service'
 import { AiDataService } from './puai/ai-data.service'
 import { AiFeedbackService } from './puai/ai-feedback.service'
 import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './puai/ai-maintenance.processor'
+import { AiLibraryController } from './puai/ai-library.controller'
+import { AiLibraryService } from './puai/ai-library.service'
 import { AiMemoriesService } from './puai/ai-memories.service'
 import { AiAdminController, AiSettingsController } from './puai/ai-settings.controller'
 import { AiSettingsService } from './puai/ai-settings.service'
@@ -42,6 +44,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     MessagesController,
     PuaiController,
     AiThreadsController,
+    AiLibraryController,
     AiSkillsController,
     ChatRefsController,
     AiSettingsController,
@@ -62,6 +65,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     AiTasksService,
     AiMaintenanceProcessor,
     AiThreadsService,
+    AiLibraryService,
     PuaiService,
     ConversationsService,
     StudyGroupChatService,
