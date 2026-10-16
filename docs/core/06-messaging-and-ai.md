@@ -730,6 +730,6 @@ Chi tiết thiết kế & quyết định: [`09-chat-mention-ai-threads-skills.m
 
 - **Mention nhóm** (`message_mentions`): chỉ khớp thành viên đang ở nhóm; `@all` chỉ trưởng nhóm; badge `@` + nút nhảy tới tin; người bị nhắc nhận push kể cả khi tắt tiếng; sửa tin tính lại mention.
 - **Ngữ cảnh** (`refs` ≤ 5 / tin): học phần, tài liệu (đọc `document_chunks`), bài viết, hội thoại PU AI của mình (chỉ trong thread AI); kiểm quyền khi gửi, PU AI ghim trước nguồn truy xuất.
-- **PU AI nhiều thread**: `ai/threads` (keyset, tìm tiêu đề, đổi tên, xóa), "Chat mới" dùng lại thread rỗng, tiêu đề tự đặt từ câu hỏi đầu, danh sách chính chỉ giữ thread đại diện; **tóm tắt cuộn** `conversations.ai_summary` khi > 24 tin sau mốc.
+- **PU AI nhiều thread**: `ai/threads` (keyset, tìm tiêu đề, đổi tên, xóa), "Chat mới" dùng lại thread rỗng, tiêu đề tự đặt từ câu hỏi đầu, danh sách chính chỉ giữ thread đại diện (2026-10-17: bỏ hẳn — thread AI sang không gian riêng `/puai`, xem `core/11`); **tóm tắt cuộn** `conversations.ai_summary` khi > 24 tin sau mốc.
 - **Skill** (`ai_skills`, ≤ 30 / người): lệnh `/slug` cộng chỉ dẫn vào system prompt; 6 chế độ học vẫn là `aiMode`.
 - **Connector** (Thư viện PU · Tài liệu của tôi · Nhóm học) + **Research** (truy xuất sâu, prompt báo cáo, 2 lượt). Nhóm chat chỉ dùng Thư viện PU.

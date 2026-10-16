@@ -253,7 +253,7 @@ sequenceDiagram
 sequenceDiagram
   autonumber
   actor U as Người dùng
-  participant W as Web (/messages/[id])
+  participant W as Web (/messages/[id] · /puai/[id])
   participant A as MessagesController
   participant S as MessagesService
   participant DB as Postgres
@@ -308,6 +308,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-17 — 5.7: thread PU AI mở ở `/puai/[id]` (Web Push trỏ đúng không gian AI).
 - 2026-10-16 — 5.7: mention trong nhóm (`message_mentions`, push vượt tắt tiếng), ngữ cảnh `refs`, skill, Research, connector, tóm tắt cuộn, tiêu đề thread AI.
 - 2026-10-14 — 5.4: cộng điểm khớp hồ sơ quan tâm (`interestBoostSql`, chuẩn hóa theo chủ đề mạnh nhất).
 - 2026-10-14 — 5.7: PU AI viết câu hỏi tiếp theo sau dấu mốc `<<<FOLLOWUPS>>>` trong cùng luồng stream; server giấu khỏi delta, lưu `meta.followUps`.

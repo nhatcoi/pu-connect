@@ -53,7 +53,7 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 | GET / POST | `/ai/skills` | list nhẹ / tạo |
 | GET / PATCH / DELETE | `/ai/skills/:id` | chi tiết có `instructions` / sửa / xóa |
 | GET | `/ai/connectors` | registry + `available` / `connected` / `account` của người xem |
-| GET | `/ai/connectors/{google-drive\|google-calendar}/connect` · `/ai/connectors/google/callback` | OAuth redirect flow (state + provider trong session, 1 callback URI) ⇒ `/messages?connector=…&result=…` |
+| GET | `/ai/connectors/{google-drive\|google-calendar}/connect` · `/ai/connectors/google/callback` | OAuth redirect flow (state + provider trong session, 1 callback URI) ⇒ `/puai/settings/connectors?connector=…&result=…` (trước 2026-10-17: `/messages?…`) |
 | DELETE | `/ai/connectors/{google-drive\|google-calendar}` | xóa token + revoke phía Google |
 | GET / POST | `/ai/skills/library?q=` · `/ai/skills/:id/install` | thư viện skill công khai (cờ `installed`) · cài = sao chép |
 
@@ -88,7 +88,7 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 - `ai/connectors/`: `GoogleOAuthService` (dùng chung: authorize URL, đổi code, kiểm scope, làm mới access token có cache, revoke, `invalid_grant` ⇒ xóa), `GoogleDriveService` (tìm `fullText contains`, export Docs/Sheets/Slides, tải PDF/DOCX/txt ≤ 10 MB ⇒ `ai/doc-text.ts`), `GoogleCalendarService` (sự kiện lịch chính N ngày tới), `TokenCipher` (AES-256-GCM), `AiConnectorsService` (registry + trạng thái), `AiConnectorsController` (`:provider/connect`, `google/callback`, `DELETE :provider`).
 - Thêm provider Google mới = 1 dòng `GOOGLE_PROVIDERS` + 1 service đọc dữ liệu + 1 nhánh trong `AiRetrieval`.
 - Token bị thu hồi (`invalid_grant`) ⇒ tự xóa kết nối; mọi lỗi Drive ⇒ PU AI bỏ qua nguồn này (`AiRetrieval.safe`).
-- Web: menu `+` › Connectors hiện "Kết nối" (điều hướng cả trang tới `/api/ai/connectors/<slug>/connect`), đã kết nối ⇒ bật/tắt như nguồn khác + email tài khoản + "Ngắt …"; `/messages?connector=&result=` báo kết quả bằng toast.
+- Web: menu `+` › Connectors hiện "Kết nối" (điều hướng cả trang tới `/api/ai/connectors/<slug>/connect`), đã kết nối ⇒ bật/tắt như nguồn khác + email tài khoản + "Ngắt …"; `/puai/settings/connectors?connector=&result=` báo kết quả bằng toast.
 - Cấu hình Google Console: [`docs/auth-google.md`](../auth-google.md#connector-google-drive-cho-pu-ai-tùy-chọn).
 
 ## 8. Thư viện skill công khai

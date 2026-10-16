@@ -1,7 +1,7 @@
 # ⚙️ Đặc Tả: Cài Đặt PU AI (Kỹ năng · Tác vụ · Kết nối · Web · Bộ nhớ · Hỗ trợ · Quyền riêng tư)
 
 > Trạng thái: **Đã triển khai (2026-10-16)**. Nối tiếp [`09-chat-mention-ai-threads-skills.md`](./09-chat-mention-ai-threads-skills.md).
-> Mục **PU AI** trong `/settings` (danh sách giống app di động) → `/settings/puai/[item]`.
+> Mục **PU AI** trong `/settings` (danh sách giống app di động) → `/puai/settings/[item]` (từ 2026-10-17 nằm trong không gian [`/puai`](./11-puai-space.md); `/settings/puai*` redirect).
 
 ## 1. Quyết định
 

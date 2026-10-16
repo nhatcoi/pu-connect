@@ -1,6 +1,6 @@
 # 07 · Web App (`apps/web`)
 
-> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-16**.
+> Route, component chính, state và nguồn dữ liệu. Cập nhật lần cuối: **2026-10-17**.
 
 ## Route map
 
@@ -23,8 +23,14 @@ flowchart LR
     post["<b>/post/[id]</b><br/>?comment= highlight"]
     courses["<b>/courses</b><br/>danh mục học phần"]
     course["<b>/courses/[code]</b><br/>thảo luận · tài liệu · nhóm học"]
-    msgs["<b>/messages</b><br/>lọc · tin nhắn mới · tạo nhóm · PU AI"]
-    thread["<b>/messages/[id]</b><br/>tệp · trả lời · cảm xúc · ghim<br/>@ / + menu · chip ngữ cảnh · nút @<br/>quiz/flashcard AI · lịch sử PU AI · bảng thông tin"]
+    msgs["<b>/messages</b><br/>DM · nhóm · lọc · tạo nhóm<br/>lối vào PU AI"]
+    thread["<b>/messages/[id]</b><br/>tệp · trả lời · cảm xúc · ghim<br/>@ / + menu · chip ngữ cảnh · nút @ · bảng thông tin<br/>(thread AI ⇒ /puai/[id])"]
+    subgraph puai["/puai — không gian PU AI (PuaiShell: thanh bên lịch sử + hồ sơ PU AI)"]
+      puaihome["<b>/puai</b><br/>chat mới (thread rỗng)"]
+      puaithread["<b>/puai/[id]</b><br/>?m= cuộn tới tin<br/>quiz/flashcard · 👍/👎"]
+      puailib["<b>/puai/library</b><br/>ảnh · tài liệu · học liệu"]
+      puaiset["<b>/puai/settings[/item]</b><br/>skill · tác vụ · kết nối · web<br/>bộ nhớ · hỗ trợ · quyền riêng tư"]
+    end
     adminp["<b>/admin</b><br/>chỉ role admin"]
     settings["<b>/settings</b><br/>danh sách mục"]
     settingsec["<b>/settings/[section]</b><br/>account · privacy · features<br/>notifications · appearance · blocked"]
@@ -43,13 +49,18 @@ flowchart LR
   home --> courses & msgs
   courses --> course
   msgs --> thread
+  msgs -->|Học cùng PU AI| puaihome
+  puaihome -->|gửi tin đầu| puaithread
+  puaihome & puaithread -.-> puailib & puaiset
+  puailib -->|nguồn| puaithread
   profile -->|Nhắn tin| thread
   home & profile -->|menu tài khoản · ⚙| settings
   settings --> settingsec
+  settings -->|mục PU AI| puaiset
 
   classDef page fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef redirect fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp,settings,settingsec page
+  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp,settings,settingsec,puaihome,puaithread,puailib,puaiset page
   class getstarted redirect
 ```
 
@@ -60,7 +71,7 @@ flowchart TB
   subgraph Shell["app/(app)/layout.tsx — AppLayout dựng 1 lần cho mọi trang cần đăng nhập"]
     direction LR
     header["Header<br/>search · Đăng bài · NotificationsPopover · avatar<br/>VerifyEmailBanner"]
-    sidebar["Sidebar<br/>nav + Highlight trượt (animate-ui)"]
+    sidebar["Sidebar<br/>nav + Highlight trượt (animate-ui)<br/>/puai* ⇒ ẩn, PuaiSidebar thay thế"]
     main["Nội dung trang<br/>SlidingTabs · AcademicPostComposer · PostCard[]"]
     right["RightSidebar (mặc định)<br/>hoặc PageAside của trang"]
     dialogs["Hộp thoại toàn cục<br/>soạn bài · tài liệu · nhóm · xem tài liệu"]
@@ -106,7 +117,8 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
 | `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
-| `/messages`, `/messages/[id]`, badge Tin nhắn | `conversations*`, `messages/:id*`, `ai/*` (threads, skills, connectors), `chat/refs`, `upload/file?folder=chat`, `search?type=users`, `presence` | localStorage `pu.ai.connectors` | `message.new/updated/delta`, `conv.read/updated/removed`, `ai.thread.updated`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
+| `/puai`, `/puai/[id]`, `/puai/library`, `/puai/settings*` | `ai/threads`, `ai/library`, `ai/quota`, `ai/settings`, `ai/*` (skills, connectors, memories, tasks…), `conversations/:id*` | — | như dòng dưới (thread AI không vá danh sách Tin nhắn; tệp / quiz mới ⇒ làm mới Thư viện) |
+| `/messages`, `/messages/[id]`, badge Tin nhắn (không gồm thread AI) | `conversations*`, `messages/:id*`, `ai/*` (threads, skills, connectors), `chat/refs`, `upload/file?folder=chat`, `search?type=users`, `presence` | localStorage `pu.ai.connectors` | `message.new/updated/delta`, `conv.read/updated/removed`, `ai.thread.updated`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
 | `/admin` | `admin/*` | — | — |
 | `/settings/[section]` | `users/privacy`, `users/preferences`, `users/verify-university`, `blocks`, `notifications/settings`, `push/*` | — | — |
 
@@ -115,6 +127,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-17 — không gian PU AI `/puai` (`app/(app)/puai/*`, `components/puai/*`, `lib/puai-routes.ts`): `AppLayout` ẩn Sidebar & cột phải; thanh bên lịch sử + hồ sơ PU AI, ngăn kéo mobile (`ui/sheet.tsx`); `/puai/library`; `/settings/puai*` ⇒ `/puai/settings*`; `components/chat/conversation-view.tsx` dùng chung; Sidebar có mục PU AI.
 - 2026-10-16 — `/settings/puai` + `/settings/puai/[item]` (`components/settings/puai/*`, `lib/puai-settings-registry.ts`, `hooks/chat/use-puai-settings.ts`), `/ai-terms`; `AiMessageFooter` (👍/👎, nhãn bộ nhớ); admin tab PU AI; connector mặc định lấy từ server thay localStorage.
 - 2026-10-16 — bảng tin mặc định chuyển về `/` (`app/(app)/page.tsx`, chưa đăng nhập hiện `LandingView`); `/home` tự động chuyển về `/`. Thông báo & xem trước (`NotificationRow`, toast `useNotificationsSync`, `FeaturedCommentPreview`, `QuizCard`, `FlashcardDeck`) dựng qua `MarkdownPreview` (`inline` cho thông báo/bình luận nổi bật, hỗ trợ in đậm, code, KaTeX) + hiện avatar `N7AiMark` cho `@puai`; `DropdownMenu` mặc định `modal={false}` tránh CLS.
 - 2026-10-16 — chat: ô soạn `@` (nhắc tên + ngữ cảnh) / `/` (chế độ, skill, lệnh) / `+` (tệp, skill, connector, Research) — `composer/use-composer-picker.ts`, `picker-popover`, `plus-menu`, `context-chips`, `skills-dialog`; lịch sử PU AI `ai/ai-thread-list.tsx` (`hooks/chat/use-ai-threads.ts`); `thread/message-text.tsx` (tô sáng @, chip ngữ cảnh), `thread/mention-jump.tsx`, badge @ ở danh sách.
