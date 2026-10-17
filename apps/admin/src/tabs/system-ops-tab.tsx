@@ -45,7 +45,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'user.verify': 'Cấp tích xanh',
   'user.unverify': 'Gỡ tích xanh',
   'user.revoke_sessions': 'Đăng xuất mọi thiết bị',
-  'user.insight_view': 'Xem dữ liệu cá nhân hóa',
+  'user.insight_view': 'Xem insight',
   'user.note_add': 'Thêm ghi chú',
   'user.note_delete': 'Xóa ghi chú',
   'user.export': 'Xuất danh sách người dùng',
