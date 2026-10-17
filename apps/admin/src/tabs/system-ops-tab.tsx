@@ -27,7 +27,7 @@ import {
   Tr
 } from '@/components/ui'
 
-const ACTION_LABELS: Record<string, string> = {
+export const ACTION_LABELS: Record<string, string> = {
   'post.hide': 'Ẩn bài viết',
   'post.unhide': 'Hiện lại bài viết',
   'post.pin': 'Ghim bài viết',
@@ -41,6 +41,9 @@ const ACTION_LABELS: Record<string, string> = {
   'user.unverify': 'Gỡ tích xanh',
   'user.revoke_sessions': 'Đăng xuất mọi thiết bị',
   'user.insight_view': 'Xem insight',
+  'user.note_add': 'Thêm ghi chú',
+  'user.note_delete': 'Xóa ghi chú',
+  'user.export': 'Xuất danh sách người dùng',
   'ai.ticket_status': 'Cập nhật yêu cầu N7AI',
   'ai.skill_moderate': 'Kiểm duyệt skill',
   'course.create': 'Tạo học phần',

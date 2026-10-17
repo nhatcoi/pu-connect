@@ -11,6 +11,8 @@ import {
   LogOut,
   Megaphone,
   Menu as MenuIcon,
+  PanelLeftClose,
+  PanelLeftOpen,
   Monitor,
   Moon,
   RefreshCw,
@@ -27,7 +29,7 @@ import { Avatar, Button, Menu, MenuItem, MenuLabel, MenuSeparator } from '@/comp
 import { LoginScreen } from '@/components/login-screen'
 import { DashboardTab } from '@/tabs/dashboard-tab'
 import { ModerationTab } from '@/tabs/moderation-tab'
-import { UsersRbacTab } from '@/tabs/users-rbac-tab'
+import { UsersPage } from '@/features/users/users-page'
 import { AiOpsTab } from '@/tabs/ai-ops-tab'
 import { AcademicTab } from '@/tabs/academic-tab'
 import { AuditLogsTab, BroadcastTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
@@ -46,13 +48,30 @@ const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 
 
 // Điều hướng theo hash (#/users) — giữ trang khi F5
 function readHash(): NavId {
-  const h = window.location.hash.replace(/^#\/?/, '') as NavId
+  const h = window.location.hash.replace(/^#\/?/, '').split('?')[0] as NavId
   return NAV_IDS.includes(h) ? h : 'dashboard'
 }
 
 export function App() {
   const [active, setActive] = useState<NavId>(readHash)
   const [drawer, setDrawer] = useState(false)
+  // Sidebar thu gọn (chỉ icon) — nhớ theo trình duyệt
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('puc-admin-sidebar') === 'collapsed'
+    } catch {
+      return false
+    }
+  })
+  const toggleCollapsed = () =>
+    setCollapsed((v) => {
+      try {
+        localStorage.setItem('puc-admin-sidebar', v ? 'expanded' : 'collapsed')
+      } catch {
+        // ignore
+      }
+      return !v
+    })
   const qc = useQueryClient()
   const theme = useTheme()
 
@@ -146,11 +165,17 @@ export function App() {
   const allowed = groups.flatMap((g) => g.items.map((i) => i.id))
   const current = allowed.includes(active) ? active : allowed[0]
 
-  const sidebar = (
-    <nav className="flex flex-col gap-5 p-3">
+  // mini = sidebar thu gọn (chỉ icon + tooltip)
+  const renderNav = (mini: boolean) => (
+    <nav className={cn('flex flex-col gap-5', mini ? 'p-2' : 'p-3')}>
       {groups.map((g, gi) => (
         <div key={gi} className="space-y-0.5">
-          {g.label && <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g.label}</p>}
+          {g.label &&
+            (mini ? (
+              gi > 0 && <div className="mx-2 mb-2 h-px bg-border" />
+            ) : (
+              <p className="px-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">{g.label}</p>
+            ))}
           {g.items.map((item) => {
             const Icon = item.icon
             const on = current === item.id
@@ -159,14 +184,18 @@ export function App() {
                 key={item.id}
                 type="button"
                 onClick={() => navigate(item.id)}
+                title={mini ? item.label : undefined}
                 className={cn(
-                  'flex h-9 w-full items-center gap-3 rounded-md px-3 text-sm transition-colors cursor-pointer',
+                  'relative flex h-9 w-full items-center gap-3 rounded-md text-sm transition-colors cursor-pointer',
+                  mini ? 'justify-center px-0' : 'px-3',
                   on ? 'bg-primary/10 font-semibold text-primary' : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                 )}
               >
                 <Icon className="size-[18px] shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge ? (
+                {!mini && <span className="flex-1 text-left">{item.label}</span>}
+                {item.badge && mini ? (
+                  <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-brand-orange" />
+                ) : item.badge ? (
                   <span className="min-w-5 rounded-full bg-brand-orange px-1.5 text-center text-[11px] font-semibold leading-5 text-white tabular-nums">
                     {item.badge > 99 ? '99+' : item.badge}
                   </span>
@@ -188,7 +217,10 @@ export function App() {
         <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setDrawer(true)} aria-label="Menu">
           <MenuIcon />
         </Button>
-        <a href="#/dashboard" onClick={() => navigate('dashboard')} className="flex items-center gap-2.5 md:w-56">
+        <Button variant="ghost" size="icon" className="hidden md:inline-flex" onClick={toggleCollapsed} aria-label="Thu gọn menu" title="Thu gọn menu">
+          {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+        </Button>
+        <a href="#/dashboard" onClick={() => navigate('dashboard')} className="flex items-center gap-2.5">
           <img src="/brand/pu-mark.svg" alt="" className="size-8" />
           <span className="text-base font-extrabold tracking-tight text-foreground">
             PU Connector <span className="font-semibold text-muted-foreground">Admin</span>
@@ -252,8 +284,13 @@ export function App() {
 
       <div className="flex">
         {/* Sidebar desktop */}
-        <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-60 shrink-0 overflow-y-auto border-r border-border bg-background md:block">
-          {sidebar}
+        <aside
+          className={cn(
+            'sticky top-14 hidden h-[calc(100vh-3.5rem)] shrink-0 overflow-y-auto border-r border-border bg-background transition-[width] duration-200 md:block',
+            collapsed ? 'w-16' : 'w-60'
+          )}
+        >
+          {renderNav(collapsed)}
         </aside>
 
         {/* Sidebar mobile (drawer) */}
@@ -269,18 +306,18 @@ export function App() {
                   <X />
                 </Button>
               </div>
-              {sidebar}
+              {renderNav(false)}
             </aside>
           </div>
         )}
 
         <main className="min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="mx-auto w-full max-w-[1600px] px-4 py-6 sm:px-6 lg:px-8 lg:py-7">
             {current === 'dashboard' && (
               <DashboardTab stats={stats.data} isLoading={stats.isPending} permissions={perms} userName={session.user.displayName} onNavigate={navigate} />
             )}
             {current === 'moderation' && <ModerationTab permissions={perms} pendingCount={stats.data?.pendingReports} />}
-            {current === 'users' && <UsersRbacTab currentUserId={session.user.id} permissions={perms} />}
+            {current === 'users' && <UsersPage currentUserId={session.user.id} />}
             {current === 'academic' && <AcademicTab permissions={perms} />}
             {current === 'ai' && <AiOpsTab permissions={perms} openTickets={stats.data?.openSupportTickets} />}
             {current === 'search' && <SearchAnalyticsTab />}

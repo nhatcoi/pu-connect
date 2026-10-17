@@ -42,14 +42,18 @@ export function Menu({
       if (!panelRef.current?.contains(t) && !anchorRef.current?.contains(t)) close()
     }
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    // Cuộn trang ⇒ đóng; cuộn bên trong panel thì giữ
+    const onScroll = (e: Event) => {
+      if (!panelRef.current?.contains(e.target as Node)) close()
+    }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
-    window.addEventListener('scroll', close, true)
+    window.addEventListener('scroll', onScroll, true)
     window.addEventListener('resize', close)
     return () => {
       document.removeEventListener('mousedown', onDown)
       document.removeEventListener('keydown', onKey)
-      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('scroll', onScroll, true)
       window.removeEventListener('resize', close)
     }
   }, [open, close])

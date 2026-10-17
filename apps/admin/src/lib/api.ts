@@ -8,6 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export const WEB_PORTAL_URL = (import.meta as { env?: Record<string, string> }).env?.VITE_WEB_URL || 'https://puc.vnhat.dev'
 const API_BASE = (import.meta as { env?: Record<string, string> }).env?.VITE_API_URL || '/api'
 
+// URL tuyệt đối tới API (link tải file, cookie đi kèm)
+export const apiUrl = (path: string) => `${API_BASE}${path}`
+
 type Envelope<T> = {
   success?: boolean
   data: T
