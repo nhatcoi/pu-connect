@@ -14,6 +14,7 @@ import {
   CardHeader,
   EmptyState,
   Field,
+  FilterChip,
   Input,
   LoadingRows,
   PageHeader,
@@ -388,7 +389,7 @@ const LOGIN_EVENT_LABEL: Record<string, string> = {
 
 function LoginsSection() {
   const state = useListState({ sort: 'recent' })
-  const list = usePaged<AdminSecurityEventRow>('security-events', '/admin/security-events', state.params, ['q', 'event', 'result', 'days'])
+  const list = usePaged<AdminSecurityEventRow>('security-events', '/admin/security-events', state.params, ['q', 'event', 'result', 'days', 'country'])
   const rows = list.data?.items ?? []
 
   return (
@@ -399,7 +400,8 @@ function LoginsSection() {
           onChange={(v) => state.set({ result: v })}
           items={[
             { id: '', label: 'Tất cả' },
-            { id: 'failed', label: 'Thất bại' }
+            { id: 'failed', label: 'Thất bại' },
+            { id: 'unusual', label: 'Nơi lạ' }
           ]}
         />
         <ParamSelect state={state} name="event" all="Mọi sự kiện" options={Object.entries(LOGIN_EVENT_LABEL).map(([value, label]) => ({ value, label }))} className="w-48" />
@@ -415,6 +417,7 @@ function LoginsSection() {
           className="w-36"
         />
         <ListSearch state={state} placeholder="@username hoặc IP" className="w-52" />
+        {state.params.country && <FilterChip label="Quốc gia" value={state.params.country} onRemove={() => state.set({ country: undefined })} />}
         {list.data && <span className="ml-auto text-sm tabular-nums text-muted-foreground">{formatNumber(list.data.total)} sự kiện</span>}
       </Toolbar>
 
@@ -428,7 +431,7 @@ function LoginsSection() {
             <THead>
               <Th>Sự kiện</Th>
               <Th>Tài khoản</Th>
-              <Th className="hidden md:table-cell">IP</Th>
+              <Th className="hidden md:table-cell">IP · Vị trí</Th>
               <Th className="hidden lg:table-cell">Thiết bị</Th>
               <Th className="text-right">Thời gian</Th>
             </THead>
@@ -452,9 +455,22 @@ function LoginsSection() {
                   </Td>
                   <Td className="hidden md:table-cell">
                     {e.ip ? (
-                      <button type="button" onClick={() => state.set({ q: e.ip })} className="font-mono text-xs text-muted-foreground hover:text-primary cursor-pointer" title="Lọc theo IP này">
-                        {e.ip}
-                      </button>
+                      <span className="block">
+                        <button type="button" onClick={() => state.set({ q: e.ip })} className="font-mono text-xs text-muted-foreground hover:text-primary cursor-pointer" title="Lọc theo IP này">
+                          {e.ip}
+                        </button>
+                        {e.location && (
+                          <button
+                            type="button"
+                            onClick={() => e.country && state.set({ country: e.country })}
+                            className="block text-xs text-muted-foreground hover:text-primary cursor-pointer"
+                            title="Lọc theo quốc gia này"
+                          >
+                            {e.location}
+                            {e.unusual && <span className="ml-1 font-medium text-warning">· nơi lạ</span>}
+                          </button>
+                        )}
+                      </span>
                     ) : (
                       '—'
                     )}

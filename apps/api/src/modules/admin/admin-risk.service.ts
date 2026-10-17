@@ -14,6 +14,7 @@ const RECOMPUTE_MS = 10 * 60_000
  *  - Đăng nhập chung mạng với 1–9 tài khoản khác (30 ngày)     10 + 5 / tài khoản (tối đa 25)
  *    ("mạng" = ip_net(): IPv4 nguyên địa chỉ, IPv6 theo /64 vì 64 bit cuối tự đổi)
  *  - Đăng nhập sai ≥ 5 lần trong 24h                           10 điểm
+ *  - Đăng nhập từ nơi lạ trong 30 ngày                         10 / lần (tối đa 20)
  * Cùng job: xóa nhật ký bảo mật quá 90 ngày.
  */
 const RISK_SQL = `
@@ -48,6 +49,10 @@ fail AS (
   SELECT user_id AS uid, COUNT(*)::int AS n FROM user_security_events
   WHERE NOT success AND created_at > NOW() - INTERVAL '24 hours' AND user_id IS NOT NULL GROUP BY 1
 ),
+unus AS (
+  SELECT user_id AS uid, COUNT(*)::int AS n FROM user_security_events
+  WHERE unusual AND created_at > NOW() - INTERVAL '30 days' AND user_id IS NOT NULL GROUP BY 1
+),
 f AS (
   SELECT h.id, array_remove(ARRAY[
     CASE WHEN rep.n > 0 THEN jsonb_build_object('key', 'reports', 'label', rep.n || ' lượt bị báo cáo (30 ngày)', 'points', LEAST(30, rep.n * 8)) END,
@@ -55,11 +60,13 @@ f AS (
     CASE WHEN san.n > 0 THEN jsonb_build_object('key', 'sanctions', 'label', san.n || ' lần bị xử phạt (180 ngày)', 'points', LEAST(30, san.n * 15)) END,
     CASE WHEN burst.n >= 10 THEN jsonb_build_object('key', 'burst', 'label', 'Tài khoản mới đăng ' || burst.n || ' nội dung / 24h', 'points', 15) END,
     CASE WHEN shared.n > 0 THEN jsonb_build_object('key', 'shared_ip', 'label', 'Chung mạng / IP với ' || shared.n || ' tài khoản khác', 'points', LEAST(25, 5 + shared.n * 5)) END,
-    CASE WHEN fail.n >= 5 THEN jsonb_build_object('key', 'failed_logins', 'label', 'Đăng nhập sai ' || fail.n || ' lần / 24h', 'points', 10) END
+    CASE WHEN fail.n >= 5 THEN jsonb_build_object('key', 'failed_logins', 'label', 'Đăng nhập sai ' || fail.n || ' lần / 24h', 'points', 10) END,
+    CASE WHEN unus.n > 0 THEN jsonb_build_object('key', 'unusual_location', 'label', unus.n || ' lần đăng nhập từ nơi lạ (30 ngày)', 'points', LEAST(20, unus.n * 10)) END
   ], NULL) AS factors
   FROM h
   LEFT JOIN rep ON rep.uid = h.id LEFT JOIN hid ON hid.uid = h.id LEFT JOIN san ON san.uid = h.id
   LEFT JOIN burst ON burst.uid = h.id LEFT JOIN shared ON shared.uid = h.id LEFT JOIN fail ON fail.uid = h.id
+  LEFT JOIN unus ON unus.uid = h.id
 ),
 c AS (
   SELECT id, to_jsonb(factors) AS factors,

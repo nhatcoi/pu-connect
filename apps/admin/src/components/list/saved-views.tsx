@@ -30,6 +30,7 @@ const BUILTIN: Record<ViewPage, { name: string; query: string }[]> = {
   audit: [
     { name: '24 giờ qua', query: 'days=1' },
     { name: 'Đăng nhập thất bại 24h', query: 'tab=logins&result=failed&days=1' },
+    { name: 'Đăng nhập từ nơi lạ', query: 'tab=logins&result=unusual' },
     { name: 'Xem insight', query: 'action=user.insight_view' },
     { name: 'Khóa tài khoản', query: 'action=user.suspend' }
   ]

@@ -12,6 +12,7 @@ import type {
   AdminSecurityEventRow
 } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { formatLocation } from '../auth/security-log.service'
 import { iso, likeEscape, orderBy, pagedQuery, searchCondition, SqlParams, whereOf } from './admin-paging'
 import type {
   AuditQuery,
@@ -344,13 +345,15 @@ export class AdminListsService {
       raw && (isIp ? `host(e.ip) LIKE ${p.add(`${likeEscape(raw)}%`)}` : `lower(u.username) LIKE ${p.add(`${likeEscape(raw.replace(/^@/, '').toLowerCase())}%`)}`),
       q.event && `e.event = ${p.add(q.event)}`,
       q.result === 'failed' && 'NOT e.success',
+      q.result === 'unusual' && 'e.unusual',
+      q.country && `e.country = ${p.add(q.country.toUpperCase())}`,
       q.days && `e.created_at > NOW() - make_interval(days => ${p.add(Number(q.days))})`
     ]
     return pagedQuery(this.db, {
       params: p,
       page: q.page,
       pageSize: q.pageSize,
-      select: `e.id, e.event, e.success, e.method, host(e.ip) AS ip, e.device, e.created_at,
+      select: `e.id, e.event, e.success, e.method, host(e.ip) AS ip, e.device, e.country, e.region, e.city, e.unusual, e.created_at,
         u.id AS user_id, u.username, u.display_name, u.avatar_url`,
       from: `user_security_events e LEFT JOIN users u ON u.id = e.user_id ${whereOf(conds)}`,
       order: orderBy('e.created_at', q.dir, 'e.id'),
@@ -361,6 +364,9 @@ export class AdminListsService {
         method: r.method,
         ip: r.ip,
         device: r.device,
+        location: formatLocation(r as never),
+        country: r.country,
+        unusual: r.unusual,
         createdAt: iso(r.created_at) as string,
         user: r.user_id ? { id: r.user_id, username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url } : null
       })

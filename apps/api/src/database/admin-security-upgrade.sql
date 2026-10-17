@@ -46,3 +46,10 @@ CREATE INDEX IF NOT EXISTS idx_security_events_net ON user_security_events (ip_n
 
 -- 5. Sự kiện admin ép đăng xuất: không phải thiết bị của người dùng (dữ liệu cũ ghi device = 'Quản trị viên')
 UPDATE user_security_events SET device = NULL, method = 'admin' WHERE device = 'Quản trị viên';
+
+-- 6. Vị trí gần đúng từ IP (header Cloudflare "visitor location") + cờ đăng nhập từ nơi lạ
+ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS country CHAR(2);
+ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS region VARCHAR(80);
+ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS city VARCHAR(80);
+ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS unusual BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_security_events_unusual ON user_security_events (created_at DESC) WHERE unusual;

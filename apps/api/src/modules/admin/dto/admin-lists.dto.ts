@@ -101,7 +101,8 @@ export const SecurityEventsQuerySchema = z.object({
   ...paging,
   q: text(64), // @username hoặc IP
   event: opt(['login', 'login_failed', 'login_blocked', 'logout', 'register', 'password_reset', 'password_reset_requested', 'email_verified', 'session_revoked'] as const),
-  result: opt(['failed'] as const),
+  result: opt(['failed', 'unusual'] as const),
+  country: z.preprocess((v) => (v === '' ? undefined : v), z.string().trim().regex(/^[A-Za-z]{2}$/).optional()),
   days: opt(['1', '7', '30', '90'] as const)
 })
 export type SecurityEventsQuery = z.infer<typeof SecurityEventsQuerySchema>

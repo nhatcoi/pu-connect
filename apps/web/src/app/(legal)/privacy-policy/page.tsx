@@ -40,8 +40,9 @@ const SECTIONS: LegalSection[] = [
           đăng ký thông báo đẩy của trình duyệt nếu bạn bật thông báo đẩy.
         </p>
         <p>
-          <strong>Nhật ký bảo mật.</strong> Thời điểm đăng nhập, đăng xuất, nhập sai mật khẩu, đặt lại mật khẩu, kèm địa chỉ IP và loại thiết bị, trình duyệt.
-          Dùng để phát hiện đăng nhập lạ, dò mật khẩu và tài khoản giả mạo. Bạn xem được nhật ký của chính mình trong Cài đặt › Đăng nhập &amp; Bảo mật. Lưu 90
+          <strong>Nhật ký bảo mật.</strong> Thời điểm đăng nhập, đăng xuất, nhập sai mật khẩu, đặt lại mật khẩu, kèm địa chỉ IP, loại thiết bị, trình duyệt
+          và vị trí gần đúng (tỉnh/thành, quốc gia) suy ra từ địa chỉ IP — chúng tôi không dùng GPS hay định vị chính xác. Dùng để phát hiện đăng nhập lạ (và
+          báo cho bạn khi có đăng nhập từ nơi mới), dò mật khẩu và tài khoản giả mạo. Bạn xem được nhật ký của chính mình trong Cài đặt › Đăng nhập &amp; Bảo mật. Lưu 90
           ngày rồi tự xóa.
         </p>
         <p>

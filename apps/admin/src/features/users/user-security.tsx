@@ -108,6 +108,7 @@ export function SecurityTab({ userId, onOpenUser }: { userId: string; onOpenUser
                 <tr key={ip.network}>
                   <td className="py-1.5 pr-3">
                     <span className="block break-all font-mono text-xs text-foreground">{ip.ip}</span>
+                    {ip.location && <span className="block text-[11px] text-muted-foreground">{ip.location}</span>}
                     {ip.network.includes(':') && (
                       <span className="block font-mono text-[11px] text-muted-foreground">
                         mạng {ip.network}
@@ -173,7 +174,12 @@ function EventRow({ e }: { e: SecurityEvent }) {
           )}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {[e.device, e.ip].filter(Boolean).join(' · ')} · {formatRelativeTime(e.createdAt)}
+          {[e.location, e.device, e.ip].filter(Boolean).join(' · ')} · {formatRelativeTime(e.createdAt)}
+          {e.unusual && (
+            <Badge tone="warning" className="ml-1.5">
+              Nơi lạ
+            </Badge>
+          )}
         </p>
       </div>
     </li>

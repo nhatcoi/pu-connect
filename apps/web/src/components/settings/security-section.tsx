@@ -81,7 +81,7 @@ function SessionRow({ s, busy, onRevoke }: { s: LoginSession; busy: boolean; onR
           {s.current && <span className="ml-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">· Thiết bị này</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {[s.ip, s.method === 'google' ? 'Google' : s.method === 'password' ? 'Mật khẩu' : null, `đăng nhập ${formatRelativeTime(s.createdAt ?? s.lastActiveAt)}`]
+          {[s.location, s.ip, s.method === 'google' ? 'Google' : s.method === 'password' ? 'Mật khẩu' : null, `đăng nhập ${formatRelativeTime(s.createdAt ?? s.lastActiveAt)}`]
             .filter(Boolean)
             .join(' · ')}
         </p>
@@ -104,7 +104,10 @@ function EventRow({ e }: { e: SecurityEvent }) {
         <p className={`text-[13px] ${e.success ? '' : 'font-medium text-red-500'}`}>
           {e.method === 'admin' ? 'Quản trị viên đã đăng xuất một phiên của bạn' : (EVENT_LABEL[e.event] ?? e.event)}
         </p>
-        <p className="truncate text-xs text-muted-foreground">{[e.device, e.ip, formatRelativeTime(e.createdAt)].filter(Boolean).join(' · ')}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {[e.location, e.device, e.ip, formatRelativeTime(e.createdAt)].filter(Boolean).join(' · ')}
+          {e.unusual && <span className="ml-1 font-medium text-amber-600 dark:text-amber-400">· nơi lạ</span>}
+        </p>
       </div>
     </div>
   )

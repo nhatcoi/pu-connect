@@ -18,6 +18,11 @@ export interface SecurityEvent {
   method: 'password' | 'google' | 'admin' | null // admin = do quản trị viên thực hiện
   ip: string | null
   device: string | null
+  // Vị trí gần đúng từ IP (Cloudflare): "Hanoi, VN"
+  location: string | null
+  country: string | null
+  // Đăng nhập từ quốc gia / vùng chưa từng thấy trong 90 ngày
+  unusual: boolean
   createdAt: string
 }
 
@@ -26,6 +31,7 @@ export interface LoginSession {
   id: string
   device: string
   ip: string | null
+  location?: string | null
   method: 'password' | 'google' | null
   createdAt: string | null
   lastActiveAt: string
@@ -54,7 +60,7 @@ export interface LinkedAccount {
 export interface AdminUserSecurity {
   events: SecurityEvent[]
   // Gom theo mạng: IPv4 nguyên địa chỉ, IPv6 theo /64 (64 bit cuối tự đổi)
-  ips: { ip: string; network: string; addresses: number; count: number; lastAt: string; accounts: number }[]
+  ips: { ip: string; network: string; location: string | null; addresses: number; count: number; lastAt: string; accounts: number }[]
   devices: { device: string; count: number; lastAt: string }[]
   linkedAccounts: LinkedAccount[]
   failedLogins24h: number

@@ -25,6 +25,7 @@ import { UserInsightService } from '../personalization/user-insight.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { writeAudit } from './admin-audit'
 import { SHARED_IP_MAX_ACCOUNTS } from './admin-risk.service'
+import { formatLocation } from '../auth/security-log.service'
 import type { AdminUserQueryParsed } from './dto/admin.dto'
 
 // Biểu thức lấy user id trong phiên express-session (có index idx_user_sessions_user)
@@ -329,17 +330,19 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
   async security(adminId: string, userId: string): Promise<AdminUserSecurity> {
     const [events, ips, devices, linked, fails] = await Promise.all([
       this.db.query(
-        `SELECT id, event, success, method, host(ip) AS ip, device, created_at FROM user_security_events
+        `SELECT id, event, success, method, host(ip) AS ip, device, country, region, city, unusual, created_at FROM user_security_events
          WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
         [userId]
       ),
       // Gom theo mạng (IPv6 /64), hiện IP đầy đủ gần nhất
       this.db.query(
-        `SELECT g.net::text AS net, g.ip, g.addresses, g.n, g.last_at,
+        `SELECT g.net::text AS net, g.ip, g.location, g.addresses, g.n, g.last_at,
                 (SELECT COUNT(DISTINCT x.user_id) FROM user_security_events x
                  WHERE x.ip IS NOT NULL AND ip_net(x.ip) = g.net AND x.user_id IS NOT NULL)::int AS accounts
          FROM (
            SELECT ip_net(e.ip) AS net, (array_agg(host(e.ip) ORDER BY e.created_at DESC))[1] AS ip,
+                  (array_agg(concat_ws(', ', COALESCE(e.city, e.region), e.country) ORDER BY e.created_at DESC)
+                     FILTER (WHERE e.country IS NOT NULL))[1] AS location,
                   COUNT(DISTINCT e.ip)::int AS addresses, COUNT(*)::int AS n, MAX(e.created_at) AS last_at
            FROM user_security_events e WHERE e.user_id = $1 AND e.ip IS NOT NULL
            GROUP BY 1
@@ -381,9 +384,12 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
         method: r.method,
         ip: r.ip,
         device: r.device,
+        location: formatLocation(r),
+        country: r.country,
+        unusual: r.unusual,
         createdAt: iso(r.created_at) as string
       })),
-      ips: ips.rows.map((r) => ({ ip: r.ip, network: r.net, addresses: r.addresses, count: r.n, lastAt: iso(r.last_at) as string, accounts: r.accounts })),
+      ips: ips.rows.map((r) => ({ ip: r.ip, network: r.net, location: r.location ?? null, addresses: r.addresses, count: r.n, lastAt: iso(r.last_at) as string, accounts: r.accounts })),
       devices: devices.rows.map((r) => ({ device: r.device, count: r.n, lastAt: iso(r.last_at) as string })),
       linkedAccounts: linked.rows.map((r) => ({
         id: r.id,

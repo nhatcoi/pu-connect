@@ -35,6 +35,13 @@ Thang (đếm vi phạm 180 ngày, bỏ bản đã hủy): **Cảnh cáo → H�
 - **Khóa** = không đăng nhập được, bị đăng xuất mọi thiết bị. Hết hạn ⇒ đăng nhập lại được ngay; job mỗi phút dọn dữ liệu.
 - Không khóa / hạn chế được tài khoản admin và chính mình.
 
+## Đăng nhập từ nơi lạ
+
+Đăng nhập thành công từ **quốc gia / vùng chưa từng thấy trong 90 ngày** (không tính lần đầu) ⇒ cột `unusual`:
+người dùng nhận thông báo "Có đăng nhập mới từ … — nếu không phải bạn, đổi mật khẩu…", nhật ký gắn nhãn *Nơi lạ*
+(**Nhật ký › Đăng nhập › Nơi lạ**, view *Đăng nhập từ nơi lạ*), điểm rủi ro +10 / lần (30 ngày, tối đa 20).
+IP 4G ở VN hay định vị về Hà Nội / TP.HCM ⇒ chỉ để tham khảo, không làm bằng chứng.
+
 ## Điểm rủi ro (0–100, tính lại mỗi 10 phút)
 
 Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày · tài khoản mới đăng dồn dập · đăng nhập chung mạng với tài khoản khác · đăng nhập sai liên tục. **Mạng có > 10 tài khoản bị bỏ qua** (wifi trường / NAT), tránh coi cả trường là clone.
@@ -45,7 +52,7 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 
 | Dữ liệu | Lưu | Ghi chú |
 |---|---|---|
-| Nhật ký bảo mật (`user_security_events`) | 90 ngày | đăng nhập, sai MK, đăng xuất, đặt lại MK… + IP, thiết bị. Người dùng xem được của mình (Cài đặt › Đăng nhập & Bảo mật) |
+| Nhật ký bảo mật (`user_security_events`) | 90 ngày | đăng nhập, sai MK, đăng xuất, đặt lại MK… + IP, thiết bị, **vị trí gần đúng** (thành phố / vùng / quốc gia từ header Cloudflare *Add visitor location headers* — không GPS). Người dùng xem được của mình (Cài đặt › Đăng nhập & Bảo mật) |
 | Lượt xem hồ sơ (`profile_views`) | 90 ngày | gộp theo giờ, bỏ qua tự xem. **Người bị xem không thấy**, chỉ admin |
 | Hội thoại | — | admin chỉ thấy **siêu dữ liệu** (với ai, bao nhiêu tin) — **không đọc nội dung** |
 | Hành vi xem & tìm kiếm (`user_events`) | — | chỉ có khi người dùng bật cá nhân hóa |
