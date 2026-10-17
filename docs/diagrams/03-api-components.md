@@ -93,7 +93,7 @@ flowchart TB
 | Notifications | `GET notifications` (cursor `before`, `unread`, `type`) · `GET notifications/unread-count` · `PATCH notifications/:id/read` · `PATCH notifications/read-all` · `GET/PATCH notifications/settings` |
 | Storage | `POST upload/file` · `POST upload/multiple` |
 | Push | `GET push/config` · `POST/DELETE push/subscriptions` · `POST push/test` |
-| Admin (role `admin`) | `GET admin/stats` · `GET admin/reports?status=pending\|resolved` · `POST admin/posts/:id/{hide,unhide,dismiss-reports}` · `GET admin/users?q=&status=` · `POST admin/users/:id/{suspend,unsuspend}` · `GET admin/users/:id/insight` (→ `UserInsightService`, ghi audit) · `GET admin/audit-logs` · `GET admin/search/zero-results?days=` |
+| Admin (RBAC `AdminGuard` + `@RequireAdminPermission`) | `GET admin/me` · `GET admin/stats` · `GET admin/reports?status=pending\|resolved` · `GET admin/posts?q=&filter=` · `POST admin/posts/:id/{hide,unhide,pin,dismiss-reports}` · `GET admin/comments?q=` · `DELETE admin/comments/:id` · `GET admin/users?q=&status=&role=` · `PATCH admin/users/:id/role` · `PATCH admin/users/:id/verify` · `POST admin/users/:id/{suspend,unsuspend,revoke-sessions}` · `GET admin/users/:id/insight` · `GET admin/ai/overview` · `GET admin/ai-feedback` · `PATCH admin/ai/tickets/:id` · `GET/PATCH admin/ai/skills` · `GET/POST/PATCH admin/courses` · `GET/DELETE admin/documents` · `GET admin/communities` · `GET admin/search/{zero-results,top}` · `POST admin/broadcast` · `GET admin/audit-logs` |
 | Personalization | `POST events` (lô ≤ 50 sự kiện hành vi, 204) · `GET ai/suggestions?mode=` (`{ personalized, items[] }`) |
 | Presence | `GET presence` (`{ [userId]: { online, lastSeenAt } }` của người cùng hội thoại) |
 | Blocks | `GET blocks` (mình đã chặn ai) · `PUT blocks/:userId` (chặn, idempotent, hủy theo dõi 2 chiều) · `DELETE blocks/:userId` |
@@ -126,6 +126,7 @@ flowchart TB
 
 **Changelog:**
 - 2026-10-17 — `AiSkillDraftService`: `POST ai/skills/draft` (PU AI viết bản nháp skill, không lưu, 1 lượt); thư viện skill trả `official` (skill của @puai, seed `ai-skills-seed.sql`).
+- 2026-10-17 — Mở rộng `AdminModule` với phân quyền RBAC 15 quyền (`@RequireAdminPermission`), quản lý bài viết/ghim, xóa bình luận, đổi role/verify/revoke-sessions, PU AI telemetry (`admin/ai/overview`, `admin/ai/tickets/:id`, `admin/ai/skills`), quản lý học phần/tài liệu/cộng đồng, top searches và phát thông báo hệ thống (`admin/broadcast`).
 - 2026-10-17 — `AiLibraryController` `GET ai/library`; `GET conversations` & `unread-count` bỏ thread AI; push PU AI ⇒ `/puai/:id`; callback Google connector ⇒ `/puai/settings/connectors`.
 - 2026-10-16 — Cài đặt PU AI: `AiSettingsController` (`ai/settings`, `ai/memories`, `ai/tasks`, `ai/messages/:id/feedback`, `ai/support`, `ai/usage`, `ai/data`), `AiAdminController` `GET admin/ai-feedback`, `PATCH ai/skills/:id/state`; queue BullMQ `ai-maintenance` (tác vụ tự động 5 phút, dọn lịch sử hằng ngày); `WebReaderService` (connector `web`, `web_search`).
 - 2026-10-16 — `ConnectorCallbackMiddleware` trên `GET auth/google/callback`: connector Google dùng chung redirect URI đăng nhập (phân biệt bằng `state` trong session).

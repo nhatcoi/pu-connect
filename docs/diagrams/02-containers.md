@@ -9,8 +9,9 @@ flowchart LR
   subgraph PUC["PU Connector (monorepo pnpm + Turborepo)"]
     direction LR
     web["<b>apps/web</b><br/>Next.js 15 App Router<br/>React 19 · Tailwind v4 · animate-ui<br/>Zustand store"]
+    adminspa["<b>apps/admin</b><br/>Vite + React 19 Static SPA<br/>admin-puc.vnhat.dev (0 MB Node RAM)"]
     api["<b>apps/api</b><br/>NestJS 11<br/>REST /api · GraphQL /graphql<br/>Socket.IO /api/socket.io<br/>Passport session"]
-    schemas[["<b>packages/schemas</b><br/>zod schemas + TS types<br/>(dùng chung web ↔ api)"]]
+    schemas[["<b>packages/schemas</b><br/>zod schemas + TS types<br/>(dùng chung web ↔ admin ↔ api)"]]
     redis[("<b>Redis 7</b><br/>BullMQ queues notification-push · chat-push")]
     sw["<b>public/sw.js</b><br/>Service Worker"]
     db[("<b>PostgreSQL 16 + pgvector</b><br/>dữ liệu nghiệp vụ<br/>user_sessions (session store)")]
@@ -23,7 +24,9 @@ flowchart LR
   claude["LLM gateway<br/>OpenAI-compatible"]
 
   browser -->|"HTTPS: trang SSR/CSR"| web
+  browser -->|"HTTPS: Static SPA (admin-puc.vnhat.dev)"| adminspa
   browser -->|"HTTPS fetch /api/* · /graphql<br/>cookie pu_session"| web
+  adminspa -->|"HTTPS /api/admin/* · /api/auth/*"| api
   web -->|"rewrite /api/* · /graphql → INTERNAL_API_URL"| api
   browser <-->|"WebSocket /api/socket.io<br/>notification · message.* · typing"| api
   browser -->|"tải ảnh/tài liệu (public URL)"| r2
@@ -39,6 +42,7 @@ flowchart LR
   pushsvc --> sw
   browser -. đăng ký .-> sw
   web -. import type .-> schemas
+  adminspa -. import .-> schemas
   api -. import type .-> schemas
   mobile -.->|REST/GraphQL · planned| api
 
@@ -47,7 +51,7 @@ flowchart LR
   classDef lib fill:#e0e7ff,stroke:#6366f1,color:#312e81
   classDef external fill:#f1f5f9,stroke:#94a3b8,color:#334155
   classDef planned fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class web,api,sw app
+  class web,adminspa,api,sw app
   class db,redis store
   class schemas lib
   class google,gmail,r2,pushsvc,claude external
@@ -58,7 +62,7 @@ flowchart LR
 
 | Giao thức | Đường dẫn | Dùng cho | Xác thực |
 |---|---|---|---|
-| REST | `/api/*` | Auth, posts, comments, communities, upload, notifications, search | Cookie `pu_session` (Passport) |
+| REST | `/api/*` | Auth, posts, comments, communities, upload, notifications, search, admin RBAC | Cookie `pu_session` (Passport) |
 | GraphQL (Apollo) | `/graphql` | Hồ sơ, follow, gợi ý theo dõi, feed/document lồng nhau | Cookie `pu_session` |
 | WebSocket (Socket.IO) | `/api/socket.io` | Đẩy thông báo (`notification`), tin nhắn (`message.*`, `typing`), AI streaming (`message.delta`) | Cookie ở handshake; room `user:{id}` do server cấp |
 | Redis (BullMQ) | `REDIS_URL` | Hàng đợi push: delay, retry, hoãn | localhost-only |
@@ -68,10 +72,12 @@ flowchart LR
 ## Ghi chú kiến trúc
 
 - **Web gọi API cùng origin** qua rewrite của Next.js (`/api/*`, `/graphql`) ⇒ cookie first-party, không cần CORS ở trình duyệt. Production: nginx route `/api/` và `/graphql` thẳng vào API (xem [06](./06-deployment.md)).
+- **Admin SPA (`apps/admin`)** là ứng dụng Vite + React tĩnh phục vụ trực tiếp từ Nginx trên `admin-puc.vnhat.dev` (không tốn RAM Node.js runtime trên VPS).
 - **`packages/schemas` là mã TS nguồn**: API chỉ được `import type` lúc runtime (validate phía server khai báo lại trong `dto/`).
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-17 — Thêm `apps/admin` (`@pu/admin` Vite + React Static SPA) cho `admin-puc.vnhat.dev`.
 - 2026-10-16 — API gọi Google Drive API cho connector PU AI.
 - 2026-10-13 — `chat-push` thêm job `clear`: push im lặng đóng thông báo OS đã đọc ở thiết bị khác.
 - 2026-10-13 — Redis: thêm queue `chat-push` (Web Push tin nhắn).

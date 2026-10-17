@@ -77,9 +77,11 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 |---|---|---|
 | `/var/www/pu-connector/.env` | `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, `GOOGLE_*`, `SMTP_*`, `R2_*`, `REDIS_URL`, `VAPID_*`, `BACKUP_PASSPHRASE`, `TELEGRAM_*` (tùy chọn) | Không bị rsync ghi đè; backup `.env.bak.*` |
 | `apps/web/.env` (VPS) | `INTERNAL_API_URL=http://localhost:4001` | Port API production là **4001** |
-| `/etc/nginx/sites-available/pu-connector.conf` | Routing + SSL | Backup `/root/pu-connector.conf.bak.*` |
+| `/etc/nginx/sites-available/pu-connector.conf` | Routing `puc.vnhat.dev` + SSL | Backup `/root/pu-connector.conf.bak.*` |
+| `scripts/ops/nginx-admin-puc.conf` | Routing `admin-puc.vnhat.dev` (`apps/admin/dist` Static SPA + `/api/` proxy) | 0 MB Node.js RAM runtime |
 
 **Changelog:**
+- 2026-10-17 — Thêm cổng quản trị độc lập `admin-puc.vnhat.dev` (`apps/admin/dist` Static SPA phục vụ trực tiếp từ Nginx, cấu hình mẫu `scripts/ops/nginx-admin-puc.conf`).
 - 2026-10-16 — migration `puai-settings-upgrade.sql`; env tùy chọn `TAVILY_API_KEY`; queue BullMQ mới `ai-maintenance` (cùng Redis).
 - 2026-10-16 — migration `ai-skills-share-upgrade.sql`; env `GOOGLE_DRIVE_CALLBACK_URL` đổi thành `GOOGLE_CONNECTOR_CALLBACK_URL` (callback chung `/api/ai/connectors/google/callback`).
 - 2026-10-16 — migration `ai-connectors-upgrade.sql`; env mới `GOOGLE_DRIVE_CALLBACK_URL` (tùy chọn), `CONNECTOR_ENCRYPTION_KEY` (khuyên đặt).

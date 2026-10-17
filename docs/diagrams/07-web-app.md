@@ -119,7 +119,6 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
 | `/puai`, `/puai/[id]`, `/puai/library`, `/puai/settings*` | `ai/threads`, `ai/library`, `ai/quota`, `ai/settings`, `ai/*` (skills, connectors, memories, tasks…), `conversations/:id*` | — | như dòng dưới (thread AI không vá danh sách Tin nhắn; tệp / quiz mới ⇒ làm mới Thư viện) |
 | `/messages`, `/messages/[id]`, badge Tin nhắn (không gồm thread AI) | `conversations*`, `messages/:id*`, `ai/*` (threads, skills, connectors), `chat/refs`, `upload/file?folder=chat`, `search?type=users`, `presence` | localStorage `pu.ai.connectors` | `message.new/updated/delta`, `conv.read/updated/removed`, `ai.thread.updated`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
-| `/admin` | `admin/*` | — | — |
 | `/settings/[section]` | `users/privacy`, `users/preferences`, `users/verify-university`, `blocks`, `notifications/settings`, `push/*` | — | — |
 
 ## Feature flags (`lib/features.ts`)
@@ -128,6 +127,7 @@ Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắ
 
 **Changelog:**
 - 2026-10-17 — Skill: menu Tạo skill (PU AI · tự viết · tải `.md`), `lib/skill-file.ts`, hook `useAiSkillActions().draft`, badge chính thức ở Thư viện.
+- 2026-10-17 — Tách `/admin` khỏi `apps/web` sang ứng dụng Static SPA độc lập `apps/admin` (`admin-puc.vnhat.dev`) với 6 phân hệ điều hành và phân quyền RBAC.
 - 2026-10-17 — `/[username]`: tab hoạt động (`ProfileActivityTab`, `useProfileActivity`, key `['profile', username, 'activity', type]`), thông báo hồ sơ riêng tư; Cài đặt → Quyền riêng tư nhóm "Hoạt động trên hồ sơ".
 - 2026-10-17 — không gian PU AI `/puai` (`app/(app)/puai/*`, `components/puai/*`, `lib/puai-routes.ts`): `AppLayout` ẩn Sidebar & cột phải; thanh bên lịch sử + hồ sơ PU AI, ngăn kéo mobile (`ui/sheet.tsx`); `/puai/library`; `/settings/puai*` ⇒ `/puai/settings*`; `components/chat/conversation-view.tsx` dùng chung; Sidebar có mục PU AI.
 - 2026-10-16 — `/settings/puai` + `/settings/puai/[item]` (`components/settings/puai/*`, `lib/puai-settings-registry.ts`, `hooks/chat/use-puai-settings.ts`), `/ai-terms`; `AiMessageFooter` (👍/👎, nhãn bộ nhớ); admin tab PU AI; connector mặc định lấy từ server thay localStorage.
