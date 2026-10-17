@@ -15,6 +15,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { ConnectorIcon } from '@/components/n7ai/connector-icon'
 import { chatApi, useAiConnectors, useAiSkills, useDisconnectConnector } from '@/hooks/chat'
 
 interface Props {
@@ -97,6 +98,7 @@ export function PlusMenu(props: Props) {
                 if (c.requiresAuth && !c.connected) {
                   return (
                     <DropdownMenuItem key={c.id} disabled={!c.available} onSelect={() => window.location.assign(chatApi.connectorConnectUrl(c.id))}>
+                      <ConnectorIcon id={c.id} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-medium">{c.name}</span>
                         <span className="block truncate text-[11px] text-muted-foreground">
@@ -117,6 +119,7 @@ export function PlusMenu(props: Props) {
                       props.onToggleConnector(c.id)
                     }}
                   >
+                    <ConnectorIcon id={c.id} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-medium">{c.name}</span>
                       <span className="block truncate text-[11px] text-muted-foreground">{c.account ?? c.description}</span>
