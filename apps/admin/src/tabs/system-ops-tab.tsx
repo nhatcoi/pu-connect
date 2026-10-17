@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ListFooter, ListSearch, ParamSelect, useListState, usePaged } from '@/components/list/list-kit'
 import { Bell, History, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { USER_ROLES, type AdminAuditLog, type AdminBroadcastInput, type TopSearchQuery, type ZeroResultQuery } from '@pu/schemas'
@@ -229,67 +230,107 @@ export function BroadcastTab() {
 
 /* ── Nhật ký kiểm toán ────────────────────────────────── */
 
+const TARGET_LABELS: Record<string, string> = {
+  user: 'Người dùng',
+  post: 'Bài viết',
+  comment: 'Bình luận',
+  course: 'Học phần',
+  document: 'Tài liệu',
+  ai_ticket: 'Yêu cầu N7AI',
+  ai_skill: 'Skill',
+  system: 'Hệ thống'
+}
+
+// Chi tiết dễ đọc: lý do, vai trò mới, số người trong thao tác hàng loạt
+function detailText(d: Record<string, unknown> | null): string | null {
+  if (!d) return null
+  const parts: string[] = []
+  if (typeof d.reason === 'string' && d.reason) parts.push(`“${d.reason}”`)
+  if (typeof d.to === 'string') parts.push(`→ ${ROLE_SHORT[d.to] ?? d.to}`)
+  if (typeof d.snippet === 'string') parts.push(`“${d.snippet}”`)
+  if (typeof d.bulk === 'number') parts.push(`hàng loạt ${d.bulk}`)
+  if (typeof d.closedReports === 'number' && d.closedReports) parts.push(`đóng ${d.closedReports} báo cáo`)
+  if (typeof d.revokedSessions === 'number') parts.push(`${d.revokedSessions} phiên`)
+  return parts.length ? parts.join(' · ') : null
+}
+
 export function AuditLogsTab() {
-  const [action, setAction] = useState('')
-  const logs = useQuery({
-    queryKey: ['admin', 'audit-logs', action],
-    queryFn: () => adminApi.get<AdminAuditLog[]>(`/admin/audit-logs?limit=150${action ? `&action=${encodeURIComponent(action)}` : ''}`),
-    placeholderData: keepPreviousData
-  })
+  const state = useListState({ sort: 'recent' })
+  const list = usePaged<AdminAuditLog>('audit-logs', '/admin/audit-logs', state.params, ['q', 'action', 'admin', 'targetType', 'days'])
+  const rows = list.data?.items ?? []
 
   return (
     <>
-      <PageHeader title="Nhật ký" description="Mọi thao tác quản trị đều được ghi lại." />
+      <PageHeader title="Nhật ký" description="Mọi thao tác quản trị đều được ghi lại, không sửa được." />
       <Toolbar>
-        <Select value={action} onChange={(e) => setAction(e.target.value)} className="w-56">
-          <option value="">Mọi thao tác</option>
-          {Object.entries(ACTION_LABELS).map(([k, label]) => (
-            <option key={k} value={k}>
-              {label}
-            </option>
-          ))}
-        </Select>
+        <Segmented
+          value={state.params.days ?? ''}
+          onChange={(v) => state.set({ days: v })}
+          items={[
+            { id: '1', label: '24 giờ' },
+            { id: '7', label: '7 ngày' },
+            { id: '30', label: '30 ngày' },
+            { id: '', label: 'Tất cả' }
+          ]}
+        />
+        <ParamSelect state={state} name="action" all="Mọi thao tác" options={Object.entries(ACTION_LABELS).map(([value, label]) => ({ value, label }))} className="w-52" />
+        <ParamSelect state={state} name="targetType" all="Mọi đối tượng" options={Object.entries(TARGET_LABELS).map(([value, label]) => ({ value, label }))} className="w-40" />
+        <ParamSelect
+          state={state}
+          name="admin"
+          all="Mọi người thực hiện"
+          options={(list.data?.facets?.admin ?? []).map((f) => ({ value: f.value, label: `@${f.value}`, count: f.count }))}
+          className="w-48"
+        />
+        <ListSearch state={state} placeholder="ID đối tượng" className="w-44" />
+        {list.data && <span className="ml-auto text-sm tabular-nums text-muted-foreground">{formatNumber(list.data.total)} bản ghi</span>}
       </Toolbar>
 
-      {logs.isPending ? (
+      {list.isPending ? (
         <LoadingRows rows={8} />
-      ) : !logs.data?.length ? (
-        <EmptyState icon={History} title="Chưa có bản ghi" />
+      ) : rows.length === 0 ? (
+        <EmptyState icon={History} title="Không có bản ghi phù hợp" />
       ) : (
-        <Table className={cn(logs.isPlaceholderData && 'opacity-60')}>
-          <THead>
-            <Th>Thao tác</Th>
-            <Th>Người thực hiện</Th>
-            <Th className="hidden md:table-cell">Đối tượng</Th>
-            <Th className="hidden lg:table-cell">Chi tiết</Th>
-            <Th className="text-right">Thời gian</Th>
-          </THead>
-          <TBody>
-            {logs.data.map((log) => (
-              <Tr key={log.id}>
-                <Td>
-                  <Badge tone={ACTION_TONE(log.action)}>{ACTION_LABELS[log.action] || log.action}</Badge>
-                </Td>
-                <Td className="font-medium text-foreground">@{log.admin?.username || 'system'}</Td>
-                <Td className="hidden text-xs text-muted-foreground md:table-cell">
-                  {log.targetType} <code className="font-mono">{log.targetId.slice(0, 8)}</code>
-                </Td>
-                <Td className="hidden max-w-[280px] lg:table-cell">
-                  {log.details && Object.keys(log.details).length > 0 ? (
-                    <code className="block truncate font-mono text-xs text-muted-foreground" title={JSON.stringify(log.details, null, 2)}>
-                      {JSON.stringify(log.details)}
-                    </code>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </Td>
-                <Td className="whitespace-nowrap text-right text-xs text-muted-foreground" >
-                  <span title={new Date(log.createdAt).toLocaleString('vi-VN')}>{formatRelativeTime(log.createdAt)}</span>
-                </Td>
-              </Tr>
-            ))}
-          </TBody>
-        </Table>
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <THead>
+              <Th>Thao tác</Th>
+              <Th>Người thực hiện</Th>
+              <Th className="hidden md:table-cell">Đối tượng</Th>
+              <Th className="hidden lg:table-cell">Chi tiết</Th>
+              <Th className="text-right">Thời gian</Th>
+            </THead>
+            <TBody>
+              {rows.map((log) => (
+                <Tr key={log.id}>
+                  <Td>
+                    <Badge tone={ACTION_TONE(log.action)}>{ACTION_LABELS[log.action] || log.action}</Badge>
+                  </Td>
+                  <Td className="font-medium text-foreground">@{log.admin?.username || 'system'}</Td>
+                  <Td className="hidden text-xs text-muted-foreground md:table-cell">
+                    {TARGET_LABELS[log.targetType] ?? log.targetType}{' '}
+                    {log.targetType === 'user' ? (
+                      <a href={`#/users?user=${log.targetId}`} className="font-mono text-primary hover:underline">
+                        {log.targetId.slice(0, 8)}
+                      </a>
+                    ) : (
+                      <code className="font-mono">{log.targetId.slice(0, 8)}</code>
+                    )}
+                  </Td>
+                  <Td className="hidden max-w-[320px] lg:table-cell">
+                    <span className="block truncate text-xs text-muted-foreground" title={log.details ? JSON.stringify(log.details, null, 2) : undefined}>
+                      {detailText(log.details) ?? '—'}
+                    </span>
+                  </Td>
+                  <Td className="whitespace-nowrap text-right text-xs text-muted-foreground">
+                    <span title={new Date(log.createdAt).toLocaleString('vi-VN')}>{formatRelativeTime(log.createdAt)}</span>
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
       )}
     </>
   )

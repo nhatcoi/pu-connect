@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Compass, ExternalLink, FileText, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminCommunityRow, AdminCourseInput, AdminCourseRow, AdminDocumentRow, AdminPermission } from '@pu/schemas'
 import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/lib/api'
-import { useDebounced } from '@/hooks/use-debounced'
+import { useHashQuery } from '@/hooks/use-hash-query'
 import {
   Badge,
   Button,
@@ -15,7 +15,8 @@ import {
   Input,
   LoadingRows,
   PageHeader,
-  SearchInput,
+  Segmented,
+  SortTh,
   Table,
   TBody,
   Td,
@@ -26,11 +27,31 @@ import {
   Toolbar,
   Tr
 } from '@/components/ui'
+import { ListFooter, ListSearch, ParamSelect, useListState, usePaged, type ListState } from '@/components/list/list-kit'
 
 type Sub = 'courses' | 'documents' | 'communities'
 
+const DOC_TYPE_LABELS: Record<string, string> = {
+  midterm_exam: 'Đề giữa kỳ',
+  final_exam: 'Đề cuối kỳ',
+  lecture_slide: 'Slide bài giảng',
+  syllabus: 'Đề cương',
+  sample_project: 'Đồ án mẫu',
+  internship_report: 'Báo cáo thực tập',
+  scientific_paper: 'Bài báo khoa học'
+}
+
+const COMMUNITY_TYPE_LABELS: Record<string, string> = {
+  campus: 'Toàn trường',
+  faculty: 'Khoa',
+  academic: 'Học thuật',
+  life: 'Đời sống',
+  club: 'CLB'
+}
+
 export function AcademicTab({ permissions }: { permissions: AdminPermission[] }) {
-  const [tab, setTab] = useState<Sub>('courses')
+  const [params, set] = useHashQuery()
+  const tab = (['courses', 'documents', 'communities'].includes(params.tab) ? params.tab : 'courses') as Sub
   const [createOpen, setCreateOpen] = useState(false)
   const canManage = permissions.includes('academic:manage')
 
@@ -48,7 +69,7 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
         tabs={
           <Tabs
             value={tab}
-            onChange={setTab}
+            onChange={(t) => set({ tab: t === 'courses' ? undefined : t }, { replace: true })}
             items={[
               { id: 'courses', label: 'Học phần' },
               { id: 'documents', label: 'Tài liệu' },
@@ -65,56 +86,87 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
   )
 }
 
-// Hook tìm kiếm có debounce dùng chung cho 3 danh sách
-function useSearchList<T>(key: string, path: string) {
-  const [q, setQ] = useState('')
-  const query = useDebounced(q.trim())
-  const result = useQuery({
-    queryKey: ['admin', key, query],
-    queryFn: () => adminApi.get<T[]>(`${path}?q=${encodeURIComponent(query)}`),
-    placeholderData: keepPreviousData
-  })
-  return { q, setQ, result }
+// Tiêu đề cột sắp xếp gắn với state URL
+function Sort({ state, id, children, align, className }: { state: ListState; id: string; children: React.ReactNode; align?: 'right'; className?: string }) {
+  return (
+    <SortTh id={id} sort={state.sort} dir={state.dir} onSort={state.onSort} align={align} className={className}>
+      {children}
+    </SortTh>
+  )
 }
 
+function Total({ n, unit }: { n?: number; unit: string }) {
+  if (n === undefined) return null
+  return (
+    <span className="ml-auto text-sm tabular-nums text-muted-foreground">
+      {formatNumber(n)} {unit}
+    </span>
+  )
+}
+
+/* ── Học phần ────────────────────────────────────────────── */
+
 function CoursesSection() {
-  const { q, setQ, result } = useSearchList<AdminCourseRow>('courses', '/admin/courses')
+  const state = useListState({ sort: 'posts' })
+  const list = usePaged<AdminCourseRow>('courses', '/admin/courses', state.params, ['q', 'faculty'])
+  const rows = list.data?.items ?? []
 
   return (
     <>
       <Toolbar>
-        <SearchInput value={q} onChange={setQ} placeholder="Mã môn, tên môn, khoa" className="min-w-[220px] flex-1 sm:max-w-sm" />
+        <ListSearch state={state} placeholder="Mã môn, tên môn (không dấu)" />
+        <ParamSelect
+          state={state}
+          name="faculty"
+          all="Mọi khoa"
+          options={(list.data?.facets?.faculty ?? []).map((f) => ({ value: f.value, label: f.value, count: f.count }))}
+          className="w-40"
+        />
+        <Total n={list.data?.total} unit="học phần" />
       </Toolbar>
-      {result.isPending ? (
+      {list.isPending ? (
         <LoadingRows />
-      ) : !result.data?.length ? (
+      ) : rows.length === 0 ? (
         <EmptyState icon={BookOpen} title="Không có học phần phù hợp" />
       ) : (
-        <Table className={cn(result.isPlaceholderData && 'opacity-60')}>
-          <THead>
-            <Th className="w-28">Mã</Th>
-            <Th>Tên học phần</Th>
-            <Th className="hidden md:table-cell">Khoa</Th>
-            <Th className="hidden text-right sm:table-cell">Tín chỉ</Th>
-            <Th className="text-right">Tài liệu</Th>
-            <Th className="hidden text-right sm:table-cell">Thảo luận</Th>
-          </THead>
-          <TBody>
-            {result.data.map((c) => (
-              <Tr key={c.id}>
-                <Td className="font-mono text-xs font-semibold text-primary">{c.code}</Td>
-                <Td className="max-w-[360px]">
-                  <p className="truncate font-medium text-foreground">{c.name}</p>
-                  {c.description && <p className="truncate text-xs text-muted-foreground">{c.description}</p>}
-                </Td>
-                <Td className="hidden text-muted-foreground md:table-cell">{c.facultyCode || '—'}</Td>
-                <Td className="hidden text-right tabular-nums sm:table-cell">{c.credits}</Td>
-                <Td className="text-right tabular-nums">{formatNumber(c.documentCount)}</Td>
-                <Td className="hidden text-right tabular-nums sm:table-cell">{formatNumber(c.postCount)}</Td>
-              </Tr>
-            ))}
-          </TBody>
-        </Table>
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <THead>
+              <Sort state={state} id="code" className="w-28">
+                Mã
+              </Sort>
+              <Th>Tên học phần</Th>
+              <Th className="hidden md:table-cell">Khoa</Th>
+              <Th className="hidden text-right sm:table-cell">Tín chỉ</Th>
+              <Sort state={state} id="documents" align="right">
+                Tài liệu
+              </Sort>
+              <Sort state={state} id="posts" align="right" className="hidden sm:table-cell">
+                Thảo luận
+              </Sort>
+              <Sort state={state} id="recent" className="hidden lg:table-cell">
+                Ngày tạo
+              </Sort>
+            </THead>
+            <TBody>
+              {rows.map((c) => (
+                <Tr key={c.id}>
+                  <Td className="font-mono text-xs font-semibold text-primary">{c.code}</Td>
+                  <Td className="max-w-[420px]">
+                    <p className="truncate font-medium text-foreground">{c.name}</p>
+                    {c.description && <p className="truncate text-xs text-muted-foreground">{c.description}</p>}
+                  </Td>
+                  <Td className="hidden text-muted-foreground md:table-cell">{c.facultyCode || '—'}</Td>
+                  <Td className="hidden text-right tabular-nums sm:table-cell">{c.credits}</Td>
+                  <Td className="text-right tabular-nums">{formatNumber(c.documentCount)}</Td>
+                  <Td className="hidden text-right tabular-nums sm:table-cell">{formatNumber(c.postCount)}</Td>
+                  <Td className="hidden text-muted-foreground lg:table-cell">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
       )}
     </>
   )
@@ -186,8 +238,13 @@ function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => v
   )
 }
 
+
+/* ── Tài liệu ────────────────────────────────────────────── */
+
 function DocumentsSection({ canManage }: { canManage: boolean }) {
-  const { q, setQ, result } = useSearchList<AdminDocumentRow>('documents', '/admin/documents')
+  const state = useListState({ sort: 'recent' })
+  const list = usePaged<AdminDocumentRow>('documents', '/admin/documents', state.params, ['q', 'docType', 'indexed'])
+  const rows = list.data?.items ?? []
   const [delTarget, setDelTarget] = useState<AdminDocumentRow | null>(null)
   const qc = useQueryClient()
 
@@ -205,61 +262,89 @@ function DocumentsSection({ canManage }: { canManage: boolean }) {
   return (
     <>
       <Toolbar>
-        <SearchInput value={q} onChange={setQ} placeholder="Tên tài liệu, mã môn, @username" className="min-w-[220px] flex-1 sm:max-w-sm" />
+        <ListSearch state={state} placeholder="Tên tài liệu, mã môn, @người đăng" />
+        <ParamSelect
+          state={state}
+          name="docType"
+          all="Mọi loại"
+          options={(list.data?.facets?.docType ?? []).map((f) => ({ value: f.value, label: DOC_TYPE_LABELS[f.value] ?? f.value, count: f.count }))}
+        />
+        <Segmented
+          value={state.params.indexed ?? ''}
+          onChange={(v) => state.set({ indexed: v })}
+          items={[
+            { id: '', label: 'Tất cả' },
+            { id: 'yes', label: 'Đã vào N7AI' },
+            { id: 'no', label: 'Chưa vào N7AI' }
+          ]}
+        />
+        <Total n={list.data?.total} unit="tài liệu" />
       </Toolbar>
-      {result.isPending ? (
+      {list.isPending ? (
         <LoadingRows />
-      ) : !result.data?.length ? (
+      ) : rows.length === 0 ? (
         <EmptyState icon={FileText} title="Không có tài liệu phù hợp" />
       ) : (
-        <Table className={cn(result.isPlaceholderData && 'opacity-60')}>
-          <THead>
-            <Th>Tài liệu</Th>
-            <Th className="hidden md:table-cell">Người đăng</Th>
-            <Th className="hidden text-right sm:table-cell">Kích thước</Th>
-            <Th className="hidden text-right lg:table-cell">Lượt tải</Th>
-            <Th className="hidden text-right lg:table-cell">Chỉ mục AI</Th>
-            <Th className="w-20" />
-          </THead>
-          <TBody>
-            {result.data.map((d) => (
-              <Tr key={d.id}>
-                <Td className="max-w-[380px]">
-                  <p className="truncate font-medium text-foreground">{d.title}</p>
-                  <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                    {d.courseCode && <span className="font-mono text-primary">{d.courseCode}</span>}
-                    <span className="uppercase">{d.docType}</span>
-                    <span>· {formatRelativeTime(d.createdAt)}</span>
-                  </div>
-                </Td>
-                <Td className="hidden text-muted-foreground md:table-cell">@{d.owner.username}</Td>
-                <Td className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">{formatBytes(d.fileSize)}</Td>
-                <Td className="hidden text-right tabular-nums lg:table-cell">{formatNumber(d.downloadCount)}</Td>
-                <Td className="hidden text-right lg:table-cell">
-                  {d.chunkCount > 0 ? <Badge tone="success">{d.chunkCount} đoạn</Badge> : <Badge>Chưa có</Badge>}
-                </Td>
-                <Td className="text-right">
-                  <div className="flex justify-end gap-0.5">
-                    <a
-                      href={d.fileUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Mở file"
-                      className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    >
-                      <ExternalLink className="size-4" />
-                    </a>
-                    {canManage && (
-                      <Button variant="danger-soft" size="icon-sm" title="Xóa" onClick={() => setDelTarget(d)}>
-                        <Trash2 />
-                      </Button>
-                    )}
-                  </div>
-                </Td>
-              </Tr>
-            ))}
-          </TBody>
-        </Table>
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <THead>
+              <Th>Tài liệu</Th>
+              <Th className="hidden md:table-cell">Người đăng</Th>
+              <Sort state={state} id="size" align="right" className="hidden sm:table-cell">
+                Kích thước
+              </Sort>
+              <Sort state={state} id="downloads" align="right" className="hidden lg:table-cell">
+                Lượt tải
+              </Sort>
+              <Sort state={state} id="chunks" align="right" className="hidden lg:table-cell">
+                Chỉ mục AI
+              </Sort>
+              <Sort state={state} id="recent" className="hidden xl:table-cell">
+                Ngày đăng
+              </Sort>
+              <Th className="w-20" />
+            </THead>
+            <TBody>
+              {rows.map((d) => (
+                <Tr key={d.id}>
+                  <Td className="max-w-[380px]">
+                    <p className="truncate font-medium text-foreground">{d.title}</p>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {d.courseCode && <span className="font-mono text-primary">{d.courseCode}</span>}
+                      <span>{DOC_TYPE_LABELS[d.docType] ?? d.docType}</span>
+                    </div>
+                  </Td>
+                  <Td className="hidden text-muted-foreground md:table-cell">@{d.owner.username}</Td>
+                  <Td className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">{formatBytes(d.fileSize)}</Td>
+                  <Td className="hidden text-right tabular-nums lg:table-cell">{formatNumber(d.downloadCount)}</Td>
+                  <Td className="hidden text-right lg:table-cell">
+                    {d.chunkCount > 0 ? <Badge tone="success">{d.chunkCount} đoạn</Badge> : <Badge>Chưa có</Badge>}
+                  </Td>
+                  <Td className="hidden text-muted-foreground xl:table-cell">{formatRelativeTime(d.createdAt)}</Td>
+                  <Td className="text-right">
+                    <div className="flex justify-end gap-0.5">
+                      <a
+                        href={d.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Mở file"
+                        className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        <ExternalLink className="size-4" />
+                      </a>
+                      {canManage && (
+                        <Button variant="danger-soft" size="icon-sm" title="Xóa" onClick={() => setDelTarget(d)}>
+                          <Trash2 />
+                        </Button>
+                      )}
+                    </div>
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
       )}
 
       <ConfirmDialog
@@ -276,42 +361,65 @@ function DocumentsSection({ canManage }: { canManage: boolean }) {
   )
 }
 
+/* ── Cộng đồng ───────────────────────────────────────────── */
+
 function CommunitiesSection() {
-  const { q, setQ, result } = useSearchList<AdminCommunityRow>('communities', '/admin/communities')
+  const state = useListState({ sort: 'members' })
+  const list = usePaged<AdminCommunityRow>('communities', '/admin/communities', state.params, ['q', 'type'])
+  const rows = list.data?.items ?? []
 
   return (
     <>
       <Toolbar>
-        <SearchInput value={q} onChange={setQ} placeholder="Tên hoặc slug" className="min-w-[220px] flex-1 sm:max-w-sm" />
+        <ListSearch state={state} placeholder="Tên hoặc slug" />
+        <ParamSelect
+          state={state}
+          name="type"
+          all="Mọi loại"
+          options={(list.data?.facets?.type ?? []).map((f) => ({ value: f.value, label: COMMUNITY_TYPE_LABELS[f.value] ?? f.value, count: f.count }))}
+          className="w-40"
+        />
+        <Total n={list.data?.total} unit="cộng đồng" />
       </Toolbar>
-      {result.isPending ? (
+      {list.isPending ? (
         <LoadingRows />
-      ) : !result.data?.length ? (
+      ) : rows.length === 0 ? (
         <EmptyState icon={Compass} title="Không có cộng đồng phù hợp" />
       ) : (
-        <Table className={cn(result.isPlaceholderData && 'opacity-60')}>
-          <THead>
-            <Th>Cộng đồng</Th>
-            <Th className="hidden sm:table-cell">Loại</Th>
-            <Th className="text-right">Thành viên</Th>
-            <Th className="hidden text-right sm:table-cell">Bài viết</Th>
-          </THead>
-          <TBody>
-            {result.data.map((c) => (
-              <Tr key={c.id}>
-                <Td className="max-w-[420px]">
-                  <p className="truncate font-medium text-foreground">{c.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{c.description || `c/${c.slug}`}</p>
-                </Td>
-                <Td className="hidden sm:table-cell">
-                  <Badge>{c.communityType}</Badge>
-                </Td>
-                <Td className="text-right tabular-nums">{formatNumber(c.membersCount)}</Td>
-                <Td className="hidden text-right tabular-nums sm:table-cell">{formatNumber(c.postsCount)}</Td>
-              </Tr>
-            ))}
-          </TBody>
-        </Table>
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <THead>
+              <Th>Cộng đồng</Th>
+              <Th className="hidden sm:table-cell">Loại</Th>
+              <Sort state={state} id="members" align="right">
+                Thành viên
+              </Sort>
+              <Sort state={state} id="posts" align="right" className="hidden sm:table-cell">
+                Bài viết
+              </Sort>
+              <Sort state={state} id="recent" className="hidden lg:table-cell">
+                Ngày tạo
+              </Sort>
+            </THead>
+            <TBody>
+              {rows.map((c) => (
+                <Tr key={c.id}>
+                  <Td className="max-w-[420px]">
+                    <p className="truncate font-medium text-foreground">{c.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{c.description || `c/${c.slug}`}</p>
+                  </Td>
+                  <Td className="hidden sm:table-cell">
+                    <Badge>{COMMUNITY_TYPE_LABELS[c.communityType] ?? c.communityType}</Badge>
+                  </Td>
+                  <Td className="text-right tabular-nums">{formatNumber(c.membersCount)}</Td>
+                  <Td className="hidden text-right tabular-nums sm:table-cell">{formatNumber(c.postsCount)}</Td>
+                  <Td className="hidden text-muted-foreground lg:table-cell">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
       )}
     </>
   )

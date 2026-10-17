@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, CheckCircle2, EyeOff, LifeBuoy, Power, Sparkles, ThumbsDown, ThumbsUp, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,8 +24,12 @@ import {
   THead,
   Tabs,
   Tr,
-  Button
+  Button,
+  Segmented,
+  SortTh
 } from '@/components/ui'
+import { ListFooter, ListSearch, useListState, usePaged } from '@/components/list/list-kit'
+import { useHashQuery } from '@/hooks/use-hash-query'
 
 const REASON_LABEL: Record<string, string> = {
   wrong: 'Sai kiến thức',
@@ -51,7 +55,8 @@ function useAiMutation<V>(fn: (v: V) => Promise<unknown>, msg: string) {
 }
 
 export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermission[]; openTickets?: number }) {
-  const [tab, setTab] = useState<'usage' | 'feedback' | 'skills'>('usage')
+  const [params, set] = useHashQuery()
+  const tab = (['usage', 'feedback', 'skills'].includes(params.tab) ? params.tab : 'usage') as 'usage' | 'feedback' | 'skills'
   const canManage = permissions.includes('ai:manage')
 
   return (
@@ -61,7 +66,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
         tabs={
           <Tabs
             value={tab}
-            onChange={setTab}
+            onChange={(t) => set({ tab: t === 'usage' ? undefined : t }, { replace: true })}
             items={[
               { id: 'usage', label: 'Sử dụng' },
               { id: 'feedback', label: 'Phản hồi & hỗ trợ', count: openTickets },
@@ -300,60 +305,88 @@ function FeedbackSection({ canManage }: { canManage: boolean }) {
 }
 
 function SkillsSection({ canManage }: { canManage: boolean }) {
-  const skills = useQuery({
-    queryKey: ['admin', 'ai', 'skills'],
-    queryFn: () => adminApi.get<AdminAiSkillRow[]>('/admin/ai/skills')
-  })
+  const state = useListState({ sort: 'installs' })
+  const list = usePaged<AdminAiSkillRow>('ai-skills', '/admin/ai/skills', state.params, ['q', 'status'])
+  const rows = list.data?.items ?? []
   const mod = useAiMutation(
     ({ id, isPublic, enabled }: { id: string; isPublic?: boolean; enabled?: boolean }) => adminApi.patch(`/admin/ai/skills/${id}`, { isPublic, enabled }),
     'Đã cập nhật skill'
   )
 
-  if (skills.isPending) return <LoadingRows rows={5} />
-  if (!skills.data?.length) return <EmptyState icon={Sparkles} title="Chưa có skill nào" />
-
   return (
-    <Table>
-      <THead>
-        <Th>Skill</Th>
-        <Th className="hidden sm:table-cell">Tác giả</Th>
-        <Th className="hidden text-right md:table-cell">Cài đặt</Th>
-        <Th className="hidden text-right md:table-cell">Lượt dùng</Th>
-        <Th>Trạng thái</Th>
-        {canManage && <Th className="w-12" />}
-      </THead>
-      <TBody>
-        {skills.data.map((s) => (
-          <Tr key={s.id}>
-            <Td className="max-w-[340px]">
-              <p className="truncate font-semibold text-foreground">{s.name}</p>
-              <p className="truncate text-xs text-muted-foreground">{s.description || `/${s.slug}`}</p>
-            </Td>
-            <Td className="hidden text-muted-foreground sm:table-cell">@{s.owner.username}</Td>
-            <Td className="hidden text-right tabular-nums md:table-cell">{formatNumber(s.installCount)}</Td>
-            <Td className="hidden text-right tabular-nums md:table-cell">{formatNumber(s.useCount)}</Td>
-            <Td>
-              <div className="flex flex-wrap gap-1">
-                {!s.enabled ? <Badge tone="danger">Tắt</Badge> : s.isPublic ? <Badge tone="primary">Công khai</Badge> : <Badge>Riêng tư</Badge>}
-              </div>
-            </Td>
-            {canManage && (
-              <Td className="text-right">
-                <Menu>
-                  {s.isPublic && (
-                    <MenuItem icon={EyeOff} onSelect={() => mod.mutate({ id: s.id, isPublic: false })}>
-                      Gỡ khỏi công khai
-                    </MenuItem>
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <ListSearch state={state} placeholder="Tên skill, slug, @tác giả" />
+        <Segmented
+          value={state.params.status ?? ''}
+          onChange={(v) => state.set({ status: v })}
+          items={[
+            { id: '', label: 'Tất cả' },
+            { id: 'public', label: 'Công khai' },
+            { id: 'private', label: 'Riêng tư' },
+            { id: 'disabled', label: 'Đã tắt' }
+          ]}
+        />
+        {list.data && <span className="ml-auto text-sm tabular-nums text-muted-foreground">{formatNumber(list.data.total)} skill</span>}
+      </div>
+
+      {list.isPending ? (
+        <LoadingRows rows={5} />
+      ) : rows.length === 0 ? (
+        <EmptyState icon={Sparkles} title="Không có skill phù hợp" />
+      ) : (
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <THead>
+              <Th>Skill</Th>
+              <Th className="hidden sm:table-cell">Tác giả</Th>
+              <SortTh id="installs" sort={state.sort} dir={state.dir} onSort={state.onSort} align="right" className="hidden md:table-cell">
+                Cài đặt
+              </SortTh>
+              <SortTh id="uses" sort={state.sort} dir={state.dir} onSort={state.onSort} align="right" className="hidden md:table-cell">
+                Lượt dùng
+              </SortTh>
+              <SortTh id="recent" sort={state.sort} dir={state.dir} onSort={state.onSort} className="hidden lg:table-cell">
+                Ngày tạo
+              </SortTh>
+              <Th>Trạng thái</Th>
+              {canManage && <Th className="w-12" />}
+            </THead>
+            <TBody>
+              {rows.map((s) => (
+                <Tr key={s.id}>
+                  <Td className="max-w-[340px]">
+                    <p className="truncate font-semibold text-foreground">{s.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{s.description || `/${s.slug}`}</p>
+                  </Td>
+                  <Td className="hidden text-muted-foreground sm:table-cell">@{s.owner.username}</Td>
+                  <Td className="hidden text-right tabular-nums md:table-cell">{formatNumber(s.installCount)}</Td>
+                  <Td className="hidden text-right tabular-nums md:table-cell">{formatNumber(s.useCount)}</Td>
+                  <Td className="hidden text-muted-foreground lg:table-cell">{new Date(s.createdAt).toLocaleDateString('vi-VN')}</Td>
+                  <Td>
+                    {!s.enabled ? <Badge tone="danger">Tắt</Badge> : s.isPublic ? <Badge tone="primary">Công khai</Badge> : <Badge>Riêng tư</Badge>}
+                  </Td>
+                  {canManage && (
+                    <Td className="text-right">
+                      <Menu>
+                        {s.isPublic && (
+                          <MenuItem icon={EyeOff} onSelect={() => mod.mutate({ id: s.id, isPublic: false })}>
+                            Gỡ khỏi công khai
+                          </MenuItem>
+                        )}
+                        <MenuItem icon={s.enabled ? Ban : Power} danger={s.enabled} onSelect={() => mod.mutate({ id: s.id, enabled: !s.enabled })}>
+                          {s.enabled ? 'Vô hiệu hóa' : 'Bật lại'}
+                        </MenuItem>
+                      </Menu>
+                    </Td>
                   )}
-                  <MenuItem icon={s.enabled ? Ban : Power} danger={s.enabled} onSelect={() => mod.mutate({ id: s.id, enabled: !s.enabled })}>
-                    {s.enabled ? 'Vô hiệu hóa' : 'Bật lại'}
-                  </MenuItem>
-                </Menu>
-              </Td>
-            )}
-          </Tr>
-        ))}
-      </TBody>
-    </Table>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
+      )}
+    </>
   )
 }
