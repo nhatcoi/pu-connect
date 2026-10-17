@@ -66,6 +66,7 @@ WEB_PORT=3000
 NEXT_PUBLIC_API_URL=/api
 INTERNAL_API_URL=http://localhost:4001
 APP_URL=https://puc.vnhat.dev
+ADMIN_URL=https://admin-puc.vnhat.dev
 R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
@@ -200,6 +201,66 @@ sleep 3
 systemctl is-active --quiet pu-api && echo "pu-api (NestJS): ACTIVE" || { echo "pu-api: FAILED"; exit 1; }
 systemctl is-active --quiet pu-web && echo "pu-web (Next.js): ACTIVE" || { echo "pu-web: FAILED"; exit 1; }
 
+# Cấu hình Nginx cho Admin Console (admin-puc.vnhat.dev — Static SPA 0 MB RAM)
+cp scripts/ops/nginx-admin-puc.conf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf
+ln -sf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf /etc/nginx/sites-enabled/admin-puc.vnhat.dev.conf
+
+# Nếu đã có chứng chỉ SSL Let's Encrypt cho admin-puc.vnhat.dev (hoặc dùng cert puc.vnhat.dev cho Cloudflare Full)
+if [ -f /etc/letsencrypt/live/admin-puc.vnhat.dev/fullchain.pem ]; then
+  CERT_DIR="/etc/letsencrypt/live/admin-puc.vnhat.dev"
+else
+  CERT_DIR="/etc/letsencrypt/live/puc.vnhat.dev"
+fi
+
+cat > /etc/nginx/sites-available/admin-puc.vnhat.dev.conf << EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name admin-puc.vnhat.dev;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name admin-puc.vnhat.dev;
+
+    ssl_certificate $CERT_DIR/fullchain.pem;
+    ssl_certificate_key $CERT_DIR/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    root /var/www/pu-connector/apps/admin/dist;
+    index index.html;
+
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript image/svg+xml;
+
+    add_header X-Robots-Tag "noindex, nofollow" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-Content-Type-Options "nosniff" always;
+
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:4001/api/;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 90s;
+    }
+
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+}
+EOF
+
 # Reload Nginx
 nginx -t && systemctl reload nginx
 
@@ -212,14 +273,17 @@ echo -e "\n${YELLOW}[6/6] Kiểm tra tình trạng hoạt động (Health Check)
 sleep 2
 
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN")
+ADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://admin-$DOMAIN")
 API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN/api/auth/me")
 
 echo -e "Web (https://$DOMAIN): HTTP Status ${GREEN}$HTTP_STATUS${NC}"
+echo -e "Admin (https://admin-$DOMAIN): HTTP Status ${GREEN}$ADMIN_STATUS${NC}"
 echo -e "API (https://$DOMAIN/api/auth/me): HTTP Status ${GREEN}$API_STATUS${NC} (Session Check)"
 
 if [ "$HTTP_STATUS" -eq 200 ]; then
   echo -e "\n${GREEN}======================================================${NC}"
   echo -e "${GREEN}  🎉 DEPLOY THÀNH CÔNG LÊN: https://$DOMAIN          ${NC}"
+  echo -e "${GREEN}  🛡️  ADMIN CONSOLE:        https://admin-$DOMAIN    ${NC}"
   echo -e "${GREEN}======================================================${NC}"
 else
   echo -e "\n${YELLOW}Lưu ý: Web trả về mã $HTTP_STATUS, vui lòng kiểm tra logs: ssh $VPS_HOST 'journalctl -u pu-web -n 50'${NC}"
