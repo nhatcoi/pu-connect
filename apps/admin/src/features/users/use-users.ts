@@ -8,7 +8,11 @@ import type {
   AdminUserPage,
   AdminUserRole,
   AdminUserSummary,
-  AdminUserSecurity
+  AdminUserSecurity,
+  AdminActivityItem,
+  AdminActivityType,
+  AdminPage,
+  LoginSession
 } from '@pu/schemas'
 import { adminApi, ROLE_SHORT } from '@/lib/api'
 
@@ -125,5 +129,36 @@ export function useUserSecurity(id: string | null, enabled: boolean) {
     queryFn: () => adminApi.get<AdminUserSecurity>(`/admin/users/${id}/security`),
     enabled: !!id && enabled,
     staleTime: 60_000
+  })
+}
+
+// Dữ liệu chi tiết theo loại (bài viết, bình luận, theo dõi, lượt xem hồ sơ…)
+export function useUserActivity(id: string, type: AdminActivityType, page: number) {
+  return useQuery({
+    queryKey: ['admin', 'users', 'activity', id, type, page],
+    queryFn: () => adminApi.get<AdminPage<AdminActivityItem>>(`/admin/users/${id}/activity?type=${type}&page=${page}&pageSize=20`),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000
+  })
+}
+
+// Phiên đăng nhập đang mở + ép đăng xuất từng phiên
+export function useUserSessions(id: string) {
+  return useQuery({
+    queryKey: ['admin', 'users', 'sessions', id],
+    queryFn: () => adminApi.get<LoginSession[]>(`/admin/users/${id}/sessions`)
+  })
+}
+
+export function useRevokeUserSession(id: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (sessionId: string) => adminApi.delete<LoginSession[]>(`/admin/users/${id}/sessions/${sessionId}`),
+    onSuccess: (list) => {
+      qc.setQueryData(['admin', 'users', 'sessions', id], list)
+      toast.success('Đã đăng xuất phiên này')
+      void qc.invalidateQueries({ queryKey: ['admin', 'users', 'detail', id] })
+    },
+    onError: (err: Error) => toast.error(err.message)
   })
 }

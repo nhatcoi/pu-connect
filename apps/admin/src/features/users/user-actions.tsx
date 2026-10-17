@@ -1,13 +1,13 @@
 import React from 'react'
 import { Activity, BadgeCheck, BadgeX, ExternalLink, Gavel, LockOpen, LogOut, PanelRight, ShieldCheck } from 'lucide-react'
-import { USER_ROLES, type AdminUserRow } from '@pu/schemas'
+import { USER_ROLES, type AdminUserRow, type SanctionKind } from '@pu/schemas'
 import { ROLE_SHORT, WEB_PORTAL_URL } from '@/lib/api'
 import { Menu, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui'
 import type { BulkVars } from './use-users'
 
 export interface UserActionHandlers {
   run: (v: BulkVars) => void
-  onSanction: (users: AdminUserRow[]) => void
+  onSanction: (users: AdminUserRow[], kind?: SanctionKind) => void
   onInsight?: (id: string) => void
   onOpen?: (id: string) => void
 }

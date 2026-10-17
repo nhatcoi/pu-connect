@@ -22,11 +22,14 @@ export const durationLabel = (days: number | null) => (days ? `${days} ngày` : 
 // Xử phạt 1 hoặc nhiều người — 1 người thì đề xuất bậc theo lịch sử vi phạm
 export function SanctionDialog({
   users,
+  presetKind,
   onClose,
   onSubmit,
   loading
 }: {
   users: AdminUserRow[]
+  // Mở từ nút "Khóa" ⇒ chọn sẵn loại (vẫn đổi được)
+  presetKind?: SanctionKind
   onClose: () => void
   onSubmit: (v: Omit<BulkVars, 'ids'>) => void
   loading: boolean
@@ -43,9 +46,11 @@ export function SanctionDialog({
   useEffect(() => {
     if (!users.length) return
     setReason('')
-    setKind(rec?.kind ?? 'warning')
-    setDays(rec?.kind === 'warning' ? 7 : (rec?.durationDays ?? (rec ? null : 7)))
-  }, [users, rec])
+    const kind = presetKind ?? rec?.kind ?? 'warning'
+    setKind(kind)
+    // Thời hạn: theo đề xuất nếu cùng loại, ngược lại 7 ngày
+    setDays(rec && rec.kind === kind ? rec.durationDays : 7)
+  }, [users, rec, presetKind])
 
   const action = { warning: 'warn', restrict: 'restrict', suspend: 'suspend' } as const
 

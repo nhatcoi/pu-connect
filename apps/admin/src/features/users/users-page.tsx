@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { BadgeCheck, BadgeX, Download, Gavel, LockOpen, LogOut, ShieldCheck, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
-import { USER_ROLES, type AdminUserRow, type AdminUserSort, type AdminUserSummary } from '@pu/schemas'
+import { USER_ROLES, type AdminUserRow, type AdminUserSort, type AdminUserSummary, type SanctionKind } from '@pu/schemas'
 import { apiUrl, cn, formatCompact, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { useHashQuery } from '@/hooks/use-hash-query'
@@ -38,6 +38,7 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [sanctionTargets, setSanctionTargets] = useState<AdminUserRow[]>([])
+  const [sanctionKind, setSanctionKind] = useState<SanctionKind | undefined>()
   const [insightId, setInsightId] = useState<string | null>(null)
   const actions = useUserActions(() => {
     setSanctionTargets([])
@@ -56,7 +57,10 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
 
   const handlers: UserActionHandlers = {
     run: (v) => actions.mutate(v),
-    onSanction: setSanctionTargets,
+    onSanction: (users, kind) => {
+      setSanctionKind(kind)
+      setSanctionTargets(users)
+    },
     onInsight: setInsightId,
     onOpen: (id) => setParams({ user: id }, { resetPage: false })
   }
@@ -245,6 +249,7 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
 
       <SanctionDialog
         users={sanctionTargets}
+        presetKind={sanctionKind}
         onClose={() => setSanctionTargets([])}
         loading={actions.isPending}
         onSubmit={(v) => actions.mutate({ ids: sanctionTargets.map((u) => u.id), ...v })}

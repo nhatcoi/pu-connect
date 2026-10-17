@@ -10,12 +10,15 @@ export function Drawer({
   onClose,
   children,
   header,
+  actions,
   width = 'sm:max-w-xl'
 }: {
   open: boolean
   onClose: () => void
   children: React.ReactNode
   header?: React.ReactNode
+  // Nút phụ cạnh nút đóng (VD: phóng to)
+  actions?: React.ReactNode
   width?: string
 }) {
   useEffect(() => {
@@ -42,13 +45,14 @@ export function Drawer({
         role="complementary"
         onMouseDown={(e) => e.stopPropagation()}
         className={cn(
-          'absolute inset-y-0 right-0 flex w-full flex-col border-l border-border bg-background shadow-2xl',
+          'absolute inset-y-0 right-0 flex w-full flex-col border-l border-border bg-background shadow-2xl transition-[max-width] duration-200',
           'animate-[drawer-in_180ms_ease-out]',
           width
         )}
       >
         <div className="flex items-start gap-2 border-b border-border px-5 py-4">
           <div className="min-w-0 flex-1">{header}</div>
+          {actions}
           <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="Đóng" className="-mr-2">
             <X />
           </Button>

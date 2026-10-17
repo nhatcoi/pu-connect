@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { SavedViews } from '@/components/list/saved-views'
+import { useHashQuery } from '@/hooks/use-hash-query'
 import { ListFooter, ListSearch, ParamSelect, useListState, usePaged } from '@/components/list/list-kit'
 import { Bell, History, Send } from 'lucide-react'
 import { toast } from 'sonner'
-import { USER_ROLES, type AdminAuditLog, type AdminBroadcastInput, type TopSearchQuery, type ZeroResultQuery } from '@pu/schemas'
+import { USER_ROLES, type AdminSecurityEventRow, type AdminAuditLog, type AdminBroadcastInput, type TopSearchQuery, type ZeroResultQuery } from '@pu/schemas'
 import { adminApi, cn, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
 import {
   Badge,
@@ -25,6 +26,7 @@ import {
   Textarea,
   Th,
   THead,
+  Tabs,
   Toolbar,
   Tr
 } from '@/components/ui'
@@ -48,6 +50,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'user.revoke_sessions': 'Đăng xuất mọi thiết bị',
   'user.insight_view': 'Xem insight',
   'user.security_view': 'Xem nhật ký bảo mật',
+  'user.data_view': 'Xem dữ liệu chi tiết',
+  'user.session_revoke': 'Đăng xuất 1 phiên',
   'user.note_add': 'Thêm ghi chú',
   'user.note_delete': 'Xóa ghi chú',
   'user.export': 'Xuất danh sách người dùng',
@@ -262,14 +266,13 @@ function detailText(d: Record<string, unknown> | null): string | null {
   return parts.length ? parts.join(' · ') : null
 }
 
-export function AuditLogsTab() {
+function AdminActionsSection() {
   const state = useListState({ sort: 'recent' })
   const list = usePaged<AdminAuditLog>('audit-logs', '/admin/audit-logs', state.params, ['q', 'action', 'admin', 'targetType', 'days'])
   const rows = list.data?.items ?? []
 
   return (
     <>
-      <PageHeader title="Nhật ký" description="Mọi thao tác quản trị đều được ghi lại, không sửa được." actions={<SavedViews page="audit" />} />
       <Toolbar>
         <Segmented
           value={state.params.days ?? ''}
@@ -332,6 +335,131 @@ export function AuditLogsTab() {
                   </Td>
                   <Td className="whitespace-nowrap text-right text-xs text-muted-foreground">
                     <span title={new Date(log.createdAt).toLocaleString('vi-VN')}>{formatRelativeTime(log.createdAt)}</span>
+                  </Td>
+                </Tr>
+              ))}
+            </TBody>
+          </Table>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
+      )}
+    </>
+  )
+}
+
+/* ── Trang Nhật ký: thao tác admin + đăng nhập toàn hệ thống ── */
+
+export function AuditLogsTab() {
+  const [params, set] = useHashQuery()
+  const tab = params.tab === 'logins' ? 'logins' : 'admin'
+  return (
+    <>
+      <PageHeader
+        title="Nhật ký"
+        description={tab === 'admin' ? 'Mọi thao tác quản trị đều được ghi lại, không sửa được.' : 'Đăng nhập, sai mật khẩu, đăng xuất… của mọi tài khoản (lưu 90 ngày).'}
+        actions={<SavedViews page="audit" />}
+        tabs={
+          <Tabs
+            value={tab}
+            onChange={(t) => set({ tab: t === 'admin' ? undefined : t }, { replace: true })}
+            items={[
+              { id: 'admin', label: 'Thao tác quản trị' },
+              { id: 'logins', label: 'Đăng nhập' }
+            ]}
+          />
+        }
+      />
+      {tab === 'admin' ? <AdminActionsSection /> : <LoginsSection />}
+    </>
+  )
+}
+
+const LOGIN_EVENT_LABEL: Record<string, string> = {
+  login: 'Đăng nhập',
+  login_failed: 'Sai mật khẩu',
+  login_blocked: 'Bị chặn (đang khóa)',
+  logout: 'Đăng xuất',
+  register: 'Đăng ký',
+  password_reset: 'Đặt lại mật khẩu',
+  password_reset_requested: 'Yêu cầu đặt lại MK',
+  email_verified: 'Xác thực email',
+  session_revoked: 'Đăng xuất thiết bị'
+}
+
+function LoginsSection() {
+  const state = useListState({ sort: 'recent' })
+  const list = usePaged<AdminSecurityEventRow>('security-events', '/admin/security-events', state.params, ['q', 'event', 'result', 'days'])
+  const rows = list.data?.items ?? []
+
+  return (
+    <>
+      <Toolbar>
+        <Segmented
+          value={state.params.result ?? ''}
+          onChange={(v) => state.set({ result: v })}
+          items={[
+            { id: '', label: 'Tất cả' },
+            { id: 'failed', label: 'Thất bại' }
+          ]}
+        />
+        <ParamSelect state={state} name="event" all="Mọi sự kiện" options={Object.entries(LOGIN_EVENT_LABEL).map(([value, label]) => ({ value, label }))} className="w-48" />
+        <ParamSelect
+          state={state}
+          name="days"
+          all="Mọi thời gian"
+          options={[
+            { value: '1', label: '24 giờ' },
+            { value: '7', label: '7 ngày' },
+            { value: '30', label: '30 ngày' }
+          ]}
+          className="w-36"
+        />
+        <ListSearch state={state} placeholder="@username hoặc IP" className="w-52" />
+        {list.data && <span className="ml-auto text-sm tabular-nums text-muted-foreground">{formatNumber(list.data.total)} sự kiện</span>}
+      </Toolbar>
+
+      {list.isPending ? (
+        <LoadingRows rows={8} />
+      ) : rows.length === 0 ? (
+        <EmptyState icon={History} title="Chưa có sự kiện" description="Nhật ký đăng nhập bắt đầu ghi từ 17/10/2026." />
+      ) : (
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <Table>
+            <THead>
+              <Th>Sự kiện</Th>
+              <Th>Tài khoản</Th>
+              <Th className="hidden md:table-cell">IP</Th>
+              <Th className="hidden lg:table-cell">Thiết bị</Th>
+              <Th className="text-right">Thời gian</Th>
+            </THead>
+            <TBody>
+              {rows.map((e) => (
+                <Tr key={e.id}>
+                  <Td>
+                    <Badge tone={e.success ? 'neutral' : 'danger'}>{LOGIN_EVENT_LABEL[e.event] ?? e.event}</Badge>
+                    {e.method && <span className="ml-1.5 text-xs text-muted-foreground">{e.method === 'google' ? 'Google' : 'mật khẩu'}</span>}
+                  </Td>
+                  <Td>
+                    {e.user ? (
+                      <a href={`#/users?user=${e.user.id}`} className="font-medium text-foreground hover:text-primary hover:underline">
+                        @{e.user.username}
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </Td>
+                  <Td className="hidden md:table-cell">
+                    {e.ip ? (
+                      <button type="button" onClick={() => state.set({ q: e.ip })} className="font-mono text-xs text-muted-foreground hover:text-primary cursor-pointer" title="Lọc theo IP này">
+                        {e.ip}
+                      </button>
+                    ) : (
+                      '—'
+                    )}
+                  </Td>
+                  <Td className="hidden text-xs text-muted-foreground lg:table-cell">{e.device ?? '—'}</Td>
+                  <Td className="whitespace-nowrap text-right text-xs text-muted-foreground">
+                    <span title={new Date(e.createdAt).toLocaleString('vi-VN')}>{formatRelativeTime(e.createdAt)}</span>
                   </Td>
                 </Tr>
               ))}

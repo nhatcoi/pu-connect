@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Activity, BadgeCheck, Ban, Chrome, Gavel, KeyRound, LockOpen, LogOut, MoreHorizontal, ShieldAlert, ShieldCheck, StickyNote, Trash2, Undo2 } from 'lucide-react'
+import { Activity, BadgeCheck, Ban, Chrome, Gavel, KeyRound, LockOpen, LogOut, MoreHorizontal, ShieldAlert, ShieldCheck, StickyNote, Trash2, Undo2, Lock, Maximize2, Minimize2 } from 'lucide-react'
 import type { AdminUserDetail, AdminUserRow } from '@pu/schemas'
 import { cn, formatNumber, formatRelativeTime, markdownToPlainText, ROLE_SHORT, WEB_PORTAL_URL } from '@/lib/api'
 import { Avatar, Badge, Button, Drawer, ErrorState, ROLE_TONE, Skeleton, Tabs, Textarea } from '@/components/ui'
@@ -8,8 +8,9 @@ import { UserActionsMenu, type UserActionHandlers } from './user-actions'
 import { isOnline, useRevokeSanction, useUserDetail, useUserNotes } from './use-users'
 import { durationLabel, SANCTION_LABEL } from './sanction-dialog'
 import { RiskCard, SecurityTab } from './user-security'
+import { ActivityTab, ProfileViewsTab, SessionsPanel } from './user-activity'
 
-type Tab = 'overview' | 'sanctions' | 'security' | 'moderation' | 'notes'
+type Tab = 'overview' | 'activity' | 'views' | 'security' | 'sanctions' | 'moderation' | 'notes'
 
 export function UserDrawer({
   userId,
@@ -24,12 +25,36 @@ export function UserDrawer({
 }) {
   const { data, isPending, isError, error } = useUserDetail(userId)
   const [tab, setTab] = useState<Tab>('overview')
+  // Phóng to ⇒ gần toàn màn hình (nhớ theo trình duyệt)
+  const [wide, setWide] = useState(() => {
+    try {
+      return localStorage.getItem('puc-admin-drawer') === 'wide'
+    } catch {
+      return false
+    }
+  })
+  const toggleWide = () =>
+    setWide((v) => {
+      try {
+        localStorage.setItem('puc-admin-drawer', v ? 'normal' : 'wide')
+      } catch {
+        // ignore
+      }
+      return !v
+    })
   const u = data?.user
+  const openUser = (id: string) => handlers.onOpen?.(id)
 
   return (
     <Drawer
       open={!!userId}
       onClose={onClose}
+      width={wide ? 'sm:max-w-[min(1200px,92vw)]' : 'sm:max-w-xl'}
+      actions={
+        <Button variant="ghost" size="icon-sm" onClick={toggleWide} aria-label={wide ? 'Thu nhỏ' : 'Phóng to'} title={wide ? 'Thu nhỏ' : 'Phóng to'} className="hidden sm:inline-flex">
+          {wide ? <Minimize2 /> : <Maximize2 />}
+        </Button>
+      }
       header={
         u ? (
           <DrawerHeader u={u} />
@@ -76,6 +101,11 @@ export function UserDrawer({
                     <ShieldCheck /> Gỡ hạn chế
                   </Button>
                 )}
+                {u.role !== 'admin' && u.status !== 'suspended' && (
+                  <Button size="sm" onClick={() => handlers.onSanction([u], 'suspend')}>
+                    <Lock /> Khóa
+                  </Button>
+                )}
                 {u.role !== 'admin' && (
                   <Button size="sm" variant="danger" onClick={() => handlers.onSanction([u])}>
                     <Gavel /> Xử phạt
@@ -101,8 +131,10 @@ export function UserDrawer({
               onChange={setTab}
               items={[
                 { id: 'overview', label: 'Tổng quan' },
+                { id: 'activity', label: 'Hoạt động' },
+                { id: 'views', label: 'Lượt xem hồ sơ' },
+                { id: 'security', label: 'Phiên & Bảo mật', count: data.stats.activeSessions || undefined },
                 { id: 'sanctions', label: 'Xử phạt', count: data.recommendation.strikes || undefined },
-                { id: 'security', label: 'Bảo mật' },
                 { id: 'moderation', label: 'Kiểm duyệt', count: data.moderationLog.length || undefined },
                 { id: 'notes', label: 'Ghi chú', count: data.notes.length || undefined }
               ]}
@@ -112,7 +144,14 @@ export function UserDrawer({
           <div className="p-5">
             {tab === 'overview' && <Overview d={data} onInsight={handlers.onInsight} />}
             {tab === 'sanctions' && <Sanctions d={data} onSanction={() => handlers.onSanction([u])} />}
-            {tab === 'security' && <SecurityTab userId={u.id} onOpenUser={(id) => handlers.onOpen?.(id)} />}
+            {tab === 'activity' && <ActivityTab userId={u.id} onOpenUser={openUser} />}
+            {tab === 'views' && <ProfileViewsTab userId={u.id} onOpenUser={openUser} />}
+            {tab === 'security' && (
+              <div className="space-y-6">
+                <SessionsPanel userId={u.id} canRevokeAll={u.id !== selfId} />
+                <SecurityTab userId={u.id} onOpenUser={openUser} />
+              </div>
+            )}
             {tab === 'moderation' && <Moderation d={data} />}
             {tab === 'notes' && <Notes userId={u.id} d={data} />}
           </div>
