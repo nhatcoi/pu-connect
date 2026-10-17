@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AiFeedbackInput, AiMemoryInput, AiSkillStateInput, AiSupportInput, AiTaskInput } from '@pu/schemas'
+import type { AiFeedbackInput, AiMemoryInput, AiSkillDraftInput, AiSkillStateInput, AiSupportInput, AiTaskInput } from '@pu/schemas'
 import { AI_CONNECTORS } from './chat.dto'
 
 // @pu/schemas là mã TS nguồn ⇒ API khai báo lại schema runtime (giữ khớp bằng kiểm tra kiểu ở cuối file)
@@ -37,6 +37,10 @@ export const AiSkillStateBodySchema = z
   .object({ enabled: z.boolean().optional(), pinned: z.boolean().optional() })
   .refine((v) => v.enabled !== undefined || v.pinned !== undefined, { message: 'Không có thay đổi' })
 
+export const AiSkillDraftBodySchema = z.object({
+  prompt: z.string().trim().min(10, { message: 'Mô tả tối thiểu 10 ký tự' }).max(1000, { message: 'Mô tả tối đa 1000 ký tự' })
+})
+
 export const AiFeedbackBodySchema = z.object({
   rating: z.union([z.literal(1), z.literal(-1)]),
   reason: z.enum(['wrong', 'unhelpful', 'unsafe', 'too_long', 'other']).nullable().optional(),
@@ -59,4 +63,5 @@ const _task: AiTaskInput = {} as z.infer<typeof AiTaskBodySchema>
 const _state: AiSkillStateInput = {} as z.infer<typeof AiSkillStateBodySchema>
 const _feedback: AiFeedbackInput = {} as z.infer<typeof AiFeedbackBodySchema>
 const _support: AiSupportInput = {} as z.infer<typeof AiSupportBodySchema>
-void [_memory, _task, _state, _feedback, _support]
+const _draft: AiSkillDraftInput = {} as z.infer<typeof AiSkillDraftBodySchema>
+void [_memory, _task, _state, _feedback, _support, _draft]

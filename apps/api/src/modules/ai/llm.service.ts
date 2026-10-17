@@ -72,7 +72,7 @@ export class LlmService {
     ])
   }
 
-  async startRun(input: { requesterId: string; trigger: AiTrigger; task: string; source: AiRef; reply?: AiRef }): Promise<string> {
+  async startRun(input: { requesterId: string; trigger: AiTrigger; task: string; source?: AiRef; reply?: AiRef }): Promise<string> {
     const res = await this.db.query(
       `INSERT INTO ai_runs (bot_id, requester_id, trigger, task, source_ref, reply_ref, model)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
@@ -81,7 +81,7 @@ export class LlmService {
         input.requesterId,
         input.trigger,
         input.task,
-        JSON.stringify(input.source),
+        input.source ? JSON.stringify(input.source) : null,
         input.reply ? JSON.stringify(input.reply) : null,
         this.model
       ]

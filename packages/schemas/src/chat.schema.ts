@@ -269,6 +269,13 @@ export const AiSkillInputSchema = z.object({
 })
 export type AiSkillInput = z.infer<typeof AiSkillInputSchema>
 
+// Tạo nhanh: mô tả bằng lời ⇒ PU AI viết bản nháp (chưa lưu), người dùng xem lại rồi mới tạo
+export const AiSkillDraftInputSchema = z.object({
+  prompt: z.string().trim().min(10, { message: 'Mô tả tối thiểu 10 ký tự' }).max(1000, { message: 'Mô tả tối đa 1000 ký tự' })
+})
+export type AiSkillDraftInput = z.infer<typeof AiSkillDraftInputSchema>
+export type AiSkillDraft = Omit<AiSkillInput, 'isPublic'> & { inputHint: string | null }
+
 // Danh sách nhẹ (không có instructions) — dùng cho menu "/"
 export interface AiSkill {
   id: string
@@ -294,6 +301,7 @@ export interface AiPublicSkill {
   description: string
   installCount: number
   author: { username: string; displayName: string }
+  official: boolean // skill dựng sẵn của PU AI
   installed: boolean
 }
 

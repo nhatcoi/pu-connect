@@ -26,6 +26,7 @@ import { AiSummaryService } from './puai/ai-summary.service'
 import { AiTasksService } from './puai/ai-tasks.service'
 import { AiSkillsController } from './puai/ai-skills.controller'
 import { AiSkillsService } from './puai/ai-skills.service'
+import { AiSkillDraftService } from './puai/ai-skill-draft.service'
 import { AiThreadsController } from './puai/ai-threads.controller'
 import { AiThreadsService } from './puai/ai-threads.service'
 import { PuaiController } from './puai/puai.controller'
@@ -57,6 +58,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     ChatMentionsService,
     ChatRefsService,
     AiSkillsService,
+    AiSkillDraftService,
     AiSummaryService,
     AiSettingsService,
     AiMemoriesService,

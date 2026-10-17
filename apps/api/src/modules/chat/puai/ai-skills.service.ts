@@ -21,7 +21,7 @@ const mapSkill = (r: any): AiSkill => ({
 })
 
 // Lệnh còn trống: slug, slug-2 … (giữ ≤ 40 ký tự)
-function freeSlug(base: string, taken: Set<string>): string {
+export function freeSlug(base: string, taken: Set<string>): string {
   if (!taken.has(base)) return base
   for (let i = 2; ; i++) {
     const candidate = `${base.slice(0, 40 - String(i).length - 1)}-${i}`
@@ -42,6 +42,12 @@ export class AiSkillsService {
       [userId]
     )
     return res.rows.map(mapSkill)
+  }
+
+  // Lệnh đã dùng (đặt lệnh không trùng cho bản nháp / bản cài)
+  async slugs(userId: string): Promise<Set<string>> {
+    const res = await this.db.query(`SELECT slug FROM ai_skills WHERE owner_id = $1`, [userId])
+    return new Set(res.rows.map((r) => r.slug as string))
   }
 
   async get(userId: string, id: string): Promise<AiSkillDetail> {
@@ -80,19 +86,19 @@ export class AiSkillsService {
     }
   }
 
-  // Thư viện: skill công khai của người khác (nhiều lượt cài trước), đánh dấu đã cài
+  // Thư viện: skill công khai của người khác (skill dựng sẵn của PU AI → nhiều lượt cài), đánh dấu đã cài
   async library(userId: string, q: string): Promise<AiPublicSkill[]> {
     const term = q
       .trim()
       .toLowerCase()
       .replace(/[%_\\]/g, (c) => `\\${c}`)
     const res = await this.db.query(
-      `SELECT s.id, s.slug, s.name, s.description, s.install_count, u.username, u.display_name,
+      `SELECT s.id, s.slug, s.name, s.description, s.install_count, u.username, u.display_name, u.account_type = 'bot' AS official,
               EXISTS (SELECT 1 FROM ai_skills m WHERE m.owner_id = $1 AND m.source_skill_id = s.id) AS installed
        FROM ai_skills s JOIN users u ON u.id = s.owner_id
        WHERE s.is_public AND s.owner_id <> $1 AND u.status = 'active'
          ${term ? `AND immutable_unaccent(lower(s.name || ' ' || s.description || ' ' || s.slug)) LIKE '%' || immutable_unaccent($3) || '%'` : ''}
-       ORDER BY s.install_count DESC, s.created_at DESC LIMIT $2`,
+       ORDER BY official DESC, s.install_count DESC, s.created_at DESC LIMIT $2`,
       term ? [userId, LIBRARY_LIMIT, term] : [userId, LIBRARY_LIMIT]
     )
     return res.rows.map((r) => ({
@@ -102,6 +108,7 @@ export class AiSkillsService {
       description: r.description,
       installCount: r.install_count,
       author: { username: r.username, displayName: r.display_name },
+      official: r.official,
       installed: r.installed
     }))
   }

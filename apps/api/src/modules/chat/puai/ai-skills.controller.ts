@@ -1,18 +1,22 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AiSkillInput } from '@pu/schemas'
+import type { AiSkillDraftInput, AiSkillInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import { AiSkillBodySchema, SkillLibraryQuerySchema } from '../dto/chat.dto'
-import { AiSkillStateBodySchema } from '../dto/puai.dto'
+import { AiSkillDraftBodySchema, AiSkillStateBodySchema } from '../dto/puai.dto'
+import { AiSkillDraftService } from './ai-skill-draft.service'
 import { AiSkillsService } from './ai-skills.service'
 
 // Skill tự tạo cho PU AI (slash command)
 @Controller('ai/skills')
 @UseGuards(AuthenticatedGuard)
 export class AiSkillsController {
-  constructor(private readonly skills: AiSkillsService) {}
+  constructor(
+    private readonly skills: AiSkillsService,
+    private readonly drafts: AiSkillDraftService
+  ) {}
 
   @Get()
   list(@Req() req: Request) {
@@ -22,6 +26,12 @@ export class AiSkillsController {
   @Post()
   create(@Body(new ZodValidationPipe(AiSkillBodySchema)) body: AiSkillInput, @Req() req: Request) {
     return this.skills.create(requireUserId(req), body)
+  }
+
+  // Tạo nhanh: PU AI viết bản nháp từ mô tả (chưa lưu, tốn 1 lượt)
+  @Post('draft')
+  draft(@Body(new ZodValidationPipe(AiSkillDraftBodySchema)) body: AiSkillDraftInput, @Req() req: Request) {
+    return this.drafts.draft(requireUserId(req), body.prompt)
   }
 
   // Thư viện skill công khai (khai báo trước ':id')
