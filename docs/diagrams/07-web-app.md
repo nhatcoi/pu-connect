@@ -126,6 +126,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-17 — `ConnectorIcon` (logo Google Drive / Calendar) ở Trình kết nối, menu `+`, "Nguồn tham khảo"; trích dẫn Drive / Calendar / web mở tab mới.
 - 2026-10-17 — Thư viện skill: `SkillLibraryRow` dùng chung, nhóm Chính thức / Cộng đồng, ẩn lượt cài = 0.
 - 2026-10-17 — Đổi tên PU AI → N7AI: route `/n7ai*` (redirect 308 từ `/puai*`, `/settings/puai*`, `/c/puai`), `components/n7ai/`, `components/settings/n7ai/`, `lib/n7ai-routes.ts`.
 - 2026-10-17 — Skill: menu Tạo skill (N7AI · tự viết · tải `.md`), `lib/skill-file.ts`, hook `useAiSkillActions().draft`, badge chính thức ở Thư viện.

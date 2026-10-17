@@ -308,6 +308,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-17 — 5.7: nguồn đánh số, N7AI ghi `[nguồn] n` ⇒ chỉ trích nguồn đã dùng; tìm thư viện khớp ≥ 2 từ khóa (bỏ hư từ); connector lỗi ⇒ `<connector_error>`.
 - 2026-10-17 — 5.7: thread N7AI mở ở `/n7ai/[id]` (Web Push trỏ đúng không gian AI).
 - 2026-10-16 — 5.7: mention trong nhóm (`message_mentions`, push vượt tắt tiếng), ngữ cảnh `refs`, skill, Research, connector, tóm tắt cuộn, tiêu đề thread AI.
 - 2026-10-14 — 5.4: cộng điểm khớp hồ sơ quan tâm (`interestBoostSql`, chuẩn hóa theo chủ đề mạnh nhất).
