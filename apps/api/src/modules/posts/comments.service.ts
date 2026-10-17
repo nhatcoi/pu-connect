@@ -41,7 +41,7 @@ export class CommentsService {
     const rootsTotal = countRes.rows[0]?.roots || 0
 
     const params: any[] = [postId, safeLimit, safeOffset, currentUserId ?? null]
-    const likedSql = currentUserId ? `EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = c.id AND pr.user_id = $4)` : 'FALSE'
+    const likedSql = currentUserId ? `EXISTS(SELECT 1 FROM comment_reactions cr WHERE cr.comment_id = c.id AND cr.user_id = $4)` : 'FALSE'
 
     // Recursive CTE: gốc trong trang + mọi hậu duệ (dữ liệu cũ có thể sâu > 2 cấp)
     const res = await this.db.query(
@@ -274,22 +274,21 @@ export class CommentsService {
     return result
   }
 
+  // Thích / bỏ thích bình luận (comment_reactions); khóa dòng comment ⇒ đếm đúng khi bấm liên tục
+  // Toggle comment like; row lock on the comment serializes concurrent toggles
   async toggleLike(commentId: string, userId: string): Promise<{ isLiked: boolean; likesCount: number }> {
     return this.db.transaction(async (client) => {
-      const check = await client.query(`SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2 LIMIT 1 FOR UPDATE`, [commentId, userId])
+      const found = await client.query(`SELECT 1 FROM comments WHERE id = $1 FOR UPDATE`, [commentId])
+      if (!found.rowCount) throw new NotFoundException('Không tìm thấy bình luận')
 
-      let isLiked = false
-      if (check.rows.length > 0) {
-        await client.query(`DELETE FROM post_reactions WHERE post_id = $1 AND user_id = $2`, [commentId, userId])
-        const res = await client.query(`UPDATE comments SET likes_count = GREATEST(0, likes_count - 1) WHERE id = $1 RETURNING likes_count`, [commentId])
-        isLiked = false
-        return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
-      } else {
-        await client.query(`INSERT INTO post_reactions (post_id, user_id, reaction) VALUES ($1, $2, 'like')`, [commentId, userId])
-        const res = await client.query(`UPDATE comments SET likes_count = likes_count + 1 WHERE id = $1 RETURNING likes_count`, [commentId])
-        isLiked = true
-        return { isLiked, likesCount: res.rows[0]?.likes_count || 0 }
-      }
+      const removed = await client.query(`DELETE FROM comment_reactions WHERE comment_id = $1 AND user_id = $2`, [commentId, userId])
+      const isLiked = !removed.rowCount
+      if (isLiked) await client.query(`INSERT INTO comment_reactions (comment_id, user_id) VALUES ($1, $2)`, [commentId, userId])
+      const res = await client.query(
+        `UPDATE comments SET likes_count = GREATEST(0, likes_count + $2) WHERE id = $1 RETURNING likes_count`,
+        [commentId, isLiked ? 1 : -1]
+      )
+      return { isLiked, likesCount: res.rows[0]?.likes_count ?? 0 }
     })
   }
 
