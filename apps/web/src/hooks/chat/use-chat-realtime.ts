@@ -45,9 +45,9 @@ export function useChatRealtime() {
     if (msg.sender) useTypingStore.getState().set({ conversationId: msg.conversationId, userId: msg.sender.id, isTyping: false })
     if (msg.kind === 'ai' || msg.attachments) void qc.invalidateQueries({ queryKey: ['chat-media', msg.conversationId] })
     if (msg.attachments && isAiConversation(qc, msg.conversationId)) void qc.invalidateQueries({ queryKey: queryKeys.aiLibraryAll })
-    bumpAiThread(qc, msg) // chỉ khớp khi là thread PU AI đã nằm trong lịch sử
+    bumpAiThread(qc, msg) // chỉ khớp khi là thread N7AI đã nằm trong lịch sử
   })
-  // Thread PU AI được đặt tên (tự động / đổi tên ở tab khác)
+  // Thread N7AI được đặt tên (tự động / đổi tên ở tab khác)
   useRealtimeEvent<AiThread>('ai.thread.updated', (t) => upsertAiThread(qc, t))
   useRealtimeEvent<ChatMessage>('message.updated', (msg) => {
     upsertMessage(qc, msg)

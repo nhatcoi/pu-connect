@@ -7,7 +7,7 @@ import { ArrowLeft, BellOff, Eraser, Info, Maximize2, Menu, SquarePen } from 'lu
 import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
-import { PUAI_HOME } from '@/lib/puai-routes'
+import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { ConversationAvatar } from '../conversation-avatar'
 import { OpenInN7AiButton } from '../ai/open-in-n7ai'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -17,9 +17,9 @@ interface ThreadHeaderProps {
   typingLabel: string | null
   backHref: string
   onInfo: () => void
-  // Không gian PU AI (mobile): mở ngăn lịch sử thay cho nút quay lại
+  // Không gian N7AI (mobile): mở ngăn lịch sử thay cho nút quay lại
   onOpenNav?: () => void
-  // Thread PU AI chat nhanh (Tin nhắn): mở trong không gian /puai thay cho "Chat mới"
+  // Thread N7AI chat nhanh (Tin nhắn): mở trong không gian /n7ai thay cho "Chat mới"
   spaceHref?: string
   onAiReset: () => void
 }
@@ -48,7 +48,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
   return (
     <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-3 py-2.5 flex items-center gap-2.5">
       {onOpenNav ? (
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 md:hidden" onClick={onOpenNav} aria-label="Lịch sử PU AI">
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 md:hidden" onClick={onOpenNav} aria-label="Lịch sử N7AI">
           <Menu className="h-4 w-4" />
         </Button>
       ) : (
@@ -66,7 +66,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
               {conversationTitle(conv)}
             </Link>
           ) : (
-            // Thread PU AI: hiện tiêu đề cuộc trò chuyện
+            // Thread N7AI: hiện tiêu đề cuộc trò chuyện
             <p className="text-sm font-semibold truncate">{isAi && conv.title ? conv.title : conversationTitle(conv)}</p>
           )}
           {conv?.mutedUntil && <BellOff className="h-3 w-3 text-muted-foreground shrink-0" />}
@@ -80,7 +80,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
           size="icon"
           className="h-8 w-8 rounded-full shrink-0"
           onClick={onAiReset}
-          title="Chủ đề mới — PU AI quên các tin phía trên"
+          title="Chủ đề mới — N7AI quên các tin phía trên"
           aria-label="Chủ đề mới"
         >
           <Eraser className="h-3.5 w-3.5" />
@@ -88,14 +88,14 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
       )}
       {isAi &&
         (spaceHref ? (
-          <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" title="Mở trong không gian PU AI">
-            <Link href={spaceHref} aria-label="Mở trong không gian PU AI">
+          <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" title="Mở trong không gian N7AI">
+            <Link href={spaceHref} aria-label="Mở trong không gian N7AI">
               <Maximize2 className="h-3.5 w-3.5" />
             </Link>
           </Button>
         ) : (
           <Button asChild variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" title="Cuộc trò chuyện mới">
-            <Link href={PUAI_HOME}>
+            <Link href={N7AI_HOME}>
               <SquarePen className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Chat mới</span>
             </Link>
           </Button>

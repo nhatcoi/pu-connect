@@ -10,7 +10,7 @@ import { useAppStore } from '@/store'
 import { useMentionPicker } from '@/hooks/use-mention-picker'
 import { useDraft } from '@/hooks/use-draft'
 import { uploadFileToR2 } from '@/lib/api-client'
-import { PUAI_MENTION } from '@/lib/mention'
+import { N7AI_MENTION } from '@/lib/mention'
 import { Image as ImageIcon, Binary, Code2, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -26,7 +26,7 @@ interface CommentComposerProps {
   mentionContext?: MentionCandidate[]
   // Khoá nháp trên trình duyệt (bỏ trống = không lưu nháp)
   draftKey?: string
-  // Sửa bình luận: nút "Lưu", không đính kèm ảnh, không gọi PU AI
+  // Sửa bình luận: nút "Lưu", không đính kèm ảnh, không gọi N7AI
   mode?: 'create' | 'edit'
 }
 
@@ -61,7 +61,7 @@ export function CommentComposer({
 
   // Nháp: chỉ lưu phần người dùng tự gõ (bỏ qua "@user " điền sẵn khi trả lời)
   const clearDraft = useDraft(draftKey, content === initialContent ? '' : content, setContent)
-  const asksPuai = !isEdit && PUAI_MENTION.test(content)
+  const asksN7Ai = !isEdit && N7AI_MENTION.test(content)
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -195,11 +195,11 @@ export function CommentComposer({
           />
         )}
 
-        {/* Đã gọi @puai ⇒ báo trước PU AI sẽ trả lời */}
-        {asksPuai && (
+        {/* Đã gọi @n7ai ⇒ báo trước N7AI sẽ trả lời */}
+        {asksN7Ai && (
           <p className="flex items-center gap-1.5 text-[11px] text-primary">
             <N7AiMark className="h-3.5 w-3.5" />
-            PU AI sẽ trả lời bình luận này
+            N7AI sẽ trả lời bình luận này
           </p>
         )}
 

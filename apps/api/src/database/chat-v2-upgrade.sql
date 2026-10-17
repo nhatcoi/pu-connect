@@ -1,6 +1,6 @@
 -- ==========================================================
 -- Migration: Nhắn tin P2 — đính kèm, trả lời, cảm xúc, ghim, sửa tin,
--- quản lý nhóm, tắt thông báo / ghim hội thoại, chế độ học PU AI (idempotent)
+-- quản lý nhóm, tắt thông báo / ghim hội thoại, chế độ học N7AI (idempotent)
 -- Thiết kế: docs/core/06-messaging-and-ai.md §13
 -- ==========================================================
 

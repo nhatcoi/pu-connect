@@ -19,7 +19,7 @@ import { chatApi, useAiConnectors, useAiSkills, useDisconnectConnector } from '@
 
 interface Props {
   disabled?: boolean
-  aiTools: boolean // hỏi được PU AI (thread AI / nhóm) ⇒ Skills, Research
+  aiTools: boolean // hỏi được N7AI (thread AI / nhóm) ⇒ Skills, Research
   connectorsEnabled: boolean // chỉ thread AI riêng (nhóm không đọc dữ liệu riêng của người hỏi)
   onUpload: () => void
   onAddContext: () => void
@@ -100,7 +100,7 @@ export function PlusMenu(props: Props) {
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-medium">{c.name}</span>
                         <span className="block truncate text-[11px] text-muted-foreground">
-                          {c.available ? `Kết nối để PU AI đọc ${c.name} (chỉ đọc)` : 'Máy chủ chưa cấu hình'}
+                          {c.available ? `Kết nối để N7AI đọc ${c.name} (chỉ đọc)` : 'Máy chủ chưa cấu hình'}
                         </span>
                       </span>
                       {c.available && <ExternalLink />}

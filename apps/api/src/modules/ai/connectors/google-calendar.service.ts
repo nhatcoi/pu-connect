@@ -16,7 +16,7 @@ type CalendarEvent = {
 const fmt = new Intl.DateTimeFormat('vi-VN', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 const fmtDay = new Intl.DateTimeFormat('vi-VN', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit' })
 
-// Connector Google Calendar (calendar.readonly): lịch sắp tới của lịch chính ⇒ 1 nguồn gọn cho PU AI
+// Connector Google Calendar (calendar.readonly): lịch sắp tới của lịch chính ⇒ 1 nguồn gọn cho N7AI
 // (lập lộ trình ôn quanh lịch học / lịch thi, hỏi "tuần này mình bận gì")
 @Injectable()
 export class GoogleCalendarService {

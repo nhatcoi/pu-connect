@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PageAside } from '@/components/layout/page-aside'
 import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { chatApi, setActiveConversation, trackSuggestionClick, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
-import { PUAI_HOME } from '@/lib/puai-routes'
+import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { useAppStore } from '@/store'
 import { AiWelcome } from './ai/ai-welcome'
 import { BlockedComposer } from './composer/blocked-composer'
@@ -26,13 +26,13 @@ interface ConversationViewProps {
   id: string
   // Không mở được ⇒ nút quay về
   backHref: string
-  // Tin cần cuộn tới khi mở (vd. từ Thư viện PU AI)
+  // Tin cần cuộn tới khi mở (vd. từ Thư viện N7AI)
   initialJump?: string | null
-  // Mobile (không gian PU AI): mở ngăn lịch sử
+  // Mobile (không gian N7AI): mở ngăn lịch sử
   onOpenNav?: () => void
-  // Thread rỗng vừa có tin đầu tiên (trang /puai ⇒ đổi URL sang /puai/[id])
+  // Thread rỗng vừa có tin đầu tiên (trang /n7ai ⇒ đổi URL sang /n7ai/[id])
   onStarted?: () => void
-  // Thread PU AI chat nhanh trong Tin nhắn ⇒ nút mở ở không gian /puai
+  // Thread N7AI chat nhanh trong Tin nhắn ⇒ nút mở ở không gian /n7ai
   spaceHref?: string
 }
 
@@ -99,7 +99,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
 
   const isAi = conv?.type === 'ai'
   const resetAi = () => chatApi.aiReset(id).catch((err) => toast.error(err?.message || 'Không làm mới được'))
-  const runCommand = (command: ComposerCommand) => (command === 'new' ? router.push(PUAI_HOME) : resetAi())
+  const runCommand = (command: ComposerCommand) => (command === 'new' ? router.push(N7AI_HOME) : resetAi())
   // Gợi ý mở đầu ⇒ điền sẵn để sửa; câu hỏi tiếp theo ⇒ gửi ngay
   const pickStarter = (s: AiSuggestion) => {
     trackSuggestionClick('starter', s)
@@ -134,7 +134,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
             <div className="py-16 text-center text-muted-foreground space-y-2">
               <MessageSquare className="h-9 w-9 mx-auto opacity-30" />
               <p className="text-sm">Gửi lời chào đầu tiên 👋</p>
-              {conv?.type === 'group' && <p className="text-xs">Gõ @puai trong tin để hỏi PU AI cùng cả nhóm.</p>}
+              {conv?.type === 'group' && <p className="text-xs">Gõ @n7ai trong tin để hỏi N7AI cùng cả nhóm.</p>}
             </div>
           )}
         </div>
@@ -166,7 +166,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           onCommand={runCommand}
           disabled={!conv}
           placeholder={
-            isAi ? 'Hỏi PU AI… (/ lệnh · @ gắn ngữ cảnh)' : conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi PU AI)' : 'Nhắn tin… (@ gắn ngữ cảnh)'
+            isAi ? 'Hỏi N7AI… (/ lệnh · @ gắn ngữ cảnh)' : conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi N7AI)' : 'Nhắn tin… (@ gắn ngữ cảnh)'
           }
           replyTo={replyTo}
           editing={editing}
@@ -184,7 +184,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
 
       <MentionJump key={id} conversation={conv} onJump={jump} />
 
-      {/* Thread PU AI trong /puai: lịch sử & thư viện ở thanh bên riêng; chat nhanh (Tin nhắn) có cột thông tin như DM */}
+      {/* Thread N7AI trong /n7ai: lịch sử & thư viện ở thanh bên riêng; chat nhanh (Tin nhắn) có cột thông tin như DM */}
       {conv && (!isAi || spaceHref) && (
         <>
           <PageAside>

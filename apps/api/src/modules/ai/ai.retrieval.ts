@@ -27,7 +27,7 @@ function toTsQuery(question: string): string {
   return words.map((w) => `${w}:*`).join(' | ')
 }
 
-// Truy xuất nguồn cho PU AI (chat, bình luận): mỗi connector 1 truy vấn, chạy song song
+// Truy xuất nguồn cho N7AI (chat, bình luận): mỗi connector 1 truy vấn, chạy song song
 @Injectable()
 export class AiRetrieval {
   private readonly logger = new Logger(AiRetrieval.name)

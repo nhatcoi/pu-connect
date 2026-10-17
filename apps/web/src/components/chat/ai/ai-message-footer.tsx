@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { AI_FEEDBACK_REASONS, type AiFeedbackInput, type ChatMessageMeta } from '@pu/schemas'
 import { chatApi } from '@/hooks/chat'
 import { errorMessage } from '@/lib/api-client'
-import { puaiSettingsHref } from '@/lib/puai-routes'
+import { n7aiSettingsHref } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
 
 const REASON_LABEL: Record<(typeof AI_FEEDBACK_REASONS)[number], string> = {
@@ -18,7 +18,7 @@ const REASON_LABEL: Record<(typeof AI_FEEDBACK_REASONS)[number], string> = {
   other: 'Khác'
 }
 
-// Dưới câu trả lời PU AI: 👍/👎 (👎 ⇒ chọn lý do) + nhãn "Đã cập nhật bộ nhớ"
+// Dưới câu trả lời N7AI: 👍/👎 (👎 ⇒ chọn lý do) + nhãn "Đã cập nhật bộ nhớ"
 export function AiMessageFooter({ messageId, meta }: { messageId: string; meta: ChatMessageMeta | null }) {
   const [rating, setRating] = useState<1 | -1 | null>(meta?.feedback ?? null)
   const [askReason, setAskReason] = useState(false)
@@ -71,7 +71,7 @@ export function AiMessageFooter({ messageId, meta }: { messageId: string; meta: 
         ))}
       {meta?.memoryUpdated?.length ? (
         <Link
-          href={puaiSettingsHref('memory')}
+          href={n7aiSettingsHref('memory')}
           title={meta.memoryUpdated.join(' · ')}
           className="ml-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 h-6 text-[11px] font-medium text-primary"
         >

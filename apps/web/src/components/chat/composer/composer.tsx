@@ -35,11 +35,11 @@ interface ComposerProps {
   onSend: (draft: Draft) => void
   onEdit: (id: string, content: string) => void
   handleRef?: React.Ref<ComposerHandle>
-  // PU AI: chế độ học do trang giữ (màn trống cũng đổi gợi ý theo chế độ)
+  // N7AI: chế độ học do trang giữ (màn trống cũng đổi gợi ý theo chế độ)
   aiMode?: AiMode
   onAiModeChange?: (mode: AiMode) => void
   suggestOnModeChange?: boolean // đã có tin ⇒ chọn chế độ mở bảng gợi ý trên ô soạn
-  onCommand?: (command: ComposerCommand) => void // "/new", "/reset" (thread PU AI)
+  onCommand?: (command: ComposerCommand) => void // "/new", "/reset" (thread N7AI)
 }
 
 // Ô soạn tin: văn bản + đính kèm (chọn / dán / kéo thả), trả lời, sửa tin
@@ -61,7 +61,7 @@ export function Composer({
   onCommand
 }: ComposerProps) {
   const isAi = conversation?.type === 'ai'
-  const aiTools = isAi || conversation?.type === 'group' // hỏi được PU AI
+  const aiTools = isAi || conversation?.type === 'group' // hỏi được N7AI
   const myId = useAppStore((s) => s.user?.id)
   const [text, setText] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)

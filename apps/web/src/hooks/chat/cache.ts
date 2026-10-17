@@ -46,12 +46,12 @@ export function syncPinned(qc: QueryClient, msg: ChatMessage) {
 export type ConversationListData = InfiniteData<ConversationsPage, string | null>
 
 const isMuted = (c: ConversationSummary) => !!c.mutedUntil && new Date(c.mutedUntil).getTime() > Date.now()
-// Badge "Tin nhắn" giống server: bỏ hội thoại tắt tiếng & thread PU AI (dòng AI vẫn hiện chấm chưa đọc)
+// Badge "Tin nhắn" giống server: bỏ hội thoại tắt tiếng & thread N7AI (dòng AI vẫn hiện chấm chưa đọc)
 const countsInBadge = (c: ConversationSummary) => c.type !== 'ai' && !isMuted(c)
-// Nhóm thứ tự giống server: PU AI chat nhanh → đã ghim → còn lại
+// Nhóm thứ tự giống server: N7AI chat nhanh → đã ghim → còn lại
 const rankOf = (c: ConversationSummary) => (c.type === 'ai' ? 2 : c.pinnedAt ? 1 : 0)
 
-// Thread PU AI (đang mở / trong lịch sử) — không tính vào badge chưa đọc
+// Thread N7AI (đang mở / trong lịch sử) — không tính vào badge chưa đọc
 export function isAiConversation(qc: QueryClient, id: string): boolean {
   if (qc.getQueryData<ConversationSummary>(queryKeys.conversation(id))?.type === 'ai') return true
   return qc
@@ -118,7 +118,7 @@ export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string 
       stale ||= !!belongs[filter]
       return data
     }
-    // PU AI / đã ghim: giữ vị trí; còn lại: lên đầu nhóm "thường"
+    // N7AI / đã ghim: giữ vị trí; còn lại: lên đầu nhóm "thường"
     if (rankOf(next) > 0) return { ...data, pages: data.pages.map((p) => ({ ...p, data: p.data.map((c) => (c.id === next.id ? next : c)) })) }
     const pages = data.pages.map((p) => ({ ...p, data: p.data.filter((c) => c.id !== next.id) }))
     const first = pages[0].data

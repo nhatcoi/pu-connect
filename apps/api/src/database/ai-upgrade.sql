@@ -1,5 +1,5 @@
 -- ==========================================================
--- Migration: PU AI — nhật ký lượt chạy & quota (idempotent)
+-- Migration: N7AI — nhật ký lượt chạy & quota (idempotent)
 -- Thiết kế: docs/core/06-messaging-and-ai.md §3.5
 -- ==========================================================
 

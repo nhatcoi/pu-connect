@@ -1,13 +1,13 @@
 import type { MentionCandidate } from '@pu/schemas'
 
-export const PUAI_USERNAME = 'puai'
-export const PUAI_MENTION = /(^|\s)@puai\b/i
+export const N7AI_USERNAME = 'n7ai'
+export const N7AI_MENTION = /(^|\s)@n7ai\b/i
 
-// PU AI luôn ghim đầu danh sách gợi ý (bot không nằm trong kết quả server)
-export const PUAI_CANDIDATE: MentionCandidate = {
-  id: 'puai',
-  username: PUAI_USERNAME,
-  displayName: 'PU AI',
+// N7AI luôn ghim đầu danh sách gợi ý (bot không nằm trong kết quả server)
+export const N7AI_CANDIDATE: MentionCandidate = {
+  id: 'n7ai',
+  username: N7AI_USERNAME,
+  displayName: 'N7AI',
   avatarUrl: null,
   reason: 'other'
 }

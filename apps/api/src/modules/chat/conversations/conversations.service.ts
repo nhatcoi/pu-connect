@@ -13,7 +13,7 @@ import { LlmService } from '../../ai/llm.service'
 
 const MAX_GROUP_MEMBERS = 50
 
-// Hội thoại: DM, nhóm, PU AI; quản lý thành viên & cài đặt riêng
+// Hội thoại: DM, nhóm, N7AI; quản lý thành viên & cài đặt riêng
 @Injectable()
 export class ConversationsService {
   private readonly groupLimiter = new SimpleRateLimiter(10, 86_400_000) // tạo nhóm 10 / ngày
@@ -73,7 +73,7 @@ export class ConversationsService {
     return mapSummaryRow(res.rows[0])
   }
 
-  // Tổng tin chưa đọc (badge "Tin nhắn"); bỏ qua hội thoại đang tắt thông báo và thread PU AI
+  // Tổng tin chưa đọc (badge "Tin nhắn"); bỏ qua hội thoại đang tắt thông báo và thread N7AI
   async unreadTotal(userId: string): Promise<number> {
     const res = await this.db.query(
       `SELECT COALESCE(SUM(LEAST(x.n, 99)), 0)::int AS total FROM (
@@ -113,13 +113,13 @@ export class ConversationsService {
     return this.get(userId, id)
   }
 
-  // Mở PU AI chat nhanh (Tin nhắn / nhắn bot từ hồ sơ): thread gần nhất, chưa có thì tạo
+  // Mở N7AI chat nhanh (Tin nhắn / nhắn bot từ hồ sơ): thread gần nhất, chưa có thì tạo
   async openAi(userId: string): Promise<ConversationSummary> {
     const res = await this.db.query(LATEST_AI_SQL, [userId])
     return res.rows[0] ? this.get(userId, res.rows[0].id) : this.createAiThread(userId)
   }
 
-  // "Chat mới" với PU AI: dùng lại thread chưa có tin (bấm nhiều lần không sinh rác)
+  // "Chat mới" với N7AI: dùng lại thread chưa có tin (bấm nhiều lần không sinh rác)
   async createAiThread(userId: string): Promise<ConversationSummary> {
     const id = await this.db.transaction(async (client) => {
       const empty = await client.query(
@@ -131,7 +131,7 @@ export class ConversationsService {
     return this.get(userId, id)
   }
 
-  // Thread PU AI riêng cho 1 tác vụ tự động (có tiêu đề sẵn)
+  // Thread N7AI riêng cho 1 tác vụ tự động (có tiêu đề sẵn)
   async createTaskThread(userId: string, title: string): Promise<string> {
     return this.db.transaction((client) => this.insertAiConversation(client, userId, title))
   }

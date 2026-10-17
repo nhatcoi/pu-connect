@@ -8,7 +8,7 @@ import { useAiSuggestions } from '@/hooks/chat'
 import { AI_MODE_META } from './ai-modes'
 import { OpenInN7AiCard } from './open-in-n7ai'
 
-// Màn hình trống của PU AI: giới thiệu + gợi ý mở đầu theo chế độ đang chọn (cá nhân hóa từ server)
+// Màn hình trống của N7AI: giới thiệu + gợi ý mở đầu theo chế độ đang chọn (cá nhân hóa từ server)
 export function AiWelcome({ mode, onPick }: { mode: AiMode; onPick: (s: AiSuggestion) => void }) {
   const { data, isPending } = useAiSuggestions(mode)
 
@@ -18,9 +18,9 @@ export function AiWelcome({ mode, onPick }: { mode: AiMode; onPick: (s: AiSugges
         <div className="h-12 w-12 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
           <Sparkles className="h-6 w-6" />
         </div>
-        <p className="text-[15px] font-semibold">PU AI — trợ lý học tập</p>
+        <p className="text-[15px] font-semibold">N7AI — trợ lý học tập</p>
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-          Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi. Gửi kèm ảnh chụp đề bài, tệp PDF, Word hoặc .txt để PU AI đọc — hỏi tiếp
+          Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi. Gửi kèm ảnh chụp đề bài, tệp PDF, Word hoặc .txt để N7AI đọc — hỏi tiếp
           không cần gửi lại.
         </p>
       </div>

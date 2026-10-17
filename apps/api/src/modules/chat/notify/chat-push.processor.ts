@@ -73,7 +73,7 @@ export class ChatPushProcessor extends WorkerHost {
 
     const last = s.last as LastMessage
     const sender = last.sender || 'Thành viên'
-    const name = s.type === 'group' ? s.title || 'Nhóm chat' : s.type === 'ai' ? 'PU AI' : sender
+    const name = s.type === 'group' ? s.title || 'Nhóm chat' : s.type === 'ai' ? 'N7AI' : sender
     const preview = this.preview(last)
     // Đánh dấu TRƯỚC khi gửi: đọc trong lúc gửi vẫn kích hoạt "đóng" (thừa 1 push im lặng còn hơn sót)
     await this.db.query(`UPDATE conversation_members SET push_shown_at = NOW() WHERE conversation_id = $1 AND user_id = $2`, [conversationId, recipientId])
@@ -82,7 +82,7 @@ export class ChatPushProcessor extends WorkerHost {
       {
         title: s.mentioned ? `${name} · có người nhắc đến bạn` : s.unread > 1 ? `${name} · ${s.unread} tin mới` : name,
         body: s.type === 'group' ? `${sender}: ${preview}` : preview,
-        url: s.type === 'ai' ? `/puai/${conversationId}` : `/messages/${conversationId}`, // PU AI có không gian riêng
+        url: s.type === 'ai' ? `/n7ai/${conversationId}` : `/messages/${conversationId}`, // N7AI có không gian riêng
         tag: chatNotificationTag(conversationId), // tin sau thay thế thông báo trước của cùng hội thoại
         type: 'chat_message'
       },

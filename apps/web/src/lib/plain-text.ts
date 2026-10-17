@@ -5,7 +5,7 @@ const FENCE_LABELS: Record<string, string> = { quiz: '📝 Quiz', flashcards: '�
 export function markdownToPlainText(md: string): string {
   return (
     md
-      // Khối code (PU AI trả quiz/flashcard dạng ```quiz) ⇒ nhãn ngắn
+      // Khối code (N7AI trả quiz/flashcard dạng ```quiz) ⇒ nhãn ngắn
       .replace(/```(\w+)?[^\n]*\n?[\s\S]*?(```|$)/g, (_, lang?: string) => ` ${(lang && FENCE_LABELS[lang]) || '[code]'} `)
       .replace(/\$\$([\s\S]*?)\$\$/g, '$1') // công thức khối
       .replace(/!\[([^\]]*)\]\([^)]*\)/g, (_, alt: string) => alt || '🖼️') // ảnh

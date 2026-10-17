@@ -1,5 +1,5 @@
 -- ==========================================================
--- Migration: Mention trong chat, PU AI nhiều hội thoại, skill tự tạo (idempotent)
+-- Migration: Mention trong chat, N7AI nhiều hội thoại, skill tự tạo (idempotent)
 -- Thiết kế: docs/core/09-chat-mention-ai-threads-skills.md
 -- ==========================================================
 
@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS message_mentions (
 );
 CREATE INDEX IF NOT EXISTS idx_message_mentions_user ON message_mentions(user_id, conversation_id, message_id DESC);
 
--- 2. PU AI nhiều hội thoại: tiêu đề tự đặt + tóm tắt cuộn (trí nhớ dài)
+-- 2. N7AI nhiều hội thoại: tiêu đề tự đặt + tóm tắt cuộn (trí nhớ dài)
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS ai_summary TEXT;
 ALTER TABLE conversations ADD COLUMN IF NOT EXISTS ai_summary_upto BIGINT;
 CREATE INDEX IF NOT EXISTS idx_conversations_ai_threads
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS ai_skills (
 );
 CREATE INDEX IF NOT EXISTS idx_ai_skills_owner ON ai_skills(owner_id, last_used_at DESC NULLS LAST);
 
--- 4. Hội thoại PU AI cũ chưa có tiêu đề ⇒ lấy dòng đầu câu hỏi đầu tiên (≤ 60 ký tự)
+-- 4. Hội thoại N7AI cũ chưa có tiêu đề ⇒ lấy dòng đầu câu hỏi đầu tiên (≤ 60 ký tự)
 UPDATE conversations c SET title = t.title
 FROM (
     SELECT DISTINCT ON (m.conversation_id) m.conversation_id,

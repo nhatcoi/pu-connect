@@ -21,9 +21,12 @@ const nextConfig: NextConfig = {
     return [
       { source: '/home', destination: '/', permanent: false },
       { source: '/get-started', destination: '/', permanent: false },
-      // Cài đặt PU AI chuyển vào không gian /puai
-      { source: '/settings/puai', destination: '/puai/settings', permanent: true },
-      { source: '/settings/puai/:item', destination: '/puai/settings/:item', permanent: true }
+      // Đổi tên PU AI → N7AI: link cũ /puai*, /settings/puai*, /c/puai, /puai (hồ sơ bot) vẫn mở được
+      { source: '/settings/puai', destination: '/n7ai/settings', permanent: true },
+      { source: '/settings/puai/:item', destination: '/n7ai/settings/:item', permanent: true },
+      { source: '/puai', destination: '/n7ai', permanent: true },
+      { source: '/puai/:path*', destination: '/n7ai/:path*', permanent: true },
+      { source: '/c/puai', destination: '/c/n7ai', permanent: true }
     ]
   },
   async rewrites() {

@@ -5,7 +5,7 @@ import { Heart, MessageSquare, CheckCircle2 } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
-import { PUAI_USERNAME } from '@/lib/mention'
+import { N7AI_USERNAME } from '@/lib/mention'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { FeaturedComment } from '@pu/schemas'
 
@@ -18,7 +18,7 @@ interface FeaturedCommentPreviewProps {
 export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPreviewProps) {
   const name = comment.author.displayName || comment.author.username
   const isSolution = comment.reason === 'solution'
-  const isBot = comment.author.username === PUAI_USERNAME
+  const isBot = comment.author.username === N7AI_USERNAME
 
   return (
     <button

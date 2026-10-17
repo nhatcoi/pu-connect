@@ -13,7 +13,7 @@ import { cn, formatRelativeTime } from '@/lib/utils'
 import type { CommentItem, MentionCandidate } from '@pu/schemas'
 import { useQueryClient } from '@tanstack/react-query'
 import { prefetchProfile } from '@/hooks/use-profile'
-import { PUAI_USERNAME } from '@/lib/mention'
+import { N7AI_USERNAME } from '@/lib/mention'
 
 interface CommentItemCardProps {
   comment: CommentItem
@@ -75,8 +75,8 @@ export function CommentItemCard({
           onMouseEnter={() => prefetchProfile(queryClient, comment.author?.username || '')}
           className="flex items-center space-x-2.5 group/author cursor-pointer"
         >
-          {comment.author?.username === PUAI_USERNAME ? (
-            // PU AI trả lời khi được @puai
+          {comment.author?.username === N7AI_USERNAME ? (
+            // N7AI trả lời khi được @n7ai
             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-muted">
               <N7AiMark className="h-[68%] w-[68%]" />
             </span>

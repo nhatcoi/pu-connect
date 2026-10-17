@@ -7,14 +7,14 @@ export const metadata: Metadata = {
   description: 'Cách PU Connector thu thập, sử dụng, lưu trữ và bảo vệ dữ liệu cá nhân của bạn.'
 }
 
-// Nội dung bám theo dữ liệu hệ thống thực sự lưu (bảng users, messages, push_subscriptions, R2, PU AI)
+// Nội dung bám theo dữ liệu hệ thống thực sự lưu (bảng users, messages, push_subscriptions, R2, N7AI)
 const SECTIONS: LegalSection[] = [
   {
     id: 'pham-vi',
     title: 'Phạm vi áp dụng',
     body: (
       <p>
-        Chính sách này áp dụng cho website PU Connector và mọi tính năng đi kèm: bảng tin, cộng đồng, học phần, tài liệu, nhóm học, tin nhắn và trợ lý PU AI.
+        Chính sách này áp dụng cho website PU Connector và mọi tính năng đi kèm: bảng tin, cộng đồng, học phần, tài liệu, nhóm học, tin nhắn và trợ lý N7AI.
         Khi dùng dịch vụ, bạn đồng ý với cách xử lý dữ liệu mô tả dưới đây, cùng với <Link href="/terms">Điều khoản dịch vụ</Link>.
       </p>
     )
@@ -50,22 +50,22 @@ const SECTIONS: LegalSection[] = [
         <li>Tạo và duy trì tài khoản, xác thực đăng nhập, xác minh email và đặt lại mật khẩu.</li>
         <li>Hiển thị hồ sơ, bảng tin, kết quả tìm kiếm và gợi ý kết nối phù hợp với khoa, ngành, sở thích của bạn.</li>
         <li>Gửi và đồng bộ tin nhắn, gửi thông báo trong ứng dụng, qua email và thông báo đẩy.</li>
-        <li>Vận hành PU AI để trả lời câu hỏi bạn gửi.</li>
+        <li>Vận hành N7AI để trả lời câu hỏi bạn gửi.</li>
         <li>Phát hiện spam, xử lý báo cáo vi phạm và bảo vệ an toàn cho cộng đồng.</li>
       </ul>
     )
   },
   {
-    id: 'pu-ai',
-    title: 'Trợ lý PU AI',
+    id: 'n7ai',
+    title: 'Trợ lý N7AI',
     body: (
       <>
         <p>
-          Khi bạn trò chuyện với PU AI hoặc nhắc PU AI trong nhóm chat, nội dung cần thiết để trả lời gồm tin nhắn, ngữ cảnh hội thoại gần nhất, ảnh và nội dung
+          Khi bạn trò chuyện với N7AI hoặc nhắc N7AI trong nhóm chat, nội dung cần thiết để trả lời gồm tin nhắn, ngữ cảnh hội thoại gần nhất, ảnh và nội dung
           tệp PDF, DOCX, TXT bạn gửi kèm sẽ được chuyển tới dịch vụ mô hình ngôn ngữ để tạo câu trả lời. Câu trả lời được lưu như một tin nhắn trong hội thoại.
         </p>
         <p>
-          Không gửi cho PU AI mật khẩu, số giấy tờ tùy thân, thông tin tài chính hay dữ liệu nhạy cảm của người khác. Mỗi tài khoản có giới hạn số lượt dùng PU
+          Không gửi cho N7AI mật khẩu, số giấy tờ tùy thân, thông tin tài chính hay dữ liệu nhạy cảm của người khác. Mỗi tài khoản có giới hạn số lượt dùng PU
           AI mỗi ngày.
         </p>
       </>
@@ -85,7 +85,7 @@ const SECTIONS: LegalSection[] = [
           <li>Dịch vụ lưu trữ đám mây: lưu ảnh, tệp đính kèm và tài liệu bạn tải lên.</li>
           <li>Dịch vụ gửi email: gửi email xác minh, đặt lại mật khẩu và thông báo.</li>
           <li>Dịch vụ thông báo đẩy của trình duyệt (Google, Apple, Mozilla…): chuyển thông báo tới thiết bị của bạn.</li>
-          <li>Dịch vụ mô hình ngôn ngữ: xử lý nội dung bạn gửi cho PU AI.</li>
+          <li>Dịch vụ mô hình ngôn ngữ: xử lý nội dung bạn gửi cho N7AI.</li>
         </ul>
         <p>Chúng tôi có thể cung cấp dữ liệu khi cơ quan nhà nước có thẩm quyền yêu cầu theo quy định pháp luật.</p>
       </>

@@ -108,7 +108,7 @@ npx web-push generate-vapid-keys         # điền VAPID_PUBLIC_KEY / VAPID_PRIV
 ```
 Thiếu VAPID ⇒ chỉ có thông báo trong app. Chi tiết: [`docs/core/05`](docs/core/05-notifications-and-realtime.md#7-triển-khai-v2--web-push--bullmq-đang-chạy).
 
-**PU AI** (trợ lý trong `/messages`): gọi API tương thích OpenAI. Điền `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v9`) vào `apps/api/.env`; `AI_DAILY_QUOTA` mặc định 30. Thiếu key ⇒ bot trả lời "chưa bật".
+**N7AI** (trợ lý trong `/messages`): gọi API tương thích OpenAI. Điền `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v9`) vào `apps/api/.env`; `AI_DAILY_QUOTA` mặc định 30. Thiếu key ⇒ bot trả lời "chưa bật".
 
 **Test tích hợp API** (Jest + supertest, DB riêng `pu_connector_test` được tạo lại mỗi lượt):
 ```bash
@@ -121,7 +121,7 @@ Cài một lần trên VPS (idempotent): `ssh root@<vps> 'bash /var/www/pu-conne
 - **Backup DB** 03:17 hằng ngày (`scripts/ops/backup-db.sh`): `pg_dump` → gzip → mã hóa AES-256 (`BACKUP_PASSPHRASE` trong `.env`, tự sinh) → R2 `backups/db/` (giữ 30 ngày) + `/var/backups/pu-connector` (giữ 7 bản). Bucket R2 là public nên **bắt buộc mã hóa**. **Lưu bản sao `BACKUP_PASSPHRASE` ngoài VPS** — mất khóa = không khôi phục được.
 - **Thử khôi phục** (an toàn, vào DB tạm rồi xóa): `bash scripts/ops/restore-db.sh [file | backups/db/<tên>]`. Ghi đè DB thật: thêm `--into-live` (phải gõ tên DB xác nhận).
 - **Giám sát** mỗi 5 phút (`scripts/ops/healthcheck.sh`): web 200, API 401, systemd, container, Postgres, đĩa < 85%, RAM, backup < 26 giờ. Chỉ cảnh báo khi trạng thái đổi.
-- **Xem dữ liệu cá nhân hóa của 1 user** (chỉ đọc): `pnpm user:insight <username>` (DB stage qua SSH) hoặc thêm `--local`. In hồ sơ, `user_interests`, tín hiệu nguồn, `user_events` gần nhất, câu hỏi PU AI.
+- **Xem dữ liệu cá nhân hóa của 1 user** (chỉ đọc): `pnpm user:insight <username>` (DB stage qua SSH) hoặc thêm `--local`. In hồ sơ, `user_interests`, tín hiệu nguồn, `user_events` gần nhất, câu hỏi N7AI.
 - **Cảnh báo Telegram** (tùy chọn): thêm `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` vào `.env` trên VPS (tạo bot qua @BotFather). Không có thì ghi log `/var/log/pu-monitor.log`, `/var/log/pu-backup.log`.
 
 ### 8. Sơ đồ hệ thống
@@ -152,4 +152,4 @@ Khi bạn muốn bổ sung Mobile App:
 ---
 
 ## 🔐 Xác thực
-Email + mật khẩu và Google OAuth (tùy chọn). Biến môi trường `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (xem `.env.example`) và hướng dẫn cấu hình tại [`docs/auth-google.md`](docs/auth-google.md). Connector Google Drive / Calendar của PU AI dùng lại client này, thêm `CONNECTOR_ENCRYPTION_KEY` (và `GOOGLE_CONNECTOR_CALLBACK_URL` nếu khác origin). Tìm kiếm web cho PU AI: `TAVILY_API_KEY` (tùy chọn). Kiểm tra mã: `pnpm lint` (ESLint flat config ở `apps/web`, `apps/api`). Tài khoản seed local dùng mật khẩu `password123`.
+Email + mật khẩu và Google OAuth (tùy chọn). Biến môi trường `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (xem `.env.example`) và hướng dẫn cấu hình tại [`docs/auth-google.md`](docs/auth-google.md). Connector Google Drive / Calendar của N7AI dùng lại client này, thêm `CONNECTOR_ENCRYPTION_KEY` (và `GOOGLE_CONNECTOR_CALLBACK_URL` nếu khác origin). Tìm kiếm web cho N7AI: `TAVILY_API_KEY` (tùy chọn). Kiểm tra mã: `pnpm lint` (ESLint flat config ở `apps/web`, `apps/api`). Tài khoản seed local dùng mật khẩu `password123`.

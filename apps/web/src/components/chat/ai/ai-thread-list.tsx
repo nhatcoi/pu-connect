@@ -9,7 +9,7 @@ import type { AiThread } from '@pu/schemas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { chatApi, useAiThreadActions, useAiThreads, type UiPage } from '@/hooks/chat'
-import { PUAI_HOME, puaiThreadHref } from '@/lib/puai-routes'
+import { N7AI_HOME, n7aiThreadHref } from '@/lib/n7ai-routes'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 
@@ -28,7 +28,7 @@ function groupLabel(iso: string | null, now: Date): string {
   return 'Cũ hơn'
 }
 
-// Lịch sử hội thoại PU AI (thanh bên /puai): tìm theo tiêu đề / nội dung, cuộn tải thêm, đổi tên / xóa; rê chuột ⇒ tải trước tin
+// Lịch sử hội thoại N7AI (thanh bên /n7ai): tìm theo tiêu đề / nội dung, cuộn tải thêm, đổi tên / xóa; rê chuột ⇒ tải trước tin
 export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNavigate?: () => void }) {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -116,7 +116,7 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
   // Xóa thread đang mở ⇒ về trang chat mới
   const destroy = () => {
     if (!window.confirm('Xóa cuộc trò chuyện này? Không thể hoàn tác.')) return
-    remove.mutate(thread.id, { onSuccess: () => active && router.replace(PUAI_HOME) })
+    remove.mutate(thread.id, { onSuccess: () => active && router.replace(N7AI_HOME) })
   }
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(thread.title ?? '')
@@ -154,7 +154,7 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
 
   return (
     <div className={cn('group flex items-center rounded-lg h-8 pr-1', active ? 'bg-primary/10 text-primary' : 'hover:bg-muted')}>
-      <Link href={puaiThreadHref(thread.id)} onMouseEnter={onHover} onClick={onNavigate} className="flex-1 min-w-0 px-2 text-xs truncate">
+      <Link href={n7aiThreadHref(thread.id)} onMouseEnter={onHover} onClick={onNavigate} className="flex-1 min-w-0 px-2 text-xs truncate">
         {thread.title || UNTITLED}
       </Link>
       <DropdownMenu>

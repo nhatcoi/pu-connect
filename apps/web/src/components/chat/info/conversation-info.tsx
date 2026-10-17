@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { chatApi, conversationTitle, useConversationActions } from '@/hooks/chat'
-import { puaiSettingsHref, puaiThreadHref } from '@/lib/puai-routes'
+import { n7aiSettingsHref, n7aiThreadHref } from '@/lib/n7ai-routes'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
 import { ConversationAvatar } from '../conversation-avatar'
@@ -29,7 +29,7 @@ const MUTE_OPTIONS = [
   { hours: -1, label: 'Cho đến khi bật lại' }
 ]
 
-// Bảng thông tin DM / nhóm / PU AI chat nhanh (cột phải trên desktop, hộp thoại trên mobile)
+// Bảng thông tin DM / nhóm / N7AI chat nhanh (cột phải trên desktop, hộp thoại trên mobile)
 export function ConversationInfo({ conversation: c, onJump }: { conversation: ConversationSummary; onJump: (id: string) => void }) {
   const router = useRouter()
   const isGroup = c.type === 'group'
@@ -82,8 +82,8 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
           {isGroup ? (
             `${c.studyGroupId ? 'Nhóm học' : 'Nhóm'} · ${c.memberCount} thành viên`
           ) : isAi ? (
-            <Link href="/puai" className="hover:underline">
-              @puai · Trợ lý học tập
+            <Link href="/n7ai" className="hover:underline">
+              @n7ai · Trợ lý học tập
             </Link>
           ) : (
             other && (
@@ -95,17 +95,17 @@ export function ConversationInfo({ conversation: c, onJump }: { conversation: Co
         </p>
       </div>
 
-      {/* PU AI luôn đứng đầu & không tính badge ⇒ thay tắt tiếng / ghim bằng lối vào không gian /puai */}
+      {/* N7AI luôn đứng đầu & không tính badge ⇒ thay tắt tiếng / ghim bằng lối vào không gian /n7ai */}
       {isAi ? (
         <div className="grid grid-cols-2 gap-2">
           <Button asChild variant="outline" size="sm" className="h-9 rounded-xl gap-1.5 text-xs">
-            <Link href={puaiThreadHref(c.id)}>
-              <Maximize2 className="h-3.5 w-3.5" /> Mở trong PU AI
+            <Link href={n7aiThreadHref(c.id)}>
+              <Maximize2 className="h-3.5 w-3.5" /> Mở trong N7AI
             </Link>
           </Button>
           <Button asChild variant="outline" size="sm" className="h-9 rounded-xl gap-1.5 text-xs">
-            <Link href={puaiSettingsHref()}>
-              <Settings className="h-3.5 w-3.5" /> Cài đặt PU AI
+            <Link href={n7aiSettingsHref()}>
+              <Settings className="h-3.5 w-3.5" /> Cài đặt N7AI
             </Link>
           </Button>
         </div>

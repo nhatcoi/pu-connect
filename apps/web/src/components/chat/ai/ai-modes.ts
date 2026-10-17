@@ -1,9 +1,9 @@
 import { BookOpen, Brain, CalendarCheck, FileText, Layers, MessageCircleQuestion, type LucideIcon } from 'lucide-react'
 import type { AiMode } from '@pu/schemas'
 
-// Chế độ học của PU AI: nhãn, biểu tượng, gợi ý nhập (server: puai.prompts.ts)
+// Chế độ học của N7AI: nhãn, biểu tượng, gợi ý nhập (server: n7ai.prompts.ts)
 export const AI_MODE_META: Record<AiMode, { label: string; icon: LucideIcon; placeholder: string; hint: string }> = {
-  ask: { label: 'Hỏi đáp', icon: MessageCircleQuestion, placeholder: 'Hỏi PU AI bất cứ điều gì…', hint: 'Trả lời dựa trên bài viết & tài liệu' },
+  ask: { label: 'Hỏi đáp', icon: MessageCircleQuestion, placeholder: 'Hỏi N7AI bất cứ điều gì…', hint: 'Trả lời dựa trên bài viết & tài liệu' },
   explain: { label: 'Giải thích', icon: Brain, placeholder: 'Khái niệm cần giải thích, vd. "Đệ quy là gì?"', hint: 'Từng bước, có ví dụ' },
   quiz: { label: 'Quiz', icon: BookOpen, placeholder: 'Chủ đề muốn tự kiểm tra, vd. "Chuẩn hóa CSDL"', hint: '5 câu trắc nghiệm có chấm điểm' },
   flashcards: { label: 'Flashcard', icon: Layers, placeholder: 'Chủ đề cần ghi nhớ, vd. "Công thức đạo hàm"', hint: 'Thẻ lật để học thuộc' },

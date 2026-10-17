@@ -51,7 +51,7 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
           {!continued &&
             m.sender &&
             (m.sender.isBot ? (
-              // Bot @puai: logo N7AI
+              // Bot @n7ai: logo N7AI
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
                 <N7AiMark className="h-[70%] w-[70%]" />
               </span>

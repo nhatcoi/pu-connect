@@ -16,7 +16,7 @@ export class ChatPushService {
     @InjectQueue(CHAT_PUSH_QUEUE) private readonly queue: Queue<ChatPushJobData, unknown, ChatPushJobName>
   ) {}
 
-  // Có tin mới (người hoặc PU AI) ⇒ 1 job trễ cho mỗi thành viên người thật khác, chưa tắt thông báo
+  // Có tin mới (người hoặc N7AI) ⇒ 1 job trễ cho mỗi thành viên người thật khác, chưa tắt thông báo
   // Người bị nhắc (@tên / @all) nhận cả khi đang tắt tiếng hội thoại
   // Gọi sau commit, không await ở luồng gửi tin (lỗi Redis không ảnh hưởng nhắn tin)
   async onNewMessage(conversationId: string, senderId: string | null, mentionedIds: string[] = []): Promise<void> {

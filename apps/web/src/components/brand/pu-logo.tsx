@@ -14,7 +14,7 @@ export function PuMark({ className }: { className?: string }) {
 
 // Logo trợ lý AI (N7AI): kim cương xanh-cam + node mạch
 export function N7AiMark({ className }: { className?: string }) {
-  return <BrandMark src="/brand/n7ai-mark.svg" label="PU AI" className={className} />
+  return <BrandMark src="/brand/n7ai-mark.svg" label="N7AI" className={className} />
 }
 
 // Lockup ngang: mark + tên

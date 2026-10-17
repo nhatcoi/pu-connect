@@ -23,7 +23,7 @@ const SIGNALS: { key: keyof UserInsight['signals']; label: string }[] = [
   { key: 'postsSaved', label: 'Lưu bài' },
   { key: 'studyGroups', label: 'Nhóm học' },
   { key: 'comments', label: 'Bình luận' },
-  { key: 'aiQuestions', label: 'Hỏi PU AI' },
+  { key: 'aiQuestions', label: 'Hỏi N7AI' },
   { key: 'reactions', label: 'Cảm xúc' }
 ]
 
@@ -121,7 +121,7 @@ function InsightContent({ d }: { d: UserInsight }) {
       </Section>
 
       {d.suggestionPreview.length > 0 && (
-        <Section title="Gợi ý PU AI hiện tại">
+        <Section title="Gợi ý N7AI hiện tại">
           <div className="flex flex-wrap gap-1.5">
             {d.suggestionPreview.map((s) => (
               <span
@@ -139,7 +139,7 @@ function InsightContent({ d }: { d: UserInsight }) {
         </Section>
       )}
 
-      <Section title="Câu hỏi PU AI gần đây">
+      <Section title="Câu hỏi N7AI gần đây">
         {d.aiQuestions.length === 0 ? (
           <p className="text-muted-foreground">Chưa có</p>
         ) : (

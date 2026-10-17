@@ -45,7 +45,7 @@ export class CommentsController {
       ...body,
       postId
     })
-    void this.postAi.onComment(comment, authorId) // @puai ⇒ PU AI trả lời nền
+    void this.postAi.onComment(comment, authorId) // @n7ai ⇒ N7AI trả lời nền
 
     return {
       success: true,

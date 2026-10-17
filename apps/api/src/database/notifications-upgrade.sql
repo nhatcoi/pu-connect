@@ -7,7 +7,7 @@
 -- 1. Loại thông báo mới
 ALTER TYPE notification_type_enum ADD VALUE IF NOT EXISTS 'user_follow';
 ALTER TYPE notification_type_enum ADD VALUE IF NOT EXISTS 'account_verified';
-ALTER TYPE notification_type_enum ADD VALUE IF NOT EXISTS 'ai_reply'; -- dành cho PU AI (P3)
+ALTER TYPE notification_type_enum ADD VALUE IF NOT EXISTS 'ai_reply'; -- dành cho N7AI (P3)
 
 -- 2. Gộp thông báo (aggregation) + điều hướng
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS group_key VARCHAR(120);

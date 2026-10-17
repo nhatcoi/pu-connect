@@ -146,7 +146,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             ) : (
               <>
                 <BlockUserControl userId={profile.id} username={profile.username} blockState={blockState} />
-                {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển tới hội thoại (bot PU AI ⇒ thread chat nhanh) */}
+                {/* Nhắn tin: mở (hoặc tạo) DM rồi chuyển tới hội thoại (bot N7AI ⇒ thread chat nhanh) */}
                 <Button
                   variant="outline"
                   size="icon"

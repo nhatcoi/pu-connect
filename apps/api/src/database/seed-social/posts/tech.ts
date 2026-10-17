@@ -217,7 +217,7 @@ Nếu dữ liệu đổi khi có thao tác (VD admin sửa sản phẩm) thì g�
 
 1. **Đọc theo thứ tự:** Abstract → hình vẽ & bảng kết quả → Conclusion. Thấy hay mới đọc Method.
 2. **Ghi 5 dòng:** bài toán gì, ý tưởng chính, so với cái gì, kết quả, điểm yếu.
-3. **Không hiểu thuật ngữ thì hỏi PU AI hoặc tra**, đừng dịch cả bài, rất tốn thời gian.
+3. **Không hiểu thuật ngữ thì hỏi N7AI hoặc tra**, đừng dịch cả bài, rất tốn thời gian.
 4. **Đọc code nếu có.** Nhiều khi đọc code 30 phút hiểu hơn đọc Method 2 tiếng.
 
 Mình hay lấy paper từ arXiv rồi nghe giải thích trên kênh Yannic Kilcher. Người mới nên bắt đầu với các bài kinh điển như *Attention Is All You Need*, đọc chậm thôi.

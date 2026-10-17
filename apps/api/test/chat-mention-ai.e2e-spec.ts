@@ -3,7 +3,7 @@ import type { DatabaseService } from '../src/database/database.service'
 import { TokenCipher } from '../src/modules/ai/connectors/token-cipher'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
-// Mention trong nhóm, PU AI nhiều thread, skill, ngữ cảnh (docs/core/09-chat-mention-ai-threads-skills.md)
+// Mention trong nhóm, N7AI nhiều thread, skill, ngữ cảnh (docs/core/09-chat-mention-ai-threads-skills.md)
 describe('Chat mention · AI threads · skills · refs (e2e)', () => {
   let app: NestExpressApplication
   let db: DatabaseService
@@ -60,7 +60,7 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     expect((await summary(m1Agent, conv.id)).unreadMentions).toBe(0)
   })
 
-  it('PU AI nhiều thread: tự đặt tiêu đề, chat mới dùng lại thread rỗng, danh sách / tìm / đổi tên / xóa', async () => {
+  it('N7AI nhiều thread: tự đặt tiêu đề, chat mới dùng lại thread rỗng, danh sách / tìm / đổi tên / xóa', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
     const first = (await agent.post('/api/conversations/ai').expect(200)).body.data
@@ -181,7 +181,7 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
 
     // Callback không có state trong session ⇒ không lưu gì, về Cài đặt › Trình kết nối báo lỗi
     const cb = await agent.get('/api/ai/connectors/google/callback?code=x&state=forged').expect(302)
-    expect(cb.headers.location).toMatch(/\/puai\/settings\/connectors\?connector=google&result=error$/)
+    expect(cb.headers.location).toMatch(/\/n7ai\/settings\/connectors\?connector=google&result=error$/)
 
     const cipher = new TokenCipher('secret')
     const enc = cipher.encrypt('refresh-token')

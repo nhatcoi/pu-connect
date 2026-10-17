@@ -77,7 +77,7 @@ const decode = (s: string) =>
     .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"')
 
-// Duyệt web cho PU AI: (1) đọc URL có trong câu hỏi; (2) tìm kiếm web qua Tavily (khi có TAVILY_API_KEY)
+// Duyệt web cho N7AI: (1) đọc URL có trong câu hỏi; (2) tìm kiếm web qua Tavily (khi có TAVILY_API_KEY)
 // Không dùng trình duyệt headless (tốn RAM, rủi ro) — chỉ tải HTML tĩnh
 @Injectable()
 export class WebReaderService {
@@ -118,7 +118,7 @@ export class WebReaderService {
       await assertPublicUrl(url)
       const res = await fetch(url, {
         redirect: 'manual',
-        headers: { 'User-Agent': 'PU-AI-Reader/1.0 (+https://puc.vnhat.dev)', Accept: 'text/html,text/plain;q=0.9' },
+        headers: { 'User-Agent': 'N7AI-Reader/1.0 (+https://puc.vnhat.dev)', Accept: 'text/html,text/plain;q=0.9' },
         signal: AbortSignal.timeout(TIMEOUT_MS)
       })
       const location = res.headers.get('location')

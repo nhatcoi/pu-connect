@@ -57,7 +57,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
   return (
     <>
       <PageHeader
-        title="PU AI"
+        title="N7AI"
         tabs={
           <Tabs
             value={tab}

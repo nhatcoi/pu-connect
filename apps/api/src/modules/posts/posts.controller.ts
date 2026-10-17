@@ -131,11 +131,11 @@ export class PostsController {
     return this.postsService.toggleResolve(id, userId)
   }
 
-  // Tóm tắt bài bằng PU AI (bản đã lưu không tốn lượt)
+  // Tóm tắt bài bằng N7AI (bản đã lưu không tốn lượt)
   @Post(':id/summary')
   @HttpCode(HttpStatus.OK)
   summarize(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    return this.postAi.summarize(id, requireUserId(req, 'Đăng nhập để dùng PU AI'))
+    return this.postAi.summarize(id, requireUserId(req, 'Đăng nhập để dùng N7AI'))
   }
 
   @Post(':id/report')

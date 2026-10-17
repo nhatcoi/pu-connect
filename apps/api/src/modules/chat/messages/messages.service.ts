@@ -7,11 +7,11 @@ import { ChatCoreService } from '../chat-core.service'
 import { MESSAGE_COLUMNS, MESSAGE_FROM, mapMessageRow } from '../chat.mapper'
 import { ChatMentionsService, mentionMeta } from '../mentions/chat-mentions.service'
 import { ChatPushService } from '../notify/chat-push.service'
-import { AiSkillsService } from '../puai/ai-skills.service'
-import { deriveThreadTitle, mapThread } from '../puai/ai-threads.service'
-import { PuaiService, type ReplyOutcome } from '../puai/puai.service'
+import { AiSkillsService } from '../n7ai/ai-skills.service'
+import { deriveThreadTitle, mapThread } from '../n7ai/ai-threads.service'
+import { N7AiService, type ReplyOutcome } from '../n7ai/n7ai.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
-import { PUAI_MENTION } from '../../ai/ai.constants'
+import { N7AI_MENTION } from '../../ai/ai.constants'
 
 type Membership = { type: string; role: string }
 
@@ -26,7 +26,7 @@ export class MessagesService {
 
   constructor(
     private readonly core: ChatCoreService,
-    private readonly puai: PuaiService,
+    private readonly n7ai: N7AiService,
     private readonly storage: StorageService,
     private readonly chatPush: ChatPushService,
     private readonly mentions: ChatMentionsService,
@@ -53,18 +53,18 @@ export class MessagesService {
     return { data: rows.map(mapMessageRow), nextCursor: res.rows.length > lim ? String(rows[rows.length - 1].id) : null }
   }
 
-  // Gửi tin của người dùng (giới hạn tốc độ) rồi để PU AI trả lời nền khi được hỏi
+  // Gửi tin của người dùng (giới hạn tốc độ) rồi để N7AI trả lời nền khi được hỏi
   async send(userId: string, conversationId: string, input: SendMessageInput): Promise<ChatMessage> {
     this.sendLimiter.consume(userId)
     const { message, asksAi } = await this.persist(userId, conversationId, input)
-    if (asksAi) void this.puai.reply(conversationId, userId, message.id)
+    if (asksAi) void this.n7ai.reply(conversationId, userId, message.id)
     return message
   }
 
-  // Tác vụ tự động: đăng câu hỏi thay người dùng (gắn meta.task) rồi chờ PU AI trả lời xong
+  // Tác vụ tự động: đăng câu hỏi thay người dùng (gắn meta.task) rồi chờ N7AI trả lời xong
   async sendAsTask(userId: string, conversationId: string, input: SendMessageInput, task: { id: string; title: string }): Promise<ReplyOutcome> {
     const { message } = await this.persist(userId, conversationId, input, { task })
-    return this.puai.reply(conversationId, userId, message.id)
+    return this.n7ai.reply(conversationId, userId, message.id)
   }
 
   // ACID: lưu tin + cập nhật tin cuối + read cursor người gửi + mention / ngữ cảnh / skill / tiêu đề thread AI; phát sự kiện sau commit
@@ -127,7 +127,7 @@ export class MessagesService {
     return { message, asksAi: this.asksAi(type, input.content, message.meta) }
   }
 
-  // Chế độ học / Research / connector chỉ có nghĩa khi hỏi PU AI (thread AI hoặc nhóm)
+  // Chế độ học / Research / connector chỉ có nghĩa khi hỏi N7AI (thread AI hoặc nhóm)
   private aiMeta(type: string, input: SendMessageInput): ChatMessageMeta {
     if (type === 'direct') return {}
     const meta: ChatMessageMeta = {}
@@ -176,10 +176,10 @@ export class MessagesService {
     return res.rows[0] ? mapThread(res.rows[0]) : null
   }
 
-  // Thread AI luôn hỏi; nhóm: @puai, hoặc chọn chế độ / skill / Research qua "/" hay "+"
+  // Thread AI luôn hỏi; nhóm: @n7ai, hoặc chọn chế độ / skill / Research qua "/" hay "+"
   private asksAi(type: string, content: string, meta: ChatMessageMeta | null): boolean {
     if (type === 'ai') return true
-    return type === 'group' && (PUAI_MENTION.test(content) || !!meta?.aiMode || !!meta?.skill || !!meta?.research)
+    return type === 'group' && (N7AI_MENTION.test(content) || !!meta?.aiMode || !!meta?.skill || !!meta?.research)
   }
 
   // Sửa tin văn bản của mình trong 15 phút; nhóm ⇒ tính lại mention (bỏ @ thì hết badge, không push lại)

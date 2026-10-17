@@ -50,7 +50,7 @@ export function PrivacySection() {
       </SettingsGroup>
 
       <SettingsGroup label="Dữ liệu & gợi ý" hint="Tắt cá nhân hóa sẽ xóa ngay dữ liệu hành vi đã lưu.">
-        <SwitchRow {...bind('personalization')} label="Cá nhân hóa gợi ý" description="Dùng bài bạn xem, tìm kiếm và tương tác để gợi ý bảng tin và PU AI" />
+        <SwitchRow {...bind('personalization')} label="Cá nhân hóa gợi ý" description="Dùng bài bạn xem, tìm kiếm và tương tác để gợi ý bảng tin và N7AI" />
       </SettingsGroup>
     </>
   )

@@ -14,7 +14,7 @@ export const RESEARCH_COST = 2 // truy xuất sâu + câu trả lời dài ⇒ t
 export type LlmMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam
 export type LlmUsage = { prompt_tokens: number; completion_tokens: number }
 
-// Lõi gọi LLM dùng chung: client, model, tài khoản @puai, quota/ngày và nhật ký ai_runs
+// Lõi gọi LLM dùng chung: client, model, tài khoản @n7ai, quota/ngày và nhật ký ai_runs
 // Shared LLM core: one client, one quota across chat, comments and summaries
 @Injectable()
 export class LlmService {
@@ -40,13 +40,13 @@ export class LlmService {
 
   async getBotId(): Promise<string> {
     if (this.botId) return this.botId
-    const res = await this.db.query(`SELECT id FROM users WHERE username = 'puai' AND account_type = 'bot' LIMIT 1`)
-    if (!res.rows[0]) throw new Error('Thiếu tài khoản @puai (chạy messaging-upgrade.sql)')
+    const res = await this.db.query(`SELECT id FROM users WHERE username = 'n7ai' AND account_type = 'bot' LIMIT 1`)
+    if (!res.rows[0]) throw new Error('Thiếu tài khoản @n7ai (chạy messaging-upgrade.sql)')
     this.botId = res.rows[0].id as string
     return this.botId
   }
 
-  // Lượt đã dùng hôm nay (theo giờ Việt Nam), tính chung mọi nơi gọi PU AI; Research tính 2 lượt
+  // Lượt đã dùng hôm nay (theo giờ Việt Nam), tính chung mọi nơi gọi N7AI; Research tính 2 lượt
   async quota(userId: string): Promise<AiQuota> {
     const res = await this.db.query(
       `SELECT COALESCE(SUM(CASE WHEN task = '${RESEARCH_TASK}' THEN ${RESEARCH_COST} ELSE 1 END), 0)::int AS used FROM ai_runs

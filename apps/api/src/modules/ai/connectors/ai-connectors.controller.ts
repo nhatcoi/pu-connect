@@ -7,7 +7,7 @@ import { AiConnectorsService } from './ai-connectors.service'
 import { completeConnectorOAuth } from './connector-callback'
 import { GoogleOAuthService, providerFromSlug, type GoogleProvider } from './google-oauth.service'
 
-// Connector PU AI: danh sách + kết nối / ngắt Google Drive, Google Calendar (OAuth redirect flow, state lưu session)
+// Connector N7AI: danh sách + kết nối / ngắt Google Drive, Google Calendar (OAuth redirect flow, state lưu session)
 @Controller('ai/connectors')
 @UseGuards(AuthenticatedGuard)
 export class AiConnectorsController {

@@ -1,6 +1,6 @@
 -- ==========================================================
--- Seed: Skill dựng sẵn của PU AI trong thư viện (idempotent)
--- Chủ sở hữu = tài khoản bot @puai ⇒ hiện "Chính thức", xếp đầu thư viện
+-- Seed: Skill dựng sẵn của N7AI trong thư viện (idempotent)
+-- Chủ sở hữu = tài khoản bot @n7ai ⇒ hiện "Chính thức", xếp đầu thư viện
 -- Chạy lại ⇒ cập nhật nội dung, giữ nguyên is_public / enabled (admin có thể ẩn)
 -- Chuỗi bọc $i$ (chỉ dẫn có LaTeX $$…$$)
 -- ==========================================================
@@ -84,7 +84,7 @@ Giữ nguyên ý người viết. Nếu là bài luận, thêm nhận xét ngắ
 4. Trích dẫn theo APA 7 khi có thông tin nguồn; không bịa nguồn.
 Không viết hộ toàn bài; tập trung giúp người học tự viết tốt hơn.$i$, 'Đề tài và yêu cầu của giảng viên…')
 ) AS v(slug, name, description, instructions, input_hint)
-WHERE u.username = 'puai' AND u.account_type = 'bot'
+WHERE u.username = 'n7ai' AND u.account_type = 'bot'
 ON CONFLICT (owner_id, slug) DO UPDATE
   SET name = EXCLUDED.name, description = EXCLUDED.description, instructions = EXCLUDED.instructions,
       input_hint = EXCLUDED.input_hint, updated_at = NOW()

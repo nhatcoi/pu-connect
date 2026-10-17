@@ -485,7 +485,7 @@ export class AdminService {
     return insight
   }
 
-  // ── 4. PU AI Operations & Telemetry ──────────────────────────────────────
+  // ── 4. N7AI Operations & Telemetry ──────────────────────────────────────
 
   async getAiOverview(): Promise<AdminAiOverview> {
     const [summaryRes, dailyRes, byTaskRes, errorsRes, topUsersRes] = await Promise.all([

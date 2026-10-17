@@ -96,6 +96,7 @@ echo "Đang kiểm tra và áp dụng cập nhật CSDL (Schema & Upgrades)..."
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/schema.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/domain1-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/add-communities.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/n7ai-rename-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/add-indexes.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/auth-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/messaging-upgrade.sql

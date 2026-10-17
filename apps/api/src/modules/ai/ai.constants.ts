@@ -1,7 +1,8 @@
-// Gọi PU AI bằng @puai trong tin nhắn nhóm / bình luận
-export const PUAI_MENTION = /(^|\s)@puai\b/i
+// Gọi N7AI bằng @n7ai trong tin nhắn nhóm / bình luận
+// Tên cũ @puai (trước 2026-10-17) vẫn gọi được
+export const N7AI_MENTION = /(^|\s)@(?:n7ai|puai)\b/i
 
-export const stripPuaiMention = (text: string) => text.replace(/@puai\b/gi, '').trim()
+export const stripN7AiMention = (text: string) => text.replace(/@(?:n7ai|puai)\b/gi, '').trim()
 
 export type AiTrigger = 'dm' | 'mention' | 'comment' | 'summary' | 'skill'
 export type AiRef = { type: 'message' | 'comment' | 'post'; id: string }

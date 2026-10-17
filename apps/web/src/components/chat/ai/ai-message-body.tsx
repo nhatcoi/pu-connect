@@ -10,7 +10,7 @@ import { FlashcardDeck } from './flashcard-deck'
 import { QuizCard } from './quiz-card'
 import { splitStudyBlocks } from './study-blocks'
 
-// Nội dung tin PU AI: Markdown + quiz/flashcard tương tác + nguồn tham khảo
+// Nội dung tin N7AI: Markdown + quiz/flashcard tương tác + nguồn tham khảo
 export function AiMessageBody({ message: m }: { message: UiMessage }) {
   const segments = useMemo(() => splitStudyBlocks(m.content), [m.content])
   const mode = m.meta?.aiMode

@@ -56,7 +56,7 @@ export const FeaturePreferencesSchema = z.object({
   featuredComment: z.boolean().default(true),
   // Bảng tin: pill "N bài mới" (tắt ⇒ dừng polling + socket)
   newPostsPill: z.boolean().default(true),
-  // PU AI: nút "✨ Tóm tắt" trên bài dài
+  // N7AI: nút "✨ Tóm tắt" trên bài dài
   aiSummary: z.boolean().default(true)
 })
 

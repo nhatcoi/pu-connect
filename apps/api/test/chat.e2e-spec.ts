@@ -69,7 +69,7 @@ describe('Chat (e2e)', () => {
     expect(del.body.data).toMatchObject({ deleted: true, content: '' })
   })
 
-  it('hội thoại PU AI: khi chưa cấu hình key, bot trả lời thông báo', async () => {
+  it('hội thoại N7AI: khi chưa cấu hình key, bot trả lời thông báo', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
     const conv = await agent.post('/api/conversations/ai').expect(200)

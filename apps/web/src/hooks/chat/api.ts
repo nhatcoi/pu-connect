@@ -67,7 +67,7 @@ export const chatApi = {
   get: (id: string) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}`)),
   unread: async () => (await unwrap(apiClient<Envelope<{ total: number }>>('/conversations/unread-count'))).total,
   openDirect: (userId: string) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/direct', json('POST', { userId }))),
-  // PU AI chat nhanh: thread gần nhất, chưa có thì tạo
+  // N7AI chat nhanh: thread gần nhất, chưa có thì tạo
   openAi: () => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/ai', json('POST'))),
   openStudyGroup: (groupId: string) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/study-groups/${groupId}`, json('POST'))),
   createGroup: (title: string, memberIds: string[]) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations', json('POST', { title, memberIds }))),
@@ -106,7 +106,7 @@ export const chatApi = {
   connectorConnectUrl: (id: AiConnectorId) => `${API_BASE_URL}/ai/connectors/${connectorSlug(id)}/connect`,
   disconnectConnector: (id: AiConnectorId) => apiClient(`/ai/connectors/${connectorSlug(id)}`, json('DELETE')),
 
-  // PU AI nhiều hội thoại
+  // N7AI nhiều hội thoại
   aiThreads: (q: string, cursor: string | null, signal?: AbortSignal) =>
     unwrap(apiClient<Envelope<AiThreadsPage>>(`/ai/threads?${qs({ q, cursor, limit: 20 })}`, { signal })),
   createAiThread: () => unwrap(apiClient<Envelope<ConversationSummary>>('/ai/threads', json('POST'))),
@@ -127,7 +127,7 @@ export const chatApi = {
   skillState: (id: string, state: { enabled?: boolean; pinned?: boolean }) =>
     unwrap(apiClient<Envelope<AiSkill>>(`/ai/skills/${id}/state`, json('PATCH', state))),
 
-  // Cài đặt PU AI (docs/core/10-puai-settings.md)
+  // Cài đặt N7AI (docs/core/10-n7ai-settings.md)
   aiSettings: () => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings')),
   updateAiSettings: (patch: Partial<AiSettings>) => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings', json('PATCH', patch))),
   memories: () => unwrap(apiClient<Envelope<AiMemory[]>>('/ai/memories')),

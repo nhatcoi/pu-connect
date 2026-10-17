@@ -5,7 +5,7 @@ import type { AiMode } from '@pu/schemas'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META, AI_MODE_ORDER } from '../ai/ai-modes'
 
-// Chip chọn chế độ học (đặt trên ô soạn tin của PU AI)
+// Chip chọn chế độ học (đặt trên ô soạn tin của N7AI)
 export function AiModeBar({ value, onChange }: { value: AiMode; onChange: (mode: AiMode) => void }) {
   return (
     <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1.5">

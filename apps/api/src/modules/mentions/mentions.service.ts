@@ -51,7 +51,7 @@ export class MentionsService {
     return res.rows.map((r) => ({ id: r.id, username: r.username, accountType: r.account_type }))
   }
 
-  // Thông báo user_mention cho người thật; bot (@puai) do AI layer xử lý (P3)
+  // Thông báo user_mention cho người thật; bot (@n7ai) do AI layer xử lý (P3)
   toNotifications(mentioned: MentionedUser[], ctx: MentionContext): NotifyInput[] {
     const where = ctx.sourceType === 'comment' ? 'một bình luận' : 'một bài viết'
     const link = ctx.commentId ? `/post/${ctx.postId}?comment=${ctx.commentId}` : `/post/${ctx.postId}`

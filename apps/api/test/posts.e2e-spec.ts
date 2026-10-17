@@ -57,12 +57,12 @@ describe('Posts & accepted solution (e2e)', () => {
     expect(after.rows[0].is_resolved).toBe(false)
   })
 
-  it('@puai trong bình luận ⇒ PU AI trả lời thành bình luận con', async () => {
+  it('@n7ai trong bình luận ⇒ N7AI trả lời thành bình luận con', async () => {
     const author = await createUser(db)
     const agent = await loginAgent(app, author)
     const post = await agent.post('/api/posts').send({ content: 'Đệ quy là gì?' }).expect(201)
     const postId = post.body.data.id
-    const asked = await agent.post(`/api/posts/${postId}/comments`).send({ content: '@puai giải thích giúp mình' }).expect(201)
+    const asked = await agent.post(`/api/posts/${postId}/comments`).send({ content: '@n7ai giải thích giúp mình' }).expect(201)
 
     // Trả lời chạy nền ⇒ chờ tối đa 3s
     let rows: { content: string }[] = []
@@ -71,15 +71,15 @@ describe('Posts & accepted solution (e2e)', () => {
       rows = (
         await db.query(
           `SELECT c.content FROM comments c JOIN users u ON u.id = c.author_id
-           WHERE c.post_id = $1 AND c.parent_id = $2 AND u.username = 'puai'`,
+           WHERE c.post_id = $1 AND c.parent_id = $2 AND u.username = 'n7ai'`,
           [postId, asked.body.data.id]
         )
       ).rows
     }
     expect(rows).toHaveLength(1)
-    expect(rows[0].content).toContain('PU AI')
+    expect(rows[0].content).toContain('N7AI')
 
-    // Bình luận thường không gọi PU AI
+    // Bình luận thường không gọi N7AI
     await agent.post(`/api/posts/${postId}/comments`).send({ content: 'cảm ơn' }).expect(201)
     await new Promise((r) => setTimeout(r, 300))
     const count = await db.query(`SELECT comments_count FROM posts WHERE id = $1`, [postId])
@@ -95,7 +95,7 @@ describe('Posts & accepted solution (e2e)', () => {
     const content = 'Nội dung dài về cấu trúc dữ liệu. '.repeat(20)
     const post = await agent.post('/api/posts').send({ content }).expect(201)
     const postId = post.body.data.id
-    // PU AI tắt trong test ⇒ chưa có bản lưu thì 503
+    // N7AI tắt trong test ⇒ chưa có bản lưu thì 503
     await agent.post(`/api/posts/${postId}/summary`).expect(503)
 
     // Băm giống server: tiêu đề + nội dung

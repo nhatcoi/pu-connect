@@ -17,7 +17,7 @@ const GOOGLE: (Static & { id: GoogleProvider })[] = [
   { id: 'google_calendar', name: 'Google Calendar', description: 'Lịch sắp tới để lập lộ trình ôn, hỏi lịch bận (chỉ đọc)' }
 ]
 
-// Registry connector của PU AI (menu "+" › Connectors) kèm trạng thái kết nối của người xem
+// Registry connector của N7AI (menu "+" › Connectors) kèm trạng thái kết nối của người xem
 @Injectable()
 export class AiConnectorsService {
   constructor(

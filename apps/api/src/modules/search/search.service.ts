@@ -325,7 +325,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
       // Tham số người xem chỉ thêm khi có đăng nhập (khác posts/documents: ở đây chỉ dùng cho cờ "đã theo dõi")
       if (currentUserId) params.push(currentUserId)
       const viewer = `$${params.length}`
-      // Chỉ tài khoản hoạt động; bot (@puai) tìm được, tài khoản hệ thống thì không
+      // Chỉ tài khoản hoạt động; bot (@n7ai) tìm được, tài khoản hệ thống thì không
       let sql = `
         SELECT u.id, u.username, u.display_name, u.avatar_url, u.faculty, u.role,
                u.reputation_points, u.academic_year,

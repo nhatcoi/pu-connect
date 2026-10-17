@@ -9,7 +9,7 @@ import { ConversationListSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
-import { PuaiFab } from '@/components/puai/puai-fab'
+import { N7AiFab } from '@/components/n7ai/n7ai-fab'
 import { useConversations } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -22,14 +22,14 @@ const FILTERS: { id: Filter; label: string }[] = [
 ]
 
 // Danh sách hội thoại (mobile & desktop đều tách 2 màn: /messages và /messages/[id])
-// PU AI: 1 thread chat nhanh đứng đầu (server xếp hạng) + nút nổi mở không gian /puai
+// N7AI: 1 thread chat nhanh đứng đầu (server xếp hạng) + nút nổi mở không gian /n7ai
 export default function MessagesPage() {
   const myId = useAppStore((s) => s.user?.id)
   const [composing, setComposing] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   // Lọc ở server, mỗi bộ lọc 1 cache
   const { conversations: visible, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useConversations(filter)
-  // Chưa từng chat PU AI ⇒ dòng mở đầu thay cho thread chat nhanh
+  // Chưa từng chat N7AI ⇒ dòng mở đầu thay cho thread chat nhanh
   const showAiRow = filter === 'all' && !isPending && !visible.some((c) => c.type === 'ai')
 
   // Cuộn gần cuối ⇒ tải trang tiếp
@@ -101,7 +101,7 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <PuaiFab />
+      <N7AiFab />
       <PageAside>
         <AiStudyCard />
       </PageAside>

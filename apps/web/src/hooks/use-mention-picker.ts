@@ -5,7 +5,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import type { MentionCandidate } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
-import { PUAI_CANDIDATE, getActiveMention, insertMention, matchesCandidate, type ActiveMention } from '@/lib/mention'
+import { N7AI_CANDIDATE, getActiveMention, insertMention, matchesCandidate, type ActiveMention } from '@/lib/mention'
 
 const MAX_ITEMS = 8
 const DEBOUNCE_MS = 150
@@ -20,7 +20,7 @@ interface Options {
   enabled?: boolean
 }
 
-// Gợi ý @mention: PU AI ghim đầu > người trong bài > kết quả server (đang theo dõi, khác)
+// Gợi ý @mention: N7AI ghim đầu > người trong bài > kết quả server (đang theo dõi, khác)
 export function useMentionPicker({ textareaRef, value, setValue, postId, context = [], enabled = true }: Options) {
   const [active, setActive] = useState<ActiveMention | null>(null)
   const [index, setIndex] = useState(0)
@@ -66,7 +66,7 @@ export function useMentionPicker({ textareaRef, value, setValue, postId, context
       seen.add(key)
       out.push(c)
     }
-    if (matchesCandidate(PUAI_CANDIDATE, q) || 'pu ai'.startsWith(q.toLowerCase())) push(PUAI_CANDIDATE)
+    if (matchesCandidate(N7AI_CANDIDATE, q) || 'n7 ai'.startsWith(q.toLowerCase())) push(N7AI_CANDIDATE)
     context.filter((c) => matchesCandidate(c, q)).forEach(push)
     // Kết quả cũ (keepPreviousData) vẫn lọc theo từ khoá hiện tại để không nhảy lung tung
     ;(remote.data ?? []).filter((c) => matchesCandidate(c, q)).forEach(push)

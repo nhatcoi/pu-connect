@@ -8,7 +8,7 @@ import { flattenPages } from '@/lib/post-cache'
 import type { CommentItem } from '@pu/schemas'
 import { toast } from 'sonner'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
-import { PUAI_MENTION } from '@/lib/mention'
+import { N7AI_MENTION } from '@/lib/mention'
 
 const INITIAL_COMMENT_LIMIT = 3
 const BATCH_COMMENT_LIMIT = 10
@@ -87,7 +87,7 @@ export function useComments(postId: string, initialOpen = false) {
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  // PU AI trả lời xong (server báo người hỏi) ⇒ tải lại bình luận của bài
+  // N7AI trả lời xong (server báo người hỏi) ⇒ tải lại bình luận của bài
   useRealtimeEvent<{ postId: string }>('comments.changed', (e) => {
     if (e.postId === postId) void queryClient.invalidateQueries({ queryKey: key })
   })
@@ -103,7 +103,7 @@ export function useComments(postId: string, initialOpen = false) {
         })
         if (res?.data) {
           const created = res.data
-          if (PUAI_MENTION.test(created.content)) toast.info('PU AI đang soạn câu trả lời…')
+          if (N7AI_MENTION.test(created.content)) toast.info('N7AI đang soạn câu trả lời…')
           // Chưa mở bình luận lần nào ⇒ chưa có cache: tạo trang đầu chứa bình luận mới
           if (!queryClient.getQueryData(key)) {
             queryClient.setQueryData<CommentsData>(key, {

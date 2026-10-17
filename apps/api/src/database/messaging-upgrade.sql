@@ -14,18 +14,18 @@ CREATE INDEX IF NOT EXISTS idx_user_sessions_expire ON user_sessions(expire);
 -- 2. Loại tài khoản: human | bot | system (bot/system không thể đăng nhập)
 ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(10) NOT NULL DEFAULT 'human';
 
--- 3. Tài khoản PU AI (@puai): không mật khẩu, không google_id
+-- 3. Tài khoản N7AI (@n7ai): không mật khẩu, không google_id
 INSERT INTO users (email, username, display_name, account_type, role, reputation_points,
                    is_onboarded, is_verified, verified_at, email_verified, email_verified_at, avatar_url, bio)
-VALUES ('puai@system.local', 'puai', 'PU AI', 'bot', 'student', 0,
+VALUES ('n7ai@system.local', 'n7ai', 'N7AI', 'bot', 'student', 0,
         TRUE, TRUE, NOW(), TRUE, NOW(),
-        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=puai&backgroundColor=1e3a8a',
-        'Trợ lý học tập của PU Connector. Tag @puai để hỏi.')
-ON CONFLICT (username) DO NOTHING;
+        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=n7ai&backgroundColor=1e3a8a',
+        'Trợ lý học tập của PU Connector. Tag @n7ai để hỏi.')
+ON CONFLICT DO NOTHING;
 
--- Đảm bảo @puai luôn là bot (kể cả khi username đã tồn tại từ trước)
+-- Đảm bảo @n7ai luôn là bot (kể cả khi username đã tồn tại từ trước)
 UPDATE users SET account_type = 'bot', password_hash = NULL, google_id = NULL
-WHERE username = 'puai' AND email = 'puai@system.local' AND account_type <> 'bot';
+WHERE username = 'n7ai' AND email = 'n7ai@system.local' AND account_type <> 'bot';
 
 -- 4. Mention dùng chung cho post / comment / message
 CREATE TABLE IF NOT EXISTS mentions (

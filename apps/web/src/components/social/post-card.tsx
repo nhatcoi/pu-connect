@@ -601,7 +601,7 @@ export function PostCard({
                 <button type="button" onClick={() => setIsExpanded((v) => !v)} className="text-xs font-medium text-primary hover:underline cursor-pointer">
                   {isExpanded ? 'Thu gọn' : 'Xem thêm'}
                 </button>
-                {/* Bài dài: tóm tắt bằng PU AI (cần đăng nhập) */}
+                {/* Bài dài: tóm tắt bằng N7AI (cần đăng nhập) */}
                 {user && showAiSummary && (
                   <button
                     type="button"

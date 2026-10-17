@@ -30,7 +30,7 @@ SELECT * FROM (
   UNION ALL SELECT 'nhóm học (4)', count(*), NULL FROM study_group_members WHERE user_id = :'uid'
   UNION ALL SELECT 'bình luận (3)', count(*), max(created_at) FROM comments WHERE author_id = :'uid'
   UNION ALL SELECT 'thả cảm xúc (1)', count(*), max(created_at) FROM post_reactions WHERE user_id = :'uid'
-  UNION ALL SELECT 'hỏi PU AI', count(*), max(m.created_at) FROM messages m JOIN conversations c ON c.id = m.conversation_id
+  UNION ALL SELECT 'hỏi N7AI', count(*), max(m.created_at) FROM messages m JOIN conversations c ON c.id = m.conversation_id
     WHERE c.type = 'ai' AND m.sender_id = :'uid' AND m.kind = 'text' AND m.deleted_at IS NULL
 ) s;
 
@@ -49,7 +49,7 @@ LEFT JOIN documents d ON e.target_type = 'document' AND d.id = e.target_id
 LEFT JOIN courses dc ON dc.id = d.course_id
 WHERE e.user_id = :'uid' ORDER BY e.id DESC LIMIT 30;
 
-\echo '\n== 6. Câu hỏi PU AI gần nhất (môn được nhận diện) =='
+\echo '\n== 6. Câu hỏi N7AI gần nhất (môn được nhận diện) =='
 SELECT m.created_at, left(m.content, 80) AS question,
        (SELECT string_agg(co.code, ', ') FROM courses co
          WHERE immutable_unaccent(lower(m.content)) LIKE '%' || immutable_unaccent(lower(co.name)) || '%'

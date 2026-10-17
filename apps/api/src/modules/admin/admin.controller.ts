@@ -160,7 +160,7 @@ export class AdminController {
     return this.admin.unsuspendUser(requireUserId(req), id)
   }
 
-  // ── 4. PU AI Operations & Telemetry ──
+  // ── 4. N7AI Operations & Telemetry ──
   @Get('ai/overview')
   @RequireAdminPermission('ai:read')
   aiOverview() {

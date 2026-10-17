@@ -4,7 +4,7 @@ import type { CommentItem, PostSummary } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { COMMENT_PROMPT, SUMMARY_PROMPT, SYSTEM_PROMPT } from '../ai/ai.prompts'
 import { blockExistsSql } from '../blocks/blocks.sql'
-import { PUAI_MENTION, stripPuaiMention } from '../ai/ai.constants'
+import { N7AI_MENTION, stripN7AiMention } from '../ai/ai.constants'
 import { AiRetrieval, contextBlock } from '../ai/ai.retrieval'
 import { LlmService, type LlmMessage } from '../ai/llm.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
@@ -20,7 +20,7 @@ const SUMMARY_INPUT_CHARS = 12000
 type PostContext = { title: string; content: string; author: string; thread: { name: string; content: string }[] }
 type ThreadContext = PostContext & { question: string; asker: string }
 
-// PU AI trên bài viết (Domain 13): trả lời @puai trong bình luận, tóm tắt bài dài
+// N7AI trên bài viết (Domain 13): trả lời @n7ai trong bình luận, tóm tắt bài dài
 @Injectable()
 export class PostAiService {
   private readonly logger = new Logger(PostAiService.name)
@@ -35,11 +35,11 @@ export class PostAiService {
 
   // Gọi sau khi bình luận đã lưu; chạy nền, không ném lỗi ra ngoài
   async onComment(comment: CommentItem, requesterId: string): Promise<void> {
-    if (!PUAI_MENTION.test(comment.content)) return
+    if (!N7AI_MENTION.test(comment.content)) return
     try {
       await this.replyToComment(comment, requesterId)
     } catch (err: any) {
-      this.logger.error(`PU AI trả lời bình luận ${comment.id} lỗi: ${err?.message}`)
+      this.logger.error(`N7AI trả lời bình luận ${comment.id} lỗi: ${err?.message}`)
     }
   }
 
@@ -48,10 +48,10 @@ export class PostAiService {
     const botId = await this.llm.getBotId()
     const reply = (content: string) => this.postReply(botId, comment, content, requesterId)
 
-    if (!this.llm.client) return void (await reply('PU AI chưa sẵn sàng, bạn thử lại sau nhé.'))
+    if (!this.llm.client) return void (await reply('N7AI chưa sẵn sàng, bạn thử lại sau nhé.'))
     if (!(await this.llm.hasQuota(requesterId))) {
       await this.llm.logRejected(requesterId, 'comment')
-      return void (await reply('Bạn đã dùng hết lượt hỏi PU AI hôm nay. Hẹn bạn ngày mai nhé!'))
+      return void (await reply('Bạn đã dùng hết lượt hỏi N7AI hôm nay. Hẹn bạn ngày mai nhé!'))
     }
 
     const runId = await this.llm.startRun({ requesterId, trigger: 'comment', task: 'comment', source: { type: 'comment', id: comment.id } })
@@ -71,7 +71,7 @@ export class PostAiService {
       await this.llm.finishRun(runId, { usage, startedAt: started, reply: { type: 'comment', id: saved.id } })
     } catch (err) {
       await this.llm.failRun(runId, err, started)
-      await reply(this.llm.isBusyError(err) ? 'PU AI đang quá tải, bạn thử lại sau ít phút nhé.' : 'PU AI gặp lỗi khi trả lời. Bạn thử lại sau nhé.')
+      await reply(this.llm.isBusyError(err) ? 'N7AI đang quá tải, bạn thử lại sau ít phút nhé.' : 'N7AI gặp lỗi khi trả lời. Bạn thử lại sau nhé.')
       throw err
     }
   }
@@ -93,10 +93,10 @@ export class PostAiService {
     const hash = createHash('sha256').update(text).digest('hex')
     if (post.content_hash === hash) return { summary: post.summary, cached: true }
 
-    if (!this.llm.client) throw new ServiceUnavailableException('PU AI chưa sẵn sàng, bạn thử lại sau nhé')
+    if (!this.llm.client) throw new ServiceUnavailableException('N7AI chưa sẵn sàng, bạn thử lại sau nhé')
     if (!(await this.llm.hasQuota(requesterId))) {
       await this.llm.logRejected(requesterId, 'summary')
-      throw new HttpException('Bạn đã dùng hết lượt PU AI hôm nay', HttpStatus.TOO_MANY_REQUESTS)
+      throw new HttpException('Bạn đã dùng hết lượt N7AI hôm nay', HttpStatus.TOO_MANY_REQUESTS)
     }
 
     const started = Date.now()
@@ -122,11 +122,11 @@ export class PostAiService {
       return { summary, cached: false }
     } catch (err) {
       await this.llm.failRun(runId, err, started)
-      throw new ServiceUnavailableException(this.llm.isBusyError(err) ? 'PU AI đang quá tải, bạn thử lại sau ít phút nhé' : 'PU AI chưa tóm tắt được bài này')
+      throw new ServiceUnavailableException(this.llm.isBusyError(err) ? 'N7AI đang quá tải, bạn thử lại sau ít phút nhé' : 'N7AI chưa tóm tắt được bài này')
     }
   }
 
-  // Bình luận của @puai (qua CommentsService ⇒ đếm, thông báo "đã trả lời bình luận của bạn" dùng chung)
+  // Bình luận của @n7ai (qua CommentsService ⇒ đếm, thông báo "đã trả lời bình luận của bạn" dùng chung)
   private async postReply(botId: string, comment: CommentItem, content: string, requesterId: string) {
     const saved = await this.comments.create(botId, { postId: comment.postId, parentId: comment.id, content })
     this.realtime.emitToUser(requesterId, 'comments.changed', { postId: comment.postId })
@@ -159,7 +159,7 @@ export class PostAiService {
       content: (p.content || '').slice(0, POST_CHARS),
       author: p.author,
       thread: thread.rows.reverse(),
-      question: stripPuaiMention(comment.content),
+      question: stripN7AiMention(comment.content),
       asker: comment.author?.displayName || 'Người hỏi'
     }
   }

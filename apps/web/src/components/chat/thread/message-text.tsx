@@ -4,7 +4,7 @@ import React, { useMemo } from 'react'
 import Link from 'next/link'
 import { CalendarClock, Telescope, Wand2 } from 'lucide-react'
 import type { ChatMessageMeta } from '@pu/schemas'
-import { PUAI_USERNAME } from '@/lib/mention'
+import { N7AI_USERNAME } from '@/lib/mention'
 import { cn } from '@/lib/utils'
 import { REF_META, refHref } from '../refs'
 
@@ -15,7 +15,7 @@ const MENTION_RE = /(^|[^a-zA-Z0-9_@./])@([a-zA-Z0-9_]{3,30})(?![a-zA-Z0-9_])/g
 export function MessageText({ content, meta, mine, myUsername }: { content: string; meta: ChatMessageMeta | null; mine: boolean; myUsername?: string }) {
   const parts = useMemo(() => {
     const known = new Set((meta?.mentions ?? []).map((m) => m.username.toLowerCase()))
-    known.add(PUAI_USERNAME)
+    known.add(N7AI_USERNAME)
     if (meta?.mentionAll) known.add('all').add('everyone')
     const out: React.ReactNode[] = []
     let last = 0
@@ -30,7 +30,7 @@ export function MessageText({ content, meta, mine, myUsername }: { content: stri
         isMe ? 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/30 dark:text-amber-100' : mine ? 'underline underline-offset-2' : 'text-primary'
       )
       out.push(
-        username === 'all' || username === 'everyone' || username === PUAI_USERNAME ? (
+        username === 'all' || username === 'everyone' || username === N7AI_USERNAME ? (
           <span key={at} className={cls}>
             @{match[2]}
           </span>

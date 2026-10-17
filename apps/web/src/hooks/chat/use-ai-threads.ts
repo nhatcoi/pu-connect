@@ -8,7 +8,7 @@ import { chatApi } from './api'
 
 type ThreadData = InfiniteData<AiThreadsPage, string | null>
 
-// Lịch sử hội thoại PU AI: 20 / trang (keyset), tìm theo tiêu đề ở server; socket vá cache ⇒ không refetch mỗi tin
+// Lịch sử hội thoại N7AI: 20 / trang (keyset), tìm theo tiêu đề ở server; socket vá cache ⇒ không refetch mỗi tin
 export function useAiThreads(q: string, enabled = true) {
   const query = useInfiniteQuery({
     queryKey: queryKeys.aiThreads(q),
@@ -57,8 +57,8 @@ export function removeAiThread(qc: QueryClient, id: string) {
   mapThreadLists(qc, (data) => without(data, id))
 }
 
-// Trang chủ /puai: thread rỗng cho "Chat mới" (server dùng lại thread rỗng ⇒ gọi lặp vô hại)
-// gcTime 0 ⇒ mỗi lần vào lại /puai đều hỏi server (thread cũ đã có tin thì nhận thread mới)
+// Trang chủ /n7ai: thread rỗng cho "Chat mới" (server dùng lại thread rỗng ⇒ gọi lặp vô hại)
+// gcTime 0 ⇒ mỗi lần vào lại /n7ai đều hỏi server (thread cũ đã có tin thì nhận thread mới)
 export function useAiDraftThread() {
   const qc = useQueryClient()
   return useQuery({
@@ -74,7 +74,7 @@ export function useAiDraftThread() {
   })
 }
 
-// Đổi tên · xóa (chat mới = điều hướng tới /puai)
+// Đổi tên · xóa (chat mới = điều hướng tới /n7ai)
 export function useAiThreadActions() {
   const qc = useQueryClient()
   const onError = (err: Error) => toast.error(err.message || 'Thao tác thất bại')

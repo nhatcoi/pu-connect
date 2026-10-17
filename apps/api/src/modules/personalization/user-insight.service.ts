@@ -8,7 +8,7 @@ import { PROFILE_TTL_HOURS, personalizationOnSql } from './personalization.const
 const RECENT_EVENTS = 30
 const RECENT_QUESTIONS = 10
 
-// Câu hỏi PU AI của người dùng (tin văn bản, chưa thu hồi) / User's PU AI questions
+// Câu hỏi N7AI của người dùng (tin văn bản, chưa thu hồi) / User's N7AI questions
 const AI_QUESTIONS_FROM = `FROM messages m JOIN conversations c ON c.id = m.conversation_id
   WHERE c.type = 'ai' AND m.sender_id = $1 AND m.kind = 'text' AND m.deleted_at IS NULL`
 

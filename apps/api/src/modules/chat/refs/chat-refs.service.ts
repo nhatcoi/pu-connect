@@ -5,7 +5,7 @@ import { ChatCoreService, type Queryable } from '../chat-core.service'
 
 const SUGGEST_PER_TYPE = 4
 const REF_BUDGET = 16_000 // tổng ký tự ngữ cảnh ghim / lượt hỏi
-const THREAD_FALLBACK = 'Cuộc trò chuyện PU AI'
+const THREAD_FALLBACK = 'Cuộc trò chuyện N7AI'
 
 const MY_GROUP_COURSES = `SELECT sg.course_id FROM study_group_members gm JOIN study_groups sg ON sg.id = gm.group_id WHERE gm.user_id = $1`
 
@@ -18,8 +18,8 @@ const VISIBLE = {
   thread: (u: string) => `(c.type = 'ai' AND c.created_by = ${u})`
 }
 
-// Ngữ cảnh gắn vào tin (học phần, tài liệu, bài viết, hội thoại PU AI của mình)
-// Kiểm quyền khi gửi · gợi ý cho ô soạn · nạp nội dung cho PU AI
+// Ngữ cảnh gắn vào tin (học phần, tài liệu, bài viết, hội thoại N7AI của mình)
+// Kiểm quyền khi gửi · gợi ý cho ô soạn · nạp nội dung cho N7AI
 @Injectable()
 export class ChatRefsService {
   constructor(private readonly core: ChatCoreService) {}
@@ -28,7 +28,7 @@ export class ChatRefsService {
   async resolve(client: Queryable, userId: string, refs: SendMessageInput['refs'], allowThreads: boolean): Promise<ChatRef[]> {
     if (!refs?.length) return []
     const unique = [...new Map(refs.map((r) => [`${r.type}:${r.id}`, r])).values()]
-    if (!allowThreads && unique.some((r) => r.type === 'thread')) throw new BadRequestException('Chỉ gắn hội thoại PU AI khi hỏi PU AI')
+    if (!allowThreads && unique.some((r) => r.type === 'thread')) throw new BadRequestException('Chỉ gắn hội thoại N7AI khi hỏi N7AI')
     const ids = (t: ChatRefType) => unique.filter((r) => r.type === t).map((r) => r.id)
     const res = await client.query(
       `SELECT 'course' AS type, id, name AS title, code FROM courses WHERE id = ANY($1::uuid[])
@@ -82,7 +82,7 @@ export class ChatRefsService {
     return res.rows.map((r) => ({ type: r.type, id: r.id, title: r.title, subtitle: r.subtitle, ...(r.code ? { code: r.code } : {}) }))
   }
 
-  // Nội dung ref cho PU AI (ghim trước nguồn truy xuất); chia đều ngân sách ký tự
+  // Nội dung ref cho N7AI (ghim trước nguồn truy xuất); chia đều ngân sách ký tự
   async sources(userId: string, refs: ChatRef[]): Promise<Source[]> {
     if (!refs.length) return []
     const per = Math.floor(REF_BUDGET / refs.length)
@@ -115,7 +115,7 @@ export class ChatRefsService {
         'thread',
         `SELECT c.id, COALESCE(c.title, '${THREAD_FALLBACK}') AS title,
                 left(concat_ws(E'\\n\\n', 'Tóm tắt: ' || c.ai_summary,
-                  (SELECT string_agg(CASE WHEN m.kind = 'ai' THEN 'PU AI: ' ELSE 'Người dùng: ' END || left(m.content, 400), E'\\n' ORDER BY m.id)
+                  (SELECT string_agg(CASE WHEN m.kind = 'ai' THEN 'N7AI: ' ELSE 'Người dùng: ' END || left(m.content, 400), E'\\n' ORDER BY m.id)
                    FROM (SELECT id, kind, content FROM messages WHERE conversation_id = c.id AND kind <> 'system' AND deleted_at IS NULL AND status = 'done'
                          ORDER BY id DESC LIMIT 10) m)), $3) AS body
          FROM conversations c WHERE c.id = ANY($1::uuid[]) AND ${VISIBLE.thread('$2')}`

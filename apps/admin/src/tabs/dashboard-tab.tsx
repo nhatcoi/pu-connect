@@ -53,7 +53,7 @@ export function DashboardTab({ stats: s, isLoading, permissions, userName, onNav
                 <TodoRow
                   icon={LifeBuoy}
                   tone="primary"
-                  title={`${s.openSupportTickets} yêu cầu hỗ trợ PU AI`}
+                  title={`${s.openSupportTickets} yêu cầu hỗ trợ N7AI`}
                   sub="Chưa xử lý"
                   onClick={go('ai', 'ai:read')}
                 />
@@ -62,7 +62,7 @@ export function DashboardTab({ stats: s, isLoading, permissions, userName, onNav
                 <TodoRow
                   icon={AlertTriangle}
                   tone="danger"
-                  title={`${s.aiErrorRuns24h} lỗi PU AI trong 24 giờ`}
+                  title={`${s.aiErrorRuns24h} lỗi N7AI trong 24 giờ`}
                   sub="Xem nhật ký lỗi"
                   onClick={go('ai', 'ai:read')}
                 />
@@ -101,7 +101,7 @@ export function DashboardTab({ stats: s, isLoading, permissions, userName, onNav
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-sm font-semibold text-muted-foreground">Học thuật & PU AI</h2>
+            <h2 className="text-sm font-semibold text-muted-foreground">Học thuật & N7AI</h2>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Stat
                 label="Học phần"
@@ -116,7 +116,7 @@ export function DashboardTab({ stats: s, isLoading, permissions, userName, onNav
                 onClick={go('academic', 'academic:read')}
               />
               <Stat
-                label="Lượt PU AI 24h"
+                label="Lượt N7AI 24h"
                 value={formatNumber(s.aiRuns24h)}
                 sub={`${formatCompact(s.aiTokens24h)} tokens`}
                 onClick={go('ai', 'ai:read')}

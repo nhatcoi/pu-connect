@@ -14,36 +14,36 @@ import { CHAT_PUSH_QUEUE } from './notify/chat-push.constants'
 import { ChatPushProcessor } from './notify/chat-push.processor'
 import { ChatPushService } from './notify/chat-push.service'
 import { ChatMentionsService } from './mentions/chat-mentions.service'
-import { AiDataService } from './puai/ai-data.service'
-import { AiFeedbackService } from './puai/ai-feedback.service'
-import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './puai/ai-maintenance.processor'
-import { AiLibraryController } from './puai/ai-library.controller'
-import { AiLibraryService } from './puai/ai-library.service'
-import { AiMemoriesService } from './puai/ai-memories.service'
-import { AiAdminController, AiSettingsController } from './puai/ai-settings.controller'
-import { AiSettingsService } from './puai/ai-settings.service'
-import { AiSummaryService } from './puai/ai-summary.service'
-import { AiTasksService } from './puai/ai-tasks.service'
-import { AiSkillsController } from './puai/ai-skills.controller'
-import { AiSkillsService } from './puai/ai-skills.service'
-import { AiSkillDraftService } from './puai/ai-skill-draft.service'
-import { AiThreadsController } from './puai/ai-threads.controller'
-import { AiThreadsService } from './puai/ai-threads.service'
-import { PuaiController } from './puai/puai.controller'
-import { PuaiService } from './puai/puai.service'
+import { AiDataService } from './n7ai/ai-data.service'
+import { AiFeedbackService } from './n7ai/ai-feedback.service'
+import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './n7ai/ai-maintenance.processor'
+import { AiLibraryController } from './n7ai/ai-library.controller'
+import { AiLibraryService } from './n7ai/ai-library.service'
+import { AiMemoriesService } from './n7ai/ai-memories.service'
+import { AiAdminController, AiSettingsController } from './n7ai/ai-settings.controller'
+import { AiSettingsService } from './n7ai/ai-settings.service'
+import { AiSummaryService } from './n7ai/ai-summary.service'
+import { AiTasksService } from './n7ai/ai-tasks.service'
+import { AiSkillsController } from './n7ai/ai-skills.controller'
+import { AiSkillsService } from './n7ai/ai-skills.service'
+import { AiSkillDraftService } from './n7ai/ai-skill-draft.service'
+import { AiThreadsController } from './n7ai/ai-threads.controller'
+import { AiThreadsService } from './n7ai/ai-threads.service'
+import { N7AiController } from './n7ai/n7ai.controller'
+import { N7AiService } from './n7ai/n7ai.service'
 import { ChatRefsController } from './refs/chat-refs.controller'
 import { ChatRefsService } from './refs/chat-refs.service'
 
-// Nhắn tin (Domain 10) + PU AI (Domain 13)
-// AiModule (LLM, quota, truy xuất) ← puai; core · notify (Web Push) ← conversations ← study-group-chat / messages (không vòng phụ thuộc)
-// core ← mentions · refs · ai-skills · ai-summary · ai-settings · ai-memories ← puai ← messages ← ai-tasks (worker ai-maintenance)
+// Nhắn tin (Domain 10) + N7AI (Domain 13)
+// AiModule (LLM, quota, truy xuất) ← n7ai; core · notify (Web Push) ← conversations ← study-group-chat / messages (không vòng phụ thuộc)
+// core ← mentions · refs · ai-skills · ai-summary · ai-settings · ai-memories ← n7ai ← messages ← ai-tasks (worker ai-maintenance)
 // StudyGroupsModule dùng StudyGroupChatService (chat không phụ thuộc ngược lại)
 @Module({
   imports: [AiModule, RealtimeModule, StorageModule, PushModule, BullModule.registerQueue({ name: CHAT_PUSH_QUEUE }, { name: AI_MAINTENANCE_QUEUE })],
   controllers: [
     ConversationsController,
     MessagesController,
-    PuaiController,
+    N7AiController,
     AiThreadsController,
     AiLibraryController,
     AiSkillsController,
@@ -68,7 +68,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     AiMaintenanceProcessor,
     AiThreadsService,
     AiLibraryService,
-    PuaiService,
+    N7AiService,
     ConversationsService,
     StudyGroupChatService,
     MessagesService

@@ -1,6 +1,6 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
-import { FollowUpSplitter, parseFollowUps } from '../src/modules/chat/puai/puai.followups'
+import { FollowUpSplitter, parseFollowUps } from '../src/modules/chat/n7ai/n7ai.followups'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
 describe('Cá nhân hóa (e2e)', () => {
@@ -14,7 +14,7 @@ describe('Cá nhân hóa (e2e)', () => {
     await app.close()
   })
 
-  it('hành vi → hồ sơ quan tâm → gợi ý PU AI; tắt cá nhân hóa ⇒ xóa dữ liệu', async () => {
+  it('hành vi → hồ sơ quan tâm → gợi ý N7AI; tắt cá nhân hóa ⇒ xóa dữ liệu', async () => {
     const a = await createUser(db)
     const b = await createUser(db)
     const agentA = await loginAgent(app, a)
@@ -116,7 +116,7 @@ describe('Cá nhân hóa (e2e)', () => {
   })
 })
 
-describe('PU AI: tách câu hỏi gợi ý khỏi luồng trả lời', () => {
+describe('N7AI: tách câu hỏi gợi ý khỏi luồng trả lời', () => {
   it('không lộ dấu mốc dù bị cắt giữa các delta', () => {
     const s = new FollowUpSplitter()
     const chunks = ['Đáp án là 42.', '\n<<<FOLL', 'OWUPS>>>\n- Vì sao', ' lại là 42?\n- Ví dụ khác?\n- **Bài tập** tương tự']

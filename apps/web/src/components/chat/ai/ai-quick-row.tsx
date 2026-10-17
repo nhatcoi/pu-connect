@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { chatApi, refreshConversationLists } from '@/hooks/chat'
 
-// Dòng PU AI ở đầu Tin nhắn khi chưa có thread nào ⇒ mở (tạo) thread chat nhanh
+// Dòng N7AI ở đầu Tin nhắn khi chưa có thread nào ⇒ mở (tạo) thread chat nhanh
 export function AiQuickRow() {
   const router = useRouter()
   const qc = useQueryClient()
@@ -21,7 +21,7 @@ export function AiQuickRow() {
       refreshConversationLists(qc)
       router.push(`/messages/${conv.id}`)
     } catch (err) {
-      toast.error((err as Error)?.message || 'Không mở được PU AI')
+      toast.error((err as Error)?.message || 'Không mở được N7AI')
       setOpening(false)
     }
   }
@@ -32,7 +32,7 @@ export function AiQuickRow() {
         {opening ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <N7AiMark className="h-[68%] w-[68%]" />}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium">PU AI</p>
+        <p className="text-sm font-medium">N7AI</p>
         <p className="text-xs text-muted-foreground truncate">Giải thích, quiz, flashcard, lộ trình ôn…</p>
       </div>
     </button>

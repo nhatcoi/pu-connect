@@ -4,7 +4,7 @@ import { randomBytes } from 'crypto'
 import { DatabaseService } from '../../../database/database.service'
 import { TokenCipher } from './token-cipher'
 
-// Connector Google của PU AI: mỗi provider 1 scope chỉ đọc, chung 1 OAuth client & 1 callback URI
+// Connector Google của N7AI: mỗi provider 1 scope chỉ đọc, chung 1 OAuth client & 1 callback URI
 export const GOOGLE_PROVIDERS = {
   google_drive: { slug: 'google-drive', scope: 'https://www.googleapis.com/auth/drive.readonly' },
   google_calendar: { slug: 'google-calendar', scope: 'https://www.googleapis.com/auth/calendar.readonly' }

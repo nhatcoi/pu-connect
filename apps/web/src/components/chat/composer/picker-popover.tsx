@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react'
 import { Loader2, MessageSquarePlus, RotateCcw, Users, Wand2 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
-import { PUAI_USERNAME } from '@/lib/mention'
+import { N7AI_USERNAME } from '@/lib/mention'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { REF_META } from '../refs'
@@ -81,7 +81,7 @@ function ItemRow({ item }: { item: PickerItem }) {
     case 'user': {
       const u = item.user
       const icon =
-        u.username === PUAI_USERNAME ? (
+        u.username === N7AI_USERNAME ? (
           <IconBox>
             <N7AiMark className="h-[68%] w-[68%]" />
           </IconBox>
@@ -95,7 +95,7 @@ function ItemRow({ item }: { item: PickerItem }) {
             <AvatarFallback className="bg-muted text-[10px] font-bold">{u.displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
           </Avatar>
         )
-      const hint = u.username === PUAI_USERNAME ? 'Hỏi PU AI cùng cả nhóm' : u.username === ALL_CANDIDATE.username ? 'Thông báo cho mọi thành viên' : null
+      const hint = u.username === N7AI_USERNAME ? 'Hỏi N7AI cùng cả nhóm' : u.username === ALL_CANDIDATE.username ? 'Thông báo cho mọi thành viên' : null
       return <Row icon={icon} title={u.displayName} sub={`@${u.username}${hint ? ` · ${hint}` : ''}`} />
     }
     case 'ref': {

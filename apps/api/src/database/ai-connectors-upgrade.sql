@@ -1,5 +1,5 @@
 -- ==========================================================
--- Migration: Connector ngoài cho PU AI (Google Drive) (idempotent)
+-- Migration: Connector ngoài cho N7AI (Google Drive) (idempotent)
 -- Thiết kế: docs/core/09-chat-mention-ai-threads-skills.md §7
 -- ==========================================================
 

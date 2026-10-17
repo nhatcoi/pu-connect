@@ -128,7 +128,7 @@ export const PostItemSchema = z.object({
 export type CreatePostInput = z.infer<typeof CreatePostSchema>
 export type PostItem = z.infer<typeof PostItemSchema>
 
-// Tóm tắt bài bằng PU AI (POST /posts/:id/summary); cached ⇒ không tốn lượt
+// Tóm tắt bài bằng N7AI (POST /posts/:id/summary); cached ⇒ không tốn lượt
 export interface PostSummary {
   summary: string
   cached: boolean

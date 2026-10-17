@@ -22,7 +22,7 @@ export class PersonalizationController {
     return this.events.track(requireUserId(req), body)
   }
 
-  // Gợi ý mở đầu PU AI theo chế độ học
+  // Gợi ý mở đầu N7AI theo chế độ học
   @Get('ai/suggestions')
   suggest(@Query(new ZodValidationPipe(SuggestionsQuerySchema)) query: SuggestionsQuery, @Req() req: Request) {
     return this.suggestions.suggest(requireUserId(req), query.mode)

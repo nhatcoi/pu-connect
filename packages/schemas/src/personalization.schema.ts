@@ -1,6 +1,6 @@
 import type { AiMode } from './chat.schema'
 
-// Cá nhân hóa: sự kiện hành vi (client gửi theo lô) & gợi ý PU AI (docs/core/06-messaging-and-ai.md §19)
+// Cá nhân hóa: sự kiện hành vi (client gửi theo lô) & gợi ý N7AI (docs/core/06-messaging-and-ai.md §19)
 
 export const USER_EVENT_TYPES = [
   'post_view', // bài hiện trong màn hình ≥ 2s (bảng tin)

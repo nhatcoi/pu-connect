@@ -74,13 +74,13 @@ const SECTIONS: LegalSection[] = [
     )
   },
   {
-    id: 'pu-ai',
-    title: 'Trợ lý PU AI',
+    id: 'n7ai',
+    title: 'Trợ lý N7AI',
     body: (
       <ul>
-        <li>Câu trả lời của PU AI do mô hình ngôn ngữ tạo ra, có thể sai hoặc chưa đầy đủ. Hãy kiểm tra lại với giáo trình và giảng viên trước khi dùng.</li>
-        <li>PU AI hỗ trợ học tập, không thay thế bài làm của bạn. Bạn chịu trách nhiệm về liêm chính học thuật.</li>
-        <li>Mỗi tài khoản có giới hạn lượt dùng PU AI mỗi ngày, có thể thay đổi theo thời gian.</li>
+        <li>Câu trả lời của N7AI do mô hình ngôn ngữ tạo ra, có thể sai hoặc chưa đầy đủ. Hãy kiểm tra lại với giáo trình và giảng viên trước khi dùng.</li>
+        <li>N7AI hỗ trợ học tập, không thay thế bài làm của bạn. Bạn chịu trách nhiệm về liêm chính học thuật.</li>
+        <li>Mỗi tài khoản có giới hạn lượt dùng N7AI mỗi ngày, có thể thay đổi theo thời gian.</li>
       </ul>
     )
   },

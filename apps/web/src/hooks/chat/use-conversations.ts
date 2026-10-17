@@ -123,7 +123,7 @@ export function useOpenStudyGroupChat() {
 
 // Tên hiển thị hội thoại
 export function conversationTitle(c: ConversationSummary): string {
-  if (c.type === 'ai') return 'PU AI'
+  if (c.type === 'ai') return 'N7AI'
   if (c.title) return c.title
   return c.members.map((m) => m.displayName).join(', ') || 'Hội thoại'
 }

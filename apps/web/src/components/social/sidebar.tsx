@@ -28,7 +28,7 @@ import { useLogout } from '@/hooks/use-logout'
 import { FEATURES } from '@/lib/features'
 import { useNotificationsStore } from '@/hooks/use-notifications'
 import { useUnreadMessages } from '@/hooks/chat'
-import { PUAI_HOME } from '@/lib/puai-routes'
+import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
 
 export type NavTabType =
@@ -44,7 +44,7 @@ export type NavTabType =
   | 'bookmarks'
   | 'qa'
   | 'messages'
-  | 'puai'
+  | 'n7ai'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -71,7 +71,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
       icon: MessageCircle,
       badge: unreadMessages > 0 ? (unreadMessages > 99 ? '99+' : String(unreadMessages)) : undefined
     },
-    { id: 'puai' as const, path: PUAI_HOME, label: 'PU AI', icon: Sparkles },
+    { id: 'n7ai' as const, path: N7AI_HOME, label: 'N7AI', icon: Sparkles },
     {
       id: 'notifications' as const,
       path: '/notifications',

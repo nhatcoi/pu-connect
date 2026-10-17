@@ -9,7 +9,7 @@ import { GoogleOAuthService } from './connectors/google-oauth.service'
 import { WebReaderService } from './connectors/web-reader.service'
 import { LlmService } from './llm.service'
 
-// Lõi AI dùng chung (Domain 13): chat (PuaiService) và bài viết (PostAiService) cùng một client & quota
+// Lõi AI dùng chung (Domain 13): chat (N7AiService) và bài viết (PostAiService) cùng một client & quota
 // Connector: GoogleOAuth ← Drive · Calendar ← AiRetrieval
 @Module({
   controllers: [AiConnectorsController],

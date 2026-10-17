@@ -41,7 +41,7 @@ const ACTION_LABELS: Record<string, string> = {
   'user.unverify': 'Gỡ tích xanh',
   'user.revoke_sessions': 'Đăng xuất mọi thiết bị',
   'user.insight_view': 'Xem insight',
-  'ai.ticket_status': 'Cập nhật yêu cầu PU AI',
+  'ai.ticket_status': 'Cập nhật yêu cầu N7AI',
   'ai.skill_moderate': 'Kiểm duyệt skill',
   'course.create': 'Tạo học phần',
   'course.update': 'Sửa học phần',

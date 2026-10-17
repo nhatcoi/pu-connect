@@ -5,7 +5,7 @@ import { BadgeCheck, Loader2 } from 'lucide-react'
 import type { MentionCandidate } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
-import { MENTION_REASON_LABEL, PUAI_USERNAME } from '@/lib/mention'
+import { MENTION_REASON_LABEL, N7AI_USERNAME } from '@/lib/mention'
 import { cn } from '@/lib/utils'
 
 interface MentionPopoverProps {
@@ -48,8 +48,8 @@ export function MentionPopover({ id, items, index, isLoading, onHover, onSelect,
         </div>
       ) : (
         items.map((c, i) => {
-          const isAi = c.username === PUAI_USERNAME
-          const hint = isAi ? 'Hỏi PU AI về bài viết này' : MENTION_REASON_LABEL[c.reason]
+          const isAi = c.username === N7AI_USERNAME
+          const hint = isAi ? 'Hỏi N7AI về bài viết này' : MENTION_REASON_LABEL[c.reason]
           return (
             <div
               key={c.username}

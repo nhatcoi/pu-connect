@@ -32,7 +32,7 @@ const TEMPLATES: Record<StudyMode, Record<InterestKind, string>> = {
   }
 }
 
-// "Hỏi đáp": trộn nhiều chế độ để người mới thấy PU AI làm được gì
+// "Hỏi đáp": trộn nhiều chế độ để người mới thấy N7AI làm được gì
 export const MIXED_MODES: StudyMode[] = ['explain', 'quiz', 'flashcards', 'plan']
 
 export function fillTemplate(mode: StudyMode, kind: InterestKind, label: string): string {

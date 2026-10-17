@@ -1,5 +1,5 @@
 -- ==========================================================
--- Migration: Chia sẻ skill PU AI công khai (thư viện skill) (idempotent)
+-- Migration: Chia sẻ skill N7AI công khai (thư viện skill) (idempotent)
 -- Thiết kế: docs/core/09-chat-mention-ai-threads-skills.md §8
 -- ==========================================================
 

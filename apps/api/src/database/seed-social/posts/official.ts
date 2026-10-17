@@ -16,7 +16,7 @@ PU Connector là nơi để mọi người hỏi bài, chia sẻ tài liệu, t�
 1. **Cập nhật hồ sơ**: điền khoa, khóa, môn đang học → bảng tin "Dành cho bạn" sẽ ưu tiên bài đúng môn của bạn.
 2. **Hỏi bài**: chọn loại bài *Hỏi đáp*, gắn đúng mã học phần (VD: IT101). Ai trả lời đúng thì bấm *Chọn làm lời giải* để người sau tìm lại dễ.
 3. **Tài liệu**: tải đề cương, slide, đề thi lên mục Học phần. Nhớ ghi nguồn nếu không phải của mình nha.
-4. **PU AI**: hỏi trong tin nhắn hoặc gõ @puai dưới bài viết. AI trả lời kèm nguồn từ chính bài viết & tài liệu trên đây.
+4. **N7AI**: hỏi trong tin nhắn hoặc gõ @n7ai dưới bài viết. AI trả lời kèm nguồn từ chính bài viết & tài liệu trên đây.
 
 Nội quy ngắn gọn: tôn trọng nhau, không đăng đề thi đang diễn ra, không quảng cáo lùa gà. Thấy bài vi phạm thì bấm *Báo cáo*, admin xử lý trong ngày.
 
@@ -30,7 +30,7 @@ Chúc K20 một năm đầu thật vui và đừng trượt Giải tích 1 🙏`
     comments: [
       {
         by: 'vannam2k8',
-        text: 'Em K20 đây ạ, cảm ơn chị nhiều 🥹 Cho em hỏi PU AI có miễn phí không ạ?',
+        text: 'Em K20 đây ạ, cảm ơn chị nhiều 🥹 Cho em hỏi N7AI có miễn phí không ạ?',
         after: 25,
         replies: [{ by: 'tranngocdiep', text: 'Miễn phí nha em, mỗi ngày có giới hạn lượt hỏi thôi. Hỏi bài thì cứ thoải mái!', after: 12 }]
       },
@@ -44,11 +44,11 @@ Chúc K20 một năm đầu thật vui và đừng trượt Giải tích 1 🙏`
     daysAgo: 2,
     at: '21:40',
     type: 'announcement',
-    title: 'Cập nhật tháng 10: PU AI gợi ý theo môn bạn học, bảng tin thông minh hơn',
+    title: 'Cập nhật tháng 10: N7AI gợi ý theo môn bạn học, bảng tin thông minh hơn',
     content: `Tối nay team vừa deploy bản cập nhật khá lớn, tóm tắt cho mọi người:
 
-**PU AI**
-- Thẻ gợi ý khi mở PU AI giờ dựa trên môn & chủ đề bạn hay xem, không còn cố định nữa.
+**N7AI**
+- Thẻ gợi ý khi mở N7AI giờ dựa trên môn & chủ đề bạn hay xem, không còn cố định nữa.
 - Sau mỗi câu trả lời, AI gợi ý 3 câu hỏi tiếp theo, bấm là hỏi luôn.
 
 **Bảng tin**
@@ -59,7 +59,7 @@ Chúc K20 một năm đầu thật vui và đừng trượt Giải tích 1 🙏`
 Nếu không muốn cá nhân hóa, vào *Cài đặt → Quyền riêng tư → Cá nhân hóa gợi ý* và tắt đi. Tắt là dữ liệu hành vi của bạn bị xóa luôn, không giữ lại.
 
 Ai gặp lỗi thì comment dưới đây hoặc nhắn mình, kèm ảnh chụp màn hình càng tốt 🙏`,
-    tags: ['CapNhat', 'PUAI', 'ReleaseNotes'],
+    tags: ['CapNhat', 'N7AI', 'ReleaseNotes'],
     community: 'phenikaa',
     images: [529],
     likes: 16,
@@ -68,7 +68,7 @@ Ai gặp lỗi thì comment dưới đây hoặc nhắn mình, kèm ảnh chụp
       { by: 'minhtuan_dev', text: 'Feed load nhanh hơn hẳn anh ơi. Mà nút "Xem thêm" giờ đúng chỗ hơn rồi 👍', after: 40 },
       {
         by: 'haiyen_ux',
-        text: 'Chip gợi ý của PU AI xinh ghê, nhưng trên mobile hơi sát mép phải anh xem lại giúp em nha',
+        text: 'Chip gợi ý của N7AI xinh ghê, nhưng trên mobile hơi sát mép phải anh xem lại giúp em nha',
         after: 75,
         replies: [{ by: 'lehoangphuc', text: 'Ok em, mai anh chỉnh padding. Cảm ơn em!', after: 20 }]
       },

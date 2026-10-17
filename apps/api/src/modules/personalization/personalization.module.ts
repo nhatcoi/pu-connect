@@ -8,7 +8,7 @@ import { PERSONALIZATION_QUEUE } from './personalization.constants'
 import { UserEventsService } from './user-events.service'
 import { UserInsightService } from './user-insight.service'
 
-// Cá nhân hóa: nhật ký hành vi → hồ sơ quan tâm → gợi ý PU AI & xếp hạng bảng tin
+// Cá nhân hóa: nhật ký hành vi → hồ sơ quan tâm → gợi ý N7AI & xếp hạng bảng tin
 // Feed dùng thẳng bảng user_interests (SQL), không phụ thuộc module này
 @Module({
   imports: [BullModule.registerQueue({ name: PERSONALIZATION_QUEUE })],

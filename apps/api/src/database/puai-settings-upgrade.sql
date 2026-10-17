@@ -1,9 +1,9 @@
 -- ==========================================================
--- Migration: Cài đặt PU AI — bộ nhớ, tác vụ tự động, phản hồi, quyền riêng tư (idempotent)
--- Thiết kế: docs/core/10-puai-settings.md
+-- Migration: Cài đặt N7AI — bộ nhớ, tác vụ tự động, phản hồi, quyền riêng tư (idempotent)
+-- Thiết kế: docs/core/10-n7ai-settings.md
 -- ==========================================================
 
--- 1. Cài đặt PU AI của từng người (thiếu hàng ⇒ mặc định)
+-- 1. Cài đặt N7AI của từng người (thiếu hàng ⇒ mặc định)
 CREATE TABLE IF NOT EXISTS ai_settings (
     user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     memory_enabled BOOLEAN NOT NULL DEFAULT TRUE,
@@ -55,7 +55,7 @@ ALTER TABLE ai_skills ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT F
 ALTER TABLE user_connectors ADD COLUMN IF NOT EXISTS last_used_at TIMESTAMPTZ;
 ALTER TABLE user_connectors ADD COLUMN IF NOT EXISTS last_error VARCHAR(200);
 
--- 6. Phản hồi câu trả lời PU AI + yêu cầu hỗ trợ
+-- 6. Phản hồi câu trả lời N7AI + yêu cầu hỗ trợ
 CREATE TABLE IF NOT EXISTS ai_feedback (
     message_id BIGINT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS ai_support_tickets (
 );
 CREATE INDEX IF NOT EXISTS idx_ai_support_created ON ai_support_tickets(created_at DESC);
 
--- 7. Cộng đồng PU AI (chia sẻ skill, góp ý)
+-- 7. Cộng đồng N7AI (chia sẻ skill, góp ý)
 INSERT INTO communities (slug, name, description, community_type)
-VALUES ('puai', 'PU AI', 'Chia sẻ skill hay, mẹo học với PU AI, góp ý & báo lỗi trợ lý học tập.', 'academic')
+VALUES ('n7ai', 'N7AI', 'Chia sẻ skill hay, mẹo học với N7AI, góp ý & báo lỗi trợ lý học tập.', 'academic')
 ON CONFLICT (slug) DO NOTHING;

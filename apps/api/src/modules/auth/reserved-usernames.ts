@@ -1,7 +1,9 @@
 // Username dành riêng cho bot/hệ thống/route — người dùng không được đăng ký
 // Reserved for bots, system accounts and top-level routes
 const RESERVED = new Set([
-  'puai',
+  'n7ai',
+  'n7_ai',
+  'puai', // tên cũ của bot
   'pu_ai',
   'ai',
   'bot',
@@ -43,5 +45,5 @@ const RESERVED = new Set([
 
 export function isReservedUsername(username: string): boolean {
   const u = username.toLowerCase().trim()
-  return RESERVED.has(u) || u.startsWith('pu_') || u.startsWith('puai')
+  return RESERVED.has(u) || u.startsWith('pu_') || u.startsWith('n7ai') || u.startsWith('puai')
 }

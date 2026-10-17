@@ -5,7 +5,7 @@ import type { PostSummary } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 
-// Tóm tắt bài bằng PU AI: chỉ gọi khi người dùng bấm; server lưu sẵn theo nội dung ⇒ không cần tải lại
+// Tóm tắt bài bằng N7AI: chỉ gọi khi người dùng bấm; server lưu sẵn theo nội dung ⇒ không cần tải lại
 export function usePostSummary(postId: string, enabled: boolean) {
   return useQuery({
     queryKey: queryKeys.postSummary(postId),

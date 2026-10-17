@@ -17,12 +17,12 @@ interface Props {
   onClearResearch: () => void
 }
 
-// Chip phía trên ô soạn: ngữ cảnh đã gắn, skill / chế độ PU AI, Research
+// Chip phía trên ô soạn: ngữ cảnh đã gắn, skill / chế độ N7AI, Research
 export function ContextChips({ refs, onRemoveRef, skill, onClearSkill, mode, onClearMode, research, onClearResearch }: Props) {
   if (!refs.length && !skill && !mode && !research) return null
   return (
     <div className="flex flex-wrap gap-1.5 mx-1 mt-0.5 mb-1.5">
-      {mode && <Chip icon={AI_MODE_META[mode].icon} label={`PU AI · ${AI_MODE_META[mode].label}`} accent onRemove={onClearMode} />}
+      {mode && <Chip icon={AI_MODE_META[mode].icon} label={`N7AI · ${AI_MODE_META[mode].label}`} accent onRemove={onClearMode} />}
       {skill && <Chip icon={Wand2} label={`/${skill.slug}`} title={skill.name} accent onRemove={onClearSkill} />}
       {research && <Chip icon={Telescope} label="Research · 2 lượt" accent onRemove={onClearResearch} />}
       {refs.map((r) => (

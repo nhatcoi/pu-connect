@@ -3,7 +3,7 @@
 import React from 'react'
 import { CornerDownRight } from 'lucide-react'
 
-// Câu hỏi gợi ý tiếp theo dưới câu trả lời mới nhất của PU AI (bấm ⇒ gửi ngay)
+// Câu hỏi gợi ý tiếp theo dưới câu trả lời mới nhất của N7AI (bấm ⇒ gửi ngay)
 export function AiFollowUps({ items, onPick }: { items: string[]; onPick: (text: string) => void }) {
   return (
     <div className="mt-2 ml-10 flex flex-col items-start gap-1.5" aria-label="Hỏi tiếp">

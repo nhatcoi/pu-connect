@@ -9,7 +9,7 @@ import { PresenceDot } from './presence-dot'
 
 const initials = (name?: string) => (name || '?').slice(0, 2).toUpperCase()
 
-// Avatar hội thoại: PU AI = logo N7AI, nhóm = ảnh nhóm hoặc 2 avatar chồng nhau, DM = avatar người kia (+ chấm hoạt động)
+// Avatar hội thoại: N7AI = logo N7AI, nhóm = ảnh nhóm hoặc 2 avatar chồng nhau, DM = avatar người kia (+ chấm hoạt động)
 export function ConversationAvatar({ conversation, className }: { conversation: ConversationSummary; className?: string }) {
   if (conversation.type === 'ai') {
     return (

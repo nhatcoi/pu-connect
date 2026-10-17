@@ -21,7 +21,7 @@ interface MessageListProps {
   onJump: (id: string) => void
   onRetry: (m: UiMessage) => void
   handlers: MessageHandlers
-  onFollowUp?: (text: string) => void // PU AI: bấm câu hỏi gợi ý tiếp theo
+  onFollowUp?: (text: string) => void // N7AI: bấm câu hỏi gợi ý tiếp theo
 }
 
 // Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", tự cuộn xuống khi có tin mới, cuộn lên tải tin cũ

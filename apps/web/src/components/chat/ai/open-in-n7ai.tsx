@@ -8,7 +8,7 @@ import { n7aiChatUrl } from '@/lib/n7ai'
 
 const linkProps = { href: n7aiChatUrl(), target: '_blank', rel: 'noopener noreferrer' } as const
 
-// Nút gọn ở đầu hội thoại PU AI
+// Nút gọn ở đầu hội thoại N7AI
 export function OpenInN7AiButton({ className }: { className?: string }) {
   return (
     <a
@@ -26,7 +26,7 @@ export function OpenInN7AiButton({ className }: { className?: string }) {
   )
 }
 
-// Thẻ giới thiệu ở màn chào PU AI: N7AI làm được việc PU AI không làm (dữ liệu trường)
+// Thẻ giới thiệu ở màn chào N7AI: N7AI làm được việc N7AI không làm (dữ liệu trường)
 export function OpenInN7AiCard() {
   return (
     <a

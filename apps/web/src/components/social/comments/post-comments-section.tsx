@@ -9,7 +9,7 @@ import { CommentItemCard } from './comment-item-card'
 import { Button } from '@/components/ui/button'
 import { Loader2, MessageSquare, ChevronDown } from 'lucide-react'
 import type { MentionCandidate, PostItem } from '@pu/schemas'
-import { PUAI_USERNAME } from '@/lib/mention'
+import { N7AI_USERNAME } from '@/lib/mention'
 
 interface PostCommentsSectionProps {
   post: PostItem
@@ -64,7 +64,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
       a: { id: string; username: string; displayName?: string | null; avatarUrl?: string | null } | undefined,
       reason: MentionCandidate['reason']
     ) => {
-      if (!a?.username || a.id === user?.id || a.username === PUAI_USERNAME || out.has(a.username)) return
+      if (!a?.username || a.id === user?.id || a.username === N7AI_USERNAME || out.has(a.username)) return
       out.set(a.username, { id: a.id, username: a.username, displayName: a.displayName || a.username, avatarUrl: a.avatarUrl, reason })
     }
     add(post.author, 'author')

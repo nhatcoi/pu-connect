@@ -1,12 +1,12 @@
 import { Ban, Bell, Lock, Palette, Puzzle, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
 import type { FeaturePreferenceKey } from '@pu/schemas'
 
-// Các mục của trang Cài đặt (/settings/[section]); href ⇒ mục nằm ở không gian khác (PU AI ⇒ /puai/settings)
+// Các mục của trang Cài đặt (/settings/[section]); href ⇒ mục nằm ở không gian khác (N7AI ⇒ /n7ai/settings)
 export const SETTINGS_SECTIONS = [
   { id: 'account', label: 'Tài khoản', description: 'Xác thực sinh viên, email, mật khẩu', icon: UserRound },
   { id: 'privacy', label: 'Quyền riêng tư', description: 'Thông tin hiển thị, hồ sơ riêng tư, dữ liệu gợi ý', icon: Lock },
-  { id: 'features', label: 'Tính năng', description: 'Bật/tắt tiện ích bảng tin và PU AI', icon: Puzzle },
-  { id: 'puai', label: 'PU AI', description: 'Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu', icon: Sparkles, href: '/puai/settings' },
+  { id: 'features', label: 'Tính năng', description: 'Bật/tắt tiện ích bảng tin và N7AI', icon: Puzzle },
+  { id: 'n7ai', label: 'N7AI', description: 'Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu', icon: Sparkles, href: '/n7ai/settings' },
   { id: 'notifications', label: 'Thông báo', description: 'Loại thông báo, trình duyệt, giờ yên tĩnh', icon: Bell },
   { id: 'appearance', label: 'Giao diện', description: 'Sáng, tối hoặc theo hệ thống', icon: Palette },
   { id: 'blocked', label: 'Chặn & An toàn', description: 'Tài khoản bạn đã chặn', icon: Ban }
@@ -52,12 +52,12 @@ export const FEATURE_PLUG_GROUPS: { id: string; label: string; plugs: FeaturePlu
   },
   {
     id: 'ai',
-    label: 'PU AI',
+    label: 'N7AI',
     plugs: [
       {
         key: 'aiSummary',
         label: 'Tóm tắt bài dài',
-        description: 'Hiện nút "✨ Tóm tắt" để PU AI rút gọn bài viết dài thành vài ý chính'
+        description: 'Hiện nút "✨ Tóm tắt" để N7AI rút gọn bài viết dài thành vài ý chính'
       }
     ]
   }

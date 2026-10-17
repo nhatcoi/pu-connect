@@ -14,7 +14,7 @@ import { useAiSkill, useAiSkillActions, useAiSkills, useSkillLibrary, useSkillSt
 import { SKILL_FILE_ACCEPT, SKILL_FILE_MAX_BYTES, parseSkillFile, toSlug } from '@/lib/skill-file'
 import { cn } from '@/lib/utils'
 
-// Bản nháp chưa lưu: do PU AI viết hoặc đọc từ tệp ⇒ mở form để xem lại
+// Bản nháp chưa lưu: do N7AI viết hoặc đọc từ tệp ⇒ mở form để xem lại
 type Draft = { input: AiSkillInput; source: 'ai' | 'file' }
 type View = { mode: 'list' } | { mode: 'library' } | { mode: 'ai' } | { mode: 'edit'; id: string | null; draft?: Draft }
 const TITLE = { list: 'Của bạn', library: 'Thư viện' }
@@ -29,7 +29,7 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
       <DialogContent className="max-w-lg p-5 gap-4 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
-            <Wand2 className="h-4 w-4 text-primary" /> Skill PU AI
+            <Wand2 className="h-4 w-4 text-primary" /> Skill N7AI
           </DialogTitle>
           <DialogDescription className="text-xs">
             Chỉ dẫn lưu sẵn, gọi nhanh bằng <code>/lệnh</code>.
@@ -41,7 +41,7 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
   )
 }
 
-// Quản lý skill: tab Của bạn / Thư viện ⇄ tạo (tự viết / tệp / PU AI) / sửa — dùng ở hộp thoại & trang Cài đặt
+// Quản lý skill: tab Của bạn / Thư viện ⇄ tạo (tự viết / tệp / N7AI) / sửa — dùng ở hộp thoại & trang Cài đặt
 export function SkillsManager({ startWithCreate }: { startWithCreate?: boolean }) {
   const [view, setView] = useState<View>(startWithCreate ? { mode: 'ai' } : { mode: 'list' })
   // Giữ mô tả đã gõ để "Viết lại" không mất
@@ -49,7 +49,7 @@ export function SkillsManager({ startWithCreate }: { startWithCreate?: boolean }
   const toList = () => setView({ mode: 'list' })
 
   if (view.mode === 'ai' || view.mode === 'edit') {
-    const title = view.mode === 'ai' ? 'Tạo với PU AI' : view.id ? 'Sửa skill' : 'Tạo skill'
+    const title = view.mode === 'ai' ? 'Tạo với N7AI' : view.id ? 'Sửa skill' : 'Tạo skill'
     return (
       <div className="space-y-3">
         <button
@@ -174,7 +174,7 @@ function SkillList({ onEdit, onCreate, onAi, onLibrary }: SkillListProps) {
   )
 }
 
-// Nút "Tạo skill": tự viết / tải tệp .md / nhờ PU AI viết
+// Nút "Tạo skill": tự viết / tải tệp .md / nhờ N7AI viết
 function CreateMenu({ disabled, onManual, onFile, onAi }: { disabled: boolean; onManual: () => void; onFile: (input: AiSkillInput) => void; onAi: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -196,7 +196,7 @@ function CreateMenu({ disabled, onManual, onFile, onAi }: { disabled: boolean; o
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center" className="w-56">
           <DropdownMenuItem onSelect={onAi}>
-            <Sparkles className="h-4 w-4 text-primary" /> Tạo với PU AI
+            <Sparkles className="h-4 w-4 text-primary" /> Tạo với N7AI
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={onManual}>
             <Pencil className="h-4 w-4" /> Tự viết
@@ -211,7 +211,7 @@ function CreateMenu({ disabled, onManual, onFile, onAi }: { disabled: boolean; o
   )
 }
 
-// Tạo với PU AI: mô tả ngắn ⇒ bản nháp ⇒ xem lại ở form
+// Tạo với N7AI: mô tả ngắn ⇒ bản nháp ⇒ xem lại ở form
 function SkillDraftStep({
   prompt,
   setPrompt,
@@ -243,7 +243,7 @@ function SkillDraftStep({
         value={prompt}
         disabled={draft.isPending}
         onChange={(e) => setPrompt(e.target.value)}
-        placeholder="Bạn muốn PU AI làm gì? VD: chấm bài luận tiếng Anh theo tiêu chí IELTS, chỉ ra lỗi và gợi ý sửa"
+        placeholder="Bạn muốn N7AI làm gì? VD: chấm bài luận tiếng Anh theo tiêu chí IELTS, chỉ ra lỗi và gợi ý sửa"
       />
       <div className="flex flex-wrap gap-1.5">
         {AI_EXAMPLES.map((ex) => (
@@ -261,7 +261,7 @@ function SkillDraftStep({
       {error && <p className="text-xs text-destructive">{error}</p>}
       <Button type="submit" size="sm" className="w-full rounded-full gap-1.5" disabled={draft.isPending}>
         {draft.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-        {draft.isPending ? 'PU AI đang viết…' : 'Viết bản nháp'}
+        {draft.isPending ? 'N7AI đang viết…' : 'Viết bản nháp'}
       </Button>
       <p className="text-center text-[11px] text-muted-foreground">
         Tốn 1 lượt · xem lại trước khi lưu ·{' '}
@@ -313,7 +313,7 @@ function SkillForm({ id, draft, onRedo, onDone }: { id: string | null; draft?: D
       {draft && (
         <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs">
           {draft.source === 'ai' ? <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" /> : <Upload className="h-3.5 w-3.5 shrink-0 text-primary" />}
-          <span className="min-w-0 flex-1 text-muted-foreground">{draft.source === 'ai' ? 'Bản nháp từ PU AI — xem lại rồi lưu' : 'Đọc từ tệp — xem lại rồi lưu'}</span>
+          <span className="min-w-0 flex-1 text-muted-foreground">{draft.source === 'ai' ? 'Bản nháp từ N7AI — xem lại rồi lưu' : 'Đọc từ tệp — xem lại rồi lưu'}</span>
           {draft.source === 'ai' && (
             <button type="button" onClick={onRedo} className="shrink-0 font-medium text-primary hover:underline cursor-pointer">
               Viết lại
@@ -349,7 +349,7 @@ function SkillForm({ id, draft, onRedo, onDone }: { id: string | null; draft?: D
       <Field label="Mô tả ngắn (tùy chọn)">
         <Input value={form.description} maxLength={200} placeholder="Gợi ý từng bước, không đưa đáp án" onChange={(e) => set('description', e.target.value)} />
       </Field>
-      <Field label="Chỉ dẫn cho PU AI">
+      <Field label="Chỉ dẫn cho N7AI">
         <Textarea
           value={form.instructions}
           maxLength={4000}
@@ -402,7 +402,7 @@ function SkillLibrary() {
                   {s.official && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Chính thức" />}
                 </span>
                 <span className="block truncate text-[11px] text-muted-foreground">
-                  /{s.slug} · {s.official ? 'PU AI' : s.author.displayName} · {s.installCount} lượt cài
+                  /{s.slug} · {s.official ? 'N7AI' : s.author.displayName} · {s.installCount} lượt cài
                 </span>
                 {s.description && <span className="block truncate text-[11px] text-muted-foreground">{s.description}</span>}
               </span>

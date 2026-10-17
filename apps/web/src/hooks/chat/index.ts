@@ -1,4 +1,4 @@
-// Nhắn tin & PU AI: API client, cache, realtime và hooks dữ liệu
+// Nhắn tin & N7AI: API client, cache, realtime và hooks dữ liệu
 export { chatApi, type SendBody } from './api'
 export type { UiMessage, UiPage } from './cache'
 export { refreshConversationLists, setActiveConversation } from './cache'
@@ -28,4 +28,4 @@ export {
   useRefSuggestions,
   useSkillLibrary
 } from './use-ai-tools'
-export { useAiMemories, useAiSettings, useAiTasks, useAiUsage, useSkillState } from './use-puai-settings'
+export { useAiMemories, useAiSettings, useAiTasks, useAiUsage, useSkillState } from './use-n7ai-settings'

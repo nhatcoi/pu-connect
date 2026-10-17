@@ -8,7 +8,7 @@ export const SUGGESTION_POOL = 12 // số chủ đề top đọc từ hồ sơ
 const MAX_QUERY_TOPICS = 1 // từ khóa tìm kiếm dễ nhiễu ⇒ tối đa 1
 const MAX_LABEL = 50
 
-// Gợi ý mở đầu PU AI: chủ đề quan tâm (SQL) × mẫu câu theo chế độ — không gọi LLM
+// Gợi ý mở đầu N7AI: chủ đề quan tâm (SQL) × mẫu câu theo chế độ — không gọi LLM
 // Zero-state AI suggestions: interest topics × per-mode templates, no LLM call
 @Injectable()
 export class AiSuggestionsService {

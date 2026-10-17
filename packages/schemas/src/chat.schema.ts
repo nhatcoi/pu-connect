@@ -1,12 +1,12 @@
 import { z } from 'zod'
 import type { BlockState } from './block.schema'
 
-// Nhắn tin: DM, nhóm, hội thoại với PU AI (docs/core/06-messaging-and-ai.md)
+// Nhắn tin: DM, nhóm, hội thoại với N7AI (docs/core/06-messaging-and-ai.md)
 
 export const CHAT_MAX_ATTACHMENTS = 10
 export const CHAT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
 
-// Chế độ học của PU AI: đổi chỉ dẫn hệ thống + cách hiển thị câu trả lời
+// Chế độ học của N7AI: đổi chỉ dẫn hệ thống + cách hiển thị câu trả lời
 export const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
 export type AiMode = (typeof AI_MODES)[number]
 
@@ -15,7 +15,7 @@ export const CHAT_MAX_REFS = 5
 export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
 
-// Nguồn PU AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
+// Nguồn N7AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
 export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar'] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
@@ -156,13 +156,13 @@ export interface ChatMessageMeta {
   skill?: ChatSkillRef
   research?: boolean
   connectors?: AiConnectorId[]
-  memoryUpdated?: string[] // PU AI vừa ghi nhớ (nhãn "Đã cập nhật bộ nhớ")
+  memoryUpdated?: string[] // N7AI vừa ghi nhớ (nhãn "Đã cập nhật bộ nhớ")
   feedback?: 1 | -1 // đánh giá của chủ thread AI
   task?: { id: string; title: string } // tin do tác vụ tự động gửi
   event?: ChatSystemEvent
   actorName?: string
   targetNames?: string[]
-  followUps?: string[] // PU AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
+  followUps?: string[] // N7AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
 }
 
 export interface ChatMessage {
@@ -220,7 +220,7 @@ export interface MessagesPage {
   nextCursor: string | null
 }
 
-// ── PU AI: nhiều hội thoại (thread), skill, connector, gợi ý ngữ cảnh ─────────
+// ── N7AI: nhiều hội thoại (thread), skill, connector, gợi ý ngữ cảnh ─────────
 
 export interface AiThread {
   id: string
@@ -233,7 +233,7 @@ export interface AiThreadsPage {
   nextCursor: string | null
 }
 
-// Thư viện PU AI (/puai/library): ảnh, tệp đã gửi & học liệu (quiz / flashcard) trong mọi thread của mình
+// Thư viện N7AI (/n7ai/library): ảnh, tệp đã gửi & học liệu (quiz / flashcard) trong mọi thread của mình
 export type AiLibraryKind = 'image' | 'file' | 'study'
 export interface AiLibraryItem {
   messageId: string
@@ -269,7 +269,7 @@ export const AiSkillInputSchema = z.object({
 })
 export type AiSkillInput = z.infer<typeof AiSkillInputSchema>
 
-// Tạo nhanh: mô tả bằng lời ⇒ PU AI viết bản nháp (chưa lưu), người dùng xem lại rồi mới tạo
+// Tạo nhanh: mô tả bằng lời ⇒ N7AI viết bản nháp (chưa lưu), người dùng xem lại rồi mới tạo
 export const AiSkillDraftInputSchema = z.object({
   prompt: z.string().trim().min(10, { message: 'Mô tả tối thiểu 10 ký tự' }).max(1000, { message: 'Mô tả tối đa 1000 ký tự' })
 })
@@ -301,7 +301,7 @@ export interface AiPublicSkill {
   description: string
   installCount: number
   author: { username: string; displayName: string }
-  official: boolean // skill dựng sẵn của PU AI
+  official: boolean // skill dựng sẵn của N7AI
   installed: boolean
 }
 

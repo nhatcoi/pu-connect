@@ -1,5 +1,5 @@
 -- ==========================================================
--- Migration: Tóm tắt bài viết bằng PU AI (idempotent)
+-- Migration: Tóm tắt bài viết bằng N7AI (idempotent)
 -- Thiết kế: docs/core/06-messaging-and-ai.md §17
 -- ==========================================================
 

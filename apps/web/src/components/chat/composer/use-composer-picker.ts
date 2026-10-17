@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type RefObject } from 'react'
 import type { AiMode, AiSkill, ChatRef, ChatRefSuggestion, ChatRefType, ConversationSummary, MentionCandidate } from '@pu/schemas'
 import { useAiSkills, useMembers, useRefSuggestions } from '@/hooks/chat'
-import { PUAI_CANDIDATE, getActiveMention, insertMention, matchesCandidate } from '@/lib/mention'
+import { N7AI_CANDIDATE, getActiveMention, insertMention, matchesCandidate } from '@/lib/mention'
 import { AI_MODE_META, AI_MODE_ORDER } from '../ai/ai-modes'
 
 // Menu gợi ý của ô soạn: "@" (người + ngữ cảnh) và "/" (chế độ học, skill, lệnh)
@@ -78,7 +78,7 @@ export function useComposerPicker({ textareaRef, text, setText, conversation, my
     const out: PickerSection[] = []
     if (at) {
       if (kind === 'group') {
-        const people: MentionCandidate[] = [PUAI_CANDIDATE]
+        const people: MentionCandidate[] = [N7AI_CANDIDATE]
         if (conversation?.myRole === 'owner') people.push(ALL_CANDIDATE)
         for (const m of members ?? []) {
           if (m.id !== myId && !m.isBot) people.push({ id: m.id, username: m.username, displayName: m.displayName, avatarUrl: m.avatarUrl, reason: 'other' })
@@ -93,7 +93,7 @@ export function useComposerPicker({ textareaRef, text, setText, conversation, my
     }
     if (slash) {
       const modes = AI_MODE_ORDER.filter((m) => hit(q, m, AI_MODE_META[m].label))
-      if (modes.length) out.push({ title: 'Chế độ học PU AI', items: modes.map((mode) => ({ kind: 'mode', key: `m:${mode}`, mode })) })
+      if (modes.length) out.push({ title: 'Chế độ học N7AI', items: modes.map((mode) => ({ kind: 'mode', key: `m:${mode}`, mode })) })
       const own = (skills ?? []).filter((s) => s.enabled && hit(q, s.slug, s.name)).slice(0, MAX_PER_SECTION)
       out.push({ title: 'Skill của bạn', items: own.map((skill) => ({ kind: 'skill', key: `s:${skill.id}`, skill })) })
       const commands: PickerCommand[] = kind === 'ai' ? ['new', 'reset', 'create-skill'] : ['create-skill']

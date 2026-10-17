@@ -5,10 +5,10 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { useAiQuota } from '@/hooks/chat'
-import { PUAI_HOME } from '@/lib/puai-routes'
+import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { AI_MODE_META, AI_MODE_ORDER } from './ai-modes'
 
-// Thẻ giới thiệu PU AI học tập (cột phải trang /messages) ⇒ không gian /puai
+// Thẻ giới thiệu N7AI học tập (cột phải trang /messages) ⇒ không gian /n7ai
 export function AiStudyCard() {
   const { data: quota } = useAiQuota()
   return (
@@ -16,7 +16,7 @@ export function AiStudyCard() {
       <div className="flex items-center gap-2.5">
         <N7AiMark className="h-9 w-9" />
         <div>
-          <p className="text-sm font-semibold">Học cùng PU AI</p>
+          <p className="text-sm font-semibold">Học cùng N7AI</p>
           {quota && (
             <p className="text-[11px] text-muted-foreground">
               Còn {Math.max(0, quota.limit - quota.used)}/{quota.limit} lượt hôm nay
@@ -38,10 +38,10 @@ export function AiStudyCard() {
         })}
       </ul>
       <p className="text-[11px] text-muted-foreground">
-        Trong nhóm chat, gõ <span className="font-semibold text-foreground">@puai</span> để cả nhóm cùng hỏi.
+        Trong nhóm chat, gõ <span className="font-semibold text-foreground">@n7ai</span> để cả nhóm cùng hỏi.
       </p>
       <Button asChild size="sm" className="w-full rounded-full">
-        <Link href={PUAI_HOME}>Mở PU AI</Link>
+        <Link href={N7AI_HOME}>Mở N7AI</Link>
       </Button>
     </div>
   )

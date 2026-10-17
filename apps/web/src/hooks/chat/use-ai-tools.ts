@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import type { AiConnectorId, AiConnectorInfo, AiSkill, AiSkillDetail, AiSkillInput, ChatRefType } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
-import { useAiSettings } from './use-puai-settings'
+import { useAiSettings } from './use-n7ai-settings'
 
 // Công cụ ô soạn tin: skill (menu "/"), connector (menu "+"), gợi ý ngữ cảnh ("@")
 
@@ -46,14 +46,14 @@ export function useAiSkillActions() {
     onSuccess: (_, id) => qc.setQueryData<AiSkill[]>(queryKeys.aiSkills, (old) => old?.filter((s) => s.id !== id)),
     onError
   })
-  // Tạo nhanh: PU AI viết bản nháp (tốn 1 lượt ⇒ làm mới lượt dùng)
+  // Tạo nhanh: N7AI viết bản nháp (tốn 1 lượt ⇒ làm mới lượt dùng)
   const draft = useMutation({
     mutationFn: (prompt: string) => chatApi.draftSkill(prompt),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
       void qc.invalidateQueries({ queryKey: queryKeys.aiUsage })
     },
-    onError: (err: Error) => toast.error(err.message || 'PU AI chưa viết được skill')
+    onError: (err: Error) => toast.error(err.message || 'N7AI chưa viết được skill')
   })
   return { create, update, install, remove, draft }
 }
@@ -107,7 +107,7 @@ export function useRefSuggestions(q: string | null, types: ChatRefType[]) {
   })
 }
 
-// Connector mặc định của PU AI: lưu ở server (ai_settings) ⇒ đồng bộ mọi thiết bị; luôn giữ ≥ 1 nguồn
+// Connector mặc định của N7AI: lưu ở server (ai_settings) ⇒ đồng bộ mọi thiết bị; luôn giữ ≥ 1 nguồn
 export function useConnectorPrefs() {
   const { settings, update } = useAiSettings()
   const connectors: AiConnectorId[] = settings?.defaultConnectors ?? ['library', 'web']

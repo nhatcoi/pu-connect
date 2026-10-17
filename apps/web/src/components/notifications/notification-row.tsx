@@ -5,7 +5,7 @@ import { AtSign, Award, BadgeCheck, Heart, MessageSquare, Reply, Sparkles, UserP
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark, PuMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
-import { PUAI_USERNAME } from '@/lib/mention'
+import { N7AI_USERNAME } from '@/lib/mention'
 import { formatRelativeTime, cn } from '@/lib/utils'
 import type { NotificationItem, NotificationType } from '@/hooks/use-notifications'
 
@@ -41,8 +41,8 @@ export function NotificationRow({ item, onClick, compact }: NotificationRowProps
       )}
     >
       <div className="relative shrink-0">
-        {item.actor?.username === PUAI_USERNAME ? (
-          // Thông báo từ trợ lý PU AI (@puai)
+        {item.actor?.username === N7AI_USERNAME ? (
+          // Thông báo từ trợ lý N7AI (@n7ai)
           <span className={cn('flex items-center justify-center rounded-full bg-muted', compact ? 'h-8 w-8' : 'h-10 w-10')}>
             <N7AiMark className="h-[72%] w-[72%]" />
           </span>

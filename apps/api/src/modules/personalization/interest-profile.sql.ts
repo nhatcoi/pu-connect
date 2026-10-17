@@ -9,7 +9,7 @@ export const courseMentionSql = (content: string, course: string) =>
 // Interest profile: weighted, time-decayed signals grouped by course / tag / search query
 //
 // Trọng số (Weights):
-//   đăng bài / tải tài liệu lên 5 · lưu bài 4 · vào nhóm học 4 · bình luận 3 · hỏi PU AI về môn 3
+//   đăng bài / tải tài liệu lên 5 · lưu bài 4 · vào nhóm học 4 · bình luận 3 · hỏi N7AI về môn 3
 //   tải tài liệu 3 · bấm kết quả tìm 2 · mở bài / tài liệu 1.5 · tìm kiếm 1.5 · thả cảm xúc 1
 //   bấm gợi ý AI 1 · sở thích / kỹ năng hồ sơ 1 · bài hiện ≥ 2s 0.5
 export const INTEREST_PROFILE_SQL = `
@@ -40,7 +40,7 @@ signals(kind, key, w, at) AS (
   -- Nhóm học đang tham gia: trạng thái hiện tại ⇒ không suy giảm
   UNION ALL SELECT 'course', sg.course_id::text, 4.0, NOW() FROM study_group_members m JOIN study_groups sg ON sg.id = m.group_id
     WHERE m.user_id = $1 AND sg.course_id IS NOT NULL
-  -- Câu hỏi PU AI nhắc tới tên / mã môn
+  -- Câu hỏi N7AI nhắc tới tên / mã môn
   UNION ALL SELECT 'course', co.id::text, 3.0, q.created_at FROM ai_questions q JOIN courses co
     ON ${courseMentionSql('q.content', 'co')}
   UNION ALL SELECT 'query', lower(trim(meta->>'q')), 1.5, created_at FROM user_events
