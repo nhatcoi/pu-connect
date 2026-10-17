@@ -14,8 +14,8 @@ export const ADMIN_PERMISSIONS = [
   'users:role', // Phân quyền vai trò (student / ta / lecturer / club_lead / admin)
   'users:verify', // Cấp/thu hồi tích xanh xác thực (is_verified)
   'users:insight', // Xem dữ liệu cá nhân hóa & hành vi (nhạy cảm, có ghi audit log)
-  'ai:read', // Xem telemetry PU AI, token, latency, phản hồi 👍/👎, skills
-  'ai:manage', // Xử lý ticket hỗ trợ PU AI, gỡ/vô hiệu hóa skill công khai vi phạm
+  'ai:read', // Xem telemetry N7AI, token, latency, phản hồi 👍/👎, skills
+  'ai:manage', // Xử lý ticket hỗ trợ N7AI, gỡ/vô hiệu hóa skill công khai vi phạm
   'academic:read', // Xem danh mục môn học, tài liệu RAG, cộng đồng
   'academic:manage', // Tạo/sửa môn học, xóa tài liệu vi phạm
   'search:read', // Xem phân tích tìm kiếm (Zero-result & Top queries)
@@ -71,8 +71,8 @@ export const ADMIN_PERMISSION_META: Record<AdminPermission, { label: string; gro
   'users:role': { label: 'Thay đổi vai trò (RBAC)', group: 'Người dùng & RBAC' },
   'users:verify': { label: 'Cấp tích xanh xác thực', group: 'Người dùng & RBAC' },
   'users:insight': { label: 'Xem dữ liệu cá nhân hóa (Audited)', group: 'Người dùng & RBAC' },
-  'ai:read': { label: 'Xem Telemetry & Phản hồi PU AI', group: 'PU AI Ops' },
-  'ai:manage': { label: 'Xử lý Ticket AI & Kiểm duyệt Skill', group: 'PU AI Ops' },
+  'ai:read': { label: 'Xem Telemetry & Phản hồi N7AI', group: 'N7AI Ops' },
+  'ai:manage': { label: 'Xử lý Ticket AI & Kiểm duyệt Skill', group: 'N7AI Ops' },
   'academic:read': { label: 'Xem Môn học, Tài liệu & Cộng đồng', group: 'Học thuật' },
   'academic:manage': { label: 'Thêm/sửa Môn học & Xóa Tài liệu', group: 'Học thuật' },
   'search:read': { label: 'Xem xu hướng & từ khóa tìm trống', group: 'Hệ thống' },
