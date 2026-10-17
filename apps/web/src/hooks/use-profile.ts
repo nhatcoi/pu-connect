@@ -45,10 +45,15 @@ const GET_USER_PROFILE_QUERY = `
       username
       email
       studentId
+      school
       faculty
       academicYear
       avatarUrl
+      bannerUrl
       bio
+      location
+      website
+      birthDate
       role
       major
       className

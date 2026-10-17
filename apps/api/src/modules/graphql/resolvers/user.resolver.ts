@@ -26,7 +26,8 @@ export class UserResolver {
     @Context() context: any
   ): Promise<UserType | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, display_name, student_id, faculty, academic_year, major, class_name, is_verified, avatar_url, bio, role, reputation_points, created_at
+      `SELECT id, email, username, display_name, student_id, school, faculty, academic_year, major, class_name, is_verified, avatar_url, bio, role,
+              reputation_points, created_at, banner_url, location, website, to_char(birth_date, 'YYYY-MM-DD') AS birth_date
        FROM users
        WHERE username = $1 LIMIT 1`,
       [username.toLowerCase().trim()]
@@ -36,7 +37,15 @@ export class UserResolver {
       throw new NotFoundException(`Không tìm thấy sinh viên/giảng viên @${username}`)
     }
 
-    const user = this.mapRowToUser(res.rows[0], true)
+    const row = res.rows[0]
+    const user: UserType = {
+      ...this.mapRowToUser(row, true),
+      school: row.school || null,
+      bannerUrl: row.banner_url || null,
+      location: row.location || null,
+      website: row.website || null,
+      birthDate: row.birth_date || null
+    }
     const viewerId = this.viewerId(context)
     const access = await this.profileAccess.resolve({ id: user.id }, viewerId)
     const { privacy, isOwner } = access

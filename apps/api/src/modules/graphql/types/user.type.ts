@@ -19,6 +19,9 @@ export class UserType {
   studentId?: string | null
 
   @Field(() => String, { nullable: true })
+  school?: string | null
+
+  @Field(() => String, { nullable: true })
   faculty?: string | null
 
   @Field(() => String, { nullable: true })
@@ -29,6 +32,19 @@ export class UserType {
 
   @Field(() => String, { nullable: true })
   bio?: string | null
+
+  // Chỉ userProfile trả các trường hồ sơ mở rộng (form Sửa hồ sơ đọc lại từ đây)
+  @Field(() => String, { nullable: true })
+  bannerUrl?: string | null
+
+  @Field(() => String, { nullable: true })
+  location?: string | null
+
+  @Field(() => String, { nullable: true })
+  website?: string | null
+
+  @Field(() => String, { nullable: true, description: 'YYYY-MM-DD' })
+  birthDate?: string | null
 
   @Field()
   role: string

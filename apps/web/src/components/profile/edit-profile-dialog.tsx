@@ -56,6 +56,12 @@ const BANNER_PRESETS = [
   }
 ]
 
+// Ngày sinh lưu YYYY-MM-DD ⇒ hiển thị dd/mm/yyyy
+const formatBirthDate = (value: string) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : value || 'Chưa cập nhật'
+}
+
 // Chi tiết lỗi tải ảnh (bỏ thông điệp chung chung "upload failed")
 const uploadErrorDetail = (err: unknown) => {
   const msg = errorMessage(err, '')
@@ -88,9 +94,13 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
 
-  // Đồng bộ lại khi mở modal
+  // Nạp dữ liệu 1 lần khi vừa mở (cha render lại không xóa nội dung đang sửa)
+  // Snapshot on open only: parent re-renders must not reset in-progress edits
+  const initialRef = useRef(initialData)
+  initialRef.current = initialData
   useEffect(() => {
     if (open) {
+      const initialData = initialRef.current
       setDisplayName(initialData.displayName || '')
       setBio(initialData.bio || '')
       setSchool(initialData.school || '')
@@ -106,7 +116,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
       setIsEditingBirthDate(false)
       setShowBannerPresets(false)
     }
-  }, [open, initialData])
+  }, [open])
 
   // Tải lên Avatar cá nhân
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -486,7 +496,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
               >
                 <div>
                   <span className="block text-xs text-muted-foreground font-normal">Birth date</span>
-                  <span className="text-sm font-medium text-foreground">{birthDate || 'Chưa cập nhật'}</span>
+                  <span className="text-sm font-medium text-foreground">{formatBirthDate(birthDate)}</span>
                 </div>
                 <ChevronRight
                   className={cn(
@@ -500,17 +510,8 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
                 <div className="mt-2 p-3 bg-muted/40 rounded-xl border border-border flex items-center gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
                   <input
                     type="date"
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        const d = new Date(e.target.value)
-                        const formatted = d.toLocaleDateString('en-US', {
-                          month: 'long',
-                          day: 'numeric',
-                          year: 'numeric'
-                        })
-                        setBirthDate(formatted)
-                      }
-                    }}
+                    value={/^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? birthDate : ''}
+                    onChange={(e) => setBirthDate(e.target.value)}
                     className="bg-background text-foreground text-xs sm:text-sm rounded-lg px-3 py-1.5 border border-border focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                   />
                   <button

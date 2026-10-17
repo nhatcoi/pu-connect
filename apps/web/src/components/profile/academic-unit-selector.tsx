@@ -73,7 +73,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
         <label className="block text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <GraduationCap className="h-3.5 w-3.5 text-primary" />
-            <span>Ngành học / Đơn vị trực thuộc (School • Faculty • Major)</span>
+            <span>Học đường - Đại học và Khoa</span>
           </span>
           {currentPrimaryTitle && !isCustomMode && (
             <button
