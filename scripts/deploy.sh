@@ -124,6 +124,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-users-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-lists-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-sanctions-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-security-upgrade.sql
 
 # Seed initial users if empty
 USER_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d '[:space:]' || echo "0")
@@ -216,6 +217,13 @@ else
   CERT_DIR="/etc/letsencrypt/live/puc.vnhat.dev"
 fi
 
+# IP thật của người dùng sau Cloudflare (nhật ký đăng nhập, rate limit) cho PUC + admin
+mkdir -p /etc/nginx/snippets
+cp scripts/ops/nginx-cloudflare-realip.conf /etc/nginx/snippets/pu-cloudflare-realip.conf
+if ! grep -q 'pu-cloudflare-realip' /etc/nginx/sites-available/pu-connector.conf; then
+  sed -i '0,/server_name puc.vnhat.dev;/s//server_name puc.vnhat.dev;\n    include \/etc\/nginx\/snippets\/pu-cloudflare-realip.conf;/' /etc/nginx/sites-available/pu-connector.conf
+fi
+
 cat > /etc/nginx/sites-available/admin-puc.vnhat.dev.conf << EOF
 server {
     listen 80;
@@ -228,6 +236,7 @@ server {
     listen 443 ssl;
     listen [::]:443 ssl;
     server_name admin-puc.vnhat.dev;
+    include /etc/nginx/snippets/pu-cloudflare-realip.conf;
 
     ssl_certificate $CERT_DIR/fullchain.pem;
     ssl_certificate_key $CERT_DIR/privkey.pem;

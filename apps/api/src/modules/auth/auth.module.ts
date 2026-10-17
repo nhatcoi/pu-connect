@@ -7,6 +7,7 @@ import { LocalStrategy } from './local.strategy'
 import { GoogleStrategy } from './google.strategy'
 import { SessionSerializer } from './session.serializer'
 import { MailService } from './mail.service'
+import { SecurityLogService } from './security-log.service'
 import { GOOGLE_AUTH_ENABLED } from './auth.constants'
 import { NotificationsModule } from '../notifications/notifications.module'
 
@@ -16,6 +17,7 @@ import { NotificationsModule } from '../notifications/notifications.module'
   providers: [
     AuthService,
     MailService,
+    SecurityLogService,
     LocalStrategy,
     SessionSerializer,
     {
@@ -39,6 +41,6 @@ import { NotificationsModule } from '../notifications/notifications.module'
           : null
     }
   ],
-  exports: [AuthService, PassportModule]
+  exports: [AuthService, SecurityLogService, PassportModule]
 })
 export class AuthModule {}

@@ -189,16 +189,16 @@ export class AuthService {
   }
 
   // Quên mật khẩu: luôn trả cùng kết quả dù email có tồn tại hay không (chống dò tài khoản)
-  async requestPasswordReset(email: string): Promise<void> {
+  async requestPasswordReset(email: string): Promise<string | null> {
     const res = await this.db.query(
       `SELECT id, email, display_name, reset_sent_at FROM users
        WHERE email = $1 AND account_type = 'human' LIMIT 1`,
       [email.toLowerCase().trim()]
     )
     const row = res.rows[0]
-    if (!row) return
+    if (!row) return null
     // Tối đa 1 email / 60 giây / tài khoản (im lặng bỏ qua, không lộ trạng thái)
-    if (row.reset_sent_at && Date.now() - new Date(row.reset_sent_at).getTime() < 60_000) return
+    if (row.reset_sent_at && Date.now() - new Date(row.reset_sent_at).getTime() < 60_000) return null
 
     const token = randomBytes(32).toString('hex')
     await this.db.query(
@@ -211,10 +211,11 @@ export class AuthService {
     void this.mail
       .sendPasswordResetEmail(row.email, row.display_name, `${base}/reset-password?token=${token}`)
       .catch((err) => this.logger.error(`Gửi email đặt lại mật khẩu thất bại (${row.email}): ${err?.message}`))
+    return row.id
   }
 
   // Đặt mật khẩu mới bằng token (dùng một lần) và đăng xuất mọi phiên cũ
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(token: string, newPassword: string): Promise<string> {
     if (!token || !/^[a-f0-9]{64}$/.test(token)) {
       throw new BadRequestException('Liên kết đặt lại mật khẩu không hợp lệ')
     }
@@ -237,6 +238,7 @@ export class AuthService {
     void this.mail
       .sendPasswordChangedEmail(user.email, user.display_name)
       .catch((err) => this.logger.error(`Gửi cảnh báo đổi mật khẩu thất bại (${user.email}): ${err?.message}`))
+    return user.id
   }
 
   // Xác thực email bằng token; email trường được cấp tích xanh

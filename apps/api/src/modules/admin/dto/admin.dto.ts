@@ -118,7 +118,8 @@ export const AdminUserQuerySchema = z.object({
   joined: optEnum(['24h', '7d', '30d', '90d'] as const),
   faculty: z.string().trim().max(50).optional(),
   reported: optEnum(['yes'] as const),
-  sort: optEnum(['created', 'last_seen', 'reputation', 'posts', 'reports', 'name'] as const).default('created'),
+  risk: optEnum(['high', 'medium'] as const),
+  sort: optEnum(['created', 'last_seen', 'reputation', 'posts', 'reports', 'name', 'risk'] as const).default('created'),
   dir: optEnum(['asc', 'desc'] as const).default('desc'),
   page: z.coerce.number().int().min(1).max(10_000).default(1),
   pageSize: z.coerce.number().int().min(10).max(100).default(25)
@@ -140,6 +141,14 @@ export const SanctionBodySchema = z.object({
   kind: z.enum(['warning', 'restrict', 'suspend']),
   durationDays: z.number().int().min(1).max(365).nullable().optional(),
   reason: z.string().trim().min(3, 'Nhập lý do (≥ 3 ký tự)').max(255)
+})
+
+// View đã lưu: query là chuỗi URL (không chứa '#')
+export const SavedViewBodySchema = z.object({
+  page: z.enum(['users', 'moderation', 'academic', 'ai', 'audit']),
+  name: z.string().trim().min(1, 'Đặt tên cho view').max(60),
+  query: z.string().trim().max(1000).regex(/^[^#]*$/, 'Query không hợp lệ'),
+  shared: z.boolean().default(false)
 })
 
 export const AdminUserNoteBodySchema = z.object({

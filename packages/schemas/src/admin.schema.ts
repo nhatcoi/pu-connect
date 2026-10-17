@@ -253,6 +253,8 @@ export interface AdminUserRow {
   isRestricted: boolean
   restrictedUntil: string | null // null + isRestricted ⇒ vô thời hạn
   restrictedReason: string | null
+  riskScore: number
+  riskFactors: { key: string; label: string; points: number }[]
 }
 
 // ── Chế tài theo bậc: cảnh cáo → hạn chế (chỉ đọc) → khóa có thời hạn → vĩnh viễn ──
@@ -289,7 +291,7 @@ export type SanctionInput = z.infer<typeof SanctionInputSchema>
 // ── Quản lý người dùng nâng cao: phân trang server, lọc, sắp xếp, hàng loạt ──
 
 export type AdminAuthProvider = 'password' | 'google'
-export const ADMIN_USER_SORTS = ['created', 'last_seen', 'reputation', 'posts', 'reports', 'name'] as const
+export const ADMIN_USER_SORTS = ['created', 'last_seen', 'reputation', 'posts', 'reports', 'name', 'risk'] as const
 export type AdminUserSort = (typeof ADMIN_USER_SORTS)[number]
 export const ADMIN_USER_ACTIVITY = ['online', '24h', '7d', '30d', 'dormant', 'never'] as const
 export type AdminUserActivity = (typeof ADMIN_USER_ACTIVITY)[number]
@@ -307,6 +309,7 @@ export interface AdminUserQuery {
   joined?: AdminUserJoined
   faculty?: string
   reported?: 'yes'
+  risk?: 'high' | 'medium'
   sort?: AdminUserSort
   dir?: 'asc' | 'desc'
   page?: number
@@ -348,6 +351,7 @@ export interface AdminUserSummary {
   verified: number
   suspended: number
   restricted: number
+  highRisk: number
   reported: number
   dormant: number
   byRole: Partial<Record<AdminUserRole, number>>

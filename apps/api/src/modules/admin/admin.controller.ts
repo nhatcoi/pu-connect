@@ -27,6 +27,7 @@ import {
   AdminUserNoteBodySchema,
   AdminUserQuerySchema,
   SanctionBodySchema,
+  SavedViewBodySchema,
   type AdminUserQueryParsed,
   AdminVerifyUserBodySchema
 } from './dto/admin.dto'
@@ -36,6 +37,7 @@ import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminService } from './admin.service'
 import { AdminUsersService } from './admin-users.service'
 import { AdminListsService } from './admin-lists.service'
+import { AdminViewsService } from './admin-views.service'
 import {
   AuditQuerySchema,
   BulkCommentBodySchema,
@@ -68,7 +70,8 @@ export class AdminController {
   constructor(
     private readonly admin: AdminService,
     private readonly userAdmin: AdminUsersService,
-    private readonly lists: AdminListsService
+    private readonly lists: AdminListsService,
+    private readonly views_: AdminViewsService
   ) {}
 
   // Thông tin phiên quản trị & danh sách quyền RBAC hiện tại
@@ -206,6 +209,33 @@ export class AdminController {
   deleteNote(@Param('id', ParseUUIDPipe) id: string, @Param('noteId') noteId: string, @Req() req: Request) {
     if (!/^\d+$/.test(noteId)) throw new BadRequestException('noteId không hợp lệ')
     return this.userAdmin.deleteNote(requireUserId(req), id, noteId)
+  }
+
+  // Nhật ký đăng nhập, IP, thiết bị, tài khoản chung IP (ghi audit)
+  @Get('users/:id/security')
+  @RequireAdminPermission('users:insight')
+  userSecurity(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.userAdmin.security(requireUserId(req), id)
+  }
+
+  // ── View đã lưu ──
+  @Get('views')
+  @RequireAdminPermission('dashboard:view')
+  views(@Query('page') page: string, @Req() req: Request) {
+    return this.views_.list(requireUserId(req), String(page || 'users').slice(0, 30))
+  }
+
+  @Post('views')
+  @RequireAdminPermission('dashboard:view')
+  createView(@Body(new ZodValidationPipe(SavedViewBodySchema)) body: { page: string; name: string; query: string; shared: boolean }, @Req() req: Request) {
+    return this.views_.create(requireUserId(req), body)
+  }
+
+  @Delete('views/:viewId')
+  @RequireAdminPermission('dashboard:view')
+  deleteView(@Param('viewId') viewId: string, @Req() req: Request) {
+    if (!/^\d+$/.test(viewId)) throw new BadRequestException('viewId không hợp lệ')
+    return this.views_.remove(requireUserId(req), viewId)
   }
 
   @Post('users/:id/sanctions')

@@ -13,6 +13,7 @@ import type {
   AdminUserRow,
   AdminUserSummary,
   AdminSanction,
+  AdminUserSecurity,
   SanctionInput,
   SanctionKind,
   SanctionRecommendation,
@@ -23,6 +24,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { UserInsightService } from '../personalization/user-insight.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { writeAudit } from './admin-audit'
+import { SHARED_IP_MAX_ACCOUNTS } from './admin-risk.service'
 import type { AdminUserQueryParsed } from './dto/admin.dto'
 
 // Biểu thức lấy user id trong phiên express-session (có index idx_user_sessions_user)
@@ -36,7 +38,8 @@ const SORT_SQL: Record<AdminUserQueryParsed['sort'], string> = {
   reputation: 'u.reputation_points',
   posts: 'post_count',
   reports: 'report_count',
-  name: 'lower(u.display_name)'
+  name: 'lower(u.display_name)',
+  risk: 'u.risk_score'
 }
 
 // Hạn chế đang hiệu lực
@@ -45,7 +48,7 @@ const RESTRICTED = `(u.restricted_at IS NOT NULL AND (u.restricted_until IS NULL
 const ROW_COLUMNS = `u.id, u.username, u.display_name, u.email, u.avatar_url, u.role,
   CASE WHEN u.status = 'suspended' AND u.suspended_until IS NOT NULL AND u.suspended_until <= NOW() THEN 'active' ELSE u.status::text END AS status,
   u.is_verified, u.student_id, u.faculty, u.reputation_points, u.suspended_at, u.suspended_reason, u.suspended_until,
-  ${RESTRICTED} AS is_restricted, u.restricted_until, u.restricted_reason,
+  ${RESTRICTED} AS is_restricted, u.restricted_until, u.restricted_reason, u.risk_score, u.risk_factors,
   u.last_seen_at, u.created_at, (u.password_hash IS NOT NULL) AS has_password, (u.google_id IS NOT NULL) AS has_google`
 
 // Thang chế tài theo số lần vi phạm (180 ngày): cảnh cáo → hạn chế 1d → 7d → khóa 7d → 30d → vĩnh viễn
@@ -95,7 +98,9 @@ function mapUserRow(row: Row): AdminUserRow {
     suspendedUntil: iso(row.suspended_until),
     isRestricted: !!row.is_restricted,
     restrictedUntil: iso(row.restricted_until),
-    restrictedReason: row.restricted_reason ?? null
+    restrictedReason: row.restricted_reason ?? null,
+    riskScore: row.risk_score ?? 0,
+    riskFactors: row.risk_factors ?? []
   }
 }
 
@@ -138,6 +143,8 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     if (f.auth === 'google') where.push(`u.google_id IS NOT NULL`)
     if (f.auth === 'password') where.push(`u.password_hash IS NOT NULL`)
     if (f.faculty) where.push(`u.faculty = ${p(f.faculty)}`)
+    if (f.risk === 'high') where.push('u.risk_score >= 50')
+    if (f.risk === 'medium') where.push('u.risk_score BETWEEN 25 AND 49')
     if (f.reported) where.push(`EXISTS (SELECT 1 FROM post_reports r JOIN posts p ON p.id = r.post_id WHERE p.author_id = u.id)`)
 
     const activity: Record<string, string> = {
@@ -202,6 +209,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
           COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days')::int AS new_7d,
           COUNT(*) FILTER (WHERE is_verified)::int AS verified,
           COUNT(*) FILTER (WHERE status = 'suspended')::int AS suspended,
+          COUNT(*) FILTER (WHERE risk_score >= 50)::int AS high_risk,
           COUNT(*) FILTER (WHERE restricted_at IS NOT NULL AND (restricted_until IS NULL OR restricted_until > NOW()))::int AS restricted,
           COUNT(*) FILTER (WHERE last_seen_at <= NOW() - INTERVAL '30 days')::int AS dormant,
           (SELECT COUNT(DISTINCT p.author_id) FROM post_reports r JOIN posts p ON p.id = r.post_id)::int AS reported
@@ -221,6 +229,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
       verified: a.verified,
       suspended: a.suspended,
       restricted: a.restricted,
+      highRisk: a.high_risk,
       reported: a.reported,
       dormant: a.dormant,
       byRole: Object.fromEntries(roles.rows.map((r) => [r.role, r.n])),
@@ -314,6 +323,72 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
       notes,
       sanctions,
       recommendation: this.recommend(sanctions)
+    }
+  }
+
+  // ── Bảo mật: nhật ký đăng nhập, IP, thiết bị, tài khoản chung IP ──
+  async security(adminId: string, userId: string): Promise<AdminUserSecurity> {
+    const [events, ips, devices, linked, fails] = await Promise.all([
+      this.db.query(
+        `SELECT id, event, success, method, host(ip) AS ip, device, created_at FROM user_security_events
+         WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
+        [userId]
+      ),
+      this.db.query(
+        `SELECT host(e.ip) AS ip, COUNT(*)::int AS n, MAX(e.created_at) AS last_at,
+                (SELECT COUNT(DISTINCT x.user_id) FROM user_security_events x WHERE x.ip = e.ip AND x.user_id IS NOT NULL)::int AS accounts
+         FROM user_security_events e WHERE e.user_id = $1 AND e.ip IS NOT NULL
+         GROUP BY e.ip ORDER BY last_at DESC LIMIT 20`,
+        [userId]
+      ),
+      this.db.query(
+        `SELECT device, COUNT(*)::int AS n, MAX(created_at) AS last_at FROM user_security_events
+         WHERE user_id = $1 AND device IS NOT NULL GROUP BY device ORDER BY last_at DESC LIMIT 10`,
+        [userId]
+      ),
+      // Tài khoản khác đăng nhập từ cùng IP (bỏ IP dùng chung lớn: wifi trường / NAT)
+      this.db.query(
+        `WITH mine AS (
+           SELECT DISTINCT ip FROM user_security_events WHERE user_id = $1 AND ip IS NOT NULL AND success
+         ), small AS (
+           SELECT e.ip FROM user_security_events e JOIN mine m ON m.ip = e.ip WHERE e.user_id IS NOT NULL AND e.success
+           GROUP BY e.ip HAVING COUNT(DISTINCT e.user_id) <= ${SHARED_IP_MAX_ACCOUNTS}
+         )
+         SELECT u.id, u.username, u.display_name, u.avatar_url, u.status,
+                COUNT(DISTINCT e.ip)::int AS shared_ips, MAX(e.created_at) AS last_at
+         FROM user_security_events e JOIN small s ON s.ip = e.ip JOIN users u ON u.id = e.user_id
+         WHERE e.user_id <> $1 AND e.success
+         GROUP BY u.id ORDER BY shared_ips DESC, last_at DESC LIMIT 20`,
+        [userId]
+      ),
+      this.db.query(
+        `SELECT COUNT(*)::int AS n FROM user_security_events WHERE user_id = $1 AND NOT success AND created_at > NOW() - INTERVAL '24 hours'`,
+        [userId]
+      )
+    ])
+    await this.db.transaction((client) => writeAudit(client, adminId, { action: 'user.security_view', targetType: 'user', targetId: userId }))
+    return {
+      events: events.rows.map((r) => ({
+        id: String(r.id),
+        event: r.event,
+        success: r.success,
+        method: r.method,
+        ip: r.ip,
+        device: r.device,
+        createdAt: iso(r.created_at) as string
+      })),
+      ips: ips.rows.map((r) => ({ ip: r.ip, count: r.n, lastAt: iso(r.last_at) as string, accounts: r.accounts })),
+      devices: devices.rows.map((r) => ({ device: r.device, count: r.n, lastAt: iso(r.last_at) as string })),
+      linkedAccounts: linked.rows.map((r) => ({
+        id: r.id,
+        username: r.username,
+        displayName: r.display_name,
+        avatarUrl: r.avatar_url,
+        status: r.status,
+        sharedIps: r.shared_ips,
+        lastSeenTogetherAt: iso(r.last_at) as string
+      })),
+      failedLogins24h: fails.rows[0].n
     }
   }
 

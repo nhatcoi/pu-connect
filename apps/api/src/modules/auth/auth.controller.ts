@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Body, Req, Res, Inject, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Post, Get, Delete, Param, Body, Req, Res, Inject, UseGuards, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common'
 import { AuthService } from './auth.service'
+import { SecurityLogService } from './security-log.service'
 import { LocalAuthGuard } from './guards/local-auth.guard'
 import { AuthenticatedGuard } from './guards/authenticated.guard'
 import { LoginRateLimitGuard } from './guards/login-rate-limit.guard'
@@ -33,6 +34,7 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
+    private readonly securityLog: SecurityLogService,
     @Inject(GOOGLE_AUTH_ENABLED) private readonly googleEnabled: boolean
   ) {}
 
@@ -52,8 +54,10 @@ export class AuthController {
 
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Body(new ZodValidationPipe(VerifyEmailSchema)) body: { token: string }) {
-    return this.authService.verifyEmail(body.token)
+  async verifyEmail(@Body(new ZodValidationPipe(VerifyEmailSchema)) body: { token: string }, @Req() req: Request) {
+    const user = await this.authService.verifyEmail(body.token)
+    void this.securityLog.record(req, 'email_verified', { userId: user.id })
+    return user
   }
 
   // Luôn trả 200 cùng nội dung: không tiết lộ email có tài khoản hay không
@@ -62,7 +66,8 @@ export class AuthController {
   async forgotPassword(@Body(new ZodValidationPipe(ForgotPasswordSchema)) body: { email: string }, @Req() req: Request) {
     this.forgotIpLimiter.consume(req.ip || 'unknown')
     this.forgotEmailLimiter.consume(body.email)
-    await this.authService.requestPasswordReset(body.email)
+    const userId = await this.authService.requestPasswordReset(body.email)
+    if (userId) void this.securityLog.record(req, 'password_reset_requested', { userId })
     return { sent: true }
   }
 
@@ -70,7 +75,8 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body(new ZodValidationPipe(ResetPasswordSchema)) body: { token: string; password: string }, @Req() req: Request) {
     this.resetLimiter.consume(req.ip || 'unknown')
-    await this.authService.resetPassword(body.token, body.password)
+    const userId = await this.authService.resetPassword(body.token, body.password)
+    void this.securityLog.record(req, 'password_reset', { userId })
     return { success: true }
   }
 
@@ -94,6 +100,8 @@ export class AuthController {
     const user = req.user as UserProfile | undefined
     if (req.googleAuthFailed === 'suspended') return res.redirect('/?auth_error=suspended')
     if (req.googleAuthFailed || !user) return res.redirect('/?auth_error=google')
+    this.securityLog.tagSession(req, 'google')
+    void this.securityLog.record(req, 'login', { userId: user.id, method: 'google' })
     return res.redirect('/')
   }
 
@@ -107,6 +115,8 @@ export class AuthController {
         resolve()
       })
     })
+    this.securityLog.tagSession(req, 'password')
+    void this.securityLog.record(req, 'register', { userId: user.id, method: 'password' })
     return user
   }
 
@@ -114,7 +124,10 @@ export class AuthController {
   @UseGuards(LoginRateLimitGuard, LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   async login(@Req() req: Request) {
-    return req.user
+    const user = req.user as UserProfile
+    this.securityLog.tagSession(req, 'password')
+    void this.securityLog.record(req, 'login', { userId: user.id, method: 'password' })
+    return user
   }
 
   @Get('me')
@@ -134,6 +147,8 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const userId = (req.user as UserProfile | undefined)?.id
+    if (userId) void this.securityLog.record(req, 'logout', { userId })
     return new Promise((resolve) => {
       req.logout(() => {
         req.session.destroy(() => {
@@ -144,5 +159,34 @@ export class AuthController {
         })
       })
     })
+  }
+
+  // ── Thiết bị đăng nhập & nhật ký bảo mật của chính mình ──
+  @Get('sessions')
+  @UseGuards(AuthenticatedGuard)
+  sessions(@Req() req: Request) {
+    return this.securityLog.listSessions((req.user as UserProfile).id, req.sessionID)
+  }
+
+  @Delete('sessions/:id')
+  @UseGuards(AuthenticatedGuard)
+  async revokeSession(@Param('id') id: string, @Req() req: Request) {
+    if (!/^[a-f0-9]{16}$/.test(id)) throw new NotFoundException('Phiên không tồn tại')
+    const n = await this.securityLog.revokeSessions(req, (req.user as UserProfile).id, { id })
+    if (!n) throw new NotFoundException('Phiên không tồn tại hoặc là phiên hiện tại')
+    return { revoked: n }
+  }
+
+  @Post('sessions/revoke-others')
+  @UseGuards(AuthenticatedGuard)
+  @HttpCode(HttpStatus.OK)
+  async revokeOthers(@Req() req: Request) {
+    return { revoked: await this.securityLog.revokeSessions(req, (req.user as UserProfile).id, { others: true }) }
+  }
+
+  @Get('security-events')
+  @UseGuards(AuthenticatedGuard)
+  securityEvents(@Req() req: Request) {
+    return this.securityLog.listEvents((req.user as UserProfile).id)
   }
 }
