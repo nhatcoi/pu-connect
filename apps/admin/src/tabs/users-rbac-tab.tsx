@@ -1,12 +1,8 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Activity, BadgeCheck, BadgeX, Check, Lock, LockOpen, LogOut, Minus, Users } from 'lucide-react'
+import { Activity, BadgeCheck, BadgeX, Lock, LockOpen, LogOut, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import {
-  ADMIN_PERMISSIONS,
-  ADMIN_PERMISSION_META,
-  ADMIN_ROLE_LABELS,
-  ROLE_PERMISSIONS,
   USER_ROLES,
   type AdminPermission,
   type AdminUserRole,
@@ -35,7 +31,6 @@ import {
   THead,
   Toolbar,
   Tr,
-  Tabs,
   UserCell
 } from '@/components/ui'
 import { UserInsightModal } from '@/components/user-insight-modal'
@@ -46,24 +41,10 @@ interface UsersRbacTabProps {
 }
 
 export function UsersRbacTab({ currentUserId, permissions }: UsersRbacTabProps) {
-  const [tab, setTab] = useState<'users' | 'roles'>('users')
-
   return (
     <>
-      <PageHeader
-        title="Người dùng"
-        tabs={
-          <Tabs
-            value={tab}
-            onChange={setTab}
-            items={[
-              { id: 'users', label: 'Tài khoản' },
-              { id: 'roles', label: 'Vai trò & quyền' }
-            ]}
-          />
-        }
-      />
-      {tab === 'users' ? <UsersSection currentUserId={currentUserId} permissions={permissions} /> : <RolesSection mine={permissions} />}
+      <PageHeader title="Người dùng" />
+      <UsersSection currentUserId={currentUserId} permissions={permissions} />
     </>
   )
 }
@@ -271,63 +252,5 @@ function UsersSection({ currentUserId, permissions }: UsersRbacTabProps) {
       />
       <UserInsightModal userId={insightId} onClose={() => setInsightId(null)} />
     </>
-  )
-}
-
-const MATRIX_ROLES = ['admin', 'lecturer', 'ta'] as const
-
-function RolesSection({ mine }: { mine: AdminPermission[] }) {
-  // Gom quyền theo phân hệ
-  const groups = ADMIN_PERMISSIONS.reduce<Record<string, AdminPermission[]>>((acc, p) => {
-    const g = ADMIN_PERMISSION_META[p].group
-    ;(acc[g] ??= []).push(p)
-    return acc
-  }, {})
-
-  return (
-    <Table>
-      <THead>
-        <Th>Quyền</Th>
-        {MATRIX_ROLES.map((r) => (
-          <Th key={r} className="w-32 text-center">
-            <span title={ADMIN_ROLE_LABELS[r].description} className="inline-flex flex-col items-center gap-0.5">
-              <span className="text-foreground">{ROLE_SHORT[r]}</span>
-              <span className="text-[11px] font-normal">{ROLE_PERMISSIONS[r].length} quyền</span>
-            </span>
-          </Th>
-        ))}
-      </THead>
-      <TBody>
-        {Object.entries(groups).map(([group, perms]) => (
-          <React.Fragment key={group}>
-            <tr className="bg-muted/30">
-              <td colSpan={MATRIX_ROLES.length + 1} className="px-4 py-2 text-xs font-semibold text-muted-foreground">
-                {group.replace(' & RBAC', '')}
-              </td>
-            </tr>
-            {perms.map((perm) => (
-              <Tr key={perm}>
-                <Td>
-                  <div className="flex items-center gap-2">
-                    <span className="text-foreground">{ADMIN_PERMISSION_META[perm].label}</span>
-                    {mine.includes(perm) && <Badge tone="primary">Bạn có</Badge>}
-                  </div>
-                  <code className="font-mono text-[11px] text-muted-foreground">{perm}</code>
-                </Td>
-                {MATRIX_ROLES.map((r) => (
-                  <Td key={r} className="text-center">
-                    {ROLE_PERMISSIONS[r].includes(perm) ? (
-                      <Check className="mx-auto size-4 text-success" />
-                    ) : (
-                      <Minus className="mx-auto size-4 text-muted-foreground/40" />
-                    )}
-                  </Td>
-                ))}
-              </Tr>
-            ))}
-          </React.Fragment>
-        ))}
-      </TBody>
-    </Table>
   )
 }

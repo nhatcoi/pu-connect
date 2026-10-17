@@ -25,19 +25,11 @@ export const ADMIN_PERMISSIONS = [
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number]
 
-// Ma trận phân quyền theo vai trò trong cổng Admin (admin-puc.vnhat.dev)
+// Quyền cổng Admin (admin-puc.vnhat.dev) — chỉ Super Admin truy cập
 export const ROLE_PERMISSIONS: Record<AdminUserRole, readonly AdminPermission[]> = {
   admin: ADMIN_PERMISSIONS,
-  lecturer: [
-    'dashboard:view',
-    'moderation:read',
-    'moderation:write',
-    'academic:read',
-    'academic:manage',
-    'ai:read',
-    'search:read'
-  ],
-  ta: ['dashboard:view', 'moderation:read', 'moderation:write', 'academic:read', 'search:read'],
+  lecturer: [],
+  ta: [],
   club_lead: [],
   student: []
 }
@@ -49,14 +41,14 @@ export const ADMIN_ROLE_LABELS: Record<AdminUserRole, { label: string; badgeColo
     description: 'Toàn quyền điều hành hệ thống, phân quyền RBAC, khóa tài khoản, AI Ops, phát thông báo và xem nhật ký kiểm toán.'
   },
   lecturer: {
-    label: 'Giảng viên (Academic & Mod)',
+    label: 'Giảng viên',
     badgeColor: 'blue',
-    description: 'Quản lý học phần, kiểm duyệt tài liệu RAG, xử lý báo cáo bài viết học thuật và xem thống kê tìm kiếm / PU AI.'
+    description: 'Giảng dạy & chia sẻ học thuật trên cổng người dùng (không truy cập cổng Admin).'
   },
   ta: {
-    label: 'Trợ giảng (Content Moderator)',
+    label: 'Trợ giảng',
     badgeColor: 'emerald',
-    description: 'Kiểm duyệt báo cáo bài viết, bình luận vi phạm và tra cứu học phần / tài liệu.'
+    description: 'Hỗ trợ học phần trên cổng người dùng (không truy cập cổng Admin).'
   },
   club_lead: {
     label: 'Chủ nhiệm CLB',

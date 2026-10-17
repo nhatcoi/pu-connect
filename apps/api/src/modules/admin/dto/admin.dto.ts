@@ -36,8 +36,9 @@ export const ADMIN_PERMISSIONS_RUNTIME: readonly AdminPermission[] = [
 
 export const ROLE_PERMISSIONS_RUNTIME: Record<AdminUserRole, readonly AdminPermission[]> = {
   admin: ADMIN_PERMISSIONS_RUNTIME,
-  lecturer: ['dashboard:view', 'moderation:read', 'moderation:write', 'academic:read', 'academic:manage', 'ai:read', 'search:read'],
-  ta: ['dashboard:view', 'moderation:read', 'moderation:write', 'academic:read', 'search:read'],
+  // Cổng admin chỉ dành cho Super Admin (2026-10-17)
+  lecturer: [],
+  ta: [],
   club_lead: [],
   student: []
 }

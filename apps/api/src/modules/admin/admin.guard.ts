@@ -8,7 +8,7 @@ export const ADMIN_PERMISSION_KEY = 'admin_permission'
 // Gắn quyền cụ thể cho từng endpoint trong /api/admin/*
 export const RequireAdminPermission = (permission: AdminPermission) => SetMetadata(ADMIN_PERMISSION_KEY, permission)
 
-// Bảo vệ toàn bộ /api/admin/* theo RBAC (admin / lecturer / ta theo quyền cụ thể)
+// Bảo vệ toàn bộ /api/admin/* — chỉ role admin (quyền chi tiết theo endpoint)
 @Injectable()
 export class AdminGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

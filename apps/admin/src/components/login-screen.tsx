@@ -85,7 +85,7 @@ export function LoginScreen({ forbiddenRole, onSuccess, onLogout }: LoginScreenP
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">Dành cho Quản trị viên, Giảng viên và Trợ giảng</p>
+        <p className="mt-6 text-center text-xs text-muted-foreground">Chỉ dành cho Quản trị viên</p>
       </div>
     </div>
   )
