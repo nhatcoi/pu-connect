@@ -19,7 +19,7 @@ INSERT INTO users (email, username, display_name, account_type, role, reputation
                    is_onboarded, is_verified, verified_at, email_verified, email_verified_at, avatar_url, bio)
 VALUES ('n7ai@system.local', 'n7ai', 'N7AI', 'bot', 'student', 0,
         TRUE, TRUE, NOW(), TRUE, NOW(),
-        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=n7ai&backgroundColor=1e3a8a',
+        'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=puai&backgroundColor=1e3a8a',
         'Trợ lý học tập của PU Connector. Tag @n7ai để hỏi.')
 ON CONFLICT DO NOTHING;
 
