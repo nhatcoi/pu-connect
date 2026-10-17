@@ -18,6 +18,7 @@ export function MobileBottomNav() {
   const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
   const isDimmed = !isAtTop && (!isHeaderVisible || isScrolling)
 
+  // Tin nhắn ở giữa thanh đáy
   const navItems = [
     {
       id: 'feed',
@@ -34,19 +35,19 @@ export function MobileBottomNav() {
       isActive: pathname === '/search' && (!searchParams.get('type') || searchParams.get('type') === 'all')
     },
     {
-      id: 'courses',
-      label: 'Học phần',
-      icon: GraduationCap,
-      path: '/courses',
-      isActive: pathname === '/courses' || pathname.startsWith('/courses/')
-    },
-    {
       id: 'messages',
       label: 'Tin nhắn',
       icon: MessageCircle,
       path: '/messages',
       isActive: pathname === '/messages' || pathname.startsWith('/messages/'),
       unread: unreadMessages
+    },
+    {
+      id: 'courses',
+      label: 'Học phần',
+      icon: GraduationCap,
+      path: '/courses',
+      isActive: pathname === '/courses' || pathname.startsWith('/courses/')
     },
     ...(FEATURES.categoryShortcuts
       ? [

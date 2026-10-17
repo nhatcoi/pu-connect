@@ -48,6 +48,8 @@ export function Header() {
   const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   const isSearchPage = pathname === '/search'
+  // Tin nhắn (mobile): ẩn thanh trên, màn chat có đầu trang riêng
+  const isChat = pathname === '/messages' || pathname.startsWith('/messages/')
   const isSearchActive = isSearchPage && !!queryParam.trim()
 
   const handleMobileSearchSubmit = (e: React.FormEvent) => {
@@ -183,7 +185,7 @@ export function Header() {
       </div>
 
       {/* ── 2. Unified Signature Mobile Responsive Top Header (Pixel-Perfect Alignment) (md:hidden) ── */}
-      <div className="flex md:hidden h-13 items-center justify-between px-3.5 relative w-full">
+      <div className={cn('md:hidden h-13 items-center justify-between px-3.5 relative w-full', isChat ? 'hidden' : 'flex')}>
         {/* ── A. Left Anchor Slot (Fixed w-8 h-8 at exact left: 14px on ALL pages) ── */}
         <div className="w-8 h-8 shrink-0 flex items-center justify-center">
           {isSearchActive ? (
