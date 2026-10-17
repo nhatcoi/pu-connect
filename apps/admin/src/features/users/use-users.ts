@@ -56,12 +56,16 @@ export interface BulkVars {
   action: AdminBulkUserAction
   role?: AdminUserRole
   reason?: string
+  durationDays?: number | null
 }
 
 const BULK_MSG: Record<AdminBulkUserAction, (n: number, v: BulkVars) => string> = {
   verify: (n) => `Đã cấp tích xanh cho ${n} người`,
   unverify: (n) => `Đã gỡ tích xanh của ${n} người`,
-  suspend: (n) => `Đã khóa ${n} tài khoản`,
+  warn: (n) => `Đã cảnh cáo ${n} người`,
+  restrict: (n, v) => `Đã hạn chế ${n} tài khoản${v.durationDays ? ` trong ${v.durationDays} ngày` : ''}`,
+  unrestrict: (n) => `Đã gỡ hạn chế ${n} tài khoản`,
+  suspend: (n, v) => `Đã khóa ${n} tài khoản${v.durationDays ? ` trong ${v.durationDays} ngày` : ' vĩnh viễn'}`,
   unsuspend: (n) => `Đã mở khóa ${n} tài khoản`,
   revoke_sessions: (n) => `Đã đăng xuất ${n} tài khoản khỏi mọi thiết bị`,
   set_role: (n, v) => `Đã đổi ${n} người thành ${ROLE_SHORT[v.role ?? ''] ?? v.role}`
@@ -98,4 +102,17 @@ export function useUserNotes(userId: string) {
     onError: (err: Error) => toast.error(err.message)
   })
   return { add, remove }
+}
+
+// Hủy 1 chế tài (nhầm lẫn) — không tính là vi phạm
+export function useRevokeSanction(userId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (sanctionId: string) => adminApi.delete(`/admin/users/${userId}/sanctions/${sanctionId}`),
+    onSuccess: () => {
+      toast.success('Đã hủy chế tài')
+      void qc.invalidateQueries({ queryKey: ['admin'] })
+    },
+    onError: (err: Error) => toast.error(err.message)
+  })
 }

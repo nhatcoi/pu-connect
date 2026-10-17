@@ -6,6 +6,7 @@ export const FILTER_OPTIONS: Partial<Record<FilterKey, { label: string; options:
     label: 'Trạng thái',
     options: [
       ['active', 'Đang hoạt động'],
+      ['restricted', 'Bị hạn chế'],
       ['suspended', 'Bị khóa']
     ]
   },
@@ -58,6 +59,7 @@ export const SEGMENTS = [
   { id: 'active', label: 'Hoạt động 24h', patch: { activity: '24h' }, stat: 'active24h' },
   { id: 'new', label: 'Mới 7 ngày', patch: { joined: '7d' }, stat: 'new7d' },
   { id: 'reported', label: 'Bị báo cáo', patch: { reported: 'yes' }, stat: 'reported', tone: 'warning' },
+  { id: 'restricted', label: 'Bị hạn chế', patch: { status: 'restricted' }, stat: 'restricted', tone: 'warning' },
   { id: 'suspended', label: 'Bị khóa', patch: { status: 'suspended' }, stat: 'suspended', tone: 'danger' },
   { id: 'dormant', label: 'Vắng > 30 ngày', patch: { activity: 'dormant' }, stat: 'dormant' }
 ] as const

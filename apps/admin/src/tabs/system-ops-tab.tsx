@@ -35,6 +35,10 @@ export const ACTION_LABELS: Record<string, string> = {
   'post.unpin': 'Bỏ ghim bài viết',
   'report.dismiss': 'Bỏ qua báo cáo',
   'comment.delete': 'Xóa bình luận',
+  'user.warn': 'Cảnh cáo',
+  'user.restrict': 'Hạn chế (chỉ xem)',
+  'user.unrestrict': 'Gỡ hạn chế',
+  'user.sanction_revoke': 'Hủy chế tài',
   'user.suspend': 'Khóa tài khoản',
   'user.unsuspend': 'Mở khóa tài khoản',
   'user.role_change': 'Đổi vai trò',
@@ -248,6 +252,8 @@ function detailText(d: Record<string, unknown> | null): string | null {
   if (typeof d.reason === 'string' && d.reason) parts.push(`“${d.reason}”`)
   if (typeof d.to === 'string') parts.push(`→ ${ROLE_SHORT[d.to] ?? d.to}`)
   if (typeof d.snippet === 'string') parts.push(`“${d.snippet}”`)
+  if (typeof d.days === 'number') parts.push(`${d.days} ngày`)
+  if (d.days === 'permanent') parts.push('vĩnh viễn')
   if (typeof d.bulk === 'number') parts.push(`hàng loạt ${d.bulk}`)
   if (typeof d.closedReports === 'number' && d.closedReports) parts.push(`đóng ${d.closedReports} báo cáo`)
   if (typeof d.revokedSessions === 'number') parts.push(`${d.revokedSessions} phiên`)

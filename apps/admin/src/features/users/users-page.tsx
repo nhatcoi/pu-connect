@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { BadgeCheck, BadgeX, Download, Lock, LockOpen, LogOut, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
+import { BadgeCheck, BadgeX, Download, Gavel, LockOpen, LogOut, ShieldCheck, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
 import { USER_ROLES, type AdminUserRow, type AdminUserSort, type AdminUserSummary } from '@pu/schemas'
 import { apiUrl, cn, formatCompact, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
 import { useDebounced } from '@/hooks/use-debounced'
@@ -9,7 +9,6 @@ import {
   Badge,
   Button,
   Checkbox,
-  ConfirmDialog,
   EmptyState,
   FilterChip,
   LoadingRows,
@@ -28,6 +27,7 @@ import { UserInsightModal } from '@/components/user-insight-modal'
 import { FILTER_OPTIONS, filterValueLabel, SEGMENT_KEYS, SEGMENTS } from './labels'
 import { UserActionsMenu, type UserActionHandlers } from './user-actions'
 import { UserDrawer } from './user-drawer'
+import { SanctionDialog } from './sanction-dialog'
 import { FILTER_KEYS, isOnline, toQueryString, useUserActions, useUsersList, useUsersSummary, type FilterKey } from './use-users'
 
 export function UsersPage({ currentUserId }: { currentUserId: string }) {
@@ -36,10 +36,10 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
   const summary = useUsersSummary()
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [suspendTargets, setSuspendTargets] = useState<AdminUserRow[]>([])
+  const [sanctionTargets, setSanctionTargets] = useState<AdminUserRow[]>([])
   const [insightId, setInsightId] = useState<string | null>(null)
   const actions = useUserActions(() => {
-    setSuspendTargets([])
+    setSanctionTargets([])
     setSelected(new Set())
   })
 
@@ -55,7 +55,7 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
 
   const handlers: UserActionHandlers = {
     run: (v) => actions.mutate(v),
-    onSuspend: setSuspendTargets,
+    onSanction: setSanctionTargets,
     onInsight: setInsightId,
     onOpen: (id) => setParams({ user: id }, { resetPage: false })
   }
@@ -210,20 +210,15 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
           busy={actions.isPending}
           onClear={() => setSelected(new Set())}
           run={(action, role) => actions.mutate({ ids: [...selected], action, role })}
-          onSuspend={() => setSuspendTargets(selectedRows)}
+          onSanction={() => setSanctionTargets(selectedRows)}
         />
       )}
 
-      <ConfirmDialog
-        open={suspendTargets.length > 0}
-        onClose={() => setSuspendTargets([])}
-        title={suspendTargets.length === 1 ? `Khóa @${suspendTargets[0].username}?` : `Khóa ${suspendTargets.length} tài khoản?`}
-        description="Bị đăng xuất khỏi mọi thiết bị ngay. Tài khoản quản trị sẽ được bỏ qua."
-        confirmLabel="Khóa"
-        withReason
-        reasonPlaceholder="Lý do khóa (người dùng sẽ thấy khi đăng nhập)"
+      <SanctionDialog
+        users={sanctionTargets}
+        onClose={() => setSanctionTargets([])}
         loading={actions.isPending}
-        onConfirm={(reason) => actions.mutate({ ids: suspendTargets.map((u) => u.id), action: 'suspend', reason })}
+        onSubmit={(v) => actions.mutate({ ids: sanctionTargets.map((u) => u.id), ...v })}
       />
 
       <UserDrawer userId={params.user || null} selfId={currentUserId} onClose={() => setParams({ user: undefined }, { resetPage: false })} handlers={handlers} />
@@ -261,14 +256,29 @@ function RoleStatus({ u }: { u: AdminUserRow }) {
     <span className="inline-flex flex-wrap items-center gap-1">
       <Badge tone={ROLE_TONE[u.role]}>{ROLE_SHORT[u.role] ?? u.role}</Badge>
       {u.status === 'suspended' && (
-        <span title={u.suspendedReason ?? undefined}>
+        <span title={[u.suspendedReason, u.suspendedUntil ? `đến ${new Date(u.suspendedUntil).toLocaleString('vi-VN')}` : 'vĩnh viễn'].filter(Boolean).join(' · ')}>
           <Badge tone="danger" dot>
-            Bị khóa
+            Bị khóa{u.suspendedUntil ? ` · ${shortUntil(u.suspendedUntil)}` : ''}
+          </Badge>
+        </span>
+      )}
+      {u.isRestricted && (
+        <span title={[u.restrictedReason, u.restrictedUntil ? `đến ${new Date(u.restrictedUntil).toLocaleString('vi-VN')}` : 'vô thời hạn'].filter(Boolean).join(' · ')}>
+          <Badge tone="warning" dot>
+            Hạn chế{u.restrictedUntil ? ` · ${shortUntil(u.restrictedUntil)}` : ''}
           </Badge>
         </span>
       )}
     </span>
   )
+}
+
+// Thời hạn còn lại gọn: "còn 3 ngày", "còn 5 giờ"
+function shortUntil(iso: string) {
+  const ms = new Date(iso).getTime() - Date.now()
+  if (ms <= 0) return 'hết hạn'
+  const h = Math.ceil(ms / 3_600_000)
+  return h < 48 ? `còn ${h} giờ` : `còn ${Math.ceil(h / 24)} ngày`
 }
 
 function LastSeen({ at }: { at: string | null }) {
@@ -475,14 +485,14 @@ function BulkBar({
   busy,
   onClear,
   run,
-  onSuspend
+  onSanction
 }: {
   count: number
   includesSelf: boolean
   busy: boolean
   onClear: () => void
-  run: (action: 'verify' | 'unverify' | 'unsuspend' | 'revoke_sessions' | 'set_role', role?: (typeof USER_ROLES)[number]) => void
-  onSuspend: () => void
+  run: (action: 'verify' | 'unverify' | 'unrestrict' | 'unsuspend' | 'revoke_sessions' | 'set_role', role?: (typeof USER_ROLES)[number]) => void
+  onSanction: () => void
 }) {
   return (
     <div
@@ -523,11 +533,14 @@ function BulkBar({
       <Button size="sm" variant="ghost" disabled={busy} onClick={() => run('revoke_sessions')} title="Đăng xuất mọi thiết bị">
         <LogOut />
       </Button>
+      <Button size="sm" variant="ghost" disabled={busy} onClick={() => run('unrestrict')} title="Gỡ hạn chế">
+        <ShieldCheck />
+      </Button>
       <Button size="sm" variant="ghost" disabled={busy} onClick={() => run('unsuspend')} title="Mở khóa">
         <LockOpen />
       </Button>
-      <Button size="sm" variant="danger-soft" disabled={busy} onClick={onSuspend}>
-        <Lock /> <span className="hidden sm:inline">Khóa</span>
+      <Button size="sm" variant="danger-soft" disabled={busy} onClick={onSanction}>
+        <Gavel /> <span className="hidden sm:inline">Xử phạt</span>
       </Button>
     </div>
   )

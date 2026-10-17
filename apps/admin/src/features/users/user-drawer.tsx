@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
-import { Activity, BadgeCheck, Ban, Chrome, KeyRound, Lock, LockOpen, LogOut, MoreHorizontal, StickyNote, Trash2 } from 'lucide-react'
+import { Activity, BadgeCheck, Ban, Chrome, Gavel, KeyRound, LockOpen, LogOut, MoreHorizontal, ShieldAlert, ShieldCheck, StickyNote, Trash2, Undo2 } from 'lucide-react'
 import type { AdminUserDetail, AdminUserRow } from '@pu/schemas'
 import { cn, formatNumber, formatRelativeTime, markdownToPlainText, ROLE_SHORT, WEB_PORTAL_URL } from '@/lib/api'
 import { Avatar, Badge, Button, Drawer, ErrorState, ROLE_TONE, Skeleton, Tabs, Textarea } from '@/components/ui'
 import { ACTION_LABELS } from '@/tabs/system-ops-tab'
 import { UserActionsMenu, type UserActionHandlers } from './user-actions'
-import { isOnline, useUserDetail, useUserNotes } from './use-users'
+import { isOnline, useRevokeSanction, useUserDetail, useUserNotes } from './use-users'
+import { durationLabel, SANCTION_LABEL } from './sanction-dialog'
 
-type Tab = 'overview' | 'moderation' | 'notes'
+type Tab = 'overview' | 'sanctions' | 'moderation' | 'notes'
 
 export function UserDrawer({
   userId,
@@ -64,16 +65,21 @@ export function UserDrawer({
                 <Button size="sm" onClick={() => handlers.run({ ids: [u.id], action: 'revoke_sessions' })}>
                   <LogOut /> Đăng xuất
                 </Button>
-                {u.role !== 'admin' &&
-                  (u.status === 'suspended' ? (
-                    <Button size="sm" onClick={() => handlers.run({ ids: [u.id], action: 'unsuspend' })}>
-                      <LockOpen /> Mở khóa
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="danger" onClick={() => handlers.onSuspend([u])}>
-                      <Lock /> Khóa
-                    </Button>
-                  ))}
+                {u.status === 'suspended' && (
+                  <Button size="sm" onClick={() => handlers.run({ ids: [u.id], action: 'unsuspend' })}>
+                    <LockOpen /> Mở khóa
+                  </Button>
+                )}
+                {u.isRestricted && (
+                  <Button size="sm" onClick={() => handlers.run({ ids: [u.id], action: 'unrestrict' })}>
+                    <ShieldCheck /> Gỡ hạn chế
+                  </Button>
+                )}
+                {u.role !== 'admin' && (
+                  <Button size="sm" variant="danger" onClick={() => handlers.onSanction([u])}>
+                    <Gavel /> Xử phạt
+                  </Button>
+                )}
               </>
             )}
             <UserActionsMenu
@@ -94,6 +100,7 @@ export function UserDrawer({
               onChange={setTab}
               items={[
                 { id: 'overview', label: 'Tổng quan' },
+                { id: 'sanctions', label: 'Xử phạt', count: data.recommendation.strikes || undefined },
                 { id: 'moderation', label: 'Kiểm duyệt', count: data.moderationLog.length || undefined },
                 { id: 'notes', label: 'Ghi chú', count: data.notes.length || undefined }
               ]}
@@ -102,6 +109,7 @@ export function UserDrawer({
 
           <div className="p-5">
             {tab === 'overview' && <Overview d={data} onInsight={handlers.onInsight} />}
+            {tab === 'sanctions' && <Sanctions d={data} onSanction={() => handlers.onSanction([u])} />}
             {tab === 'moderation' && <Moderation d={data} />}
             {tab === 'notes' && <Notes userId={u.id} d={data} />}
           </div>
@@ -167,8 +175,21 @@ function Overview({ d, onInsight }: { d: AdminUserDetail; onInsight?: (id: strin
         <div className="flex gap-2.5 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm">
           <Ban className="mt-0.5 size-4 shrink-0 text-danger" />
           <div>
-            <p className="font-medium text-danger">Bị khóa {formatRelativeTime(u.suspendedAt)}</p>
+            <p className="font-medium text-danger">
+              Bị khóa {formatRelativeTime(u.suspendedAt)} · {u.suspendedUntil ? `đến ${new Date(u.suspendedUntil).toLocaleString('vi-VN')}` : 'vĩnh viễn'}
+            </p>
             {u.suspendedReason && <p className="mt-0.5 text-muted-foreground">{u.suspendedReason}</p>}
+          </div>
+        </div>
+      )}
+      {u.isRestricted && (
+        <div className="flex gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+          <ShieldAlert className="mt-0.5 size-4 shrink-0 text-warning" />
+          <div>
+            <p className="font-medium text-warning">
+              Đang bị hạn chế (chỉ xem) · {u.restrictedUntil ? `đến ${new Date(u.restrictedUntil).toLocaleString('vi-VN')}` : 'vô thời hạn'}
+            </p>
+            {u.restrictedReason && <p className="mt-0.5 text-muted-foreground">{u.restrictedReason}</p>}
           </div>
         </div>
       )}
@@ -243,6 +264,66 @@ function Info({ label, children }: { label: string; children: React.ReactNode })
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="min-w-0 break-words text-foreground">{children || <span className="text-muted-foreground">—</span>}</dd>
     </>
+  )
+}
+
+function Sanctions({ d, onSanction }: { d: AdminUserDetail; onSanction: () => void }) {
+  const revoke = useRevokeSanction(d.user.id)
+  const r = d.recommendation
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+        <div className="text-sm">
+          <p className="font-medium text-foreground">{r.strikes} lần vi phạm / 180 ngày</p>
+          <p className="text-xs text-muted-foreground">
+            Bậc tiếp theo: {SANCTION_LABEL[r.kind]}
+            {r.kind !== 'warning' && ` ${durationLabel(r.durationDays).toLowerCase()}`}
+          </p>
+        </div>
+        {d.user.role !== 'admin' && (
+          <Button size="sm" variant="danger" onClick={onSanction}>
+            <Gavel /> Xử phạt
+          </Button>
+        )}
+      </div>
+
+      {d.sanctions.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Chưa bị xử phạt lần nào.</p>
+      ) : (
+        <ul className="divide-y divide-border rounded-lg border border-border">
+          {d.sanctions.map((x) => (
+            <li key={x.id} className={cn('flex items-start gap-3 px-3 py-2.5', x.revokedAt && 'opacity-55')}>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge tone={x.kind === 'warning' ? 'primary' : x.kind === 'restrict' ? 'warning' : 'danger'}>{SANCTION_LABEL[x.kind]}</Badge>
+                  {x.kind !== 'warning' && (
+                    <span className="text-xs text-muted-foreground">{x.endsAt ? `đến ${new Date(x.endsAt).toLocaleString('vi-VN')}` : 'vĩnh viễn'}</span>
+                  )}
+                  {x.active && <Badge tone="danger" dot>Đang hiệu lực</Badge>}
+                  {x.revokedAt && <Badge>Đã hủy</Badge>}
+                </div>
+                {x.reason && <p className="mt-1 text-sm text-foreground">{x.reason}</p>}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  @{x.admin?.username ?? '—'} · {formatRelativeTime(x.startsAt)}
+                  {x.revokedAt && ` · hủy bởi @${x.revokedBy?.username ?? '—'}`}
+                </p>
+              </div>
+              {!x.revokedAt && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  title="Hủy (nhầm lẫn) — không tính là vi phạm, gỡ ngay nếu đang hiệu lực"
+                  disabled={revoke.isPending}
+                  onClick={() => revoke.mutate(x.id)}
+                >
+                  <Undo2 /> Hủy
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
