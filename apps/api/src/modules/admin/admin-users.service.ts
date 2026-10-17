@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
 import type { PoolClient } from 'pg'
 import type {
   AdminAuditLog,
@@ -12,6 +12,10 @@ import type {
   AdminUserRole,
   AdminUserRow,
   AdminUserSummary,
+  AdminSanction,
+  SanctionInput,
+  SanctionKind,
+  SanctionRecommendation,
   UserInsight
 } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
@@ -35,9 +39,25 @@ const SORT_SQL: Record<AdminUserQueryParsed['sort'], string> = {
   name: 'lower(u.display_name)'
 }
 
-const ROW_COLUMNS = `u.id, u.username, u.display_name, u.email, u.avatar_url, u.role, u.status,
-  u.is_verified, u.student_id, u.faculty, u.reputation_points, u.suspended_at, u.suspended_reason,
+// Hạn chế đang hiệu lực
+const RESTRICTED = `(u.restricted_at IS NOT NULL AND (u.restricted_until IS NULL OR u.restricted_until > NOW()))`
+
+const ROW_COLUMNS = `u.id, u.username, u.display_name, u.email, u.avatar_url, u.role,
+  CASE WHEN u.status = 'suspended' AND u.suspended_until IS NOT NULL AND u.suspended_until <= NOW() THEN 'active' ELSE u.status::text END AS status,
+  u.is_verified, u.student_id, u.faculty, u.reputation_points, u.suspended_at, u.suspended_reason, u.suspended_until,
+  ${RESTRICTED} AS is_restricted, u.restricted_until, u.restricted_reason,
   u.last_seen_at, u.created_at, (u.password_hash IS NOT NULL) AS has_password, (u.google_id IS NOT NULL) AS has_google`
+
+// Thang chế tài theo số lần vi phạm (180 ngày): cảnh cáo → hạn chế 1d → 7d → khóa 7d → 30d → vĩnh viễn
+const SANCTION_LADDER: { kind: SanctionKind; durationDays: number | null }[] = [
+  { kind: 'warning', durationDays: null },
+  { kind: 'restrict', durationDays: 1 },
+  { kind: 'restrict', durationDays: 7 },
+  { kind: 'suspend', durationDays: 7 },
+  { kind: 'suspend', durationDays: 30 },
+  { kind: 'suspend', durationDays: null }
+]
+const STRIKE_WINDOW = `INTERVAL '180 days'`
 
 // Đếm theo người — chỉ chạy cho các dòng của trang hiện tại (LATERAL sau LIMIT)
 const COUNT_LATERAL = `
@@ -71,12 +91,19 @@ function mapUserRow(row: Row): AdminUserRow {
     reportCount: row.report_count ?? 0,
     lastSeenAt: iso(row.last_seen_at),
     createdAt: iso(row.created_at) as string,
-    authProviders
+    authProviders,
+    suspendedUntil: iso(row.suspended_until),
+    isRestricted: !!row.is_restricted,
+    restrictedUntil: iso(row.restricted_until),
+    restrictedReason: row.restricted_reason ?? null
   }
 }
 
 @Injectable()
-export class AdminUsersService {
+export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(AdminUsersService.name)
+  private timer?: NodeJS.Timeout
+
   constructor(
     private readonly db: DatabaseService,
     private readonly realtime: RealtimeGateway,
@@ -105,7 +132,8 @@ export class AdminUsersService {
       )
     }
     if (f.role) where.push(`u.role = ${p(f.role)}::user_role_enum`)
-    if (f.status) where.push(`u.status = ${p(f.status)}::account_status_enum`)
+    if (f.status === 'restricted') where.push(RESTRICTED)
+    else if (f.status) where.push(`u.status = ${p(f.status)}::account_status_enum`)
     if (f.verified) where.push(f.verified === 'yes' ? `u.is_verified` : `NOT COALESCE(u.is_verified, FALSE)`)
     if (f.auth === 'google') where.push(`u.google_id IS NOT NULL`)
     if (f.auth === 'password') where.push(`u.password_hash IS NOT NULL`)
@@ -174,6 +202,7 @@ export class AdminUsersService {
           COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days')::int AS new_7d,
           COUNT(*) FILTER (WHERE is_verified)::int AS verified,
           COUNT(*) FILTER (WHERE status = 'suspended')::int AS suspended,
+          COUNT(*) FILTER (WHERE restricted_at IS NOT NULL AND (restricted_until IS NULL OR restricted_until > NOW()))::int AS restricted,
           COUNT(*) FILTER (WHERE last_seen_at <= NOW() - INTERVAL '30 days')::int AS dormant,
           (SELECT COUNT(DISTINCT p.author_id) FROM post_reports r JOIN posts p ON p.id = r.post_id)::int AS reported
         FROM users WHERE account_type = 'human'`),
@@ -191,6 +220,7 @@ export class AdminUsersService {
       new7d: a.new_7d,
       verified: a.verified,
       suspended: a.suspended,
+      restricted: a.restricted,
       reported: a.reported,
       dormant: a.dormant,
       byRole: Object.fromEntries(roles.rows.map((r) => [r.role, r.n])),
@@ -209,7 +239,7 @@ export class AdminUsersService {
     const row = userRes.rows[0]
     if (!row) throw new NotFoundException('Người dùng không tồn tại')
 
-    const [stats, posts, log, notes] = await Promise.all([
+    const [stats, posts, log, notes, sanctions] = await Promise.all([
       this.db.query(
         `SELECT
           (SELECT COUNT(*) FROM posts WHERE author_id = $1 AND hidden_at IS NOT NULL)::int AS hidden_posts,
@@ -235,7 +265,8 @@ export class AdminUsersService {
          ORDER BY l.created_at DESC LIMIT 20`,
         [userId]
       ),
-      this.listNotes(userId)
+      this.listNotes(userId),
+      this.listSanctions(userId)
     ])
     const s = stats.rows[0]
 
@@ -280,8 +311,106 @@ export class AdminUsersService {
           admin: l.admin_id ? { id: l.admin_id, username: l.admin_username, displayName: l.admin_name, role: l.admin_role } : null
         })
       ),
-      notes
+      notes,
+      sanctions,
+      recommendation: this.recommend(sanctions)
     }
+  }
+
+  // ── Chế tài ─────────────────────────────────────────────────────────────
+
+  async listSanctions(userId: string): Promise<AdminSanction[]> {
+    const res = await this.db.query(
+      `SELECT s.id, s.kind, s.reason, s.starts_at, s.ends_at, s.revoked_at,
+              a.username AS admin_username, a.display_name AS admin_name, r.username AS revoked_username,
+              (s.kind <> 'warning' AND s.revoked_at IS NULL AND (s.ends_at IS NULL OR s.ends_at > NOW())) AS active
+       FROM user_sanctions s
+       LEFT JOIN users a ON a.id = s.admin_id
+       LEFT JOIN users r ON r.id = s.revoked_by
+       WHERE s.user_id = $1 ORDER BY s.created_at DESC LIMIT 50`,
+      [userId]
+    )
+    return res.rows.map((r) => ({
+      id: String(r.id),
+      kind: r.kind,
+      reason: r.reason,
+      startsAt: iso(r.starts_at) as string,
+      endsAt: iso(r.ends_at),
+      revokedAt: iso(r.revoked_at),
+      active: !!r.active,
+      admin: r.admin_username ? { username: r.admin_username, displayName: r.admin_name } : null,
+      revokedBy: r.revoked_username ? { username: r.revoked_username } : null
+    }))
+  }
+
+  // Bậc đề xuất: số lần vi phạm trong 180 ngày (bỏ bản đã hủy do nhầm)
+  private recommend(sanctions: AdminSanction[]): SanctionRecommendation {
+    const since = Date.now() - 180 * 86_400_000
+    const strikes = sanctions.filter((x) => !x.revokedAt && new Date(x.startsAt).getTime() > since).length
+    return { strikes, ...SANCTION_LADDER[Math.min(strikes, SANCTION_LADDER.length - 1)] }
+  }
+
+  // Áp chế tài cho 1 người (cảnh cáo / hạn chế / khóa)
+  async sanction(adminId: string, userId: string, input: SanctionInput): Promise<AdminBulkResult> {
+    if (adminId === userId) throw new BadRequestException('Không thể tự xử phạt chính mình')
+    const action = { warning: 'warn', restrict: 'restrict', suspend: 'suspend' } as const
+    const res = await this.bulk(adminId, { ids: [userId], action: action[input.kind], reason: input.reason, durationDays: input.durationDays ?? null })
+    if (!res.affected) throw new ForbiddenException('Không thể xử phạt tài khoản này (quản trị viên hoặc không tồn tại)')
+    return res
+  }
+
+  // Hủy 1 chế tài (nhầm lẫn): không tính là vi phạm; nếu đang hiệu lực thì gỡ luôn
+  async revokeSanction(adminId: string, userId: string, sanctionId: string): Promise<AdminSanction[]> {
+    let lifted: 'restrict' | 'suspend' | null = null
+    await this.db.transaction(async (client) => {
+      const res = await client.query(
+        `UPDATE user_sanctions SET revoked_at = NOW(), revoked_by = $3
+         WHERE id = $1 AND user_id = $2 AND revoked_at IS NULL
+         RETURNING kind, (ends_at IS NULL OR ends_at > NOW()) AS was_active`,
+        [sanctionId, userId, adminId]
+      )
+      if (!res.rowCount) throw new NotFoundException('Chế tài không tồn tại hoặc đã hủy')
+      const { kind, was_active } = res.rows[0]
+      if (was_active && kind === 'restrict') {
+        await client.query(`UPDATE users SET restricted_at = NULL, restricted_until = NULL, restricted_reason = NULL WHERE id = $1`, [userId])
+        lifted = 'restrict'
+      }
+      if (was_active && kind === 'suspend') {
+        await client.query(
+          `UPDATE users SET status = 'active', suspended_at = NULL, suspended_reason = NULL, suspended_until = NULL WHERE id = $1 AND status = 'suspended'`,
+          [userId]
+        )
+        lifted = 'suspend'
+      }
+      await writeAudit(client, adminId, { action: 'user.sanction_revoke', targetType: 'user', targetId: userId, details: { sanctionId, kind, lifted } })
+    })
+    return this.listSanctions(userId)
+  }
+
+  // Job: gỡ chế tài hết hạn (mỗi phút) — đăng nhập đã tự coi khóa hết hạn là hoạt động
+  async liftExpired(): Promise<{ unsuspended: number; unrestricted: number }> {
+    const [a, b] = await Promise.all([
+      this.db.query(
+        `UPDATE users SET status = 'active', suspended_at = NULL, suspended_reason = NULL, suspended_until = NULL
+         WHERE status = 'suspended' AND suspended_until IS NOT NULL AND suspended_until <= NOW()`
+      ),
+      this.db.query(
+        `UPDATE users SET restricted_at = NULL, restricted_until = NULL, restricted_reason = NULL
+         WHERE restricted_at IS NOT NULL AND restricted_until IS NOT NULL AND restricted_until <= NOW()`
+      )
+    ])
+    return { unsuspended: a.rowCount ?? 0, unrestricted: b.rowCount ?? 0 }
+  }
+
+  onModuleInit() {
+    this.timer = setInterval(() => {
+      this.liftExpired().catch((err) => this.logger.warn(`liftExpired: ${(err as Error).message}`))
+    }, 60_000)
+    this.timer.unref()
+  }
+
+  onModuleDestroy() {
+    if (this.timer) clearInterval(this.timer)
   }
 
   // Xuất CSV theo bộ lọc hiện tại (tối đa 10.000 dòng)
@@ -408,6 +537,7 @@ export class AdminUsersService {
   async bulk(adminId: string, input: AdminBulkUserInput): Promise<AdminBulkResult> {
     const ids = [...new Set(input.ids)].filter((id) => id !== adminId || input.action === 'verify' || input.action === 'unverify')
 
+    const days = input.durationDays ?? null
     const affectedIds = await this.db.transaction(async (client) => {
       // Khóa các dòng mục tiêu; bỏ qua bot
       const locked = await client.query(
@@ -430,27 +560,60 @@ export class AdminUsersService {
           ).rows
           break
         }
-        case 'suspend': {
-          // Không khóa admin
+        case 'warn': {
+          // Cảnh cáo: chỉ ghi nhận (tính 1 lần vi phạm) + gửi thông báo
+          targets = locked.rows.filter((r) => r.role !== 'admin').map((r) => r.id)
+          changed = targets.map((id) => ({ id }))
+          await this.recordSanctions(client, adminId, targets, 'warning', null, input.reason)
+          break
+        }
+        case 'restrict': {
           targets = locked.rows.filter((r) => r.role !== 'admin').map((r) => r.id)
           changed = (
             await client.query(
-              `UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = $2, updated_at = NOW()
-               WHERE id = ANY($1::uuid[]) AND status <> 'suspended' RETURNING id`,
-              [targets, input.reason || null]
+              `UPDATE users SET restricted_at = NOW(), restricted_reason = $2, updated_at = NOW(),
+                 restricted_until = CASE WHEN $3::int IS NULL THEN NULL ELSE NOW() + make_interval(days => $3::int) END
+               WHERE id = ANY($1::uuid[]) RETURNING id`,
+              [targets, input.reason || null, days]
+            )
+          ).rows
+          await this.recordSanctions(client, adminId, changed.map((r) => r.id), 'restrict', days, input.reason)
+          break
+        }
+        case 'unrestrict':
+          changed = (
+            await client.query(
+              `UPDATE users SET restricted_at = NULL, restricted_until = NULL, restricted_reason = NULL, updated_at = NOW()
+               WHERE id = ANY($1::uuid[]) AND ${RESTRICTED.replace(/u\./g, '')} RETURNING id`,
+              [targets]
+            )
+          ).rows
+          await this.endSanctions(client, changed.map((r) => r.id), 'restrict')
+          break
+        case 'suspend': {
+          // Không khóa admin; khóa lại người đang bị khóa ⇒ cập nhật thời hạn mới
+          targets = locked.rows.filter((r) => r.role !== 'admin').map((r) => r.id)
+          changed = (
+            await client.query(
+              `UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = $2, updated_at = NOW(),
+                 suspended_until = CASE WHEN $3::int IS NULL THEN NULL ELSE NOW() + make_interval(days => $3::int) END
+               WHERE id = ANY($1::uuid[]) RETURNING id`,
+              [targets, input.reason || null, days]
             )
           ).rows
           await this.deleteSessions(client, changed.map((r) => r.id))
+          await this.recordSanctions(client, adminId, changed.map((r) => r.id), 'suspend', days, input.reason)
           break
         }
         case 'unsuspend':
           changed = (
             await client.query(
-              `UPDATE users SET status = 'active', suspended_at = NULL, suspended_reason = NULL, updated_at = NOW()
+              `UPDATE users SET status = 'active', suspended_at = NULL, suspended_reason = NULL, suspended_until = NULL, updated_at = NOW()
                WHERE id = ANY($1::uuid[]) AND status = 'suspended' RETURNING id`,
               [targets]
             )
           ).rows
+          await this.endSanctions(client, changed.map((r) => r.id), 'suspend')
           break
         case 'revoke_sessions':
           await this.deleteSessions(client, targets)
@@ -469,6 +632,9 @@ export class AdminUsersService {
       const action = {
         verify: 'user.verify',
         unverify: 'user.unverify',
+        warn: 'user.warn',
+        restrict: 'user.restrict',
+        unrestrict: 'user.unrestrict',
         suspend: 'user.suspend',
         unsuspend: 'user.unsuspend',
         revoke_sessions: 'user.revoke_sessions',
@@ -478,6 +644,7 @@ export class AdminUsersService {
         const details = JSON.stringify({
           reason: input.reason,
           to: input.role,
+          days: ['restrict', 'suspend'].includes(input.action) ? (days ?? 'permanent') : undefined,
           bulk: ids.length > 1 ? ids.length : undefined
         })
         await client.query(
@@ -492,6 +659,20 @@ export class AdminUsersService {
     // Hậu xử lý ngoài transaction: ngắt socket, gửi thông báo
     if (input.action === 'suspend' || input.action === 'revoke_sessions') {
       affectedIds.forEach((id) => this.realtime.disconnectUser(id))
+    }
+    if (input.action === 'warn' || input.action === 'restrict') {
+      const until = days ? ` trong ${days} ngày` : ''
+      const verb =
+        input.action === 'warn'
+          ? 'Bạn nhận một cảnh cáo từ Ban Quản Trị vì vi phạm tiêu chuẩn cộng đồng'
+          : `Tài khoản của bạn bị hạn chế${until}: chỉ xem, chưa thể đăng bài, bình luận hay nhắn tin`
+      await Promise.all(
+        affectedIds.map((id) =>
+          this.notifications
+            .notify({ type: 'account_notice', recipientId: id, actorId: null, verb, message: input.reason || undefined })
+            .catch(() => undefined)
+        )
+      )
     }
     if (input.action === 'verify') {
       await Promise.all(
@@ -521,6 +702,27 @@ export class AdminUsersService {
       `UPDATE user_sessions SET sess = jsonb_set(sess::jsonb, '{passport,user,role}', to_jsonb($2::text))::json
        WHERE ${SESSION_USER} = ANY($1::text[])`,
       [ids, role]
+    )
+  }
+
+  // Ghi lịch sử chế tài theo tập; chế tài cùng loại đang hiệu lực được kết thúc (thay thế)
+  private async recordSanctions(client: PoolClient, adminId: string, ids: string[], kind: SanctionKind, days: number | null, reason?: string) {
+    if (!ids.length) return
+    if (kind !== 'warning') await this.endSanctions(client, ids, kind)
+    await client.query(
+      `INSERT INTO user_sanctions (user_id, admin_id, kind, reason, ends_at)
+       SELECT t, $2, $3, $4, CASE WHEN $5::int IS NULL THEN NULL ELSE NOW() + make_interval(days => $5::int) END
+       FROM unnest($1::uuid[]) t`,
+      [ids, adminId, kind, reason || null, days]
+    )
+  }
+
+  private async endSanctions(client: PoolClient, ids: string[], kind: 'restrict' | 'suspend') {
+    if (!ids.length) return
+    await client.query(
+      `UPDATE user_sanctions SET ends_at = NOW()
+       WHERE user_id = ANY($1::uuid[]) AND kind = $2 AND revoked_at IS NULL AND (ends_at IS NULL OR ends_at > NOW())`,
+      [ids, kind]
     )
   }
 

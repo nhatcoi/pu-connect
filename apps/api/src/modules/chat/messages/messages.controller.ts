@@ -14,6 +14,7 @@ import {
   Req,
   UseGuards
 } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../../common/guards/not-restricted.guard'
 import type { Request } from 'express'
 import type { EditMessageInput, SendMessageInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
@@ -46,6 +47,7 @@ export class MessagesController {
   }
 
   @Post('conversations/:id/messages')
+  @UseGuards(NotRestrictedGuard)
   send(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(SendMessageBodySchema)) body: SendMessageInput, @Req() req: Request) {
     return this.messages.send(requireUserId(req), id, body)
   }
@@ -67,6 +69,7 @@ export class MessagesController {
   }
 
   @Patch('messages/:id')
+  @UseGuards(NotRestrictedGuard)
   edit(@Param('id') id: string, @Body(new ZodValidationPipe(EditMessageBodySchema)) body: EditMessageInput, @Req() req: Request) {
     return this.messages.edit(requireUserId(req), messageId(id), body)
   }

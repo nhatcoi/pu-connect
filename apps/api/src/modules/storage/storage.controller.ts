@@ -1,4 +1,5 @@
 import { Controller, Post, UseInterceptors, UploadedFile, UploadedFiles, BadRequestException, UseGuards, Req, Query } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
 import { StorageService, type UploadFolder } from './storage.service'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
@@ -50,6 +51,7 @@ export class StorageController {
   constructor(private readonly storageService: StorageService) {}
 
   @Post('file')
+  @UseGuards(NotRestrictedGuard)
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } }))
   async uploadSingleFile(@UploadedFile() file: Express.Multer.File, @Query('folder') folder?: UploadFolder, @Req() req?: Request) {
     if (!file) {
@@ -67,6 +69,7 @@ export class StorageController {
   }
 
   @Post('multiple')
+  @UseGuards(NotRestrictedGuard)
   @UseInterceptors(FilesInterceptor('files', 10, { limits: { fileSize: 50 * 1024 * 1024 } }))
   async uploadMultipleFiles(@UploadedFiles() files: Express.Multer.File[], @Query('folder') folder?: UploadFolder, @Req() req?: Request) {
     if (!files || files.length === 0) {

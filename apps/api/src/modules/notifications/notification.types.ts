@@ -7,6 +7,7 @@ export const NOTIFICATION_TYPES = [
   'user_follow',
   'accepted_solution',
   'account_verified',
+  'account_notice',
   'ai_reply'
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]

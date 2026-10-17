@@ -23,9 +23,21 @@ import { NotificationsService } from '../notifications/notifications.service'
 
 export const SUSPENDED_MESSAGE = 'Tài khoản của bạn đã bị khóa. Liên hệ quản trị viên nếu đây là nhầm lẫn.'
 
-// Chặn tài khoản bị khóa (suspended) ở mọi điểm đăng nhập
-export function assertNotSuspended(status: string | null | undefined): void {
-  if (status === 'suspended') throw new ForbiddenException(SUSPENDED_MESSAGE)
+// Khóa có thời hạn đã hết ⇒ coi như đang hoạt động ngay (job dọn dẹp cập nhật DB sau)
+const EFFECTIVE_STATUS = `CASE WHEN status = 'suspended' AND suspended_until IS NOT NULL AND suspended_until <= NOW()
+  THEN 'active' ELSE status::text END AS status`
+// Hạn chế (chỉ đọc) đang hiệu lực
+const SANCTION_COLUMNS = `suspended_until,
+  (restricted_at IS NOT NULL AND (restricted_until IS NULL OR restricted_until > NOW())) AS is_restricted, restricted_until`
+
+// Chặn tài khoản bị khóa (suspended) ở mọi điểm đăng nhập; báo kèm thời hạn nếu có
+export function assertNotSuspended(status: string | null | undefined, until?: string | Date | null): void {
+  if (status !== 'suspended') return
+  if (until) {
+    const d = new Date(until)
+    throw new ForbiddenException(`Tài khoản của bạn bị khóa đến ${d.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}.`)
+  }
+  throw new ForbiddenException(SUSPENDED_MESSAGE)
 }
 
 @Injectable()
@@ -44,7 +56,8 @@ export class AuthService {
       `SELECT id, email, username, password_hash, display_name, student_id, school, faculty, academic_year,
               major, class_name, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
-              avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at
+              avatar_url, bio, role, ${EFFECTIVE_STATUS}, reputation_points, is_onboarded, email_verified, skills, interests, created_at,
+              ${SANCTION_COLUMNS}
        FROM users
        WHERE (email = $1 OR username = $1) AND account_type = 'human' LIMIT 1`,
       [emailOrUsername.toLowerCase().trim()]
@@ -64,7 +77,7 @@ export class AuthService {
       return null
     }
     // Chỉ báo bị khóa sau khi đúng mật khẩu (không lộ trạng thái tài khoản)
-    assertNotSuspended(row.status)
+    assertNotSuspended(row.status, row.suspended_until)
 
     return this.mapUserRowToProfile(row)
   }
@@ -74,7 +87,8 @@ export class AuthService {
       `SELECT id, email, username, display_name, student_id, school, faculty, academic_year,
               major, class_name, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
-              avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at
+              avatar_url, bio, role, ${EFFECTIVE_STATUS}, reputation_points, is_onboarded, email_verified, skills, interests, created_at,
+              ${SANCTION_COLUMNS}
        FROM users
        WHERE id = $1 LIMIT 1`,
       [id]
@@ -438,6 +452,8 @@ export class AuthService {
       bio: row.bio,
       role: row.role,
       status: row.status || 'active',
+      isRestricted: !!row.is_restricted,
+      restrictedUntil: row.restricted_until ? new Date(row.restricted_until).toISOString() : null,
       reputationPoints: row.reputation_points || 0,
       isOnboarded: !!row.is_onboarded,
       isEmailVerified: !!row.email_verified,

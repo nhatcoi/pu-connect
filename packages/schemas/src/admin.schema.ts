@@ -248,7 +248,43 @@ export interface AdminUserRow {
   lastSeenAt: string | null
   createdAt: string
   authProviders: AdminAuthProvider[]
+  // Chế tài đang hiệu lực
+  suspendedUntil: string | null // null + status=suspended ⇒ vĩnh viễn
+  isRestricted: boolean
+  restrictedUntil: string | null // null + isRestricted ⇒ vô thời hạn
+  restrictedReason: string | null
 }
+
+// ── Chế tài theo bậc: cảnh cáo → hạn chế (chỉ đọc) → khóa có thời hạn → vĩnh viễn ──
+export const SANCTION_KINDS = ['warning', 'restrict', 'suspend'] as const
+export type SanctionKind = (typeof SANCTION_KINDS)[number]
+export const SANCTION_DURATIONS = [1, 3, 7, 14, 30, 90] as const
+
+export interface AdminSanction {
+  id: string
+  kind: SanctionKind
+  reason: string | null
+  startsAt: string
+  endsAt: string | null
+  revokedAt: string | null
+  active: boolean
+  admin: { username: string; displayName: string } | null
+  revokedBy: { username: string } | null
+}
+
+// Bậc đề xuất theo số lần vi phạm (180 ngày gần nhất, không tính bản đã hủy)
+export interface SanctionRecommendation {
+  strikes: number
+  kind: SanctionKind
+  durationDays: number | null // null: cảnh cáo hoặc vĩnh viễn (khi kind = suspend)
+}
+
+export const SanctionInputSchema = z.object({
+  kind: z.enum(SANCTION_KINDS),
+  durationDays: z.number().int().min(1).max(365).nullable().optional(),
+  reason: z.string().trim().min(3, 'Nhập lý do (≥ 3 ký tự)').max(255)
+})
+export type SanctionInput = z.infer<typeof SanctionInputSchema>
 
 // ── Quản lý người dùng nâng cao: phân trang server, lọc, sắp xếp, hàng loạt ──
 
@@ -264,7 +300,7 @@ export type AdminUserJoined = (typeof ADMIN_USER_JOINED)[number]
 export interface AdminUserQuery {
   q?: string
   role?: AdminUserRole
-  status?: 'active' | 'suspended'
+  status?: 'active' | 'suspended' | 'restricted'
   verified?: 'yes' | 'no'
   auth?: AdminAuthProvider
   activity?: AdminUserActivity
@@ -311,6 +347,7 @@ export interface AdminUserSummary {
   new7d: number
   verified: number
   suspended: number
+  restricted: number
   reported: number
   dormant: number
   byRole: Partial<Record<AdminUserRole, number>>
@@ -348,16 +385,20 @@ export interface AdminUserDetail {
   recentPosts: { id: string; title: string | null; content: string; createdAt: string; hiddenAt: string | null; likes: number; comments: number }[]
   moderationLog: AdminAuditLog[]
   notes: AdminUserNote[]
+  sanctions: AdminSanction[]
+  recommendation: SanctionRecommendation
 }
 
-export const ADMIN_BULK_USER_ACTIONS = ['verify', 'unverify', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role'] as const
+export const ADMIN_BULK_USER_ACTIONS = ['verify', 'unverify', 'warn', 'restrict', 'unrestrict', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role'] as const
 export type AdminBulkUserAction = (typeof ADMIN_BULK_USER_ACTIONS)[number]
 
 export const AdminBulkUserSchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(100),
   action: z.enum(ADMIN_BULK_USER_ACTIONS),
   role: z.enum(USER_ROLES).optional(),
-  reason: z.string().trim().max(255).optional()
+  reason: z.string().trim().max(255).optional(),
+  // Thời hạn cho restrict / suspend (bỏ trống = vô thời hạn)
+  durationDays: z.number().int().min(1).max(365).nullable().optional()
 })
 export type AdminBulkUserInput = z.infer<typeof AdminBulkUserSchema>
 

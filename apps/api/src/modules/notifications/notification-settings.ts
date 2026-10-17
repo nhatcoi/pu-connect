@@ -26,6 +26,7 @@ export const PUSH_DEFAULTS: Record<PushChannel, boolean> = {
   user_follow: false,
   accepted_solution: true,
   account_verified: true,
+  account_notice: true,
   ai_reply: true
 }
 

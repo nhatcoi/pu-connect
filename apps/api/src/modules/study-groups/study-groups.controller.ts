@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import type { Request } from 'express'
 import { requireUserId } from '../../common/http/current-user'
 
@@ -21,6 +22,7 @@ export class StudyGroupsController {
   }
 
   @Post()
+  @UseGuards(NotRestrictedGuard)
   async create(@Body() data: CreateStudyGroupInput, @Req() req: Request) {
     const userId = requireUserId(req)
     return this.studyGroupsService.create(userId, displayNameOf(req), data)

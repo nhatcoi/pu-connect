@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, ParseUUIDPipe } from '@nestjs/common'
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, HttpCode, HttpStatus, ParseUUIDPipe, UseGuards } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import { PostsService } from './posts.service'
 import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
@@ -72,6 +73,7 @@ export class PostsController {
   }
 
   @Post()
+  @UseGuards(NotRestrictedGuard)
   async create(@Body() body: CreatePostInput, @Req() req: Request) {
     const authorId = await this.resolveUserId(req)
     const post = await this.postsService.create(authorId, body)
@@ -82,6 +84,7 @@ export class PostsController {
   }
 
   @Patch(':id')
+  @UseGuards(NotRestrictedGuard)
   async update(@Param('id') id: string, @Body() body: UpdatePostInput, @Req() req: Request) {
     const userId = await this.resolveUserId(req)
     const updated = await this.postsService.update(id, userId, body)

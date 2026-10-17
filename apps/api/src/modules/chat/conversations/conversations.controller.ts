@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../../common/guards/not-restricted.guard'
 import type { Request } from 'express'
 import type { CreateGroupChatInput, MemberSettingsInput, UpdateGroupInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
@@ -41,6 +42,7 @@ export class ConversationsController {
   }
 
   @Post('direct')
+  @UseGuards(NotRestrictedGuard)
   @HttpCode(HttpStatus.OK)
   openDirect(@Body(new ZodValidationPipe(OpenDirectBodySchema)) body: { userId: string }, @Req() req: Request) {
     return this.conversations.openDirect(requireUserId(req), body.userId)
@@ -60,6 +62,7 @@ export class ConversationsController {
   }
 
   @Post()
+  @UseGuards(NotRestrictedGuard)
   createGroup(@Body(new ZodValidationPipe(CreateGroupChatBodySchema)) body: CreateGroupChatInput, @Req() req: Request) {
     return this.conversations.createGroup(requireUserId(req), body)
   }

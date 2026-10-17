@@ -1,4 +1,5 @@
 import { Resolver, Query, Mutation, Args, ID, Context } from '@nestjs/graphql'
+import { assertNotRestricted } from '../../../common/guards/not-restricted.guard'
 import { CommentType } from '../types/comment.type'
 import { CreateCommentInput } from '../dto/create-comment.input'
 import { DatabaseService } from '../../../database/database.service'
@@ -50,6 +51,7 @@ export class CommentResolver {
   @Mutation(() => CommentType)
   async createComment(@Args('input') input: CreateCommentInput, @Context() context: any): Promise<CommentType> {
     const user = context?.req?.user
+    assertNotRestricted(user)
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập để bình luận')
     }

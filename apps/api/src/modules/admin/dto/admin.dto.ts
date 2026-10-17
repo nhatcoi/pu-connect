@@ -111,7 +111,7 @@ const optEnum = <T extends readonly [string, ...string[]]>(values: T) =>
 export const AdminUserQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   role: optEnum(USER_ROLES_RUNTIME),
-  status: optEnum(['active', 'suspended'] as const),
+  status: optEnum(['active', 'suspended', 'restricted'] as const),
   verified: optEnum(['yes', 'no'] as const),
   auth: optEnum(['password', 'google'] as const),
   activity: optEnum(['online', '24h', '7d', '30d', 'dormant', 'never'] as const),
@@ -128,11 +128,19 @@ export type AdminUserQueryParsed = z.infer<typeof AdminUserQuerySchema>
 export const AdminBulkUserBodySchema = z
   .object({
     ids: z.array(z.string().uuid()).min(1).max(100),
-    action: z.enum(['verify', 'unverify', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role']),
+    action: z.enum(['verify', 'unverify', 'warn', 'restrict', 'unrestrict', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role']),
     role: z.enum(USER_ROLES_RUNTIME).optional(),
-    reason: z.string().trim().max(255).optional()
+    reason: z.string().trim().max(255).optional(),
+    durationDays: z.number().int().min(1).max(365).nullable().optional()
   })
   .refine((b) => b.action !== 'set_role' || !!b.role, { message: 'Chọn vai trò mới', path: ['role'] })
+
+// Chế tài 1 người: cảnh cáo / hạn chế / khóa (durationDays rỗng = vô thời hạn)
+export const SanctionBodySchema = z.object({
+  kind: z.enum(['warning', 'restrict', 'suspend']),
+  durationDays: z.number().int().min(1).max(365).nullable().optional(),
+  reason: z.string().trim().min(3, 'Nhập lý do (≥ 3 ký tự)').max(255)
+})
 
 export const AdminUserNoteBodySchema = z.object({
   body: z.string().trim().min(1, 'Nhập nội dung ghi chú').max(1000)

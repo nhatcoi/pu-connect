@@ -1,4 +1,5 @@
 import { Resolver, Query, Mutation, Args, Int, Context } from '@nestjs/graphql'
+import { assertNotRestricted } from '../../../common/guards/not-restricted.guard'
 import { PostType } from '../types/post.type'
 import { CreatePostInput } from '../dto/create-post.input'
 import { DatabaseService } from '../../../database/database.service'
@@ -97,6 +98,7 @@ export class FeedResolver {
   @Mutation(() => PostType)
   async createPost(@Args('input') input: CreatePostInput, @Context() context: any): Promise<PostType> {
     const user = context?.req?.user
+    assertNotRestricted(user)
     if (!user) {
       throw new UnauthorizedException('Vui lòng đăng nhập để đăng bài viết')
     }

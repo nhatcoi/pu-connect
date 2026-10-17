@@ -96,4 +96,26 @@ describe('Admin (e2e)', () => {
     const res = await agent.get('/api/admin/search/zero-results').expect(200)
     expect(res.body.data).toEqual(expect.arrayContaining([expect.objectContaining({ query: 'lich thi xyz', count: 2 })]))
   })
+
+  it('hạn chế (chỉ xem): chặn đăng bài; khóa có thời hạn hết hạn thì đăng nhập lại được', async () => {
+    const admin = await createUser(db, { role: 'admin' })
+    const target = await createUser(db)
+    const adminAgent = await loginAgent(app, admin)
+    const userAgent = await loginAgent(app, target)
+
+    await adminAgent.post(`/api/admin/users/${target.id}/sanctions`).send({ kind: 'restrict', durationDays: 1, reason: 'spam liên tục' }).expect(201)
+    await userAgent.post('/api/posts').send({ content: 'thử đăng khi bị hạn chế' }).expect(403)
+
+    const detail = await adminAgent.get(`/api/admin/users/${target.id}`).expect(200)
+    expect(detail.body.data.user.isRestricted).toBe(true)
+    expect(detail.body.data.recommendation.strikes).toBe(1)
+
+    await adminAgent.post('/api/admin/users/bulk').send({ ids: [target.id], action: 'unrestrict' }).expect(200)
+    await userAgent.post('/api/posts').send({ content: 'đã được gỡ hạn chế' }).expect(201)
+
+    // Khóa 1 ngày rồi giả lập hết hạn ⇒ đăng nhập lại được ngay (không chờ job)
+    await adminAgent.post(`/api/admin/users/${target.id}/sanctions`).send({ kind: 'suspend', durationDays: 1, reason: 'vi phạm lần 2' }).expect(201)
+    await db.query(`UPDATE users SET suspended_until = NOW() - INTERVAL '1 minute' WHERE id = $1`, [target.id])
+    await loginAgent(app, target)
+  })
 })

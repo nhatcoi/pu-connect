@@ -79,6 +79,9 @@ export const UserProfileSchema = z.object({
   bio: z.string().max(250).optional().nullable(),
   role: z.enum(['student', 'lecturer', 'ta', 'club_lead', 'alumni', 'admin']).default('student'),
   status: z.enum(['active', 'suspended', 'pending_verification']).optional(), // suspended ⇒ chặn đăng nhập
+  // Hạn chế (chỉ đọc): không đăng bài / bình luận / nhắn tin / tải tài liệu
+  isRestricted: z.boolean().optional(),
+  restrictedUntil: z.string().nullable().optional(),
   reputationPoints: z.number().default(0),
   isEmailVerified: z.boolean().optional(), // email đã xác thực
   isOnboarded: z.boolean().default(false),

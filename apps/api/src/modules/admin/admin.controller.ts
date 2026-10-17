@@ -12,7 +12,8 @@ import type {
   AdminTicketStatusInput,
   AdminUpdateRoleInput,
   AdminUserNoteInput,
-  AdminVerifyUserInput
+  AdminVerifyUserInput,
+  SanctionInput
 } from '@pu/schemas'
 import {
   AdminBroadcastBodySchema,
@@ -25,6 +26,7 @@ import {
   AdminUpdateRoleBodySchema,
   AdminUserNoteBodySchema,
   AdminUserQuerySchema,
+  SanctionBodySchema,
   type AdminUserQueryParsed,
   AdminVerifyUserBodySchema
 } from './dto/admin.dto'
@@ -204,6 +206,19 @@ export class AdminController {
   deleteNote(@Param('id', ParseUUIDPipe) id: string, @Param('noteId') noteId: string, @Req() req: Request) {
     if (!/^\d+$/.test(noteId)) throw new BadRequestException('noteId không hợp lệ')
     return this.userAdmin.deleteNote(requireUserId(req), id, noteId)
+  }
+
+  @Post('users/:id/sanctions')
+  @RequireAdminPermission('users:suspend')
+  sanction(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(SanctionBodySchema)) body: SanctionInput, @Req() req: Request) {
+    return this.userAdmin.sanction(requireUserId(req), id, body)
+  }
+
+  @Delete('users/:id/sanctions/:sanctionId')
+  @RequireAdminPermission('users:suspend')
+  revokeSanction(@Param('id', ParseUUIDPipe) id: string, @Param('sanctionId') sanctionId: string, @Req() req: Request) {
+    if (!/^\d+$/.test(sanctionId)) throw new BadRequestException('sanctionId không hợp lệ')
+    return this.userAdmin.revokeSanction(requireUserId(req), id, sanctionId)
   }
 
   @Patch('users/:id/role')

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, UnauthorizedException } from '@nestjs/common'
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import { CommentsService } from './comments.service'
 import { PostAiService } from './post-ai.service'
 import { DatabaseService } from '../../database/database.service'
@@ -38,6 +39,7 @@ export class CommentsController {
   }
 
   @Post('posts/:postId/comments')
+  @UseGuards(NotRestrictedGuard)
   async create(@Param('postId') postId: string, @Body() body: Omit<CreateCommentInput, 'postId'>, @Req() req: Request) {
     const authorId = requireUserId(req, 'Vui lòng đăng nhập để bình luận')
 
@@ -69,6 +71,7 @@ export class CommentsController {
 
   // Sửa bình luận (chỉ tác giả); chỉ báo người MỚI được @mention
   @Patch('comments/:id')
+  @UseGuards(NotRestrictedGuard)
   async update(@Param('id') id: string, @Body(new ZodValidationPipe(UpdateCommentBodySchema)) body: UpdateCommentBody, @Req() req: Request) {
     const userId = requireUserId(req, 'Vui lòng đăng nhập')
     return { success: true, data: await this.commentsService.update(id, userId, body.content) }

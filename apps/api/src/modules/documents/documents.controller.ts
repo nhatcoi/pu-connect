@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common'
+import { Controller, Get, Post, Body, Param, Query, Req, UseGuards } from '@nestjs/common'
+import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import type { Request } from 'express'
 import { requireUserId } from '../../common/http/current-user'
 import { DocumentsService } from './documents.service'
@@ -19,6 +20,7 @@ export class DocumentsController {
   }
 
   @Post()
+  @UseGuards(NotRestrictedGuard)
   async create(@Body() body: CreateDocumentInput, @Req() req: Request) {
     return this.documentsService.create(requireUserId(req), body)
   }
