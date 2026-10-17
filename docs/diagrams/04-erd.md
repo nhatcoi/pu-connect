@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **43 bảng**, **72 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **44 bảng**, **75 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -90,6 +90,9 @@ erDiagram
   users ||--o{ user_follows : "follower_id"
   users ||--o{ user_follows : "following_id"
   users ||--o{ user_interests : "user_id"
+  users |o--o{ user_sanctions : "admin_id"
+  users |o--o{ user_sanctions : "revoked_by"
+  users ||--o{ user_sanctions : "user_id"
 ```
 
 ## 2. Identity & Social graph
@@ -144,6 +147,10 @@ erDiagram
     timestamptz last_seen_at
     timestamptz interests_updated_at
     jsonb preferences
+    timestamptz suspended_until
+    timestamptz restricted_at
+    timestamptz restricted_until
+    varchar restricted_reason
   }
   user_follows {
     uuid follower_id PK,FK
@@ -188,7 +195,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -656,6 +663,18 @@ erDiagram
     timestamptz last_used_at
     varchar last_error
   }
+  user_sanctions {
+    bigint id PK
+    uuid user_id FK
+    uuid admin_id FK
+    varchar kind
+    varchar reason
+    timestamptz starts_at
+    timestamptz ends_at
+    timestamptz revoked_at
+    uuid revoked_by FK
+    timestamptz created_at
+  }
   messages ||--o{ ai_feedback : "message_id"
   messages ||--o{ ai_memories : "source_message_id"
   ai_skills ||--o{ ai_skills : "source_skill_id"
@@ -670,4 +689,4 @@ erDiagram
   messages ||--o{ messages : "reply_to_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_summaries.post_id → posts`, `push_subscriptions.user_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_summaries.post_id → posts`, `push_subscriptions.user_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`
