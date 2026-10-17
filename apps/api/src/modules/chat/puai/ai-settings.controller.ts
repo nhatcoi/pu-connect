@@ -3,7 +3,7 @@ import type { Request } from 'express'
 import type { AiFeedbackInput, AiSupportInput, AiTaskInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../common/http/current-user'
-import { AdminGuard } from '../../admin/admin.guard'
+import { AdminGuard, RequireAdminPermission } from '../../admin/admin.guard'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import {
   AiFeedbackBodySchema,
@@ -135,6 +135,7 @@ export class AiAdminController {
   constructor(private readonly feedback: AiFeedbackService) {}
 
   @Get('ai-feedback')
+  @RequireAdminPermission('ai:read')
   stats() {
     return this.feedback.stats()
   }
