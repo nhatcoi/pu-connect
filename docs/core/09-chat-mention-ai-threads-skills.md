@@ -97,6 +97,8 @@ backfill: thread AI cũ chưa có title ⇒ dòng đầu câu hỏi đầu tiên
 - `GET /ai/skills/library?q=`: skill công khai của người khác (tài khoản active), tìm không dấu theo tên/mô tả/lệnh, nhiều lượt cài trước, ≤ 30, kèm `installed`. Không trả `instructions`.
 - `POST /ai/skills/:id/install` (transaction): kiểm giới hạn 30, lệnh trùng ⇒ hậu tố `-2`, `-3`…; bản cài mặc định riêng tư; tăng `install_count` bản gốc.
 - Web: hộp thoại Skill có tab **Của bạn / Thư viện**, form có công tắc **Chia sẻ lên thư viện**.
+- Skill chính thức: seed `ai-skills-seed.sql` (chủ = bot @puai, `ON CONFLICT (owner_id, slug)` chỉ cập nhật nội dung). Thư viện trả `official = account_type = 'bot'`, xếp trước lượt cài.
+- Tạo nhanh `POST /ai/skills/draft { prompt 10–1000 }`: 1 lần gọi LLM ⇒ JSON ⇒ cắt độ dài + `AiSkillBodySchema` + `freeSlug`; không lưu (người dùng xem lại ở form), tính 1 lượt. Lỗi parse ⇒ 503 "thử mô tả lại". Tải tệp `.md` (frontmatter `name/description/command/input_hint`) xử lý hoàn toàn ở client.
 
 ## 9. Chất lượng mã
 
