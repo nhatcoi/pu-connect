@@ -1,7 +1,7 @@
 # 07 · Tìm kiếm (Search) — thiết kế & quy tắc nghiệp vụ
 
 > Trạng thái: **đã triển khai** (2026-10-04). Mã: `apps/api/src/modules/search/` · Migration: `apps/api/src/database/search-upgrade.sql`.
-> Nền cho bước sau: "bài liên quan", semantic search, PU AI (xem [06-messaging-and-ai](./06-messaging-and-ai.md)).
+> Nền cho bước sau: "bài liên quan", semantic search, N7AI (xem [06-messaging-and-ai](./06-messaging-and-ai.md)).
 
 ## 1. Mục tiêu
 
@@ -53,7 +53,7 @@ GET /api/search?q=&type=&faculty=&limit=&offset=
 | # | Quy tắc |
 |---|---|
 | V1 | Bài viết và tài liệu: chỉ `visibility = 'public'`, **hoặc của chính người đang tìm** (kể cả riêng tư). Trước đây không lọc ⇒ nội dung riêng tư có thể lộ qua search |
-| V2 | Người dùng: chỉ `status = 'active'` (tài khoản bị khóa **không** hiện) và `account_type IN ('human','bot')`. Bot `@puai` tìm được; tài khoản `system` thì không |
+| V2 | Người dùng: chỉ `status = 'active'` (tài khoản bị khóa **không** hiện) và `account_type IN ('human','bot')`. Bot `@n7ai` tìm được; tài khoản `system` thì không |
 | V3 | Người dùng đặt **hồ sơ riêng tư** (`isPrivateProfile`) **vẫn tìm được theo tên** (giống Instagram): tìm được người, không lộ nội dung. Nếu sau này muốn ẩn hẳn ⇒ thêm cờ `searchable` riêng |
 | V4 | Bộ lọc `faculty` giữ nguyên (khoa của tác giả/người dùng hoặc của học phần) |
 | V5 | Cờ "đã thích / đã theo dõi" chỉ tính khi đăng nhập; khách vẫn tìm được nội dung công khai |
@@ -108,7 +108,7 @@ Giới hạn đã biết:
 
 ## 9. Đã kiểm thử (local, dữ liệu tiếng Việt thật)
 
-Có dấu / không dấu / HOA; từ nối; tiền tố (`postgre`); nhiều từ; `#tag`; `@username`; gõ sai (`overfiting`, `pgvecotr`, `lethimia`); chuỗi SQL injection; chỉ ký tự đặc biệt; 1 ký tự; tài liệu riêng tư (không lộ với khách); người dùng bị khóa / tài khoản system (ẩn); bot `@puai` (hiện); log ghi trang kết quả, không ghi typeahead.
+Có dấu / không dấu / HOA; từ nối; tiền tố (`postgre`); nhiều từ; `#tag`; `@username`; gõ sai (`overfiting`, `pgvecotr`, `lethimia`); chuỗi SQL injection; chỉ ký tự đặc biệt; 1 ký tự; tài liệu riêng tư (không lộ với khách); người dùng bị khóa / tài khoản system (ẩn); bot `@n7ai` (hiện); log ghi trang kết quả, không ghi typeahead.
 
 ## 10. Backlog (làm khi cần)
 

@@ -1,4 +1,4 @@
-# 💬 Đặc Tả Thiết Kế: Nhắn Tin & PU AI (Messaging + AI Layer)
+# 💬 Đặc Tả Thiết Kế: Nhắn Tin & N7AI (Messaging + AI Layer)
 
 > Trạng thái: **P0 + P1 + P2 (rút gọn) + P4 (rút gọn) đã triển khai** — xem mục 12 · P3, P5: thiết kế · Phạm vi: Domain 10 (Realtime Messaging) + Domain 13 (AI Layer)
 > Liên quan: [05-notifications-and-realtime.md](./05-notifications-and-realtime.md), [../auth-google.md](../auth-google.md)
@@ -8,15 +8,15 @@
 ## 0. Tóm tắt
 
 Một mô hình duy nhất cho mọi kiểu chat: **Conversation + Message + Member**.
-**PU AI (`@puai`) là một user đặc biệt** (`account_type = 'bot'`): có hồ sơ, được mention, gửi message/comment như người thật, nhưng không đăng nhập được và **mọi hành động chạy dưới quyền của người hỏi**.
+**N7AI (`@n7ai`) là một user đặc biệt** (`account_type = 'bot'`): có hồ sơ, được mention, gửi message/comment như người thật, nhưng không đăng nhập được và **mọi hành động chạy dưới quyền của người hỏi**.
 
-Nhờ vậy DM, chat nhóm, panel AI, `@puai` trong bình luận… chỉ khác nhau ở **điểm kích hoạt** và **ngữ cảnh**, dùng chung lưu trữ, realtime, thông báo, phân quyền.
+Nhờ vậy DM, chat nhóm, panel AI, `@n7ai` trong bình luận… chỉ khác nhau ở **điểm kích hoạt** và **ngữ cảnh**, dùng chung lưu trữ, realtime, thông báo, phân quyền.
 
 | Kiểu | Ví dụ |
 |---|---|
 | Hội thoại 1-1 / nhóm | Sinh viên nhắn bạn cùng lớp, nhóm đồ án |
-| Hội thoại với AI | Panel "PU AI" bên phải, trang `/messages/puai` |
-| Mention bot | `@puai giải thích giúp ý 2` trong bình luận hoặc chat nhóm |
+| Hội thoại với AI | Panel "N7AI" bên phải, trang `/messages/n7ai` |
+| Mention bot | `@n7ai giải thích giúp ý 2` trong bình luận hoặc chat nhóm |
 | Tác vụ nhanh | "Tóm tắt", "Tạo checklist", "Hỏi về tài liệu" trên bài viết |
 
 ---
@@ -96,14 +96,14 @@ Migration mới: `apps/api/src/database/messaging-upgrade.sql` (idempotent, ch�
 -- Loại tài khoản: người / bot / hệ thống
 ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(10) NOT NULL DEFAULT 'human'; -- human|bot|system
 
--- Tài khoản @puai: không mật khẩu, không google_id ⇒ không thể đăng nhập
+-- Tài khoản @n7ai: không mật khẩu, không google_id ⇒ không thể đăng nhập
 INSERT INTO users (email, username, display_name, account_type, is_verified, email_verified, bio, role)
-VALUES ('puai@system.local', 'puai', 'PU AI', 'bot', TRUE, TRUE,
-        'Trợ lý học tập của PU Connector. Tag @puai để hỏi.', 'student')
+VALUES ('n7ai@system.local', 'n7ai', 'N7AI', 'bot', TRUE, TRUE,
+        'Trợ lý học tập của PU Connector. Tag @n7ai để hỏi.', 'student')
 ON CONFLICT (username) DO NOTHING;
 ```
 
-- Username `puai` (và tiền tố `pu_`, `admin`, `system`) **reserved** trong `generateUniqueUsername` và form đổi username.
+- Username `n7ai` (và tiền tố `pu_`, `admin`, `system`) **reserved** trong `generateUniqueUsername` và form đổi username.
 - Login (`password`, Google) từ chối `account_type <> 'human'`.
 
 ### 3.2. Hội thoại
@@ -261,10 +261,10 @@ erDiagram
 
 | Method | Path | Mô tả |
 |---|---|---|
-| GET | `/conversations?cursor=` | Danh sách hội thoại của tôi (sort `last_message_at DESC`, kèm unread count). PU AI luôn ghim đầu. |
+| GET | `/conversations?cursor=` | Danh sách hội thoại của tôi (sort `last_message_at DESC`, kèm unread count). N7AI luôn ghim đầu. |
 | POST | `/conversations/direct` `{ userId }` | Mở/tạo DM (dựa `direct_key`, idempotent). |
 | POST | `/conversations` `{ type:'group', title, memberIds }` | Tạo nhóm (≤ 50 thành viên). |
-| GET | `/conversations/ai` | Lấy/tạo hội thoại AI của tôi với `@puai`. |
+| GET | `/conversations/ai` | Lấy/tạo hội thoại AI của tôi với `@n7ai`. |
 | GET | `/conversations/:id/messages?before=<id>&limit=30` | Keyset pagination, mới nhất trước. |
 | POST | `/conversations/:id/messages` `{ clientMsgId, content, replyToId?, contextRef?, attachments? }` | Gửi tin. Trả về message đã lưu. |
 | PATCH | `/messages/:id` / DELETE `/messages/:id` | Sửa (≤ 15 phút) / thu hồi (soft delete). |
@@ -321,11 +321,11 @@ sequenceDiagram
   API->>RT: emit conv.updated → user:{memberId} (mỗi thành viên)
   API->>RT: notification cho thành viên offline/muted=false
   alt có mention bot hoặc conv.type = ai
-    API->>DB: INSERT ai_runs (queued) + message puai (status=streaming)
+    API->>DB: INSERT ai_runs (queued) + message n7ai (status=streaming)
   end
 ```
 
-### 5.2. AI trả lời (panel, DM với puai, @puai trong chat)
+### 5.2. AI trả lời (panel, DM với n7ai, @n7ai trong chat)
 
 ```mermaid
 sequenceDiagram
@@ -349,12 +349,12 @@ sequenceDiagram
   O->>RT: message.updated
 ```
 
-### 5.3. `@puai` trong bình luận
+### 5.3. `@n7ai` trong bình luận
 
 1. `CommentsService.create` → `MentionService.extract(content)` → lưu `mentions`.
 2. Có mention bot ⇒ kiểm tra quota công khai (chặt hơn) ⇒ `ai_runs(trigger='mention', source_ref=comment)`.
 3. Worker dựng context: bài viết + tài liệu đính kèm + chuỗi bình luận cha (tối đa ~20).
-4. Trả lời bằng **comment mới của `@puai`**, `parent_id` = comment kích hoạt, gắn nhãn "AI".
+4. Trả lời bằng **comment mới của `@n7ai`**, `parent_id` = comment kích hoạt, gắn nhãn "AI".
 5. Thông báo `ai_reply` cho người hỏi. Giảng viên/tác giả có thể **ẩn** hoặc **đánh dấu đúng** như comment thường.
 
 ### 5.4. Tác vụ nhanh (Tóm tắt / Checklist)
@@ -374,10 +374,10 @@ Tạo study group / tham gia community (loại `club`, `academic`) ⇒ tạo/đ�
 ```ts
 // apps/api/src/modules/ai/bots.ts
 export const BOTS = {
-  puai: {
-    username: 'puai',
+  n7ai: {
+    username: 'n7ai',
     model: { default: 'claude-haiku-4-5-20251001', escalate: 'claude-sonnet-5-5' },
-    systemPrompt: PUAI_SYSTEM_PROMPT,
+    systemPrompt: N7AI_SYSTEM_PROMPT,
     tools: ['search_posts', 'get_post_thread', 'search_documents', 'get_document_chunk',
             'get_course', 'find_study_groups', 'list_campus_events', 'get_my_profile'],
     quota: { perDay: 30, publicMentionsPerDay: 10 },
@@ -424,7 +424,7 @@ Một hàm duy nhất (SQL view/CTE dùng lại trong mọi truy vấn của too
 ### 6.5. Quota, chi phí, an toàn
 
 - Chỉ tài khoản `email_verified = TRUE` được gọi AI; quota đếm từ `ai_runs` theo ngày (Asia/Ho_Chi_Minh).
-- Rate limit: 1 lượt / 3 s / user; `@puai` công khai 10 lượt/ngày.
+- Rate limit: 1 lượt / 3 s / user; `@n7ai` công khai 10 lượt/ngày.
 - Escalate model khi: ngữ cảnh > 16k token, hoặc người dùng bấm "Trả lời kỹ hơn".
 - Liêm chính học thuật: giải thích, gợi ý hướng, chỉ ra tài liệu — **không làm hộ bài nộp**.
 - Không bịa dữ liệu học vụ (hạn nộp, điểm, lịch thi): chỉ trả lời khi có nguồn; luôn hiển thị "AI có thể nhầm. Hãy kiểm tra nguồn."
@@ -458,12 +458,12 @@ Bám palette navy + cam Phenikaa; AI dùng điểm nhấn ✨ cùng tông primar
 ┌ Sidebar ┐┌──────── Hội thoại ─────────┐┌──────────── Thread ────────────────┐
 │ Bảng tin││ 🔍 Tìm hội thoại            ││ ← Nhóm Đồ án IT101 · 4 thành viên ⋯│
 │ Khám phá││ ───────────────────────────  ││                                     │
-│ Cộng đồng│ ✨ PU AI          ghim  10:24││   Đức: Mai ơi file báo cáo đâu?    │
+│ Cộng đồng│ ✨ N7AI          ghim  10:24││   Đức: Mai ơi file báo cáo đâu?    │
 │ Tin nhắn││ 👥 Nhóm Đồ án IT101   ● 2   ││              Mai: Mình up rồi nhé ▸ │
 │ Hồ sơ   ││ 👤 Trần Minh Đức       hôm qua││   ┌ 📄 bao-cao-tien-do.pdf 2.4MB ┐ │
 │         ││ 👤 TS. Nguyễn Văn Hà    T2   ││   └───────────────────────────────┘ │
-│         ││                             ││   @puai tóm tắt yêu cầu nộp giúp    │
-│         ││                             ││   ✨ PU AI · AI                      │
+│         ││                             ││   @n7ai tóm tắt yêu cầu nộp giúp    │
+│         ││                             ││   ✨ N7AI · AI                      │
 │         ││                             ││   1. Báo cáo PDF  2. Link Git  …    │
 │         ││                             ││   [Nguồn: Bài của TS. Hà ↗]         │
 │         ││                             ││  Đức đang nhập…                     │
@@ -476,7 +476,7 @@ Bám palette navy + cam Phenikaa; AI dùng điểm nhấn ✨ cùng tông primar
 ### 8.2. AI Drawer (mọi trang)
 
 ```
-                                      ┌──────── ✨ PU AI ───────── ⊕  ✕ ┐
+                                      ┌──────── ✨ N7AI ───────── ⊕  ✕ ┐
   (Bảng tin / bài viết / tài liệu)     │ 📄 Đang xem: Bài của TS. Hà   › │
                                       │                                  │
                                       │            Mình cần nộp gì? ▸    │
@@ -489,7 +489,7 @@ Bám palette navy + cam Phenikaa; AI dùng điểm nhấn ✨ cùng tông primar
                                       │ AI có thể nhầm. Hãy kiểm tra nguồn.│
                                       └──────────────────────────────────┘
 ```
-- Mở bằng nút "Hỏi PU AI" (header) hoặc ✨ trên bài. Desktop: thay chỗ RightSidebar (đóng thì sidebar quay lại). Mobile: sheet toàn màn hình.
+- Mở bằng nút "Hỏi N7AI" (header) hoặc ✨ trên bài. Desktop: thay chỗ RightSidebar (đóng thì sidebar quay lại). Mobile: sheet toàn màn hình.
 - Cùng component `ConversationThread` với `/messages`; drawer chỉ thêm **chip ngữ cảnh** (đổi khi người dùng chuyển trang/bài, có thể gỡ).
 - ⊕ = hội thoại mới (tạo conversation `ai` mới; danh sách cũ xem ở `/messages`).
 
@@ -497,13 +497,13 @@ Bám palette navy + cam Phenikaa; AI dùng điểm nhấn ✨ cùng tông primar
 
 - Không thêm hàng nút cố định. Icon ✨ nhỏ cạnh `⋯` ⇒ menu: *Tóm tắt*, *Hỏi về bài viết*, *Tạo checklist*.
 - Chỉ hiện khi bài dài (> 600 ký tự) hoặc có tài liệu/hạn nộp.
-- Kết quả tóm tắt hiện inline, thu gọn được, có nhãn "Tóm tắt bởi PU AI".
+- Kết quả tóm tắt hiện inline, thu gọn được, có nhãn "Tóm tắt bởi N7AI".
 
-### 8.4. `@mention` và hồ sơ `@puai`
+### 8.4. `@mention` và hồ sơ `@n7ai`
 
-- Gõ `@` ở composer, comment, chat ⇒ popover gợi ý (người theo dõi, thành viên conversation, `@puai` đầu danh sách với badge **AI**).
-- Comment của `@puai`: avatar ✨, nhãn **AI**, footer "Được gọi bởi @username", nút 👍/👎.
-- Trang `/puai`: giới thiệu khả năng, ví dụ câu hỏi, nút **Trò chuyện**, tab "Câu trả lời công khai". Không có nút Theo dõi/Nhắn tin kiểu người thường.
+- Gõ `@` ở composer, comment, chat ⇒ popover gợi ý (người theo dõi, thành viên conversation, `@n7ai` đầu danh sách với badge **AI**).
+- Comment của `@n7ai`: avatar ✨, nhãn **AI**, footer "Được gọi bởi @username", nút 👍/👎.
+- Trang `/n7ai`: giới thiệu khả năng, ví dụ câu hỏi, nút **Trò chuyện**, tab "Câu trả lời công khai". Không có nút Theo dõi/Nhắn tin kiểu người thường.
 
 ### 8.5. Component (apps/web)
 
@@ -538,10 +538,10 @@ store: aiDrawer { open, contextRef }, unreadTotal
 
 | Giai đoạn | Nội dung | Kết quả kiểm chứng |
 |---|---|---|
-| **P0 Nền tảng (bắt buộc trước)** | Session Postgres · bảo mật gateway (auth, room server cấp, CORS, bỏ `send_message`/broadcast cũ) · `account_type` + user `@puai` + reserved username · bảng `mentions` + `MentionService` cho post/comment · nginx `/socket.io/` | Restart API không mất đăng nhập; socket không cookie bị từ chối; `@user` trong comment tạo thông báo |
+| **P0 Nền tảng (bắt buộc trước)** | Session Postgres · bảo mật gateway (auth, room server cấp, CORS, bỏ `send_message`/broadcast cũ) · `account_type` + user `@n7ai` + reserved username · bảng `mentions` + `MentionService` cho post/comment · nginx `/socket.io/` | Restart API không mất đăng nhập; socket không cookie bị từ chối; `@user` trong comment tạo thông báo |
 | **P1 Nhắn tin** | `ChatModule` (DM, nhóm), read cursor, typing, `/messages`, badge unread | 2 trình duyệt nhắn realtime, reload giữ lịch sử, unread đúng |
-| **P2 PU AI lõi** | `AiModule`, bot registry, worker + `ai_runs`, conversation `ai`, AI drawer, streaming, `POST /ai/tasks` + `ai_cache`, quota | Hỏi trong drawer có ngữ cảnh bài; tóm tắt lần 2 trả từ cache (0 token) |
-| **P3 @puai** | Mention bot trong comment & chat nhóm, comment AI, thông báo `ai_reply`, trang `/puai` | Tag `@puai` dưới bài ⇒ comment trả lời có nguồn |
+| **P2 N7AI lõi** | `AiModule`, bot registry, worker + `ai_runs`, conversation `ai`, AI drawer, streaming, `POST /ai/tasks` + `ai_cache`, quota | Hỏi trong drawer có ngữ cảnh bài; tóm tắt lần 2 trả từ cache (0 token) |
+| **P3 @n7ai** | Mention bot trong comment & chat nhóm, comment AI, thông báo `ai_reply`, trang `/n7ai` | Tag `@n7ai` dưới bài ⇒ comment trả lời có nguồn |
 | **P4 RAG** | `content_embeddings`, job embed post/tài liệu, tools search + citation, tìm kiếm ngữ nghĩa ở `/search` | Hỏi nội dung PDF ⇒ trả lời trích đúng chunk |
 | **P5 Mở rộng** | Chat tự tạo cho study group/community, `action_proposal`, bot khác, AI hỗ trợ kiểm duyệt, embedding sở thích cho feed "Dành cho bạn" | — |
 
@@ -564,26 +564,26 @@ store: aiDrawer { open, contextRef }, unreadTotal
 |---|---|---|
 | P1 `ChatModule` | ✅ | DM (`direct_key`), nhóm ≤ 50, read cursor, thu hồi tin, rời nhóm, typing, badge chưa đọc, `/messages`, `/messages/[id]`, nút Nhắn tin trên hồ sơ. Migration `chat-upgrade.sql`. |
 | Room `conv:{id}` | ⚠️ khác thiết kế | Chưa dùng `conv.open`; server phát `message.*` tới room `user:{id}` của **từng thành viên** (đơn giản, vẫn do server cấp). Đổi sang `conv:` khi nhóm lớn. |
-| P2 PU AI lõi | ✅ rút gọn | Hội thoại `type='ai'` (`POST /conversations/ai`), streaming qua `message.delta`, quota `AI_DAILY_QUOTA`/ngày từ `ai_runs` (migration `ai-upgrade.sql`). Gọi **API tương thích OpenAI** (SDK `openai`, `AI_BASE_URL` + `AI_API_KEY`, `AI_MODEL` mặc định `v9`) thay cho Anthropic SDK như §11 #1; gateway không trả usage khi stream ⇒ `ai_runs` ghi 0 token. **Chạy trong tiến trình API** (fire-and-forget) thay vì worker `SKIP LOCKED` — đủ cho 1 instance. Chưa có AI drawer, `POST /ai/tasks`, `ai_cache`, 👍/👎. |
+| P2 N7AI lõi | ✅ rút gọn | Hội thoại `type='ai'` (`POST /conversations/ai`), streaming qua `message.delta`, quota `AI_DAILY_QUOTA`/ngày từ `ai_runs` (migration `ai-upgrade.sql`). Gọi **API tương thích OpenAI** (SDK `openai`, `AI_BASE_URL` + `AI_API_KEY`, `AI_MODEL` mặc định `v9`) thay cho Anthropic SDK như §11 #1; gateway không trả usage khi stream ⇒ `ai_runs` ghi 0 token. **Chạy trong tiến trình API** (fire-and-forget) thay vì worker `SKIP LOCKED` — đủ cho 1 instance. Chưa có AI drawer, `POST /ai/tasks`, `ai_cache`, 👍/👎. |
 | P4 RAG | ✅ rút gọn | Truy xuất **full-text** (`search_tsv`, OR các từ khóa bỏ dấu) trên bài viết + tài liệu công khai (kèm lời giải đã duyệt), bọc `<data>` trong `<context>`; câu trả lời có `blocks` citation. **Chưa dùng pgvector**: cần chọn nhà cung cấp embedding (§11 #2) và trích text PDF vào `document_chunks`. |
-| P3 `@puai` trong bình luận | ✅ 2026-10-14 | Xem §16. |
+| P3 `@n7ai` trong bình luận | ✅ 2026-10-14 | Xem §16. |
 | P5 | ⏳ | Chưa làm. |
 | Thông báo / Web Push cho tin nhắn | ⏳ | Chưa gửi push khi người nhận offline. |
 | `user_blocks` | ✅ 2026-10-14 | Xem §14. |
 | `privacy_settings.dm` | ⏳ | Hiện: chỉ tài khoản đã xác thực email mới mở DM/nhóm mới; không nhắn được tài khoản bị khóa. |
 
-## 13. Chat P2 & PU AI học tập (2026-10-13)
+## 13. Chat P2 & N7AI học tập (2026-10-13)
 
 Migration `chat-v2-upgrade.sql`: `messages.attachments/edited_at/pinned_at/pinned_by/meta`, bảng `message_reactions (message_id, user_id, emoji)`, `conversation_members.muted_until/pinned_at`.
 
-**Cấu trúc mã** (không vòng phụ thuộc: core · notify ← puai ← conversations ← study-group-chat / messages):
+**Cấu trúc mã** (không vòng phụ thuộc: core · notify ← n7ai ← conversations ← study-group-chat / messages):
 
 ```
 apps/api/src/modules/chat/
   chat.module.ts · chat.mapper.ts (SQL cột + map) · chat-core.service.ts (quyền thành viên, phát sự kiện, tin hệ thống)
   conversations/  controller + service — DM, nhóm, thành viên, cài đặt riêng, đã đọc · study-group-chat.service (nhóm học ↔ chat)
   messages/       controller + service — gửi/sửa/thu hồi, cảm xúc, ghim, tìm kiếm, kho tệp
-  puai/           controller (quota, reset) · service (stream) · prompts (chế độ học) · retrieval (full-text) · attachments (vision, PDF/DOCX)
+  n7ai/           controller (quota, reset) · service (stream) · prompts (chế độ học) · retrieval (full-text) · attachments (vision, PDF/DOCX)
   notify/         chat-push.constants · chat-push.service (xếp job) · chat-push.processor (worker Web Push)
   dto/chat.dto.ts
 apps/web/src/hooks/chat/        api · cache · use-chat-realtime · use-conversations · use-messages · use-typing · use-ai
@@ -596,7 +596,7 @@ apps/web/src/components/chat/
 
 | Hạng mục | Quyết định |
 |---|---|
-| Tệp đính kèm | Tải trước lên R2 (`POST /upload/file?folder=chat`, ≤ 25 MB phía web), tin chỉ mang metadata. Server từ chối tệp không nằm dưới `chat/{senderId}/` hoặc URL khác `R2_PUBLIC_URL/key` ⇒ không gắn được tệp của người khác, PU AI tải ảnh không bị SSRF. |
+| Tệp đính kèm | Tải trước lên R2 (`POST /upload/file?folder=chat`, ≤ 25 MB phía web), tin chỉ mang metadata. Server từ chối tệp không nằm dưới `chat/{senderId}/` hoặc URL khác `R2_PUBLIC_URL/key` ⇒ không gắn được tệp của người khác, N7AI tải ảnh không bị SSRF. |
 | Cảm xúc | Bật/tắt theo `(message, user, emoji)`; tin trả `reactions: [{emoji, userIds}]` để client tự tính "của mình". Cập nhật lạc quan, phát `message.updated`. Bấm cụm cảm xúc ⇒ hộp thoại "Cảm xúc về tin nhắn" (`GET messages/:id/reactions`, kể cả người đã rời nhóm; query key kèm chữ ký số lượng ⇒ tự tải lại). |
 | Nhóm học ↔ chat | `conversations.study_group_id` (UNIQUE). `StudyGroupChatService` (chat module, được `StudyGroupsModule` import — chat không phụ thuộc ngược lại): `open()` khóa hàng `study_groups FOR UPDATE`, chỉ thành viên nhóm học; chưa có chat ⇒ tạo + thêm cả nhóm; đã có ⇒ đưa người mở vào lại nếu đã rời. `join` nhóm học ⇒ sau commit gọi `onStudyGroupJoined` (best-effort, lỗi chỉ log; `open()` tự sửa lệch). Nguồn sự thật về thành viên = `study_group_members`. |
 | Ảnh nhóm | Web tải ảnh lên `avatars/` (thư mục chỉ nhận ảnh) rồi gửi `avatarKey`; server kiểm `StorageService.isOwnedKey(key, 'avatars', userId)` và tự ghép URL ⇒ không gắn được URL ngoài (pixel theo dõi) hay ảnh người khác. `null` = xóa. Tin hệ thống `group.avatar`. |
@@ -604,10 +604,10 @@ apps/web/src/components/chat/
 | Sửa / ghim | Sửa tin `text` của mình trong 15 phút (`edited_at`); ghim: mọi thành viên, thu hồi tin ⇒ bỏ ghim. |
 | Đã xem | `summary.readCursors` (con trỏ của người khác) + `conv.read {userId}` gửi mọi thành viên. |
 | Tắt thông báo | `muted_until` (`'infinity'` = vô hạn); hội thoại tắt tiếng không cộng vào badge và không push. |
-| Push tin nhắn | `chat/notify/`: `ChatPushService.onNewMessage` (sau commit, không chặn luồng gửi; gọi khi người gửi tin và khi PU AI trả lời xong) xếp job trễ 15s vào queue `chat-push` cho thành viên người thật chưa tắt tiếng, `jobId = chat-{conv}-{user}` ⇒ nhiều tin trong lúc chờ gộp 1 push. `ChatPushProcessor` đọc trạng thái lúc chạy (1 truy vấn): hết tin chưa đọc / tắt tiếng / tắt kênh `chat_message` / đang mở app ⇒ bỏ; giờ yên tĩnh ⇒ hoãn. Tiêu đề = tên người/nhóm (+ "N tin mới"), nội dung = tin mới nhất (nhóm có tên người gửi; chỉ ảnh/tệp ⇒ "🖼️ Ảnh"/"📎 N tệp"), `tag = chat-{conv}` ⇒ thông báo sau thay thế thông báo trước. Tin đến khi job đang chạy có thể không tạo push riêng (đã được gộp vào số tin chưa đọc lần sau). |
+| Push tin nhắn | `chat/notify/`: `ChatPushService.onNewMessage` (sau commit, không chặn luồng gửi; gọi khi người gửi tin và khi N7AI trả lời xong) xếp job trễ 15s vào queue `chat-push` cho thành viên người thật chưa tắt tiếng, `jobId = chat-{conv}-{user}` ⇒ nhiều tin trong lúc chờ gộp 1 push. `ChatPushProcessor` đọc trạng thái lúc chạy (1 truy vấn): hết tin chưa đọc / tắt tiếng / tắt kênh `chat_message` / đang mở app ⇒ bỏ; giờ yên tĩnh ⇒ hoãn. Tiêu đề = tên người/nhóm (+ "N tin mới"), nội dung = tin mới nhất (nhóm có tên người gửi; chỉ ảnh/tệp ⇒ "🖼️ Ảnh"/"📎 N tệp"), `tag = chat-{conv}` ⇒ thông báo sau thay thế thông báo trước. Tin đến khi job đang chạy có thể không tạo push riêng (đã được gộp vào số tin chưa đọc lần sau). |
 | Đóng thông báo đã đọc | Processor đặt `conversation_members.push_shown_at` **trước** khi gửi push. `markRead` lấy & xóa cờ trong 1 câu (CTE `FOR UPDATE`) ⇒ cờ có ⇒ `ChatPushService.onRead` xếp job `clear` (`jobId chat-clear-{conv}-{user}`). Job gọi `PushService.sendSilent` `{ kind: 'close', tag: chat-{conv} }` cùng `topic` với push tin ⇒ push service thay luôn thông báo chưa giao; `sw.js` đóng thông báo theo tag, không hiện gì. Bỏ qua endpoint Apple (`web.push.apple.com`): Safari thu hồi đăng ký nếu push không hiện thông báo ⇒ trên Safari/iOS thông báo cũ vẫn còn. Chrome có hạn mức push im lặng; chỉ gửi khi thật sự đã hiện thông báo nên tần suất thấp. |
 | Chế độ học | `aiMode` gửi kèm tin (`meta.aiMode`), server ghép `MODE_PROMPTS[mode]` vào system prompt, ghi `ai_runs.task`. Quiz/flashcard: model trả JSON trong khối code; web kiểm tra schema, JSON hỏng ⇒ hiện như code thường, đang stream ⇒ "Đang tạo…". |
-| `@puai` trong nhóm | Tin nhóm khớp `@puai` (đầu tin hoặc sau khoảng trắng) ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
+| `@n7ai` trong nhóm | Tin nhóm khớp `@n7ai` (đầu tin hoặc sau khoảng trắng) ⇒ `reply()` với lịch sử 12 tin gần nhất dạng "Tên: nội dung", tin trả lời `reply_to_id` = tin người hỏi, `ai_runs.trigger='mention'`. Bot không phải thành viên nhóm. |
 | Chủ đề mới | Tin hệ thống `meta.event='ai.reset'`; lịch sử gửi LLM chỉ lấy sau mốc reset gần nhất. |
 | Vision & tài liệu | Ảnh của tin hiện tại ⇒ `image_url` base64 (≤ 4 ảnh, ≤ 5 MB). PDF (`pdf-parse`, ≤ 40 trang, ≤ 20 MB), DOCX (`mammoth`), `.txt/.md/.csv` ⇒ trích text chèn `<file>` (≤ 40k ký tự/tệp, ≤ 80k/lượt), cache LRU 30 tệp theo key R2. Tin không kèm tệp ⇒ dùng lại tài liệu đọc được ở ≤ 10 tin trước (sau mốc "Chủ đề mới"). PDF scan (không có lớp chữ) ⇒ báo người dùng; PPTX/XLSX chỉ báo tên. |
 
@@ -641,15 +641,15 @@ Migration `presence-upgrade.sql`: `users.last_seen_at`. Cài đặt `privacy_set
 
 Giới hạn: tắt `showActivityStatus` không phát "offline" ngay cho người đang xem (họ thấy trạng thái cũ tới lần nạp lại kế tiếp).
 
-## 16. Lõi AI dùng chung & `@puai` trong bình luận (2026-10-14)
+## 16. Lõi AI dùng chung & `@n7ai` trong bình luận (2026-10-14)
 
-`modules/ai/` (AiModule) gom phần dùng chung: `LlmService` (client OpenAI-compatible, `@puai` bot id, quota/ngày, nhật ký `ai_runs` — `startRun`/`finishRun`/`failRun`/`logRejected`, `complete()` không stream), `AiRetrieval` (full-text), `ai.prompts.ts` (`SYSTEM_PROMPT`, `COMMENT_PROMPT`), `ai.constants.ts` (`PUAI_MENTION`). Chat (`PuaiService`) giữ phần stream theo tin nhắn.
+`modules/ai/` (AiModule) gom phần dùng chung: `LlmService` (client OpenAI-compatible, `@n7ai` bot id, quota/ngày, nhật ký `ai_runs` — `startRun`/`finishRun`/`failRun`/`logRejected`, `complete()` không stream), `AiRetrieval` (full-text), `ai.prompts.ts` (`SYSTEM_PROMPT`, `COMMENT_PROMPT`), `ai.constants.ts` (`N7AI_MENTION`). Chat (`N7AiService`) giữ phần stream theo tin nhắn.
 
 Luồng bình luận (`posts/post-ai.service.ts`):
-1. `CommentsController` lưu bình luận rồi gọi nền `PostAiService.onComment` nếu có `@puai`.
+1. `CommentsController` lưu bình luận rồi gọi nền `PostAiService.onComment` nếu có `@n7ai`.
 2. Hết quota / chưa cấu hình key ⇒ trả lời bằng 1 bình luận thông báo (không gọi LLM).
 3. Ngữ cảnh: bài viết (≤ 4000 ký tự) + ≤ 12 bình luận trước trong cùng nhánh, bọc `<post>`/`<thread>` (dữ liệu, không phải chỉ dẫn) + nguồn truy xuất (bỏ chính bài đó).
-4. Gọi `complete()` (không stream, ≤ 4096 token) ⇒ lưu bình luận con của `@puai` qua `CommentsService.create` ⇒ đếm bình luận + thông báo "đã trả lời bình luận của bạn" dùng chung luồng cũ. `ai_runs.trigger = 'comment'`, `reply_ref = {type:'comment'}`.
+4. Gọi `complete()` (không stream, ≤ 4096 token) ⇒ lưu bình luận con của `@n7ai` qua `CommentsService.create` ⇒ đếm bình luận + thông báo "đã trả lời bình luận của bạn" dùng chung luồng cũ. `ai_runs.trigger = 'comment'`, `reply_ref = {type:'comment'}`.
 5. Socket `comments.changed {postId}` tới người hỏi ⇒ web tải lại bình luận.
 
 Khác thiết kế §5.3: không có worker riêng (chạy trong tiến trình API như chat), quota dùng chung với chat (không tách quota công khai), chưa có nhãn "AI" riêng ngoài avatar N7AI.
@@ -660,13 +660,13 @@ Migration `post-summary-upgrade.sql`: `post_summaries (post_id PK, content_hash 
 
 - `POST /api/posts/:id/summary` → `{ summary, cached }` (`PostAiService.summarize`). Kiểm tra: bài hiển thị được với người hỏi (không ẩn, công khai hoặc của mình, không chặn nhau), dài ≥ 300 ký tự.
 - **Cache theo nội dung**: `sha256(tiêu đề + nội dung)` trùng ⇒ trả bản đã lưu, **không tốn lượt** và không gọi LLM ⇒ cả lớp xem chung một bản tóm tắt. Bài bị sửa ⇒ hash khác ⇒ tóm tắt lại (upsert).
-- Chưa có bản lưu: cần quota (`ai_runs.trigger = 'summary'`), hết lượt ⇒ 429, PU AI tắt / lỗi ⇒ 503.
+- Chưa có bản lưu: cần quota (`ai_runs.trigger = 'summary'`), hết lượt ⇒ 429, N7AI tắt / lỗi ⇒ 503.
 - Web: nút "✨ Tóm tắt" cạnh "Xem thêm" (chỉ hiện khi bài bị thu gọn), khung `PostSummary` có skeleton; query `['post-summary', id]` `staleTime: Infinity`.
 
 ## 18. Hiệu năng chat: phân trang & cache (2026-10-14)
 
 **Danh sách hội thoại** — `GET /api/conversations?filter=all|unread|group&cursor=&limit=20` → `{ data, nextCursor }` (trước: cố định 100 hàng, lọc ở client).
-- Thứ tự = khóa keyset `(rank, sort_at, id)` giảm dần: `rank` 2 = PU AI, 1 = đã ghim, 0 = còn lại; `sort_at` = lúc ghim hoặc tin mới nhất. Cursor là base64url của khóa, `sort_at` giữ micro giây (JS Date chỉ mili giây ⇒ có thể sót/lặp hàng). Xem `conversations/conversation-list.query.ts`.
+- Thứ tự = khóa keyset `(rank, sort_at, id)` giảm dần: `rank` 2 = N7AI, 1 = đã ghim, 0 = còn lại; `sort_at` = lúc ghim hoặc tin mới nhất. Cursor là base64url của khóa, `sort_at` giữ micro giây (JS Date chỉ mili giây ⇒ có thể sót/lặp hàng). Xem `conversations/conversation-list.query.ts`.
 - 2 bước: chọn id trang (rẻ) rồi mới dựng `SUMMARY_SELECT` cho đúng các id đó.
 - Web: `useConversations(filter)` là infinite query, mỗi bộ lọc 1 cache, cuộn gần cuối tải trang tiếp.
 
@@ -686,7 +686,7 @@ Khác: bảng thông tin DM mở tab "Đã ghim" (dùng lại cache thanh tin gh
 
 ## 19. Cá nhân hóa: hành vi → hồ sơ quan tâm → gợi ý (2026-10-14)
 
-Mục tiêu: gợi ý PU AI và bảng tin dựa trên **việc người dùng thật sự làm**, không chỉ ngành/sở thích khai báo. Không gọi LLM để chọn gợi ý.
+Mục tiêu: gợi ý N7AI và bảng tin dựa trên **việc người dùng thật sự làm**, không chỉ ngành/sở thích khai báo. Không gọi LLM để chọn gợi ý.
 
 Migration `personalization-upgrade.sql`:
 - `user_events (id, user_id, type, target_type, target_id, meta, created_at)` — chỉ ghi thêm, xóa sau **90 ngày** (worker hằng ngày).
@@ -701,7 +701,7 @@ Migration `personalization-upgrade.sql`:
 |---|---|
 | Đăng bài / tải tài liệu lên | 5 |
 | Lưu bài · vào nhóm học (không suy giảm) | 4 |
-| Bình luận · hỏi PU AI nhắc tên/mã môn · tải tài liệu | 3 |
+| Bình luận · hỏi N7AI nhắc tên/mã môn · tải tài liệu | 3 |
 | Bấm kết quả tìm kiếm | 2 |
 | Mở bài / tài liệu · tìm kiếm | 1.5 |
 | Thả cảm xúc · bấm gợi ý AI · sở thích/kỹ năng hồ sơ | 1 |
@@ -709,27 +709,27 @@ Migration `personalization-upgrade.sql`:
 
 `điểm = Σ trọng số × 0.5^(tuổi_ngày / 14)` (nửa đời 14 ngày, chỉ xét 180 ngày). Tính lại: worker `personalization` (BullMQ job scheduler) mỗi giờ cho người hoạt động trong 24h có hồ sơ cũ > 1h (≤ 500 người/lượt); hoặc ngay khi xin gợi ý mà hồ sơ cũ > 6h.
 
-**Gợi ý PU AI** — `GET /api/ai/suggestions?mode=` → `{ personalized, items: [{ mode, text, topic }] }`: top chủ đề (bỏ trùng, ≤ 1 từ khóa tìm kiếm) × mẫu câu theo chế độ (`ai-suggestions.templates.ts`); "Hỏi đáp" trộn Giải thích / Quiz / Flashcard / Lộ trình; thiếu thì bù gợi ý mặc định (trước đây viết cứng ở web). Web cache 10 phút/chế độ.
+**Gợi ý N7AI** — `GET /api/ai/suggestions?mode=` → `{ personalized, items: [{ mode, text, topic }] }`: top chủ đề (bỏ trùng, ≤ 1 từ khóa tìm kiếm) × mẫu câu theo chế độ (`ai-suggestions.templates.ts`); "Hỏi đáp" trộn Giải thích / Quiz / Flashcard / Lộ trình; thiếu thì bù gợi ý mặc định (trước đây viết cứng ở web). Web cache 10 phút/chế độ.
 - Màn trống: thẻ gợi ý đổi theo chip chế độ đang chọn; bấm ⇒ điền sẵn để sửa.
 - Đang có tin: chọn chế độ ⇒ bảng gợi ý trên ô soạn (2 hàng chip), bấm ⇒ gửi ngay.
 - Bấm gợi ý ghi `ai_suggestion_click` ⇒ chủ đề đó mạnh lên (vòng phản hồi).
 
-**Câu hỏi tiếp theo** (`puai.followups.ts`): hội thoại PU AI riêng thêm chỉ dẫn viết 3 câu hỏi sau dấu mốc `<<<FOLLOWUPS>>>` trong **cùng lượt gọi**. `FollowUpSplitter` giữ lại đuôi có thể là đầu dấu mốc ⇒ client không bao giờ thấy dấu mốc; phần sau mốc lưu `messages.meta.followUps` (bỏ khi bị cắt do dài / lọc nội dung). Web hiện chip dưới câu trả lời AI cuối, bấm ⇒ gửi.
+**Câu hỏi tiếp theo** (`n7ai.followups.ts`): hội thoại N7AI riêng thêm chỉ dẫn viết 3 câu hỏi sau dấu mốc `<<<FOLLOWUPS>>>` trong **cùng lượt gọi**. `FollowUpSplitter` giữ lại đuôi có thể là đầu dấu mốc ⇒ client không bao giờ thấy dấu mốc; phần sau mốc lưu `messages.meta.followUps` (bỏ khi bị cắt do dài / lọc nội dung). Web hiện chip dưới câu trả lời AI cuối, bấm ⇒ gửi.
 
 **Bảng tin**: điểm For You cộng `0..40 × (Σ điểm chủ đề khớp bài / điểm chủ đề mạnh nhất)` (`interestBoostSql`, khớp môn hoặc tag).
 
 **Quyền riêng tư**: `privacySettings.personalization` (mặc định bật, công tắc "Cá nhân hóa gợi ý"). Tắt ⇒ server không ghi sự kiện, `UserEventsService.forget` xóa `user_events` + `user_interests`, gợi ý về mặc định. `search_logs` vẫn ẩn danh như cũ (thống kê từ khóa cho admin).
 
-**Soi dữ liệu 1 người**: trang `/admin` → tab Người dùng → nút ⚡ (`GET /api/admin/users/:id/insight`, `UserInsightService` chỉ đọc, ghi audit `user.insight_view`; gợi ý xem trước dùng `AiSuggestionsService.fromTopics` trên hồ sơ đang lưu). CLI: `pnpm user:insight <username> [--local]` (`scripts/ops/user-insight.sh` + `sql/user-insight.sql`, chỉ đọc) — hồ sơ, cờ, `user_interests` (top 12 = thứ gợi ý AI dùng), số tín hiệu nguồn, 30 sự kiện gần nhất, câu hỏi PU AI kèm môn nhận diện.
+**Soi dữ liệu 1 người**: trang `/admin` → tab Người dùng → nút ⚡ (`GET /api/admin/users/:id/insight`, `UserInsightService` chỉ đọc, ghi audit `user.insight_view`; gợi ý xem trước dùng `AiSuggestionsService.fromTopics` trên hồ sơ đang lưu). CLI: `pnpm user:insight <username> [--local]` (`scripts/ops/user-insight.sh` + `sql/user-insight.sql`, chỉ đọc) — hồ sơ, cờ, `user_interests` (top 12 = thứ gợi ý AI dùng), số tín hiệu nguồn, 30 sự kiện gần nhất, câu hỏi N7AI kèm môn nhận diện.
 
 Chưa làm: đo CTR theo `ai_suggestion_shown` / xếp hạng bằng bandit; nhờ LLM viết lại câu gợi ý; partition `user_events` theo tháng (khi bảng lớn).
 
-## 20. Mention chat · PU AI nhiều hội thoại · slash skills · menu `+` (2026-10-16)
+## 20. Mention chat · N7AI nhiều hội thoại · slash skills · menu `+` (2026-10-16)
 
 Chi tiết thiết kế & quyết định: [`09-chat-mention-ai-threads-skills.md`](./09-chat-mention-ai-threads-skills.md). Tóm tắt:
 
 - **Mention nhóm** (`message_mentions`): chỉ khớp thành viên đang ở nhóm; `@all` chỉ trưởng nhóm; badge `@` + nút nhảy tới tin; người bị nhắc nhận push kể cả khi tắt tiếng; sửa tin tính lại mention.
-- **Ngữ cảnh** (`refs` ≤ 5 / tin): học phần, tài liệu (đọc `document_chunks`), bài viết, hội thoại PU AI của mình (chỉ trong thread AI); kiểm quyền khi gửi, PU AI ghim trước nguồn truy xuất.
-- **PU AI nhiều thread**: `ai/threads` (keyset, tìm tiêu đề, đổi tên, xóa), "Chat mới" dùng lại thread rỗng, tiêu đề tự đặt từ câu hỏi đầu, danh sách chính chỉ giữ thread đại diện (2026-10-17: bỏ hẳn — thread AI sang không gian riêng `/puai`, xem `core/11`); **tóm tắt cuộn** `conversations.ai_summary` khi > 24 tin sau mốc.
+- **Ngữ cảnh** (`refs` ≤ 5 / tin): học phần, tài liệu (đọc `document_chunks`), bài viết, hội thoại N7AI của mình (chỉ trong thread AI); kiểm quyền khi gửi, N7AI ghim trước nguồn truy xuất.
+- **N7AI nhiều thread**: `ai/threads` (keyset, tìm tiêu đề, đổi tên, xóa), "Chat mới" dùng lại thread rỗng, tiêu đề tự đặt từ câu hỏi đầu, danh sách chính chỉ giữ thread đại diện (2026-10-17: bỏ hẳn — thread AI sang không gian riêng `/n7ai`, xem `core/11`); **tóm tắt cuộn** `conversations.ai_summary` khi > 24 tin sau mốc.
 - **Skill** (`ai_skills`, ≤ 30 / người): lệnh `/slug` cộng chỉ dẫn vào system prompt; 6 chế độ học vẫn là `aiMode`.
 - **Connector** (Thư viện PU · Tài liệu của tôi · Nhóm học) + **Research** (truy xuất sâu, prompt báo cáo, 2 lượt). Nhóm chat chỉ dùng Thư viện PU.

@@ -206,7 +206,7 @@ flowchart LR
 | `user_follow` | Theo dõi bạn | `user_follow` | `/{username}` |
 | `accepted_solution` | Được chọn làm lời giải | — | `/post/{id}?comment={cid}` |
 | `account_verified` | Được cấp tích xanh sau xác thực email trường | — | `/{username}` |
-| `ai_reply` | (enum đã có, dùng ở P3 `@puai`) | — | — |
+| `ai_reply` | (enum đã có, dùng ở P3 `@n7ai`) | — | — |
 
 Các loại khác trong ma trận mục 3 bật khi có tính năng tương ứng (trang nhóm, theo dõi môn, thông báo nhà trường…).
 

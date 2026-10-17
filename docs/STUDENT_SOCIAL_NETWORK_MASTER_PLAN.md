@@ -219,7 +219,7 @@ Khả năng tìm kiếm tổng hợp trên mọi thực thể của nền tảng
 
 ### 13. 🤖 AI Layer (Lớp Trí Tuệ Nhân Tạo Thông Minh)
 Lợi thế tạo nên sự đột phá cho mạng xã hội sinh viên:
-* **PU AI Study Assistant (RAG Engine)**:
+* **N7AI Study Assistant (RAG Engine)**:
   * Trích xuất và lập chỉ mục nội dung từ slide, giáo trình, đề thi cũ trong Knowledge Vault bằng `pgvector`.
   * Trả lời thắc mắc môn học dựa trên tài liệu chính thống của trường.
   * Tóm tắt bài giảng (Summarize) và sinh câu hỏi trắc nghiệm ôn tập (Quiz Generator).

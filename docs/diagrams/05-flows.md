@@ -247,18 +247,18 @@ sequenceDiagram
   A-->>W: courses · documents · posts · users · groups
 ```
 
-## 5.7. Nhắn tin & PU AI
+## 5.7. Nhắn tin & N7AI
 
 ```mermaid
 sequenceDiagram
   autonumber
   actor U as Người dùng
-  participant W as Web (/messages/[id] · /puai/[id])
+  participant W as Web (/messages/[id] · /n7ai/[id])
   participant A as MessagesController
   participant S as MessagesService
   participant DB as Postgres
   participant RT as RealtimeGateway
-  participant P as PuaiService
+  participant P as N7AiService
   participant L as LLM gateway
 
   W->>W: hiện tin lạc quan (clientMsgId)
@@ -269,9 +269,9 @@ sequenceDiagram
   A-->>W: 201 ChatMessage (thay tin lạc quan)
   S->>RT: message.new → user:{memberId} mỗi thành viên · ai.thread.updated (tiêu đề tự đặt)
   S-)S: ChatPushService.onNewMessage(mentionedIds) — người bị nhắc vượt tắt tiếng
-  alt type = 'ai' hoặc (type = 'group' và có @puai / chế độ / skill / Research)
+  alt type = 'ai' hoặc (type = 'group' và có @n7ai / chế độ / skill / Research)
     S-)P: reply(triggerId) chạy nền
-    P->>DB: quota ai_runs hôm nay (Research = 2 lượt) · INSERT tin @puai (status=streaming)
+    P->>DB: quota ai_runs hôm nay (Research = 2 lượt) · INSERT tin @n7ai (status=streaming)
     P->>RT: message.new (placeholder)
     P->>DB: refs ghim (môn/tài liệu+chunks/bài/thread) ∥ connector: Thư viện PU · Tài liệu của tôi · Nhóm học (nhóm chat: chỉ Thư viện)
     P->>L: chat.completions stream (system + chế độ + Research + skill + tóm tắt cuộn, lịch sử sau mốc reset/tóm tắt, <context>, ảnh base64)
@@ -308,13 +308,13 @@ sequenceDiagram
 ```
 
 **Changelog:**
-- 2026-10-17 — 5.7: thread PU AI mở ở `/puai/[id]` (Web Push trỏ đúng không gian AI).
+- 2026-10-17 — 5.7: thread N7AI mở ở `/n7ai/[id]` (Web Push trỏ đúng không gian AI).
 - 2026-10-16 — 5.7: mention trong nhóm (`message_mentions`, push vượt tắt tiếng), ngữ cảnh `refs`, skill, Research, connector, tóm tắt cuộn, tiêu đề thread AI.
 - 2026-10-14 — 5.4: cộng điểm khớp hồ sơ quan tâm (`interestBoostSql`, chuẩn hóa theo chủ đề mạnh nhất).
-- 2026-10-14 — 5.7: PU AI viết câu hỏi tiếp theo sau dấu mốc `<<<FOLLOWUPS>>>` trong cùng luồng stream; server giấu khỏi delta, lưu `meta.followUps`.
-- 2026-10-13 — 5.7: `@puai` trong nhóm, chế độ học, ảnh đính kèm, kiểm tra tệp.
+- 2026-10-14 — 5.7: N7AI viết câu hỏi tiếp theo sau dấu mốc `<<<FOLLOWUPS>>>` trong cùng luồng stream; server giấu khỏi delta, lưu `meta.followUps`.
+- 2026-10-13 — 5.7: `@n7ai` trong nhóm, chế độ học, ảnh đính kèm, kiểm tra tệp.
 - 2026-10-16 — 5.4 thêm snapshot `before` + featured comment; thêm 5.4b Pill "bài mới".
-- 2026-10-13 — thêm 5.7 Nhắn tin & PU AI, 5.8 Khóa tài khoản.
+- 2026-10-13 — thêm 5.7 Nhắn tin & N7AI, 5.8 Khóa tài khoản.
 - 2026-10-04 — thêm 5.6 Tìm kiếm.
 - 2026-10-04 — thêm 5.1b Quên mật khẩu.
 - 2026-10-04 — thêm 5.5 Web Push qua BullMQ.

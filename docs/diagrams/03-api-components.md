@@ -19,9 +19,9 @@ flowchart TB
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
-    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>Puai (stream · vision) · AiThreads · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
+    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
     ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval · prompts"]
-    perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý PU AI · worker BullMQ"]
+    perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
   end
 
   subgraph Platform["Platform modules"]
@@ -49,7 +49,7 @@ flowchart TB
   chat -->|emitToUser message.*| rt
   chat -->|chat-push: sendToUser| push
   chat --> ai
-  posts -->|PostAiService: @puai trong bình luận · tóm tắt bài| ai
+  posts -->|PostAiService: @n7ai trong bình luận · tóm tắt bài| ai
   ai -->|chat/completions| llm["LLM gateway"]
   ai -->|AiConnectorsController · GoogleOAuth → Drive / Calendar| gdrive["Google Drive / Calendar"]
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
@@ -81,7 +81,7 @@ flowchart TB
 |---|---|
 | Auth | `GET auth/providers` · `POST auth/check-email` · `POST auth/register` · `POST auth/login` · `GET auth/me` · `POST auth/logout` · `GET auth/google` · `GET auth/google/callback` · `POST auth/verify-email` · `POST auth/forgot-password` · `POST auth/reset-password` · `POST auth/resend-verification` · `POST auth/onboarding` |
 | Users | `GET users/suggestions` · `GET users/:username/activity/:type` · `GET users/:username` · `PATCH users/profile` · `PATCH users/privacy` · `PATCH users/preferences` (feature plugs) · `POST users/verify-university` |
-| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`, `before`/`after` = cửa sổ snapshot; mỗi bài kèm `featuredComment`) · `GET posts/new-since?since=` (pill "bài mới") · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` · `POST posts/:id/summary` (PU AI, có cache) |
+| Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`, `before`/`after` = cửa sổ snapshot; mỗi bài kèm `featuredComment`) · `GET posts/new-since?since=` (pill "bài mới") · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` · `POST posts/:id/summary` (N7AI, có cache) |
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `PATCH comments/:id` · `DELETE comments/:id` |
 | Mentions | `GET mentions/suggest` |
 | Communities | `GET communities` · `GET communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` |
@@ -114,21 +114,22 @@ flowchart TB
 | Server → client | `notification.read` | `{ ids?, all?, unreadCount }` — đồng bộ đã đọc giữa các tab |
 | Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
 | Server → client | `message.new` · `message.updated` | `ChatMessage` tới room `user:{id}` của mọi thành viên |
-| Server → client | `message.delta` | `{ conversationId, messageId, delta }` — PU AI trả lời dần |
+| Server → client | `message.delta` | `{ conversationId, messageId, delta }` — N7AI trả lời dần |
 | Server → client | `conv.read` · `conv.updated` · `conv.removed` | đã đọc `{conversationId, userId, lastReadMessageId}` (mọi thành viên) · đổi tên/thành viên · bị xóa khỏi nhóm |
 | Server → client | `conv.read` · `conv.updated` | đồng bộ đã đọc / hội thoại mới giữa các tab |
-| Server → client | `ai.thread.updated` | `AiThread` tới chủ thread khi tự đặt / đổi tên (vá cache lịch sử PU AI) |
+| Server → client | `ai.thread.updated` | `AiThread` tới chủ thread khi tự đặt / đổi tên (vá cache lịch sử N7AI) |
 | Server → client | `presence.update` | `{ userId, online, lastSeenAt }` tới người cùng hội thoại (không chặn nhau, cả hai bật `showActivityStatus`) |
-| Server → client | `comments.changed` | `{ postId }` tới người gọi @puai khi PU AI đã trả lời bình luận |
+| Server → client | `comments.changed` | `{ postId }` tới người gọi @n7ai khi N7AI đã trả lời bình luận |
 | Server → client | `block.changed` | `{ userId }` tới cả 2 phía khi chặn / bỏ chặn ⇒ web làm mới hồ sơ, feed, hội thoại |
 | Server → client | `feed:new_post` | `{ postId, authorId }` tới follower khi có bài mới — chỉ là tín hiệu, web gọi `GET posts/new-since` để lấy số thật |
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
-- 2026-10-17 — `AiSkillDraftService`: `POST ai/skills/draft` (PU AI viết bản nháp skill, không lưu, 1 lượt); thư viện skill trả `official` (skill của @puai, seed `ai-skills-seed.sql`).
-- 2026-10-17 — Mở rộng `AdminModule` với phân quyền RBAC 15 quyền (`@RequireAdminPermission`), quản lý bài viết/ghim, xóa bình luận, đổi role/verify/revoke-sessions, PU AI telemetry (`admin/ai/overview`, `admin/ai/tickets/:id`, `admin/ai/skills`), quản lý học phần/tài liệu/cộng đồng, top searches và phát thông báo hệ thống (`admin/broadcast`).
-- 2026-10-17 — `AiLibraryController` `GET ai/library`; `GET conversations` & `unread-count` bỏ thread AI; push PU AI ⇒ `/puai/:id`; callback Google connector ⇒ `/puai/settings/connectors`.
-- 2026-10-16 — Cài đặt PU AI: `AiSettingsController` (`ai/settings`, `ai/memories`, `ai/tasks`, `ai/messages/:id/feedback`, `ai/support`, `ai/usage`, `ai/data`), `AiAdminController` `GET admin/ai-feedback`, `PATCH ai/skills/:id/state`; queue BullMQ `ai-maintenance` (tác vụ tự động 5 phút, dọn lịch sử hằng ngày); `WebReaderService` (connector `web`, `web_search`).
+- 2026-10-17 — Đổi tên PU AI → N7AI: thư mục `chat/n7ai/` (`N7AiService`, `N7AiController`, `dto/n7ai.dto.ts`), bot `@n7ai` (nhận cả `@puai` cũ), migration `n7ai-rename-upgrade.sql`.
+- 2026-10-17 — `AiSkillDraftService`: `POST ai/skills/draft` (N7AI viết bản nháp skill, không lưu, 1 lượt); thư viện skill trả `official` (skill của @n7ai, seed `ai-skills-seed.sql`).
+- 2026-10-17 — Mở rộng `AdminModule` với phân quyền RBAC 15 quyền (`@RequireAdminPermission`), quản lý bài viết/ghim, xóa bình luận, đổi role/verify/revoke-sessions, N7AI telemetry (`admin/ai/overview`, `admin/ai/tickets/:id`, `admin/ai/skills`), quản lý học phần/tài liệu/cộng đồng, top searches và phát thông báo hệ thống (`admin/broadcast`).
+- 2026-10-17 — `AiLibraryController` `GET ai/library`; `GET conversations` & `unread-count` bỏ thread AI; push N7AI ⇒ `/n7ai/:id`; callback Google connector ⇒ `/n7ai/settings/connectors`.
+- 2026-10-16 — Cài đặt N7AI: `AiSettingsController` (`ai/settings`, `ai/memories`, `ai/tasks`, `ai/messages/:id/feedback`, `ai/support`, `ai/usage`, `ai/data`), `AiAdminController` `GET admin/ai-feedback`, `PATCH ai/skills/:id/state`; queue BullMQ `ai-maintenance` (tác vụ tự động 5 phút, dọn lịch sử hằng ngày); `WebReaderService` (connector `web`, `web_search`).
 - 2026-10-16 — `ConnectorCallbackMiddleware` trên `GET auth/google/callback`: connector Google dùng chung redirect URI đăng nhập (phân biệt bằng `state` trong session).
 - 2026-10-16 — `GoogleOAuthService` dùng chung + `GoogleCalendarService`; thư viện skill công khai (`ai/skills/library`, `install`); `ai/threads?q=` tìm cả nội dung; xóa thread dọn tệp R2 (`StorageService.deleteObjects`).
 - 2026-10-16 — AiModule: `AiConnectorsController` + `GoogleDriveService` (OAuth `drive.readonly`, token AES-256-GCM trong `user_connectors`), `AiRetrieval` thêm connector `google_drive`; `ai/doc-text.ts` dùng chung trích chữ PDF/DOCX/txt.
@@ -139,19 +140,19 @@ flowchart TB
 - 2026-10-16 — Users: `PATCH users/preferences` (cột `users.preferences`); `GET posts` bỏ query featured comment khi người xem tắt cờ.
 - 2026-10-16 — Posts: `featuredComment` trong feed (`featured-comment.sql.ts`), `GET posts/new-since`, cửa sổ `before`/`after` cho `GET posts`; Posts → Realtime: `emitToUsers` event `feed:new_post`.
 - 2026-10-14 — Admin → Personalization: `GET admin/users/:id/insight` (dữ liệu cá nhân hóa 1 người, chỉ đọc, ghi `user.insight_view`).
-- 2026-10-14 — PersonalizationModule: `POST events`, `GET ai/suggestions`, worker `personalization` (BullMQ job scheduler); feed For You cộng điểm khớp `user_interests`; PU AI trả kèm câu hỏi gợi ý tiếp theo (`meta.followUps`).
+- 2026-10-14 — PersonalizationModule: `POST events`, `GET ai/suggestions`, worker `personalization` (BullMQ job scheduler); feed For You cộng điểm khớp `user_interests`; N7AI trả kèm câu hỏi gợi ý tiếp theo (`meta.followUps`).
 - 2026-10-14 — `GET conversations` phân trang keyset + lọc ở server.
-- 2026-10-14 — `POST posts/:id/summary` (tóm tắt bài bằng PU AI, lưu `post_summaries`).
-- 2026-10-14 — AiModule (LlmService, AiRetrieval) tách khỏi Chat; Posts → Ai: `PostAiService` trả lời @puai trong bình luận, event `comments.changed`.
+- 2026-10-14 — `POST posts/:id/summary` (tóm tắt bài bằng N7AI, lưu `post_summaries`).
+- 2026-10-14 — AiModule (LlmService, AiRetrieval) tách khỏi Chat; Posts → Ai: `PostAiService` trả lời @n7ai trong bình luận, event `comments.changed`.
 - 2026-10-14 — PresenceModule: gateway đếm socket theo user (`isOnline`, `onPresenceChange`), `GET presence`, event `presence.update`.
 - 2026-10-14 — BlocksModule: `GET/PUT/DELETE blocks`, event `block.changed`; GraphQL `User.blockState`; hội thoại trả `blockState`.
 - 2026-10-13 — `POST conversations/:id/owner` (chuyển quyền trưởng nhóm).
 - 2026-10-13 — Chat → Push: queue `chat-push` (`ChatPushService` / `ChatPushProcessor`), kênh cài đặt `chat_message`.
-- 2026-10-13 — PuaiService dùng SDK `openai` (gateway OpenAI-compatible).
+- 2026-10-13 — N7AiService dùng SDK `openai` (gateway OpenAI-compatible).
 - 2026-10-13 — StudyGroups → Chat (`StudyGroupChatService`): `POST conversations/study-groups/:groupId`, tự thêm thành viên mới vào nhóm chat.
 - 2026-10-13 — Chat: `GET messages/:id/reactions` (ai đã thả cảm xúc); `PATCH conversations/:id` nhận `avatarKey`.
-- 2026-10-13 — ChatModule tách `chat-core` / `conversations` / `messages` / `puai`; thêm endpoint thành viên, cài đặt, cảm xúc, ghim, sửa, tìm kiếm, kho tệp, reset AI; Storage thêm thư mục `chat`; event `conv.removed`.
-- 2026-10-13 — AdminModule, ChatModule (+ PuaiService), `courses/:id/overview`, lọc `course` cho posts/documents; StudyGroups lưu Postgres; event `message.*`, `typing`; khóa tài khoản chặn login/session/socket.
+- 2026-10-13 — ChatModule tách `chat-core` / `conversations` / `messages` / `n7ai`; thêm endpoint thành viên, cài đặt, cảm xúc, ghim, sửa, tìm kiếm, kho tệp, reset AI; Storage thêm thư mục `chat`; event `conv.removed`.
+- 2026-10-13 — AdminModule, ChatModule (+ N7AiService), `courses/:id/overview`, lọc `course` cho posts/documents; StudyGroups lưu Postgres; event `message.*`, `typing`; khóa tài khoản chặn login/session/socket.
 - 2026-10-04 — Search: unaccent + trigram, `search_logs` (xem [07-search](../core/07-search.md)).
 - 2026-10-04 — Auth: `forgot-password`, `reset-password`.
 - 2026-10-04 — PushModule + QueueModule (BullMQ), endpoint push, event `presence`.

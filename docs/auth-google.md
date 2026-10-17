@@ -60,15 +60,15 @@ Không đặt `SMTP_HOST`: API chỉ ghi link xác thực vào log (`[MailServic
 - Mọi thao tác ghi yêu cầu session (`requireUserId`), không có fallback sang tài khoản khác.
 
 
-## Connector Google Drive & Google Calendar cho PU AI (tùy chọn)
-PU AI đọc được Drive / lịch của người dùng **sau khi họ tự kết nối** (menu `+` › Connectors). Luồng OAuth riêng, tách khỏi đăng nhập, mỗi connector 1 scope chỉ đọc:
+## Connector Google Drive & Google Calendar cho N7AI (tùy chọn)
+N7AI đọc được Drive / lịch của người dùng **sau khi họ tự kết nối** (menu `+` › Connectors). Luồng OAuth riêng, tách khỏi đăng nhập, mỗi connector 1 scope chỉ đọc:
 
-| Connector | Scope | PU AI dùng thế nào |
+| Connector | Scope | N7AI dùng thế nào |
 |---|---|---|
 | Google Drive | `https://www.googleapis.com/auth/drive.readonly` | `files.list` với `fullText contains` (≤ 4 từ khóa) ⇒ đọc 2 file (Research: 4): Docs/Slides xuất `text/plain`, Sheets `text/csv`, PDF/DOCX/txt ≤ 10 MB trích chữ; ≤ 2 500 ký tự/file |
 | Google Calendar | `https://www.googleapis.com/auth/calendar.readonly` | sự kiện lịch chính 14 ngày tới (Research: 30 ngày), giờ Việt Nam ⇒ lập lộ trình ôn quanh lịch bận |
 
-- `GET /api/ai/connectors/{google-drive|google-calendar}/connect` → Google (`access_type=offline`, `prompt=consent`, `state` + provider lưu session) → Google gọi về **chính redirect URI đăng nhập** `GET /api/auth/google/callback`; `ConnectorCallbackMiddleware` nhận ra `state` của phiên connector và xử lý trước passport (state không khớp ⇒ luồng đăng nhập chạy như cũ) → `/puai/settings/connectors?connector=…&result=connected|error`. Đặt `GOOGLE_CONNECTOR_CALLBACK_URL` nếu muốn dùng URI riêng (`/api/ai/connectors/google/callback`).
+- `GET /api/ai/connectors/{google-drive|google-calendar}/connect` → Google (`access_type=offline`, `prompt=consent`, `state` + provider lưu session) → Google gọi về **chính redirect URI đăng nhập** `GET /api/auth/google/callback`; `ConnectorCallbackMiddleware` nhận ra `state` của phiên connector và xử lý trước passport (state không khớp ⇒ luồng đăng nhập chạy như cũ) → `/n7ai/settings/connectors?connector=…&result=connected|error`. Đặt `GOOGLE_CONNECTOR_CALLBACK_URL` nếu muốn dùng URI riêng (`/api/ai/connectors/google/callback`).
 - Refresh token mã hóa **AES-256-GCM** (khóa = SHA-256 của `CONNECTOR_ENCRYPTION_KEY`, mặc định `SESSION_SECRET`) trong bảng `user_connectors`; access token chỉ giữ trong bộ nhớ. Google trả `invalid_grant` (người dùng thu hồi) ⇒ tự xóa kết nối. Ngắt kết nối gọi `oauth2.googleapis.com/revoke`. Nhóm chat không dùng connector Google.
 
 Cấu hình thêm trên Google Cloud Console (cùng OAuth client):
@@ -77,4 +77,4 @@ Cấu hình thêm trên Google Cloud Console (cùng OAuth client):
 3. **Không cần thêm redirect URI** (dùng lại URI đăng nhập đã khai báo). Đã kiểm trên stage 2026-10-16: URI đăng nhập + scope `drive.readonly` được Google chấp nhận (vào màn đăng nhập); URI riêng chưa khai báo thì Google trả `redirect_uri_mismatch`.
 4. Env: `CONNECTOR_ENCRYPTION_KEY` (chuỗi ngẫu nhiên dài; đổi khóa ⇒ người dùng phải kết nối lại).
 
-Kiểm thử: `apps/api/test/google-connectors.e2e-spec.ts` chạy toàn bộ luồng (connect → callback qua URI đăng nhập → lưu token mã hóa → PU AI đọc Drive/Calendar → hết hạn + `invalid_grant` ⇒ tự ngắt → ngắt kết nối gọi revoke; sai scope ⇒ không lưu) với Google API giả lập ở tầng `fetch`.
+Kiểm thử: `apps/api/test/google-connectors.e2e-spec.ts` chạy toàn bộ luồng (connect → callback qua URI đăng nhập → lưu token mã hóa → N7AI đọc Drive/Calendar → hết hạn + `invalid_grant` ⇒ tự ngắt → ngắt kết nối gọi revoke; sai scope ⇒ không lưu) với Google API giả lập ở tầng `fetch`.

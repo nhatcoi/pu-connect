@@ -36,7 +36,7 @@ flowchart LR
   api -->|OAuth drive.readonly · Drive API v3| google
   api -->|SMTP| gmail
   api -->|S3 PutObject| r2
-  api -->|"HTTPS streaming (PU AI)"| claude
+  api -->|"HTTPS streaming (N7AI)"| claude
   api <-->|BullMQ job · worker| redis
   api -->|Web Push VAPID| pushsvc["Push service<br/>FCM · Mozilla · Apple"]
   pushsvc --> sw
@@ -78,10 +78,10 @@ flowchart LR
 
 **Changelog:**
 - 2026-10-17 — Thêm `apps/admin` (`@pu/admin` Vite + React Static SPA) cho `admin-puc.vnhat.dev`.
-- 2026-10-16 — API gọi Google Drive API cho connector PU AI.
+- 2026-10-16 — API gọi Google Drive API cho connector N7AI.
 - 2026-10-13 — `chat-push` thêm job `clear`: push im lặng đóng thông báo OS đã đọc ở thiết bị khác.
 - 2026-10-13 — Redis: thêm queue `chat-push` (Web Push tin nhắn).
 - 2026-10-13 — LLM: gateway OpenAI-compatible thay cho Anthropic API.
-- 2026-10-13 — thêm Anthropic Claude API (PU AI), sự kiện nhắn tin qua Socket.IO.
+- 2026-10-13 — thêm Anthropic Claude API (N7AI), sự kiện nhắn tin qua Socket.IO.
 - 2026-10-04 — thêm Redis/BullMQ, Service Worker và Web Push.
 - 2026-10-04 — tạo mới; Socket.IO chuyển sang `/api/socket.io` có xác thực; session store Postgres.

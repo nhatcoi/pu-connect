@@ -114,7 +114,7 @@ Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ 
   ```json
   { "success": true, "data": [{ "id": "…", "username": "minhtuan_dev", "displayName": "Nguyễn Minh Tuấn", "avatarUrl": null, "isVerified": true, "reason": "participant" }] }
   ```
-  `reason`: `author` · `participant` · `following` · `other`. PU AI (`@puai`) không có trong kết quả — client tự ghim.
+  `reason`: `author` · `participant` · `following` · `other`. N7AI (`@n7ai`) không có trong kết quả — client tự ghim.
 
 ---
 
