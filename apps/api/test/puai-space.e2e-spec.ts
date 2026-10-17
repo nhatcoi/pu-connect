@@ -28,14 +28,18 @@ describe('PU AI space (e2e)', () => {
     return String(res.rows[0].id)
   }
 
-  it('Tin nhắn & badge chưa đọc không gồm thread PU AI', async () => {
+  it('Tin nhắn chỉ giữ 1 thread PU AI chat nhanh (gần nhất, đứng đầu); badge không đếm', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
-    const thread = (await agent.post('/api/ai/threads').expect(200)).body.data
     const bot = (await db.query(`SELECT id FROM users WHERE username = 'puai' AND account_type = 'bot'`)).rows[0].id
+    const old = (await agent.post('/api/ai/threads').expect(200)).body.data
+    await insertMessage(old.id, bot, { kind: 'ai', content: 'Cũ' })
+    const thread = (await agent.post('/api/ai/threads').expect(200)).body.data
     await insertMessage(thread.id, bot, { kind: 'ai', content: 'Xin chào' })
 
-    expect((await agent.get('/api/conversations').expect(200)).body.data.data).toEqual([])
+    const list = (await agent.get('/api/conversations').expect(200)).body.data.data
+    expect(list.map((c: { id: string }) => c.id)).toEqual([thread.id])
+    expect((await agent.post('/api/conversations/ai').expect(200)).body.data.id).toBe(thread.id)
     expect((await agent.get('/api/conversations/unread-count').expect(200)).body.data.total).toBe(0)
     // Mở trực tiếp vẫn được
     expect((await agent.get(`/api/conversations/${thread.id}`).expect(200)).body.data.type).toBe('ai')

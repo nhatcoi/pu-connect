@@ -1,16 +1,19 @@
 import { BadRequestException } from '@nestjs/common'
 import type { ConversationFilter } from '@pu/schemas'
 
-// Thứ tự danh sách: hội thoại đã ghim (theo lúc ghim) → còn lại (theo tin mới nhất)
+// Thứ tự danh sách: PU AI chat nhanh → hội thoại đã ghim (theo lúc ghim) → còn lại (theo tin mới nhất)
 // Khóa keyset (rank, sort_at, id) giảm dần ⇒ so sánh tuple "<" để lấy trang sau
-export const LIST_RANK = `CASE WHEN me.pinned_at IS NOT NULL THEN 1 ELSE 0 END`
-export const LIST_SORT_AT = `COALESCE(me.pinned_at, c.last_message_at, c.created_at)`
+export const LIST_RANK = `CASE WHEN c.type = 'ai' THEN 2 WHEN me.pinned_at IS NOT NULL THEN 1 ELSE 0 END`
+export const LIST_SORT_AT = `CASE WHEN c.type <> 'ai' AND me.pinned_at IS NOT NULL THEN me.pinned_at ELSE COALESCE(c.last_message_at, c.created_at) END`
 
 // Thread PU AI gần nhất: có tin trước, rồi hoạt động gần nhất ($1 = người xem)
 export const LATEST_AI_SQL = `SELECT a.id FROM conversations a WHERE a.type = 'ai' AND a.created_by = $1
   ORDER BY (a.last_message_id IS NULL), COALESCE(a.last_message_at, a.created_at) DESC, a.id DESC LIMIT 1`
 
-// PU AI có không gian riêng (/puai) ⇒ Tin nhắn & badge chưa đọc không gồm thread AI
+// Tin nhắn chỉ giữ 1 thread PU AI "chat nhanh" = thread gần nhất (subquery không tương quan ⇒ InitPlan chạy 1 lần)
+export const LATEST_AI_ONLY = `(c.type <> 'ai' OR c.id = (${LATEST_AI_SQL}))`
+
+// Badge chưa đọc không gồm thread PU AI (câu trả lời cho chính câu mình hỏi)
 export const NOT_AI = `c.type <> 'ai'`
 
 // Lọc ở server ⇒ phân trang đúng cả khi lọc (alias me = thành viên là mình, c = hội thoại)
@@ -36,7 +39,7 @@ export function decodeCursor(raw: string | undefined): ListCursor | null {
   try {
     const [rank, sortAt, id] = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'))
     const valid =
-      [0, 1].includes(rank) && typeof sortAt === 'string' && !Number.isNaN(Date.parse(sortAt)) && typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)
+      [0, 1, 2].includes(rank) && typeof sortAt === 'string' && !Number.isNaN(Date.parse(sortAt)) && typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)
     if (valid) return { rank, sortAt, id }
   } catch {
     // rơi xuống lỗi bên dưới

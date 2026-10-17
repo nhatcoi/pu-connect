@@ -6,7 +6,7 @@ import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 import { SUMMARY_SELECT, mapMemberRow, mapSummaryRow } from '../chat.mapper'
 import type { ListConversationsQuery } from '../dto/chat.dto'
-import { LATEST_AI_SQL, NOT_AI, LIST_FILTERS, LIST_RANK, LIST_SORT_AT, SORT_AT_TEXT, decodeCursor, encodeCursor } from './conversation-list.query'
+import { LATEST_AI_ONLY, LATEST_AI_SQL, NOT_AI, LIST_FILTERS, LIST_RANK, LIST_SORT_AT, SORT_AT_TEXT, decodeCursor, encodeCursor } from './conversation-list.query'
 import { blockExistsSql } from '../../blocks/blocks.sql'
 import { ChatPushService } from '../notify/chat-push.service'
 import { LlmService } from '../../ai/llm.service'
@@ -42,7 +42,7 @@ export class ConversationsService {
       `SELECT k.id, k.rank, ${SORT_AT_TEXT} AS sort_at FROM (
          SELECT c.id, ${LIST_RANK} AS rank, ${LIST_SORT_AT} AS sort_at
          FROM conversation_members me JOIN conversations c ON c.id = me.conversation_id
-         WHERE me.user_id = $1 AND me.left_at IS NULL AND ${NOT_AI} ${LIST_FILTERS[query.filter]}
+         WHERE me.user_id = $1 AND me.left_at IS NULL AND ${LATEST_AI_ONLY} ${LIST_FILTERS[query.filter]}
        ) k ${keyset}
        ORDER BY k.rank DESC, k.sort_at DESC, k.id DESC
        LIMIT $2`,
@@ -113,7 +113,7 @@ export class ConversationsService {
     return this.get(userId, id)
   }
 
-  // Mở PU AI (nhắn bot từ hồ sơ): thread gần nhất, chưa có thì tạo
+  // Mở PU AI chat nhanh (Tin nhắn / nhắn bot từ hồ sơ): thread gần nhất, chưa có thì tạo
   async openAi(userId: string): Promise<ConversationSummary> {
     const res = await this.db.query(LATEST_AI_SQL, [userId])
     return res.rows[0] ? this.get(userId, res.rows[0].id) : this.createAiThread(userId)

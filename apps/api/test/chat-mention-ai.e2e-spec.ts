@@ -70,11 +70,11 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     expect(fresh.id).not.toBe(first.id)
     expect((await agent.post('/api/ai/threads').expect(200)).body.data.id).toBe(fresh.id) // thread rỗng được dùng lại
 
-    // Thread rỗng không nằm trong lịch sử; Tin nhắn không gồm thread AI (không gian /puai riêng)
+    // Thread rỗng không nằm trong lịch sử; Tin nhắn chỉ giữ 1 thread AI chat nhanh (thread có tin)
     const list = await agent.get('/api/ai/threads').expect(200)
     expect(list.body.data.data).toEqual([expect.objectContaining({ id: first.id, title: 'Giải thích đệ quy' })])
     const main = await agent.get('/api/conversations').expect(200)
-    expect(main.body.data.data.filter((c: { type: string }) => c.type === 'ai')).toEqual([])
+    expect(main.body.data.data.filter((c: { type: string }) => c.type === 'ai').map((c: { id: string }) => c.id)).toEqual([first.id])
 
     expect((await agent.get(`/api/ai/threads?q=${encodeURIComponent('de quy')}`).expect(200)).body.data.data).toHaveLength(1)
     expect((await agent.get('/api/ai/threads?q=khong-co').expect(200)).body.data.data).toHaveLength(0)
