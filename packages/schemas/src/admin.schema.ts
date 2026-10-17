@@ -277,11 +277,30 @@ export interface AdminUserQuery {
   pageSize?: number
 }
 
-export interface AdminUserPage {
-  items: AdminUserRow[]
+// Trang dữ liệu phân trang server dùng chung cho mọi danh sách admin
+export interface AdminPage<T> {
+  items: T[]
   total: number
   page: number
   pageSize: number
+  // Giá trị cho bộ lọc (VD: danh sách khoa, loại tài liệu) kèm số lượng
+  facets?: Record<string, { value: string; count: number }[]>
+}
+
+export type AdminUserPage = AdminPage<AdminUserRow>
+
+// ── Thao tác hàng loạt cho nội dung ──
+export const ADMIN_BULK_POST_ACTIONS = ['hide', 'unhide', 'pin', 'unpin', 'dismiss'] as const
+export type AdminBulkPostAction = (typeof ADMIN_BULK_POST_ACTIONS)[number]
+export interface AdminBulkPostInput {
+  ids: string[]
+  action: AdminBulkPostAction
+  reason?: string
+}
+export interface AdminBulkCommentInput {
+  ids: string[]
+  action: 'delete'
+  reason?: string
 }
 
 // Số liệu nhanh cho thanh "phân khúc" đầu trang + giá trị cho bộ lọc

@@ -34,7 +34,8 @@ describe('Admin (e2e)', () => {
     await reporterAgent.post(`/api/posts/${postId}/report`).send({ reason: 'spam', details: 'quảng cáo' })
 
     const reports = await adminAgent.get('/api/admin/reports').expect(200)
-    expect(reports.body.data.some((r: { postId: string }) => r.postId === postId)).toBe(true)
+    expect(reports.body.data.total).toBeGreaterThan(0)
+    expect(reports.body.data.items.some((r: { postId: string }) => r.postId === postId)).toBe(true)
 
     await adminAgent.post(`/api/admin/posts/${postId}/hide`).send({ reason: 'spam' }).expect(200)
 
@@ -48,10 +49,22 @@ describe('Admin (e2e)', () => {
     expect(feed.body.data.some((p: { id: string }) => p.id === postId)).toBe(false)
 
     const logs = await adminAgent.get('/api/admin/audit-logs').expect(200)
-    expect(logs.body.data[0]).toMatchObject({ action: 'post.hide', targetId: postId })
+    expect(logs.body.data.items[0]).toMatchObject({ action: 'post.hide', targetId: postId })
 
     await adminAgent.post(`/api/admin/posts/${postId}/unhide`).expect(200)
     await reporterAgent.get(`/api/posts/${postId}`).expect(200)
+
+    // Hàng loạt: ẩn rồi hiện lại, chạy lần 2 thì không đổi gì
+    const bulk = await adminAgent.post('/api/admin/posts/bulk').send({ ids: [postId], action: 'hide', reason: 'spam' }).expect(200)
+    expect(bulk.body.data).toMatchObject({ affected: 1, skipped: 0 })
+    const again = await adminAgent.post('/api/admin/posts/bulk').send({ ids: [postId], action: 'hide' }).expect(200)
+    expect(again.body.data).toMatchObject({ affected: 0, skipped: 1 })
+    await adminAgent.post('/api/admin/posts/bulk').send({ ids: [postId], action: 'unhide' }).expect(200)
+
+    // Phân trang + lọc
+    const page = await adminAgent.get('/api/admin/posts?pageSize=10&page=1&sort=recent').expect(200)
+    expect(page.body.data).toMatchObject({ page: 1, pageSize: 10 })
+    await adminAgent.get('/api/admin/posts?sort=drop_table').expect(400)
   })
 
   it('khóa tài khoản: hủy phiên đang mở, chặn đăng nhập; mở khóa thì đăng nhập lại được', async () => {

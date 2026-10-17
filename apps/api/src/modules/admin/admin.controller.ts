@@ -2,6 +2,8 @@ import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatu
 import type { Request, Response } from 'express'
 import type {
   AdminBroadcastInput,
+  AdminBulkCommentInput,
+  AdminBulkPostInput,
   AdminBulkUserInput,
   AdminCourseInput,
   AdminModerateSkillInput,
@@ -31,6 +33,27 @@ import { requireUserId } from '../../common/http/current-user'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminService } from './admin.service'
 import { AdminUsersService } from './admin-users.service'
+import { AdminListsService } from './admin-lists.service'
+import {
+  AuditQuerySchema,
+  BulkCommentBodySchema,
+  BulkPostBodySchema,
+  CommentsQuerySchema,
+  CommunitiesQuerySchema,
+  CoursesQuerySchema,
+  DocumentsQuerySchema,
+  PostsQuerySchema,
+  ReportsQuerySchema,
+  SkillsQuerySchema,
+  type AuditQuery,
+  type CommentsQuery,
+  type CommunitiesQuery,
+  type CoursesQuery,
+  type DocumentsQuery,
+  type PostsQuery,
+  type ReportsQuery,
+  type SkillsQuery
+} from './dto/admin-lists.dto'
 
 const toInt = (v: string | undefined, fallback: number) => {
   const n = parseInt(v || '', 10)
@@ -42,7 +65,8 @@ const toInt = (v: string | undefined, fallback: number) => {
 export class AdminController {
   constructor(
     private readonly admin: AdminService,
-    private readonly userAdmin: AdminUsersService
+    private readonly userAdmin: AdminUsersService,
+    private readonly lists: AdminListsService
   ) {}
 
   // Thông tin phiên quản trị & danh sách quyền RBAC hiện tại
@@ -62,14 +86,22 @@ export class AdminController {
   // ── 2. Trust & Safety / Content Moderation ──
   @Get('reports')
   @RequireAdminPermission('moderation:read')
-  reports(@Query('status') status?: string, @Query('limit') limit?: string) {
-    return this.admin.listReports(status === 'resolved' ? 'resolved' : 'pending', toInt(limit, 50))
+  reports(@Query(new ZodValidationPipe(ReportsQuerySchema)) q: ReportsQuery) {
+    return this.lists.reports(q)
   }
 
   @Get('posts')
   @RequireAdminPermission('moderation:read')
-  posts(@Query('q') q?: string, @Query('filter') filter?: string, @Query('limit') limit?: string) {
-    return this.admin.listPosts(q, filter, toInt(limit, 50))
+  posts(@Query(new ZodValidationPipe(PostsQuerySchema)) q: PostsQuery) {
+    return this.lists.posts(q)
+  }
+
+  // Thao tác hàng loạt trên bài viết: ẩn / hiện / ghim / bỏ ghim / bỏ qua báo cáo
+  @Post('posts/bulk')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('moderation:write')
+  postsBulk(@Body(new ZodValidationPipe(BulkPostBodySchema)) body: AdminBulkPostInput, @Req() req: Request) {
+    return this.admin.bulkPosts(requireUserId(req), body)
   }
 
   @Post('posts/:id/hide')
@@ -102,8 +134,15 @@ export class AdminController {
 
   @Get('comments')
   @RequireAdminPermission('moderation:read')
-  comments(@Query('q') q?: string, @Query('limit') limit?: string) {
-    return this.admin.listComments(q, toInt(limit, 50))
+  comments(@Query(new ZodValidationPipe(CommentsQuerySchema)) q: CommentsQuery) {
+    return this.lists.comments(q)
+  }
+
+  @Post('comments/bulk')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('moderation:write')
+  commentsBulk(@Body(new ZodValidationPipe(BulkCommentBodySchema)) body: AdminBulkCommentInput, @Req() req: Request) {
+    return this.admin.bulkComments(requireUserId(req), body)
   }
 
   @Delete('comments/:id')
@@ -233,8 +272,8 @@ export class AdminController {
 
   @Get('ai/skills')
   @RequireAdminPermission('ai:read')
-  aiSkills(@Query('publicOnly') publicOnly?: string, @Query('limit') limit?: string) {
-    return this.admin.listAiSkills(publicOnly === 'true', toInt(limit, 50))
+  aiSkills(@Query(new ZodValidationPipe(SkillsQuerySchema)) q: SkillsQuery) {
+    return this.lists.skills(q)
   }
 
   @Patch('ai/skills/:id')
@@ -250,8 +289,8 @@ export class AdminController {
   // ── 5. Academic, Documents & Communities ──
   @Get('courses')
   @RequireAdminPermission('academic:read')
-  courses(@Query('q') q?: string, @Query('limit') limit?: string) {
-    return this.admin.listCourses(q, toInt(limit, 50))
+  courses(@Query(new ZodValidationPipe(CoursesQuerySchema)) q: CoursesQuery) {
+    return this.lists.courses(q)
   }
 
   @Post('courses')
@@ -272,8 +311,8 @@ export class AdminController {
 
   @Get('documents')
   @RequireAdminPermission('academic:read')
-  documents(@Query('q') q?: string, @Query('limit') limit?: string) {
-    return this.admin.listDocuments(q, toInt(limit, 50))
+  documents(@Query(new ZodValidationPipe(DocumentsQuerySchema)) q: DocumentsQuery) {
+    return this.lists.documents(q)
   }
 
   @Delete('documents/:id')
@@ -288,8 +327,8 @@ export class AdminController {
 
   @Get('communities')
   @RequireAdminPermission('academic:read')
-  communities(@Query('q') q?: string, @Query('limit') limit?: string) {
-    return this.admin.listCommunities(q, toInt(limit, 50))
+  communities(@Query(new ZodValidationPipe(CommunitiesQuerySchema)) q: CommunitiesQuery) {
+    return this.lists.communities(q)
   }
 
   // ── 6. Search Intelligence, Broadcast & Audit Trail ──
@@ -314,7 +353,7 @@ export class AdminController {
 
   @Get('audit-logs')
   @RequireAdminPermission('audit:read')
-  auditLogs(@Query('limit') limit?: string, @Query('action') action?: string) {
-    return this.admin.listAuditLogs(toInt(limit, 100), action)
+  auditLogs(@Query(new ZodValidationPipe(AuditQuerySchema)) q: AuditQuery) {
+    return this.lists.audit(q)
   }
 }
