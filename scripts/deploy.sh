@@ -47,6 +47,7 @@ rsync -avz --delete \
   --exclude 'client_secret*.json' \
   --exclude '*.log' \
   --exclude '.DS_Store' \
+  --exclude '*.local.md' \
   ./ "$VPS_HOST:$VPS_DIR/"
 
 # 3. Setup Remote Environment & Docker PostgreSQL
