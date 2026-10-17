@@ -6,6 +6,9 @@ import { Button } from './button'
 
 const MenuCtx = React.createContext<() => void>(() => {})
 
+// Đóng menu từ phần tử tùy biến bên trong panel
+export const useMenuClose = () => React.useContext(MenuCtx)
+
 // Dropdown menu render qua portal (không bị cắt bởi bảng overflow)
 export function Menu({
   trigger,

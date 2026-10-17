@@ -44,7 +44,14 @@ export const FILTER_OPTIONS: Partial<Record<FilterKey, { label: string; options:
       ['google', 'Google']
     ]
   },
-  reported: { label: 'Báo cáo', options: [['yes', 'Từng bị báo cáo']] }
+  reported: { label: 'Báo cáo', options: [['yes', 'Từng bị báo cáo']] },
+  risk: {
+    label: 'Rủi ro',
+    options: [
+      ['high', 'Cao (≥ 50)'],
+      ['medium', 'Trung bình (25–49)']
+    ]
+  }
 }
 
 export function filterValueLabel(key: FilterKey, value: string): string {
@@ -52,12 +59,13 @@ export function filterValueLabel(key: FilterKey, value: string): string {
 }
 
 // Phân khúc nhanh đầu trang — mỗi phân khúc là 1 bộ lọc định sẵn
-export const SEGMENT_KEYS = ['status', 'activity', 'joined', 'reported'] as const
+export const SEGMENT_KEYS = ['status', 'activity', 'joined', 'reported', 'risk'] as const
 export const SEGMENTS = [
   { id: 'all', label: 'Tất cả', patch: {}, stat: 'total' },
   { id: 'online', label: 'Đang online', patch: { activity: 'online' }, stat: 'online', dot: true },
   { id: 'active', label: 'Hoạt động 24h', patch: { activity: '24h' }, stat: 'active24h' },
   { id: 'new', label: 'Mới 7 ngày', patch: { joined: '7d' }, stat: 'new7d' },
+  { id: 'risk', label: 'Rủi ro cao', patch: { risk: 'high' }, stat: 'highRisk', tone: 'danger' },
   { id: 'reported', label: 'Bị báo cáo', patch: { reported: 'yes' }, stat: 'reported', tone: 'warning' },
   { id: 'restricted', label: 'Bị hạn chế', patch: { status: 'restricted' }, stat: 'restricted', tone: 'warning' },
   { id: 'suspended', label: 'Bị khóa', patch: { status: 'suspended' }, stat: 'suspended', tone: 'danger' },

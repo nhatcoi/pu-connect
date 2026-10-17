@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { SavedViews } from '@/components/list/saved-views'
 import { ListFooter, ListSearch, ParamSelect, useListState, usePaged } from '@/components/list/list-kit'
 import { Bell, History, Send } from 'lucide-react'
 import { toast } from 'sonner'
@@ -46,6 +47,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'user.unverify': 'Gỡ tích xanh',
   'user.revoke_sessions': 'Đăng xuất mọi thiết bị',
   'user.insight_view': 'Xem insight',
+  'user.security_view': 'Xem nhật ký bảo mật',
   'user.note_add': 'Thêm ghi chú',
   'user.note_delete': 'Xóa ghi chú',
   'user.export': 'Xuất danh sách người dùng',
@@ -267,7 +269,7 @@ export function AuditLogsTab() {
 
   return (
     <>
-      <PageHeader title="Nhật ký" description="Mọi thao tác quản trị đều được ghi lại, không sửa được." />
+      <PageHeader title="Nhật ký" description="Mọi thao tác quản trị đều được ghi lại, không sửa được." actions={<SavedViews page="audit" />} />
       <Toolbar>
         <Segmented
           value={state.params.days ?? ''}

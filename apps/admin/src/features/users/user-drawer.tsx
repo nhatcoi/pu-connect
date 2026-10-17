@@ -7,8 +7,9 @@ import { ACTION_LABELS } from '@/tabs/system-ops-tab'
 import { UserActionsMenu, type UserActionHandlers } from './user-actions'
 import { isOnline, useRevokeSanction, useUserDetail, useUserNotes } from './use-users'
 import { durationLabel, SANCTION_LABEL } from './sanction-dialog'
+import { RiskCard, SecurityTab } from './user-security'
 
-type Tab = 'overview' | 'sanctions' | 'moderation' | 'notes'
+type Tab = 'overview' | 'sanctions' | 'security' | 'moderation' | 'notes'
 
 export function UserDrawer({
   userId,
@@ -101,6 +102,7 @@ export function UserDrawer({
               items={[
                 { id: 'overview', label: 'Tổng quan' },
                 { id: 'sanctions', label: 'Xử phạt', count: data.recommendation.strikes || undefined },
+                { id: 'security', label: 'Bảo mật' },
                 { id: 'moderation', label: 'Kiểm duyệt', count: data.moderationLog.length || undefined },
                 { id: 'notes', label: 'Ghi chú', count: data.notes.length || undefined }
               ]}
@@ -110,6 +112,7 @@ export function UserDrawer({
           <div className="p-5">
             {tab === 'overview' && <Overview d={data} onInsight={handlers.onInsight} />}
             {tab === 'sanctions' && <Sanctions d={data} onSanction={() => handlers.onSanction([u])} />}
+            {tab === 'security' && <SecurityTab userId={u.id} onOpenUser={(id) => handlers.onOpen?.(id)} />}
             {tab === 'moderation' && <Moderation d={data} />}
             {tab === 'notes' && <Notes userId={u.id} d={data} />}
           </div>
@@ -171,6 +174,7 @@ function Overview({ d, onInsight }: { d: AdminUserDetail; onInsight?: (id: strin
 
   return (
     <div className="space-y-6">
+      <RiskCard u={u} />
       {u.status === 'suspended' && (
         <div className="flex gap-2.5 rounded-lg border border-red-500/30 bg-red-500/5 p-3 text-sm">
           <Ban className="mt-0.5 size-4 shrink-0 text-danger" />

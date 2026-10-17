@@ -4,6 +4,7 @@ import { BookOpen, Compass, ExternalLink, FileText, Plus, Trash2 } from 'lucide-
 import { toast } from 'sonner'
 import type { AdminCommunityRow, AdminCourseInput, AdminCourseRow, AdminDocumentRow, AdminPermission } from '@pu/schemas'
 import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/lib/api'
+import { SavedViews } from '@/components/list/saved-views'
 import { useHashQuery } from '@/hooks/use-hash-query'
 import {
   Badge,
@@ -60,11 +61,14 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
       <PageHeader
         title="Học thuật"
         actions={
-          canManage && tab === 'courses' ? (
-            <Button variant="primary" onClick={() => setCreateOpen(true)}>
-              <Plus /> Thêm học phần
-            </Button>
-          ) : undefined
+          <>
+            <SavedViews page="academic" />
+            {canManage && tab === 'courses' && (
+              <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                <Plus /> Thêm học phần
+              </Button>
+            )}
+          </>
         }
         tabs={
           <Tabs

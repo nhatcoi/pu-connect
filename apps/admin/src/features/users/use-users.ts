@@ -7,12 +7,13 @@ import type {
   AdminUserNote,
   AdminUserPage,
   AdminUserRole,
-  AdminUserSummary
+  AdminUserSummary,
+  AdminUserSecurity
 } from '@pu/schemas'
 import { adminApi, ROLE_SHORT } from '@/lib/api'
 
 // Khóa bộ lọc gửi lên API (khớp AdminUserQuerySchema)
-export const FILTER_KEYS = ['q', 'role', 'status', 'verified', 'auth', 'activity', 'joined', 'faculty', 'reported'] as const
+export const FILTER_KEYS = ['q', 'role', 'status', 'verified', 'auth', 'activity', 'joined', 'faculty', 'reported', 'risk'] as const
 export const QUERY_KEYS = [...FILTER_KEYS, 'sort', 'dir', 'page', 'pageSize'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
 export type Params = Record<string, string>
@@ -114,5 +115,15 @@ export function useRevokeSanction(userId: string) {
       void qc.invalidateQueries({ queryKey: ['admin'] })
     },
     onError: (err: Error) => toast.error(err.message)
+  })
+}
+
+// Tab Bảo mật: chỉ tải khi mở (mỗi lần xem được ghi audit)
+export function useUserSecurity(id: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['admin', 'users', 'security', id],
+    queryFn: () => adminApi.get<AdminUserSecurity>(`/admin/users/${id}/security`),
+    enabled: !!id && enabled,
+    staleTime: 60_000
   })
 }

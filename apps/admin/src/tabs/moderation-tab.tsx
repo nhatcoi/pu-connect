@@ -31,6 +31,7 @@ import {
   type ListState,
   type Selection
 } from '@/components/list/list-kit'
+import { SavedViews } from '@/components/list/saved-views'
 import { useHashQuery } from '@/hooks/use-hash-query'
 
 const REASON_LABELS: Record<string, string> = {
@@ -78,6 +79,7 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
     <>
       <PageHeader
         title="Kiểm duyệt"
+        actions={<SavedViews page="moderation" />}
         tabs={
           <Tabs
             value={tab}

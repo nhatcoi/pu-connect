@@ -23,6 +23,7 @@ import {
   SortTh,
   Th
 } from '@/components/ui'
+import { SavedViews } from '@/components/list/saved-views'
 import { UserInsightModal } from '@/components/user-insight-modal'
 import { FILTER_OPTIONS, filterValueLabel, SEGMENT_KEYS, SEGMENTS } from './labels'
 import { UserActionsMenu, type UserActionHandlers } from './user-actions'
@@ -76,16 +77,23 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
         title="Người dùng"
         description={summary.data ? `${formatNumber(summary.data.total)} tài khoản · ${formatNumber(summary.data.verified)} đã xác thực` : undefined}
         actions={
-          <a
-            href={apiUrl(`/admin/users/export?${toQueryString(params, FILTER_KEYS)}`)}
-            className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-accent"
-          >
-            <Download className="size-4" /> Xuất CSV
-          </a>
+          <>
+            <SavedViews page="users" />
+            <a
+              href={apiUrl(`/admin/users/export?${toQueryString(params, FILTER_KEYS)}`)}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-border bg-card px-4 text-sm font-medium text-foreground shadow-xs transition-colors hover:bg-accent"
+            >
+              <Download className="size-4" /> Xuất CSV
+            </a>
+          </>
         }
       />
 
-      <Segments summary={summary.data} params={params} onPick={(patch) => setParams({ ...Object.fromEntries(SEGMENT_KEYS.map((k) => [k, undefined])), ...patch })} />
+      <Segments
+        summary={summary.data}
+        params={params}
+        onPick={(patch) => setParams({ ...Object.fromEntries(SEGMENT_KEYS.map((k) => [k, undefined])), ...patch })}
+      />
 
       <Toolbar params={params} setParams={setParams} summary={summary.data} total={list.data?.total} />
 
@@ -113,7 +121,14 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                   </SortTh>
                   <Th>Vai trò</Th>
                   <Th className="hidden xl:table-cell">Khoa</Th>
-                  <SortTh id="reputation" sort={sort} dir={dir} onSort={(s, d) => setParams({ sort: s, dir: d })} align="right" className="hidden lg:table-cell">
+                  <SortTh
+                    id="reputation"
+                    sort={sort}
+                    dir={dir}
+                    onSort={(s, d) => setParams({ sort: s, dir: d })}
+                    align="right"
+                    className="hidden lg:table-cell"
+                  >
                     Uy tín
                   </SortTh>
                   <SortTh id="posts" sort={sort} dir={dir} onSort={(s, d) => setParams({ sort: s, dir: d })} align="right" className="hidden lg:table-cell">
@@ -121,6 +136,9 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                   </SortTh>
                   <SortTh id="reports" sort={sort} dir={dir} onSort={(s, d) => setParams({ sort: s, dir: d })} align="right">
                     Báo cáo
+                  </SortTh>
+                  <SortTh id="risk" sort={sort} dir={dir} onSort={(s, d) => setParams({ sort: s, dir: d })} align="right">
+                    Rủi ro
                   </SortTh>
                   <SortTh id="created" sort={sort} dir={dir} onSort={(s, d) => setParams({ sort: s, dir: d })} className="hidden xl:table-cell">
                     Tham gia
@@ -136,7 +154,11 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                   <tr
                     key={u.id}
                     onClick={() => handlers.onOpen?.(u.id)}
-                    className={cn('cursor-pointer transition-colors hover:bg-accent/60', selected.has(u.id) && 'bg-primary/5', params.user === u.id && 'bg-primary/8')}
+                    className={cn(
+                      'cursor-pointer transition-colors hover:bg-accent/60',
+                      selected.has(u.id) && 'bg-primary/5',
+                      params.user === u.id && 'bg-primary/8'
+                    )}
                   >
                     <td className="pl-4" onClick={(e) => e.stopPropagation()}>
                       <Checkbox label={`Chọn ${u.username}`} checked={selected.has(u.id)} onChange={(on) => toggle(u.id, on)} />
@@ -153,7 +175,13 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                     <td className={cn('px-4 py-2.5 text-right tabular-nums', u.reportCount > 0 ? 'font-semibold text-warning' : 'text-muted-foreground')}>
                       {u.reportCount}
                     </td>
-                    <td className="hidden whitespace-nowrap px-4 py-2.5 text-muted-foreground xl:table-cell" title={new Date(u.createdAt).toLocaleString('vi-VN')}>
+                    <td className="px-4 py-2.5 text-right">
+                      <RiskBadge u={u} />
+                    </td>
+                    <td
+                      className="hidden whitespace-nowrap px-4 py-2.5 text-muted-foreground xl:table-cell"
+                      title={new Date(u.createdAt).toLocaleString('vi-VN')}
+                    >
                       {new Date(u.createdAt).toLocaleDateString('vi-VN')}
                     </td>
                     <td className="whitespace-nowrap px-4 py-2.5">
@@ -181,6 +209,7 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                     <RoleStatus u={u} />
                     <LastSeen at={u.lastSeenAt} />
                     {u.reportCount > 0 && <span className="font-medium text-warning">{u.reportCount} báo cáo</span>}
+                    {u.riskScore > 0 && <RiskBadge u={u} />}
                   </div>
                 </div>
                 <span onClick={(e) => e.stopPropagation()}>
@@ -221,7 +250,12 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
         onSubmit={(v) => actions.mutate({ ids: sanctionTargets.map((u) => u.id), ...v })}
       />
 
-      <UserDrawer userId={params.user || null} selfId={currentUserId} onClose={() => setParams({ user: undefined }, { resetPage: false })} handlers={handlers} />
+      <UserDrawer
+        userId={params.user || null}
+        selfId={currentUserId}
+        onClose={() => setParams({ user: undefined }, { resetPage: false })}
+        handlers={handlers}
+      />
       <UserInsightModal userId={insightId} onClose={() => setInsightId(null)} />
     </>
   )
@@ -256,19 +290,38 @@ function RoleStatus({ u }: { u: AdminUserRow }) {
     <span className="inline-flex flex-wrap items-center gap-1">
       <Badge tone={ROLE_TONE[u.role]}>{ROLE_SHORT[u.role] ?? u.role}</Badge>
       {u.status === 'suspended' && (
-        <span title={[u.suspendedReason, u.suspendedUntil ? `đến ${new Date(u.suspendedUntil).toLocaleString('vi-VN')}` : 'vĩnh viễn'].filter(Boolean).join(' · ')}>
+        <span
+          title={[u.suspendedReason, u.suspendedUntil ? `đến ${new Date(u.suspendedUntil).toLocaleString('vi-VN')}` : 'vĩnh viễn'].filter(Boolean).join(' · ')}
+        >
           <Badge tone="danger" dot>
             Bị khóa{u.suspendedUntil ? ` · ${shortUntil(u.suspendedUntil)}` : ''}
           </Badge>
         </span>
       )}
       {u.isRestricted && (
-        <span title={[u.restrictedReason, u.restrictedUntil ? `đến ${new Date(u.restrictedUntil).toLocaleString('vi-VN')}` : 'vô thời hạn'].filter(Boolean).join(' · ')}>
+        <span
+          title={[u.restrictedReason, u.restrictedUntil ? `đến ${new Date(u.restrictedUntil).toLocaleString('vi-VN')}` : 'vô thời hạn']
+            .filter(Boolean)
+            .join(' · ')}
+        >
           <Badge tone="warning" dot>
             Hạn chế{u.restrictedUntil ? ` · ${shortUntil(u.restrictedUntil)}` : ''}
           </Badge>
         </span>
       )}
+    </span>
+  )
+}
+
+// Điểm rủi ro 0–100: màu theo mức, rê chuột xem lý do
+export function RiskBadge({ u }: { u: AdminUserRow }) {
+  if (!u.riskScore) return <span className="text-xs text-muted-foreground">—</span>
+  const tone = u.riskScore >= 50 ? 'danger' : u.riskScore >= 25 ? 'warning' : 'neutral'
+  return (
+    <span title={u.riskFactors.map((f) => `+${f.points} ${f.label}`).join('\n')}>
+      <Badge tone={tone} className="tabular-nums">
+        {u.riskScore}
+      </Badge>
     </span>
   )
 }
@@ -374,7 +427,7 @@ function Toolbar({
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const popoverKeys = ['status', 'verified', 'activity', 'joined', 'auth', 'reported'] as const
+  const popoverKeys = ['status', 'risk', 'verified', 'activity', 'joined', 'auth', 'reported'] as const
   const activeChips = FILTER_KEYS.filter((k) => k !== 'q' && params[k])
   const advancedCount = [...popoverKeys, 'faculty' as const].filter((k) => params[k]).length
 

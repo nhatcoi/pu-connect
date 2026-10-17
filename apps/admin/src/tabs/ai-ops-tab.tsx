@@ -29,6 +29,7 @@ import {
   SortTh
 } from '@/components/ui'
 import { ListFooter, ListSearch, useListState, usePaged } from '@/components/list/list-kit'
+import { SavedViews } from '@/components/list/saved-views'
 import { useHashQuery } from '@/hooks/use-hash-query'
 
 const REASON_LABEL: Record<string, string> = {
@@ -63,6 +64,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
     <>
       <PageHeader
         title="N7AI"
+        actions={<SavedViews page="ai" />}
         tabs={
           <Tabs
             value={tab}
