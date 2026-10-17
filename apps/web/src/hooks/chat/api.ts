@@ -15,6 +15,7 @@ import type {
   AiQuota,
   AiSkill,
   AiSkillDetail,
+  AiSkillDraft,
   AiSkillInput,
   AiThread,
   AiThreadsPage,
@@ -117,6 +118,7 @@ export const chatApi = {
   // Skill tự tạo (slash command)
   skills: () => unwrap(apiClient<Envelope<AiSkill[]>>('/ai/skills')),
   skill: (id: string) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`)),
+  draftSkill: (prompt: string) => unwrap(apiClient<Envelope<AiSkillDraft>>('/ai/skills/draft', json('POST', { prompt }))),
   createSkill: (body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>('/ai/skills', json('POST', body))),
   updateSkill: (id: string, body: AiSkillInput) => unwrap(apiClient<Envelope<AiSkillDetail>>(`/ai/skills/${id}`, json('PATCH', body))),
   deleteSkill: (id: string) => apiClient(`/ai/skills/${id}`, json('DELETE')),

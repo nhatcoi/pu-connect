@@ -1,31 +1,26 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Check, Download, Loader2, Pencil, Pin, PinOff, Plus, Trash2, Wand2 } from 'lucide-react'
-import { AI_SKILL_LIMIT, AiSkillInputSchema, type AiSkillInput } from '@pu/schemas'
+import React, { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, BadgeCheck, Check, ChevronDown, Download, Loader2, Pencil, Pin, PinOff, Plus, Sparkles, Trash2, Upload, Wand2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { AI_SKILL_LIMIT, AiSkillDraftInputSchema, AiSkillInputSchema, type AiSkillInput } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { useAiSkill, useAiSkillActions, useAiSkills, useSkillLibrary, useSkillState } from '@/hooks/chat'
+import { SKILL_FILE_ACCEPT, SKILL_FILE_MAX_BYTES, parseSkillFile, toSlug } from '@/lib/skill-file'
 import { cn } from '@/lib/utils'
 
-type View = { mode: 'list' } | { mode: 'library' } | { mode: 'edit'; id: string | null }
+// Bản nháp chưa lưu: do PU AI viết hoặc đọc từ tệp ⇒ mở form để xem lại
+type Draft = { input: AiSkillInput; source: 'ai' | 'file' }
+type View = { mode: 'list' } | { mode: 'library' } | { mode: 'ai' } | { mode: 'edit'; id: string | null; draft?: Draft }
 const TITLE = { list: 'Của bạn', library: 'Thư viện' }
 
 const EMPTY: AiSkillInput = { slug: '', name: '', description: '', instructions: '', inputHint: '', isPublic: false }
-
-// Tên → lệnh gợi ý: bỏ dấu, chữ thường, gạch ngang
-const toSlug = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/đ/gi, 'd')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 40)
+const AI_EXAMPLES = ['Chấm bài luận IELTS', 'Giải thích thuật toán kèm code Python', 'Lập kế hoạch học 1 tuần']
 
 // Hộp thoại quản lý skill (mở từ "+" / "/" trong ô soạn tin)
 export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: boolean; onOpenChange: (v: boolean) => void; startWithCreate?: boolean }) {
@@ -37,8 +32,7 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
             <Wand2 className="h-4 w-4 text-primary" /> Skill PU AI
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Lưu chỉ dẫn hay dùng thành lệnh <code>/tên-lệnh</code> cho PU AI (ví dụ: chấm bài theo rubric, giải thích kiểu Feynman). Bật “Chia sẻ” để người khác
-            cài từ thư viện.
+            Chỉ dẫn lưu sẵn, gọi nhanh bằng <code>/lệnh</code>.
           </DialogDescription>
         </DialogHeader>
         {open && <SkillsManager startWithCreate={startWithCreate} />}
@@ -47,20 +41,34 @@ export function SkillsDialog({ open, onOpenChange, startWithCreate }: { open: bo
   )
 }
 
-// Quản lý skill: tab Của bạn / Thư viện ⇄ form tạo / sửa (chỉ dẫn tải khi mở form) — dùng ở hộp thoại & trang Cài đặt
+// Quản lý skill: tab Của bạn / Thư viện ⇄ tạo (tự viết / tệp / PU AI) / sửa — dùng ở hộp thoại & trang Cài đặt
 export function SkillsManager({ startWithCreate }: { startWithCreate?: boolean }) {
-  const [view, setView] = useState<View>(startWithCreate ? { mode: 'edit', id: null } : { mode: 'list' })
-  if (view.mode === 'edit') {
+  const [view, setView] = useState<View>(startWithCreate ? { mode: 'ai' } : { mode: 'list' })
+  // Giữ mô tả đã gõ để "Viết lại" không mất
+  const [aiPrompt, setAiPrompt] = useState('')
+  const toList = () => setView({ mode: 'list' })
+
+  if (view.mode === 'ai' || view.mode === 'edit') {
+    const title = view.mode === 'ai' ? 'Tạo với PU AI' : view.id ? 'Sửa skill' : 'Tạo skill'
     return (
       <div className="space-y-3">
         <button
           type="button"
-          onClick={() => setView({ mode: 'list' })}
+          onClick={toList}
           className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
         >
-          <ArrowLeft className="h-3.5 w-3.5" /> {view.id ? 'Sửa skill' : 'Tạo skill'}
+          <ArrowLeft className="h-3.5 w-3.5" /> {title}
         </button>
-        <SkillForm id={view.id} onDone={() => setView({ mode: 'list' })} />
+        {view.mode === 'ai' ? (
+          <SkillDraftStep
+            prompt={aiPrompt}
+            setPrompt={setAiPrompt}
+            onDraft={(input) => setView({ mode: 'edit', id: null, draft: { input, source: 'ai' } })}
+            onManual={() => setView({ mode: 'edit', id: null })}
+          />
+        ) : (
+          <SkillForm key={view.id ?? 'new'} id={view.id} draft={view.draft} onRedo={() => setView({ mode: 'ai' })} onDone={toList} />
+        )}
       </div>
     )
   }
@@ -78,12 +86,28 @@ export function SkillsManager({ startWithCreate }: { startWithCreate?: boolean }
           </button>
         ))}
       </div>
-      {view.mode === 'list' ? <SkillList onEdit={(id) => setView({ mode: 'edit', id })} /> : <SkillLibrary />}
+      {view.mode === 'list' ? (
+        <SkillList
+          onEdit={(id) => setView({ mode: 'edit', id })}
+          onCreate={(draft) => setView({ mode: 'edit', id: null, draft })}
+          onAi={() => setView({ mode: 'ai' })}
+          onLibrary={() => setView({ mode: 'library' })}
+        />
+      ) : (
+        <SkillLibrary />
+      )}
     </div>
   )
 }
 
-function SkillList({ onEdit }: { onEdit: (id: string | null) => void }) {
+interface SkillListProps {
+  onEdit: (id: string) => void
+  onCreate: (draft?: Draft) => void
+  onAi: () => void
+  onLibrary: () => void
+}
+
+function SkillList({ onEdit, onCreate, onAi, onLibrary }: SkillListProps) {
   const { data: skills, isPending } = useAiSkills()
   const { remove } = useAiSkillActions()
   const state = useSkillState()
@@ -138,20 +162,122 @@ function SkillList({ onEdit }: { onEdit: (id: string | null) => void }) {
           ))}
         </ul>
       ) : (
-        <p className="text-xs text-muted-foreground text-center py-4">Chưa có skill nào.</p>
+        <p className="text-xs text-muted-foreground text-center py-4">
+          Chưa có skill nào.{' '}
+          <button type="button" onClick={onLibrary} className="font-medium text-primary hover:underline cursor-pointer">
+            Xem thư viện
+          </button>
+        </p>
       )}
-      <Button size="sm" className="w-full rounded-full gap-1.5" disabled={(skills?.length ?? 0) >= AI_SKILL_LIMIT} onClick={() => onEdit(null)}>
-        <Plus className="h-3.5 w-3.5" /> Tạo skill
-      </Button>
+      <CreateMenu disabled={(skills?.length ?? 0) >= AI_SKILL_LIMIT} onManual={() => onCreate()} onFile={(input) => onCreate({ input, source: 'file' })} onAi={onAi} />
     </div>
   )
 }
 
-function SkillForm({ id, onDone }: { id: string | null; onDone: () => void }) {
+// Nút "Tạo skill": tự viết / tải tệp .md / nhờ PU AI viết
+function CreateMenu({ disabled, onManual, onFile, onAi }: { disabled: boolean; onManual: () => void; onFile: (input: AiSkillInput) => void; onAi: () => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (file.size > SKILL_FILE_MAX_BYTES) return toast.error('Tệp tối đa 64 KB')
+    onFile(parseSkillFile(await file.text(), file.name))
+  }
+
+  return (
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" className="w-full rounded-full gap-1.5" disabled={disabled}>
+            <Plus className="h-3.5 w-3.5" /> Tạo skill <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="center" className="w-56">
+          <DropdownMenuItem onSelect={onAi}>
+            <Sparkles className="h-4 w-4 text-primary" /> Tạo với PU AI
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onManual}>
+            <Pencil className="h-4 w-4" /> Tự viết
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => fileRef.current?.click()}>
+            <Upload className="h-4 w-4" /> Tải lên tệp .md
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <input ref={fileRef} type="file" accept={SKILL_FILE_ACCEPT} className="hidden" onChange={pick} />
+    </>
+  )
+}
+
+// Tạo với PU AI: mô tả ngắn ⇒ bản nháp ⇒ xem lại ở form
+function SkillDraftStep({
+  prompt,
+  setPrompt,
+  onDraft,
+  onManual
+}: {
+  prompt: string
+  setPrompt: (v: string) => void
+  onDraft: (input: AiSkillInput) => void
+  onManual: () => void
+}) {
+  const { draft } = useAiSkillActions()
+  const [error, setError] = useState<string | null>(null)
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const parsed = AiSkillDraftInputSchema.safeParse({ prompt })
+    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? 'Mô tả chưa hợp lệ')
+    setError(null)
+    draft.mutate(parsed.data.prompt, { onSuccess: (d) => onDraft({ ...d, inputHint: d.inputHint ?? '', isPublic: false }) })
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-3">
+      <Textarea
+        autoFocus
+        rows={4}
+        maxLength={1000}
+        value={prompt}
+        disabled={draft.isPending}
+        onChange={(e) => setPrompt(e.target.value)}
+        placeholder="Bạn muốn PU AI làm gì? VD: chấm bài luận tiếng Anh theo tiêu chí IELTS, chỉ ra lỗi và gợi ý sửa"
+      />
+      <div className="flex flex-wrap gap-1.5">
+        {AI_EXAMPLES.map((ex) => (
+          <button
+            key={ex}
+            type="button"
+            disabled={draft.isPending}
+            onClick={() => setPrompt(ex)}
+            className="h-7 rounded-full bg-muted px-3 text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            {ex}
+          </button>
+        ))}
+      </div>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <Button type="submit" size="sm" className="w-full rounded-full gap-1.5" disabled={draft.isPending}>
+        {draft.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+        {draft.isPending ? 'PU AI đang viết…' : 'Viết bản nháp'}
+      </Button>
+      <p className="text-center text-[11px] text-muted-foreground">
+        Tốn 1 lượt · xem lại trước khi lưu ·{' '}
+        <button type="button" onClick={onManual} className="font-medium text-primary hover:underline cursor-pointer">
+          Tự viết
+        </button>
+      </p>
+    </form>
+  )
+}
+
+function SkillForm({ id, draft, onRedo, onDone }: { id: string | null; draft?: Draft; onRedo: () => void; onDone: () => void }) {
   const { data: detail, isPending } = useAiSkill(id)
   const { create, update } = useAiSkillActions()
-  const [form, setForm] = useState<AiSkillInput>(EMPTY)
-  const [slugEdited, setSlugEdited] = useState(false)
+  const [form, setForm] = useState<AiSkillInput>(draft?.input ?? EMPTY)
+  const [slugEdited, setSlugEdited] = useState(!!draft)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -184,6 +310,17 @@ function SkillForm({ id, onDone }: { id: string | null; onDone: () => void }) {
   if (id && isPending) return <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
   return (
     <form onSubmit={submit} className="space-y-3">
+      {draft && (
+        <div className="flex items-center gap-2 rounded-xl bg-primary/5 px-3 py-2 text-xs">
+          {draft.source === 'ai' ? <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary" /> : <Upload className="h-3.5 w-3.5 shrink-0 text-primary" />}
+          <span className="min-w-0 flex-1 text-muted-foreground">{draft.source === 'ai' ? 'Bản nháp từ PU AI — xem lại rồi lưu' : 'Đọc từ tệp — xem lại rồi lưu'}</span>
+          {draft.source === 'ai' && (
+            <button type="button" onClick={onRedo} className="shrink-0 font-medium text-primary hover:underline cursor-pointer">
+              Viết lại
+            </button>
+          )}
+        </div>
+      )}
       <Field label="Tên">
         <Input
           value={form.name}
@@ -260,9 +397,12 @@ function SkillLibrary() {
           {data.map((s) => (
             <li key={s.id} className="flex items-center gap-2 px-3 py-2">
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{s.name}</span>
+                <span className="flex items-center gap-1 text-sm font-medium">
+                  <span className="truncate">{s.name}</span>
+                  {s.official && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Chính thức" />}
+                </span>
                 <span className="block truncate text-[11px] text-muted-foreground">
-                  /{s.slug} · {s.author.displayName} · {s.installCount} lượt cài
+                  /{s.slug} · {s.official ? 'PU AI' : s.author.displayName} · {s.installCount} lượt cài
                 </span>
                 {s.description && <span className="block truncate text-[11px] text-muted-foreground">{s.description}</span>}
               </span>

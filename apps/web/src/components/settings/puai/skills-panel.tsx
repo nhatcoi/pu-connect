@@ -8,7 +8,7 @@ export function SkillsPanel() {
   return (
     <div className="px-4 pb-5 sm:px-5">
       <p className="pb-3 text-xs leading-relaxed text-muted-foreground">
-        Skill là chỉ dẫn bạn lưu lại để gọi nhanh bằng <code>/tên-lệnh</code>. Ghim để lên đầu menu, tắt để tạm ẩn mà không xóa.
+        Gọi nhanh bằng <code>/lệnh</code>. Ghim để lên đầu, tắt để tạm ẩn.
       </p>
       <SkillsManager />
     </div>

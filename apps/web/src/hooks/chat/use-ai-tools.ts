@@ -46,7 +46,16 @@ export function useAiSkillActions() {
     onSuccess: (_, id) => qc.setQueryData<AiSkill[]>(queryKeys.aiSkills, (old) => old?.filter((s) => s.id !== id)),
     onError
   })
-  return { create, update, install, remove }
+  // Tạo nhanh: PU AI viết bản nháp (tốn 1 lượt ⇒ làm mới lượt dùng)
+  const draft = useMutation({
+    mutationFn: (prompt: string) => chatApi.draftSkill(prompt),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
+      void qc.invalidateQueries({ queryKey: queryKeys.aiUsage })
+    },
+    onError: (err: Error) => toast.error(err.message || 'PU AI chưa viết được skill')
+  })
+  return { create, update, install, remove, draft }
 }
 
 // Thư viện skill công khai (tìm ở server, giữ kết quả cũ khi gõ)
