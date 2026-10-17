@@ -39,6 +39,16 @@ const SECTIONS: LegalSection[] = [
           <strong>Dữ liệu kỹ thuật.</strong> Cookie phiên đăng nhập, trạng thái trực tuyến, tin nhắn đã đọc, cài đặt thông báo và quyền riêng tư, cùng địa chỉ
           đăng ký thông báo đẩy của trình duyệt nếu bạn bật thông báo đẩy.
         </p>
+        <p>
+          <strong>Nhật ký bảo mật.</strong> Thời điểm đăng nhập, đăng xuất, nhập sai mật khẩu, đặt lại mật khẩu, kèm địa chỉ IP và loại thiết bị, trình duyệt.
+          Dùng để phát hiện đăng nhập lạ, dò mật khẩu và tài khoản giả mạo. Bạn xem được nhật ký của chính mình trong Cài đặt › Đăng nhập &amp; Bảo mật. Lưu 90
+          ngày rồi tự xóa.
+        </p>
+        <p>
+          <strong>Lượt xem hồ sơ.</strong> Khi bạn mở trang cá nhân của người khác, hệ thống ghi nhận (gộp theo giờ) bạn đã xem hồ sơ nào. Dữ liệu này{' '}
+          <strong>không hiển thị cho người được xem</strong>, chỉ Ban Quản Trị dùng khi điều tra quấy rối, theo dõi hoặc giả mạo. Mỗi lần quản trị viên xem đều
+          được ghi lại. Lưu 90 ngày rồi tự xóa.
+        </p>
       </>
     )
   },
