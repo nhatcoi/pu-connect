@@ -125,6 +125,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-17 — `AdminUserDataService`: `admin/users/:id/activity`, `admin/users/:id/sessions` (+ DELETE từng phiên), `admin/security-events`; GraphQL `userProfile` ghi `profile_views`. Migration `profile-views-upgrade.sql`.
 - 2026-10-17 — `SecurityLogService` (auth): nhật ký bảo mật + `auth/sessions`, `auth/security-events`; admin `users/:id/security`, `views`; `AdminRiskService` (điểm rủi ro, dọn nhật ký 90 ngày). Migration `admin-security-upgrade.sql`.
 - 2026-10-17 — Chế tài theo bậc: `POST/DELETE admin/users/:id/sanctions`, bulk `warn/restrict/unrestrict/suspend` có thời hạn; `NotRestrictedGuard` (common/guards) trên các handler tạo nội dung; job gỡ chế tài hết hạn trong `AdminUsersService`; thông báo `account_notice`. Migration `admin-sanctions-upgrade.sql`.
 - 2026-10-17 — `AdminListsService` + `admin-paging.ts`: mọi danh sách admin trả `AdminPage<T>` (phân trang server, lọc, sắp xếp, facets); `POST admin/posts/bulk`, `POST admin/comments/bulk`. Migration `admin-lists-upgrade.sql`.
