@@ -6,6 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:fe": "turbo run build --filter=@pu/web",
+    "build:admin": "turbo run build --filter=@pu/admin",
     "build:api": "turbo run build --filter=@pu/api",
     "start": "turbo run start",
     "start:fe": "turbo run start --filter=@pu/web",
@@ -15,6 +16,7 @@
     "user:insight": "bash scripts/ops/user-insight.sh",
     "dev": "turbo run dev",
     "dev:fe": "turbo run dev --filter=@pu/web",
+    "dev:admin": "turbo run dev --filter=@pu/admin",
     "dev:api": "turbo run dev --filter=@pu/api",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",

@@ -39,3 +39,6 @@ Thumbs.db
 dist
 # IDE & tool configs
 .claude/
+
+# Ghi chú local chứa dữ liệu thật (tài khoản, email)
+*.local.md
