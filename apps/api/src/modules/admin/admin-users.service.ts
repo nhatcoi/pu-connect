@@ -60,7 +60,6 @@ const SANCTION_LADDER: { kind: SanctionKind; durationDays: number | null }[] = [
   { kind: 'suspend', durationDays: 30 },
   { kind: 'suspend', durationDays: null }
 ]
-const STRIKE_WINDOW = `INTERVAL '180 days'`
 
 // Đếm theo người — chỉ chạy cho các dòng của trang hiện tại (LATERAL sau LIMIT)
 const COUNT_LATERAL = `
