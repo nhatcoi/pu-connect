@@ -7,6 +7,12 @@ import { WebReaderService } from './connectors/web-reader.service'
 
 export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive' | 'calendar' | 'web'; id: string; title: string; body: string }
 
+// Connector tài khoản ngoài lỗi ⇒ báo N7AI nói rõ (không trả lời như chưa từng kết nối)
+export type ConnectorFailure = { name: string; message: string }
+export type Retrieved = { sources: Source[]; failures: ConnectorFailure[] }
+
+const PROVIDER_NAMES: Record<string, string> = { google_drive: 'Google Drive', google_calendar: 'Google Calendar' }
+
 export interface RetrieveOptions {
   connectors?: AiConnectorId[] // mặc định: ['library']
   research?: boolean // truy xuất sâu hơn (nhiều nguồn, thân dài hơn)
@@ -15,16 +21,34 @@ export interface RetrieveOptions {
 // Bỏ dấu tiếng Việt (khớp cột search_tsv đã unaccent)
 const unaccent = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
-// Từ khóa → tsquery OR tiền tố ('' nếu không có từ nào đủ dài)
+// Hư từ / từ phổ biến (đã bỏ dấu): khớp gần như mọi bài ⇒ bỏ khỏi truy vấn
+// Stopwords (unaccented): match nearly every post ⇒ dropped
+const STOPWORDS = new Set(
+  (
+    'cua minh toi ban la va cho cac nhung mot nhu the nao gi co khong duoc voi trong tu den nay do thi ma se da dang hay hoac cung rat ' +
+    'lam sao giup doc xem hoi oi nhe ve ra vao len khi neu de vi boi nen tai theo sau truoc tren duoi cai con nguoi nhieu it moi hon nhat ' +
+    'roi chua ah a u nha nhi vay day kia ai bao muon can biet noi viet tao dum ho ' +
+    'the and of to in is are for how what why on with my me you can please'
+  ).split(' ')
+)
+const MAX_KEYWORDS = 8
+
+// Từ khóa → tsquery "khớp ≥ 2 từ" (1 từ ⇒ chính nó); từ ≥ 3 ký tự khớp tiền tố
+// Keywords → tsquery requiring ≥ 2 matched terms ('' if none)
 function toTsQuery(question: string): string {
   const words = Array.from(
     new Set(
       unaccent(question)
         .split(/[^a-z0-9]+/)
-        .filter((w) => w.length >= 2)
+        .filter((w) => w.length >= 2 && !STOPWORDS.has(w))
     )
-  ).slice(0, 12)
-  return words.map((w) => `${w}:*`).join(' | ')
+  )
+    .slice(0, MAX_KEYWORDS)
+    .map((w) => (w.length >= 3 ? `${w}:*` : w))
+  if (words.length <= 1) return words.join('')
+  const pairs: string[] = []
+  for (let i = 0; i < words.length; i++) for (let j = i + 1; j < words.length; j++) pairs.push(`(${words[i]} & ${words[j]})`)
+  return pairs.join(' | ')
 }
 
 // Truy xuất nguồn cho N7AI (chat, bình luận): mỗi connector 1 truy vấn, chạy song song
@@ -39,19 +63,20 @@ export class AiRetrieval {
     private readonly web: WebReaderService
   ) {}
 
-  async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Source[]> {
+  async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Retrieved> {
     const connectors = new Set(opts.connectors?.length ? opts.connectors : ['library'])
     const tsquery = toTsQuery(question)
     const research = !!opts.research
     const tasks: Promise<Source[]>[] = []
+    const failures: ConnectorFailure[] = []
     if (connectors.has('library') && tsquery) tasks.push(this.safe('library', () => this.library(tsquery, requesterId, research)))
     if (connectors.has('my_documents') && tsquery) tasks.push(this.safe('my_documents', () => this.myDocuments(tsquery, requesterId, research)))
     if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
     if (connectors.has('web')) tasks.push(this.safe('web', () => this.webPages(question, research)))
     if (connectors.has('web_search')) tasks.push(this.safe('web_search', () => this.webSearch(question, research)))
-    if (connectors.has('google_drive')) tasks.push(this.tracked('google_drive', requesterId, () => this.googleDrive(question, requesterId, research)))
-    if (connectors.has('google_calendar')) tasks.push(this.tracked('google_calendar', requesterId, () => this.googleCalendar(requesterId, research)))
-    return (await Promise.all(tasks)).flat()
+    if (connectors.has('google_drive')) tasks.push(this.tracked('google_drive', requesterId, failures, () => this.googleDrive(question, requesterId, research)))
+    if (connectors.has('google_calendar')) tasks.push(this.tracked('google_calendar', requesterId, failures, () => this.googleCalendar(requesterId, research)))
+    return { sources: (await Promise.all(tasks)).flat(), failures }
   }
 
   // Lỗi 1 connector không làm hỏng câu trả lời
@@ -65,13 +90,14 @@ export class AiRetrieval {
   }
 
   // Connector tài khoản ngoài: ghi lần dùng / lỗi gần nhất (trang Trình kết nối hiển thị)
-  private async tracked(provider: string, userId: string, fn: () => Promise<Source[]>): Promise<Source[]> {
+  private async tracked(provider: string, userId: string, failures: ConnectorFailure[], fn: () => Promise<Source[]>): Promise<Source[]> {
     try {
       const sources = await fn()
       await this.db.query(`UPDATE user_connectors SET last_used_at = NOW(), last_error = NULL WHERE user_id = $1 AND provider = $2`, [userId, provider])
       return sources
     } catch (err: any) {
       this.logger.warn(`Truy xuất ${provider} thất bại: ${err?.message}`)
+      failures.push({ name: PROVIDER_NAMES[provider] ?? provider, message: String(err?.message ?? err).slice(0, 200) })
       await this.db
         .query(`UPDATE user_connectors SET last_error = $3 WHERE user_id = $1 AND provider = $2`, [userId, provider, String(err?.message ?? err).slice(0, 200)])
         .catch(() => undefined)
@@ -168,9 +194,13 @@ export class AiRetrieval {
   }
 }
 
-// Gói nguồn vào khối <context> (dữ liệu, không phải chỉ dẫn)
-export function contextBlock(sources: Source[]): string {
-  if (!sources.length) return ''
-  const body = sources.map((s) => `<data source="${s.type}:${s.id}" title="${s.title.replace(/"/g, "'")}">\n${s.body}\n</data>`).join('\n')
-  return `<context>\n${body}\n</context>\n\n`
+// Gói nguồn vào khối <context> (dữ liệu, không phải chỉ dẫn); n = số thứ tự để N7AI ghi nguồn đã dùng
+// Connector lỗi ⇒ <connector_error> để N7AI báo đúng lý do
+export function contextBlock(sources: Source[], failures: ConnectorFailure[] = []): string {
+  if (!sources.length && !failures.length) return ''
+  const body = sources.map((s, i) => `<data n="${i + 1}" source="${s.type}:${s.id}" title="${attr(s.title)}">\n${s.body}\n</data>`)
+  const errors = failures.map((f) => `<connector_error name="${attr(f.name)}">${f.message}</connector_error>`)
+  return `<context>\n${[...body, ...errors].join('\n')}\n</context>\n\n`
 }
+
+const attr = (s: string) => s.replace(/"/g, "'")

@@ -110,10 +110,10 @@ export class GoogleOAuthService {
     return this.cache(userId, provider, body)
   }
 
-  // GET Google API có Bearer token (lỗi HTTP ⇒ throw, nơi gọi tự bỏ qua nguồn)
+  // GET Google API có Bearer token (lỗi HTTP ⇒ throw lý do dễ hiểu, nơi gọi tự bỏ qua nguồn)
   async get(url: string, token: string): Promise<Response> {
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(TIMEOUT_MS) })
-    if (!res.ok) throw new Error(`Google API HTTP ${res.status}`)
+    if (!res.ok) throw new Error(await googleErrorMessage(res))
     return res
   }
 
@@ -142,4 +142,19 @@ function emailFromIdToken(idToken: string | undefined): string | null {
   } catch {
     return null
   }
+}
+
+// Lỗi Google API ⇒ câu ngắn kèm mã (hiện ở Trình kết nối, N7AI báo lại cho người dùng)
+// Google API error body ⇒ short Vietnamese reason + code
+type GoogleErrorBody = { error?: { status?: string; errors?: { reason?: string }[]; details?: { reason?: string }[] } }
+
+async function googleErrorMessage(res: Response): Promise<string> {
+  const body = (await res.json().catch(() => ({}))) as GoogleErrorBody
+  const reason = body.error?.errors?.[0]?.reason ?? body.error?.details?.find((d) => d.reason)?.reason ?? body.error?.status ?? ''
+  const code = reason ? `${res.status} ${reason}` : String(res.status)
+  if (/accessNotConfigured|SERVICE_DISABLED/i.test(reason)) return `API chưa được bật trong Google Cloud (${code})`
+  if (/insufficientPermissions|SCOPE_INSUFFICIENT/i.test(reason)) return `Thiếu quyền — kết nối lại và tick ô cấp quyền (${code})`
+  if (res.status === 401) return `Phiên Google hết hạn — kết nối lại (${code})`
+  if (res.status === 429 || /rateLimit/i.test(reason)) return `Google đang giới hạn lượt gọi, thử lại sau (${code})`
+  return `Google API lỗi (${code})`
 }

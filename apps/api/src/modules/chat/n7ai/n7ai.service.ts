@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId, AiMode, AiSettings, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatRef } from '@pu/schemas'
 import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripN7AiMention } from '../../ai/ai.constants'
-import { AiRetrieval, contextBlock, type Source } from '../../ai/ai.retrieval'
+import { AiRetrieval, contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
 import { LlmService, MAX_OUTPUT_TOKENS, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg, type LlmUsage } from '../../ai/llm.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
@@ -12,7 +12,7 @@ import { AiMemoriesService } from './ai-memories.service'
 import { AiSettingsService } from './ai-settings.service'
 import { AiSkillsService } from './ai-skills.service'
 import { attachmentParts, isReadableDoc } from './n7ai.attachments'
-import { FOLLOWUP_PROMPT, FollowUpSplitter, MEMORY_PROMPT } from './n7ai.followups'
+import { FOLLOWUP_PROMPT, FollowUpSplitter, MEMORY_PROMPT, SOURCES_PROMPT } from './n7ai.followups'
 import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, profilePrompt, skillPrompt, summaryPrompt } from './n7ai.prompts'
 
 const AI_HISTORY_LIMIT = 20
@@ -34,8 +34,18 @@ type Trigger = {
 
 export type ReplyOutcome = 'done' | 'skipped' | 'error' // skipped = hết lượt hôm nay
 
-// Chỉ post / document có trang để trích nguồn
-const citable = (s: Source) => s.type === 'post' || s.type === 'document'
+// Nguồn hiện được ở "Nguồn tham khảo" (có trang / liên kết); nhóm học, khóa học, thread thì không
+type CitableType = ChatCitation['ref']['type']
+const CITABLE = new Set<Source['type']>(['post', 'document', 'drive', 'calendar', 'web'])
+const isCitable = (s: Source): s is Source & { type: CitableType } => CITABLE.has(s.type)
+
+// Chỉ nguồn N7AI ghi "[nguồn] n" — không phải mọi kết quả tìm được
+function citationsOf(sources: Source[], cited: number[]): ChatCitation[] {
+  return cited
+    .map((n) => sources[n - 1])
+    .filter((s): s is Source & { type: CitableType } => !!s && isCitable(s))
+    .map((s) => ({ type: 'citation', ref: { type: s.type, id: s.id }, title: s.title }))
+}
 
 // N7AI: hội thoại riêng (type='ai') hoặc được @n7ai trong nhóm
 // Ngữ cảnh ghim + nguồn theo connector → gọi LLM OpenAI-compatible (streaming) → đẩy delta qua socket
@@ -131,8 +141,8 @@ export class N7AiService {
     }
 
     const question = stripN7AiMention(trigger.content)
-    const sources = await this.gatherSources(trigger, question, requesterId, settings)
-    const messages = await this.buildMessages(conversationId, botId, trigger, question, sources, settings)
+    const retrieved = await this.gatherSources(trigger, question, requesterId, settings)
+    const messages = await this.buildMessages(conversationId, botId, trigger, question, retrieved, settings)
 
     try {
       const stream = await client.chat.completions.create({
@@ -158,7 +168,7 @@ export class N7AiService {
         if (chunk.usage) usage = chunk.usage
       }
 
-      const { rest, text: answer, followUps, memories } = splitter.finish()
+      const { rest, text: answer, followUps, memories, cited } = splitter.finish()
       if (rest) emit(rest)
       let text = answer.trim()
       if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
@@ -167,9 +177,7 @@ export class N7AiService {
       // Bộ nhớ dài hạn: lưu dữ kiện N7AI vừa rút ra (chỉ khi người dùng bật)
       const remembered =
         settings?.memoryEnabled && memories.length ? await this.memories.saveFromReply(trigger.senderId, placeholder.id, memories).catch(() => []) : []
-      const citations: ChatCitation[] = sources
-        .filter(citable)
-        .map((s) => ({ type: 'citation', ref: { type: s.type as 'post' | 'document', id: s.id }, title: s.title }))
+      const citations = citationsOf(retrieved.sources, cited)
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', {
         ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
         ...(remembered.length ? { memoryUpdated: remembered } : {})
@@ -218,14 +226,14 @@ export class N7AiService {
 
   // Ngữ cảnh ghim (refs) trước, rồi nguồn truy xuất theo connector (bỏ trùng)
   // Nhóm chat: chỉ Thư viện PU — không đưa tài liệu riêng của người hỏi cho cả nhóm
-  private async gatherSources(trigger: Trigger, question: string, requesterId: string, settings: AiSettings | null): Promise<Source[]> {
+  private async gatherSources(trigger: Trigger, question: string, requesterId: string, settings: AiSettings | null): Promise<Retrieved> {
     const connectors: AiConnectorId[] = settings ? (trigger.connectors ?? settings.defaultConnectors) : ['library']
     const [pinned, found] = await Promise.all([
       this.refs.sources(requesterId, trigger.refs),
       this.retrieval.retrieve(question, requesterId, { connectors, research: trigger.research })
     ])
     const seen = new Set(pinned.map((s) => `${s.type}:${s.id}`))
-    return [...pinned, ...found.filter((s) => !seen.has(`${s.type}:${s.id}`))]
+    return { sources: [...pinned, ...found.sources.filter((s) => !seen.has(`${s.type}:${s.id}`))], failures: found.failures }
   }
 
   // System prompt (+ nhóm, chế độ học, Research, skill, trí nhớ) → lịch sử → lượt hỏi hiện tại (nguồn + tệp đính kèm)
@@ -234,7 +242,7 @@ export class N7AiService {
     botId: string,
     trigger: Trigger,
     question: string,
-    sources: Source[],
+    { sources, failures }: Retrieved,
     settings: AiSettings | null
   ): Promise<Msg[]> {
     const inGroup = trigger.type === 'group'
@@ -253,7 +261,8 @@ export class N7AiService {
       (skill ? skillPrompt(skill.name, skill.instructions) : '') +
       (summary ? summaryPrompt(summary) : '') +
       (profile.length ? profilePrompt(profile) : '') +
-      (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : ''))
+      (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : '')) +
+      (sources.length ? SOURCES_PROMPT : '')
 
     const { parts, notes } = await attachmentParts(trigger.attachments)
     // Không gửi kèm tệp ⇒ dùng lại tài liệu gần nhất trong chủ đề (hỏi tiếp về cùng PDF/DOCX)
@@ -268,7 +277,7 @@ export class N7AiService {
     }
     const label = inGroup ? `${trigger.senderName}: ` : ''
     const fileNote = notes.length ? `\n\n(Người dùng có gửi kèm tệp N7AI chưa đọc được: ${notes.join(', ')})` : ''
-    const text = `${contextBlock(sources)}${label}${question || '(Xem tệp đính kèm)'}${fileNote}${docNote}`
+    const text = `${contextBlock(sources, failures)}${label}${question || '(Xem tệp đính kèm)'}${fileNote}${docNote}`
     const current: Msg = { role: 'user', content: parts.length ? [{ type: 'text', text }, ...parts] : text }
 
     return [{ role: 'system', content: system }, ...history, current]

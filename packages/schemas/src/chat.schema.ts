@@ -99,9 +99,10 @@ export interface ChatMember extends ChatUser {
   joinedAt: string
 }
 
+// Nguồn N7AI thực sự dùng: bài / tài liệu PU, tệp Drive (id tệp), lịch Google, trang web (id = URL)
 export interface ChatCitation {
   type: 'citation'
-  ref: { type: 'post' | 'document'; id: string }
+  ref: { type: 'post' | 'document' | 'drive' | 'calendar' | 'web'; id: string }
   title: string
 }
 

@@ -59,7 +59,7 @@ export class PostAiService {
       const ctx = await this.loadContext(comment)
       if (!ctx) return void (await this.llm.failRun(runId, 'post unavailable', started))
       // Bỏ chính bài đang bàn khỏi nguồn (đã có trong <post>)
-      const sources = (await this.retrieval.retrieve(ctx.question || ctx.title, requesterId)).filter((s) => !(s.type === 'post' && s.id === comment.postId))
+      const sources = (await this.retrieval.retrieve(ctx.question || ctx.title, requesterId)).sources.filter((s) => !(s.type === 'post' && s.id === comment.postId))
       const messages: LlmMessage[] = [
         { role: 'system', content: SYSTEM_PROMPT + COMMENT_PROMPT },
         { role: 'user', content: `${postBlock(ctx)}${contextBlock(sources)}${ctx.asker}: ${ctx.question || '(Hãy giải thích bài viết này)'}` }

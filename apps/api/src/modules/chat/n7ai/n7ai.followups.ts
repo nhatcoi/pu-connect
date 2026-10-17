@@ -33,12 +33,12 @@ export class FollowUpSplitter {
     return this.emit(buf.slice(0, buf.length - keep))
   }
 
-  // Kết thúc luồng: phần còn giữ (không phải dấu mốc) + danh sách câu gợi ý
-  finish(): { rest: string; text: string; followUps: string[]; memories: string[] } {
+  // Kết thúc luồng: phần còn giữ (không phải dấu mốc) + câu gợi ý, bộ nhớ, số nguồn đã dùng
+  finish(): { rest: string; text: string; followUps: string[]; memories: string[]; cited: number[] } {
     const rest = this.tail === null ? this.held : ''
     this.visible += rest
     const tail = this.tail ?? ''
-    return { rest, text: this.visible, followUps: parseFollowUps(tail), memories: parseMemories(tail) }
+    return { rest, text: this.visible, followUps: parseFollowUps(tail), memories: parseMemories(tail), cited: parseCited(tail) }
   }
 
   private emit(text: string): string {
@@ -67,10 +67,20 @@ export function parseMemories(raw: string): string[] {
     .slice(0, 2)
 }
 
+// Dòng nguồn sau dấu mốc: "[nguồn] 1, 3" = số n của <data> N7AI thực sự dùng
+const SOURCE_LINE = /^\s*\[ngu[ồo]n\]\s*:?\s*/i
+
+export function parseCited(raw: string): number[] {
+  const line = raw.split('\n').find((l) => SOURCE_LINE.test(l))
+  if (!line) return []
+  const nums = (line.replace(SOURCE_LINE, '').match(/\d+/g) ?? []).map(Number).filter((n) => n >= 1)
+  return Array.from(new Set(nums))
+}
+
 export function parseFollowUps(raw: string): string[] {
   return raw
     .split('\n')
-    .filter((line) => !MEMORY_LINE.test(line))
+    .filter((line) => !MEMORY_LINE.test(line) && !SOURCE_LINE.test(line))
     .map((line) =>
       line
         .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
@@ -85,3 +95,7 @@ export function parseFollowUps(raw: string): string[] {
 // Bộ nhớ dài hạn (chỉ hội thoại riêng, khi người dùng bật): ghi trong cùng lượt, sau dấu mốc
 export const MEMORY_PROMPT = `
 Nếu trong lượt này người học vừa cho biết dữ kiện BỀN về bản thân (ngành, khóa, môn đang học, lịch thi, mục tiêu, cách học ưa thích) mà phần <user_profile> chưa có, viết thêm tối đa 2 dòng dạng "[nhớ] <dữ kiện ngắn gọn, ngôi thứ ba>" ngay sau dòng ${FOLLOWUP_MARKER}, trước các câu hỏi gợi ý. Không ghi thông tin nhạy cảm (sức khỏe, tài chính, mật khẩu, số giấy tờ) hay chi tiết chỉ đúng trong câu hỏi này.`
+
+// Ghi nguồn đã dùng (khi có <context>): chỉ hiện nguồn N7AI thực sự dựa vào, không phải mọi kết quả tìm được
+export const SOURCES_PROMPT = `
+Mỗi nguồn trong <context> có số thứ tự n. Sau khi trả lời, xuống dòng, viết dòng ${FOLLOWUP_MARKER} rồi ngay dòng sau viết "[nguồn] <các số n bạn thực sự dùng để trả lời, cách nhau dấu phẩy>" (trước mọi dòng khác sau dấu mốc). Nguồn không liên quan thì bỏ qua, không nhắc tới trong câu trả lời; không dùng nguồn nào thì không viết dòng [nguồn]. Không ghi số n trong phần trả lời.`
