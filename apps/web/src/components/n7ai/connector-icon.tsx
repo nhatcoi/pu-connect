@@ -13,5 +13,6 @@ const ICONS: Partial<Record<string, string>> = {
 export function ConnectorIcon({ id, className }: { id: string; className?: string }) {
   const src = ICONS[id]
   if (!src) return null
+  // eslint-disable-next-line @next/next/no-img-element -- SVG tĩnh, không cần tối ưu ảnh
   return <img src={src} alt="" aria-hidden className={cn('h-4 w-4 shrink-0 object-contain', className)} />
 }
