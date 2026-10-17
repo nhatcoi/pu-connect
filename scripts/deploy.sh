@@ -121,6 +121,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-skills-share-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/puai-settings-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-skills-seed.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-users-upgrade.sql
 
 # Seed initial users if empty
 USER_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d '[:space:]' || echo "0")
@@ -257,6 +258,11 @@ server {
     }
 
     location / {
+        # index.html không cache ⇒ deploy mới có hiệu lực ngay (assets đã có hash)
+        add_header Cache-Control "no-cache" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
         try_files \$uri \$uri/ /index.html;
     }
 }

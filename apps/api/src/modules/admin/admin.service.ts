@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import type { PoolClient } from 'pg'
 import type {
   AdminAiOverview,
@@ -16,28 +16,20 @@ import type {
   AdminSessionInfo,
   AdminStats,
   AdminTicketStatusInput,
-  AdminUpdateRoleInput,
   AdminUserRole,
-  AdminUserRow,
   TopSearchQuery,
-  UserInsight,
   ZeroResultQuery
 } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { NotificationsService } from '../notifications/notifications.service'
-import { UserInsightService } from '../personalization/user-insight.service'
-import { RealtimeGateway } from '../realtime/realtime.gateway'
+import { type AuditEntry, writeAudit } from './admin-audit'
 import { getRolePermissions } from './dto/admin.dto'
 
-type AuditTargetType = 'post' | 'comment' | 'user' | 'course' | 'document' | 'ai_ticket' | 'ai_skill' | 'system'
-type AuditEntry = { action: string; targetType: AuditTargetType; targetId: string; details?: Record<string, unknown> }
 
 @Injectable()
 export class AdminService {
   constructor(
     private readonly db: DatabaseService,
-    private readonly realtime: RealtimeGateway,
-    private readonly insight: UserInsightService,
     private readonly notifications: NotificationsService
   ) {}
 
@@ -318,172 +310,7 @@ export class AdminService {
     return { deleted: true }
   }
 
-  // ── 3. Users, Identity & RBAC ────────────────────────────────────────────
-
-  async listUsers(q?: string, status?: string, role?: string, limit = 50): Promise<AdminUserRow[]> {
-    const params: unknown[] = []
-    let where = `WHERE u.account_type = 'human'`
-    if (q?.trim()) {
-      params.push(`%${q.trim().toLowerCase()}%`)
-      where += ` AND (LOWER(u.username) LIKE $${params.length} OR LOWER(u.email) LIKE $${params.length} OR LOWER(u.display_name) LIKE $${params.length} OR LOWER(COALESCE(u.student_id, '')) LIKE $${params.length})`
-    }
-    if (status === 'suspended' || status === 'active') {
-      params.push(status)
-      where += ` AND u.status = $${params.length}::account_status_enum`
-    }
-    if (role && ['student', 'lecturer', 'ta', 'club_lead', 'admin'].includes(role)) {
-      params.push(role)
-      where += ` AND u.role = $${params.length}::user_role_enum`
-    }
-    params.push(Math.min(100, Math.max(1, limit)))
-    const res = await this.db.query(
-      `SELECT u.id, u.username, u.display_name, u.email, u.avatar_url, u.role, u.status,
-              u.is_verified, u.student_id, u.faculty, u.reputation_points,
-              u.suspended_at, u.suspended_reason, u.last_seen_at, u.created_at,
-              (SELECT COUNT(*) FROM posts p WHERE p.author_id = u.id)::int AS post_count,
-              (SELECT COUNT(*) FROM post_reports r JOIN posts p ON p.id = r.post_id WHERE p.author_id = u.id)::int AS report_count
-       FROM users u
-       ${where}
-       ORDER BY (u.role = 'admin') DESC, (u.status = 'suspended') DESC, u.created_at DESC
-       LIMIT $${params.length}`,
-      params
-    )
-    return res.rows.map((row) => ({
-      id: row.id,
-      username: row.username,
-      displayName: row.display_name,
-      email: row.email,
-      avatarUrl: row.avatar_url,
-      role: row.role as AdminUserRole,
-      status: row.status,
-      isVerified: !!row.is_verified,
-      studentId: row.student_id,
-      faculty: row.faculty,
-      reputationPoints: row.reputation_points ?? 0,
-      suspendedAt: row.suspended_at ? new Date(row.suspended_at).toISOString() : null,
-      suspendedReason: row.suspended_reason,
-      postCount: row.post_count,
-      reportCount: row.report_count,
-      lastSeenAt: row.last_seen_at ? new Date(row.last_seen_at).toISOString() : null,
-      createdAt: new Date(row.created_at).toISOString()
-    }))
-  }
-
-  // Phân quyền RBAC: cập nhật vai trò người dùng + cập nhật phiên đăng nhập (ACID)
-  async updateUserRole(adminId: string, userId: string, input: AdminUpdateRoleInput): Promise<{ role: AdminUserRole }> {
-    if (adminId === userId && input.role !== 'admin') {
-      throw new BadRequestException('Không thể tự hạ quyền quản trị của chính mình')
-    }
-    await this.db.transaction(async (client) => {
-      const target = await client.query(`SELECT role, account_type FROM users WHERE id = $1 FOR UPDATE`, [userId])
-      if (target.rows.length === 0) throw new NotFoundException('Người dùng không tồn tại')
-      if (target.rows[0].account_type !== 'human') {
-        throw new ForbiddenException('Không thể đổi vai trò của tài khoản hệ thống / AI Bot')
-      }
-      const previousRole = target.rows[0].role as string
-      await client.query(`UPDATE users SET role = $2::user_role_enum, updated_at = NOW() WHERE id = $1`, [userId, input.role])
-      // Đồng bộ role mới vào mọi session đang hoạt động của user đó
-      await client.query(
-        `UPDATE user_sessions
-         SET sess = jsonb_set(sess::jsonb, '{passport,user,role}', to_jsonb($2::text))::json
-         WHERE sess::jsonb #>> '{passport,user,id}' = $1`,
-        [userId, input.role]
-      )
-      await this.audit(client, adminId, {
-        action: 'user.role_change',
-        targetType: 'user',
-        targetId: userId,
-        details: { from: previousRole, to: input.role, reason: input.reason }
-      })
-    })
-    return { role: input.role }
-  }
-
-  // Cấp / thu hồi tích xanh xác thực (is_verified) + gửi thông báo khi được xác thực
-  async verifyUser(adminId: string, userId: string, isVerified: boolean): Promise<{ isVerified: boolean }> {
-    await this.db.transaction(async (client) => {
-      const res = await client.query(
-        `UPDATE users SET is_verified = $2, verified_at = CASE WHEN $2 THEN NOW() ELSE NULL END, updated_at = NOW()
-         WHERE id = $1 AND account_type = 'human' RETURNING id`,
-        [userId, isVerified]
-      )
-      if (res.rowCount === 0) throw new NotFoundException('Người dùng không tồn tại')
-      await this.audit(client, adminId, {
-        action: isVerified ? 'user.verify' : 'user.unverify',
-        targetType: 'user',
-        targetId: userId
-      })
-    })
-    if (isVerified) {
-      await this.notifications
-        .notify({
-          type: 'account_verified',
-          recipientId: userId,
-          actorId: null,
-          verb: 'Tài khoản của bạn đã được Ban Quản Trị xác thực chính thức',
-          message: 'Huy hiệu xác thực đã hiển thị trên hồ sơ cá nhân của bạn.'
-        })
-        .catch(() => undefined)
-    }
-    return { isVerified }
-  }
-
-  // Thu hồi mọi phiên đăng nhập & ngắt socket (Force Logout)
-  async revokeUserSessions(adminId: string, userId: string): Promise<{ revokedCount: number }> {
-    const revokedCount = await this.db.transaction(async (client) => {
-      const res = await client.query(`DELETE FROM user_sessions WHERE sess::jsonb #>> '{passport,user,id}' = $1`, [userId])
-      const count = res.rowCount ?? 0
-      await this.audit(client, adminId, {
-        action: 'user.revoke_sessions',
-        targetType: 'user',
-        targetId: userId,
-        details: { revokedSessions: count }
-      })
-      return count
-    })
-    this.realtime.disconnectUser(userId)
-    return { revokedCount }
-  }
-
-  // Khóa tài khoản: chặn đăng nhập, hủy mọi phiên + ngắt socket đang mở
-  async suspendUser(adminId: string, userId: string, reason?: string): Promise<{ status: string }> {
-    if (adminId === userId) throw new BadRequestException('Không thể tự khóa tài khoản của mình')
-    await this.db.transaction(async (client) => {
-      const target = await client.query(`SELECT role, account_type FROM users WHERE id = $1 FOR UPDATE`, [userId])
-      if (target.rows.length === 0) throw new NotFoundException('Người dùng không tồn tại')
-      if (target.rows[0].role === 'admin' || target.rows[0].account_type !== 'human') {
-        throw new ForbiddenException('Không thể khóa tài khoản quản trị hoặc tài khoản hệ thống')
-      }
-      await client.query(`UPDATE users SET status = 'suspended', suspended_at = NOW(), suspended_reason = $2, updated_at = NOW() WHERE id = $1`, [
-        userId,
-        reason || null
-      ])
-      await client.query(`DELETE FROM user_sessions WHERE sess::jsonb #>> '{passport,user,id}' = $1`, [userId])
-      await this.audit(client, adminId, { action: 'user.suspend', targetType: 'user', targetId: userId, details: { reason } })
-    })
-    this.realtime.disconnectUser(userId)
-    return { status: 'suspended' }
-  }
-
-  async unsuspendUser(adminId: string, userId: string): Promise<{ status: string }> {
-    await this.db.transaction(async (client) => {
-      const res = await client.query(
-        `UPDATE users SET status = 'active', suspended_at = NULL, suspended_reason = NULL, updated_at = NOW()
-         WHERE id = $1 RETURNING id`,
-        [userId]
-      )
-      if (res.rowCount === 0) throw new NotFoundException('Người dùng không tồn tại')
-      await this.audit(client, adminId, { action: 'user.unsuspend', targetType: 'user', targetId: userId })
-    })
-    return { status: 'active' }
-  }
-
-  // Xem dữ liệu cá nhân hóa của 1 người — dữ liệu nhạy cảm ⇒ luôn ghi nhật ký
-  async userInsight(adminId: string, userId: string): Promise<UserInsight> {
-    const insight = await this.insight.get(userId)
-    await this.db.transaction((client) => this.audit(client, adminId, { action: 'user.insight_view', targetType: 'user', targetId: userId }))
-    return insight
-  }
+  // ── 3. Users → admin-users.service.ts ──────────────────────────────────
 
   // ── 4. N7AI Operations & Telemetry ──────────────────────────────────────
 
@@ -965,13 +792,12 @@ export class AdminService {
     return res.rowCount ?? 0
   }
 
-  private async audit(client: PoolClient, adminId: string, entry: AuditEntry) {
-    await client.query(`INSERT INTO admin_audit_logs (admin_id, action, target_type, target_id, details) VALUES ($1, $2, $3, $4, $5)`, [
-      adminId,
-      entry.action,
-      entry.targetType,
-      entry.targetId,
-      entry.details ? JSON.stringify(entry.details) : null
-    ])
+  // Ghi nhật ký cho thao tác chỉ đọc (VD: xuất CSV)
+  logAction(adminId: string, entry: AuditEntry) {
+    return this.db.transaction((client) => writeAudit(client, adminId, entry))
+  }
+
+  private audit(client: PoolClient, adminId: string, entry: AuditEntry) {
+    return writeAudit(client, adminId, entry)
   }
 }

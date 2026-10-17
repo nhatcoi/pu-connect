@@ -1,29 +1,36 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
-import type { Request } from 'express'
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
+import type { Request, Response } from 'express'
 import type {
   AdminBroadcastInput,
+  AdminBulkUserInput,
   AdminCourseInput,
   AdminModerateSkillInput,
   AdminPinPostInput,
   AdminReasonInput,
   AdminTicketStatusInput,
   AdminUpdateRoleInput,
+  AdminUserNoteInput,
   AdminVerifyUserInput
 } from '@pu/schemas'
 import {
   AdminBroadcastBodySchema,
+  AdminBulkUserBodySchema,
   AdminCourseBodySchema,
   AdminModerateSkillBodySchema,
   AdminPinPostBodySchema,
   AdminReasonBodySchema,
   AdminTicketStatusBodySchema,
   AdminUpdateRoleBodySchema,
+  AdminUserNoteBodySchema,
+  AdminUserQuerySchema,
+  type AdminUserQueryParsed,
   AdminVerifyUserBodySchema
 } from './dto/admin.dto'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../common/http/current-user'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminService } from './admin.service'
+import { AdminUsersService } from './admin-users.service'
 
 const toInt = (v: string | undefined, fallback: number) => {
   const n = parseInt(v || '', 10)
@@ -33,7 +40,10 @@ const toInt = (v: string | undefined, fallback: number) => {
 @Controller('admin')
 @UseGuards(AdminGuard)
 export class AdminController {
-  constructor(private readonly admin: AdminService) {}
+  constructor(
+    private readonly admin: AdminService,
+    private readonly userAdmin: AdminUsersService
+  ) {}
 
   // Thông tin phiên quản trị & danh sách quyền RBAC hiện tại
   @Get('me')
@@ -107,10 +117,54 @@ export class AdminController {
   }
 
   // ── 3. Users, Identity & RBAC ──
+  // Danh sách phân trang server + lọc + sắp xếp
   @Get('users')
   @RequireAdminPermission('users:read')
-  users(@Query('q') q?: string, @Query('status') status?: string, @Query('role') role?: string, @Query('limit') limit?: string) {
-    return this.admin.listUsers(q, status, role, toInt(limit, 50))
+  users(@Query(new ZodValidationPipe(AdminUserQuerySchema)) query: AdminUserQueryParsed) {
+    return this.userAdmin.list(query)
+  }
+
+  @Get('users/summary')
+  @RequireAdminPermission('users:read')
+  usersSummary() {
+    return this.userAdmin.summary()
+  }
+
+  // Xuất CSV theo bộ lọc (bỏ qua envelope JSON)
+  @Get('users/export')
+  @RequireAdminPermission('users:read')
+  async usersExport(@Query(new ZodValidationPipe(AdminUserQuerySchema)) query: AdminUserQueryParsed, @Req() req: Request, @Res() res: Response) {
+    const csv = await this.userAdmin.exportCsv(query)
+    await this.admin.logAction(requireUserId(req), { action: 'user.export', targetType: 'system', targetId: 'users', details: { ...query } })
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="users-${new Date().toISOString().slice(0, 10)}.csv"`)
+    res.send(csv)
+  }
+
+  @Post('users/bulk')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('users:suspend')
+  usersBulk(@Body(new ZodValidationPipe(AdminBulkUserBodySchema)) body: AdminBulkUserInput, @Req() req: Request) {
+    return this.userAdmin.bulk(requireUserId(req), body)
+  }
+
+  @Get('users/:id')
+  @RequireAdminPermission('users:read')
+  userDetail(@Param('id', ParseUUIDPipe) id: string) {
+    return this.userAdmin.detail(id)
+  }
+
+  @Post('users/:id/notes')
+  @RequireAdminPermission('users:read')
+  addNote(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AdminUserNoteBodySchema)) body: AdminUserNoteInput, @Req() req: Request) {
+    return this.userAdmin.addNote(requireUserId(req), id, body.body)
+  }
+
+  @Delete('users/:id/notes/:noteId')
+  @RequireAdminPermission('users:read')
+  deleteNote(@Param('id', ParseUUIDPipe) id: string, @Param('noteId') noteId: string, @Req() req: Request) {
+    if (!/^\d+$/.test(noteId)) throw new BadRequestException('noteId không hợp lệ')
+    return this.userAdmin.deleteNote(requireUserId(req), id, noteId)
   }
 
   @Patch('users/:id/role')
@@ -120,7 +174,7 @@ export class AdminController {
     @Body(new ZodValidationPipe(AdminUpdateRoleBodySchema)) body: AdminUpdateRoleInput,
     @Req() req: Request
   ) {
-    return this.admin.updateUserRole(requireUserId(req), id, body)
+    return this.userAdmin.updateRole(requireUserId(req), id, body)
   }
 
   @Patch('users/:id/verify')
@@ -130,34 +184,34 @@ export class AdminController {
     @Body(new ZodValidationPipe(AdminVerifyUserBodySchema)) body: AdminVerifyUserInput,
     @Req() req: Request
   ) {
-    return this.admin.verifyUser(requireUserId(req), id, body.isVerified)
+    return this.userAdmin.verify(requireUserId(req), id, body.isVerified)
   }
 
   @Post('users/:id/revoke-sessions')
   @HttpCode(HttpStatus.OK)
   @RequireAdminPermission('users:suspend')
   revokeSessions(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    return this.admin.revokeUserSessions(requireUserId(req), id)
+    return this.userAdmin.revokeSessions(requireUserId(req), id)
   }
 
   @Get('users/:id/insight')
   @RequireAdminPermission('users:insight')
   userInsight(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    return this.admin.userInsight(requireUserId(req), id)
+    return this.userAdmin.userInsight(requireUserId(req), id)
   }
 
   @Post('users/:id/suspend')
   @HttpCode(HttpStatus.OK)
   @RequireAdminPermission('users:suspend')
   suspend(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AdminReasonBodySchema)) body: AdminReasonInput, @Req() req: Request) {
-    return this.admin.suspendUser(requireUserId(req), id, body.reason)
+    return this.userAdmin.suspend(requireUserId(req), id, body.reason)
   }
 
   @Post('users/:id/unsuspend')
   @HttpCode(HttpStatus.OK)
   @RequireAdminPermission('users:suspend')
   unsuspend(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
-    return this.admin.unsuspendUser(requireUserId(req), id)
+    return this.userAdmin.unsuspend(requireUserId(req), id)
   }
 
   // ── 4. N7AI Operations & Telemetry ──

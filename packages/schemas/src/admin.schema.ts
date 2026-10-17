@@ -247,7 +247,110 @@ export interface AdminUserRow {
   reportCount: number
   lastSeenAt: string | null
   createdAt: string
+  authProviders: AdminAuthProvider[]
 }
+
+// ── Quản lý người dùng nâng cao: phân trang server, lọc, sắp xếp, hàng loạt ──
+
+export type AdminAuthProvider = 'password' | 'google'
+export const ADMIN_USER_SORTS = ['created', 'last_seen', 'reputation', 'posts', 'reports', 'name'] as const
+export type AdminUserSort = (typeof ADMIN_USER_SORTS)[number]
+export const ADMIN_USER_ACTIVITY = ['online', '24h', '7d', '30d', 'dormant', 'never'] as const
+export type AdminUserActivity = (typeof ADMIN_USER_ACTIVITY)[number]
+export const ADMIN_USER_JOINED = ['24h', '7d', '30d', '90d'] as const
+export type AdminUserJoined = (typeof ADMIN_USER_JOINED)[number]
+
+// Tham số lọc danh sách (đồng bộ với URL #/users?...)
+export interface AdminUserQuery {
+  q?: string
+  role?: AdminUserRole
+  status?: 'active' | 'suspended'
+  verified?: 'yes' | 'no'
+  auth?: AdminAuthProvider
+  activity?: AdminUserActivity
+  joined?: AdminUserJoined
+  faculty?: string
+  reported?: 'yes'
+  sort?: AdminUserSort
+  dir?: 'asc' | 'desc'
+  page?: number
+  pageSize?: number
+}
+
+export interface AdminUserPage {
+  items: AdminUserRow[]
+  total: number
+  page: number
+  pageSize: number
+}
+
+// Số liệu nhanh cho thanh "phân khúc" đầu trang + giá trị cho bộ lọc
+export interface AdminUserSummary {
+  total: number
+  online: number
+  active24h: number
+  new7d: number
+  verified: number
+  suspended: number
+  reported: number
+  dormant: number
+  byRole: Partial<Record<AdminUserRole, number>>
+  faculties: { faculty: string; count: number }[]
+}
+
+export interface AdminUserNote {
+  id: string
+  body: string
+  createdAt: string
+  author: { username: string; displayName: string } | null
+}
+
+// Hồ sơ đầy đủ trong ngăn chi tiết (drawer)
+export interface AdminUserDetail {
+  user: AdminUserRow & {
+    bio: string | null
+    major: string | null
+    className: string | null
+    academicYear: string | null
+    verifiedAt: string | null
+  }
+  stats: {
+    posts: number
+    hiddenPosts: number
+    comments: number
+    documents: number
+    followers: number
+    following: number
+    reportsReceived: number
+    reportsFiled: number
+    activeSessions: number
+    aiRuns30d: number
+  }
+  recentPosts: { id: string; title: string | null; content: string; createdAt: string; hiddenAt: string | null; likes: number; comments: number }[]
+  moderationLog: AdminAuditLog[]
+  notes: AdminUserNote[]
+}
+
+export const ADMIN_BULK_USER_ACTIONS = ['verify', 'unverify', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role'] as const
+export type AdminBulkUserAction = (typeof ADMIN_BULK_USER_ACTIONS)[number]
+
+export const AdminBulkUserSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(100),
+  action: z.enum(ADMIN_BULK_USER_ACTIONS),
+  role: z.enum(USER_ROLES).optional(),
+  reason: z.string().trim().max(255).optional()
+})
+export type AdminBulkUserInput = z.infer<typeof AdminBulkUserSchema>
+
+export interface AdminBulkResult {
+  affected: number
+  skipped: number
+}
+
+export const AdminUserNoteSchema = z.object({
+  body: z.string().trim().min(1, 'Nhập nội dung ghi chú').max(1000)
+})
+export type AdminUserNoteInput = z.infer<typeof AdminUserNoteSchema>
 
 export interface AdminAuditLog {
   id: string

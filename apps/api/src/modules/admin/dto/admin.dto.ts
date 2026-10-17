@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
   AdminBroadcastInput,
+  AdminBulkUserInput,
   AdminCourseInput,
   AdminModerateSkillInput,
   AdminPermission,
@@ -8,6 +9,8 @@ import type {
   AdminReasonInput,
   AdminTicketStatusInput,
   AdminUpdateRoleInput,
+  AdminUserNoteInput,
+  AdminUserQuery,
   AdminUserRole,
   AdminVerifyUserInput
 } from '@pu/schemas'
@@ -101,6 +104,40 @@ export const AdminBroadcastBodySchema = z.object({
   targetRole: z.enum(['all', ...USER_ROLES_RUNTIME]).default('all')
 })
 
+// ── Danh sách người dùng: query string → tham số đã chuẩn hóa ──
+const optEnum = <T extends readonly [string, ...string[]]>(values: T) =>
+  z.preprocess((v) => (v === '' || v === undefined ? undefined : v), z.enum(values).optional())
+
+export const AdminUserQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  role: optEnum(USER_ROLES_RUNTIME),
+  status: optEnum(['active', 'suspended'] as const),
+  verified: optEnum(['yes', 'no'] as const),
+  auth: optEnum(['password', 'google'] as const),
+  activity: optEnum(['online', '24h', '7d', '30d', 'dormant', 'never'] as const),
+  joined: optEnum(['24h', '7d', '30d', '90d'] as const),
+  faculty: z.string().trim().max(50).optional(),
+  reported: optEnum(['yes'] as const),
+  sort: optEnum(['created', 'last_seen', 'reputation', 'posts', 'reports', 'name'] as const).default('created'),
+  dir: optEnum(['asc', 'desc'] as const).default('desc'),
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
+  pageSize: z.coerce.number().int().min(10).max(100).default(25)
+})
+export type AdminUserQueryParsed = z.infer<typeof AdminUserQuerySchema>
+
+export const AdminBulkUserBodySchema = z
+  .object({
+    ids: z.array(z.string().uuid()).min(1).max(100),
+    action: z.enum(['verify', 'unverify', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role']),
+    role: z.enum(USER_ROLES_RUNTIME).optional(),
+    reason: z.string().trim().max(255).optional()
+  })
+  .refine((b) => b.action !== 'set_role' || !!b.role, { message: 'Chọn vai trò mới', path: ['role'] })
+
+export const AdminUserNoteBodySchema = z.object({
+  body: z.string().trim().min(1, 'Nhập nội dung ghi chú').max(1000)
+})
+
 // Báo lỗi biên dịch nếu lệch với @pu/schemas
 const _checkReason: AdminReasonInput = {} as z.infer<typeof AdminReasonBodySchema>
 const _checkRole: AdminUpdateRoleInput = {} as z.infer<typeof AdminUpdateRoleBodySchema>
@@ -110,4 +147,8 @@ const _checkTicket: AdminTicketStatusInput = {} as z.infer<typeof AdminTicketSta
 const _checkSkill: AdminModerateSkillInput = {} as z.infer<typeof AdminModerateSkillBodySchema>
 const _checkCourse: AdminCourseInput = {} as z.infer<typeof AdminCourseBodySchema>
 const _checkBroadcast: AdminBroadcastInput = {} as z.infer<typeof AdminBroadcastBodySchema>
+const _checkBulk: AdminBulkUserInput = {} as z.infer<typeof AdminBulkUserBodySchema>
+const _checkNote: AdminUserNoteInput = {} as z.infer<typeof AdminUserNoteBodySchema>
+const _checkQuery: AdminUserQuery = {} as AdminUserQueryParsed
+void [_checkBulk, _checkNote, _checkQuery]
 void [_checkReason, _checkRole, _checkVerify, _checkPin, _checkTicket, _checkSkill, _checkCourse, _checkBroadcast]
