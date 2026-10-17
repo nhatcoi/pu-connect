@@ -83,7 +83,8 @@ export class AdminRiskService implements OnModuleInit, OnModuleDestroy {
     try {
       const res = await this.db.query(RISK_SQL)
       const purge = await this.db.query(`DELETE FROM user_security_events WHERE created_at < NOW() - INTERVAL '90 days'`)
-      return { updated: res.rowCount ?? 0, purged: purge.rowCount ?? 0 }
+      const views = await this.db.query(`DELETE FROM profile_views WHERE last_at < NOW() - INTERVAL '90 days'`)
+      return { updated: res.rowCount ?? 0, purged: (purge.rowCount ?? 0) + (views.rowCount ?? 0) }
     } finally {
       this.running = false
     }

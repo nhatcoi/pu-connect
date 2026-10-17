@@ -95,3 +95,13 @@ export const BulkCommentBodySchema = z.object({
   reason: z.string().trim().max(255).optional()
 })
 
+
+// Nhật ký đăng nhập toàn hệ thống
+export const SecurityEventsQuerySchema = z.object({
+  ...paging,
+  q: text(64), // @username hoặc IP
+  event: opt(['login', 'login_failed', 'login_blocked', 'logout', 'register', 'password_reset', 'password_reset_requested', 'email_verified', 'session_revoked'] as const),
+  result: opt(['failed'] as const),
+  days: opt(['1', '7', '30', '90'] as const)
+})
+export type SecurityEventsQuery = z.infer<typeof SecurityEventsQuerySchema>

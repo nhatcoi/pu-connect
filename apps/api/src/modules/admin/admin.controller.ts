@@ -13,6 +13,7 @@ import type {
   AdminUpdateRoleInput,
   AdminUserNoteInput,
   AdminVerifyUserInput,
+  AdminActivityType,
   SanctionInput
 } from '@pu/schemas'
 import {
@@ -26,6 +27,7 @@ import {
   AdminUpdateRoleBodySchema,
   AdminUserNoteBodySchema,
   AdminUserQuerySchema,
+  ActivityQuerySchema,
   SanctionBodySchema,
   SavedViewBodySchema,
   type AdminUserQueryParsed,
@@ -38,6 +40,7 @@ import { AdminService } from './admin.service'
 import { AdminUsersService } from './admin-users.service'
 import { AdminListsService } from './admin-lists.service'
 import { AdminViewsService } from './admin-views.service'
+import { AdminUserDataService } from './admin-user-data.service'
 import {
   AuditQuerySchema,
   BulkCommentBodySchema,
@@ -48,6 +51,7 @@ import {
   DocumentsQuerySchema,
   PostsQuerySchema,
   ReportsQuerySchema,
+  SecurityEventsQuerySchema,
   SkillsQuerySchema,
   type AuditQuery,
   type CommentsQuery,
@@ -56,6 +60,7 @@ import {
   type DocumentsQuery,
   type PostsQuery,
   type ReportsQuery,
+  type SecurityEventsQuery,
   type SkillsQuery
 } from './dto/admin-lists.dto'
 
@@ -71,7 +76,8 @@ export class AdminController {
     private readonly admin: AdminService,
     private readonly userAdmin: AdminUsersService,
     private readonly lists: AdminListsService,
-    private readonly views_: AdminViewsService
+    private readonly views_: AdminViewsService,
+    private readonly userData: AdminUserDataService
   ) {}
 
   // Thông tin phiên quản trị & danh sách quyền RBAC hiện tại
@@ -216,6 +222,26 @@ export class AdminController {
   @RequireAdminPermission('users:insight')
   userSecurity(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     return this.userAdmin.security(requireUserId(req), id)
+  }
+
+  // Dữ liệu chi tiết: bài, bình luận, cảm xúc, theo dõi, hội thoại (siêu dữ liệu), lượt xem hồ sơ…
+  @Get('users/:id/activity')
+  @RequireAdminPermission('users:insight')
+  userActivity(@Param('id', ParseUUIDPipe) id: string, @Query(new ZodValidationPipe(ActivityQuerySchema)) q: { type: AdminActivityType; page: number; pageSize: number }, @Req() req: Request) {
+    return this.userData.activity(requireUserId(req), id, q.type, q.page, q.pageSize)
+  }
+
+  @Get('users/:id/sessions')
+  @RequireAdminPermission('users:suspend')
+  userSessions(@Param('id', ParseUUIDPipe) id: string) {
+    return this.userData.sessions(id)
+  }
+
+  @Delete('users/:id/sessions/:sessionId')
+  @RequireAdminPermission('users:suspend')
+  revokeUserSession(@Param('id', ParseUUIDPipe) id: string, @Param('sessionId') sessionId: string, @Req() req: Request) {
+    if (!/^[a-f0-9]{16}$/.test(sessionId)) throw new BadRequestException('sessionId không hợp lệ')
+    return this.userData.revokeSession(requireUserId(req), id, sessionId)
   }
 
   // ── View đã lưu ──
@@ -400,5 +426,12 @@ export class AdminController {
   @RequireAdminPermission('audit:read')
   auditLogs(@Query(new ZodValidationPipe(AuditQuerySchema)) q: AuditQuery) {
     return this.lists.audit(q)
+  }
+
+  // Nhật ký đăng nhập toàn hệ thống (IP / thiết bị)
+  @Get('security-events')
+  @RequireAdminPermission('users:insight')
+  securityEvents(@Query(new ZodValidationPipe(SecurityEventsQuerySchema)) q: SecurityEventsQuery) {
+    return this.lists.securityEvents(q)
   }
 }

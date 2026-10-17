@@ -37,8 +37,20 @@ export class UserResolver {
     }
 
     const user = this.mapRowToUser(res.rows[0], true)
-    const access = await this.profileAccess.resolve({ id: user.id }, this.viewerId(context))
+    const viewerId = this.viewerId(context)
+    const access = await this.profileAccess.resolve({ id: user.id }, viewerId)
     const { privacy, isOwner } = access
+    // Ghi lượt xem hồ sơ (chỉ admin xem được): gộp theo giờ, không chờ, lỗi bỏ qua
+    if (viewerId && !isOwner) {
+      void this.db
+        .query(
+          `INSERT INTO profile_views (profile_id, viewer_id, viewed_hour)
+           VALUES ($1, $2, date_trunc('hour', NOW() AT TIME ZONE 'UTC'))
+           ON CONFLICT (profile_id, viewer_id, viewed_hour) DO UPDATE SET views = profile_views.views + 1, last_at = NOW()`,
+          [user.id, viewerId]
+        )
+        .catch(() => undefined)
+    }
     return {
       ...user,
       email: isOwner || privacy.showEmail ? user.email : '',

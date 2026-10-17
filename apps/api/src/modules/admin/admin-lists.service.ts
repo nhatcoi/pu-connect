@@ -8,7 +8,8 @@ import type {
   AdminDocumentRow,
   AdminPage,
   AdminPostRow,
-  AdminReportedPost
+  AdminReportedPost,
+  AdminSecurityEventRow
 } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { iso, likeEscape, orderBy, pagedQuery, searchCondition, SqlParams, whereOf } from './admin-paging'
@@ -20,6 +21,7 @@ import type {
   DocumentsQuery,
   PostsQuery,
   ReportsQuery,
+  SecurityEventsQuery,
   SkillsQuery
 } from './dto/admin-lists.dto'
 
@@ -330,6 +332,39 @@ export class AdminListsService {
     )
     const [res, adminFacet] = await Promise.all([page, admins])
     return { ...res, facets: { admin: adminFacet } }
+  }
+
+  // ── Nhật ký đăng nhập toàn hệ thống ─────────────────────────────────────
+
+  async securityEvents(q: SecurityEventsQuery): Promise<AdminPage<AdminSecurityEventRow>> {
+    const p = new SqlParams()
+    const raw = q.q?.trim()
+    const isIp = !!raw && /^[0-9a-f:.]+$/i.test(raw) && /[.:]/.test(raw)
+    const conds = [
+      raw && (isIp ? `host(e.ip) LIKE ${p.add(`${likeEscape(raw)}%`)}` : `lower(u.username) LIKE ${p.add(`${likeEscape(raw.replace(/^@/, '').toLowerCase())}%`)}`),
+      q.event && `e.event = ${p.add(q.event)}`,
+      q.result === 'failed' && 'NOT e.success',
+      q.days && `e.created_at > NOW() - make_interval(days => ${p.add(Number(q.days))})`
+    ]
+    return pagedQuery(this.db, {
+      params: p,
+      page: q.page,
+      pageSize: q.pageSize,
+      select: `e.id, e.event, e.success, e.method, host(e.ip) AS ip, e.device, e.created_at,
+        u.id AS user_id, u.username, u.display_name, u.avatar_url`,
+      from: `user_security_events e LEFT JOIN users u ON u.id = e.user_id ${whereOf(conds)}`,
+      order: orderBy('e.created_at', q.dir, 'e.id'),
+      map: (r): AdminSecurityEventRow => ({
+        id: String(r.id),
+        event: r.event,
+        success: r.success,
+        method: r.method,
+        ip: r.ip,
+        device: r.device,
+        createdAt: iso(r.created_at) as string,
+        user: r.user_id ? { id: r.user_id, username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url } : null
+      })
+    })
   }
 
   private async facet(sql: string) {

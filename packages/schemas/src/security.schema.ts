@@ -70,3 +70,41 @@ export interface AdminSavedView {
   mine: boolean
   owner: string | null
 }
+
+// ── Admin: dữ liệu chi tiết của 1 người (tab Hoạt động / Lượt xem hồ sơ) ──
+
+export const ADMIN_ACTIVITY_TYPES = [
+  'posts',
+  'comments',
+  'reactions',
+  'saved',
+  'following',
+  'followers',
+  'communities',
+  'groups',
+  'documents',
+  'conversations',
+  'reports_filed',
+  'reports_received',
+  'events',
+  'profile_viewers',
+  'profiles_viewed'
+] as const
+export type AdminActivityType = (typeof ADMIN_ACTIVITY_TYPES)[number]
+
+// 1 dòng hoạt động dạng chung ⇒ frontend chỉ cần 1 component danh sách
+export interface AdminActivityItem {
+  id: string
+  title: string
+  subtitle: string | null
+  at: string
+  // Liên kết sang PU Connector (bài viết, hồ sơ…) hoặc sang hồ sơ admin của người khác
+  href: string | null
+  user: { id: string; username: string; displayName: string; avatarUrl: string | null } | null
+  badge: string | null
+}
+
+// Dòng nhật ký đăng nhập toàn hệ thống (trang Nhật ký › Đăng nhập)
+export interface AdminSecurityEventRow extends SecurityEvent {
+  user: { id: string; username: string; displayName: string; avatarUrl: string | null } | null
+}

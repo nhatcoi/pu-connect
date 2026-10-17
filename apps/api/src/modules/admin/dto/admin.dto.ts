@@ -143,6 +143,16 @@ export const SanctionBodySchema = z.object({
   reason: z.string().trim().min(3, 'Nhập lý do (≥ 3 ký tự)').max(255)
 })
 
+// Dữ liệu chi tiết 1 người (tab Hoạt động / Lượt xem hồ sơ)
+export const ActivityQuerySchema = z.object({
+  type: z.enum([
+    'posts', 'comments', 'reactions', 'saved', 'following', 'followers', 'communities', 'groups',
+    'documents', 'conversations', 'reports_filed', 'reports_received', 'events', 'profile_viewers', 'profiles_viewed'
+  ]),
+  page: z.coerce.number().int().min(1).max(10_000).default(1),
+  pageSize: z.coerce.number().int().min(10).max(100).default(20)
+})
+
 // View đã lưu: query là chuỗi URL (không chứa '#')
 export const SavedViewBodySchema = z.object({
   page: z.enum(['users', 'moderation', 'academic', 'ai', 'audit']),
