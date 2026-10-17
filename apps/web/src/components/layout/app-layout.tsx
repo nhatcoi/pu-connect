@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { AppShellSkeleton } from '@/components/skeletons/app-shell-skeleton'
 import { Header } from '@/components/social/header'
+import { RestrictionBanner } from '@/components/layout/restriction-banner'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
@@ -62,6 +63,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <AsideSlotProvider node={asideNode} onCustomChange={onCustomChange}>
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
           <Header />
+          <RestrictionBanner />
           <GlobalDialogs />
           <div className={cn('mx-auto flex justify-center gap-6 px-0 sm:px-4 lg:px-6 min-h-screen', SHELL_WIDTH)}>
             {!immersive && (

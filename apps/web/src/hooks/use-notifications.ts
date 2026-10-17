@@ -9,7 +9,7 @@ import { useAppStore } from '@/store'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 
 export type NotificationType =
-  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'ai_reply'
+  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'account_notice' | 'ai_reply'
 
 export interface NotificationItem {
   id: string

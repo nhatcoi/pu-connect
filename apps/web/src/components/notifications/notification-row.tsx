@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { AtSign, Award, BadgeCheck, Heart, MessageSquare, Reply, Sparkles, UserPlus } from 'lucide-react'
+import { AtSign, Award, BadgeCheck, Heart, MessageSquare, Reply, Sparkles, UserPlus, ShieldAlert } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark, PuMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
@@ -18,6 +18,7 @@ const TYPE_ICON: Record<NotificationType, React.ReactNode> = {
   user_follow: <UserPlus className="h-3 w-3 text-emerald-600" />,
   accepted_solution: <Award className="h-3 w-3 text-amber-500 fill-amber-500/30" />,
   account_verified: <BadgeCheck className="h-3 w-3 text-primary" />,
+  account_notice: <ShieldAlert className="h-3 w-3 text-amber-500" />,
   ai_reply: <Sparkles className="h-3 w-3 text-primary" />
 }
 
