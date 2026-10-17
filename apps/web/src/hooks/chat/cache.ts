@@ -46,10 +46,12 @@ export function syncPinned(qc: QueryClient, msg: ChatMessage) {
 export type ConversationListData = InfiniteData<ConversationsPage, string | null>
 
 const isMuted = (c: ConversationSummary) => !!c.mutedUntil && new Date(c.mutedUntil).getTime() > Date.now()
-// Nhóm thứ tự giống server: đã ghim → còn lại
-const rankOf = (c: ConversationSummary) => (c.pinnedAt ? 1 : 0)
+// Badge "Tin nhắn" giống server: bỏ hội thoại tắt tiếng & thread PU AI (dòng AI vẫn hiện chấm chưa đọc)
+const countsInBadge = (c: ConversationSummary) => c.type !== 'ai' && !isMuted(c)
+// Nhóm thứ tự giống server: PU AI chat nhanh → đã ghim → còn lại
+const rankOf = (c: ConversationSummary) => (c.type === 'ai' ? 2 : c.pinnedAt ? 1 : 0)
 
-// Thread PU AI (đang mở / trong lịch sử) — không thuộc danh sách Tin nhắn & badge
+// Thread PU AI (đang mở / trong lịch sử) — không tính vào badge chưa đọc
 export function isAiConversation(qc: QueryClient, id: string): boolean {
   if (qc.getQueryData<ConversationSummary>(queryKeys.conversation(id))?.type === 'ai') return true
   return qc
@@ -91,15 +93,14 @@ const mentionsMe = (msg: ChatMessage, myId: string | undefined) => !!msg.meta?.m
 const bumpUnread = (qc: QueryClient, delta: number) => qc.setQueryData<number>(queryKeys.unreadMessages, (n) => (n === undefined ? n : Math.max(0, n + delta)))
 
 // Tin mới: cập nhật tin cuối + chưa đọc, đưa hội thoại lên đầu nhóm của nó
-// Không có trong cache (hội thoại mới / ở trang chưa tải) ⇒ tải lại danh sách đang mở
+// Không có trong cache (hội thoại mới / thread AI chat nhanh vừa đổi / ở trang chưa tải) ⇒ tải lại danh sách đang mở
 export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string | undefined) {
-  if (isAiConversation(qc, msg.conversationId)) return
   const mine = msg.sender?.id === myId
   const countsUnread = !mine && msg.kind !== 'system' && !isViewing(msg.conversationId)
   const found = findConversation(qc, msg.conversationId)?.conversation
   if (!found) {
     void qc.invalidateQueries({ queryKey: queryKeys.conversationLists, refetchType: 'active' })
-    if (countsUnread) void qc.invalidateQueries({ queryKey: queryKeys.unreadMessages })
+    if (countsUnread && !isAiConversation(qc, msg.conversationId)) void qc.invalidateQueries({ queryKey: queryKeys.unreadMessages })
     return
   }
   if (found.lastMessage?.id === msg.id) return // sự kiện lặp (nhiều tab / gửi lại) ⇒ không đếm 2 lần
@@ -108,7 +109,7 @@ export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string 
   const unreadCount = mine ? 0 : found.unreadCount + (countsUnread ? 1 : 0)
   const unreadMentions = mine ? 0 : found.unreadMentions + (countsUnread && mentionsMe(msg, myId) ? 1 : 0)
   const next: ConversationSummary = { ...found, lastMessage: msg, lastMessageAt: msg.createdAt, unreadCount, unreadMentions }
-  if (!isMuted(next)) bumpUnread(qc, Math.min(unreadCount, 99) - Math.min(found.unreadCount, 99))
+  if (countsInBadge(next)) bumpUnread(qc, Math.min(unreadCount, 99) - Math.min(found.unreadCount, 99))
   const belongs: Record<string, boolean> = { all: true, group: next.type === 'group', unread: next.unreadCount > 0 }
   let stale = false
   mapLists(qc, (data, filter) => {
@@ -117,7 +118,7 @@ export function applyNewMessage(qc: QueryClient, msg: ChatMessage, myId: string 
       stale ||= !!belongs[filter]
       return data
     }
-    // Đã ghim: giữ vị trí; còn lại: lên đầu nhóm "thường"
+    // PU AI / đã ghim: giữ vị trí; còn lại: lên đầu nhóm "thường"
     if (rankOf(next) > 0) return { ...data, pages: data.pages.map((p) => ({ ...p, data: p.data.map((c) => (c.id === next.id ? next : c)) })) }
     const pages = data.pages.map((p) => ({ ...p, data: p.data.filter((c) => c.id !== next.id) }))
     const first = pages[0].data
@@ -143,7 +144,7 @@ export function applyRead(qc: QueryClient, conversationId: string) {
   if (!found) return void qc.invalidateQueries({ queryKey: queryKeys.unreadMessages })
   if (!found.unreadCount && !found.unreadMentions) return
   patchConversation(qc, conversationId, (c) => ({ ...c, unreadCount: 0, unreadMentions: 0 }))
-  if (!isMuted(found)) bumpUnread(qc, -Math.min(found.unreadCount, 99))
+  if (countsInBadge(found)) bumpUnread(qc, -Math.min(found.unreadCount, 99))
 }
 
 // Danh sách / badge đổi theo cách không suy ra được từ sự kiện (thêm/rời nhóm, mất kết nối)

@@ -32,10 +32,12 @@ interface ConversationViewProps {
   onOpenNav?: () => void
   // Thread rỗng vừa có tin đầu tiên (trang /puai ⇒ đổi URL sang /puai/[id])
   onStarted?: () => void
+  // Thread PU AI chat nhanh trong Tin nhắn ⇒ nút mở ở không gian /puai
+  spaceHref?: string
 }
 
 // Màn hội thoại: đầu trang + tin ghim + dòng tin + ô soạn; DM / nhóm có thông tin ở cột phải (desktop) / hộp thoại (mobile)
-export function ConversationView({ id, backHref, initialJump = null, onOpenNav, onStarted }: ConversationViewProps) {
+export function ConversationView({ id, backHref, initialJump = null, onOpenNav, onStarted, spaceHref }: ConversationViewProps) {
   const router = useRouter()
   const me = useAppStore((s) => s.user)
   const { data: conv, isError } = useConversation(id)
@@ -117,6 +119,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
         backHref={backHref}
         onInfo={() => setInfoOpen(true)}
         onOpenNav={onOpenNav}
+        spaceHref={spaceHref}
         onAiReset={resetAi}
       />
       <PinnedBanner conversationId={id} onJump={jump} />
@@ -181,7 +184,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
 
       <MentionJump key={id} conversation={conv} onJump={jump} />
 
-      {/* Thread PU AI: lịch sử & thư viện nằm ở thanh bên không gian /puai */}
+      {/* Thread PU AI: lịch sử & thư viện nằm ở không gian /puai */}
       {conv && !isAi && (
         <>
           <PageAside>

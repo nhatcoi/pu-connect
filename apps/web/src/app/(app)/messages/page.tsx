@@ -1,17 +1,16 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
-import { ChevronRight, Loader2, MessageCircle, PenSquare } from 'lucide-react'
-import { N7AiMark } from '@/components/brand/pu-logo'
+import { Loader2, MessageCircle, PenSquare } from 'lucide-react'
 import { PageAside } from '@/components/layout/page-aside'
+import { AiQuickRow } from '@/components/chat/ai/ai-quick-row'
 import { AiStudyCard } from '@/components/chat/ai/ai-study-card'
 import { ConversationListSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
+import { PuaiFab } from '@/components/puai/puai-fab'
 import { useConversations } from '@/hooks/chat'
-import { PUAI_HOME } from '@/lib/puai-routes'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import type { ConversationFilter as Filter } from '@pu/schemas'
@@ -22,13 +21,16 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'group', label: 'Nhóm' }
 ]
 
-// Danh sách DM & nhóm (mobile & desktop đều tách 2 màn: /messages và /messages/[id]); PU AI ở không gian /puai
+// Danh sách hội thoại (mobile & desktop đều tách 2 màn: /messages và /messages/[id])
+// PU AI: 1 thread chat nhanh đứng đầu (server xếp hạng) + nút nổi mở không gian /puai
 export default function MessagesPage() {
   const myId = useAppStore((s) => s.user?.id)
   const [composing, setComposing] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   // Lọc ở server, mỗi bộ lọc 1 cache
   const { conversations: visible, isPending, hasNextPage, isFetchingNextPage, fetchNextPage } = useConversations(filter)
+  // Chưa từng chat PU AI ⇒ dòng mở đầu thay cho thread chat nhanh
+  const showAiRow = filter === 'all' && !isPending && !visible.some((c) => c.type === 'ai')
 
   // Cuộn gần cuối ⇒ tải trang tiếp
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -69,20 +71,11 @@ export default function MessagesPage() {
 
       {composing && <NewChatPanel onClose={() => setComposing(false)} />}
 
-      {/* Lối vào không gian PU AI (mobile không có cột phải) */}
-      <Link
-        href={PUAI_HOME}
-        className="lg:hidden mx-2 sm:mx-0 mb-2.5 rounded-xl bg-gradient-to-r from-primary/10 to-brand-orange/10 hover:from-primary/15 hover:to-brand-orange/15 p-4 flex items-center gap-3"
-      >
-        <div className="h-10 w-10 rounded-full bg-card flex items-center justify-center shrink-0">
-          <N7AiMark className="h-7 w-7" />
+      {showAiRow && (
+        <div className={cn('mx-2 sm:mx-0 rounded-xl bg-card overflow-hidden', visible.length > 0 && 'rounded-b-none border-b border-border/50')}>
+          <AiQuickRow />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">Học cùng PU AI</p>
-          <p className="text-xs text-muted-foreground">Giải thích bài, tạo quiz & flashcard, tóm tắt tài liệu, lập lộ trình ôn thi.</p>
-        </div>
-        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-      </Link>
+      )}
 
       {isPending ? (
         <ConversationListSkeleton />
@@ -95,7 +88,7 @@ export default function MessagesPage() {
           {filter !== 'unread' && <p className="text-xs">Bấm “Mới” để nhắn tin hoặc tạo nhóm học.</p>}
         </div>
       ) : (
-        <div className="mx-2 sm:mx-0 rounded-xl bg-card overflow-hidden divide-y divide-border/50">
+        <div className={cn('mx-2 sm:mx-0 rounded-xl bg-card overflow-hidden divide-y divide-border/50', showAiRow && 'rounded-t-none')}>
           {visible.map((c) => (
             <ConversationItem key={c.id} conversation={c} myId={myId} />
           ))}
@@ -108,6 +101,7 @@ export default function MessagesPage() {
         </div>
       )}
 
+      <PuaiFab />
       <PageAside>
         <AiStudyCard />
       </PageAside>

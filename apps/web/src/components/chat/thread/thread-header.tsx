@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BellOff, Eraser, Info, Menu, SquarePen } from 'lucide-react'
+import { ArrowLeft, BellOff, Eraser, Info, Maximize2, Menu, SquarePen } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
@@ -19,11 +19,13 @@ interface ThreadHeaderProps {
   onInfo: () => void
   // Không gian PU AI (mobile): mở ngăn lịch sử thay cho nút quay lại
   onOpenNav?: () => void
+  // Thread PU AI chat nhanh (Tin nhắn): mở trong không gian /puai thay cho "Chat mới"
+  spaceHref?: string
   onAiReset: () => void
 }
 
 // Đầu hội thoại: quay lại / mở lịch sử, tên + trạng thái (đang nhập / hoạt động / lượt AI / số thành viên), thông tin
-export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo, onOpenNav, onAiReset }: ThreadHeaderProps) {
+export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo, onOpenNav, spaceHref, onAiReset }: ThreadHeaderProps) {
   const router = useRouter()
   const isAi = conv?.type === 'ai'
   const other = conv?.type === 'direct' ? conv.members[0] : null
@@ -84,13 +86,20 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
           <Eraser className="h-3.5 w-3.5" />
         </Button>
       )}
-      {isAi && (
-        <Button asChild variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" title="Cuộc trò chuyện mới">
-          <Link href={PUAI_HOME}>
-            <SquarePen className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Chat mới</span>
-          </Link>
-        </Button>
-      )}
+      {isAi &&
+        (spaceHref ? (
+          <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" title="Mở trong không gian PU AI">
+            <Link href={spaceHref} aria-label="Mở trong không gian PU AI">
+              <Maximize2 className="h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        ) : (
+          <Button asChild variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" title="Cuộc trò chuyện mới">
+            <Link href={PUAI_HOME}>
+              <SquarePen className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Chat mới</span>
+            </Link>
+          </Button>
+        ))}
       {conv && !isAi && (
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label="Thông tin hội thoại">
           <Info className="h-4 w-4" />
