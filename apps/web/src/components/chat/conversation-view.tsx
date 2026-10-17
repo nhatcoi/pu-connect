@@ -184,8 +184,8 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
 
       <MentionJump key={id} conversation={conv} onJump={jump} />
 
-      {/* Thread PU AI: lịch sử & thư viện nằm ở không gian /puai */}
-      {conv && !isAi && (
+      {/* Thread PU AI trong /puai: lịch sử & thư viện ở thanh bên riêng; chat nhanh (Tin nhắn) có cột thông tin như DM */}
+      {conv && (!isAi || spaceHref) && (
         <>
           <PageAside>
             <ConversationInfo conversation={conv} onJump={jump} />

@@ -100,7 +100,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
             </Link>
           </Button>
         ))}
-      {conv && !isAi && (
+      {conv && (!isAi || spaceHref) && (
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label="Thông tin hội thoại">
           <Info className="h-4 w-4" />
         </Button>

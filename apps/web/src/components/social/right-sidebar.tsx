@@ -13,14 +13,11 @@ import { ProfileCompletionCard } from '@/components/profile/profile-completion-c
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ShieldCheck } from 'lucide-react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 
 export function RightSidebar() {
   const queryClient = useQueryClient()
   const user = useAppStore((s) => s.user)
   const [exploreOpen, setExploreOpen] = useState(false)
-  // Màn chat (Tin nhắn) không nhắc hoàn thiện hồ sơ
-  const inChat = usePathname().startsWith('/messages')
   // Gợi ý theo dõi cache 10 phút; cùng thuật toán xếp hạng với modal Khám phá
   const { data: suggestedUsers = [], isPending: isLoadingUsers } = useSidebarSuggestions(!!user)
 
@@ -32,7 +29,7 @@ export function RightSidebar() {
 
   return (
     <div className="w-full space-y-6">
-      {!inChat && <ProfileCompletionCard />}
+      <ProfileCompletionCard />
 
       {/* 1. Xu hướng — ẩn: số liệu cứng, chưa có API */}
       {FEATURES.trending && (
