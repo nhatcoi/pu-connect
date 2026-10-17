@@ -113,7 +113,7 @@ export class SecurityLogService {
         ip: meta.ip ?? null,
         method: (meta.method as LoginSession['method']) ?? null,
         createdAt: meta.createdAt ?? null,
-        // express-session gia hạn expire mỗi lần dùng ⇒ hoạt động cuối ≈ expire − maxAge
+        // Phiên không rolling ⇒ expire cố định từ lúc tạo: expire − maxAge ≈ thời điểm đăng nhập
         lastActiveAt: new Date(new Date(r.expire).getTime() - SESSION_MAX_AGE_MS).toISOString(),
         current: r.sid === currentSid
       }

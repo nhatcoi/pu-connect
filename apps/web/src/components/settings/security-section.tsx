@@ -81,7 +81,7 @@ function SessionRow({ s, busy, onRevoke }: { s: LoginSession; busy: boolean; onR
           {s.current && <span className="ml-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">· Thiết bị này</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          {[s.ip, s.method === 'google' ? 'Google' : s.method === 'password' ? 'Mật khẩu' : null, `hoạt động ${formatRelativeTime(s.lastActiveAt)}`]
+          {[s.ip, s.method === 'google' ? 'Google' : s.method === 'password' ? 'Mật khẩu' : null, `đăng nhập ${formatRelativeTime(s.createdAt ?? s.lastActiveAt)}`]
             .filter(Boolean)
             .join(' · ')}
         </p>
