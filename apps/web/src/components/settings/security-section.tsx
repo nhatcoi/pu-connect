@@ -101,7 +101,9 @@ function EventRow({ e }: { e: SecurityEvent }) {
     <div className="flex items-start gap-3 py-2">
       <Icon className={`mt-0.5 h-4 w-4 shrink-0 ${e.success ? 'text-muted-foreground' : 'text-red-500'}`} />
       <div className="min-w-0 flex-1">
-        <p className={`text-[13px] ${e.success ? '' : 'font-medium text-red-500'}`}>{EVENT_LABEL[e.event] ?? e.event}</p>
+        <p className={`text-[13px] ${e.success ? '' : 'font-medium text-red-500'}`}>
+          {e.method === 'admin' ? 'Quản trị viên đã đăng xuất một phiên của bạn' : (EVENT_LABEL[e.event] ?? e.event)}
+        </p>
         <p className="truncate text-xs text-muted-foreground">{[e.device, e.ip, formatRelativeTime(e.createdAt)].filter(Boolean).join(' · ')}</p>
       </div>
     </div>

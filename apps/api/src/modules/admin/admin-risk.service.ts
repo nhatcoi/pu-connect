@@ -11,7 +11,8 @@ const RECOMPUTE_MS = 10 * 60_000
  *  - Bài bị ẩn trong 90 ngày         15 điểm / bài   (tối đa 30)
  *  - Bị xử phạt trong 180 ngày       15 điểm / lần   (tối đa 30)
  *  - Tài khoản < 7 ngày đăng ≥ 10 bài/bình luận trong 24h      15 điểm
- *  - Đăng nhập chung IP với 1–9 tài khoản khác (30 ngày)       10 + 5 / tài khoản (tối đa 25)
+ *  - Đăng nhập chung mạng với 1–9 tài khoản khác (30 ngày)     10 + 5 / tài khoản (tối đa 25)
+ *    ("mạng" = ip_net(): IPv4 nguyên địa chỉ, IPv6 theo /64 vì 64 bit cuối tự đổi)
  *  - Đăng nhập sai ≥ 5 lần trong 24h                           10 điểm
  * Cùng job: xóa nhật ký bảo mật quá 90 ngày.
  */
@@ -33,7 +34,7 @@ burst AS (
   FROM h WHERE h.created_at > NOW() - INTERVAL '7 days'
 ),
 ip_users AS (
-  SELECT DISTINCT ip, user_id FROM user_security_events
+  SELECT DISTINCT ip_net(ip) AS ip, user_id FROM user_security_events
   WHERE ip IS NOT NULL AND user_id IS NOT NULL AND success AND event IN ('login', 'register')
     AND created_at > NOW() - INTERVAL '30 days'
 ),
@@ -53,7 +54,7 @@ f AS (
     CASE WHEN hid.n > 0 THEN jsonb_build_object('key', 'hidden', 'label', hid.n || ' bài bị ẩn (90 ngày)', 'points', LEAST(30, hid.n * 15)) END,
     CASE WHEN san.n > 0 THEN jsonb_build_object('key', 'sanctions', 'label', san.n || ' lần bị xử phạt (180 ngày)', 'points', LEAST(30, san.n * 15)) END,
     CASE WHEN burst.n >= 10 THEN jsonb_build_object('key', 'burst', 'label', 'Tài khoản mới đăng ' || burst.n || ' nội dung / 24h', 'points', 15) END,
-    CASE WHEN shared.n > 0 THEN jsonb_build_object('key', 'shared_ip', 'label', 'Chung IP với ' || shared.n || ' tài khoản khác', 'points', LEAST(25, 5 + shared.n * 5)) END,
+    CASE WHEN shared.n > 0 THEN jsonb_build_object('key', 'shared_ip', 'label', 'Chung mạng / IP với ' || shared.n || ' tài khoản khác', 'points', LEAST(25, 5 + shared.n * 5)) END,
     CASE WHEN fail.n >= 5 THEN jsonb_build_object('key', 'failed_logins', 'label', 'Đăng nhập sai ' || fail.n || ' lần / 24h', 'points', 10) END
   ], NULL) AS factors
   FROM h

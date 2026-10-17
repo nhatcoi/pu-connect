@@ -75,7 +75,7 @@ export function SecurityTab({ userId, onOpenUser }: { userId: string; onOpenUser
         </div>
       )}
 
-      <Section title="Tài khoản dùng chung IP" icon={Users} hint="Bỏ qua IP có hơn 10 tài khoản (wifi trường, NAT)">
+      <Section title="Tài khoản dùng chung mạng" icon={Users} hint="IPv4 so nguyên địa chỉ, IPv6 so theo /64 (64 bit cuối tự đổi). Bỏ qua mạng có hơn 10 tài khoản (wifi trường, NAT).">
         {data.linkedAccounts.length === 0 ? (
           <p className="text-muted-foreground">Không có</p>
         ) : (
@@ -87,7 +87,7 @@ export function SecurityTab({ userId, onOpenUser }: { userId: string; onOpenUser
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-medium text-foreground">{a.displayName}</span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      @{a.username} · {a.sharedIps} IP chung · {formatRelativeTime(a.lastSeenTogetherAt)}
+                      @{a.username} · {a.sharedIps} mạng chung · {formatRelativeTime(a.lastSeenTogetherAt)}
                     </span>
                   </span>
                   {a.status === 'suspended' && <Badge tone="danger">Bị khóa</Badge>}
@@ -98,15 +98,23 @@ export function SecurityTab({ userId, onOpenUser }: { userId: string; onOpenUser
         )}
       </Section>
 
-      <Section title="IP gần đây" icon={MonitorSmartphone}>
+      <Section title="Mạng / IP gần đây" icon={MonitorSmartphone}>
         {data.ips.length === 0 ? (
           <p className="text-muted-foreground">Chưa có dữ liệu (nhật ký bắt đầu từ 17/10/2026)</p>
         ) : (
           <table className="w-full text-sm">
             <tbody className="divide-y divide-border">
               {data.ips.map((ip) => (
-                <tr key={ip.ip}>
-                  <td className="py-1.5 font-mono text-xs">{ip.ip}</td>
+                <tr key={ip.network}>
+                  <td className="py-1.5 pr-3">
+                    <span className="block break-all font-mono text-xs text-foreground">{ip.ip}</span>
+                    {ip.network.includes(':') && (
+                      <span className="block font-mono text-[11px] text-muted-foreground">
+                        mạng {ip.network}
+                        {ip.addresses > 1 ? ` · ${ip.addresses} địa chỉ` : ''}
+                      </span>
+                    )}
+                  </td>
                   <td className="py-1.5 text-xs text-muted-foreground">{ip.count} lần</td>
                   <td className="py-1.5 text-xs">
                     {ip.accounts > 10 ? (
@@ -160,7 +168,9 @@ function EventRow({ e }: { e: SecurityEvent }) {
       <div className="min-w-0 flex-1">
         <p className={cn('text-foreground', !e.success && 'text-danger')}>
           {EVENT_LABEL[e.event] ?? e.event}
-          {e.method && <span className="text-muted-foreground"> · {e.method === 'google' ? 'Google' : 'mật khẩu'}</span>}
+          {e.method && (
+            <span className="text-muted-foreground"> · {e.method === 'admin' ? 'bởi quản trị viên' : e.method === 'google' ? 'Google' : 'mật khẩu'}</span>
+          )}
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {[e.device, e.ip].filter(Boolean).join(' · ')} · {formatRelativeTime(e.createdAt)}

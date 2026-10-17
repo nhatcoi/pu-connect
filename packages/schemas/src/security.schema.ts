@@ -15,7 +15,7 @@ export interface SecurityEvent {
   id: string
   event: SecurityEventType
   success: boolean
-  method: 'password' | 'google' | null
+  method: 'password' | 'google' | 'admin' | null // admin = do quản trị viên thực hiện
   ip: string | null
   device: string | null
   createdAt: string
@@ -53,7 +53,8 @@ export interface LinkedAccount {
 
 export interface AdminUserSecurity {
   events: SecurityEvent[]
-  ips: { ip: string; count: number; lastAt: string; accounts: number }[]
+  // Gom theo mạng: IPv4 nguyên địa chỉ, IPv6 theo /64 (64 bit cuối tự đổi)
+  ips: { ip: string; network: string; addresses: number; count: number; lastAt: string; accounts: number }[]
   devices: { device: string; count: number; lastAt: string }[]
   linkedAccounts: LinkedAccount[]
   failedLogins24h: number

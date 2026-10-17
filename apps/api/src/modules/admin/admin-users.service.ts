@@ -333,11 +333,17 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
          WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
         [userId]
       ),
+      // Gom theo mạng (IPv6 /64), hiện IP đầy đủ gần nhất
       this.db.query(
-        `SELECT host(e.ip) AS ip, COUNT(*)::int AS n, MAX(e.created_at) AS last_at,
-                (SELECT COUNT(DISTINCT x.user_id) FROM user_security_events x WHERE x.ip = e.ip AND x.user_id IS NOT NULL)::int AS accounts
-         FROM user_security_events e WHERE e.user_id = $1 AND e.ip IS NOT NULL
-         GROUP BY e.ip ORDER BY last_at DESC LIMIT 20`,
+        `SELECT g.net::text AS net, g.ip, g.addresses, g.n, g.last_at,
+                (SELECT COUNT(DISTINCT x.user_id) FROM user_security_events x
+                 WHERE x.ip IS NOT NULL AND ip_net(x.ip) = g.net AND x.user_id IS NOT NULL)::int AS accounts
+         FROM (
+           SELECT ip_net(e.ip) AS net, (array_agg(host(e.ip) ORDER BY e.created_at DESC))[1] AS ip,
+                  COUNT(DISTINCT e.ip)::int AS addresses, COUNT(*)::int AS n, MAX(e.created_at) AS last_at
+           FROM user_security_events e WHERE e.user_id = $1 AND e.ip IS NOT NULL
+           GROUP BY 1
+         ) g ORDER BY g.last_at DESC LIMIT 20`,
         [userId]
       ),
       this.db.query(
@@ -348,14 +354,15 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
       // Tài khoản khác đăng nhập từ cùng IP (bỏ IP dùng chung lớn: wifi trường / NAT)
       this.db.query(
         `WITH mine AS (
-           SELECT DISTINCT ip FROM user_security_events WHERE user_id = $1 AND ip IS NOT NULL AND success
+           SELECT DISTINCT ip_net(ip) AS net FROM user_security_events WHERE user_id = $1 AND ip IS NOT NULL AND success
          ), small AS (
-           SELECT e.ip FROM user_security_events e JOIN mine m ON m.ip = e.ip WHERE e.user_id IS NOT NULL AND e.success
-           GROUP BY e.ip HAVING COUNT(DISTINCT e.user_id) <= ${SHARED_IP_MAX_ACCOUNTS}
+           SELECT ip_net(e.ip) AS net FROM user_security_events e JOIN mine m ON m.net = ip_net(e.ip)
+           WHERE e.ip IS NOT NULL AND e.user_id IS NOT NULL AND e.success
+           GROUP BY 1 HAVING COUNT(DISTINCT e.user_id) <= ${SHARED_IP_MAX_ACCOUNTS}
          )
          SELECT u.id, u.username, u.display_name, u.avatar_url, u.status,
-                COUNT(DISTINCT e.ip)::int AS shared_ips, MAX(e.created_at) AS last_at
-         FROM user_security_events e JOIN small s ON s.ip = e.ip JOIN users u ON u.id = e.user_id
+                COUNT(DISTINCT ip_net(e.ip))::int AS shared_ips, MAX(e.created_at) AS last_at
+         FROM user_security_events e JOIN small s ON s.net = ip_net(e.ip) JOIN users u ON u.id = e.user_id
          WHERE e.user_id <> $1 AND e.success
          GROUP BY u.id ORDER BY shared_ips DESC, last_at DESC LIMIT 20`,
         [userId]
@@ -376,7 +383,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
         device: r.device,
         createdAt: iso(r.created_at) as string
       })),
-      ips: ips.rows.map((r) => ({ ip: r.ip, count: r.n, lastAt: iso(r.last_at) as string, accounts: r.accounts })),
+      ips: ips.rows.map((r) => ({ ip: r.ip, network: r.net, addresses: r.addresses, count: r.n, lastAt: iso(r.last_at) as string, accounts: r.accounts })),
       devices: devices.rows.map((r) => ({ device: r.device, count: r.n, lastAt: iso(r.last_at) as string })),
       linkedAccounts: linked.rows.map((r) => ({
         id: r.id,

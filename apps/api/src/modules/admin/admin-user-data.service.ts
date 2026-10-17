@@ -182,9 +182,8 @@ export class AdminUserDataService {
     if (!sid) throw new NotFoundException('Phiên không tồn tại hoặc đã hết hạn')
     await this.db.transaction(async (client) => {
       await client.query(`DELETE FROM user_sessions WHERE sid = $1`, [sid])
-      await client.query(`INSERT INTO user_security_events (user_id, event, success, device) VALUES ($1, 'session_revoked', TRUE, 'Quản trị viên')`, [
-        userId
-      ])
+      // method 'admin' = do quản trị viên thực hiện (không phải thiết bị của người dùng)
+      await client.query(`INSERT INTO user_security_events (user_id, event, success, method) VALUES ($1, 'session_revoked', TRUE, 'admin')`, [userId])
       await writeAudit(client, adminId, { action: 'user.session_revoke', targetType: 'user', targetId: userId, details: { session: sessionId } })
     })
     return this.sessions(userId)

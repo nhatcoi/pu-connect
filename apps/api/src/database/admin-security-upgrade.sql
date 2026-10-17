@@ -37,3 +37,12 @@ CREATE TABLE IF NOT EXISTS admin_saved_views (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_admin_saved_views_page ON admin_saved_views (page, created_at);
+
+-- 4. "Cùng mạng": IPv6 đổi 64 bit cuối liên tục (privacy address) ⇒ so theo /64; IPv4 so nguyên địa chỉ
+CREATE OR REPLACE FUNCTION ip_net(ip inet) RETURNS cidr
+  LANGUAGE sql IMMUTABLE PARALLEL SAFE
+  AS $$ SELECT CASE WHEN family(ip) = 6 THEN network(set_masklen(ip, 64)) ELSE network(set_masklen(ip, 32)) END $$;
+CREATE INDEX IF NOT EXISTS idx_security_events_net ON user_security_events (ip_net(ip), user_id) WHERE ip IS NOT NULL;
+
+-- 5. Sự kiện admin ép đăng xuất: không phải thiết bị của người dùng (dữ liệu cũ ghi device = 'Quản trị viên')
+UPDATE user_security_events SET device = NULL, method = 'admin' WHERE device = 'Quản trị viên';

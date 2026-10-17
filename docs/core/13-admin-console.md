@@ -37,7 +37,9 @@ Thang (đếm vi phạm 180 ngày, bỏ bản đã hủy): **Cảnh cáo → H�
 
 ## Điểm rủi ro (0–100, tính lại mỗi 10 phút)
 
-Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày · tài khoản mới đăng dồn dập · đăng nhập chung IP với tài khoản khác · đăng nhập sai liên tục. **IP có > 10 tài khoản bị bỏ qua** (wifi trường / NAT), tránh coi cả trường là clone.
+Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày · tài khoản mới đăng dồn dập · đăng nhập chung mạng với tài khoản khác · đăng nhập sai liên tục. **Mạng có > 10 tài khoản bị bỏ qua** (wifi trường / NAT), tránh coi cả trường là clone.
+
+**"Cùng mạng"** = hàm SQL `ip_net()`: IPv4 so nguyên địa chỉ, **IPv6 so theo /64** (máy cá nhân tự đổi 64 bit cuối để bảo vệ riêng tư ⇒ so nguyên địa chỉ gần như không bao giờ khớp). Người dùng mạng hỗ trợ IPv6 (phần lớn nhà mạng VN) sẽ chỉ có IPv6 — server không biết IPv4 của họ, đó là bình thường.
 
 ## Dữ liệu & quyền riêng tư
 

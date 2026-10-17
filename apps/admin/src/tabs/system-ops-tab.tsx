@@ -437,7 +437,9 @@ function LoginsSection() {
                 <Tr key={e.id}>
                   <Td>
                     <Badge tone={e.success ? 'neutral' : 'danger'}>{LOGIN_EVENT_LABEL[e.event] ?? e.event}</Badge>
-                    {e.method && <span className="ml-1.5 text-xs text-muted-foreground">{e.method === 'google' ? 'Google' : 'mật khẩu'}</span>}
+                    {e.method && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">{e.method === 'admin' ? 'bởi quản trị viên' : e.method === 'google' ? 'Google' : 'mật khẩu'}</span>
+                    )}
                   </Td>
                   <Td>
                     {e.user ? (
