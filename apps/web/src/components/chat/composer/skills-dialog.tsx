@@ -1,9 +1,9 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, BadgeCheck, Check, ChevronDown, Download, Loader2, Pencil, Pin, PinOff, Plus, Sparkles, Trash2, Upload, Wand2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Loader2, Pencil, Pin, PinOff, Plus, Sparkles, Trash2, Upload, Wand2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { AI_SKILL_LIMIT, AiSkillDraftInputSchema, AiSkillInputSchema, type AiSkillInput } from '@pu/schemas'
+import { AI_SKILL_LIMIT, AiSkillDraftInputSchema, AiSkillInputSchema, type AiPublicSkill, type AiSkillInput } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useAiSkill, useAiSkillActions, useAiSkills, useSkillLibrary, useSkillState } from '@/hooks/chat'
 import { SKILL_FILE_ACCEPT, SKILL_FILE_MAX_BYTES, parseSkillFile, toSlug } from '@/lib/skill-file'
 import { cn } from '@/lib/utils'
+import { SkillLibraryRow } from './skill-library-row'
 
 // Bản nháp chưa lưu: do N7AI viết hoặc đọc từ tệp ⇒ mở form để xem lại
 type Draft = { input: AiSkillInput; source: 'ai' | 'file' }
@@ -393,42 +394,32 @@ function SkillLibrary() {
       {isPending ? (
         <Loader2 className="h-4 w-4 animate-spin mx-auto text-muted-foreground" />
       ) : data?.length ? (
-        <ul className="divide-y divide-border/60 rounded-xl border">
-          {data.map((s) => (
-            <li key={s.id} className="flex items-center gap-2 px-3 py-2">
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1 text-sm font-medium">
-                  <span className="truncate">{s.name}</span>
-                  {s.official && <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Chính thức" />}
-                </span>
-                <span className="block truncate text-[11px] text-muted-foreground">
-                  /{s.slug} · {s.official ? 'N7AI' : s.author.displayName} · {s.installCount} lượt cài
-                </span>
-                {s.description && <span className="block truncate text-[11px] text-muted-foreground">{s.description}</span>}
-              </span>
-              <Button
-                size="sm"
-                variant={s.installed ? 'secondary' : 'outline'}
-                className="h-7 rounded-full text-xs gap-1"
-                disabled={s.installed || install.isPending}
-                onClick={() => install.mutate(s.id)}
-              >
-                {s.installed ? (
-                  <>
-                    <Check className="h-3.5 w-3.5" /> Đã cài
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-3.5 w-3.5" /> Cài
-                  </>
-                )}
-              </Button>
-            </li>
-          ))}
-        </ul>
+        <SkillGroups skills={data} installing={install.isPending} onInstall={(id) => install.mutate(id)} />
       ) : (
         <p className="text-xs text-muted-foreground text-center py-4">{q ? 'Không tìm thấy skill' : 'Chưa có skill công khai nào'}</p>
       )}
+    </div>
+  )
+}
+
+// Nhóm Chính thức (N7AI) / Cộng đồng — server đã xếp theo lượt cài trong từng nhóm
+function SkillGroups({ skills, installing, onInstall }: { skills: AiPublicSkill[]; installing: boolean; onInstall: (id: string) => void }) {
+  const groups = [
+    { label: 'Chính thức', items: skills.filter((s) => s.official) },
+    { label: 'Cộng đồng', items: skills.filter((s) => !s.official) }
+  ].filter((g) => g.items.length)
+  return (
+    <div className="space-y-3">
+      {groups.map((g) => (
+        <section key={g.label} className="space-y-1.5">
+          {groups.length > 1 && <h3 className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{g.label}</h3>}
+          <ul className="divide-y divide-border/60 rounded-xl border">
+            {g.items.map((s) => (
+              <SkillLibraryRow key={s.id} skill={s} installing={installing} onInstall={() => onInstall(s.id)} />
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   )
 }

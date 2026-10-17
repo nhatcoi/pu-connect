@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { ArrowUpRight, Loader2, Users } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { SkillLibraryRow } from '@/components/chat/composer/skill-library-row'
 import { useAiSkillActions, useSkillLibrary } from '@/hooks/chat'
 import { SettingsGroup } from '../settings-ui'
 
@@ -11,6 +11,8 @@ import { SettingsGroup } from '../settings-ui'
 export function CommunityPanel() {
   const { data, isPending } = useSkillLibrary('')
   const { install } = useAiSkillActions()
+  // Nổi bật = nhiều lượt cài nhất (không ưu tiên skill chính thức)
+  const top = [...(data ?? [])].sort((a, b) => b.installCount - a.installCount).slice(0, 5)
   return (
     <>
       <div className="px-4 pb-2 sm:px-5">
@@ -26,26 +28,12 @@ export function CommunityPanel() {
       <SettingsGroup label="Skill nổi bật">
         {isPending ? (
           <Loader2 className="mx-auto my-4 h-4 w-4 animate-spin text-muted-foreground" />
-        ) : data?.length ? (
-          data.slice(0, 5).map((s) => (
-            <div key={s.id} className="flex items-center gap-2 py-2.5">
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{s.name}</span>
-                <span className="block truncate text-[11px] text-muted-foreground">
-                  /{s.slug} · {s.author.displayName} · {s.installCount} lượt cài
-                </span>
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 rounded-full text-xs"
-                disabled={s.installed || install.isPending}
-                onClick={() => install.mutate(s.id)}
-              >
-                {s.installed ? 'Đã cài' : 'Cài'}
-              </Button>
-            </div>
-          ))
+        ) : top.length ? (
+          <ul className="-mx-3 divide-y divide-border/60">
+            {top.map((s) => (
+              <SkillLibraryRow key={s.id} skill={s} installing={install.isPending} onInstall={() => install.mutate(s.id)} />
+            ))}
+          </ul>
         ) : (
           <p className="py-4 text-center text-xs text-muted-foreground">Chưa có skill công khai — hãy là người đầu tiên chia sẻ!</p>
         )}
