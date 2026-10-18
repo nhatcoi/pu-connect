@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, RotateCcw, Shuffle } from 'lucide-react'
+import { CheckCircle2, ChevronLeft, ChevronRight, RotateCcw, Shuffle } from 'lucide-react'
 import { toast } from 'sonner'
 import type { ReviewGrade, StudyItem, StudySetDetail } from '@pu/schemas'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
@@ -23,7 +23,8 @@ const GRADES: { grade: ReviewGrade; label: string; hint: string; key: string; cl
 const isDue = (it: StudyItem, now: number) => !it.dueAt || new Date(it.dueAt).getTime() <= now
 
 // Ôn thẻ: hàng đợi thẻ đến hạn (thẻ mới trước), lật ⇒ chấm ⇒ lịch ôn kế tiếp; "Quên" ⇒ gặp lại cuối phiên
-// Phím tắt: Space lật · 1–4 chấm
+// Trước / Sau: quay lại thẻ vừa xem hoặc bỏ qua thẻ (chưa chấm ⇒ dời cuối hàng)
+// Phím tắt: Space lật · 1–4 chấm · ← → trước / sau
 export function FlashcardReview({ set }: { set: StudySetDetail }) {
   const qc = useQueryClient()
   const [mode, setMode] = useState<'due' | 'all'>('due')
@@ -35,13 +36,16 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, set.id])
   const [queue, setQueue] = useState<string[]>(initialQueue)
+  // Thẻ đã xem (để quay lại) · thẻ đã chấm nhớ (đếm tiến độ, không trùng)
+  const [history, setHistory] = useState<string[]>([])
+  const [doneIds, setDoneIds] = useState<ReadonlySet<string>>(() => new Set())
   const [flipped, setFlipped] = useState(false)
-  const [done, setDone] = useState(0)
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     setQueue(initialQueue)
+    setHistory([])
+    setDoneIds(new Set())
     setFlipped(false)
-    setDone(0)
   }, [initialQueue])
 
   const byId = useMemo(() => new Map(set.items.map((it) => [it.id, it])), [set.items])
@@ -57,8 +61,14 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
         qc.setQueryData<StudySetDetail>(queryKeys.toolSet(set.id), (old) =>
           old ? { ...old, dueCount: res.dueCount, items: old.items.map((it) => (it.id === res.item.id ? res.item : it)) } : old
         )
+        setHistory((h) => [...h, current.id])
         setQueue((q) => (g === 'again' ? [...q.slice(1), q[0]] : q.slice(1)))
-        if (g !== 'again') setDone((n) => n + 1)
+        setDoneIds((d) => {
+          const next = new Set(d)
+          if (g === 'again') next.delete(current.id)
+          else next.add(current.id)
+          return next
+        })
         setFlipped(false)
       } catch (err) {
         toast.error(errorMessage(err, 'Không lưu được lượt ôn'))
@@ -69,23 +79,43 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
     [current, busy, set.id, qc]
   )
 
+  // Quay lại thẻ vừa xem: đưa lên đầu hàng (bỏ bản trùng nếu thẻ đang chờ ở cuối)
+  const prev = useCallback(() => {
+    const last = history.at(-1)
+    if (!last || busy) return
+    setHistory((h) => h.slice(0, -1))
+    setQueue((q) => [last, ...q.filter((id) => id !== last)])
+    setFlipped(false)
+  }, [history, busy])
+
+  // Bỏ qua thẻ chưa chấm: dời xuống cuối hàng
+  const next = useCallback(() => {
+    if (!current || busy || queue.length < 2) return
+    setHistory((h) => [...h, current.id])
+    setQueue((q) => [...q.slice(1), q[0]])
+    setFlipped(false)
+  }, [current, busy, queue.length])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest('input, textarea, [contenteditable]')) return
       if (e.code === 'Space') {
         e.preventDefault()
         setFlipped((f) => !f)
-      } else if (flipped) {
+      } else if (e.key === 'ArrowLeft') prev()
+      else if (e.key === 'ArrowRight') next()
+      else if (flipped) {
         const g = GRADES.find((x) => x.key === e.key)
         if (g) void grade(g.grade)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [flipped, grade])
+  }, [flipped, grade, prev, next])
 
   const finished = !current
-  const total = done + queue.length
+  const done = doneIds.size
+  const total = initialQueue.length
 
   if (finished) {
     return (
@@ -94,6 +124,11 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
         <p className="font-semibold">{done ? `Xong phiên ôn — ${done} thẻ` : 'Không còn thẻ đến hạn'}</p>
         <p className="text-xs text-muted-foreground">Thẻ sẽ quay lại đúng lúc bạn sắp quên.</p>
         <div className="flex justify-center gap-2 pt-1">
+          {history.length > 0 && (
+            <Button size="sm" variant="ghost" className="rounded-full gap-1" onClick={prev}>
+              <ChevronLeft className="h-3.5 w-3.5" /> Thẻ trước
+            </Button>
+          )}
           <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => setMode((m) => (m === 'all' ? 'due' : 'all'))}>
             <RotateCcw className="h-3.5 w-3.5" /> {mode === 'all' ? 'Chỉ thẻ đến hạn' : `Ôn tất cả ${set.items.length} thẻ`}
           </Button>
@@ -103,6 +138,28 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
   }
 
   const card = asCard(current.content)
+  const actions = flipped ? (
+    <div className="grid grid-cols-4 gap-2">
+      {GRADES.map((g) => (
+        <button
+          key={g.grade}
+          type="button"
+          disabled={busy}
+          onClick={() => void grade(g.grade)}
+          className={cn('rounded-xl border bg-card py-2 text-sm font-semibold transition-colors disabled:opacity-50', g.className)}
+        >
+          {g.label}
+          <span className="block text-[10px] font-normal text-muted-foreground">
+            {g.hint} · {g.key}
+          </span>
+        </button>
+      ))}
+    </div>
+  ) : (
+    <Button className="w-full h-10 rounded-xl" onClick={() => setFlipped(true)}>
+      Lật thẻ
+    </Button>
+  )
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -140,28 +197,23 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
         {!flipped && <span className="text-[11px] text-muted-foreground pt-2">Chạm hoặc nhấn Space để lật</span>}
       </button>
 
-      {flipped ? (
-        <div className="grid grid-cols-4 gap-2">
-          {GRADES.map((g) => (
-            <button
-              key={g.grade}
-              type="button"
-              disabled={busy}
-              onClick={() => void grade(g.grade)}
-              className={cn('rounded-xl border bg-card py-2 text-sm font-semibold transition-colors disabled:opacity-50', g.className)}
-            >
-              {g.label}
-              <span className="block text-[10px] font-normal text-muted-foreground">
-                {g.hint} · {g.key}
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <Button className="w-full rounded-xl" onClick={() => setFlipped(true)}>
-          Lật thẻ
-        </Button>
-      )}
+      <div className="flex items-stretch gap-2">
+        <NavButton label="Thẻ trước (←)" disabled={!history.length || busy} onClick={prev}>
+          <ChevronLeft className="h-4 w-4" />
+        </NavButton>
+        <div className="min-w-0 flex-1">{actions}</div>
+        <NavButton label="Bỏ qua, thẻ sau (→)" disabled={queue.length < 2 || busy} onClick={next}>
+          <ChevronRight className="h-4 w-4" />
+        </NavButton>
+      </div>
     </div>
+  )
+}
+
+function NavButton({ label, disabled, onClick, children }: { label: string; disabled: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <Button variant="outline" disabled={disabled} onClick={onClick} aria-label={label} title={label} className="h-auto min-h-10 w-10 shrink-0 rounded-xl px-0">
+      {children}
+    </Button>
   )
 }

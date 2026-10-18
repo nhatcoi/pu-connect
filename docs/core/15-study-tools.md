@@ -44,7 +44,7 @@ Prompt chế độ Flashcard: chỉ nêu chủ đề ⇒ 8–12 thẻ. Người 
 | --- | --- |
 | `/tools` | thẻ từng công cụ (số bộ, mục, thẻ cần ôn) + bộ gần đây |
 | `/tools/[kind]` | danh sách bộ, tìm theo tên, nút **Tạo bộ** (Tạo bằng N7AI / Tự soạn) |
-| `/tools/[kind]/[id]` | ôn flashcard (`FlashcardReview`: Space lật, phím 1–4 chấm) hoặc làm quiz (`QuizRunner`), xem toàn bộ mục, sửa / xóa |
+| `/tools/[kind]/[id]` | ôn flashcard (`FlashcardReview`: Space lật, phím 1–4 chấm, ← → thẻ trước / bỏ qua thẻ) hoặc làm quiz (`QuizRunner`: ← → chuyển câu, bỏ qua được, câu bỏ trống tính sai), xem toàn bộ mục, sửa / xóa |
 
 `components/tools/tool-catalog.ts` khai báo các loại công cụ. Thêm công cụ mới = thêm 1 mục ở đây, thêm `kind` vào schema / CHECK, và viết trình học tương ứng. Trình soạn `StudySetEditor` hỗ trợ tự nhập, dán danh sách (`mặt trước - mặt sau` mỗi dòng) và N7AI soạn nháp (thêm vào cuối bộ, xem lại rồi lưu).
 

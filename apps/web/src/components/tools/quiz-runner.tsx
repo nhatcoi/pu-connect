@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, RotateCcw, Trophy, X } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, RotateCcw, Trophy, X } from 'lucide-react'
 import type { StudySetDetail } from '@pu/schemas'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { asQuestion } from './tool-catalog'
 
 // Làm quiz: từng câu, chọn ⇒ xem đúng/sai + giải thích; hết bài ⇒ điểm, lưu điểm cao nhất
+// Câu trước / sau tự do (bỏ qua được, câu bỏ trống tính sai) · phím ← →
 export function QuizRunner({ set }: { set: StudySetDetail }) {
   const qc = useQueryClient()
   const [pos, setPos] = useState(0)
@@ -23,6 +24,18 @@ export function QuizRunner({ set }: { set: StudySetDetail }) {
   const q = item ? asQuestion(item.content) : null
   const choice = picked[pos]
   const correct = picked.filter((p, i) => p !== null && p === asQuestion(set.items[i].content).answer).length
+  const unanswered = picked.filter((p) => p === null).length
+
+  useEffect(() => {
+    if (finished) return
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.closest('input, textarea, [contenteditable]')) return
+      if (e.key === 'ArrowLeft') setPos((p) => Math.max(0, p - 1))
+      else if (e.key === 'ArrowRight') setPos((p) => Math.min(total - 1, p + 1))
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [finished, total])
 
   const finish = () => {
     setFinished(true)
@@ -85,10 +98,13 @@ export function QuizRunner({ set }: { set: StudySetDetail }) {
         <span>
           Câu {pos + 1}/{total}
         </span>
-        <span>Đúng {correct}</span>
+        <span>
+          Đúng {correct}
+          {unanswered ? ` · ${unanswered} chưa làm` : ''}
+        </span>
       </div>
       <div className="h-1 rounded-full bg-muted overflow-hidden">
-        <div className="h-full bg-primary transition-all" style={{ width: `${((pos + (choice !== null ? 1 : 0)) / total) * 100}%` }} />
+        <div className="h-full bg-primary transition-all" style={{ width: `${((total - unanswered) / total) * 100}%` }} />
       </div>
       <div className="rounded-2xl border bg-card p-4 space-y-3">
         <MarkdownPreview content={q.q} className="text-[15px] font-semibold leading-snug [&>p]:m-0" />
@@ -118,19 +134,20 @@ export function QuizRunner({ set }: { set: StudySetDetail }) {
         {choice !== null && q.explain && <p className="text-xs text-muted-foreground border-t pt-2">💡 {q.explain}</p>}
       </div>
       <div className="flex justify-between gap-2">
-        <Button variant="ghost" size="sm" disabled={pos === 0} onClick={() => setPos((p) => p - 1)}>
-          Câu trước
+        <Button variant="outline" size="sm" className="gap-1" disabled={pos === 0} onClick={() => setPos((p) => p - 1)}>
+          <ChevronLeft className="h-4 w-4" /> Câu trước
         </Button>
-        {pos < total - 1 ? (
-          <Button size="sm" disabled={choice === null} onClick={() => setPos((p) => p + 1)}>
-            Câu tiếp
-          </Button>
-        ) : (
-          <Button size="sm" disabled={choice === null} onClick={finish}>
-            Nộp bài
+        {pos < total - 1 && (
+          <Button variant={choice === null ? 'outline' : 'default'} size="sm" className="gap-1" onClick={() => setPos((p) => p + 1)}>
+            {choice === null ? 'Bỏ qua' : 'Câu tiếp'} <ChevronRight className="h-4 w-4" />
           </Button>
         )}
       </div>
+      {(pos === total - 1 || !unanswered) && (
+        <Button className="w-full rounded-xl" onClick={finish}>
+          Nộp bài{unanswered ? ` (${unanswered} câu bỏ trống)` : ''}
+        </Button>
+      )}
     </div>
   )
 }
