@@ -24,6 +24,38 @@ export const GOOGLE_MCP_PROVIDERS = {
   }
 } as const
 
+// Nhãn bước hiển thị khi N7AI gọi tool (message.progress) / Step labels shown while N7AI runs a tool
+const TOOL_LABELS: Record<string, string> = {
+  search_drive_files: 'Tìm tệp trong Drive',
+  get_drive_file_content: 'Đọc tệp Drive',
+  list_drive_items: 'Xem thư mục Drive',
+  list_calendars: 'Xem danh sách lịch',
+  get_events: 'Đọc sự kiện trong lịch',
+  query_freebusy: 'Kiểm tra lịch bận',
+  search_gmail_messages: 'Tìm thư trong Gmail',
+  get_gmail_message_content: 'Đọc thư',
+  get_gmail_messages_content_batch: 'Đọc thư',
+  get_gmail_thread_content: 'Đọc chuỗi thư',
+  list_gmail_labels: 'Xem nhãn Gmail'
+}
+
+const clip = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? (v.trim().length > max ? `${v.trim().slice(0, max - 1)}…` : v.trim()) : undefined)
+const day = (v: unknown) => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? new Date(v).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : undefined)
+
+// Nhãn + chi tiết ngắn (từ khóa, khoảng ngày, số thư) — không chứa dữ liệu Google trả về
+export function describeToolCall(tool: string, args: Record<string, unknown>): { label: string; detail?: string } {
+  const label = TOOL_LABELS[tool] ?? tool
+  const ids = args.message_ids ?? args.messageIds
+  const from = day(args.time_min ?? args.timeMin)
+  const to = day(args.time_max ?? args.timeMax)
+  const detail =
+    clip(args.query) ??
+    (Array.isArray(ids) ? `${ids.length} thư` : undefined) ??
+    (from || to ? [from, to].filter(Boolean).join(' – ') : undefined) ??
+    clip(args.file_name ?? args.fileName)
+  return detail ? { label, detail } : { label }
+}
+
 export type GoogleProvider = keyof typeof GOOGLE_MCP_PROVIDERS
 export const isGoogleProvider = (id: string): id is GoogleProvider => Object.hasOwn(GOOGLE_MCP_PROVIDERS, id)
 

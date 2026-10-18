@@ -9,6 +9,7 @@ import { ConnectorIcon } from '@/components/n7ai/connector-icon'
 import type { UiMessage } from '@/hooks/chat'
 import { SavedToTools } from '@/components/tools/saved-to-tools'
 import { AI_MODE_META } from './ai-modes'
+import { AiSteps } from './ai-steps'
 import { FlashcardDeck } from './flashcard-deck'
 import { QuizCard } from './quiz-card'
 import { splitStudyBlocks } from './study-blocks'
@@ -21,17 +22,28 @@ export function AiMessageBody({ message: m }: { message: AiBodyMessage }) {
   const segments = useMemo(() => splitStudyBlocks(m.content), [m.content])
   const mode = m.meta?.aiMode
 
-  if (m.status === 'streaming' && !m.content) {
+  const steps = m.meta?.steps ?? []
+  const live = m.status === 'streaming'
+
+  // Chưa có chữ: các bước đang chạy (Gmail / Drive / Lịch) hoặc "Đang suy nghĩ…"
+  if (live && !m.content) {
+    const running = steps.some((s) => s.status === 'running')
     return (
-      <span className="flex items-center gap-1.5 text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
-        {mode ? `Đang soạn ${AI_MODE_META[mode].label.toLowerCase()}…` : 'Đang suy nghĩ…'}
-      </span>
+      <div>
+        <AiSteps steps={steps} live />
+        {!running && (
+          <span className="flex items-center gap-1.5 text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
+            {steps.length ? 'Đang soạn câu trả lời…' : mode ? `Đang soạn ${AI_MODE_META[mode].label.toLowerCase()}…` : 'Đang suy nghĩ…'}
+          </span>
+        )}
+      </div>
     )
   }
 
   return (
     <div className="space-y-1">
+      <AiSteps steps={steps} live={live} />
       {segments.map((s, i) =>
         s.type === 'markdown' ? (
           <MarkdownPreview key={i} content={s.text} className="prose-sm max-w-none" />

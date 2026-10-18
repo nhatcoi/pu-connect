@@ -1,4 +1,5 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
+import type { AiStep } from '@pu/schemas'
 import type { DatabaseService } from '../src/database/database.service'
 import { GoogleOAuthService } from '../src/modules/ai/connectors/google-oauth.service'
 import { GoogleMcpService } from '../src/modules/ai/connectors/google-mcp.service'
@@ -187,17 +188,25 @@ describe('Google MCP connectors', () => {
     )
     const loop = new McpAgentService({ client: { chat: { completions: { create } } }, model: 'test' } as unknown as LlmService, app.get(GoogleMcpService))
     const output: string[] = []
+    const progress: AiStep[][] = []
     const result = await loop.stream(
       [{ role: 'user', content: 'Đối chiếu lịch trường với email về kỳ thi' }],
       user.id,
       ['google_calendar', 'google_gmail'],
-      (text) => output.push(text)
+      (text) => output.push(text),
+      (steps) => progress.push(steps)
     )
     expect(output.join('')).toContain('đã được đối chiếu')
     expect(result.calls).toHaveLength(2)
     expect(result.calls.every((c) => c.ok)).toBe(true)
     expect(result.usage).toEqual({ prompt_tokens: 30, completion_tokens: 15 })
     expect(calls.some((c) => c.name === 'search_gmail_messages')).toBe(true)
+    // Tiến trình: mỗi tool 1 lần running + 1 lần xong; nhãn tiếng Việt, chi tiết = từ khóa
+    expect(progress.map((p) => p.map((s) => s.status).join(','))).toEqual(['running', 'done', 'done,running', 'done,done'])
+    expect(result.steps).toEqual([
+      expect.objectContaining({ provider: 'google_calendar', label: 'Đọc sự kiện trong lịch', status: 'done' }),
+      expect.objectContaining({ provider: 'google_gmail', label: 'Tìm thư trong Gmail', detail: 'subject:thi', status: 'done' })
+    ])
   })
 
   it('does not expose private connectors to group replies even with forged connector metadata', async () => {
@@ -220,7 +229,7 @@ describe('Google MCP connectors', () => {
     const spy = jest.spyOn(app.get(McpAgentService), 'stream').mockImplementation(async (_messages, _userId, connectors, emit) => {
       expect(connectors).toEqual([])
       emit('Trả lời trong nhóm')
-      return { usage: { prompt_tokens: 1, completion_tokens: 1 }, finishReason: 'stop', calls: [] }
+      return { usage: { prompt_tokens: 1, completion_tokens: 1 }, finishReason: 'stop', calls: [], steps: [] }
     })
     try {
       expect(await app.get(N7AiService).reply(conv.id, owner.id, String(trigger.rows[0].id))).toBe('done')
@@ -264,6 +273,7 @@ describe('Google MCP connectors', () => {
         tools: [{ type: 'function', function: { name: 'google_drive__search_drive_files', parameters: { type: 'object' } } }],
         errors: [],
         call,
+        resolve: () => ({ provider: 'google_drive', tool: 'search_drive_files' }),
         close
       })
     } as unknown as GoogleMcpService
@@ -282,6 +292,7 @@ describe('Google MCP connectors', () => {
         tools: [{ type: 'function', function: { name: 'google_drive__search_drive_files', parameters: { type: 'object' } } }],
         errors: [],
         call: jest.fn(),
+        resolve: () => null,
         close
       })
     } as unknown as GoogleMcpService

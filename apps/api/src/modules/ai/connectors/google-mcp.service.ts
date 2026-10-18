@@ -16,6 +16,8 @@ export interface GoogleMcpSession {
   tools: OpenAI.Chat.Completions.ChatCompletionTool[]
   errors: string[]
   call: (name: string, args: Record<string, unknown>) => Promise<string>
+  // Tool đã cấp trong lượt ⇒ provider + tên gốc (null nếu không được phép)
+  resolve: (name: string) => { provider: GoogleProvider; tool: string } | null
   close: () => Promise<void>
 }
 
@@ -108,6 +110,10 @@ export class GoogleMcpService {
     return {
       tools,
       errors,
+      resolve: (name) => {
+        const entry = allowed.get(name)
+        return entry ? { provider: entry.provider, tool: entry.tool.name } : null
+      },
       call: async (name, args) => {
         const entry = allowed.get(name)
         if (!entry) return JSON.stringify({ error: 'Công cụ không được cấp quyền trong lượt hỏi này' })

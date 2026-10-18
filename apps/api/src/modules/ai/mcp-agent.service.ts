@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import type OpenAI from 'openai'
-import type { AiConnectorId } from '@pu/schemas'
+import type { AiConnectorId, AiStep } from '@pu/schemas'
+import { describeToolCall } from './connectors/google-mcp.providers'
 import { GoogleMcpService } from './connectors/google-mcp.service'
 import { LlmService, MAX_OUTPUT_TOKENS, type LlmMessage, type LlmUsage } from './llm.service'
 
@@ -24,7 +25,14 @@ export class McpAgentService {
     private readonly mcp: GoogleMcpService
   ) {}
 
-  async stream(messages: LlmMessage[], userId: string, connectors: AiConnectorId[], emit: (text: string) => void) {
+  // onSteps: danh sách bước tool (đầy đủ) mỗi khi đổi trạng thái ⇒ UI hiện "Đang tìm thư trong Gmail…"
+  async stream(
+    messages: LlmMessage[],
+    userId: string,
+    connectors: AiConnectorId[],
+    emit: (text: string) => void,
+    onSteps: (steps: AiStep[]) => void = () => undefined
+  ) {
     const client = this.llm.client
     if (!client) throw new Error('disabled')
     const signal = AbortSignal.timeout(TURN_TIMEOUT)
@@ -33,6 +41,7 @@ export class McpAgentService {
     let budgetUsed = 0
     let resultChars = 0
     const calls: { name: string; ok: boolean }[] = []
+    const steps: AiStep[] = []
     const history = [...messages]
     if (session.tools.length || session.errors.length) {
       history.unshift({
@@ -51,7 +60,7 @@ export class McpAgentService {
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const remaining = MAX_OUTPUT_TOKENS - budgetUsed
-        if (remaining <= 0) return { usage, finishReason: 'length', calls }
+        if (remaining <= 0) return { usage, finishReason: 'length', calls, steps }
         const toolsAllowed = round < MAX_ROUNDS - 1 && calls.length < MAX_CALLS && resultChars < 48_000 && session.tools.length > 0
         const stream = await client.chat.completions
           .create(
@@ -98,7 +107,7 @@ export class McpAgentService {
         usage.prompt_tokens += roundUsage?.prompt_tokens ?? 0
         usage.completion_tokens += roundUsage?.completion_tokens ?? 0
         budgetUsed += roundUsage?.completion_tokens ?? Buffer.byteLength(content + [...pending.values()].map((call) => call.arguments).join(''), 'utf8')
-        if (!pending.size || finishReason === 'length' || finishReason === 'content_filter') return { usage, finishReason, calls }
+        if (!pending.size || finishReason === 'length' || finishReason === 'content_filter') return { usage, finishReason, calls, steps }
         const toolCalls: OpenAI.Chat.Completions.ChatCompletionMessageToolCall[] = [...pending.values()].map((call) => ({
           id: call.id,
           type: 'function',
@@ -108,21 +117,33 @@ export class McpAgentService {
         // Sequential tool execution bounds provider load and preserves model dependencies.
         for (const call of pending.values()) {
           let result: string
+          let step: AiStep | undefined
           try {
             if (!toolsAllowed || calls.length >= MAX_CALLS || resultChars >= 48_000) throw new Error('Đã đạt giới hạn gọi công cụ trong lượt hỏi')
             const args: unknown = JSON.parse(call.arguments || '{}')
             if (!args || typeof args !== 'object' || Array.isArray(args)) throw new Error('Tham số công cụ phải là một object JSON')
+            const target = session.resolve(call.name)
+            if (target) {
+              step = { id: call.id || `step-${steps.length}`, provider: target.provider, ...describeToolCall(target.tool, args as Record<string, unknown>), status: 'running' }
+              steps.push(step)
+              onSteps(steps.map((s) => ({ ...s })))
+            }
             result = await session.call(call.name, args as Record<string, unknown>)
           } catch {
             result = JSON.stringify({ error: 'Không thực hiện được công cụ: tham số không hợp lệ hoặc đã đạt giới hạn lượt gọi' })
           }
           resultChars += result.length
           const parsed = JSON.parse(result) as { error?: string; isError?: boolean }
-          calls.push({ name: call.name, ok: !parsed.error && !parsed.isError })
+          const ok = !parsed.error && !parsed.isError
+          if (step) {
+            step.status = ok ? 'done' : 'error'
+            onSteps(steps.map((s) => ({ ...s })))
+          }
+          calls.push({ name: call.name, ok })
           history.push({ role: 'tool', tool_call_id: call.id, content: result })
         }
       }
-      return { usage, finishReason: 'length', calls }
+      return { usage, finishReason: 'length', calls, steps }
     } finally {
       await session.close()
     }

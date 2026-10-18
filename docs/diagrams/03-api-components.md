@@ -118,6 +118,7 @@ flowchart TB
 | Client → server | `presence` | `{ visible }` — tab hiện/ẩn, quyết định có cần Web Push |
 | Server → client | `message.new` · `message.updated` | `ChatMessage` tới room `user:{id}` của mọi thành viên |
 | Server → client | `message.delta` | `{ conversationId, messageId, delta }` — N7AI trả lời dần |
+| Server → client | `message.progress` | `{ conversationId, messageId, steps: AiStep[] }` — N7AI đang gọi Gmail / Drive / Lịch (danh sách đầy đủ, thay thế); bản cuối lưu `meta.steps` |
 | Server → client | `conv.read` · `conv.updated` · `conv.removed` | đã đọc `{conversationId, userId, lastReadMessageId}` (mọi thành viên) · đổi tên/thành viên · bị xóa khỏi nhóm |
 | Server → client | `conv.read` · `conv.updated` | đồng bộ đã đọc / hội thoại mới giữa các tab |
 | Server → client | `ai.thread.updated` | `AiThread` tới chủ thread khi tự đặt / đổi tên (vá cache lịch sử N7AI) |
@@ -128,6 +129,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-18 — Socket `message.progress` (bước tool MCP: nhãn, chi tiết ngắn, trạng thái) + `meta.steps` trên tin N7AI hoàn tất.
 - 2026-10-18 — `GoogleMcpService` nối `workspace-mcp` tự host (`GOOGLE_WORKSPACE_MCP_URL`, mặc định `http://127.0.0.1:8765/mcp`) thay 3 endpoint MCP chính thức của Google; allowlist tool theo tên của workspace-mcp.
 - 2026-10-18 — `StudyToolsModule`: `tools/overview`, `tools/sets` CRUD, `tools/sets/draft` (N7AI, trigger `tool`), `tools/sets/:id/review` (SRS), `tools/sets/:id/attempts`; N7AiService tự lưu khối flashcard / quiz (`meta.studySet`). Migration `study-tools-upgrade.sql`.
 - 2026-10-18 — `AiThreadShareService` + `AiSharedController`: chia sẻ thread N7AI qua link (`ai/threads/:id/share`, công khai `ai/shared/:token`); migration `ai-thread-share-upgrade.sql`.

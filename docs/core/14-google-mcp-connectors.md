@@ -34,6 +34,12 @@ One endpoint serves every provider, but each provider keeps its own OAuth grant 
 5. The model chooses tools and arguments, sees tool results and may make another call. Calendar IDs, dates and search terms come from the question/model rather than a fixed primary-calendar/14-day query. Results stream through the existing chat delta and follow-up splitter flow.
 6. The client closes in `finally`. Actual successful tool calls update `last_used_at`; discovery alone does not. Failures populate a sanitized `last_error`. Final AI messages invalidate the connector status query so Settings shows recent failures and offers reconnect.
 
+## Progress (tiến trình suy nghĩ)
+
+- Before and after each executed tool call, `McpAgentService` calls `onSteps` with the full step list; `N7AiService` emits socket `message.progress` `{ conversationId, messageId, steps }` to the conversation members.
+- `AiStep = { id, provider, label, detail?, status: running | done | error }`. `label` is a Vietnamese description per tool (`describeToolCall` in `google-mcp.providers.ts`), `detail` is only the search query, date range or message count from the model's arguments, never data returned by Google.
+- The final message stores `meta.steps`. The web `AiSteps` component shows the live list (connector icon, spinner / check / error) while streaming and a collapsed "Đã dùng N bước" toggle afterwards. Public share pages do not include steps.
+
 ## Account boundaries and limits
 
 - Each reply has separate MCP clients and bearer tokens, keyed by the authoritative sender. A mismatched requester/trigger sender is rejected.
@@ -69,5 +75,6 @@ Google responses and model completions are simulated in these integration tests.
 
 ## Changelog
 
+- 2026-10-18 — Tool progress: socket `message.progress`, `meta.steps`, `AiSteps` UI; Gmail logo in `ConnectorIcon`.
 - 2026-10-18 — Google's hosted MCP servers required the Developer Preview Program (every call failed) ⇒ switched to self-hosted `workspace-mcp` 2.1.0 on localhost (external bearer mode, read-only, stateless); tool allowlist renamed; endpoint via `GOOGLE_WORKSPACE_MCP_URL`.
 - 2026-10-17 — Replaced Google REST prefetch with model-driven MCP calls; added Gmail, private-turn isolation, read tool policies and separate agent OAuth credentials.

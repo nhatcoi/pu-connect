@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import type { AiThread, ChatMessage, MessageDeltaEvent, ReadEvent, TypingEvent } from '@pu/schemas'
+import type { AiThread, ChatMessage, MessageDeltaEvent, MessageProgressEvent, ReadEvent, TypingEvent } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 import { getRealtimeSocket } from '@/lib/realtime'
@@ -64,6 +64,12 @@ export function useChatRealtime() {
   useRealtimeEvent<MessageDeltaEvent>('message.delta', (e) => {
     patchMessages(qc, e.conversationId, (pages) =>
       pages.map((p) => ({ ...p, data: p.data.map((m) => (m.id === e.messageId ? { ...m, content: m.content + e.delta } : m)) }))
+    )
+  })
+  // N7AI đang gọi Gmail / Drive / Lịch: thay danh sách bước của tin đang stream
+  useRealtimeEvent<MessageProgressEvent>('message.progress', (e) => {
+    patchMessages(qc, e.conversationId, (pages) =>
+      pages.map((p) => ({ ...p, data: p.data.map((m) => (m.id === e.messageId ? { ...m, meta: { ...m.meta, steps: e.steps } } : m)) }))
     )
   })
   // Đã đọc: của mình ⇒ đồng bộ badge; của người khác ⇒ "Đã xem"

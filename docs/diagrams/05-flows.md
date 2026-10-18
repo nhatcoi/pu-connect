@@ -326,6 +326,7 @@ sequenceDiagram
   C-->>L: Chỉ các công cụ đọc trong allowlist
   loop Model cần thêm dữ liệu, trong budget
     L->>C: Công cụ + tham số do model chọn
+    L-->>U: message.progress (bước running: "Tìm thư trong Gmail · từ khóa")
     C->>G: tools/call với bearer của người hỏi
     G-->>C: Kết quả
     C-->>L: Tool result (dữ liệu không tin cậy)
@@ -337,6 +338,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-18 — `message.progress` trước/sau mỗi tool call; tin hoàn tất lưu `meta.steps`.
 - 2026-10-18 — MCP server = `workspace-mcp` tự host thay MCP chính thức của Google.
 - 2026-10-17 — Luồng N7AI: Google MCP discovery → model tool loop → streaming; cách ly dữ liệu theo tài khoản và loại hội thoại.
 - 2026-10-17 — 5.7: nguồn đánh số, N7AI ghi `[nguồn] n` ⇒ chỉ trích nguồn đã dùng; tìm thư viện khớp ≥ 2 từ khóa (bỏ hư từ); connector lỗi ⇒ `<connector_error>`.

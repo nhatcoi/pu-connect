@@ -132,6 +132,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-18 — `AiSteps` trong `AiMessageBody`: tiến trình N7AI (gọi Gmail / Drive / Lịch) từ socket `message.progress`, thu gọn "Đã dùng N bước" khi xong; logo Gmail trong `ConnectorIcon`.
 - 2026-10-18 — thêm `/tools`, `/tools/[kind]`, `/tools/[kind]/[id]` (Công cụ: Flashcard ôn lặp lại ngắt quãng, Quiz); sidebar có mục Công cụ; tin N7AI có `meta.studySet` hiện nhãn "Đã lưu vào Công cụ".
 - 2026-10-18 — `/share/[token]` (route group `(shared)`, server render, `noindex`): xem hội thoại N7AI được chia sẻ; `ShareThreadDialog` mở từ nút Chia sẻ ở `ThreadHeader` (thread AI) và menu ⋯ của `AiThreadList`.
 - 2026-10-17 — `ConnectorIcon` (logo Google Drive / Calendar) ở Trình kết nối, menu `+`, "Nguồn tham khảo"; trích dẫn Drive / Calendar / web mở tab mới.

@@ -154,14 +154,16 @@ export class N7AiService {
       const emit = (delta: string) => this.core.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
       // Phần sau dấu mốc = câu hỏi gợi ý tiếp theo ⇒ không đẩy ra màn hình
       const splitter = new FollowUpSplitter()
-      const { finishReason, usage } = await this.agent.stream(
+      const { finishReason, usage, steps } = await this.agent.stream(
         messages,
         requesterId,
         inGroup ? [] : (trigger.connectors ?? settings?.defaultConnectors ?? ['library']),
         (delta) => {
           const shown = splitter.push(delta)
           if (shown) emit(shown)
-        }
+        },
+        // Tiến trình gọi Gmail / Drive / Lịch ⇒ client hiện từng bước khi đang trả lời
+        (progress) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps: progress })
       )
 
       const { rest, text: answer, followUps, memories, cited } = splitter.finish()
@@ -179,7 +181,8 @@ export class N7AiService {
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', {
         ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
         ...(remembered.length ? { memoryUpdated: remembered } : {}),
-        ...(studySet ? { studySet } : {})
+        ...(studySet ? { studySet } : {}),
+        ...(steps.length ? { steps } : {})
       })
       await this.llm.finishRun(runId, { usage, startedAt: started })
       if (!inGroup) this.summaries.maybeSummarize(conversationId, botId)

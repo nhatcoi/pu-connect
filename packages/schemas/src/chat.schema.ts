@@ -165,6 +165,7 @@ export interface ChatMessageMeta {
   actorName?: string
   targetNames?: string[]
   followUps?: string[] // N7AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
+  steps?: AiStep[] // N7AI: các bước đã chạy (gọi Gmail / Drive / Lịch…) — hiện khi đang trả lời, thu gọn khi xong
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
 }
 
@@ -335,6 +336,20 @@ export interface AiQuota {
 }
 
 // Sự kiện realtime (Socket.IO, room user:{id})
+// Bước N7AI đang làm (tool call MCP): provider = connector, label tiếng Việt, detail = từ khóa / phạm vi ngắn (không có dữ liệu trả về)
+export interface AiStep {
+  id: string
+  provider: AiConnectorId
+  label: string
+  detail?: string
+  status: 'running' | 'done' | 'error'
+}
+// message.progress: danh sách bước đầy đủ (thay thế, không cộng dồn) của tin đang stream
+export interface MessageProgressEvent {
+  conversationId: string
+  messageId: string
+  steps: AiStep[]
+}
 export interface MessageDeltaEvent {
   conversationId: string
   messageId: string
