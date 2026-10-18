@@ -1,6 +1,10 @@
 import { z } from 'zod'
-import { FLASHCARD_TEMPLATES, SPEECH_LANGS, type FlashcardContent } from '@pu/schemas'
+import type { FlashcardContent, FlashcardTemplate, SpeechLang } from '@pu/schemas'
 import { STUDY_AI_MAX_ITEMS, type StudyKindDef } from './study-kind'
+
+// @pu/schemas chỉ import type ở API ⇒ khai báo lại hằng runtime (satisfies giữ khớp)
+const FLASHCARD_TEMPLATES = ['basic', 'vocab'] as const satisfies readonly FlashcardTemplate[]
+const SPEECH_LANGS = ['en-US', 'en-GB', 'vi-VN', 'zh-CN', 'ja-JP', 'ko-KR', 'fr-FR', 'de-DE', 'es-ES', 'ru-RU'] as const satisfies readonly SpeechLang[]
 
 // Thẻ ghi nhớ: mô tả từng trường (.describe) đi thẳng vào JSON Schema N7AI nhận
 export const FlashcardContentSchema = z.object({
