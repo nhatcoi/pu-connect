@@ -58,6 +58,11 @@ export const queryKeys = {
   aiUsage: ['ai-usage'] as const,
   aiSuggestions: (mode: string) => ['ai-suggestions', mode] as const,
   presence: ['presence'] as const,
+  // Công cụ học tập (/tools)
+  toolsAll: ['tools'] as const,
+  toolsOverview: ['tools', 'overview'] as const,
+  toolSets: (kind: string, q: string) => ['tools', 'sets', kind, q.trim().toLowerCase()] as const,
+  toolSet: (id: string) => ['tools', 'set', id] as const,
   admin: (section: string, ...args: unknown[]) => ['admin', section, ...args] as const
 }
 

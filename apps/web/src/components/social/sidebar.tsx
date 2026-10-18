@@ -17,7 +17,8 @@ import {
   Compass,
   Bell,
   MessageCircle,
-  Sparkles
+  Sparkles,
+  Wrench
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
@@ -45,6 +46,7 @@ export type NavTabType =
   | 'qa'
   | 'messages'
   | 'n7ai'
+  | 'tools'
 
 interface SidebarProps {
   currentTab?: NavTabType
@@ -64,6 +66,7 @@ export function Sidebar({ currentTab, onTabChange }: SidebarProps) {
     { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
     { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
     { id: 'courses' as const, path: '/courses', label: 'Học phần', icon: GraduationCap },
+    { id: 'tools' as const, path: '/tools', label: 'Công cụ', icon: Wrench },
     {
       id: 'messages' as const,
       path: '/messages',
