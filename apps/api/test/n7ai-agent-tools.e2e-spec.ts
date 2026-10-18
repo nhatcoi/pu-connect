@@ -3,6 +3,7 @@ import type { DatabaseService } from '../src/database/database.service'
 import { parseActionLines, safeAppHref, toActions } from '../src/modules/chat/n7ai/agent/ai-actions'
 import { HistoryToolsService } from '../src/modules/chat/n7ai/agent/history-tools.service'
 import { PucToolsService } from '../src/modules/chat/n7ai/agent/puc-tools.service'
+import { StudyDigestService, studyDigestPrompt } from '../src/modules/chat/n7ai/agent/study-digest.service'
 import { AiMemoriesService } from '../src/modules/chat/n7ai/ai-memories.service'
 import { FollowUpSplitter, parseFollowUps } from '../src/modules/chat/n7ai/n7ai.followups'
 import { learnerPrompt } from '../src/modules/chat/n7ai/n7ai.prompts'
@@ -140,5 +141,23 @@ describe('N7AI agent tools (e2e)', () => {
     expect((await agent.patch(`/api/ai/memories/${pinned.id}/pin`).send({ pinned: true }).expect(200)).body.data.pinned).toBe(true)
     expect((await memories.recall(user.id, 'âm nhạc'))[0]).toBe('Thi cuối kỳ Giải tích ngày 20/12')
     expect((await agent.get('/api/ai/memories').expect(200)).body.data[0].id).toBe(pinned.id)
+  })
+
+  it('Tiến độ học tóm tắt: bộ đã ôn gần đây, thẻ hay quên, đưa vào system prompt', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    expect(await app.get(StudyDigestService).recent(user.id)).toEqual([]) // chưa học gì ⇒ không có khối
+    const set = (
+      await agent
+        .post('/api/tools/sets')
+        .send({ kind: 'flashcards', title: 'Vũ trụ', items: [{ content: { front: 'Wormhole', back: 'Lỗ sâu' } }, { content: { front: 'Galaxy', back: 'Thiên hà' } }] })
+        .expect(201)
+    ).body.data
+    await agent.post(`/api/tools/sets/${set.id}/review`).send({ itemId: set.items[0].id, grade: 'again' }).expect(201)
+
+    const digest = await app.get(StudyDigestService).recent(user.id)
+    expect(digest).toEqual([expect.objectContaining({ title: 'Vũ trụ', kind: 'flashcards', items: 2, learned: 0, weak: ['Wormhole'] })])
+    expect(studyDigestPrompt(digest)).toContain('hay quên: Wormhole')
+    expect(studyDigestPrompt([])).toBe('')
   })
 })

@@ -65,19 +65,34 @@ Web (`components/chat/ai/ai-actions.tsx`):
   - Danh sách xếp ghim trước.
   - Nút ghim ở Cài đặt › Bộ nhớ.
 
-## 6. Dữ liệu & vận hành
+## 6. Tiến độ học tóm tắt (thay "ghi bộ nhớ sau mỗi lần ôn")
+
+`agent/study-digest.service.ts` tính **lúc hỏi** từ lịch ôn, không ghi vào `ai_memories`. Lý do: luôn mới, không sinh mục trùng mỗi lần ôn, không cần sửa luồng ôn (`study-tools`).
+- **Phạm vi:** ≤ 3 bộ học gần nhất trong 30 ngày. Flashcard: số thẻ đã thuộc, đến hạn, ≤ 5 thẻ hay quên nhất. Quiz: điểm cao nhất.
+- **Dùng chung định nghĩa** trạng thái thẻ với tool `my_study` (`study-progress.sql.ts`).
+- **Vào system prompt** thành khối `<study_progress>`, chỉ khi bật connector `my_study`. N7AI chủ động nhắc ôn thẻ đến hạn / từ hay quên mà không cần gọi tool; muốn xem chi tiết thì gọi `my_study__*`.
+
+## 7. Dữ liệu & vận hành
 
 - Migration `ai-agent-upgrade.sql`: 3 cột hồ sơ, `ai_memories.pinned`. Bật `my_chats` **đúng 1 lần** cho người đã có cài đặt, với mốc là DEFAULT của cột ⇒ người tự tắt không bị bật lại.
 - Bước tiến trình: provider `my_chats` (icon hội thoại), `puc` (logo PU). `AiStep.provider: AiToolProvider = AiConnectorId | 'puc'`.
 
-## 7. Kiểm thử
+## 8. Kiểm thử
 
 `apps/api/test/n7ai-agent-tools.e2e-spec.ts` gồm 4 nhóm:
 - **Hội thoại cũ:** tìm bỏ dấu, đọc lại, chặn thread hiện tại / thread của người khác.
 - **Tool PUC:** tìm nhóm học / cộng đồng, hướng dẫn app, nhóm tham gia được.
 - **Nút:** chặn link ngoài / sai định dạng, nhóm không hợp lệ bị bỏ, không lẫn vào câu gợi ý.
 - **Hồ sơ học & ghim:** lưu / xóa từng trường, giới hạn độ dài, mục ghim luôn được nhớ.
+- **Tiến độ tóm tắt:** chưa học ⇒ không có khối; ôn "Quên" ⇒ thẻ vào danh sách hay quên.
+
+**Model thật (2026-10-18):** script chạy trên VPS với model đang dùng, prompt và tool thật, kết quả tool giả (không chạm dữ liệu người dùng).
+- "nhóm học Giải tích đang tuyển" ⇒ `puc__search`, kèm nút tham gia + mở học phần.
+- "làm flashcard ở đâu" ⇒ `puc__app_help`, kèm nút `/tools`.
+- "lần trước hỏi gì về đạo hàm riêng" ⇒ `search_threads` → `get_thread`, trích đúng thread.
+- Câu hỏi gợi ý không lẫn dòng nút.
 
 ## Changelog
 
+- 2026-10-18 — Tiến độ học tóm tắt `<study_progress>` (thay ghi bộ nhớ sau mỗi lần ôn); kiểm hành vi model thật.
 - 2026-10-18 — Bản đầu: `my_chats`, `puc__search` / `puc__app_help`, `meta.actions` (link + tham gia nhóm có xác nhận), hồ sơ học, ghim bộ nhớ.

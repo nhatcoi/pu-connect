@@ -18,6 +18,7 @@ import { ChatPushService } from './notify/chat-push.service'
 import { ChatMentionsService } from './mentions/chat-mentions.service'
 import { HistoryToolsService } from './n7ai/agent/history-tools.service'
 import { PucToolsService } from './n7ai/agent/puc-tools.service'
+import { StudyDigestService } from './n7ai/agent/study-digest.service'
 import { AiDataService } from './n7ai/ai-data.service'
 import { AiFeedbackService } from './n7ai/ai-feedback.service'
 import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './n7ai/ai-maintenance.processor'
@@ -79,6 +80,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     AiLibraryService,
     HistoryToolsService,
     PucToolsService,
+    StudyDigestService,
     N7AiService,
     ConversationsService,
     StudyGroupChatService,
