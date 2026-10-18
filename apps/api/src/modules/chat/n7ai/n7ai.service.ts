@@ -3,7 +3,8 @@ import type { AiConnectorId, AiMode, AiSettings, ChatAttachment, ChatCitation, C
 import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripN7AiMention } from '../../ai/ai.constants'
 import { AiRetrieval, contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
-import { LlmService, MAX_OUTPUT_TOKENS, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg, type LlmUsage } from '../../ai/llm.service'
+import { McpAgentService, McpModelError } from '../../ai/mcp-agent.service'
+import { LlmService, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg } from '../../ai/llm.service'
 import { StudyToolsService } from '../../study-tools/study-tools.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
@@ -57,6 +58,7 @@ export class N7AiService {
   constructor(
     private readonly core: ChatCoreService,
     private readonly llm: LlmService,
+    private readonly agent: McpAgentService,
     private readonly retrieval: AiRetrieval,
     private readonly chatPush: ChatPushService,
     private readonly refs: ChatRefsService,
@@ -96,7 +98,7 @@ export class N7AiService {
     const botId = await this.llm.getBotId()
     const started = Date.now()
     const trigger = await this.loadTrigger(triggerId)
-    if (!trigger) return 'error'
+    if (!trigger || trigger.senderId !== requesterId) return 'error'
     const inGroup = trigger.type === 'group'
     // Nhóm chat: không dùng cài đặt / dữ liệu riêng của người hỏi
     const settings = inGroup ? null : await this.settings.get(trigger.senderId)
@@ -147,28 +149,20 @@ export class N7AiService {
     const messages = await this.buildMessages(conversationId, botId, trigger, question, retrieved, settings)
 
     try {
-      const stream = await client.chat.completions.create({
-        model: this.llm.model,
-        max_tokens: MAX_OUTPUT_TOKENS,
-        stream: true,
-        stream_options: { include_usage: true },
-        messages
-      })
       // Danh sách thành viên lấy 1 lần (delta đến liên tục)
       const memberIds = await this.core.memberIds(conversationId)
       const emit = (delta: string) => this.core.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
       // Phần sau dấu mốc = câu hỏi gợi ý tiếp theo ⇒ không đẩy ra màn hình
       const splitter = new FollowUpSplitter()
-      let finishReason: string | null = null
-      let usage: LlmUsage = { prompt_tokens: 0, completion_tokens: 0 }
-      for await (const chunk of stream) {
-        const choice = chunk.choices[0]
-        const delta = choice?.delta?.content
-        const shown = delta ? splitter.push(delta) : ''
-        if (shown) emit(shown)
-        if (choice?.finish_reason) finishReason = choice.finish_reason
-        if (chunk.usage) usage = chunk.usage
-      }
+      const { finishReason, usage } = await this.agent.stream(
+        messages,
+        requesterId,
+        inGroup ? [] : (trigger.connectors ?? settings?.defaultConnectors ?? ['library']),
+        (delta) => {
+          const shown = splitter.push(delta)
+          if (shown) emit(shown)
+        }
+      )
 
       const { rest, text: answer, followUps, memories, cited } = splitter.finish()
       if (rest) emit(rest)
@@ -195,7 +189,11 @@ export class N7AiService {
       await this.finish(
         placeholder.id,
         conversationId,
-        busy ? 'N7AI đang quá tải, bạn thử lại sau ít phút nhé.' : 'N7AI gặp lỗi khi trả lời. Bạn thử lại sau nhé.',
+        err instanceof McpModelError
+          ? err.message
+          : busy
+            ? 'N7AI đang quá tải, bạn thử lại sau ít phút nhé.'
+            : 'N7AI gặp lỗi khi trả lời. Bạn thử lại sau nhé.',
         null,
         'error'
       )

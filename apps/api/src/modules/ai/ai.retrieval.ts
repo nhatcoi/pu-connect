@@ -1,8 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
-import { GoogleCalendarService } from './connectors/google-calendar.service'
-import { GoogleDriveService } from './connectors/google-drive.service'
 import { WebReaderService } from './connectors/web-reader.service'
 
 export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive' | 'calendar' | 'web'; id: string; title: string; body: string }
@@ -11,7 +9,6 @@ export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group'
 export type ConnectorFailure = { name: string; message: string }
 export type Retrieved = { sources: Source[]; failures: ConnectorFailure[] }
 
-const PROVIDER_NAMES: Record<string, string> = { google_drive: 'Google Drive', google_calendar: 'Google Calendar' }
 
 export interface RetrieveOptions {
   connectors?: AiConnectorId[] // mặc định: ['library']
@@ -58,13 +55,11 @@ export class AiRetrieval {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly drive: GoogleDriveService,
-    private readonly calendar: GoogleCalendarService,
     private readonly web: WebReaderService
   ) {}
 
   async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Retrieved> {
-    const connectors = new Set(opts.connectors?.length ? opts.connectors : ['library'])
+    const connectors = new Set(opts.connectors ?? ['library'])
     const tsquery = toTsQuery(question)
     const research = !!opts.research
     const tasks: Promise<Source[]>[] = []
@@ -74,8 +69,6 @@ export class AiRetrieval {
     if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
     if (connectors.has('web')) tasks.push(this.safe('web', () => this.webPages(question, research)))
     if (connectors.has('web_search')) tasks.push(this.safe('web_search', () => this.webSearch(question, research)))
-    if (connectors.has('google_drive')) tasks.push(this.tracked('google_drive', requesterId, failures, () => this.googleDrive(question, requesterId, research)))
-    if (connectors.has('google_calendar')) tasks.push(this.tracked('google_calendar', requesterId, failures, () => this.googleCalendar(requesterId, research)))
     return { sources: (await Promise.all(tasks)).flat(), failures }
   }
 
@@ -85,22 +78,6 @@ export class AiRetrieval {
       return await fn()
     } catch (err: any) {
       this.logger.warn(`Truy xuất ${name} thất bại: ${err?.message}`)
-      return []
-    }
-  }
-
-  // Connector tài khoản ngoài: ghi lần dùng / lỗi gần nhất (trang Trình kết nối hiển thị)
-  private async tracked(provider: string, userId: string, failures: ConnectorFailure[], fn: () => Promise<Source[]>): Promise<Source[]> {
-    try {
-      const sources = await fn()
-      await this.db.query(`UPDATE user_connectors SET last_used_at = NOW(), last_error = NULL WHERE user_id = $1 AND provider = $2`, [userId, provider])
-      return sources
-    } catch (err: any) {
-      this.logger.warn(`Truy xuất ${provider} thất bại: ${err?.message}`)
-      failures.push({ name: PROVIDER_NAMES[provider] ?? provider, message: String(err?.message ?? err).slice(0, 200) })
-      await this.db
-        .query(`UPDATE user_connectors SET last_error = $3 WHERE user_id = $1 AND provider = $2`, [userId, provider, String(err?.message ?? err).slice(0, 200)])
-        .catch(() => undefined)
       return []
     }
   }
@@ -164,18 +141,6 @@ export class AiRetrieval {
       [tsquery, requesterId, research ? 4 : 2]
     )
     return res.rows.map((r) => ({ type: 'document' as const, id: r.id, title: r.title, body: r.body }))
-  }
-
-  // Google Drive (đã kết nối): file khớp từ khóa, đọc nội dung
-  private async googleDrive(question: string, requesterId: string, research: boolean): Promise<Source[]> {
-    const files = await this.drive.search(requesterId, question, research ? 4 : 2)
-    return files.map((f) => ({ type: 'drive' as const, id: f.id, title: f.title, body: f.body }))
-  }
-
-  // Google Calendar (đã kết nối): lịch 14 ngày tới (Research: 30 ngày)
-  private async googleCalendar(requesterId: string, research: boolean): Promise<Source[]> {
-    const events = await this.calendar.upcoming(requesterId, research ? 30 : 14, research ? 40 : 20)
-    return events.map((e) => ({ type: 'calendar' as const, id: e.id, title: e.title, body: e.body }))
   }
 
   // Nhóm học của tôi: tóm tắt ngắn (không phụ thuộc câu hỏi, ≤ 5 nhóm)

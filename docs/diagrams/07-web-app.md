@@ -136,6 +136,7 @@ Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắ
 - 2026-10-18 — `/share/[token]` (route group `(shared)`, server render, `noindex`): xem hội thoại N7AI được chia sẻ; `ShareThreadDialog` mở từ nút Chia sẻ ở `ThreadHeader` (thread AI) và menu ⋯ của `AiThreadList`.
 - 2026-10-17 — `ConnectorIcon` (logo Google Drive / Calendar) ở Trình kết nối, menu `+`, "Nguồn tham khảo"; trích dẫn Drive / Calendar / web mở tab mới.
 - 2026-10-17 — Thư viện skill: `SkillLibraryRow` dùng chung, nhóm Chính thức / Cộng đồng, ẩn lượt cài = 0.
+- 2026-10-17 — Trình kết nối có Gmail, kết nối lại khi lỗi và skeleton tải đầu; hoàn tất trả lời AI làm mới trạng thái connector MCP.
 - 2026-10-17 — Đổi tên PU AI → N7AI: route `/n7ai*` (redirect 308 từ `/puai*`, `/settings/puai*`, `/c/puai`), `components/n7ai/`, `components/settings/n7ai/`, `lib/n7ai-routes.ts`.
 - 2026-10-17 — Skill: menu Tạo skill (N7AI · tự viết · tải `.md`), `lib/skill-file.ts`, hook `useAiSkillActions().draft`, badge chính thức ở Thư viện.
 - 2026-10-17 — Tách `/admin` khỏi `apps/web` sang ứng dụng Static SPA độc lập `apps/admin` (`admin-puc.vnhat.dev`) với 6 phân hệ điều hành và phân quyền RBAC.

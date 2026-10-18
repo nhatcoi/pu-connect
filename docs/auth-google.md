@@ -72,6 +72,8 @@ N7AI đọc được Drive / lịch của người dùng **sau khi họ tự k�
 - Refresh token mã hóa **AES-256-GCM** (khóa = SHA-256 của `CONNECTOR_ENCRYPTION_KEY`, mặc định `SESSION_SECRET`) trong bảng `user_connectors`; access token chỉ giữ trong bộ nhớ. Google trả `invalid_grant` (người dùng thu hồi) ⇒ tự xóa kết nối. Ngắt kết nối gọi `oauth2.googleapis.com/revoke`. Nhóm chat không dùng connector Google.
 
 Cấu hình thêm trên Google Cloud Console (cùng OAuth client):
+**Cập nhật 2026-10-17:** Google connectors đã chuyển sang MCP (server tự host `workspace-mcp`) và thêm Gmail. Cấu hình hiện hành, OAuth client dành cho AI agent và quyền chỉ đọc: [Google MCP connectors](./core/14-google-mcp-connectors.md). Các bước REST dưới đây được giữ làm lịch sử triển khai trước MCP.
+
 1. **APIs & Services → Library**: bật **Google Drive API** và **Google Calendar API**.
 2. **OAuth consent screen → Scopes**: thêm `.../auth/drive.readonly` (*restricted*) và `.../auth/calendar.readonly` (*sensitive*). Khi app ở chế độ *Testing* chỉ test user dùng được; mở cho mọi người cần Google xác minh app.
 3. **Không cần thêm redirect URI** (dùng lại URI đăng nhập đã khai báo). Đã kiểm trên stage 2026-10-16: URI đăng nhập + scope `drive.readonly` được Google chấp nhận (vào màn đăng nhập); URI riêng chưa khai báo thì Google trả `redirect_uri_mismatch`.

@@ -15,7 +15,7 @@ flowchart TB
   r2["Cloudflare R2<br/>lưu ảnh, tài liệu, avatar"]
   dicebear["DiceBear API<br/>avatar mặc định"]
   pushsvc["Push service trình duyệt<br/>FCM · Mozilla · Apple"]
-  gdrive["Google Drive / Calendar API<br/>connector N7AI (chỉ đọc)"]
+  gdrive["Google Drive / Calendar / Gmail API<br/>qua workspace-mcp tự host · connector N7AI (chỉ đọc)"]
   tavily["Tavily Search API<br/>tìm kiếm web (tùy chọn)"]
   web["Trang web công khai<br/>link người dùng gửi"]
   llm["LLM gateway (OpenAI-compatible)<br/>api-ai.vnhat.dev · N7AI (@n7ai)"]
@@ -31,7 +31,7 @@ flowchart TB
   pushsvc -->|thông báo hệ điều hành| student
   puc -.->|avatar URL| dicebear
   puc -->|HTTPS · chat/completions stream| llm
-  puc -->|OAuth chỉ đọc · Drive files.list/export · Calendar events.list| gdrive
+  puc -->|OAuth chỉ đọc · MCP tools/list + tools/call| gdrive
   puc -.->|HTTPS search (khi có key)| tavily
   puc -->|HTTP(S) GET, chặn SSRF| web
 
@@ -47,7 +47,7 @@ flowchart TB
 | Phụ thuộc ngoài | Dùng cho | Cấu hình | Khi lỗi |
 |---|---|---|---|
 | Google OAuth | Đăng nhập Google | `GOOGLE_CLIENT_ID/SECRET/CALLBACK_URL` | Nút Google tự ẩn nếu chưa cấu hình |
-| Google Drive / Calendar API | Connector N7AI: đọc file Drive, lịch sắp tới của người dùng đã kết nối | Dùng lại `GOOGLE_CLIENT_ID/SECRET`; `GOOGLE_CONNECTOR_CALLBACK_URL` (mặc định cùng origin), `CONNECTOR_ENCRYPTION_KEY` | Chưa cấu hình ⇒ mục Drive bị khóa; token bị thu hồi ⇒ tự ngắt kết nối; lỗi ⇒ N7AI bỏ qua nguồn Drive |
+| Google Drive / Calendar / Gmail API (qua `workspace-mcp`) | Connector N7AI: model chọn công cụ tìm/đọc dữ liệu Google | `GOOGLE_WORKSPACE_MCP_URL`, `GOOGLE_MCP_CLIENT_ID/SECRET` (fallback client Google hiện có), callback, `CONNECTOR_ENCRYPTION_KEY` | workspace-mcp dừng ⇒ lỗi hiện trong Settings/chat; không fallback REST |
 | Tavily Search API | Connector "Tìm kiếm web" của N7AI | `TAVILY_API_KEY` | Không có key ⇒ connector tắt; lỗi ⇒ bỏ qua nguồn web |
 | Gmail SMTP | Email xác thực | `SMTP_HOST/PORT/USER/PASS`, `MAIL_FROM` | Không có `SMTP_HOST` ⇒ chỉ log link |
 | Cloudflare R2 | Upload file | `R2_*` | Upload lỗi, phần còn lại vẫn chạy |
@@ -56,6 +56,8 @@ flowchart TB
 | LLM gateway OpenAI-compatible | N7AI trả lời trong hội thoại `/messages` | `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` (mặc định `v9`), `AI_DAILY_QUOTA` | Thiếu key ⇒ bot trả lời "chưa bật"; 429/5xx ⇒ tin lỗi "quá tải" · xem [06-messaging-and-ai](../core/06-messaging-and-ai.md) |
 
 **Changelog:**
+- 2026-10-18 — Google connectors dùng `workspace-mcp` tự host (localhost, read-only) thay MCP chính thức của Google (cần Developer Preview).
+- 2026-10-17 — N7AI chuyển Google connectors sang remote MCP chính thức; thêm Gmail và OAuth client dành cho AI agent.
 - 2026-10-16 — N7AI đọc trang web công khai (chặn SSRF) và tìm kiếm qua Tavily (tùy chọn).
 - 2026-10-16 — thêm Google Calendar API (connector N7AI), callback connector chung.
 - 2026-10-16 — thêm Google Drive API (connector N7AI, OAuth `drive.readonly`).

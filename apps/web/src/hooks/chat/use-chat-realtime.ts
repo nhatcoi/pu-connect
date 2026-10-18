@@ -55,6 +55,7 @@ export function useChatRealtime() {
     applyUpdatedMessage(qc, msg)
     if (msg.kind === 'ai' && msg.status !== 'streaming') {
       void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
+      void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })
       // Câu trả lời có quiz / flashcard ⇒ Thư viện › Học liệu
       if (/```(quiz|flashcards)/.test(msg.content)) void qc.invalidateQueries({ queryKey: queryKeys.aiLibrary('study') })
     }

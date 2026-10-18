@@ -17,6 +17,7 @@
 | [**`07-search.md`**](./07-search.md) | Search chuẩn: full-text bỏ dấu tiếng Việt + gõ sai (trigram), xếp hạng, quy tắc quyền xem, `search_logs`, hiệu năng. | ✅ Đã triển khai |
 | [**`08-web-state.md`**](./08-web-state.md) | Quản lý state phía web (ADR): TanStack Query cho dữ liệu server, zustand cho UI, layout chung, cache/prefetch/cập nhật lạc quan. | ✅ Đã triển khai |
 | [**`06-messaging-and-ai.md`**](./06-messaging-and-ai.md) | Nhắn tin 1-1/nhóm, N7AI (`@n7ai` là bot user), AI drawer theo ngữ cảnh, tác vụ nhanh, RAG pgvector, lộ trình P0–P5. | 📐 Thiết kế |
+| [**`14-google-mcp-connectors.md`**](./14-google-mcp-connectors.md) | Google MCP client + server tự host `workspace-mcp`: Drive, Calendar, Gmail; vòng lặp tool calling, OAuth, quyền chỉ đọc và cấu hình. | ✅ Đã triển khai |
 | [**`13-admin-console.md`**](./13-admin-console.md) | Cổng quản trị (chỉ admin): xem gì ở đâu, xử phạt theo bậc, điểm rủi ro, nhật ký bảo mật, lượt xem hồ sơ, quyền riêng tư & vận hành. | ✅ Đã triển khai |
 
 ---

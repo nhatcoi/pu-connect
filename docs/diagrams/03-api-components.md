@@ -20,7 +20,7 @@ flowchart TB
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
     chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
-    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval · prompts"]
+    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>McpAgentService · GoogleMcpService · GoogleOAuth"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
     tools["<b>StudyTools</b><br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tự lưu từ chat"]
   end
@@ -54,7 +54,7 @@ flowchart TB
   tools --> ai
   posts -->|PostAiService: @n7ai trong bình luận · tóm tắt bài| ai
   ai -->|chat/completions| llm["LLM gateway"]
-  ai -->|AiConnectorsController · GoogleOAuth → Drive / Calendar| gdrive["Google Drive / Calendar"]
+  ai -->|"OAuth · MCP initialize / tools/list / tools/call"| gdrive["workspace-mcp (localhost) → Google Drive / Calendar / Gmail API"]
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
   others -->|StudyGroupChatService: đồng bộ thành viên| chat
   blocks -->|block.changed| rt
@@ -128,8 +128,10 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-18 — `GoogleMcpService` nối `workspace-mcp` tự host (`GOOGLE_WORKSPACE_MCP_URL`, mặc định `http://127.0.0.1:8765/mcp`) thay 3 endpoint MCP chính thức của Google; allowlist tool theo tên của workspace-mcp.
 - 2026-10-18 — `StudyToolsModule`: `tools/overview`, `tools/sets` CRUD, `tools/sets/draft` (N7AI, trigger `tool`), `tools/sets/:id/review` (SRS), `tools/sets/:id/attempts`; N7AiService tự lưu khối flashcard / quiz (`meta.studySet`). Migration `study-tools-upgrade.sql`.
 - 2026-10-18 — `AiThreadShareService` + `AiSharedController`: chia sẻ thread N7AI qua link (`ai/threads/:id/share`, công khai `ai/shared/:token`); migration `ai-thread-share-upgrade.sql`.
+- 2026-10-17 — Thêm GoogleMcpService và McpAgentService; gỡ Drive/Calendar REST services; thêm provider google_gmail vào endpoint OAuth hiện có.
 - 2026-10-17 — `SecurityLogService` ghi vị trí gần đúng (header Cloudflare `cf-ipcountry` / `cf-region` / `cf-ipcity`) + cờ `unusual` (quốc gia/vùng mới trong 90 ngày) ⇒ thông báo `account_notice`, yếu tố rủi ro; `admin/security-events?result=unusual&country=`.
 - 2026-10-17 — `AdminUserDataService`: `admin/users/:id/activity`, `admin/users/:id/sessions` (+ DELETE từng phiên), `admin/security-events`; GraphQL `userProfile` ghi `profile_views`. Migration `profile-views-upgrade.sql`.
 - 2026-10-17 — `SecurityLogService` (auth): nhật ký bảo mật + `auth/sessions`, `auth/security-events`; admin `users/:id/security`, `views`; `AdminRiskService` (điểm rủi ro, dọn nhật ký 90 ngày). Migration `admin-security-upgrade.sql`.

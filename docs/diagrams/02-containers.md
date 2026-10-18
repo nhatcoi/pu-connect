@@ -33,7 +33,8 @@ flowchart LR
 
   api -->|"SQL · pg.Pool (max 20)<br/>ACID transaction"| db
   api -->|OAuth 2.0| google
-  api -->|OAuth drive.readonly · Drive API v3| google
+  api -->|"Streamable HTTP 127.0.0.1:8765 · MCP tools/list + tools/call<br/>bearer Google của người hỏi"| wsmcp["<b>workspace-mcp</b><br/>Python · systemd · read-only<br/>EXTERNAL_OAUTH21_PROVIDER"]
+  wsmcp -->|"Drive / Calendar / Gmail API"| google
   api -->|SMTP| gmail
   api -->|S3 PutObject| r2
   api -->|"HTTPS streaming (N7AI)"| claude
@@ -77,6 +78,8 @@ flowchart LR
 - **Session lưu Postgres** (`connect-pg-simple`) ⇒ restart/deploy không đăng xuất; dùng chung cho HTTP và Socket.IO.
 
 **Changelog:**
+- 2026-10-18 — Thêm container `workspace-mcp` (tự host trên VPS, chỉ nghe localhost) giữa API và Google APIs.
+- 2026-10-17 — Google data đi qua MCP chính thức (Drive / Calendar / Gmail); N7AI dùng model tool loop thay REST prefetch.
 - 2026-10-17 — Thêm `apps/admin` (`@pu/admin` Vite + React Static SPA) cho `admin-puc.vnhat.dev`.
 - 2026-10-16 — API gọi Google Drive API cho connector N7AI.
 - 2026-10-13 — `chat-push` thêm job `clear`: push im lặng đóng thông báo OS đã đọc ở thiết bị khác.

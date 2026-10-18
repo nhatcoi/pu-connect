@@ -307,7 +307,38 @@ sequenceDiagram
   A-->>X: 403 "Tài khoản của bạn đã bị khóa" (sai mật khẩu vẫn 401)
 ```
 
+## N7AI Google MCP (hội thoại riêng)
+
+```mermaid
+sequenceDiagram
+  actor U as Người hỏi
+  participant A as N7AiService
+  participant R as AiRetrieval
+  participant L as McpAgentService / Model
+  participant C as GoogleMcpService
+  participant G as workspace-mcp (localhost) → Google APIs
+  U->>A: Câu hỏi + connector được bật
+  A->>R: Truy xuất nguồn PU (không Google prefetch)
+  A->>L: Context + connector riêng của người hỏi
+  L->>C: Mở session OAuth theo user
+  C->>G: initialize + tools/list
+  G-->>C: Schema công cụ
+  C-->>L: Chỉ các công cụ đọc trong allowlist
+  loop Model cần thêm dữ liệu, trong budget
+    L->>C: Công cụ + tham số do model chọn
+    C->>G: tools/call với bearer của người hỏi
+    G-->>C: Kết quả
+    C-->>L: Tool result (dữ liệu không tin cậy)
+  end
+  L-->>A: Stream câu trả lời + tổng usage
+  A-->>U: message.delta / message.updated
+  L->>C: Đóng session trong finally
+  Note over A,C: Chat nhóm: không mở Google MCP riêng, chỉ nguồn PU công khai
+```
+
 **Changelog:**
+- 2026-10-18 — MCP server = `workspace-mcp` tự host thay MCP chính thức của Google.
+- 2026-10-17 — Luồng N7AI: Google MCP discovery → model tool loop → streaming; cách ly dữ liệu theo tài khoản và loại hội thoại.
 - 2026-10-17 — 5.7: nguồn đánh số, N7AI ghi `[nguồn] n` ⇒ chỉ trích nguồn đã dùng; tìm thư viện khớp ≥ 2 từ khóa (bỏ hư từ); connector lỗi ⇒ `<connector_error>`.
 - 2026-10-17 — 5.7: thread N7AI mở ở `/n7ai/[id]` (Web Push trỏ đúng không gian AI).
 - 2026-10-16 — 5.7: mention trong nhóm (`message_mentions`, push vượt tắt tiếng), ngữ cảnh `refs`, skill, Research, connector, tóm tắt cuộn, tiêu đề thread AI.

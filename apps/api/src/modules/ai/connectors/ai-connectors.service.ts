@@ -13,8 +13,9 @@ const INTERNAL: Static[] = [
   { id: 'web', name: 'Đọc trang web', description: 'Đọc nội dung link bạn dán vào câu hỏi (chỉ trang công khai)' }
 ]
 const GOOGLE: (Static & { id: GoogleProvider })[] = [
-  { id: 'google_drive', name: 'Google Drive', description: 'Tìm & đọc Docs, Sheets, Slides, PDF, Word trong Drive (chỉ đọc)' },
-  { id: 'google_calendar', name: 'Google Calendar', description: 'Lịch sắp tới để lập lộ trình ôn, hỏi lịch bận (chỉ đọc)' }
+  { id: 'google_drive', name: 'Google Drive', description: 'Tìm và đọc tài liệu trong Google Drive qua MCP (chỉ đọc)' },
+  { id: 'google_calendar', name: 'Google Calendar', description: 'Tìm sự kiện và đọc các lịch Google qua MCP (chỉ đọc)' },
+  { id: 'google_gmail', name: 'Gmail', description: 'Tìm và đọc email, chuỗi hội thoại qua MCP (chỉ đọc)' }
 ]
 
 // Registry connector của N7AI (menu "+" › Connectors) kèm trạng thái kết nối của người xem

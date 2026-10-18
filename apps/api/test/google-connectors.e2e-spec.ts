@@ -1,127 +1,303 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
-import { AiRetrieval } from '../src/modules/ai/ai.retrieval'
 import { GoogleOAuthService } from '../src/modules/ai/connectors/google-oauth.service'
+import { GoogleMcpService } from '../src/modules/ai/connectors/google-mcp.service'
+import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
+import { LlmService } from '../src/modules/ai/llm.service'
+import { N7AiService } from '../src/modules/chat/n7ai/n7ai.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
-// Luồng connector Google đầy đủ (connect → callback → đọc Drive / Calendar → refresh / thu hồi → ngắt)
-// Google API được giả lập ở tầng fetch ⇒ chạy đúng code thật của GoogleOAuth/Drive/Calendar service
-const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly'
-const CAL_SCOPE = 'https://www.googleapis.com/auth/calendar.readonly'
-const idToken = (email: string) => `x.${Buffer.from(JSON.stringify({ email })).toString('base64url')}.y`
+const SCOPES = { drive: 'drive.readonly', calendar: 'calendar.readonly', gmail: 'gmail.readonly' }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+// workspace-mcp advertises every service's tools (read + write) on one endpoint; N7AI filters per provider
+const MCP_URL = 'http://workspace-mcp.test/mcp'
+const TOOLS = [
+  'search_drive_files',
+  'get_drive_file_content',
+  'create_drive_file',
+  'list_calendars',
+  'get_events',
+  'manage_event',
+  'search_gmail_messages',
+  'get_gmail_thread_content',
+  'send_gmail_message'
+]
 
-describe('Google connectors (e2e, Google API giả lập)', () => {
+// Real SDK and DB; only Google / workspace-mcp network and model responses are intercepted.
+describe('Google MCP connectors', () => {
   let app: NestExpressApplication
   let db: DatabaseService
   const realFetch = global.fetch
-  const calls: string[] = []
+  const calls: { host: string; method: string; name?: string; args?: Record<string, unknown>; token: string }[] = []
   let tokenResponse: () => Response
-
-  const ENV_KEYS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_CALLBACK_URL', 'CONNECTOR_ENCRYPTION_KEY'] as const
-  const savedEnv = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]))
-
+  let rejectOldToken = false
+  const keys = [
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+    'GOOGLE_CALLBACK_URL',
+    'GOOGLE_MCP_CLIENT_ID',
+    'GOOGLE_MCP_CLIENT_SECRET',
+    'CONNECTOR_ENCRYPTION_KEY',
+    'GOOGLE_WORKSPACE_MCP_URL'
+  ]
+  const saved = Object.fromEntries(keys.map((key) => [key, process.env[key]]))
   beforeAll(async () => {
     Object.assign(process.env, {
       GOOGLE_CLIENT_ID: 'cid',
       GOOGLE_CLIENT_SECRET: 'secret',
       GOOGLE_CALLBACK_URL: 'https://puc.test/api/auth/google/callback',
-      CONNECTOR_ENCRYPTION_KEY: 'test-key'
+      GOOGLE_MCP_CLIENT_ID: 'mcp-cid',
+      GOOGLE_MCP_CLIENT_SECRET: 'mcp-secret',
+      CONNECTOR_ENCRYPTION_KEY: 'test-key',
+      GOOGLE_WORKSPACE_MCP_URL: MCP_URL
     })
-    // Chỉ chặn request tới Google; còn lại (supertest) đi bình thường
     global.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input)
-      if (!/googleapis\.com|accounts\.google\.com/.test(url)) return realFetch(input, init)
-      calls.push(`${init?.method ?? 'GET'} ${url.split('?')[0]}`)
-      if (url.startsWith('https://oauth2.googleapis.com/token')) return tokenResponse()
-      if (url.startsWith('https://oauth2.googleapis.com/revoke')) return json({})
-      if (url.includes('/drive/v3/files?')) {
-        expect(new URL(url).searchParams.get('q')).toContain("fullText contains 'đạo'")
-        return json({ files: [{ id: 'd1', name: 'Giải tích - đạo hàm', mimeType: 'application/vnd.google-apps.document' }] })
-      }
-      if (url.includes('/drive/v3/files/d1/export')) return new Response('Đạo hàm của x^2 là 2x.')
-      if (url.includes('/calendar/v3/calendars/primary/events')) {
-        return json({ items: [{ id: 'e1', summary: 'Thi Giải tích 2', location: 'A2-301', start: { dateTime: '2026-10-20T07:30:00+07:00' } }] })
-      }
-      throw new Error(`unexpected ${url}`)
+      const url = new URL(input instanceof Request ? input.url : String(input))
+      if (url.hostname === 'oauth2.googleapis.com') return url.pathname === '/token' ? tokenResponse() : json({})
+      if (url.href !== MCP_URL) return realFetch(input, init)
+      const token = new Headers(init?.headers).get('Authorization') ?? ''
+      if (rejectOldToken && token === 'Bearer old-access') return json({ error: 'expired' }, 401)
+      if (init?.method === 'GET') return new Response(null, { status: 405 })
+      const req = JSON.parse(String(init?.body ?? '{}'))
+      calls.push({ host: url.hostname, method: req.method, name: req.params?.name, args: req.params?.arguments, token })
+      if (req.method?.startsWith('notifications/')) return new Response(null, { status: 202 })
+      let result: unknown
+      if (req.method === 'initialize')
+        result = { protocolVersion: req.params.protocolVersion, capabilities: { tools: {} }, serverInfo: { name: 'google-test', version: '1' } }
+      else if (req.method === 'tools/list')
+        result = {
+          tools: TOOLS.map((name) => ({
+            name,
+            description: name,
+            inputSchema: { type: 'object', properties: { query: { type: 'string' }, calendarId: { type: 'string' }, timeMin: { type: 'string' } } },
+            annotations: { readOnlyHint: true }
+          }))
+        }
+      else if (req.method === 'tools/call')
+        result = {
+          content: [{ type: 'text', text: JSON.stringify({ source: req.params.name, arguments: req.params.arguments, text: 'Thông tin từ Google MCP' }) }]
+        }
+      else throw new Error(`Unexpected MCP method ${req.method}`)
+      return json({ jsonrpc: '2.0', id: req.id, result })
     }) as typeof fetch
     ;({ app, db } = await createTestApp())
   })
   afterAll(async () => {
     global.fetch = realFetch
-    for (const k of ENV_KEYS) {
-      if (savedEnv[k] === undefined) delete process.env[k]
-      else process.env[k] = savedEnv[k]
+    for (const key of keys) {
+      if (saved[key] === undefined) delete process.env[key]
+      else process.env[key] = saved[key]
     }
     await app.close()
   })
+  beforeEach(() => {
+    calls.length = 0
+    rejectOldToken = false
+  })
 
-  // connect ⇒ state trong session ⇒ callback đổi code
-  async function connect(agent: Awaited<ReturnType<typeof loginAgent>>, slug: string, scope: string) {
-    const start = await agent.get(`/api/ai/connectors/${slug}/connect`).expect(302)
+  async function connect(agent: Awaited<ReturnType<typeof loginAgent>>, provider: keyof typeof SCOPES, access = 'access-token') {
+    const scope = `https://www.googleapis.com/auth/${SCOPES[provider]}`
+    const start = await agent.get(`/api/ai/connectors/google-${provider}/connect`).expect(302)
     const auth = new URL(start.headers.location)
-    expect(auth.origin).toBe('https://accounts.google.com')
-    // Dùng lại redirect URI đăng nhập Google (đã khai báo trên Console)
-    expect(auth.searchParams.get('redirect_uri')).toBe('https://puc.test/api/auth/google/callback')
+    expect(auth.searchParams.get('client_id')).toBe('mcp-cid')
     expect(auth.searchParams.get('scope')).toContain(scope)
     expect(auth.searchParams.get('access_type')).toBe('offline')
     tokenResponse = () =>
-      json({ access_token: 'at', refresh_token: 'rt-secret', expires_in: 3600, scope: `openid email ${scope}`, id_token: idToken('sv@x.edu.vn') })
-    return agent.get(`/api/auth/google/callback?code=c&state=${auth.searchParams.get('state')}`).expect(302)
+      json({
+        access_token: access,
+        refresh_token: 'rt-secret',
+        expires_in: 3600,
+        scope: `openid email ${scope}`,
+        id_token: `x.${Buffer.from(JSON.stringify({ email: 'student@example.test' })).toString('base64url')}.y`
+      })
+    const result = await agent.get(`/api/auth/google/callback?code=c&state=${auth.searchParams.get('state')}`).expect(302)
+    expect(result.headers.location).toContain('result=connected')
   }
 
-  it('Drive + Calendar: kết nối, token mã hóa, N7AI đọc được nguồn, thu hồi ⇒ tự ngắt, ngắt kết nối gọi revoke', async () => {
+  it('connects Drive/Calendar/Gmail, discovers MCP tools, denies writes and isolates accounts', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
-
-    const cb = await connect(agent, 'google-drive', DRIVE_SCOPE)
-    expect(cb.headers.location).toBe('/n7ai/settings/connectors?connector=google-drive&result=connected')
-    const row = await db.query(`SELECT refresh_token_enc, account_email FROM user_connectors WHERE user_id = $1 AND provider = 'google_drive'`, [user.id])
-    expect(row.rows[0].account_email).toBe('sv@x.edu.vn')
+    for (const provider of ['drive', 'calendar', 'gmail'] as const) await connect(agent, provider)
+    const row = await db.query('SELECT refresh_token_enc FROM user_connectors WHERE user_id = $1', [user.id])
     expect(row.rows[0].refresh_token_enc).not.toContain('rt-secret')
-
-    await connect(agent, 'google-calendar', CAL_SCOPE)
     const list = (await agent.get('/api/ai/connectors').expect(200)).body.data
-    expect(list.filter((c: { connected: boolean; requiresAuth: boolean }) => c.requiresAuth && c.connected)).toHaveLength(2)
-
-    // N7AI truy xuất qua connector (access token từ lúc kết nối, không gọi lại /token)
-    const retrieval = app.get(AiRetrieval)
-    const sources = await retrieval.retrieve('Giải thích đạo hàm giúp mình', user.id, { connectors: ['google_drive', 'google_calendar'] })
-    expect(sources).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ type: 'drive', title: 'Giải tích - đạo hàm', body: 'Đạo hàm của x^2 là 2x.' }),
-        expect.objectContaining({ type: 'calendar', body: expect.stringContaining('Thi Giải tích 2 @ A2-301') })
-      ])
-    )
-
-    // Access token hết hạn + người dùng đã thu hồi ở Google ⇒ refresh lỗi invalid_grant ⇒ tự xóa kết nối Drive
-    ;(app.get(GoogleOAuthService) as unknown as { tokens: Map<string, unknown> }).tokens.clear()
-    tokenResponse = () => json({ error: 'invalid_grant' }, 400)
-    expect(await retrieval.retrieve('đạo hàm', user.id, { connectors: ['google_drive'] })).toEqual([])
-    const left = await db.query(`SELECT provider FROM user_connectors WHERE user_id = $1`, [user.id])
-    expect(left.rows.map((r) => r.provider)).toEqual(['google_calendar'])
-
-    // Ngắt Calendar ⇒ thu hồi phía Google bằng refresh token đã giải mã
-    tokenResponse = () => json({ access_token: 'at2', expires_in: 3600 })
-    calls.length = 0
-    await agent.delete('/api/ai/connectors/google-calendar').expect(200)
-    expect(calls).toContain('POST https://oauth2.googleapis.com/revoke')
-    expect((await db.query(`SELECT 1 FROM user_connectors WHERE user_id = $1`, [user.id])).rows).toHaveLength(0)
+    expect(list.filter((c: { connected: boolean; requiresAuth: boolean }) => c.connected && c.requiresAuth)).toHaveLength(3)
+    await agent
+      .patch('/api/ai/settings')
+      .send({ defaultConnectors: ['google_gmail'] })
+      .expect(200)
+    const mcp = app.get(GoogleMcpService)
+    const session = await mcp.open(user.id, ['google_drive', 'google_calendar', 'google_gmail'], AbortSignal.timeout(15_000))
+    try {
+      expect(session.errors).toEqual([])
+      const names = session.tools.map((t) => (t.type === 'function' ? t.function.name : ''))
+      expect(names).toContain('google_gmail__search_gmail_messages')
+      expect(names.join(' ')).not.toMatch(/create_drive_file|manage_event|send_gmail_message/)
+      expect(await session.call('google_calendar__get_events', { calendarId: 'school', timeMin: '2030-06-01T00:00:00Z' })).toContain('school')
+      expect(calls.find((c) => c.name === 'get_events')?.args?.timeMin).toBe('2030-06-01T00:00:00Z')
+      const count = calls.length
+      expect(await session.call('google_gmail__send_gmail_message', {})).toContain('error')
+      expect(calls).toHaveLength(count)
+      const other = await mcp.open((await createUser(db)).id, ['google_drive'], AbortSignal.timeout(15_000))
+      expect(other.tools).toHaveLength(0)
+      expect(other.errors).toHaveLength(1)
+      await other.close()
+      await agent.delete('/api/ai/connectors/google-calendar').expect(200)
+      expect(await session.call('google_calendar__get_events', {})).toContain('Đã ngắt')
+    } finally {
+      await session.close()
+    }
   })
 
-  it('callback đăng nhập Google không có phiên connector ⇒ middleware nhường cho passport', async () => {
-    const res = await (await loginAgent(app, await createUser(db))).get('/api/auth/google/callback?code=c&state=login-state')
-    expect(res.headers.location ?? '').not.toContain('connector=')
-  })
-
-  it('Google không cấp đúng scope ⇒ không lưu, báo lỗi', async () => {
+  it('refreshes an expired bearer once and removes a revoked grant', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
-    const start = await agent.get('/api/ai/connectors/google-drive/connect').expect(302)
+    await connect(agent, 'drive', 'old-access')
+    rejectOldToken = true
+    tokenResponse = () => json({ access_token: 'fresh-access', expires_in: 3600 })
+    const session = await app.get(GoogleMcpService).open(user.id, ['google_drive'], AbortSignal.timeout(15_000))
+    expect(session.errors).toEqual([])
+    await session.call('google_drive__search_drive_files', { query: "title contains 'Giải tích'" })
+    expect(calls.filter((c) => c.name === 'search_drive_files').every((c) => c.token === 'Bearer fresh-access')).toBe(true)
+    await session.close()
+    tokenResponse = () => json({ error: 'invalid_grant' }, 400)
+    expect(await app.get(GoogleOAuthService).accessToken(user.id, 'google_drive', true)).toBeNull()
+    expect((await db.query('SELECT 1 FROM user_connectors WHERE user_id = $1', [user.id])).rows).toHaveLength(0)
+  })
+
+  it('executes model-selected multi-step tools and aggregates streaming usage', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    await connect(agent, 'calendar')
+    await connect(agent, 'gmail')
+    let turn = 0
+    const create = jest.fn(() =>
+      Promise.resolve(
+        (async function* () {
+          const current = turn++
+          if (current < 2) {
+            const name = current === 0 ? 'google_calendar__get_events' : 'google_gmail__search_gmail_messages'
+            const args = current === 0 ? '{"calendarId":"school"}' : '{"query":"subject:thi"}'
+            yield { choices: [{ delta: { tool_calls: [{ index: 0, id: `call-${current}`, function: { name, arguments: args.slice(0, 5) } }] } }] }
+            yield { choices: [{ delta: { tool_calls: [{ index: 0, function: { arguments: args.slice(5) } }] }, finish_reason: 'tool_calls' }] }
+          } else yield { choices: [{ delta: { content: 'Lịch học và email đã được đối chiếu.' }, finish_reason: 'stop' }] }
+          yield { choices: [], usage: { prompt_tokens: 10, completion_tokens: 5 } }
+        })()
+      )
+    )
+    const loop = new McpAgentService({ client: { chat: { completions: { create } } }, model: 'test' } as unknown as LlmService, app.get(GoogleMcpService))
+    const output: string[] = []
+    const result = await loop.stream(
+      [{ role: 'user', content: 'Đối chiếu lịch trường với email về kỳ thi' }],
+      user.id,
+      ['google_calendar', 'google_gmail'],
+      (text) => output.push(text)
+    )
+    expect(output.join('')).toContain('đã được đối chiếu')
+    expect(result.calls).toHaveLength(2)
+    expect(result.calls.every((c) => c.ok)).toBe(true)
+    expect(result.usage).toEqual({ prompt_tokens: 30, completion_tokens: 15 })
+    expect(calls.some((c) => c.name === 'search_gmail_messages')).toBe(true)
+  })
+
+  it('does not expose private connectors to group replies even with forged connector metadata', async () => {
+    const owner = await createUser(db)
+    const member = await createUser(db)
+    const agent = await loginAgent(app, owner)
+    const conv = (
+      await agent
+        .post('/api/conversations')
+        .send({ title: 'Group', memberIds: [member.id] })
+        .expect(201)
+    ).body.data
+    const trigger = await db.query(
+      `INSERT INTO messages (conversation_id, sender_id, kind, content, meta) VALUES ($1, $2, 'text', 'Hỏi lịch', $3) RETURNING id`,
+      [conv.id, owner.id, JSON.stringify({ connectors: ['google_gmail', 'google_calendar'] })]
+    )
+    const llm = app.get(LlmService)
+    const original = llm.client
+    Object.assign(llm, { client: {} })
+    const spy = jest.spyOn(app.get(McpAgentService), 'stream').mockImplementation(async (_messages, _userId, connectors, emit) => {
+      expect(connectors).toEqual([])
+      emit('Trả lời trong nhóm')
+      return { usage: { prompt_tokens: 1, completion_tokens: 1 }, finishReason: 'stop', calls: [] }
+    })
+    try {
+      expect(await app.get(N7AiService).reply(conv.id, owner.id, String(trigger.rows[0].id))).toBe('done')
+      expect(spy).toHaveBeenCalledTimes(1)
+    } finally {
+      spy.mockRestore()
+      Object.assign(llm, { client: original })
+    }
+  })
+
+  it('rejects a grant missing required scopes', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const start = await agent.get('/api/ai/connectors/google-gmail/connect').expect(302)
     const state = new URL(start.headers.location).searchParams.get('state')
     tokenResponse = () => json({ access_token: 'at', refresh_token: 'rt', scope: 'openid email' })
-    const cb = await agent.get(`/api/auth/google/callback?code=c&state=${state}`).expect(302)
-    expect(cb.headers.location).toBe('/n7ai/settings/connectors?connector=google-drive&result=error')
-    expect((await db.query(`SELECT 1 FROM user_connectors WHERE user_id = $1`, [user.id])).rows).toHaveLength(0)
+    const result = await agent.get(`/api/auth/google/callback?code=c&state=${state}`).expect(302)
+    expect(result.headers.location).toContain('result=error')
+    expect((await db.query('SELECT 1 FROM user_connectors WHERE user_id = $1', [user.id])).rows).toHaveLength(0)
+  })
+
+  it('bounds repeated model tool calls and always closes the MCP session', async () => {
+    let rounds = 0
+    const call = jest.fn(async () => JSON.stringify({ data: 'ok' }))
+    const close = jest.fn(async () => undefined)
+    const create = jest.fn(async () =>
+      (async function* () {
+        rounds++
+        yield {
+          choices: [
+            {
+              delta: { tool_calls: [{ index: 0, id: `c-${rounds}`, function: { name: 'google_drive__search_drive_files', arguments: '{}' } }] },
+              finish_reason: 'tool_calls'
+            }
+          ]
+        }
+      })()
+    )
+    const mcp = {
+      open: async () => ({
+        tools: [{ type: 'function', function: { name: 'google_drive__search_drive_files', parameters: { type: 'object' } } }],
+        errors: [],
+        call,
+        close
+      })
+    } as unknown as GoogleMcpService
+    const llm = { client: { chat: { completions: { create } } }, model: 'test' } as unknown as LlmService
+    const result = await new McpAgentService(llm, mcp).stream([{ role: 'user', content: 'Search' }], 'account', ['google_drive'], () => undefined)
+    expect(rounds).toBe(5)
+    expect(call).toHaveBeenCalledTimes(4)
+    expect(result.finishReason).toBe('length')
+    expect(close).toHaveBeenCalledTimes(1)
+  })
+
+  it('closes clients after model failure and exposes a useful gateway compatibility error', async () => {
+    const close = jest.fn(async () => undefined)
+    const mcp = {
+      open: async () => ({
+        tools: [{ type: 'function', function: { name: 'google_drive__search_drive_files', parameters: { type: 'object' } } }],
+        errors: [],
+        call: jest.fn(),
+        close
+      })
+    } as unknown as GoogleMcpService
+    const llm = {
+      client: {
+        chat: {
+          completions: {
+            create: async () => {
+              throw { status: 400 }
+            }
+          }
+        }
+      },
+      model: 'test'
+    } as unknown as LlmService
+    await expect(new McpAgentService(llm, mcp).stream([], 'account', ['google_drive'], () => undefined)).rejects.toThrow('tool calling')
+    expect(close).toHaveBeenCalledTimes(1)
   })
 })

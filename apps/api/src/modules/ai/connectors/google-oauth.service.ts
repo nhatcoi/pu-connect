@@ -2,14 +2,12 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { randomBytes } from 'crypto'
 import { DatabaseService } from '../../../database/database.service'
+import { GOOGLE_MCP_PROVIDERS, type GoogleProvider } from './google-mcp.providers'
+export type { GoogleProvider } from './google-mcp.providers'
 import { TokenCipher } from './token-cipher'
 
 // Connector Google của N7AI: mỗi provider 1 scope chỉ đọc, chung 1 OAuth client & 1 callback URI
-export const GOOGLE_PROVIDERS = {
-  google_drive: { slug: 'google-drive', scope: 'https://www.googleapis.com/auth/drive.readonly' },
-  google_calendar: { slug: 'google-calendar', scope: 'https://www.googleapis.com/auth/calendar.readonly' }
-} as const
-export type GoogleProvider = keyof typeof GOOGLE_PROVIDERS
+export const GOOGLE_PROVIDERS = GOOGLE_MCP_PROVIDERS
 
 export const providerFromSlug = (slug: string): GoogleProvider | null =>
   (Object.keys(GOOGLE_PROVIDERS) as GoogleProvider[]).find((p) => GOOGLE_PROVIDERS[p].slug === slug) ?? null
@@ -36,8 +34,11 @@ export class GoogleOAuthService {
     private readonly db: DatabaseService,
     config: ConfigService
   ) {
-    this.clientId = config.get<string>('GOOGLE_CLIENT_ID') || undefined
-    this.clientSecret = config.get<string>('GOOGLE_CLIENT_SECRET') || undefined
+    const mcpId = config.get<string>('GOOGLE_MCP_CLIENT_ID') || undefined
+    const mcpSecret = config.get<string>('GOOGLE_MCP_CLIENT_SECRET') || undefined
+    const dedicated = !!(mcpId || mcpSecret)
+    this.clientId = dedicated ? mcpId : config.get<string>('GOOGLE_CLIENT_ID') || undefined
+    this.clientSecret = dedicated ? mcpSecret : config.get<string>('GOOGLE_CLIENT_SECRET') || undefined
     // Mặc định dùng lại redirect URI của đăng nhập Google (đã khai báo) ⇒ ConnectorCallbackMiddleware nhận theo state
     this.redirectUri = config.get<string>('GOOGLE_CONNECTOR_CALLBACK_URL') || config.get<string>('GOOGLE_CALLBACK_URL') || undefined
     this.cipher = new TokenCipher(config.get<string>('CONNECTOR_ENCRYPTION_KEY') || config.get<string>('SESSION_SECRET') || 'dev-connector-key')
@@ -55,7 +56,7 @@ export class GoogleOAuthService {
       client_id: this.clientId!,
       redirect_uri: this.redirectUri!,
       response_type: 'code',
-      scope: `openid email ${GOOGLE_PROVIDERS[provider].scope}`,
+      scope: ['openid', 'email', ...GOOGLE_PROVIDERS[provider].scopes].join(' '),
       access_type: 'offline',
       prompt: 'consent', // luôn nhận refresh token
       state
@@ -66,15 +67,16 @@ export class GoogleOAuthService {
   // Đổi code lấy token; phải được cấp đúng scope của provider
   async connect(userId: string, provider: GoogleProvider, code: string): Promise<void> {
     const body = await this.tokenRequest({ code, redirect_uri: this.redirectUri!, grant_type: 'authorization_code' })
-    if (!body.refresh_token || !body.scope?.split(' ').includes(GOOGLE_PROVIDERS[provider].scope)) {
+    if (!body.refresh_token || !GOOGLE_PROVIDERS[provider].scopes.every((scope) => body.scope?.split(' ').includes(scope))) {
       throw new BadRequestException('Không nhận được quyền truy cập cần thiết')
     }
     await this.db.query(
       `INSERT INTO user_connectors (user_id, provider, refresh_token_enc, account_email, scope) VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (user_id, provider) DO UPDATE SET refresh_token_enc = EXCLUDED.refresh_token_enc, account_email = EXCLUDED.account_email,
-         scope = EXCLUDED.scope, updated_at = NOW()`,
+         scope = EXCLUDED.scope, last_error = NULL, last_used_at = NULL, updated_at = NOW()`,
       [userId, provider, this.cipher.encrypt(body.refresh_token), emailFromIdToken(body.id_token), body.scope]
     )
+    this.tokens.delete(`${provider}:${userId}`)
     if (body.access_token) this.cache(userId, provider, body)
   }
 
@@ -91,7 +93,8 @@ export class GoogleOAuthService {
   }
 
   // Access token còn hạn (cache) hoặc làm mới bằng refresh token; chưa kết nối ⇒ null
-  async accessToken(userId: string, provider: GoogleProvider): Promise<string | null> {
+  async accessToken(userId: string, provider: GoogleProvider, forceRefresh = false): Promise<string | null> {
+    if (forceRefresh) this.tokens.delete(`${provider}:${userId}`)
     const cached = this.tokens.get(`${provider}:${userId}`)
     if (cached && cached.expiresAt > Date.now()) return cached.value
     if (!this.isConfigured()) return null

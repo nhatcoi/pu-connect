@@ -17,7 +17,7 @@ export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
 
 // Nguồn N7AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar'] as const
+export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar', 'google_gmail'] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
 export const ChatAttachmentSchema = z.object({
