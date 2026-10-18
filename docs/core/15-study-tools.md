@@ -38,6 +38,29 @@ Sau khi N7AI trả lời trong thread riêng, `N7AiService` gọi `StudyToolsSer
 
 Prompt chế độ Flashcard: chỉ nêu chủ đề ⇒ 8–12 thẻ. Người dùng đưa danh sách cụ thể hoặc số lượng ⇒ tạo đủ (tối đa 60).
 
+## N7AI đọc tiến độ học ("Học tập của tôi", 2026-10-18)
+
+Trước đây N7AI không trả lời được "mình đã học từ vựng gì rồi", vì bộ thẻ nằm ở `/tools` còn N7AI chỉ thấy thread hiện tại và bộ nhớ dài hạn. Có 2 đường đọc:
+
+**1. Connector `my_study` (tool, model tự gọi khi cần).** `StudyAgentToolsService.open(userId)` trả `AgentToolSession` (`ai/agent-tools.ts`), chạy chung vòng tool với Google MCP trong `McpAgentService`. Chỉ thread N7AI riêng; nhóm chat không có. Chỉ đọc, lọc `owner_id = người hỏi`. Tham số model đưa vào được kiểm (uuid, enum, giới hạn), kết quả ≤ 12k ký tự.
+
+| Tool | Việc |
+| --- | --- |
+| `my_study__list_study_sets(kind?, query?, limit ≤ 20)` | bộ + tiến độ: thẻ đã thuộc / mới / đến hạn / hay quên; quiz: số lần làm, điểm cao nhất |
+| `my_study__get_study_items(set_id?, query?, status?, limit ≤ 80)` | mục kèm trạng thái ôn; `status` = `due` · `weak` · `new` · `learning` · `learned` · `all` |
+
+Trạng thái thẻ (`study-progress.sql.ts`, dùng chung với ref):
+- `new`: chưa ôn.
+- `learned`: nhớ ≥ 2 lần, khoảng ôn ≥ 3 ngày.
+- `learning`: còn lại.
+- `weak`: từng "Quên" hoặc `ease < 2.3`.
+
+Tiến trình hiện "Đọc thẻ đã học · từ hay quên" (icon `Layers`).
+
+**Bật sẵn:** `my_study` có trong mặc định `ai_settings` (`DEFAULTS` và DEFAULT cột). Migration `ai-study-connector-upgrade.sql` thêm vào người đã có cài đặt **đúng 1 lần**: mốc là DEFAULT của cột, nên chạy lại mỗi lần deploy không bật lại cho người đã tự tắt. Tắt ở menu `+` › Connectors hoặc Cài đặt N7AI.
+
+**2. Gắn `@bộ học tập` (ref `study_set`).** Gõ `@` trong thread N7AI ⇒ mục "Bộ học tập" (bộ mới học trước, phụ đề "Flashcard · 29 mục"). Ghim toàn bộ bộ vào lượt hỏi gồm tiến độ chung và từng mục: flashcard "mặt trước — mặt sau [trạng thái, hay quên]", quiz "Hỏi … · Đáp án …". `ChatRef.code` = loại bộ ⇒ chip dẫn tới `/tools/[kind]/[id]`. Giống ref `thread`, đây là dữ liệu riêng: chỉ chủ bộ, chỉ khi hỏi N7AI (`ChatRefsService.resolve(…, allowPrivate)`).
+
 ## Web
 
 | Route | Nội dung |

@@ -271,9 +271,9 @@ describe('Google MCP connectors', () => {
     const mcp = {
       open: async () => ({
         tools: [{ type: 'function', function: { name: 'google_drive__search_drive_files', parameters: { type: 'object' } } }],
-        errors: [],
+        instructions: [],
         call,
-        resolve: () => ({ provider: 'google_drive', tool: 'search_drive_files' }),
+        describe: () => ({ provider: 'google_drive', label: 'Tìm tệp trong Drive' }),
         close
       })
     } as unknown as GoogleMcpService
@@ -290,9 +290,9 @@ describe('Google MCP connectors', () => {
     const mcp = {
       open: async () => ({
         tools: [{ type: 'function', function: { name: 'google_drive__search_drive_files', parameters: { type: 'object' } } }],
-        errors: [],
+        instructions: [],
         call: jest.fn(),
-        resolve: () => null,
+        describe: () => null,
         close
       })
     } as unknown as GoogleMcpService

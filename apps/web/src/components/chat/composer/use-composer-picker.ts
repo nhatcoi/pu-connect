@@ -69,7 +69,8 @@ export function useComposerPicker({ textareaRef, text, setText, conversation, my
 
   // Nguồn dữ liệu: thành viên (đã cache, lọc tại client), ngữ cảnh (server), skill (cache 10 phút)
   const { data: members } = useMembers(conversation?.id ?? '', at && kind === 'group')
-  const refTypes: ChatRefType[] = kind === 'ai' ? ['thread', 'course', 'document', 'post'] : ['course', 'document', 'post']
+  // Thread N7AI riêng: thêm hội thoại & bộ Flashcard / Quiz của mình (dữ liệu riêng)
+  const refTypes: ChatRefType[] = kind === 'ai' ? ['thread', 'study_set', 'course', 'document', 'post'] : ['course', 'document', 'post']
   const refs = useRefSuggestions(at ? q : null, refTypes)
   const { data: skills } = useAiSkills(slash)
 

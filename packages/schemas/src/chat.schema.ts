@@ -13,11 +13,23 @@ export type AiMode = (typeof AI_MODES)[number]
 
 // Ngữ cảnh gắn vào tin (chip trên ô soạn): server kiểm quyền rồi mới lưu meta.refs
 export const CHAT_MAX_REFS = 5
-export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
+// thread / study_set: dữ liệu riêng của người hỏi ⇒ chỉ gắn khi hỏi N7AI trong thread riêng
+export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread', 'study_set'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
+export const PRIVATE_REF_TYPES: readonly ChatRefType[] = ['thread', 'study_set']
 
-// Nguồn N7AI được đọc (connector); 'library' = mặc định; google_drive cần kết nối OAuth
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar', 'google_gmail'] as const
+// Nguồn N7AI được đọc (connector); 'library' = mặc định; google_* cần kết nối OAuth; my_study = bộ Flashcard / Quiz + tiến độ ôn (tool)
+export const AI_CONNECTORS = [
+  'library',
+  'my_documents',
+  'my_groups',
+  'my_study',
+  'web',
+  'web_search',
+  'google_drive',
+  'google_calendar',
+  'google_gmail'
+] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
 export const ChatAttachmentSchema = z.object({
@@ -141,7 +153,7 @@ export interface ChatRef {
   type: ChatRefType
   id: string
   title: string
-  code?: string // học phần: mã môn (dựng link /courses/[code])
+  code?: string // học phần: mã môn (dựng link /courses/[code]) · bộ học tập: loại bộ (flashcards / quiz ⇒ /tools/[kind]/[id])
 }
 
 export interface ChatSkillRef {
@@ -336,7 +348,7 @@ export interface AiQuota {
 }
 
 // Sự kiện realtime (Socket.IO, room user:{id})
-// Bước N7AI đang làm (tool call MCP): provider = connector, label tiếng Việt, detail = từ khóa / phạm vi ngắn (không có dữ liệu trả về)
+// Bước N7AI đang làm (tool call: Google MCP / Học tập của tôi): provider = connector, label tiếng Việt, detail = từ khóa / phạm vi ngắn (không có dữ liệu trả về)
 export interface AiStep {
   id: string
   provider: AiConnectorId

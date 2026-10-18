@@ -1,15 +1,21 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AlertCircle, Check, ChevronDown, Loader2 } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, Layers, Loader2 } from 'lucide-react'
 import type { AiStep } from '@pu/schemas'
 import { ConnectorIcon } from '@/components/n7ai/connector-icon'
 import { cn } from '@/lib/utils'
 
+// Logo Google (ConnectorIcon) hoặc biểu tượng nguồn nội bộ
+function StepIcon({ provider }: { provider: AiStep['provider'] }) {
+  if (provider === 'my_study') return <Layers className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+  return <ConnectorIcon id={provider} className="h-3.5 w-3.5" />
+}
+
 function StepRow({ step: s }: { step: AiStep }) {
   return (
     <li className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-      <ConnectorIcon id={s.provider} className="h-3.5 w-3.5" />
+      <StepIcon provider={s.provider} />
       <span className={cn('truncate', s.status === 'running' && 'text-foreground')}>
         {s.label}
         {s.status === 'running' && '…'}
@@ -26,7 +32,7 @@ function StepRow({ step: s }: { step: AiStep }) {
   )
 }
 
-// Tiến trình N7AI (gọi Gmail / Drive / Lịch): đang trả lời ⇒ hiện từng bước; xong ⇒ thu gọn "Đã dùng N bước"
+// Tiến trình N7AI (gọi Gmail / Drive / Lịch / Học tập của tôi): đang trả lời ⇒ hiện từng bước; xong ⇒ thu gọn "Đã dùng N bước"
 export function AiSteps({ steps, live }: { steps: AiStep[]; live: boolean }) {
   const [open, setOpen] = useState(false)
   if (!steps.length) return null
@@ -49,7 +55,7 @@ export function AiSteps({ steps, live }: { steps: AiStep[]; live: boolean }) {
       >
         <span className="flex -space-x-1">
           {[...new Set(steps.map((s) => s.provider))].map((p) => (
-            <ConnectorIcon key={p} id={p} className="h-3.5 w-3.5" />
+            <StepIcon key={p} provider={p} />
           ))}
         </span>
         Đã dùng {steps.length} bước

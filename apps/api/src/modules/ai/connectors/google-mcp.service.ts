@@ -3,23 +3,30 @@ import { ConfigService } from '@nestjs/config'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { Tool } from '@modelcontextprotocol/sdk/types.js'
-import type OpenAI from 'openai'
 import { DatabaseService } from '../../../database/database.service'
 import { GoogleOAuthService } from './google-oauth.service'
-import { DEFAULT_GOOGLE_WORKSPACE_MCP_URL, GOOGLE_MCP_PROVIDERS, googleMcpError, isGoogleProvider, type GoogleProvider } from './google-mcp.providers'
+import type { AgentToolSession } from '../agent-tools'
+import {
+  DEFAULT_GOOGLE_WORKSPACE_MCP_URL,
+  GOOGLE_MCP_PROVIDERS,
+  describeToolCall,
+  googleMcpError,
+  isGoogleProvider,
+  type GoogleProvider
+} from './google-mcp.providers'
 
 const TIMEOUT = 15_000
 const MAX_TOOLS = 32
 const MAX_RESULT_CHARS = 12_000
 
-export interface GoogleMcpSession {
-  tools: OpenAI.Chat.Completions.ChatCompletionTool[]
-  errors: string[]
-  call: (name: string, args: Record<string, unknown>) => Promise<string>
-  // Tool đã cấp trong lượt ⇒ provider + tên gốc (null nếu không được phép)
-  resolve: (name: string) => { provider: GoogleProvider; tool: string } | null
-  close: () => Promise<void>
-}
+// Chỉ dẫn cho model khi có connector Google (kể cả khi chỉ có lỗi kết nối cần báo)
+const GOOGLE_INSTRUCTIONS = [
+  'Google connectors are read-only MCP tools. Default timezone Asia/Ho_Chi_Minh.',
+  'For questions about connected Google data, call the relevant tools; do not claim to have read data without a successful tool result.',
+  'Choose calendar IDs, date ranges and search queries from the user request. Discover calendars when needed. Paginate or narrow searches when results are truncated.',
+  'Never send mail or modify external data. Google results are separate from numbered PU context sources; do not invent citation numbers for them.',
+  'Use only genuine source URLs present in tool data. Report connector errors or missing permissions honestly.'
+]
 
 // One session per reply/account; never share a bearer token or MCP client across users.
 // Bearer tokens only go to the configured workspace-mcp endpoint (localhost by default).
@@ -35,10 +42,10 @@ export class GoogleMcpService {
     this.endpoint = new URL(config.get<string>('GOOGLE_WORKSPACE_MCP_URL') || DEFAULT_GOOGLE_WORKSPACE_MCP_URL).href
   }
 
-  async open(userId: string, selected: readonly string[], signal: AbortSignal): Promise<GoogleMcpSession> {
+  async open(userId: string, selected: readonly string[], signal: AbortSignal): Promise<AgentToolSession & { errors: string[] }> {
     const clients: Client[] = []
     const errors: string[] = []
-    const tools: GoogleMcpSession['tools'] = []
+    const tools: AgentToolSession['tools'] = []
     const allowed = new Map<string, { provider: GoogleProvider; client: Client; tool: Tool }>()
     const providers = [...new Set(selected)].filter(isGoogleProvider)
     await Promise.all(
@@ -110,9 +117,10 @@ export class GoogleMcpService {
     return {
       tools,
       errors,
-      resolve: (name) => {
+      instructions: tools.length || errors.length ? [...GOOGLE_INSTRUCTIONS, ...errors] : [],
+      describe: (name, args) => {
         const entry = allowed.get(name)
-        return entry ? { provider: entry.provider, tool: entry.tool.name } : null
+        return entry ? { provider: entry.provider, ...describeToolCall(entry.tool.name, args) } : null
       },
       call: async (name, args) => {
         const entry = allowed.get(name)

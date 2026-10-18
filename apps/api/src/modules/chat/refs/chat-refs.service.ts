@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common'
 import type { ChatRef, ChatRefSuggestion, ChatRefType, SendMessageInput } from '@pu/schemas'
 import type { Source } from '../../ai/ai.retrieval'
+import { ITEM_LINE_SQL } from '../../study-tools/study-progress.sql'
 import { ChatCoreService, type Queryable } from '../chat-core.service'
 
 const SUGGEST_PER_TYPE = 4
@@ -9,26 +10,30 @@ const THREAD_FALLBACK = 'Cuộc trò chuyện N7AI'
 
 const MY_GROUP_COURSES = `SELECT sg.course_id FROM study_group_members gm JOIN study_groups sg ON sg.id = gm.group_id WHERE gm.user_id = $1`
 
-const ALIAS: Record<ChatRefType, string> = { course: 'co', document: 'd', post: 'p', thread: 'c' }
+const ALIAS: Record<ChatRefType, string> = { course: 'co', document: 'd', post: 'p', thread: 'c', study_set: 's' }
+// Dữ liệu riêng của người hỏi ⇒ chỉ gắn khi hỏi N7AI trong thread riêng
+const PRIVATE_TYPES = new Set<ChatRefType>(['thread', 'study_set'])
+const STUDY_KIND_LABEL = `CASE s.kind WHEN 'flashcards' THEN 'Flashcard' ELSE 'Quiz' END`
 
 // Quyền xem từng loại ref (alias theo bảng; $U = người xem)
 const VISIBLE = {
   document: (u: string) => `(d.visibility = 'public' OR d.owner_id = ${u})`,
   post: (u: string) => `(p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = ${u}))`,
-  thread: (u: string) => `(c.type = 'ai' AND c.created_by = ${u})`
+  thread: (u: string) => `(c.type = 'ai' AND c.created_by = ${u})`,
+  study_set: (u: string) => `(s.owner_id = ${u})`
 }
 
-// Ngữ cảnh gắn vào tin (học phần, tài liệu, bài viết, hội thoại N7AI của mình)
+// Ngữ cảnh gắn vào tin (học phần, tài liệu, bài viết, hội thoại N7AI / bộ Flashcard · Quiz của mình)
 // Kiểm quyền khi gửi · gợi ý cho ô soạn · nạp nội dung cho N7AI
 @Injectable()
 export class ChatRefsService {
   constructor(private readonly core: ChatCoreService) {}
 
   // Gọi trong transaction gửi tin: ref nào không xem được ⇒ từ chối cả tin (giữ đúng thứ tự gửi lên)
-  async resolve(client: Queryable, userId: string, refs: SendMessageInput['refs'], allowThreads: boolean): Promise<ChatRef[]> {
+  async resolve(client: Queryable, userId: string, refs: SendMessageInput['refs'], allowPrivate: boolean): Promise<ChatRef[]> {
     if (!refs?.length) return []
     const unique = [...new Map(refs.map((r) => [`${r.type}:${r.id}`, r])).values()]
-    if (!allowThreads && unique.some((r) => r.type === 'thread')) throw new BadRequestException('Chỉ gắn hội thoại N7AI khi hỏi N7AI')
+    if (!allowPrivate && unique.some((r) => PRIVATE_TYPES.has(r.type))) throw new BadRequestException('Chỉ gắn hội thoại / bộ học tập của bạn khi hỏi N7AI')
     const ids = (t: ChatRefType) => unique.filter((r) => r.type === t).map((r) => r.id)
     const res = await client.query(
       `SELECT 'course' AS type, id, name AS title, code FROM courses WHERE id = ANY($1::uuid[])
@@ -37,8 +42,10 @@ export class ChatRefsService {
        UNION ALL
        SELECT 'post', p.id, COALESCE(NULLIF(p.title, ''), left(p.content, 80)), NULL FROM posts p WHERE p.id = ANY($3::uuid[]) AND ${VISIBLE.post('$5')}
        UNION ALL
-       SELECT 'thread', c.id, COALESCE(c.title, '${THREAD_FALLBACK}'), NULL FROM conversations c WHERE c.id = ANY($4::uuid[]) AND ${VISIBLE.thread('$5')}`,
-      [ids('course'), ids('document'), ids('post'), ids('thread'), userId]
+       SELECT 'thread', c.id, COALESCE(c.title, '${THREAD_FALLBACK}'), NULL FROM conversations c WHERE c.id = ANY($4::uuid[]) AND ${VISIBLE.thread('$5')}
+       UNION ALL
+       SELECT 'study_set', s.id, s.title, s.kind FROM study_sets s WHERE s.id = ANY($6::uuid[]) AND ${VISIBLE.study_set('$5')}`,
+      [ids('course'), ids('document'), ids('post'), ids('thread'), userId, ids('study_set')]
     )
     const found = new Map<string, ChatRef>(
       res.rows.map((r) => [`${r.type}:${r.id}`, { type: r.type, id: r.id, title: r.title, ...(r.code ? { code: r.code } : {}) }])
@@ -75,7 +82,11 @@ export class ChatRefsService {
         ? `${cols('post', 'p.title')} FROM posts p
            WHERE ${VISIBLE.post('$1')} AND p.title <> '' AND ${like('p.title')} ORDER BY p.likes_count DESC LIMIT ${SUGGEST_PER_TYPE}`
         : `${cols('post', 'p.title')} FROM saved_posts s JOIN posts p ON p.id = s.post_id
-           WHERE s.user_id = $1 AND p.title <> '' AND ${VISIBLE.post('$1')} ORDER BY s.saved_at DESC LIMIT ${SUGGEST_PER_TYPE}`
+           WHERE s.user_id = $1 AND p.title <> '' AND ${VISIBLE.post('$1')} ORDER BY s.saved_at DESC LIMIT ${SUGGEST_PER_TYPE}`,
+      // Bộ mới học / mới tạo lên trước; code = loại bộ (dựng link /tools/[kind]/[id])
+      study_set: `${cols('study_set', 's.title', `${STUDY_KIND_LABEL} || ' · ' || s.item_count || ' mục'`, 's.kind')} FROM study_sets s
+         WHERE ${VISIBLE.study_set('$1')} ${term ? `AND ${like('s.title')}` : ''}
+         ORDER BY COALESCE(s.last_studied_at, s.updated_at) DESC LIMIT ${SUGGEST_PER_TYPE}`
     }
     const sql = [...new Set(types)].map((t) => `(${branches[t]})`).join(' UNION ALL ')
     const res = await this.core.db.query(sql, term ? [userId, term] : [userId])
@@ -90,7 +101,7 @@ export class ChatRefsService {
     const db = this.core.db
     const run = (t: ChatRefType, sql: string) => (ids(t).length ? db.query(sql, [ids(t), userId, per]).then((r) => r.rows) : Promise.resolve([]))
 
-    const [courses, documents, posts, threads] = await Promise.all([
+    const [courses, documents, posts, threads, studySets] = await Promise.all([
       run(
         'course',
         `SELECT co.id, co.code || ' — ' || co.name AS title,
@@ -119,6 +130,17 @@ export class ChatRefsService {
                    FROM (SELECT id, kind, content FROM messages WHERE conversation_id = c.id AND kind <> 'system' AND deleted_at IS NULL AND status = 'done'
                          ORDER BY id DESC LIMIT 10) m)), $3) AS body
          FROM conversations c WHERE c.id = ANY($1::uuid[]) AND ${VISIBLE.thread('$2')}`
+      ),
+      // Bộ học tập: tiến độ chung + từng mục kèm trạng thái ôn (flashcard) / đáp án (quiz)
+      run(
+        'study_set',
+        `SELECT s.id, ${STUDY_KIND_LABEL} || ': ' || s.title AS title,
+                left(concat_ws(E'\n',
+                  'Bộ ' || ${STUDY_KIND_LABEL} || ' "' || s.title || '" — ' || s.item_count || ' mục'
+                    || CASE WHEN s.kind = 'quiz' AND s.best_score IS NOT NULL THEN ', điểm cao nhất ' || s.best_score || '%, ' || s.attempts || ' lần làm' ELSE '' END
+                    || CASE WHEN s.last_studied_at IS NOT NULL THEN ', học gần nhất ' || to_char(s.last_studied_at AT TIME ZONE 'Asia/Ho_Chi_Minh', 'DD/MM/YYYY') ELSE '' END,
+                  (SELECT string_agg(${ITEM_LINE_SQL}, E'\n' ORDER BY i.position) FROM study_items i WHERE i.set_id = s.id)), $3) AS body
+         FROM study_sets s WHERE s.id = ANY($1::uuid[]) AND ${VISIBLE.study_set('$2')}`
       )
     ])
     const byKey = new Map<string, Source>()
@@ -127,6 +149,7 @@ export class ChatRefsService {
     add('document', documents)
     add('post', posts)
     add('thread', threads)
+    add('study_set', studySets)
     return refs.map((r) => byKey.get(`${r.type}:${r.id}`)).filter((s): s is Source => !!s)
   }
 }

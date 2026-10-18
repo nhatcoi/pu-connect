@@ -20,9 +20,9 @@ flowchart TB
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
     chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
-    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>McpAgentService · GoogleMcpService · GoogleOAuth"]
+    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>McpAgentService (AgentToolSession) · GoogleMcpService · GoogleOAuth"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
-    tools["<b>StudyTools</b><br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tự lưu từ chat"]
+    tools["<b>StudyTools</b><br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tự lưu từ chat<br/>StudyAgentTools (tool my_study)"]
   end
 
   subgraph Platform["Platform modules"]
@@ -130,6 +130,7 @@ flowchart TB
 
 **Changelog:**
 - 2026-10-18 — Socket `message.progress` (bước tool MCP: nhãn, chi tiết ngắn, trạng thái) + `meta.steps` trên tin N7AI hoàn tất.
+- 2026-10-18 — `AgentToolSession` (`ai/agent-tools.ts`): McpAgentService gộp session Google MCP + tool nội bộ; `StudyAgentToolsService` (connector `my_study`: `list_study_sets`, `get_study_items`) cho N7AI đọc bộ Flashcard / Quiz + tiến độ ôn; ref `study_set` trong `ChatRefsService`. Migration `ai-study-connector-upgrade.sql`.
 - 2026-10-18 — `GoogleMcpService` nối `workspace-mcp` tự host (`GOOGLE_WORKSPACE_MCP_URL`, mặc định `http://127.0.0.1:8765/mcp`) thay 3 endpoint MCP chính thức của Google; allowlist tool theo tên của workspace-mcp.
 - 2026-10-18 — `StudyToolsModule`: `tools/overview`, `tools/sets` CRUD, `tools/sets/draft` (N7AI, trigger `tool`), `tools/sets/:id/review` (SRS), `tools/sets/:id/attempts`; N7AiService tự lưu khối flashcard / quiz (`meta.studySet`). Migration `study-tools-upgrade.sql`.
 - 2026-10-18 — `AiThreadShareService` + `AiSharedController`: chia sẻ thread N7AI qua link (`ai/threads/:id/share`, công khai `ai/shared/:token`); migration `ai-thread-share-upgrade.sql`.

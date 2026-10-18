@@ -1,5 +1,7 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
+import { ChatRefsService } from '../src/modules/chat/refs/chat-refs.service'
+import { StudyAgentToolsService } from '../src/modules/study-tools/study-agent-tools.service'
 import { StudyToolsService } from '../src/modules/study-tools/study-tools.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
@@ -93,5 +95,47 @@ describe('Study tools (e2e)', () => {
     const list = (await agent.get('/api/tools/sets?kind=flashcards').expect(200)).body.data
     expect(list).toHaveLength(1)
     expect(list[0]).toMatchObject({ source: 'n7ai', itemCount: 1, sourceMessageId: String(msg) })
+  })
+
+  it('N7AI "Học tập của tôi": liệt kê bộ + tiến độ, lọc thẻ hay quên, chỉ đọc bộ của chính mình', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const set = (await agent.post('/api/tools/sets').send({ kind: 'flashcards', title: 'Vũ trụ', items: cards }).expect(201)).body.data
+    await agent.post(`/api/tools/sets/${set.id}/review`).send({ itemId: set.items[0].id, grade: 'again' }).expect(201)
+
+    const session = app.get(StudyAgentToolsService).open(user.id)
+    const sets = JSON.parse(await session.call('my_study__list_study_sets', { kind: 'flashcards' })).data
+    expect(sets).toEqual([expect.objectContaining({ id: set.id, title: 'Vũ trụ', items: 2, cards: { learned: 0, new: 1, due: 0, weak: 1 } })])
+
+    const weak = JSON.parse(await session.call('my_study__get_study_items', { status: 'weak' })).data
+    expect(weak).toEqual([expect.objectContaining({ front: 'Invisible (adj)', back: 'Vô hình', weak: true, forgotten: 1 })])
+    expect(JSON.parse(await session.call('my_study__get_study_items', { query: 'vat ly' })).data[0].front).toBe('Physicist (n)')
+    expect(session.describe('my_study__get_study_items', { status: 'weak' })).toEqual({ provider: 'my_study', label: 'Đọc thẻ đã học', detail: 'từ hay quên' })
+
+    // Người khác: không thấy bộ, set_id của người khác ⇒ rỗng
+    const other = app.get(StudyAgentToolsService).open((await createUser(db)).id)
+    expect(JSON.parse(await other.call('my_study__list_study_sets', {})).data).toEqual([])
+    expect(JSON.parse(await other.call('my_study__get_study_items', { set_id: set.id })).data).toEqual([])
+  })
+
+  it('Gắn @bộ học tập: chỉ chủ bộ, chỉ trong thread N7AI; nội dung kèm trạng thái ôn', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const set = (await agent.post('/api/tools/sets').send({ kind: 'flashcards', title: 'Thiên văn', items: cards }).expect(201)).body.data
+    const refs = app.get(ChatRefsService)
+
+    const suggested = await refs.suggest(user.id, 'thien van', ['study_set'])
+    expect(suggested).toEqual([expect.objectContaining({ type: 'study_set', id: set.id, code: 'flashcards', subtitle: 'Flashcard · 2 mục' })])
+    expect(await refs.suggest((await createUser(db)).id, 'thien van', ['study_set'])).toEqual([])
+
+    const ref = { type: 'study_set' as const, id: set.id }
+    await expect(refs.resolve(db, user.id, [ref], false)).rejects.toThrow('khi hỏi N7AI')
+    await expect(refs.resolve(db, (await createUser(db)).id, [ref], true)).rejects.toThrow('không có quyền')
+    const [resolved] = await refs.resolve(db, user.id, [ref], true)
+    expect(resolved).toEqual({ type: 'study_set', id: set.id, title: 'Thiên văn', code: 'flashcards' })
+
+    const [source] = await refs.sources(user.id, [resolved])
+    expect(source.body).toContain('Invisible (adj) — Vô hình [new]')
+    expect(source.body).toContain('2 mục')
   })
 })

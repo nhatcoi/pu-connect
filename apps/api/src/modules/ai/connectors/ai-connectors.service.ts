@@ -10,6 +10,7 @@ const INTERNAL: Static[] = [
   { id: 'library', name: 'Thư viện PU', description: 'Bài viết & tài liệu công khai, lời giải đã duyệt' },
   { id: 'my_documents', name: 'Tài liệu của tôi', description: 'Tài liệu bạn đã tải lên (kể cả riêng tư), đọc nội dung tệp' },
   { id: 'my_groups', name: 'Nhóm học của tôi', description: 'Tên, chủ đề, môn của các nhóm học bạn tham gia' },
+  { id: 'my_study', name: 'Học tập của tôi', description: 'Bộ Flashcard / Quiz đã lưu và tiến độ ôn (đã thuộc, hay quên, đến hạn)' },
   { id: 'web', name: 'Đọc trang web', description: 'Đọc nội dung link bạn dán vào câu hỏi (chỉ trang công khai)' }
 ]
 const GOOGLE: (Static & { id: GoogleProvider })[] = [

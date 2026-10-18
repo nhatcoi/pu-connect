@@ -5,6 +5,7 @@ import { stripN7AiMention } from '../../ai/ai.constants'
 import { AiRetrieval, contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
 import { McpAgentService, McpModelError } from '../../ai/mcp-agent.service'
 import { LlmService, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg } from '../../ai/llm.service'
+import { StudyAgentToolsService } from '../../study-tools/study-agent-tools.service'
 import { StudyToolsService } from '../../study-tools/study-tools.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
@@ -66,7 +67,8 @@ export class N7AiService {
     private readonly summaries: AiSummaryService,
     private readonly settings: AiSettingsService,
     private readonly memories: AiMemoriesService,
-    private readonly studyTools: StudyToolsService
+    private readonly studyTools: StudyToolsService,
+    private readonly studyAgentTools: StudyAgentToolsService
   ) {}
 
   private get db() {
@@ -154,16 +156,19 @@ export class N7AiService {
       const emit = (delta: string) => this.core.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
       // Phần sau dấu mốc = câu hỏi gợi ý tiếp theo ⇒ không đẩy ra màn hình
       const splitter = new FollowUpSplitter()
+      // Nhóm chat: không connector riêng (Google, Học tập của tôi) của người hỏi
+      const connectors: AiConnectorId[] = inGroup ? [] : (trigger.connectors ?? settings?.defaultConnectors ?? ['library'])
       const { finishReason, usage, steps } = await this.agent.stream(
         messages,
         requesterId,
-        inGroup ? [] : (trigger.connectors ?? settings?.defaultConnectors ?? ['library']),
+        connectors,
         (delta) => {
           const shown = splitter.push(delta)
           if (shown) emit(shown)
         },
         // Tiến trình gọi Gmail / Drive / Lịch ⇒ client hiện từng bước khi đang trả lời
-        (progress) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps: progress })
+        (progress) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps: progress }),
+        connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []
       )
 
       const { rest, text: answer, followUps, memories, cited } = splitter.finish()

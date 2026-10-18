@@ -12,8 +12,18 @@ import type {
 // @pu/schemas là mã TS nguồn ⇒ API khai báo lại schema runtime ở đây (xem auth/dto/register.dto.ts)
 const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
-export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread'] as const
-export const AI_CONNECTORS = ['library', 'my_documents', 'my_groups', 'web', 'web_search', 'google_drive', 'google_calendar', 'google_gmail'] as const
+export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread', 'study_set'] as const
+export const AI_CONNECTORS = [
+  'library',
+  'my_documents',
+  'my_groups',
+  'my_study',
+  'web',
+  'web_search',
+  'google_drive',
+  'google_calendar',
+  'google_gmail'
+] as const
 export const CHAT_MAX_REFS = 5
 export const AI_SKILL_LIMIT = 30
 

@@ -3,7 +3,12 @@ import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { WebReaderService } from './connectors/web-reader.service'
 
-export type Source = { type: 'post' | 'document' | 'course' | 'thread' | 'group' | 'drive' | 'calendar' | 'web'; id: string; title: string; body: string }
+export type Source = {
+  type: 'post' | 'document' | 'course' | 'thread' | 'study_set' | 'group' | 'drive' | 'calendar' | 'web'
+  id: string
+  title: string
+  body: string
+}
 
 // Connector tài khoản ngoài lỗi ⇒ báo N7AI nói rõ (không trả lời như chưa từng kết nối)
 export type ConnectorFailure = { name: string; message: string }

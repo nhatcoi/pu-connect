@@ -29,7 +29,8 @@ One endpoint serves every provider, but each provider keeps its own OAuth grant 
 
 1. Settings or the composer selects connectors. The shared `AiConnectorId` and API DTO include Gmail. Existing authenticated connect/callback/disconnect endpoints support `/ai/connectors/google-gmail/*` through the provider registry.
 2. Internal PU sources still use `AiRetrieval`. Google data is no longer fetched before the model runs; the former Drive/Calendar REST services were removed.
-3. `McpAgentService` opens a per-reply `GoogleMcpService` session for the selected Google connectors. The client uses the official MCP SDK with Streamable HTTP, initialization, `tools/list` and `tools/call`.
+3. `McpAgentService` opens a per-reply `GoogleMcpService` session for the selected Google connectors and merges it with local tool sessions passed by the caller (`AgentToolSession` in `ai/agent-tools.ts`, e.g. "Học tập của tôi" from `StudyAgentToolsService`). Each session brings its own tools, model instructions and step labels (`describe`).
+   The Google session's MCP client uses the official MCP SDK with Streamable HTTP, initialization, `tools/list` and `tools/call`.
 4. Discovery filters the server-advertised tools against a provider-specific read allowlist. Function schemas are passed to the configured OpenAI-compatible model. Names are mapped to `google_drive__search_drive_files`, etc., then translated back to the original MCP tool name when executed.
 5. The model chooses tools and arguments, sees tool results and may make another call. Calendar IDs, dates and search terms come from the question/model rather than a fixed primary-calendar/14-day query. Results stream through the existing chat delta and follow-up splitter flow.
 6. The client closes in `finally`. Actual successful tool calls update `last_used_at`; discovery alone does not. Failures populate a sanitized `last_error`. Final AI messages invalidate the connector status query so Settings shows recent failures and offers reconnect.
@@ -74,6 +75,8 @@ Google responses and model completions are simulated in these integration tests.
 - [MCP TypeScript client](https://ts.sdk.modelcontextprotocol.io/client)
 
 ## Changelog
+
+- 2026-10-18 — `AgentToolSession` interface: Google MCP is one tool source among others (`mergeToolSessions`); instructions / step labels move into each session. First local source: `my_study` (docs/core/15).
 
 - 2026-10-18 — Tool progress: socket `message.progress`, `meta.steps`, `AiSteps` UI; Gmail logo in `ConnectorIcon`.
 - 2026-10-18 — Google's hosted MCP servers required the Developer Preview Program (every call failed) ⇒ switched to self-hosted `workspace-mcp` 2.1.0 on localhost (external bearer mode, read-only, stateless); tool allowlist renamed; endpoint via `GOOGLE_WORKSPACE_MCP_URL`.

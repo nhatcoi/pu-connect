@@ -3,7 +3,7 @@ import type { AiConnectorId, AiSettings } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
 import type { AiSettingsBody } from '../dto/n7ai.dto'
 
-const DEFAULTS: AiSettings = { memoryEnabled: true, retentionDays: null, defaultConnectors: ['library', 'web'] }
+const DEFAULTS: AiSettings = { memoryEnabled: true, retentionDays: null, defaultConnectors: ['library', 'web', 'my_study'] }
 
 const mapSettings = (r: any): AiSettings => ({
   memoryEnabled: r.memory_enabled,

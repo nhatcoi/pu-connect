@@ -35,7 +35,7 @@ describe('N7AI settings (e2e)', () => {
     expect((await agent.get('/api/ai/settings').expect(200)).body.data).toEqual({
       memoryEnabled: true,
       retentionDays: null,
-      defaultConnectors: ['library', 'web']
+      defaultConnectors: ['library', 'web', 'my_study']
     })
     await agent.patch('/api/ai/settings').send({ retentionDays: 30 }).expect(200)
     const s = (
