@@ -18,6 +18,7 @@ import type {
   AiSkillDraft,
   AiSkillInput,
   AiThread,
+  AiThreadShare,
   AiThreadsPage,
   ChatRefSuggestion,
   ChatRefType,
@@ -112,6 +113,10 @@ export const chatApi = {
   createAiThread: () => unwrap(apiClient<Envelope<ConversationSummary>>('/ai/threads', json('POST'))),
   renameAiThread: (id: string, title: string) => unwrap(apiClient<Envelope<AiThread>>(`/ai/threads/${id}`, json('PATCH', { title }))),
   deleteAiThread: (id: string) => apiClient(`/ai/threads/${id}`, json('DELETE')),
+  // Chia sẻ công khai qua link (ảnh chụp tới tin cuối)
+  aiThreadShare: (id: string) => unwrap(apiClient<Envelope<AiThreadShare | null>>(`/ai/threads/${id}/share`)),
+  shareAiThread: (id: string) => unwrap(apiClient<Envelope<AiThreadShare>>(`/ai/threads/${id}/share`, json('POST'))),
+  unshareAiThread: (id: string) => apiClient(`/ai/threads/${id}/share`, json('DELETE')),
   aiLibrary: (kind: AiLibraryKind, cursor: string | null, signal?: AbortSignal) =>
     unwrap(apiClient<Envelope<AiLibraryPage>>(`/ai/library?${qs({ kind, cursor })}`, { signal })),
 

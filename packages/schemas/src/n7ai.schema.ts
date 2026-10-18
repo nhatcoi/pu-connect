@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AiConnectorId } from './chat.schema'
+import type { AiConnectorId, AiMode, ChatCitation } from './chat.schema'
 
 // Cài đặt N7AI: bộ nhớ, tác vụ tự động, phản hồi, quyền riêng tư (docs/core/10-n7ai-settings.md)
 
@@ -80,4 +80,29 @@ export interface AiFeedbackStats {
   down: number
   byReason: Record<string, number>
   tickets: { id: string; category: string; message: string; status: string; createdAt: string; user: string | null }[]
+}
+
+// Chia sẻ công khai 1 hội thoại N7AI qua link (docs/core/11-n7ai-space.md §Chia sẻ)
+// Ảnh chụp tới tin cuối lúc tạo / cập nhật link; tin sau đó không lộ
+export interface AiThreadShare {
+  token: string
+  sharedAt: string // lần tạo / cập nhật ảnh chụp gần nhất
+  messageCount: number
+  hasNewer: boolean // có tin mới sau ảnh chụp ⇒ gợi ý "Cập nhật link"
+}
+
+export interface SharedAiMessage {
+  id: string
+  role: 'user' | 'ai'
+  content: string
+  aiMode: AiMode | null
+  citations: ChatCitation[] // chỉ nguồn công khai (bài PU, trang web)
+  attachmentCount: number // tệp của người hỏi không công khai, chỉ báo số lượng
+  createdAt: string
+}
+
+export interface SharedAiThread {
+  title: string | null
+  sharedAt: string
+  messages: SharedAiMessage[]
 }

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2, MoreHorizontal, Pencil, Search, Trash2, X } from 'lucide-react'
+import { Check, Loader2, MoreHorizontal, Pencil, Search, Share2, Trash2, X } from 'lucide-react'
 import type { AiThread } from '@pu/schemas'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -12,6 +12,7 @@ import { chatApi, useAiThreadActions, useAiThreads, type UiPage } from '@/hooks/
 import { N7AI_HOME, n7aiThreadHref } from '@/lib/n7ai-routes'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
+import { ShareThreadDialog } from './share-thread-dialog'
 
 const SEARCH_DEBOUNCE_MS = 250
 const UNTITLED = 'Cuộc trò chuyện mới'
@@ -28,7 +29,7 @@ function groupLabel(iso: string | null, now: Date): string {
   return 'Cũ hơn'
 }
 
-// Lịch sử hội thoại N7AI (thanh bên /n7ai): tìm theo tiêu đề / nội dung, cuộn tải thêm, đổi tên / xóa; rê chuột ⇒ tải trước tin
+// Lịch sử hội thoại N7AI (thanh bên /n7ai): tìm theo tiêu đề / nội dung, cuộn tải thêm, đổi tên / chia sẻ / xóa; rê chuột ⇒ tải trước tin
 export function AiThreadList({ activeId, onNavigate }: { activeId?: string; onNavigate?: () => void }) {
   const qc = useQueryClient()
   const [search, setSearch] = useState('')
@@ -119,6 +120,7 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
     remove.mutate(thread.id, { onSuccess: () => active && router.replace(N7AI_HOME) })
   }
   const [editing, setEditing] = useState(false)
+  const [sharing, setSharing] = useState(false)
   const [title, setTitle] = useState(thread.title ?? '')
 
   const save = () => {
@@ -175,11 +177,15 @@ function ThreadRow({ thread, active, onHover, onNavigate }: { thread: AiThread; 
           >
             <Pencil /> Đổi tên
           </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => setSharing(true)}>
+            <Share2 /> Chia sẻ
+          </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onSelect={destroy}>
             <Trash2 /> Xóa
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      {sharing && <ShareThreadDialog threadId={thread.id} open onOpenChange={setSharing} />}
     </div>
   )
 }

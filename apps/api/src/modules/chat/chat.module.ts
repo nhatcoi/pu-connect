@@ -27,6 +27,8 @@ import { AiTasksService } from './n7ai/ai-tasks.service'
 import { AiSkillsController } from './n7ai/ai-skills.controller'
 import { AiSkillsService } from './n7ai/ai-skills.service'
 import { AiSkillDraftService } from './n7ai/ai-skill-draft.service'
+import { AiSharedController } from './n7ai/ai-shared.controller'
+import { AiThreadShareService } from './n7ai/ai-thread-share.service'
 import { AiThreadsController } from './n7ai/ai-threads.controller'
 import { AiThreadsService } from './n7ai/ai-threads.service'
 import { N7AiController } from './n7ai/n7ai.controller'
@@ -45,6 +47,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     MessagesController,
     N7AiController,
     AiThreadsController,
+    AiSharedController,
     AiLibraryController,
     AiSkillsController,
     ChatRefsController,
@@ -67,6 +70,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     AiTasksService,
     AiMaintenanceProcessor,
     AiThreadsService,
+    AiThreadShareService,
     AiLibraryService,
     N7AiService,
     ConversationsService,

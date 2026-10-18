@@ -12,8 +12,11 @@ import { FlashcardDeck } from './flashcard-deck'
 import { QuizCard } from './quiz-card'
 import { splitStudyBlocks } from './study-blocks'
 
+// Phần tin cần để hiển thị (dùng lại cho trang chia sẻ công khai)
+export type AiBodyMessage = Pick<UiMessage, 'content' | 'status' | 'blocks' | 'meta'>
+
 // Nội dung tin N7AI: Markdown + quiz/flashcard tương tác + nguồn tham khảo
-export function AiMessageBody({ message: m }: { message: UiMessage }) {
+export function AiMessageBody({ message: m }: { message: AiBodyMessage }) {
   const segments = useMemo(() => splitStudyBlocks(m.content), [m.content])
   const mode = m.meta?.aiMode
 

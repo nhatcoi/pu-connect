@@ -34,6 +34,7 @@ const RESERVED = new Set([
   'verify-email',
   'get-started',
   'post',
+  'share',
   'p',
   'c',
   'u',

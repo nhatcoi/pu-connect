@@ -6,6 +6,7 @@ import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import { ConversationsService } from '../conversations/conversations.service'
 import { AiThreadUpdateBodySchema, ListAiThreadsQuerySchema, type ListAiThreadsQuery } from '../dto/chat.dto'
+import { AiThreadShareService } from './ai-thread-share.service'
 import { AiThreadsService } from './ai-threads.service'
 
 // Lịch sử hội thoại N7AI (nhiều thread)
@@ -14,7 +15,8 @@ import { AiThreadsService } from './ai-threads.service'
 export class AiThreadsController {
   constructor(
     private readonly threads: AiThreadsService,
-    private readonly conversations: ConversationsService
+    private readonly conversations: ConversationsService,
+    private readonly shares: AiThreadShareService
   ) {}
 
   // ?q=&cursor=&limit= (keyset, hoạt động gần nhất trước)
@@ -38,5 +40,22 @@ export class AiThreadsController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     return this.threads.remove(requireUserId(req), id)
+  }
+
+  // Chia sẻ công khai qua link: trạng thái / tạo hoặc cập nhật ảnh chụp / ngắt
+  @Get(':id/share')
+  getShare(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.shares.get(requireUserId(req), id)
+  }
+
+  @Post(':id/share')
+  @HttpCode(HttpStatus.OK)
+  share(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.shares.share(requireUserId(req), id)
+  }
+
+  @Delete(':id/share')
+  unshare(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.shares.unshare(requireUserId(req), id)
   }
 }

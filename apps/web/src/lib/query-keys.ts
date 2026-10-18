@@ -45,6 +45,7 @@ export const queryKeys = {
   aiThreadsAll: ['ai-threads'] as const,
   aiThreads: (q: string) => ['ai-threads', q.trim().toLowerCase()] as const,
   aiDraftThread: ['ai-draft-thread'] as const,
+  aiThreadShare: (id: string) => ['ai-thread-share', id] as const,
   aiLibraryAll: ['ai-library'] as const,
   aiLibrary: (kind: string) => ['ai-library', kind] as const,
   aiSkills: ['ai-skills'] as const,

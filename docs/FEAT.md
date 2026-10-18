@@ -7,6 +7,8 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Chia sẻ hội thoại N7AI qua link công khai** ([thiết kế](./core/11-n7ai-space.md#6-chia-sẻ-hội-thoại)): nút Chia sẻ ở đầu thread AI và menu ⋯ trong lịch sử N7AI ⇒ hộp thoại tạo link / sao chép / cập nhật / ngắt. Link = ảnh chụp tới tin cuối lúc tạo (`ai_thread_shares.until_message_id`, migration `ai-thread-share-upgrade.sql`), token 128-bit giữ nguyên khi cập nhật. API `GET/POST/DELETE /api/ai/threads/:id/share` (chủ thread) + `GET /api/ai/shared/:token` (không đăng nhập). Trang `/share/[token]` (route group `(shared)`, render server, `noindex`): ẩn tệp đính kèm (chỉ báo số lượng), nguồn Drive/Lịch/tài liệu và bài không công khai; `share` vào danh sách username dành riêng.
+
 ### 👤 Domain 1: Identity & Profile (Định Danh & Hồ Sơ Sinh Viên — Hoàn Thành 100%)
 - [x] 🪪 **Hồ sơ sinh viên chuẩn hóa**: Mã SV (MSSV), Họ tên hiển thị, Username, Email, Bio, Avatar, Khoa/Viện (`faculty`), Niên khóa (`academic_year`), Trường (`school`), Ngành (`major`), Lớp (`class_name`).
 - [x] 🏛️ **Cây Tổ chức Học thuật Đại học Phenikaa Chuẩn hóa (PU Academic Master Data & Constants)**: 7 Trường thành viên (`School`), các Khoa trực thuộc, Khoa độc lập (`Khoa Luật`, `Khoa Khoa học cơ bản`), 3 Viện nghiên cứu (PIAS, PHENA, PRATI), 4 Trung tâm và toàn bộ các Ngành đào tạo (`Major`), Niên khóa chuẩn hóa K14 - K19.

@@ -2,7 +2,7 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { AiThread, AiThreadsPage, ChatMessage } from '@pu/schemas'
+import type { AiThread, AiThreadShare, AiThreadsPage, ChatMessage } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
 
@@ -94,4 +94,23 @@ export function useAiThreadActions() {
     onError
   })
   return { rename, remove }
+}
+
+// Link chia sẻ công khai của 1 thread: trạng thái + tạo / cập nhật ảnh chụp / ngắt
+export function useAiThreadShare(id: string, enabled: boolean) {
+  const qc = useQueryClient()
+  const key = queryKeys.aiThreadShare(id)
+  const query = useQuery({ queryKey: key, queryFn: () => chatApi.aiThreadShare(id), enabled, staleTime: 30 * 1000 })
+  const onError = (err: Error) => toast.error(err.message || 'Thao tác thất bại')
+  const share = useMutation({
+    mutationFn: () => chatApi.shareAiThread(id),
+    onSuccess: (s) => qc.setQueryData<AiThreadShare | null>(key, s),
+    onError
+  })
+  const unshare = useMutation({
+    mutationFn: () => chatApi.unshareAiThread(id),
+    onSuccess: () => qc.setQueryData<AiThreadShare | null>(key, null),
+    onError
+  })
+  return { ...query, share, unshare }
 }

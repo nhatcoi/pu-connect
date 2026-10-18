@@ -45,3 +45,17 @@ Truy vấn: `conversations (type='ai', created_by)` (idx_conversations_ai_thread
 ## 5. Kiểm thử
 
 `apps/api/test/n7ai-space.e2e-spec.ts`: Tin nhắn chỉ 1 thread AI chat nhanh (gần nhất, = `POST conversations/ai`), badge không đếm; thư viện theo loại, chỉ của mình, keyset, tham số sai ⇒ 400. Cập nhật `chat-mention-ai` / `google-connectors` (callback mới).
+
+## 6. Chia sẻ hội thoại
+
+| Vấn đề | Quyết định | Lý do |
+|---|---|---|
+| Phạm vi link | Ảnh chụp: tin `id <= until_message_id` (BIGSERIAL tăng dần), chỉ tin `done`, chưa thu hồi, không phải tin hệ thống | Tin hỏi sau đó không tự lộ; không sao chép dữ liệu |
+| Bảng | `ai_thread_shares (conversation_id PK → conversations ON DELETE CASCADE, owner_id, token UNIQUE, until_message_id)` | 1 link / thread; xóa thread ⇒ mất link |
+| Cập nhật / ngắt | `POST` lần sau chỉ dời `until_message_id`, giữ token; `DELETE` xóa hàng ⇒ link 404 ngay | Link đã gửi vẫn dùng được; gỡ tức thì |
+| Dữ liệu công khai | Vai trò, nội dung, `aiMode`, số tệp; trích dẫn chỉ giữ `web` + bài `public` chưa ẩn | Tệp chat (R2 key), Drive, Lịch, tài liệu có thể riêng tư |
+| Ẩn danh | Không trả tên / avatar người hỏi | Như ChatGPT share |
+| Trang | `/share/[token]` trong `app/(shared)` (không AppLayout), server component đọc `INTERNAL_API_URL`, `cache: 'no-store'`, `robots: noindex` | Xem trước link có tiêu đề; ngắt là hết hiệu lực; không lên máy tìm kiếm |
+| Token | `randomBytes(16)` base64url (22 ký tự), kiểm tra dạng trước khi truy vấn | Không đoán được, endpoint công khai không cần đăng nhập |
+
+Kiểm thử: `apps/api/test/n7ai-share.e2e-spec.ts` (thread rỗng ⇒ 400, xem không đăng nhập, ẩn tệp / nguồn riêng, tin sau ảnh chụp không lộ, cập nhật giữ token, người khác 404, ngắt ⇒ 404).

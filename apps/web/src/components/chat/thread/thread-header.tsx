@@ -3,13 +3,14 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BellOff, Eraser, Info, Maximize2, Menu, SquarePen } from 'lucide-react'
+import { ArrowLeft, BellOff, Eraser, Info, Maximize2, Menu, Share2, SquarePen } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresence } from '@/hooks/chat'
 import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { ConversationAvatar } from '../conversation-avatar'
 import { OpenInN7AiButton } from '../ai/open-in-n7ai'
+import { ShareThreadDialog } from '../ai/share-thread-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
 interface ThreadHeaderProps {
@@ -32,6 +33,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
   const { data: quota } = useAiQuota(isAi)
   const otherPresence = usePresence(other?.id)
   const onlineInGroup = useOnlineCount(conv?.type === 'group' ? conv.members.map((m) => m.id) : [])
+  const [sharing, setSharing] = React.useState(false)
 
   const subtitle =
     typingLabel ??
@@ -74,6 +76,12 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
         <p className={`text-[11px] truncate ${typingLabel ? 'text-primary' : 'text-muted-foreground'}`}>{subtitle}</p>
       </div>
       {isAi && <OpenInN7AiButton />}
+      {isAi && conv.lastMessage && (
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={() => setSharing(true)} title="Chia sẻ qua link" aria-label="Chia sẻ">
+          <Share2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {isAi && sharing && <ShareThreadDialog threadId={conv.id} open onOpenChange={setSharing} />}
       {isAi && (
         <Button
           variant="ghost"

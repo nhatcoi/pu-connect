@@ -12,6 +12,7 @@ flowchart LR
   reset["<b>/reset-password</b><br/>?token="]
   getstarted["/home · /get-started<br/>→ redirect /"]
   legal["<b>/terms</b> · <b>/privacy-policy</b><br/>route group (legal), công khai"]
+  shared["<b>/share/[token]</b><br/>hội thoại N7AI được chia sẻ<br/>route group (shared), công khai, noindex"]
 
   subgraph guarded["AuthGuard (cần đăng nhập)"]
     home["<b>/</b><br/>Bảng tin: for_you · following · qa"]
@@ -38,6 +39,7 @@ flowchart LR
 
   landing -->|login / register / Google| home
   landing -->|footer · lời đồng ý| legal
+  n7aithread -->|Chia sẻ link| shared
   verify --> home
   landing -->|Quên mật khẩu?| forgot
   forgot -.->|email chứa link| reset
@@ -60,7 +62,7 @@ flowchart LR
 
   classDef page fill:#1e3a8a,stroke:#1e3a8a,color:#fff
   classDef redirect fill:#fff,stroke:#94a3b8,color:#64748b,stroke-dasharray:5 5
-  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp,settings,settingsec,n7aihome,n7aithread,n7ailib,n7aiset page
+  class landing,verify,forgot,reset,home,search,comms,comm,profile,notif,post,courses,course,msgs,thread,adminp,settings,settingsec,n7aihome,n7aithread,n7ailib,n7aiset,shared page
   class getstarted redirect
 ```
 
@@ -126,6 +128,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-18 — `/share/[token]` (route group `(shared)`, server render, `noindex`): xem hội thoại N7AI được chia sẻ; `ShareThreadDialog` mở từ nút Chia sẻ ở `ThreadHeader` (thread AI) và menu ⋯ của `AiThreadList`.
 - 2026-10-17 — `ConnectorIcon` (logo Google Drive / Calendar) ở Trình kết nối, menu `+`, "Nguồn tham khảo"; trích dẫn Drive / Calendar / web mở tab mới.
 - 2026-10-17 — Thư viện skill: `SkillLibraryRow` dùng chung, nhóm Chính thức / Cộng đồng, ẩn lượt cài = 0.
 - 2026-10-17 — Đổi tên PU AI → N7AI: route `/n7ai*` (redirect 308 từ `/puai*`, `/settings/puai*`, `/c/puai`), `components/n7ai/`, `components/settings/n7ai/`, `lib/n7ai-routes.ts`.
