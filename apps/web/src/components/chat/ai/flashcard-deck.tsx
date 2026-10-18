@@ -2,18 +2,22 @@
 
 import React, { useState } from 'react'
 import { ChevronLeft, ChevronRight, Shuffle } from 'lucide-react'
-import { MarkdownPreview } from '@/components/renderer/markdown-preview'
+import { useSpeech } from '@/components/tools/card-speech'
+import { MeaningFace, TermFace } from '@/components/tools/flashcard-face'
+import { hasSpeech } from '@/components/tools/tool-catalog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { FlashcardData } from './study-blocks'
 
-// Bộ thẻ ghi nhớ: chạm để lật, trước/sau, xáo trộn; đánh dấu thẻ đã thuộc
+// Bộ thẻ ghi nhớ trong chat: chạm để lật, trước/sau, xáo trộn, phát âm (bộ từ vựng); đánh dấu thẻ đã thuộc
 export function FlashcardDeck({ data }: { data: FlashcardData }) {
   const [order, setOrder] = useState(() => data.cards.map((_, i) => i))
   const [pos, setPos] = useState(0)
   const [flipped, setFlipped] = useState(false)
   const [known, setKnown] = useState<Set<number>>(new Set())
   const card = data.cards[order[pos]]
+  const { supported, speaking, speak } = useSpeech()
+  const speech = supported && hasSpeech(data) ? { onSpeak: () => speak(card.front, data.lang), speaking } : null
 
   const go = (next: number) => {
     setFlipped(false)
@@ -49,10 +53,7 @@ export function FlashcardDeck({ data }: { data: FlashcardData }) {
           )}
         >
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{flipped ? 'Mặt sau' : 'Mặt trước'} · chạm để lật</span>
-          <MarkdownPreview
-            content={flipped ? card.back : card.front}
-            className={cn('leading-snug space-y-1 [&>p]:m-0', flipped ? 'text-[13px]' : 'text-[15px] font-semibold')}
-          />
+          {flipped ? <MeaningFace card={card} /> : <TermFace card={card} speech={speech} />}
         </button>
         <div className="mt-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">

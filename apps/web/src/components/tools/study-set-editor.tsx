@@ -3,7 +3,16 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ClipboardPaste, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { STUDY_SET_MAX_ITEMS, type StudyItemContent, type StudySetDetail, type StudyToolKind } from '@pu/schemas'
+import {
+  FLASHCARD_TEMPLATES,
+  SPEECH_LANGS,
+  STUDY_SET_MAX_ITEMS,
+  type SpeechLang,
+  type StudyItemContent,
+  type StudySetDetail,
+  type StudySetOptions,
+  type StudyToolKind
+} from '@pu/schemas'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -11,7 +20,8 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useStudySetActions } from '@/hooks/use-study-tools'
 import { cn } from '@/lib/utils'
-import { TOOL_META, asCard, asQuestion, emptyContent, parseCardLines } from './tool-catalog'
+import { SPEECH_LANG_LABELS } from './card-speech'
+import { FLASHCARD_TEMPLATE_META, TOOL_META, asCard, asQuestion, emptyContent, isVocab, parseCardLines } from './tool-catalog'
 
 type Row = { key: string; id?: string; content: StudyItemContent }
 type Panel = 'ai' | 'paste' | null
@@ -39,6 +49,7 @@ export function StudySetEditor({
   const { create, update, draft } = useStudySetActions()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [options, setOptions] = useState<StudySetOptions>({})
   const [rows, setRows] = useState<Row[]>([])
   const [panel, setPanel] = useState<Panel>(null)
   const [prompt, setPrompt] = useState('')
@@ -53,6 +64,7 @@ export function StudySetEditor({
     const init = initialRef.current
     setTitle(init?.title ?? '')
     setDescription(init?.description ?? '')
+    setOptions(init?.options ?? {})
     setRows(init?.items.length ? init.items.map((it) => row(it.content, it.id)) : startWithAi ? [] : [row(emptyContent(kind))])
     setPanel(!init && startWithAi ? 'ai' : null)
     setPrompt('')
@@ -77,6 +89,8 @@ export function StudySetEditor({
         onSuccess: (d) => {
           if (!title.trim()) setTitle(d.title)
           if (!description.trim() && d.description) setDescription(d.description)
+          // Bộ chưa chọn mẫu ⇒ theo gợi ý của N7AI (vd. từ vựng tiếng Anh)
+          if (!options.template && d.options) setOptions((o) => ({ ...d.options, ...o }))
           addRows(d.items.map((it) => it.content))
           setPanel(null)
           toast.success(`N7AI đã tạo ${d.items.length} ${meta.itemLabel} — xem lại rồi lưu`)
@@ -97,7 +111,7 @@ export function StudySetEditor({
     const items = rows.filter((r) => !isBlank(r.content)).map((r) => ({ id: r.id, content: r.content }))
     if (!title.trim()) return toast.error('Nhập tên bộ')
     if (!items.length) return toast.error(`Thêm ít nhất 1 ${meta.itemLabel}`)
-    const body = { kind, title: title.trim(), description: description.trim() || null, items }
+    const body = { kind, title: title.trim(), description: description.trim() || null, options: kind === 'flashcards' ? options : {}, items }
     const done = (set: StudySetDetail) => {
       toast.success(initial ? 'Đã lưu thay đổi' : `Đã tạo bộ ${meta.label}`)
       onOpenChange(false)
@@ -118,6 +132,7 @@ export function StudySetEditor({
           <div className="space-y-2 pt-2">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Tên bộ, vd. Từ vựng Khoa học & Vũ trụ" />
             <Input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} placeholder="Mô tả ngắn (không bắt buộc)" className="h-8 text-xs" />
+            {kind === 'flashcards' && <DeckOptions options={options} onChange={setOptions} />}
           </div>
           <div className="flex flex-wrap gap-1.5 pt-2">
             <Button size="sm" variant={panel === 'ai' ? 'secondary' : 'outline'} className="h-7 rounded-full text-xs gap-1" onClick={() => setPanel(panel === 'ai' ? null : 'ai')}>
@@ -149,7 +164,7 @@ export function StudySetEditor({
                 value={paste}
                 onChange={(e) => setPaste(e.target.value)}
                 rows={5}
-                placeholder={'Mỗi dòng 1 thẻ, vd.\nInvisible (adj) - Vô hình\nPhysicist: Nhà vật lý học'}
+                placeholder={'Mỗi dòng 1 thẻ, vd.\nInvisible (adj) - Vô hình\nPhysicist: Nhà vật lý học\nOrbit (n) | /ˈɔː.bɪt/ | Quỹ đạo | The moon orbits the Earth.'}
                 className="text-sm bg-background font-mono"
                 autoFocus
               />
@@ -179,7 +194,10 @@ export function StudySetEditor({
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
-              {kind === 'flashcards' ? <CardFields content={r.content} onChange={(c) => setContent(r.key, c)} /> : <QuestionFields content={r.content} onChange={(c) => setContent(r.key, c)} />}
+              {kind === 'flashcards' ? (
+                <CardFields content={r.content} vocab={isVocab(options)} onChange={(c) => setContent(r.key, c)} />
+              ) : ( <QuestionFields content={r.content} onChange={(c) => setContent(r.key, c)} />
+              )}
             </div>
           ))}
           <div ref={listEnd} />
@@ -208,12 +226,68 @@ function isBlank(c: StudyItemContent) {
   return !c.q.trim() && c.options.every((o) => !o.trim())
 }
 
-function CardFields({ content, onChange }: { content: StudyItemContent; onChange: (c: StudyItemContent) => void }) {
-  const c = asCard(content)
+// Mẫu bộ + ngôn ngữ phát âm (chỉ flashcard)
+function DeckOptions({ options, onChange }: { options: StudySetOptions; onChange: (o: StudySetOptions) => void }) {
+  const template = options.template ?? 'basic'
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-      <Textarea value={c.front} onChange={(e) => onChange({ ...c, front: e.target.value })} rows={2} maxLength={500} placeholder="Mặt trước" className="text-sm min-h-0" />
-      <Textarea value={c.back} onChange={(e) => onChange({ ...c, back: e.target.value })} rows={2} maxLength={2000} placeholder="Mặt sau" className="text-sm min-h-0" />
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <div className="inline-flex rounded-full border p-0.5" role="radiogroup" aria-label="Mẫu bộ">
+        {FLASHCARD_TEMPLATES.map((t) => (
+          <button
+            key={t}
+            type="button"
+            role="radio"
+            aria-checked={template === t}
+            title={FLASHCARD_TEMPLATE_META[t].hint}
+            onClick={() => onChange({ ...options, template: t })}
+            className={cn('rounded-full px-2.5 py-1 font-medium transition-colors', template === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
+          >
+            {FLASHCARD_TEMPLATE_META[t].label}
+          </button>
+        ))}
+      </div>
+      <label className="flex items-center gap-1.5 text-muted-foreground">
+        Phát âm
+        <select
+          value={options.lang ?? ''}
+          onChange={(e) => onChange({ ...options, lang: (e.target.value || undefined) as SpeechLang | undefined })}
+          className="h-7 rounded-full border bg-background px-2 text-xs text-foreground"
+        >
+          <option value="">{template === 'vocab' ? 'Tự nhận' : 'Tắt'}</option>
+          {SPEECH_LANGS.map((l) => (
+            <option key={l} value={l}>
+              {SPEECH_LANG_LABELS[l]}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  )
+}
+
+// Thẻ: mặt trước / sau; phiên âm + ví dụ luôn hiện ở mẫu Từ vựng, mẫu Cơ bản mở bằng "+ Chi tiết"
+function CardFields({ content, vocab, onChange }: { content: StudyItemContent; vocab: boolean; onChange: (c: StudyItemContent) => void }) {
+  const c = asCard(content)
+  const [more, setMore] = useState(() => !!(c.phonetic || c.example))
+  const showMore = vocab || more
+  // Ô trống ⇒ bỏ trường (không lưu chuỗi rỗng)
+  const set = (field: 'phonetic' | 'example', v: string) => onChange({ ...c, [field]: v || undefined })
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <Textarea value={c.front} onChange={(e) => onChange({ ...c, front: e.target.value })} rows={2} maxLength={500} placeholder={vocab ? 'Từ, vd. Orbit (n)' : 'Mặt trước'} className="text-sm min-h-0" />
+        <Textarea value={c.back} onChange={(e) => onChange({ ...c, back: e.target.value })} rows={2} maxLength={2000} placeholder={vocab ? 'Nghĩa' : 'Mặt sau'} className="text-sm min-h-0" />
+      </div>
+      {showMore ? (
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-2">
+          <Input value={c.phonetic ?? ''} onChange={(e) => set('phonetic', e.target.value)} maxLength={120} placeholder="Phiên âm, vd. /ˈɔː.bɪt/" className="h-8 text-xs font-mono" />
+          <Input value={c.example ?? ''} onChange={(e) => set('example', e.target.value)} maxLength={600} placeholder="Câu ví dụ (không bắt buộc)" className="h-8 text-xs" />
+        </div>
+      ) : (
+        <button type="button" onClick={() => setMore(true)} className="text-[11px] text-primary hover:underline">
+          + Chi tiết (phiên âm, ví dụ)
+        </button>
+      )}
     </div>
   )
 }

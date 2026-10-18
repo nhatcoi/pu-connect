@@ -1,5 +1,13 @@
 import { Layers, ListChecks, type LucideIcon } from 'lucide-react'
-import { STUDY_TOOL_KINDS, type FlashcardContent, type QuizQuestionContent, type StudyItemContent, type StudyToolKind } from '@pu/schemas'
+import {
+  STUDY_TOOL_KINDS,
+  type FlashcardContent,
+  type FlashcardTemplate,
+  type QuizQuestionContent,
+  type StudyItemContent,
+  type StudySetOptions,
+  type StudyToolKind
+} from '@pu/schemas'
 
 // Danh mục công cụ học tập: thêm loại mới = thêm 1 mục ở đây + trình học tương ứng
 export interface ToolMeta {
@@ -43,13 +51,32 @@ export const emptyContent = (kind: StudyToolKind): StudyItemContent =>
 export const asCard = (c: StudyItemContent) => c as FlashcardContent
 export const asQuestion = (c: StudyItemContent) => c as QuizQuestionContent
 
-// Dán danh sách ⇒ thẻ: mỗi dòng "mặt trước <tab | - | : | => > mặt sau"
+// Mẫu bộ flashcard: Từ vựng hiện sẵn ô phiên âm, ví dụ + nút phát âm
+export const FLASHCARD_TEMPLATE_META: Record<FlashcardTemplate, { label: string; hint: string }> = {
+  basic: { label: 'Cơ bản', hint: 'Mặt trước · mặt sau' },
+  vocab: { label: 'Từ vựng', hint: 'Thêm phiên âm, ví dụ, phát âm' }
+}
+
+export const isVocab = (options?: StudySetOptions | null) => options?.template === 'vocab'
+// Nút phát âm: bộ từ vựng hoặc đã chọn ngôn ngữ
+export const hasSpeech = (options?: StudySetOptions | null) => isVocab(options) || !!options?.lang
+
+const IPA = /^\/.*\/$|^\[.*]$/
+
+// Dán danh sách ⇒ thẻ, mỗi dòng 1 thẻ:
+// "mặt trước <tab | - | : | => > mặt sau" hoặc cột "|": từ | nghĩa · từ | /phiên âm/ | nghĩa · từ | /phiên âm/ | nghĩa | ví dụ
 export function parseCardLines(text: string): FlashcardContent[] {
   return text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => {
+    .map((line): FlashcardContent | null => {
+      if (line.includes('|')) {
+        const cols = line.split('|').map((c) => c.trim())
+        const [front, second = '', third = '', fourth = ''] = cols
+        if (IPA.test(second)) return { front, back: third, phonetic: second, ...(fourth ? { example: fourth } : {}) }
+        return { front, back: second, ...(third ? { example: third } : {}) }
+      }
       const m = /^(.+?)\s*(?:\t|\s[-–—:=]>?\s|\s?=>\s?|:\s)\s*(.+)$/.exec(line)
       return m ? { front: m[1].trim(), back: m[2].trim() } : null
     })

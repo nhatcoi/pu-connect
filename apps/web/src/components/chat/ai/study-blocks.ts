@@ -1,12 +1,17 @@
+import { FLASHCARD_TEMPLATES, SPEECH_LANGS, type FlashcardContent, type FlashcardTemplate, type SpeechLang } from '@pu/schemas'
+
 // Tách câu trả lời AI thành đoạn Markdown + khối học tập tương tác (```quiz / ```flashcards chứa JSON)
 
 export interface QuizData {
   title?: string
   questions: { q: string; options: string[]; answer: number; explain?: string }[]
 }
+// Khối chuẩn do server chèn sau khi N7AI gọi tool create_flashcards (kèm mẫu + ngôn ngữ phát âm)
 export interface FlashcardData {
   title?: string
-  cards: { front: string; back: string }[]
+  template?: FlashcardTemplate
+  lang?: SpeechLang
+  cards: FlashcardContent[]
 }
 
 export type Segment =
@@ -36,8 +41,21 @@ function parseQuiz(raw: unknown): QuizData | null {
 function parseCards(raw: unknown): FlashcardData | null {
   const d = (Array.isArray(raw) ? { cards: raw } : raw) as FlashcardData
   if (!d || !Array.isArray(d.cards)) return null
-  const cards = d.cards.filter((c) => c && typeof c.front === 'string' && typeof c.back === 'string')
-  return cards.length ? { title: d.title, cards } : null
+  const cards = d.cards
+    .filter((c) => c && typeof c.front === 'string' && typeof c.back === 'string')
+    .map((c) => ({
+      front: c.front,
+      back: c.back,
+      ...(typeof c.phonetic === 'string' && c.phonetic ? { phonetic: c.phonetic } : {}),
+      ...(typeof c.example === 'string' && c.example ? { example: c.example } : {})
+    }))
+  if (!cards.length) return null
+  return {
+    title: d.title,
+    ...(FLASHCARD_TEMPLATES.includes(d.template as FlashcardTemplate) ? { template: d.template } : {}),
+    ...(SPEECH_LANGS.includes(d.lang as SpeechLang) ? { lang: d.lang } : {}),
+    cards
+  }
 }
 
 export function splitStudyBlocks(content: string): Segment[] {

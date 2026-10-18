@@ -96,7 +96,10 @@ function StudySetView({ set }: { set: StudySetDetail }) {
                   {set.kind === 'flashcards' ? (
                     <div className="grid grid-cols-[auto_1fr_1fr] gap-3">
                       <span className="text-[11px] text-muted-foreground pt-0.5">{i + 1}</span>
-                      <MarkdownPreview content={asCard(it.content).front} className="font-medium [&>p]:m-0" />
+                      <div className="min-w-0">
+                        <MarkdownPreview content={asCard(it.content).front} className="font-medium [&>p]:m-0" />
+                        {asCard(it.content).phonetic && <span className="text-[11px] font-mono text-muted-foreground">{asCard(it.content).phonetic}</span>}
+                      </div>
                       <MarkdownPreview content={asCard(it.content).back} className="text-muted-foreground [&>p]:m-0" />
                     </div>
                   ) : (
