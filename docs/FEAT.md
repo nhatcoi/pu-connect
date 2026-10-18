@@ -229,6 +229,13 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🔐 **Connector Google dùng chung redirect URI đăng nhập** (`ConnectorCallbackMiddleware` theo `state`) ⇒ không cần khai báo URI mới; test e2e luồng đầy đủ với Google API giả lập (`google-connectors.e2e-spec.ts`).
 - Kèm theo: `.prettierrc.json` khớp style repo (không `;`, nháy đơn, 160 cột) — các file của tính năng này đã format; `ai/doc-text.ts` gom trích chữ PDF/DOCX/txt dùng chung.
 
+### 🧰 Công Cụ Học Tập `/tools` (2026-10-18)
+- [x] **Mục Công cụ trên navbar** (sidebar): trang tổng quan `/tools` (số bộ, mục, thẻ cần ôn hôm nay, bộ gần đây), danh sách `/tools/[kind]`, trang học `/tools/[kind]/[id]`. Khung chung cho nhiều loại công cụ (`components/tools/tool-catalog.ts`); đợt đầu **Flashcard** và **Quiz**.
+- [x] **CRUD linh hoạt**: `StudySetEditor` tự nhập từng thẻ / câu (đáp án đúng, giải thích), **dán danh sách** (`mặt trước - mặt sau` mỗi dòng), **Tạo bằng N7AI** (`POST tools/sets/draft`, tốn 1 lượt, giữ đủ mọi mục khi người dùng dán danh sách, ≤ 60) ⇒ xem lại rồi lưu. Sửa bộ giữ lịch ôn của thẻ cũ.
+- [x] **Flashcard ôn lặp lại ngắt quãng** (SM-2 rút gọn, `srs.ts`): hàng đợi thẻ đến hạn, Quên / Khó / Nhớ / Dễ (phím 1–4, Space lật), "Quên" gặp lại sau 10 phút. **Quiz**: từng câu, giải thích, chấm điểm, lưu điểm cao nhất, xem lại câu sai.
+- [x] **Tự lưu từ chat**: N7AI tạo flashcard / quiz trong thread riêng ⇒ `StudyToolsService.saveFromReply` lưu bộ (`source = n7ai`, unique theo tin), tin có nhãn "Đã lưu vào Công cụ › Flashcard · Ôn ngay". Prompt Flashcard sửa: danh sách cụ thể ⇒ tạo đủ, không cắt còn 10.
+- [x] Bảng `study_sets`, `study_items` (migration `study-tools-upgrade.sql`); test e2e `study-tools.e2e-spec.ts`. Chi tiết: `docs/core/15-study-tools.md`.
+
 ### 🎯 Cá Nhân Hóa & Gợi Ý N7AI (2026-10-14)
 - [x] Ghi hành vi ngầm `user_events` (bài xem ≥ 2s, mở bài/tài liệu, tải tài liệu, tìm kiếm, bấm kết quả, bấm gợi ý) qua `POST /api/events` theo lô (`lib/track.ts`), giữ 90 ngày.
 - [x] Hồ sơ quan tâm `user_interests` (môn / tag / từ khóa) tính bằng SQL từ đăng bài, lưu, bình luận, cảm xúc, nhóm học, câu hỏi N7AI và sự kiện; suy giảm nửa đời 14 ngày; worker BullMQ làm mới mỗi giờ (`modules/personalization/`).

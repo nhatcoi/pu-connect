@@ -22,6 +22,7 @@ flowchart TB
     chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
     ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval · prompts"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
+    tools["<b>StudyTools</b><br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tự lưu từ chat"]
   end
 
   subgraph Platform["Platform modules"]
@@ -49,6 +50,8 @@ flowchart TB
   chat -->|emitToUser message.*| rt
   chat -->|chat-push: sendToUser| push
   chat --> ai
+  chat -->|tự lưu flashcard / quiz| tools
+  tools --> ai
   posts -->|PostAiService: @n7ai trong bình luận · tóm tắt bài| ai
   ai -->|chat/completions| llm["LLM gateway"]
   ai -->|AiConnectorsController · GoogleOAuth → Drive / Calendar| gdrive["Google Drive / Calendar"]
@@ -125,6 +128,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-18 — `StudyToolsModule`: `tools/overview`, `tools/sets` CRUD, `tools/sets/draft` (N7AI, trigger `tool`), `tools/sets/:id/review` (SRS), `tools/sets/:id/attempts`; N7AiService tự lưu khối flashcard / quiz (`meta.studySet`). Migration `study-tools-upgrade.sql`.
 - 2026-10-18 — `AiThreadShareService` + `AiSharedController`: chia sẻ thread N7AI qua link (`ai/threads/:id/share`, công khai `ai/shared/:token`); migration `ai-thread-share-upgrade.sql`.
 - 2026-10-17 — `SecurityLogService` ghi vị trí gần đúng (header Cloudflare `cf-ipcountry` / `cf-region` / `cf-ipcity`) + cờ `unusual` (quốc gia/vùng mới trong 90 ngày) ⇒ thông báo `account_notice`, yếu tố rủi ro; `admin/security-events?result=unusual&country=`.
 - 2026-10-17 — `AdminUserDataService`: `admin/users/:id/activity`, `admin/users/:id/sessions` (+ DELETE từng phiên), `admin/security-events`; GraphQL `userProfile` ghi `profile_views`. Migration `profile-views-upgrade.sql`.
