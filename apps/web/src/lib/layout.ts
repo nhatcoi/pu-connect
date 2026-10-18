@@ -3,3 +3,6 @@
 export const SHELL_WIDTH = 'max-w-[1440px]'
 // Cột nội dung giữa: đủ rộng cho màn lớn, vẫn giữ độ dài dòng dễ đọc
 export const MAIN_WIDTH = 'max-w-[760px]'
+// Trang làm việc toàn cột (Công cụ): ẩn cột phải, cột giữa rộng hơn
+export const WIDE_MAIN_WIDTH = 'max-w-[1040px]'
+export const isFullWidthPath = (pathname: string) => pathname === '/tools' || pathname.startsWith('/tools/')

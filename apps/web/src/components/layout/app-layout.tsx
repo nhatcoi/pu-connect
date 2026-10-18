@@ -19,7 +19,7 @@ import { useAppStore } from '@/store'
 import { useChatRealtime } from '@/hooks/chat'
 import { useBlocksRealtime } from '@/hooks/use-blocks'
 import { cn } from '@/lib/utils'
-import { SHELL_WIDTH, MAIN_WIDTH } from '@/lib/layout'
+import { SHELL_WIDTH, MAIN_WIDTH, WIDE_MAIN_WIDTH, isFullWidthPath } from '@/lib/layout'
 import { isN7AiPath } from '@/lib/n7ai-routes'
 
 // Hộp thoại dùng chung: mở được từ mọi trang (soạn bài, tài liệu, nhóm, xem tài liệu)
@@ -55,6 +55,8 @@ function GlobalDialogs() {
 // Không gian N7AI (/n7ai) tự dựng thanh bên riêng ⇒ ẩn Sidebar & cột phải, cột giữa giãn hết
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const immersive = isN7AiPath(usePathname())
+  // Công cụ (/tools): không cần cột phải
+  const fullWidth = isFullWidthPath(pathname)
   const [asideNode, setAsideNode] = useState<HTMLElement | null>(null)
   const [hasCustomAside, setHasCustomAside] = useState(false)
   const onCustomChange = React.useCallback((count: number) => setHasCustomAside(count > 0), [])
@@ -72,8 +74,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Sidebar />
               </div>
             )}
-            <main className={cn('flex-1 w-full min-w-0 min-h-screen', immersive ? 'pb-14 md:pb-0' : cn('pb-20 md:pb-12', MAIN_WIDTH))}>{children}</main>
-            {!immersive && (
+            <main className={cn('flex-1 w-full min-w-0 min-h-screen', immersive ? 'pb-14 md:pb-0' : cn('pb-20 md:pb-12', fullWidth ? WIDE_MAIN_WIDTH : MAIN_WIDTH))}>{children}</main>
+            {!immersive && !fullWidth && (
               <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar py-4">
                 {/* Cột phải riêng của trang được portal vào đây */}
                 <div ref={setAsideNode} className="space-y-4" />
