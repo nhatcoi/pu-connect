@@ -18,6 +18,7 @@ export const AI_CONNECTORS = [
   'my_documents',
   'my_groups',
   'my_study',
+  'my_chats',
   'web',
   'web_search',
   'google_drive',

@@ -24,9 +24,10 @@
 
 | Method | Endpoint | Ghi chú |
 |---|---|---|
-| GET / PATCH | `/ai/settings` | `{ memoryEnabled, retentionDays, defaultConnectors }` |
+| GET / PATCH | `/ai/settings` | `{ memoryEnabled, retentionDays, defaultConnectors, profile: { goal, about, style } }` (hồ sơ học, 2026-10-18) |
 | GET / POST | `/ai/memories` | danh sách / thêm tay |
 | PATCH / DELETE | `/ai/memories/:id` | sửa / xóa; `DELETE /ai/memories` xóa tất cả |
+| PATCH | `/ai/memories/:id/pin` | `{ pinned }` — mục ghim luôn được nhớ, không bị dọn (2026-10-18) |
 | GET / POST | `/ai/tasks` | danh sách / tạo (≤ 5) |
 | PATCH / DELETE | `/ai/tasks/:id` | sửa, bật/tắt / xóa; `POST /ai/tasks/:id/run` chạy ngay |
 | PATCH | `/ai/skills/:id/state` | `{ enabled?, pinned? }` |
@@ -40,7 +41,7 @@ Connector mới: `web` (Đọc trang web, mặc định bật), `web_search` (kh
 
 ## 3. Web
 
-- `/settings` thêm mục **N7AI** → `components/settings/n7ai/*`: Kỹ năng · Tác vụ tự động · Trình kết nối · Duyệt web · Bộ nhớ · Cộng đồng · Phản hồi & Hỗ trợ · Điều khoản · Quyền riêng tư N7AI.
+- `/settings` thêm mục **N7AI** → `components/settings/n7ai/*`: Hồ sơ học (2026-10-18, [`core/16`](./16-n7ai-agent-tools.md)) · Kỹ năng · Tác vụ tự động · Trình kết nối · Duyệt web · Bộ nhớ · Cộng đồng · Phản hồi & Hỗ trợ · Điều khoản · Quyền riêng tư N7AI.
 - Bong bóng câu trả lời N7AI: 👍/👎 (+ lý do khi 👎), nhãn "Đã cập nhật bộ nhớ".
 - Connector mặc định đọc từ `ai_settings` (đồng bộ mọi thiết bị) thay localStorage.
 - `/ai-terms`: điều khoản N7AI (trong nhóm route `(legal)`).

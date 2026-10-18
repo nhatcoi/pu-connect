@@ -35,7 +35,8 @@ describe('N7AI settings (e2e)', () => {
     expect((await agent.get('/api/ai/settings').expect(200)).body.data).toEqual({
       memoryEnabled: true,
       retentionDays: null,
-      defaultConnectors: ['library', 'web', 'my_study']
+      defaultConnectors: ['library', 'web', 'my_study', 'my_chats'],
+      profile: { goal: null, about: null, style: null }
     })
     await agent.patch('/api/ai/settings').send({ retentionDays: 30 }).expect(200)
     const s = (
@@ -44,7 +45,7 @@ describe('N7AI settings (e2e)', () => {
         .send({ memoryEnabled: false, defaultConnectors: ['library', 'my_documents'] })
         .expect(200)
     ).body.data
-    expect(s).toEqual({ memoryEnabled: false, retentionDays: 30, defaultConnectors: ['library', 'my_documents'] })
+    expect(s).toMatchObject({ memoryEnabled: false, retentionDays: 30, defaultConnectors: ['library', 'my_documents'] })
     await agent.patch('/api/ai/settings').send({ retentionDays: 7 }).expect(400)
     await agent.patch('/api/ai/settings').send({ defaultConnectors: [] }).expect(400)
   })

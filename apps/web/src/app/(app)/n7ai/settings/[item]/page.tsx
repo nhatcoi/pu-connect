@@ -7,6 +7,7 @@ import { CommunityPanel } from '@/components/settings/n7ai/community-panel'
 import { ConnectorsPanel } from '@/components/settings/n7ai/connectors-panel'
 import { MemoryPanel } from '@/components/settings/n7ai/memory-panel'
 import { PrivacyPanel } from '@/components/settings/n7ai/privacy-panel'
+import { ProfilePanel } from '@/components/settings/n7ai/profile-panel'
 import { SkillsPanel } from '@/components/settings/n7ai/skills-panel'
 import { SupportPanel } from '@/components/settings/n7ai/support-panel'
 import { TasksPanel } from '@/components/settings/n7ai/tasks-panel'
@@ -15,6 +16,7 @@ import { n7aiSettingsHref } from '@/lib/n7ai-routes'
 import { findN7AiItem } from '@/lib/n7ai-settings-registry'
 
 const PANELS: Record<string, React.ComponentType> = {
+  profile: ProfilePanel,
   skills: SkillsPanel,
   tasks: TasksPanel,
   connectors: ConnectorsPanel,

@@ -8,7 +8,23 @@ export interface AiSettings {
   memoryEnabled: boolean
   retentionDays: (typeof AI_RETENTION_DAYS)[number] | null // null = giữ vô hạn
   defaultConnectors: AiConnectorId[]
+  profile: AiLearnerProfile
 }
+
+// Hồ sơ học do người dùng tự viết ⇒ luôn có trong system prompt thread riêng (kèm ngành / trường / khóa từ hồ sơ PU)
+export const AI_PROFILE_LIMITS = { goal: 300, about: 600, style: 300 } as const
+export interface AiLearnerProfile {
+  goal: string | null // mục tiêu học (vd. IELTS 6.5, qua môn Giải tích 2)
+  about: string | null // N7AI nên biết gì về bạn (trình độ, môn đang học, cách học)
+  style: string | null // N7AI nên trả lời thế nào (ngắn gọn, nhiều ví dụ, tiếng Anh…)
+}
+export const AiLearnerProfileSchema = z
+  .object({
+    goal: z.string().trim().max(AI_PROFILE_LIMITS.goal, { message: `Tối đa ${AI_PROFILE_LIMITS.goal} ký tự` }).nullable(),
+    about: z.string().trim().max(AI_PROFILE_LIMITS.about, { message: `Tối đa ${AI_PROFILE_LIMITS.about} ký tự` }).nullable(),
+    style: z.string().trim().max(AI_PROFILE_LIMITS.style, { message: `Tối đa ${AI_PROFILE_LIMITS.style} ký tự` }).nullable()
+  })
+  .partial()
 
 export const AI_MEMORY_LIMIT = 100
 export const AiMemoryInputSchema = z.object({
@@ -19,6 +35,7 @@ export interface AiMemory {
   id: string
   content: string
   source: 'auto' | 'manual'
+  pinned: boolean // ghim ⇒ luôn có trong ngữ cảnh, không bị mục tự động mới đẩy ra
   createdAt: string
 }
 

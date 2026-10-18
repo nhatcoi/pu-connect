@@ -1,12 +1,12 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Check, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Check, Loader2, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
 import { AI_MEMORY_LIMIT, type AiMemory } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAiMemories, useAiSettings } from '@/hooks/chat'
-import { formatRelativeTime } from '@/lib/utils'
+import { cn, formatRelativeTime } from '@/lib/utils'
 import { SettingsGroup, SwitchRow } from '../settings-ui'
 
 // Bộ nhớ dài hạn: bật/tắt, thêm tay, sửa, xóa từng mục / xóa hết
@@ -32,7 +32,10 @@ export function MemoryPanel() {
           onCheckedChange={(memoryEnabled) => update.mutate({ memoryEnabled })}
         />
       </SettingsGroup>
-      <SettingsGroup label={`Đã ghi nhớ (${memories.length}/${AI_MEMORY_LIMIT})`}>
+      <SettingsGroup
+        label={`Đã ghi nhớ (${memories.length}/${AI_MEMORY_LIMIT})`}
+        hint="Ghim ⇒ N7AI luôn dùng mục đó trong mọi câu trả lời và không bị mục tự ghi mới đẩy ra."
+      >
         <form onSubmit={add} className="flex items-center gap-2 py-3">
           <Input
             value={draft}
@@ -70,7 +73,7 @@ export function MemoryPanel() {
 }
 
 function MemoryRow({ memory, onDelete }: { memory: AiMemory; onDelete: () => void }) {
-  const { update } = useAiMemories()
+  const { update, pin } = useAiMemories()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(memory.content)
   const save = () => {
@@ -86,6 +89,7 @@ function MemoryRow({ memory, onDelete }: { memory: AiMemory; onDelete: () => voi
         <span className="min-w-0 flex-1">
           <span className="block text-[13px]">{memory.content}</span>
           <span className="block text-[11px] text-muted-foreground">
+            {memory.pinned && 'Đã ghim · '}
             {memory.source === 'auto' ? 'N7AI ghi' : 'Bạn thêm'} · {formatRelativeTime(memory.createdAt)}
           </span>
         </span>
@@ -101,6 +105,17 @@ function MemoryRow({ memory, onDelete }: { memory: AiMemory; onDelete: () => voi
         </>
       ) : (
         <>
+          <Button
+            size="icon"
+            variant="ghost"
+            className={cn('h-7 w-7 rounded-full', memory.pinned && 'text-primary')}
+            disabled={pin.isPending}
+            onClick={() => pin.mutate({ id: memory.id, pinned: !memory.pinned })}
+            aria-label={memory.pinned ? 'Bỏ ghim' : 'Ghim'}
+            aria-pressed={memory.pinned}
+          >
+            {memory.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          </Button>
           <Button size="icon" variant="ghost" className="h-7 w-7 rounded-full" onClick={() => setEditing(true)} aria-label="Sửa">
             <Pencil className="h-3.5 w-3.5" />
           </Button>

@@ -1,14 +1,17 @@
 'use client'
 
 import React, { useState } from 'react'
-import { AlertCircle, Check, ChevronDown, Layers, Loader2 } from 'lucide-react'
+import { AlertCircle, Check, ChevronDown, Layers, Loader2, MessagesSquare } from 'lucide-react'
 import type { AiStep } from '@pu/schemas'
+import { PuMark } from '@/components/brand/pu-logo'
 import { ConnectorIcon } from '@/components/n7ai/connector-icon'
 import { cn } from '@/lib/utils'
 
 // Logo Google (ConnectorIcon) hoặc biểu tượng nguồn nội bộ
 function StepIcon({ provider }: { provider: AiStep['provider'] }) {
   if (provider === 'my_study') return <Layers className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+  if (provider === 'my_chats') return <MessagesSquare className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+  if (provider === 'puc') return <PuMark className="h-3.5 w-3.5 shrink-0" />
   return <ConnectorIcon id={provider} className="h-3.5 w-3.5" />
 }
 
@@ -32,7 +35,7 @@ function StepRow({ step: s }: { step: AiStep }) {
   )
 }
 
-// Tiến trình N7AI (gọi Gmail / Drive / Lịch / Học tập của tôi): đang trả lời ⇒ hiện từng bước; xong ⇒ thu gọn "Đã dùng N bước"
+// Tiến trình N7AI (gọi Gmail / Drive / Lịch / Học tập / Hội thoại cũ / PU Connector): đang trả lời ⇒ hiện từng bước; xong ⇒ thu gọn "Đã dùng N bước"
 export function AiSteps({ steps, live }: { steps: AiStep[]; live: boolean }) {
   const [open, setOpen] = useState(false)
   if (!steps.length) return null

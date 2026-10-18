@@ -7,17 +7,19 @@ const RECALL_LIMIT = 8
 const RECALL_CHARS = 2000
 const DUPLICATE_SIMILARITY = 0.6 // trigram ⇒ coi như đã nhớ
 
-const mapMemory = (r: any): AiMemory => ({ id: r.id, content: r.content, source: r.source, createdAt: new Date(r.created_at).toISOString() })
+const mapMemory = (r: any): AiMemory => ({ id: r.id, content: r.content, source: r.source, pinned: r.pinned, createdAt: new Date(r.created_at).toISOString() })
 
 // Bộ nhớ dài hạn của người học (khác tóm tắt từng thread): dữ kiện bền như ngành, môn, lịch thi, cách học ưa thích
 // Ghi: N7AI trả kèm dòng "[nhớ] …" trong cùng lượt trả lời (không tốn thêm lượt LLM) hoặc người dùng tự thêm
-// Đọc: ≤ 8 mục liên quan câu hỏi (trigram) + mới nhất
+// Đọc: mục ghim luôn có, rồi ≤ 8 mục liên quan câu hỏi (trigram) + mới nhất
 @Injectable()
 export class AiMemoriesService {
   constructor(private readonly db: DatabaseService) {}
 
   async list(userId: string): Promise<AiMemory[]> {
-    const res = await this.db.query(`SELECT id, content, source, created_at FROM ai_memories WHERE user_id = $1 ORDER BY created_at DESC`, [userId])
+    const res = await this.db.query(`SELECT id, content, source, pinned, created_at FROM ai_memories WHERE user_id = $1 ORDER BY pinned DESC, created_at DESC`, [
+      userId
+    ])
     return res.rows.map(mapMemory)
   }
 
@@ -25,7 +27,7 @@ export class AiMemoriesService {
     const res = await this.db.query(
       `INSERT INTO ai_memories (user_id, content, source)
        SELECT $1, $2, 'manual' WHERE (SELECT COUNT(*) FROM ai_memories WHERE user_id = $1) < $3
-       RETURNING id, content, source, created_at`,
+       RETURNING id, content, source, pinned, created_at`,
       [userId, content, AI_MEMORY_LIMIT]
     )
     if (!res.rows[0]) throw new BadRequestException(`Tối đa ${AI_MEMORY_LIMIT} mục nhớ — xóa bớt mục cũ`)
@@ -34,8 +36,18 @@ export class AiMemoriesService {
 
   async update(userId: string, id: string, content: string): Promise<AiMemory> {
     const res = await this.db.query(
-      `UPDATE ai_memories SET content = $3, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING id, content, source, created_at`,
+      `UPDATE ai_memories SET content = $3, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING id, content, source, pinned, created_at`,
       [id, userId, content]
+    )
+    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy mục nhớ')
+    return mapMemory(res.rows[0])
+  }
+
+  // Ghim / bỏ ghim (chỉ chủ mục)
+  async setPinned(userId: string, id: string, pinned: boolean): Promise<AiMemory> {
+    const res = await this.db.query(
+      `UPDATE ai_memories SET pinned = $3, updated_at = NOW() WHERE id = $1 AND user_id = $2 RETURNING id, content, source, pinned, created_at`,
+      [id, userId, pinned]
     )
     if (!res.rows[0]) throw new NotFoundException('Không tìm thấy mục nhớ')
     return mapMemory(res.rows[0])
@@ -52,12 +64,12 @@ export class AiMemoriesService {
     return { deleted: res.rowCount ?? 0 }
   }
 
-  // Mục liên quan câu hỏi trước, rồi mới nhất; cắt theo ngân sách ký tự
+  // Mục ghim trước (luôn có), rồi liên quan câu hỏi, rồi mới nhất; cắt theo ngân sách ký tự
   async recall(userId: string, question: string): Promise<string[]> {
     const res = await this.db.query(
       `SELECT content FROM ai_memories WHERE user_id = $1
-       ORDER BY similarity(immutable_unaccent(lower(content)), immutable_unaccent(lower($2))) DESC, created_at DESC
-       LIMIT $3`,
+       ORDER BY pinned DESC, similarity(immutable_unaccent(lower(content)), immutable_unaccent(lower($2))) DESC, created_at DESC
+       LIMIT $3::int + (SELECT COUNT(*) FROM ai_memories WHERE user_id = $1 AND pinned)::int`,
       [userId, question.slice(0, 500), RECALL_LIMIT]
     )
     const out: string[] = []
@@ -92,8 +104,8 @@ export class AiMemoriesService {
     if (saved.length) {
       await this.db.query(
         `DELETE FROM ai_memories WHERE id IN (
-           SELECT id FROM ai_memories WHERE user_id = $1 AND source = 'auto'
-           ORDER BY created_at DESC OFFSET GREATEST(0, $2 - (SELECT COUNT(*) FROM ai_memories WHERE user_id = $1 AND source = 'manual')))`,
+           SELECT id FROM ai_memories WHERE user_id = $1 AND source = 'auto' AND NOT pinned
+           ORDER BY created_at DESC OFFSET GREATEST(0, $2 - (SELECT COUNT(*) FROM ai_memories WHERE user_id = $1 AND (source = 'manual' OR pinned))))`,
         [userId, AI_MEMORY_LIMIT]
       )
     }

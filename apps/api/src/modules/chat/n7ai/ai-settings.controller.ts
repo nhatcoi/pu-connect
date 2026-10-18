@@ -8,6 +8,7 @@ import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import {
   AiFeedbackBodySchema,
   AiMemoryBodySchema,
+  AiMemoryPinBodySchema,
   AiSettingsBodySchema,
   AiSupportBodySchema,
   AiTaskBodySchema,
@@ -56,6 +57,11 @@ export class AiSettingsController {
   @Patch('memories/:id')
   updateMemory(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiMemoryBodySchema)) body: { content: string }, @Req() req: Request) {
     return this.memories.update(requireUserId(req), id, body.content)
+  }
+
+  @Patch('memories/:id/pin')
+  pinMemory(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiMemoryPinBodySchema)) body: { pinned: boolean }, @Req() req: Request) {
+    return this.memories.setPinned(requireUserId(req), id, body.pinned)
   }
 
   @Delete('memories/:id')

@@ -1,13 +1,27 @@
 import { z } from 'zod'
-import type { AiFeedbackInput, AiMemoryInput, AiSkillDraftInput, AiSkillStateInput, AiSupportInput, AiTaskInput } from '@pu/schemas'
+import type { AiFeedbackInput, AiLearnerProfile, AiMemoryInput, AiSkillDraftInput, AiSkillStateInput, AiSupportInput, AiTaskInput } from '@pu/schemas'
 import { AI_CONNECTORS } from './chat.dto'
 
 // @pu/schemas là mã TS nguồn ⇒ API khai báo lại schema runtime (giữ khớp bằng kiểm tra kiểu ở cuối file)
 export const AI_MEMORY_LIMIT = 100
 export const AI_TASK_LIMIT = 5
 
+// Hồ sơ học: chuỗi rỗng ⇒ xóa (null)
+const profileText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, { message: `Tối đa ${max} ký tự` })
+    .nullable()
+    .transform((v) => v || null)
+export const AiLearnerProfileBodySchema = z
+  .object({ goal: profileText(300), about: profileText(600), style: profileText(300) })
+  .partial()
+  .strict()
+
 export const AiSettingsBodySchema = z
   .object({
+    profile: AiLearnerProfileBodySchema,
     memoryEnabled: z.boolean(),
     retentionDays: z.union([z.literal(30), z.literal(365)]).nullable(),
     defaultConnectors: z.array(z.enum(AI_CONNECTORS)).min(1, { message: 'Chọn ít nhất 1 nguồn' }).max(AI_CONNECTORS.length)
@@ -15,6 +29,8 @@ export const AiSettingsBodySchema = z
   .partial()
   .strict()
 export type AiSettingsBody = z.infer<typeof AiSettingsBodySchema>
+
+export const AiMemoryPinBodySchema = z.object({ pinned: z.boolean() })
 
 export const AiMemoryBodySchema = z.object({
   content: z.string().trim().min(3, { message: 'Nội dung quá ngắn' }).max(300, { message: 'Tối đa 300 ký tự' })
@@ -64,4 +80,5 @@ const _state: AiSkillStateInput = {} as z.infer<typeof AiSkillStateBodySchema>
 const _feedback: AiFeedbackInput = {} as z.infer<typeof AiFeedbackBodySchema>
 const _support: AiSupportInput = {} as z.infer<typeof AiSupportBodySchema>
 const _draft: AiSkillDraftInput = {} as z.infer<typeof AiSkillDraftBodySchema>
-void [_memory, _task, _state, _feedback, _support, _draft]
+const _profile: Partial<AiLearnerProfile> = {} as z.infer<typeof AiLearnerProfileBodySchema>
+void [_memory, _task, _state, _feedback, _support, _draft, _profile]

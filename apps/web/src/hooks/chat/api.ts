@@ -2,6 +2,7 @@ import type {
   AiLibraryKind,
   AiLibraryPage,
   AiFeedbackInput,
+  AiLearnerProfile,
   AiMemory,
   AiSettings,
   AiSupportInput,
@@ -62,6 +63,9 @@ const qs = (params: Record<string, string | number | null | undefined>) =>
     .join('&')
 
 // REST client nhắn tin (apps/api/src/modules/chat)
+// Cập nhật cài đặt N7AI từng phần; hồ sơ học cũng từng trường (null / '' ⇒ xóa)
+export type AiSettingsPatch = Partial<Omit<AiSettings, 'profile'>> & { profile?: Partial<AiLearnerProfile> }
+
 export const chatApi = {
   list: (filter: ConversationFilter, cursor: string | null, limit = 20) =>
     unwrap(apiClient<Envelope<ConversationsPage>>(`/conversations?filter=${filter}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)),
@@ -134,10 +138,11 @@ export const chatApi = {
 
   // Cài đặt N7AI (docs/core/10-n7ai-settings.md)
   aiSettings: () => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings')),
-  updateAiSettings: (patch: Partial<AiSettings>) => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings', json('PATCH', patch))),
+  updateAiSettings: (patch: AiSettingsPatch) => unwrap(apiClient<Envelope<AiSettings>>('/ai/settings', json('PATCH', patch))),
   memories: () => unwrap(apiClient<Envelope<AiMemory[]>>('/ai/memories')),
   createMemory: (content: string) => unwrap(apiClient<Envelope<AiMemory>>('/ai/memories', json('POST', { content }))),
   updateMemory: (id: string, content: string) => unwrap(apiClient<Envelope<AiMemory>>(`/ai/memories/${id}`, json('PATCH', { content }))),
+  pinMemory: (id: string, pinned: boolean) => unwrap(apiClient<Envelope<AiMemory>>(`/ai/memories/${id}/pin`, json('PATCH', { pinned }))),
   deleteMemory: (id: string) => apiClient(`/ai/memories/${id}`, json('DELETE')),
   clearMemories: () => apiClient('/ai/memories', json('DELETE')),
   tasks: () => unwrap(apiClient<Envelope<AiTask[]>>('/ai/tasks')),

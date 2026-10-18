@@ -18,6 +18,7 @@
 | [**`08-web-state.md`**](./08-web-state.md) | Quản lý state phía web (ADR): TanStack Query cho dữ liệu server, zustand cho UI, layout chung, cache/prefetch/cập nhật lạc quan. | ✅ Đã triển khai |
 | [**`06-messaging-and-ai.md`**](./06-messaging-and-ai.md) | Nhắn tin 1-1/nhóm, N7AI (`@n7ai` là bot user), AI drawer theo ngữ cảnh, tác vụ nhanh, RAG pgvector, lộ trình P0–P5. | 📐 Thiết kế |
 | [**`14-google-mcp-connectors.md`**](./14-google-mcp-connectors.md) | Google MCP client + server tự host `workspace-mcp`: Drive, Calendar, Gmail; vòng lặp tool calling, OAuth, quyền chỉ đọc và cấu hình. | ✅ Đã triển khai |
+| [**`16-n7ai-agent-tools.md`**](./16-n7ai-agent-tools.md) | N7AI agent: tool hội thoại cũ (`my_chats`), tool PU Connector (tìm kiếm + hướng dẫn app), nút dẫn đường / tham gia nhóm có xác nhận, hồ sơ học, ghim bộ nhớ; nguyên tắc chọn prompt / prefetch / tool. | ✅ Đã triển khai |
 | [**`13-admin-console.md`**](./13-admin-console.md) | Cổng quản trị (chỉ admin): xem gì ở đâu, xử phạt theo bậc, điểm rủi ro, nhật ký bảo mật, lượt xem hồ sơ, quyền riêng tư & vận hành. | ✅ Đã triển khai |
 
 ---

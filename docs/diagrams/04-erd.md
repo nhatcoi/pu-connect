@@ -520,6 +520,7 @@ erDiagram
     bigint source_message_id FK
     timestamptz created_at
     timestamptz updated_at
+    boolean pinned
   }
   ai_runs {
     uuid id PK
@@ -544,6 +545,9 @@ erDiagram
     integer retention_days
     text_array default_connectors
     timestamptz updated_at
+    varchar profile_goal
+    varchar profile_about
+    varchar profile_style
   }
   ai_skills {
     uuid id PK

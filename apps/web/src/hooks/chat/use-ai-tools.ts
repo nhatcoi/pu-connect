@@ -110,7 +110,7 @@ export function useRefSuggestions(q: string | null, types: ChatRefType[]) {
 // Connector mặc định của N7AI: lưu ở server (ai_settings) ⇒ đồng bộ mọi thiết bị; luôn giữ ≥ 1 nguồn
 export function useConnectorPrefs() {
   const { settings, update } = useAiSettings()
-  const connectors: AiConnectorId[] = settings?.defaultConnectors ?? ['library', 'web', 'my_study']
+  const connectors: AiConnectorId[] = settings?.defaultConnectors ?? ['library', 'web', 'my_study', 'my_chats']
   const toggle = (id: AiConnectorId) => {
     const next = connectors.includes(id) ? connectors.filter((c) => c !== id) : [...connectors, id]
     if (next.length) update.mutate({ defaultConnectors: next })

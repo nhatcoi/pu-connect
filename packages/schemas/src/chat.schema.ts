@@ -18,12 +18,14 @@ export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread', 'study_se
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
 export const PRIVATE_REF_TYPES: readonly ChatRefType[] = ['thread', 'study_set']
 
-// Nguồn N7AI được đọc (connector); 'library' = mặc định; google_* cần kết nối OAuth; my_study = bộ Flashcard / Quiz + tiến độ ôn (tool)
+// Nguồn N7AI được đọc (connector); 'library' = mặc định; google_* cần kết nối OAuth
+// my_study = bộ Flashcard / Quiz + tiến độ ôn (tool) · my_chats = các hội thoại N7AI cũ của mình (tool)
 export const AI_CONNECTORS = [
   'library',
   'my_documents',
   'my_groups',
   'my_study',
+  'my_chats',
   'web',
   'web_search',
   'google_drive',
@@ -179,7 +181,11 @@ export interface ChatMessageMeta {
   followUps?: string[] // N7AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
   steps?: AiStep[] // N7AI: các bước đã chạy (gọi Gmail / Drive / Lịch…) — hiện khi đang trả lời, thu gọn khi xong
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
+  actions?: AiAction[] // N7AI: nút dẫn tới trang trong app / hành động cần người dùng xác nhận
 }
+
+// Nút dưới câu trả lời N7AI (server kiểm trước khi lưu): link = mở trang trong app; join_group = tham gia nhóm học khi người dùng bấm xác nhận
+export type AiAction = { kind: 'link'; label: string; href: string } | { kind: 'join_group'; id: string; label: string; href: string }
 
 export interface ChatMessage {
   id: string // BIGSERIAL dạng chuỗi
@@ -349,9 +355,11 @@ export interface AiQuota {
 
 // Sự kiện realtime (Socket.IO, room user:{id})
 // Bước N7AI đang làm (tool call: Google MCP / Học tập của tôi): provider = connector, label tiếng Việt, detail = từ khóa / phạm vi ngắn (không có dữ liệu trả về)
+// Nguồn tool của bước: connector hoặc 'puc' (tool về chính PU Connector: tìm kiếm, hướng dẫn app — luôn có trong thread riêng)
+export type AiToolProvider = AiConnectorId | 'puc'
 export interface AiStep {
   id: string
-  provider: AiConnectorId
+  provider: AiToolProvider
   label: string
   detail?: string
   status: 'running' | 'done' | 'error'

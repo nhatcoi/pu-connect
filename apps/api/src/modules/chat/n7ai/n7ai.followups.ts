@@ -1,3 +1,6 @@
+import type { ActionDraft } from './agent/ai-actions'
+import { MAX_ACTIONS, parseActionLines } from './agent/ai-actions'
+
 // Câu hỏi gợi ý tiếp theo: LLM viết sau dấu mốc ở cuối câu trả lời (cùng 1 lượt gọi, không tốn thêm request)
 // Follow-up suggestions: emitted after a marker in the same completion, hidden from the streamed text
 
@@ -33,12 +36,19 @@ export class FollowUpSplitter {
     return this.emit(buf.slice(0, buf.length - keep))
   }
 
-  // Kết thúc luồng: phần còn giữ (không phải dấu mốc) + câu gợi ý, bộ nhớ, số nguồn đã dùng
-  finish(): { rest: string; text: string; followUps: string[]; memories: string[]; cited: number[] } {
+  // Kết thúc luồng: phần còn giữ (không phải dấu mốc) + câu gợi ý, bộ nhớ, số nguồn đã dùng, nút (chưa kiểm nhóm học)
+  finish(): { rest: string; text: string; followUps: string[]; memories: string[]; cited: number[]; actions: ActionDraft[] } {
     const rest = this.tail === null ? this.held : ''
     this.visible += rest
     const tail = this.tail ?? ''
-    return { rest, text: this.visible, followUps: parseFollowUps(tail), memories: parseMemories(tail), cited: parseCited(tail) }
+    return {
+      rest,
+      text: this.visible,
+      followUps: parseFollowUps(tail),
+      memories: parseMemories(tail),
+      cited: parseCited(tail),
+      actions: parseActionLines(tail)
+    }
   }
 
   private emit(text: string): string {
@@ -77,10 +87,13 @@ export function parseCited(raw: string): number[] {
   return Array.from(new Set(nums))
 }
 
+// Dòng dữ liệu có nhãn ([nhớ], [nguồn], [mở], [tham gia]…) không phải câu hỏi gợi ý
+const TAGGED_LINE = /^\s*\[[^\]\n]{1,16}\]/
+
 export function parseFollowUps(raw: string): string[] {
   return raw
     .split('\n')
-    .filter((line) => !MEMORY_LINE.test(line) && !SOURCE_LINE.test(line))
+    .filter((line) => !TAGGED_LINE.test(line))
     .map((line) =>
       line
         .replace(/^\s*(?:[-*•]|\d+[.)])\s*/, '')
@@ -99,3 +112,10 @@ Nếu trong lượt này người học vừa cho biết dữ kiện BỀN về 
 // Ghi nguồn đã dùng (khi có <context>): chỉ hiện nguồn N7AI thực sự dựa vào, không phải mọi kết quả tìm được
 export const SOURCES_PROMPT = `
 Mỗi nguồn trong <context> có số thứ tự n. Sau khi trả lời, xuống dòng, viết dòng ${FOLLOWUP_MARKER} rồi ngay dòng sau viết "[nguồn] <các số n bạn thực sự dùng để trả lời, cách nhau dấu phẩy>" (trước mọi dòng khác sau dấu mốc). Nguồn không liên quan thì bỏ qua, không nhắc tới trong câu trả lời; không dùng nguồn nào thì không viết dòng [nguồn]. Không ghi số n trong phần trả lời.`
+
+// Nút dẫn đường / hành động cần xác nhận (thread riêng, có tool puc__*): cú pháp xem agent/ai-actions.ts
+export const ACTIONS_PROMPT = `
+Khi câu trả lời hướng người học tới một trang / tính năng trong PU Connector (kết quả từ công cụ puc__*), sau dòng ${FOLLOWUP_MARKER} có thể thêm tối đa ${MAX_ACTIONS} dòng nút (trước các câu hỏi gợi ý):
+- "[mở] <nhãn ngắn> | <đường dẫn>": đường dẫn lấy đúng trường href trong kết quả công cụ (vd. /courses/IT101, /tools/flashcards). Không bịa đường dẫn.
+- "[tham gia] <id nhóm học>": chỉ khi người học muốn tham gia một nhóm học đang tuyển (status recruiting) trong kết quả puc__search; người học sẽ tự bấm xác nhận.
+Không có trang phù hợp thì không viết dòng nút.`

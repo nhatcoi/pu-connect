@@ -4,6 +4,7 @@ import { AiModule } from '../ai/ai.module'
 import { StudyToolsModule } from '../study-tools/study-tools.module'
 import { PushModule } from '../push/push.module'
 import { RealtimeModule } from '../realtime/realtime.module'
+import { SearchModule } from '../search/search.module'
 import { StorageModule } from '../storage/storage.module'
 import { ChatCoreService } from './chat-core.service'
 import { ConversationsController } from './conversations/conversations.controller'
@@ -15,6 +16,8 @@ import { CHAT_PUSH_QUEUE } from './notify/chat-push.constants'
 import { ChatPushProcessor } from './notify/chat-push.processor'
 import { ChatPushService } from './notify/chat-push.service'
 import { ChatMentionsService } from './mentions/chat-mentions.service'
+import { HistoryToolsService } from './n7ai/agent/history-tools.service'
+import { PucToolsService } from './n7ai/agent/puc-tools.service'
 import { AiDataService } from './n7ai/ai-data.service'
 import { AiFeedbackService } from './n7ai/ai-feedback.service'
 import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './n7ai/ai-maintenance.processor'
@@ -41,8 +44,9 @@ import { ChatRefsService } from './refs/chat-refs.service'
 // AiModule (LLM, quota, truy xuất) ← n7ai; core · notify (Web Push) ← conversations ← study-group-chat / messages (không vòng phụ thuộc)
 // core ← mentions · refs · ai-skills · ai-summary · ai-settings · ai-memories ← n7ai ← messages ← ai-tasks (worker ai-maintenance)
 // StudyGroupsModule dùng StudyGroupChatService (chat không phụ thuộc ngược lại)
+// n7ai/agent: tool N7AI về hội thoại cũ (my_chats) & chính PU Connector (puc, dùng SearchService)
 @Module({
-  imports: [AiModule, StudyToolsModule, RealtimeModule, StorageModule, PushModule, BullModule.registerQueue({ name: CHAT_PUSH_QUEUE }, { name: AI_MAINTENANCE_QUEUE })],
+  imports: [AiModule, StudyToolsModule, SearchModule, RealtimeModule, StorageModule, PushModule, BullModule.registerQueue({ name: CHAT_PUSH_QUEUE }, { name: AI_MAINTENANCE_QUEUE })],
   controllers: [
     ConversationsController,
     MessagesController,
@@ -73,6 +77,8 @@ import { ChatRefsService } from './refs/chat-refs.service'
     AiThreadsService,
     AiThreadShareService,
     AiLibraryService,
+    HistoryToolsService,
+    PucToolsService,
     N7AiService,
     ConversationsService,
     StudyGroupChatService,

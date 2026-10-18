@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import type { AiMemory, AiSettings, AiSkill, AiTask, AiTaskInput } from '@pu/schemas'
 import { errorMessage } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
-import { chatApi } from './api'
+import { chatApi, type AiSettingsPatch } from './api'
 
 const onError = (err: unknown) => toast.error(errorMessage(err, 'Thao tác thất bại'))
 
@@ -14,11 +14,11 @@ export function useAiSettings(enabled = true) {
   const qc = useQueryClient()
   const query = useQuery({ queryKey: queryKeys.aiSettings, queryFn: chatApi.aiSettings, staleTime: 5 * 60 * 1000, enabled })
   const update = useMutation({
-    mutationFn: (patch: Partial<AiSettings>) => chatApi.updateAiSettings(patch),
+    mutationFn: (patch: AiSettingsPatch) => chatApi.updateAiSettings(patch),
     onMutate: async (patch) => {
       await qc.cancelQueries({ queryKey: queryKeys.aiSettings })
       const prev = qc.getQueryData<AiSettings>(queryKeys.aiSettings)
-      if (prev) qc.setQueryData(queryKeys.aiSettings, { ...prev, ...patch })
+      if (prev) qc.setQueryData<AiSettings>(queryKeys.aiSettings, { ...prev, ...patch, profile: { ...prev.profile, ...patch.profile } })
       return { prev }
     },
     onError: (err, _patch, ctx) => {
@@ -29,6 +29,9 @@ export function useAiSettings(enabled = true) {
   })
   return { settings: query.data, isLoading: query.isPending, update }
 }
+
+const sortMemories = (list: AiMemory[]) =>
+  [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.createdAt.localeCompare(a.createdAt))
 
 // Bộ nhớ dài hạn: danh sách + thêm / sửa / xóa / xóa hết (ghi thẳng cache)
 export function useAiMemories() {
@@ -43,7 +46,13 @@ export function useAiMemories() {
   })
   const remove = useMutation({ mutationFn: (id: string) => chatApi.deleteMemory(id), onSuccess: (_, id) => set((l) => l.filter((x) => x.id !== id)), onError })
   const clear = useMutation({ mutationFn: chatApi.clearMemories, onSuccess: () => set(() => []), onError })
-  return { memories: query.data ?? [], isLoading: query.isPending, create, update, remove, clear }
+  // Ghim ⇒ lên đầu danh sách (giống thứ tự server: ghim trước, mới trước)
+  const pin = useMutation({
+    mutationFn: ({ id, pinned }: { id: string; pinned: boolean }) => chatApi.pinMemory(id, pinned),
+    onSuccess: (m) => set((l) => sortMemories(l.map((x) => (x.id === m.id ? m : x)))),
+    onError
+  })
+  return { memories: query.data ?? [], isLoading: query.isPending, create, update, remove, clear, pin }
 }
 
 // Tác vụ tự động

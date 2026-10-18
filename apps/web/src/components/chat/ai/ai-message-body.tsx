@@ -8,6 +8,7 @@ import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { ConnectorIcon } from '@/components/n7ai/connector-icon'
 import type { UiMessage } from '@/hooks/chat'
 import { SavedToTools } from '@/components/tools/saved-to-tools'
+import { AiActions } from './ai-actions'
 import { AI_MODE_META } from './ai-modes'
 import { AiSteps } from './ai-steps'
 import { FlashcardDeck } from './flashcard-deck'
@@ -58,6 +59,7 @@ export function AiMessageBody({ message: m }: { message: AiBodyMessage }) {
         )
       )}
       {m.meta?.studySet && m.status === 'done' && <SavedToTools set={m.meta.studySet} />}
+      {m.meta?.actions && m.meta.actions.length > 0 && m.status === 'done' && <AiActions actions={m.meta.actions} />}
       {m.blocks && m.blocks.length > 0 && m.status === 'done' && (
         <div className="mt-2 pt-2 border-t border-border/60 space-y-1">
           <p className="text-[11px] font-semibold text-muted-foreground">Nguồn tham khảo</p>
