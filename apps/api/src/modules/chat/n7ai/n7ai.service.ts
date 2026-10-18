@@ -4,6 +4,7 @@ import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripN7AiMention } from '../../ai/ai.constants'
 import { AiRetrieval, contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
 import { LlmService, MAX_OUTPUT_TOKENS, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg, type LlmUsage } from '../../ai/llm.service'
+import { StudyToolsService } from '../../study-tools/study-tools.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
@@ -62,7 +63,8 @@ export class N7AiService {
     private readonly skills: AiSkillsService,
     private readonly summaries: AiSummaryService,
     private readonly settings: AiSettingsService,
-    private readonly memories: AiMemoriesService
+    private readonly memories: AiMemoriesService,
+    private readonly studyTools: StudyToolsService
   ) {}
 
   private get db() {
@@ -178,9 +180,12 @@ export class N7AiService {
       const remembered =
         settings?.memoryEnabled && memories.length ? await this.memories.saveFromReply(trigger.senderId, placeholder.id, memories).catch(() => []) : []
       const citations = citationsOf(retrieved.sources, cited)
+      // Bộ flashcard / quiz trong câu trả lời ⇒ tự lưu vào Công cụ của người hỏi (chỉ thread riêng)
+      const studySet = inGroup ? null : await this.studyTools.saveFromReply(trigger.senderId, placeholder.id, text)
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', {
         ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
-        ...(remembered.length ? { memoryUpdated: remembered } : {})
+        ...(remembered.length ? { memoryUpdated: remembered } : {}),
+        ...(studySet ? { studySet } : {})
       })
       await this.llm.finishRun(runId, { usage, startedAt: started })
       if (!inGroup) this.summaries.maybeSummarize(conversationId, botId)
@@ -346,7 +351,7 @@ export class N7AiService {
     text: string,
     blocks: ChatCitation[] | null,
     status: 'done' | 'error',
-    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated'> = {}
+    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet'> = {}
   ) {
     // Gợi ý tiếp theo / bộ nhớ vừa cập nhật gộp vào meta (giữ aiMode sẵn có)
     await this.db.query(

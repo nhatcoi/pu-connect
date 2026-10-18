@@ -22,6 +22,7 @@ import { ChatModule } from './modules/chat/chat.module'
 import { BlocksModule } from './modules/blocks/blocks.module'
 import { PresenceModule } from './modules/presence/presence.module'
 import { PersonalizationModule } from './modules/personalization/personalization.module'
+import { StudyToolsModule } from './modules/study-tools/study-tools.module'
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { PersonalizationModule } from './modules/personalization/personalization
     ChatModule,
     BlocksModule,
     PresenceModule,
-    PersonalizationModule
+    PersonalizationModule,
+    StudyToolsModule
   ]
 })
 export class AppModule {}

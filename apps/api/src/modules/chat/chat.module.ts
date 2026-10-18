@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { BullModule } from '@nestjs/bullmq'
 import { AiModule } from '../ai/ai.module'
+import { StudyToolsModule } from '../study-tools/study-tools.module'
 import { PushModule } from '../push/push.module'
 import { RealtimeModule } from '../realtime/realtime.module'
 import { StorageModule } from '../storage/storage.module'
@@ -41,7 +42,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
 // core ← mentions · refs · ai-skills · ai-summary · ai-settings · ai-memories ← n7ai ← messages ← ai-tasks (worker ai-maintenance)
 // StudyGroupsModule dùng StudyGroupChatService (chat không phụ thuộc ngược lại)
 @Module({
-  imports: [AiModule, RealtimeModule, StorageModule, PushModule, BullModule.registerQueue({ name: CHAT_PUSH_QUEUE }, { name: AI_MAINTENANCE_QUEUE })],
+  imports: [AiModule, StudyToolsModule, RealtimeModule, StorageModule, PushModule, BullModule.registerQueue({ name: CHAT_PUSH_QUEUE }, { name: AI_MAINTENANCE_QUEUE })],
   controllers: [
     ConversationsController,
     MessagesController,

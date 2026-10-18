@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ChatStudySetRef } from './study-tools.schema'
 import type { BlockState } from './block.schema'
 
 // Nhắn tin: DM, nhóm, hội thoại với N7AI (docs/core/06-messaging-and-ai.md)
@@ -164,6 +165,7 @@ export interface ChatMessageMeta {
   actorName?: string
   targetNames?: string[]
   followUps?: string[] // N7AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
+  studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
 }
 
 export interface ChatMessage {

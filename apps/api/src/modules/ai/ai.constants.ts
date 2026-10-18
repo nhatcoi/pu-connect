@@ -4,5 +4,5 @@ export const N7AI_MENTION = /(^|\s)@(?:n7ai|puai)\b/i
 
 export const stripN7AiMention = (text: string) => text.replace(/@(?:n7ai|puai)\b/gi, '').trim()
 
-export type AiTrigger = 'dm' | 'mention' | 'comment' | 'summary' | 'skill'
+export type AiTrigger = 'dm' | 'mention' | 'comment' | 'summary' | 'skill' | 'tool'
 export type AiRef = { type: 'message' | 'comment' | 'post'; id: string }
