@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import type { UiMessage } from '@/hooks/chat'
+import { useStickToBottom } from '@/hooks/use-stick-to-bottom'
 import { AiFollowUps } from '../ai/ai-follow-ups'
 import { dayLabel, isContinuation, sameDay } from '../utils'
 import { MessageBubble } from './message-bubble'
@@ -24,7 +25,7 @@ interface MessageListProps {
   onFollowUp?: (text: string) => void // N7AI: bấm câu hỏi gợi ý tiếp theo
 }
 
-// Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", tự cuộn xuống khi có tin mới, cuộn lên tải tin cũ
+// Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", neo đáy (mở ở tin mới nhất), cuộn lên tải tin cũ
 export function MessageList({
   conversation,
   messages,
@@ -39,26 +40,20 @@ export function MessageList({
   handlers,
   onFollowUp
 }: MessageListProps) {
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
   const isGroup = conversation?.type === 'group'
   const latest = messages[messages.length - 1]
   // Chỉ hiện gợi ý dưới câu trả lời AI cuối cùng (đã xong)
   const followUps = onFollowUp && latest?.kind === 'ai' && latest.status === 'done' ? (latest.meta?.followUps ?? []) : []
 
-  // Cuộn xuống cuối khi có tin mới / AI đang trả lời dần
-  const latestKey = latest ? `${latest.id}:${latest.content.length}:${latest.reactions.length}:${latest.status}` : ''
-  const nearBottom = useRef(true)
-  useEffect(() => {
-    const onScroll = () => {
-      nearBottom.current = window.innerHeight + window.scrollY >= document.body.scrollHeight - 240
-    }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+  // Mở ở tin mới nhất ngay frame đầu; tin mới / AI trả lời dần giữ ở đáy nếu đang ở đáy
+  const { stick, release } = useStickToBottom(listRef, latest?.conversationId)
+  // Mình vừa gửi ⇒ luôn về đáy
+  const mineLatest = latest?.sender?.id === myId ? latest?.clientMsgId || latest?.id : undefined
   useLayoutEffect(() => {
-    if (nearBottom.current || latest?.sender?.id === myId) bottomRef.current?.scrollIntoView({ block: 'end' })
-  }, [latestKey, latest?.sender?.id, myId])
+    if (mineLatest) stick()
+  }, [mineLatest, stick])
 
   // Cuộn gần đầu ⇒ tự tải trang tin cũ hơn; giữ nguyên tin đang nhìn khi chèn phía trên
   const topRef = useRef<HTMLDivElement>(null)
@@ -92,6 +87,7 @@ export function MessageList({
     if (!jumpTo) return
     const el = document.getElementById(`msg-${jumpTo}`)
     if (el) {
+      release()
       el.scrollIntoView({ block: 'center', behavior: 'smooth' })
       setHighlight(jumpTo)
       onJumpHandled()
@@ -100,7 +96,7 @@ export function MessageList({
     }
     if (hasOlder && !isLoadingOlder) loadOlder()
     else if (!hasOlder) onJumpHandled()
-  }, [jumpTo, messages.length, hasOlder, isLoadingOlder, loadOlder, onJumpHandled])
+  }, [jumpTo, messages.length, hasOlder, isLoadingOlder, loadOlder, onJumpHandled, release])
 
   // "Đã xem": DM ⇒ dưới tin cuối của mình mà người kia đã đọc; nhóm ⇒ số người đã đọc tin cuối
   const seenFor = (m: UiMessage): string | null => {
@@ -113,7 +109,7 @@ export function MessageList({
   }
 
   return (
-    <div className="flex-1 px-3 sm:px-1 pt-2 pb-4">
+    <div ref={listRef} className="flex-1 px-3 sm:px-1 pt-2 pb-4">
       <div ref={topRef} aria-hidden />
       {isLoadingOlder && (
         <div className="flex justify-center pb-2">
@@ -156,7 +152,6 @@ export function MessageList({
         )
       })}
       {followUps.length > 0 && onFollowUp && <AiFollowUps items={followUps} onPick={onFollowUp} />}
-      <div ref={bottomRef} />
     </div>
   )
 }

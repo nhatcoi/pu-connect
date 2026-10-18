@@ -733,3 +733,13 @@ Chi tiết thiết kế & quyết định: [`09-chat-mention-ai-threads-skills.m
 - **N7AI nhiều thread**: `ai/threads` (keyset, tìm tiêu đề, đổi tên, xóa), "Chat mới" dùng lại thread rỗng, tiêu đề tự đặt từ câu hỏi đầu, danh sách chính chỉ giữ thread đại diện (2026-10-17: bỏ hẳn — thread AI sang không gian riêng `/n7ai`, xem `core/11`); **tóm tắt cuộn** `conversations.ai_summary` khi > 24 tin sau mốc.
 - **Skill** (`ai_skills`, ≤ 30 / người): lệnh `/slug` cộng chỉ dẫn vào system prompt; 6 chế độ học vẫn là `aiMode`.
 - **Connector** (Thư viện PU · Tài liệu của tôi · Nhóm học) + **Research** (truy xuất sâu, prompt báo cáo, 2 lượt). Nhóm chat chỉ dùng Thư viện PU.
+
+## 21. Mở thread ở tin mới nhất — neo đáy (2026-10-18)
+
+- **Vấn đề:** mở hội thoại (người & N7AI) thấy trang vẽ từ đầu rồi mới cuộn xuống. Nội dung cao dần sau lần cuộn đầu (markdown, flashcard, ảnh, gợi ý tiếp theo) và router Next cuộn đầu trang sau khi mount ⇒ lệch khỏi tin mới nhất.
+- **Dữ liệu:** đã đúng chiều — `GET /conversations/:id/messages` keyset `ORDER BY m.id DESC LIMIT 30`. Trang đầu là 30 tin mới nhất; cuộn lên tải `before=<id>`.
+- **Giải pháp:** hook `useStickToBottom` (`apps/web/src/hooks/use-stick-to-bottom.ts`), dùng trong `MessageList`.
+  - `useLayoutEffect` đặt ở đáy **trước khi vẽ** frame đầu, và mỗi lần đổi hội thoại.
+  - `ResizeObserver` trên dòng tin + khung cha: đang neo ⇒ cao thêm vẫn ở đáy. Áp dụng cho AI stream, ảnh, banner ghim và ô soạn. Bỏ cơ chế `latestKey` cũ.
+  - Chưa có cử chỉ cuộn của người dùng (`wheel`/`touchstart`/`keydown`/`mousedown`) ⇒ cú cuộn rời đáy được coi là do router / khôi phục cuộn ⇒ kéo về. Có cử chỉ rồi ⇒ neo theo vị trí (cách đáy ≤ 240px).
+  - Mình gửi tin ⇒ `stick()`. Nhảy tới tin (trả lời, ghim, mention) ⇒ `release()`. Tải tin cũ vẫn giữ mốc như cũ.
