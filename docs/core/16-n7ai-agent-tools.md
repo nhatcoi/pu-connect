@@ -65,16 +65,23 @@ Web (`components/chat/ai/ai-actions.tsx`):
   - Danh sách xếp ghim trước.
   - Nút ghim ở Cài đặt › Bộ nhớ.
 
-## 6. Tiến độ học tóm tắt (thay "ghi bộ nhớ sau mỗi lần ôn")
+## 6. Bộ nhớ tự ghi tiến độ học
 
-`agent/study-digest.service.ts` tính **lúc hỏi** từ lịch ôn, không ghi vào `ai_memories`. Lý do: luôn mới, không sinh mục trùng mỗi lần ôn, không cần sửa luồng ôn (`study-tools`).
-- **Phạm vi:** ≤ 3 bộ học gần nhất trong 30 ngày. Flashcard: số thẻ đã thuộc, đến hạn, ≤ 5 thẻ hay quên nhất. Quiz: điểm cao nhất.
-- **Dùng chung định nghĩa** trạng thái thẻ với tool `my_study` (`study-progress.sql.ts`).
-- **Vào system prompt** thành khối `<study_progress>`, chỉ khi bật connector `my_study`. N7AI chủ động nhắc ôn thẻ đến hạn / từ hay quên mà không cần gọi tool; muốn xem chi tiết thì gọi `my_study__*`.
+`study-tools/study-progress-memory.service.ts`: sau mỗi lần ôn flashcard (`StudyToolsService.review`) hoặc làm quiz (`.attempt`), khi transaction đã xong, N7AI ghi **1 mục bộ nhớ cho mỗi bộ**. Ví dụ:
+
+> Đang ôn Flashcard "Vũ trụ" (29 thẻ): đã thuộc 5, đến hạn ôn 3, hay quên: Wormhole, Contract (cập nhật 18/10)
+
+> Đã làm Quiz "Giải tích" (10 câu) 3 lần, điểm cao nhất 80% (cập nhật 18/10)
+
+- **Ghi đè, không trùng.** `ai_memories.study_set_id` có unique `(user_id, study_set_id)`, nên mỗi lần ôn cập nhật nội dung và đưa mục lên mới nhất. Cờ ghim được giữ. Chỉ giữ mục tiến độ của 10 bộ học gần nhất (trừ mục ghim).
+- **Theo công tắc ghi nhớ.** Tắt "Cho phép N7AI ghi nhớ" thì không ghi. Bộ bị xóa thì mục bị xóa theo (FK `ON DELETE CASCADE`). Người dùng xóa mục thì lần ôn sau ghi lại.
+- **Chạy nền.** Lỗi khi ghi chỉ ghi log, không làm hỏng lượt ôn.
+- **Cách N7AI đọc.** N7AI đọc như mọi mục nhớ khác (trigram + mới nhất), nên nhắc ôn / từ hay quên mà không cần gọi tool. Muốn chi tiết từng thẻ thì dùng tool `my_study__*`.
+- Trạng thái thẻ dùng chung định nghĩa với tool `my_study` (`study-progress.sql.ts`).
 
 ## 7. Dữ liệu & vận hành
 
-- Migration `ai-agent-upgrade.sql`: 3 cột hồ sơ, `ai_memories.pinned`. Bật `my_chats` **đúng 1 lần** cho người đã có cài đặt, với mốc là DEFAULT của cột ⇒ người tự tắt không bị bật lại.
+- Migration `ai-agent-upgrade.sql`: 3 cột hồ sơ, `ai_memories.pinned`, `ai_memories.study_set_id` (+ unique theo người dùng). Bật `my_chats` **đúng 1 lần** cho người đã có cài đặt, với mốc là DEFAULT của cột ⇒ người tự tắt không bị bật lại.
 - Bước tiến trình: provider `my_chats` (icon hội thoại), `puc` (logo PU). `AiStep.provider: AiToolProvider = AiConnectorId | 'puc'`.
 
 ## 8. Kiểm thử
@@ -84,7 +91,7 @@ Web (`components/chat/ai/ai-actions.tsx`):
 - **Tool PUC:** tìm nhóm học / cộng đồng, hướng dẫn app, nhóm tham gia được.
 - **Nút:** chặn link ngoài / sai định dạng, nhóm không hợp lệ bị bỏ, không lẫn vào câu gợi ý.
 - **Hồ sơ học & ghim:** lưu / xóa từng trường, giới hạn độ dài, mục ghim luôn được nhớ.
-- **Tiến độ tóm tắt:** chưa học ⇒ không có khối; ôn "Quên" ⇒ thẻ vào danh sách hay quên.
+- **Bộ nhớ tiến độ:** 2 lượt ôn vẫn 1 mục; nội dung có thẻ hay quên; quiz ghi điểm; tắt ghi nhớ ⇒ không ghi; xóa bộ ⇒ xóa mục.
 
 **Model thật (2026-10-18):** script chạy trên VPS với model đang dùng, prompt và tool thật, kết quả tool giả (không chạm dữ liệu người dùng).
 - "nhóm học Giải tích đang tuyển" ⇒ `puc__search`, kèm nút tham gia + mở học phần.
@@ -94,5 +101,5 @@ Web (`components/chat/ai/ai-actions.tsx`):
 
 ## Changelog
 
-- 2026-10-18 — Tiến độ học tóm tắt `<study_progress>` (thay ghi bộ nhớ sau mỗi lần ôn); kiểm hành vi model thật.
+- 2026-10-18 — Bộ nhớ tự ghi tiến độ: 1 mục / bộ sau mỗi lần ôn / làm quiz (thay bản tóm tắt `<study_progress>` tính lúc hỏi, đã gỡ); kiểm hành vi model thật.
 - 2026-10-18 — Bản đầu: `my_chats`, `puc__search` / `puc__app_help`, `meta.actions` (link + tham gia nhóm có xác nhận), hồ sơ học, ghim bộ nhớ.

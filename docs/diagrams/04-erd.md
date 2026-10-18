@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **51 bảng**, **86 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **51 bảng**, **87 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -25,6 +25,7 @@ erDiagram
   messages ||--o{ ai_feedback : "message_id"
   users ||--o{ ai_feedback : "user_id"
   messages |o--o{ ai_memories : "source_message_id"
+  study_sets |o--o{ ai_memories : "study_set_id"
   users ||--o{ ai_memories : "user_id"
   users ||--o{ ai_runs : "bot_id"
   users ||--o{ ai_runs : "requester_id"
@@ -521,6 +522,7 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
     boolean pinned
+    uuid study_set_id FK
   }
   ai_runs {
     uuid id PK
@@ -769,6 +771,7 @@ erDiagram
   }
   messages ||--o{ ai_feedback : "message_id"
   messages ||--o{ ai_memories : "source_message_id"
+  study_sets ||--o{ ai_memories : "study_set_id"
   ai_skills ||--o{ ai_skills : "source_skill_id"
   conversations ||--o{ ai_support_tickets : "conversation_id"
   conversations ||--o{ ai_tasks : "conversation_id"

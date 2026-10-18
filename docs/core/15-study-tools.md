@@ -67,6 +67,8 @@ Prompt nội dung (8–12 thẻ khi chỉ nêu chủ đề, giữ đủ danh sá
 - **Cách ôn** (tùy chọn của người xem, lưu `localStorage`, không gắn vào bộ): *Lật thẻ* · *Đảo mặt* (nhìn nghĩa nhớ từ) · *Gõ đáp án* (so khớp bỏ dấu, hoa thường, loại từ; mặt trước "a / b" gõ 1 trong 2 cũng đúng; đúng ⇒ gợi ý *Nhớ*, sai ⇒ *Quên*, Enter chấm theo gợi ý). Ví dụ chứa từ cần nhớ ⇒ ở 2 cách sau chỉ hiện sau khi lật.
 - **Dán danh sách**: `từ - nghĩa` như cũ, hoặc cột `|`: `từ | nghĩa | ví dụ`, `từ | /phiên âm/ | nghĩa | ví dụ`.
 
+**3. Bộ nhớ tự ghi tiến độ.** Sau mỗi lần ôn / làm quiz, `StudyProgressMemoryService` ghi đè 1 mục bộ nhớ N7AI cho bộ đó (chi tiết: [`core/16` §6](./16-n7ai-agent-tools.md)).
+
 ## Web
 
 | Route | Nội dung |

@@ -3,6 +3,7 @@ import { AiModule } from '../ai/ai.module'
 import { StudyAgentToolsService } from './study-agent-tools.service'
 import { StudyCreateToolsService } from './study-create-tools.service'
 import { StudyDraftService } from './study-draft.service'
+import { StudyProgressMemoryService } from './study-progress-memory.service'
 import { StudyToolsController } from './study-tools.controller'
 import { StudyToolsService } from './study-tools.service'
 
@@ -10,7 +11,7 @@ import { StudyToolsService } from './study-tools.service'
 @Module({
   imports: [AiModule],
   controllers: [StudyToolsController],
-  providers: [StudyToolsService, StudyDraftService, StudyAgentToolsService, StudyCreateToolsService],
+  providers: [StudyToolsService, StudyDraftService, StudyAgentToolsService, StudyCreateToolsService, StudyProgressMemoryService],
   exports: [StudyToolsService, StudyAgentToolsService, StudyCreateToolsService]
 })
 export class StudyToolsModule {}

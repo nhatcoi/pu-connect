@@ -24,3 +24,7 @@ BEGIN
     ALTER TABLE ai_settings ALTER COLUMN default_connectors SET DEFAULT '{library,web,my_study,my_chats}';
   END IF;
 END $$;
+
+-- 4. Bộ nhớ tự ghi tiến độ học: 1 mục / bộ Flashcard · Quiz (ghi đè sau mỗi lần ôn / làm bài); bộ bị xóa ⇒ mục bị xóa theo
+ALTER TABLE ai_memories ADD COLUMN IF NOT EXISTS study_set_id UUID REFERENCES study_sets(id) ON DELETE CASCADE;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_ai_memories_study_set ON ai_memories (user_id, study_set_id) WHERE study_set_id IS NOT NULL;

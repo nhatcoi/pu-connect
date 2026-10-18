@@ -15,7 +15,6 @@ import { ChatRefsService } from '../refs/chat-refs.service'
 import { toActions } from './agent/ai-actions'
 import { HistoryToolsService } from './agent/history-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
-import { StudyDigestService, studyDigestPrompt } from './agent/study-digest.service'
 import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
 import { AiMemoriesService } from './ai-memories.service'
 import { AiSettingsService } from './ai-settings.service'
@@ -77,8 +76,7 @@ export class N7AiService {
     private readonly studyAgentTools: StudyAgentToolsService,
     private readonly studyCreateTools: StudyCreateToolsService,
     private readonly historyTools: HistoryToolsService,
-    private readonly pucTools: PucToolsService,
-    private readonly studyDigest: StudyDigestService
+    private readonly pucTools: PucToolsService
   ) {}
 
   private get db() {
@@ -283,15 +281,12 @@ export class N7AiService {
   ): Promise<Msg[]> {
     const inGroup = trigger.type === 'group'
     const memoryOn = !!settings?.memoryEnabled
-    // Tiến độ học tóm tắt: theo connector my_study (người dùng đồng ý cho N7AI đọc dữ liệu học tập)
-    const studyOn = !!settings && (trigger.connectors ?? settings.defaultConnectors).includes('my_study')
-    const [history, skill, summary, profile, learner, progress] = await Promise.all([
+    const [history, skill, summary, profile, learner] = await Promise.all([
       this.loadHistory(conversationId, botId, trigger.id, inGroup),
       trigger.skillId ? this.skills.instructions(trigger.senderId, trigger.skillId) : null,
       inGroup ? null : this.summaries.summary(conversationId),
       memoryOn ? this.memories.recall(trigger.senderId, question) : [],
-      settings ? this.loadLearner(trigger.senderId, settings) : null,
-      studyOn ? this.studyDigest.recent(trigger.senderId).catch(() => []) : []
+      settings ? this.loadLearner(trigger.senderId, settings) : null
     ])
     const system =
       SYSTEM_PROMPT +
@@ -300,7 +295,6 @@ export class N7AiService {
       (trigger.research ? RESEARCH_PROMPT : '') +
       (skill ? skillPrompt(skill.name, skill.instructions) : '') +
       (learner ? learnerPrompt(learner) : '') +
-      studyDigestPrompt(progress) +
       (summary ? summaryPrompt(summary) : '') +
       (profile.length ? profilePrompt(profile) : '') +
       (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : '') + ACTIONS_PROMPT) +

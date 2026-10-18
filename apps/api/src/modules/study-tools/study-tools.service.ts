@@ -15,6 +15,7 @@ import type {
 import { DatabaseService } from '../../database/database.service'
 import { STUDY_SET_LIMIT, STUDY_TOOL_KINDS, type StudySetBody } from './dto/study-tools.dto'
 import { nextReview } from './srs'
+import { StudyProgressMemoryService } from './study-progress-memory.service'
 import { parseStudyBlocks } from './study-blocks'
 
 // Cột tóm tắt bộ + số thẻ đến hạn (thẻ mới = đến hạn)
@@ -57,7 +58,10 @@ const toItem = (r: any): StudyItem => ({
 export class StudyToolsService {
   private readonly logger = new Logger(StudyToolsService.name)
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly progressMemory: StudyProgressMemoryService
+  ) {}
 
   // Trang tổng quan: số bộ / mục / thẻ đến hạn theo loại + 6 bộ gần đây
   async overview(userId: string): Promise<StudyToolsOverview> {
@@ -165,7 +169,7 @@ export class StudyToolsService {
 
   // Ôn 1 thẻ: tính lịch ôn kế tiếp (SM-2 rút gọn)
   async review(userId: string, setId: string, itemId: string, grade: ReviewGrade): Promise<{ item: StudyItem; dueCount: number }> {
-    return this.db.transaction(async (client) => {
+    const result = await this.db.transaction(async (client) => {
       const res = await client.query(
         `SELECT i.* FROM study_items i JOIN study_sets s ON s.id = i.set_id
          WHERE i.id = $1 AND i.set_id = $2 AND s.owner_id = $3 AND s.kind = 'flashcards' FOR UPDATE OF i`,
@@ -185,6 +189,9 @@ export class StudyToolsService {
       )
       return { item: toItem(upd.rows[0]), dueCount: due.rows[0].due_count }
     })
+    // Sau commit: N7AI ghi nhớ tiến độ bộ này (nền, lỗi không ảnh hưởng lượt ôn)
+    this.progressMemory.record(userId, setId)
+    return result
   }
 
   // Kết quả 1 lần làm quiz ⇒ cập nhật điểm cao nhất
@@ -196,6 +203,7 @@ export class StudyToolsService {
       [setId, userId, score]
     )
     if (!res.rows[0]) throw new NotFoundException('Không tìm thấy quiz')
+    this.progressMemory.record(userId, setId)
     return toSummary(res.rows[0])
   }
 
