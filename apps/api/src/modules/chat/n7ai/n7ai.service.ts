@@ -6,6 +6,8 @@ import { AiRetrieval, contextBlock, type Retrieved, type Source } from '../../ai
 import { McpAgentService, McpModelError } from '../../ai/mcp-agent.service'
 import { LlmService, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg } from '../../ai/llm.service'
 import { StudyAgentToolsService } from '../../study-tools/study-agent-tools.service'
+import { hasStudyFence } from '../../study-tools/study-blocks'
+import { StudyCreateToolsService } from '../../study-tools/study-create-tools.service'
 import { StudyToolsService } from '../../study-tools/study-tools.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
@@ -68,7 +70,8 @@ export class N7AiService {
     private readonly settings: AiSettingsService,
     private readonly memories: AiMemoriesService,
     private readonly studyTools: StudyToolsService,
-    private readonly studyAgentTools: StudyAgentToolsService
+    private readonly studyAgentTools: StudyAgentToolsService,
+    private readonly studyCreateTools: StudyCreateToolsService
   ) {}
 
   private get db() {
@@ -158,6 +161,9 @@ export class N7AiService {
       const splitter = new FollowUpSplitter()
       // Nhóm chat: không connector riêng (Google, Học tập của tôi) của người hỏi
       const connectors: AiConnectorId[] = inGroup ? [] : (trigger.connectors ?? settings?.defaultConnectors ?? ['library'])
+      // Thread riêng: luôn có tool tạo bộ Flashcard / Quiz (registry); tool đọc tiến độ theo connector my_study
+      const creator = inGroup ? null : this.studyCreateTools.open(requesterId, placeholder.id)
+      const local = [...(creator ? [creator] : []), ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : [])]
       const { finishReason, usage, steps } = await this.agent.stream(
         messages,
         requesterId,
@@ -168,7 +174,7 @@ export class N7AiService {
         },
         // Tiến trình gọi Gmail / Drive / Lịch ⇒ client hiện từng bước khi đang trả lời
         (progress) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps: progress }),
-        connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []
+        local
       )
 
       const { rest, text: answer, followUps, memories, cited } = splitter.finish()
@@ -181,8 +187,10 @@ export class N7AiService {
       const remembered =
         settings?.memoryEnabled && memories.length ? await this.memories.saveFromReply(trigger.senderId, placeholder.id, memories).catch(() => []) : []
       const citations = citationsOf(retrieved.sources, cited)
-      // Bộ flashcard / quiz trong câu trả lời ⇒ tự lưu vào Công cụ của người hỏi (chỉ thread riêng)
-      const studySet = inGroup ? null : await this.studyTools.saveFromReply(trigger.senderId, placeholder.id, text)
+      // Bộ N7AI tạo qua tool ⇒ chèn khối chuẩn vào tin (web dựng bộ thẻ, Thư viện › Học liệu); không gọi tool ⇒ lưu khối model tự viết (dự phòng)
+      const created = creator?.created() ?? null
+      if (created && !hasStudyFence(text)) text = `${text}\n\n${created.fence}`
+      const studySet = created?.ref ?? (inGroup ? null : await this.studyTools.saveFromReply(trigger.senderId, placeholder.id, text))
       await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', {
         ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
         ...(remembered.length ? { memoryUpdated: remembered } : {}),

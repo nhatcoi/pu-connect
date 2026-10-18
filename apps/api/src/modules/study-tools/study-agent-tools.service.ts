@@ -165,6 +165,8 @@ export class StudyAgentToolsService {
         ...base,
         front: c.front,
         back: c.back,
+        ...(c.phonetic ? { phonetic: c.phonetic } : {}),
+        ...(c.example ? { example: c.example } : {}),
         status: r.status,
         ...(r.weak ? { weak: true, forgotten: r.lapses } : {}),
         ...(r.due_at ? { nextReview: day(r.due_at) } : {})

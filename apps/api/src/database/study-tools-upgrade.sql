@@ -42,3 +42,6 @@ CREATE TABLE IF NOT EXISTS study_items (
 CREATE INDEX IF NOT EXISTS idx_study_items_set ON study_items (set_id, position);
 -- Đếm thẻ đến hạn
 CREATE INDEX IF NOT EXISTS idx_study_items_due ON study_items (set_id, due_at);
+
+-- Tùy chọn cấp bộ: mẫu flashcard (basic / vocab), ngôn ngữ phát âm — {"template": "vocab", "lang": "en-US"}
+ALTER TABLE study_sets ADD COLUMN IF NOT EXISTS options JSONB NOT NULL DEFAULT '{}'::jsonb;

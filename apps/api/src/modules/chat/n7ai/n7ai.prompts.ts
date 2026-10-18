@@ -9,19 +9,11 @@ export const MODE_PROMPTS: Record<AiMode, string> = {
   ask: '',
   explain: `
 Chế độ GIẢI THÍCH: giải thích khái niệm từ trực giác → định nghĩa chính xác → ví dụ cụ thể (có số liệu/code nếu hợp) → lỗi hay gặp. Chia bước rõ ràng. Kết thúc bằng 1 câu hỏi ngắn để người học tự kiểm tra hiểu bài.`,
+  // Nội dung + định dạng bộ nằm ở registry (study-tools/kinds) ⇒ chế độ chỉ yêu cầu gọi đúng tool
   quiz: `
-Chế độ QUIZ: tạo 5 câu trắc nghiệm (4 lựa chọn, 1 đáp án đúng) về chủ đề người dùng nêu, độ khó tăng dần (người dùng nêu số câu ⇒ theo số đó, tối đa 30). Quiz tự lưu vào mục Công cụ › Quiz của người dùng.
-Viết 1 câu giới thiệu ngắn, rồi trả về DUY NHẤT một khối code ngôn ngữ \`quiz\` chứa JSON hợp lệ theo mẫu:
-\`\`\`quiz
-{"title": "Tên chủ đề", "questions": [{"q": "Câu hỏi?", "options": ["A", "B", "C", "D"], "answer": 0, "explain": "Vì sao đáp án đúng"}]}
-\`\`\`
-"answer" là chỉ số (0-3) của lựa chọn đúng. Không viết đáp án ngoài khối JSON.`,
+Chế độ QUIZ: tạo bộ trắc nghiệm về chủ đề / nội dung người dùng đưa bằng cách GỌI công cụ my_study__create_quiz (bộ tự lưu vào Công cụ › Quiz và hiện thành thẻ làm bài). Không viết câu hỏi hay đáp án trong câu trả lời.`,
   flashcards: `
-Chế độ FLASHCARD: tạo thẻ ghi nhớ (thuật ngữ/công thức/khái niệm cốt lõi). Chỉ nêu chủ đề ⇒ 8–12 thẻ trọng tâm. Người dùng đưa danh sách cụ thể (từ vựng, thuật ngữ, ảnh chụp bảng từ…) hoặc nói số lượng ⇒ tạo ĐỦ mọi mục, không bỏ bớt (tối đa 60). Bộ thẻ tự lưu vào mục Công cụ › Flashcard của người dùng.
-Viết 1 câu giới thiệu ngắn, rồi trả về DUY NHẤT một khối code ngôn ngữ \`flashcards\` chứa JSON hợp lệ theo mẫu:
-\`\`\`flashcards
-{"title": "Tên chủ đề", "cards": [{"front": "Mặt trước (câu hỏi/thuật ngữ)", "back": "Mặt sau (giải thích ngắn)"}]}
-\`\`\``,
+Chế độ FLASHCARD: tạo bộ thẻ ghi nhớ bằng cách GỌI công cụ my_study__create_flashcards (bộ tự lưu vào Công cụ › Flashcard và hiện thành thẻ ôn). Không liệt kê thẻ trong câu trả lời.`,
   summarize: `
 Chế độ TÓM TẮT: tóm tắt nội dung người dùng gửi (văn bản, ảnh chụp, tệp) hoặc nguồn trong <context>. Cấu trúc:
 ## Ý chính (3–6 gạch đầu dòng)

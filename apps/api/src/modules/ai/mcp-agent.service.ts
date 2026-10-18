@@ -8,6 +8,8 @@ import { LlmService, MAX_OUTPUT_TOKENS, type LlmMessage, type LlmUsage } from '.
 const MAX_ROUNDS = 5
 const MAX_CALLS = 12
 const TURN_TIMEOUT = 120_000
+// Tham số 1 lượt gọi: tool tạo bộ flashcard / quiz chở tới 60 mục / Per-call argument cap (study-set create tools carry up to 60 items)
+const MAX_CALL_ARGS = 48_000
 
 export class McpModelError extends Error {
   constructor() {
@@ -96,7 +98,7 @@ export class McpAgentService {
             if (fragment.id) call.id += fragment.id
             if (fragment.function?.name) call.name += fragment.function.name
             if (fragment.function?.arguments) call.arguments += fragment.function.arguments
-            if (call.arguments.length > 16_000 || (!pending.has(fragment.index) && pending.size >= MAX_CALLS)) throw new Error('Tool call exceeds size limit')
+            if (call.arguments.length > MAX_CALL_ARGS || (!pending.has(fragment.index) && pending.size >= MAX_CALLS)) throw new Error('Tool call exceeds size limit')
             pending.set(fragment.index, call)
           }
           if (choice?.finish_reason) finishReason = choice.finish_reason

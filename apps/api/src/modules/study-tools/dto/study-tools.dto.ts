@@ -1,24 +1,12 @@
 import { z } from 'zod'
 import type { StudyAttemptInput, StudyReviewInput, StudySetDraftInput, StudyToolKind } from '@pu/schemas'
+import { STUDY_KINDS } from '../kinds/study-kinds.registry'
+import { STUDY_SET_MAX_ITEMS } from '../kinds/study-kind'
 
 // @pu/schemas là mã TS nguồn ⇒ API khai báo lại schema runtime (giữ khớp bằng kiểm tra kiểu ở cuối file)
 export const STUDY_TOOL_KINDS = ['flashcards', 'quiz'] as const satisfies readonly StudyToolKind[]
-export const STUDY_SET_MAX_ITEMS = 200
 export const STUDY_SET_LIMIT = 300 // số bộ tối đa mỗi người
-
-export const FlashcardContentSchema = z.object({
-  front: z.string().trim().min(1, { message: 'Mặt trước trống' }).max(500),
-  back: z.string().trim().min(1, { message: 'Mặt sau trống' }).max(2000)
-})
-
-export const QuizQuestionContentSchema = z
-  .object({
-    q: z.string().trim().min(1, { message: 'Câu hỏi trống' }).max(1000),
-    options: z.array(z.string().trim().min(1, { message: 'Lựa chọn trống' }).max(300)).min(2, { message: 'Ít nhất 2 lựa chọn' }).max(6),
-    answer: z.number().int().min(0),
-    explain: z.string().trim().max(1000).optional()
-  })
-  .refine((v) => v.answer < v.options.length, { message: 'Đáp án đúng không hợp lệ', path: ['answer'] })
+export { STUDY_SET_MAX_ITEMS }
 
 const ItemSchema = z.object({ id: z.string().uuid().optional(), content: z.unknown() })
 
@@ -28,22 +16,25 @@ export const StudySetBodySchema = z
     kind: z.enum(STUDY_TOOL_KINDS),
     title: z.string().trim().min(1, { message: 'Nhập tên bộ' }).max(120),
     description: z.string().trim().max(300).nullable().optional(),
+    options: z.unknown().optional(),
     items: z
       .array(ItemSchema)
       .min(1, { message: 'Thêm ít nhất 1 mục' })
       .max(STUDY_SET_MAX_ITEMS, { message: `Tối đa ${STUDY_SET_MAX_ITEMS} mục` })
   })
   .transform((v, ctx) => {
-    const schema = v.kind === 'flashcards' ? FlashcardContentSchema : QuizQuestionContentSchema
+    const def = STUDY_KINDS[v.kind]
     const items = v.items.map((it, i) => {
-      const parsed = schema.safeParse(it.content)
+      const parsed = def.item.safeParse(it.content)
       if (!parsed.success) {
         ctx.addIssue({ code: 'custom', path: ['items', i], message: `Mục ${i + 1}: ${parsed.error.issues[0]?.message ?? 'không hợp lệ'}` })
         return null
       }
       return { id: it.id, content: parsed.data }
     })
-    return { ...v, items: items.filter((it): it is NonNullable<typeof it> => it !== null) }
+    // Tùy chọn hỏng ⇒ bỏ trường đó (options schema dùng .catch)
+    const options = def.options.safeParse(v.options ?? {})
+    return { ...v, options: options.success ? options.data : {}, items: items.filter((it): it is NonNullable<typeof it> => it !== null) }
   })
 export type StudySetBody = z.infer<typeof StudySetBodySchema>
 

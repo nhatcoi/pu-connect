@@ -10,10 +10,27 @@ export type StudyToolKind = (typeof STUDY_TOOL_KINDS)[number]
 
 export const STUDY_SET_MAX_ITEMS = 200
 
-// Thẻ ghi nhớ / câu trắc nghiệm (nội dung Markdown)
+// Mẫu bộ flashcard: chỉ quyết định ô nào hiện trong trình soạn / màn ôn (dữ liệu thẻ chung 1 kiểu)
+// Flashcard template: which optional fields the editor and reviewer show
+export const FLASHCARD_TEMPLATES = ['basic', 'vocab'] as const
+export type FlashcardTemplate = (typeof FLASHCARD_TEMPLATES)[number]
+
+// Ngôn ngữ phát âm (Web Speech API, BCP 47); không đặt ⇒ tự nhận theo nội dung thẻ
+export const SPEECH_LANGS = ['en-US', 'en-GB', 'vi-VN', 'zh-CN', 'ja-JP', 'ko-KR', 'fr-FR', 'de-DE', 'es-ES', 'ru-RU'] as const
+export type SpeechLang = (typeof SPEECH_LANGS)[number]
+
+// Tùy chọn cấp bộ (cột study_sets.options)
+export interface StudySetOptions {
+  template?: FlashcardTemplate
+  lang?: SpeechLang // ngôn ngữ mặt trước (từ cần học)
+}
+
+// Thẻ ghi nhớ / câu trắc nghiệm (nội dung Markdown); phiên âm + ví dụ không bắt buộc
 export const FlashcardContentSchema = z.object({
   front: z.string().trim().min(1, { message: 'Mặt trước trống' }).max(500),
-  back: z.string().trim().min(1, { message: 'Mặt sau trống' }).max(2000)
+  back: z.string().trim().min(1, { message: 'Mặt sau trống' }).max(2000),
+  phonetic: z.string().trim().max(120).optional(),
+  example: z.string().trim().max(600).optional()
 })
 export type FlashcardContent = z.infer<typeof FlashcardContentSchema>
 
@@ -49,6 +66,7 @@ export interface StudySetSummary {
   title: string
   description: string | null
   source: 'manual' | 'n7ai'
+  options: StudySetOptions
   itemCount: number
   dueCount: number // flashcard: số thẻ đến hạn ôn (thẻ mới tính là đến hạn)
   bestScore: number | null // quiz: % cao nhất
@@ -78,6 +96,7 @@ export interface StudySetInput {
   kind: StudyToolKind
   title: string
   description?: string | null
+  options?: StudySetOptions
   items: StudySetItemInput[]
 }
 

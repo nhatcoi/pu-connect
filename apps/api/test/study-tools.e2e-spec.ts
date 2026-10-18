@@ -2,6 +2,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
 import { ChatRefsService } from '../src/modules/chat/refs/chat-refs.service'
 import { StudyAgentToolsService } from '../src/modules/study-tools/study-agent-tools.service'
+import { StudyCreateToolsService } from '../src/modules/study-tools/study-create-tools.service'
 import { StudyToolsService } from '../src/modules/study-tools/study-tools.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
@@ -95,6 +96,56 @@ describe('Study tools (e2e)', () => {
     const list = (await agent.get('/api/tools/sets?kind=flashcards').expect(200)).body.data
     expect(list).toHaveLength(1)
     expect(list[0]).toMatchObject({ source: 'n7ai', itemCount: 1, sourceMessageId: String(msg) })
+  })
+
+  it('Mẫu Từ vựng: lưu tùy chọn bộ (lỗi ⇒ bỏ) + phiên âm, ví dụ của thẻ', async () => {
+    const agent = await loginAgent(app, await createUser(db))
+    const body = {
+      kind: 'flashcards',
+      title: 'Space',
+      options: { template: 'vocab', lang: 'xx-XX' },
+      items: [{ content: { front: 'Spaceship (n)', back: 'Tàu vũ trụ', phonetic: '/ˈspeɪs.ʃɪp/', example: 'The spaceship landed.' } }]
+    }
+    const set = (await agent.post('/api/tools/sets').send(body).expect(201)).body.data
+    expect(set.options).toEqual({ template: 'vocab' }) // lang không hợp lệ bị bỏ
+    expect(set.items[0].content).toMatchObject({ phonetic: '/ˈspeɪs.ʃɪp/', example: 'The spaceship landed.' })
+    const upd = (await agent.patch(`/api/tools/sets/${set.id}`).send({ ...body, options: { template: 'vocab', lang: 'en-US' } }).expect(200)).body.data
+    expect(upd.options).toEqual({ template: 'vocab', lang: 'en-US' })
+  })
+
+  it('Tool N7AI create_flashcards: kiểm tham số theo registry, lưu phần hợp lệ, 1 bộ / tin, khối chuẩn cho chat', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const thread = (await agent.post('/api/ai/threads').expect(200)).body.data
+    const bot = (await db.query(`SELECT id FROM users WHERE username = 'n7ai' AND account_type = 'bot'`)).rows[0].id
+    const msg = (await db.query(`INSERT INTO messages (conversation_id, sender_id, kind, content) VALUES ($1, $2, 'ai', '') RETURNING id`, [thread.id, bot])).rows[0].id
+
+    const session = app.get(StudyCreateToolsService).open(user.id, String(msg))
+    const tool = session.tools.find((t) => t.type === 'function' && t.function.name === 'my_study__create_flashcards')
+    expect(tool && tool.type === 'function' && (tool.function.parameters as any).properties.cards.items.required).toEqual(['front', 'back'])
+    expect(session.describe('my_study__create_flashcards', { title: 'Space' })).toEqual({ provider: 'my_study', label: 'Tạo bộ Flashcard', detail: 'Space' })
+
+    // Khung hỏng ⇒ lỗi kèm issues để model sửa
+    const bad = JSON.parse(await session.call('my_study__create_flashcards', { cards: [{ front: 'A', back: 'B' }] }))
+    expect(bad.issues[0]).toMatch(/^title/)
+    expect(session.created()).toBeNull()
+
+    const ok = JSON.parse(
+      await session.call('my_study__create_flashcards', {
+        title: 'Space',
+        options: { template: 'vocab', lang: 'en-US' },
+        cards: [{ front: 'Orbit (n)', back: 'Quỹ đạo', phonetic: '/ˈɔː.bɪt/' }, { front: '', back: 'hỏng' }]
+      })
+    )
+    expect(ok).toMatchObject({ saved: true, items: 1, skipped: [expect.stringMatching(/^cards\.1/)] })
+    const created = session.created()!
+    expect(created.ref).toMatchObject({ kind: 'flashcards', title: 'Space' })
+    expect(created.fence).toMatch(/^```flashcards\n/)
+    expect(JSON.parse(created.fence.split('\n')[1])).toEqual({ title: 'Space', template: 'vocab', lang: 'en-US', cards: [{ front: 'Orbit (n)', back: 'Quỹ đạo', phonetic: '/ˈɔː.bɪt/' }] })
+    expect(JSON.parse(await session.call('my_study__create_quiz', { title: 'Q', questions: [{ q: '1?', options: ['a', 'b'], answer: 0 }] })).error).toMatch(/chỉ tạo 1 bộ/)
+
+    const saved = (await agent.get(`/api/tools/sets/${created.ref.id}`).expect(200)).body.data
+    expect(saved).toMatchObject({ source: 'n7ai', sourceMessageId: String(msg), options: { template: 'vocab', lang: 'en-US' }, itemCount: 1 })
   })
 
   it('N7AI "Học tập của tôi": liệt kê bộ + tiến độ, lọc thẻ hay quên, chỉ đọc bộ của chính mình', async () => {

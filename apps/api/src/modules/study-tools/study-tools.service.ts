@@ -7,6 +7,7 @@ import type {
   StudyItem,
   StudyItemContent,
   StudySetDetail,
+  StudySetOptions,
   StudySetSummary,
   StudyToolKind,
   StudyToolsOverview
@@ -17,7 +18,7 @@ import { nextReview } from './srs'
 import { parseStudyBlocks } from './study-blocks'
 
 // Cột tóm tắt bộ + số thẻ đến hạn (thẻ mới = đến hạn)
-const SUMMARY_COLUMNS = `s.id, s.kind, s.title, s.description, s.source, s.source_message_id, s.item_count, s.attempts, s.best_score,
+const SUMMARY_COLUMNS = `s.id, s.kind, s.title, s.description, s.source, s.options, s.source_message_id, s.item_count, s.attempts, s.best_score,
   s.last_studied_at, s.created_at, s.updated_at,
   CASE WHEN s.kind = 'flashcards'
        THEN (SELECT COUNT(*) FROM study_items i WHERE i.set_id = s.id AND (i.due_at IS NULL OR i.due_at <= NOW()))
@@ -31,6 +32,7 @@ const toSummary = (r: any): StudySetSummary => ({
   title: r.title,
   description: r.description,
   source: r.source,
+  options: r.options ?? {},
   itemCount: r.item_count,
   dueCount: r.due_count ?? 0,
   bestScore: r.best_score,
@@ -102,9 +104,18 @@ export class StudyToolsService {
       const count = await client.query(`SELECT COUNT(*)::int AS n FROM study_sets WHERE owner_id = $1`, [userId])
       if (count.rows[0].n >= STUDY_SET_LIMIT) throw new BadRequestException(`Tối đa ${STUDY_SET_LIMIT} bộ — xóa bớt bộ cũ nhé`)
       const ins = await client.query(
-        `INSERT INTO study_sets (owner_id, kind, title, description, source, source_message_id, item_count)
-         VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
-        [userId, body.kind, body.title, body.description || null, origin?.source ?? 'manual', origin?.messageId ?? null, body.items.length]
+        `INSERT INTO study_sets (owner_id, kind, title, description, options, source, source_message_id, item_count)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
+        [
+          userId,
+          body.kind,
+          body.title,
+          body.description || null,
+          JSON.stringify(body.options ?? {}),
+          origin?.source ?? 'manual',
+          origin?.messageId ?? null,
+          body.items.length
+        ]
       )
       await this.insertItems(client, ins.rows[0].id, body.items.map((it) => it.content))
       return ins.rows[0].id as string
@@ -136,10 +147,11 @@ export class StudyToolsService {
         fresh.map((f) => f.content),
         fresh.map((f) => f.position)
       )
-      await client.query(`UPDATE study_sets SET title = $2, description = $3, item_count = $4, updated_at = NOW() WHERE id = $1`, [
+      await client.query(`UPDATE study_sets SET title = $2, description = $3, options = $4, item_count = $5, updated_at = NOW() WHERE id = $1`, [
         id,
         body.title,
         body.description || null,
+        JSON.stringify(body.options ?? {}),
         body.items.length
       ])
     })
@@ -187,30 +199,40 @@ export class StudyToolsService {
     return toSummary(res.rows[0])
   }
 
-  // Tự lưu khối flashcard / quiz đầu tiên trong câu trả lời N7AI (1 tin ⇒ tối đa 1 bộ); lỗi không chặn câu trả lời
-  // Auto-save the first study block of an N7AI reply into the requester's tools
+  // Dự phòng: model tự viết khối ```flashcards / ```quiz thay vì gọi tool ⇒ lưu khối đầu tiên (lỗi không chặn câu trả lời)
+  // Legacy fallback for inline study fences in an N7AI reply
   async saveFromReply(userId: string, messageId: string, text: string): Promise<ChatStudySetRef | null> {
     const block = parseStudyBlocks(text)[0]
     if (!block) return null
     try {
-      return await this.db.transaction(async (client) => {
-        const count = await client.query(`SELECT COUNT(*)::int AS n FROM study_sets WHERE owner_id = $1`, [userId])
-        if (count.rows[0].n >= STUDY_SET_LIMIT) return null
-        const ins = await client.query(
-          `INSERT INTO study_sets (owner_id, kind, title, source, source_message_id, item_count)
-           VALUES ($1, $2, $3, 'n7ai', $4, $5)
-           ON CONFLICT (source_message_id) WHERE source_message_id IS NOT NULL DO NOTHING
-           RETURNING id`,
-          [userId, block.kind, block.title, messageId, block.items.length]
-        )
-        if (!ins.rows[0]) return null
-        await this.insertItems(client, ins.rows[0].id, block.items)
-        return { id: ins.rows[0].id as string, kind: block.kind, title: block.title }
-      })
+      return await this.saveForMessage(userId, messageId, block)
     } catch (err: any) {
       this.logger.warn(`Không tự lưu được bộ học tập (msg ${messageId}): ${err?.message}`)
       return null
     }
+  }
+
+  // Lưu bộ N7AI tạo cho 1 tin (tool create_* hoặc khối dự phòng); 1 tin ⇒ tối đa 1 bộ; null = đã có bộ cho tin này
+  // Throws BadRequest when the user hit the set limit (tool call reports it to the model)
+  async saveForMessage(
+    userId: string,
+    messageId: string,
+    set: { kind: StudyToolKind; title: string; description?: string | null; options: StudySetOptions; items: StudyItemContent[] }
+  ): Promise<ChatStudySetRef | null> {
+    return this.db.transaction(async (client) => {
+      const count = await client.query(`SELECT COUNT(*)::int AS n FROM study_sets WHERE owner_id = $1`, [userId])
+      if (count.rows[0].n >= STUDY_SET_LIMIT) throw new BadRequestException(`Tối đa ${STUDY_SET_LIMIT} bộ — xóa bớt bộ cũ nhé`)
+      const ins = await client.query(
+        `INSERT INTO study_sets (owner_id, kind, title, description, options, source, source_message_id, item_count)
+         VALUES ($1, $2, $3, $4, $5, 'n7ai', $6, $7)
+         ON CONFLICT (source_message_id) WHERE source_message_id IS NOT NULL DO NOTHING
+         RETURNING id`,
+        [userId, set.kind, set.title, set.description || null, JSON.stringify(set.options), messageId, set.items.length]
+      )
+      if (!ins.rows[0]) return null
+      await this.insertItems(client, ins.rows[0].id, set.items)
+      return { id: ins.rows[0].id as string, kind: set.kind, title: set.title }
+    })
   }
 
   // Chèn nhiều mục 1 câu lệnh (unnest) / Bulk insert items
