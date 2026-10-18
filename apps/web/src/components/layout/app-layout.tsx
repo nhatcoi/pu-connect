@@ -9,6 +9,7 @@ import { RestrictionBanner } from '@/components/layout/restriction-banner'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
+import { N7AiFab } from '@/components/n7ai/n7ai-fab'
 import { CreatePostDialog } from '@/components/social/create-post-dialog'
 import { CreateDocumentDialog } from '@/components/social/create-document-dialog'
 import { CreateGroupDialog } from '@/components/social/create-group-dialog'
@@ -80,6 +81,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </aside>
             )}
           </div>
+          <N7AiFab />
           <MobileBottomNav />
         </div>
       </AsideSlotProvider>

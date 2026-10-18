@@ -9,7 +9,6 @@ import { ConversationListSkeleton } from '@/components/skeletons/chat-skeleton'
 import { ConversationItem } from '@/components/chat/conversation-item'
 import { NewChatPanel } from '@/components/chat/new-chat-panel'
 import { Button } from '@/components/ui/button'
-import { N7AiFab } from '@/components/n7ai/n7ai-fab'
 import { useConversations } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
@@ -101,7 +100,6 @@ export default function MessagesPage() {
         </div>
       )}
 
-      <N7AiFab />
       <PageAside>
         <AiStudyCard />
       </PageAside>
