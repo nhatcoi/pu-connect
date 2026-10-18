@@ -22,7 +22,7 @@ flowchart TB
     chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance"]
     ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>McpAgentService (AgentToolSession) · GoogleMcpService · GoogleOAuth"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
-    tools["<b>StudyTools</b><br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tự lưu từ chat<br/>StudyAgentTools (tool my_study)"]
+    tools["<b>StudyTools</b><br/>registry loại bộ (kinds/)<br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tool tạo bộ trong chat<br/>StudyAgentTools (tool my_study)"]
   end
 
   subgraph Platform["Platform modules"]
@@ -50,7 +50,7 @@ flowchart TB
   chat -->|emitToUser message.*| rt
   chat -->|chat-push: sendToUser| push
   chat --> ai
-  chat -->|tự lưu flashcard / quiz| tools
+  chat -->|tool create_flashcards / create_quiz| tools
   tools --> ai
   posts -->|PostAiService: @n7ai trong bình luận · tóm tắt bài| ai
   ai -->|chat/completions| llm["LLM gateway"]
@@ -130,6 +130,7 @@ flowchart TB
 
 **Changelog:**
 - 2026-10-18 — Socket `message.progress` (bước tool MCP: nhãn, chi tiết ngắn, trạng thái) + `meta.steps` trên tin N7AI hoàn tất.
+- 2026-10-18 — Registry loại bộ `study-tools/kinds/` (schema mục, tùy chọn, hợp đồng tool N7AI); `StudyCreateToolsService` (`my_study__create_flashcards`, `my_study__create_quiz`) trong mọi thread N7AI riêng, server chèn khối ```` ```flashcards ```` chuẩn vào tin; `tools/sets/draft` dùng cùng JSON Schema. `study_sets.options` (mẫu, ngôn ngữ phát âm).
 - 2026-10-18 — `AgentToolSession` (`ai/agent-tools.ts`): McpAgentService gộp session Google MCP + tool nội bộ; `StudyAgentToolsService` (connector `my_study`: `list_study_sets`, `get_study_items`) cho N7AI đọc bộ Flashcard / Quiz + tiến độ ôn; ref `study_set` trong `ChatRefsService`. Migration `ai-study-connector-upgrade.sql`.
 - 2026-10-18 — `GoogleMcpService` nối `workspace-mcp` tự host (`GOOGLE_WORKSPACE_MCP_URL`, mặc định `http://127.0.0.1:8765/mcp`) thay 3 endpoint MCP chính thức của Google; allowlist tool theo tên của workspace-mcp.
 - 2026-10-18 — `StudyToolsModule`: `tools/overview`, `tools/sets` CRUD, `tools/sets/draft` (N7AI, trigger `tool`), `tools/sets/:id/review` (SRS), `tools/sets/:id/attempts`; N7AiService tự lưu khối flashcard / quiz (`meta.studySet`). Migration `study-tools-upgrade.sql`.

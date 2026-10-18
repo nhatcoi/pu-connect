@@ -718,6 +718,7 @@ erDiagram
     timestamptz last_studied_at
     timestamptz created_at
     timestamptz updated_at
+    jsonb options
   }
   user_blocks {
     uuid blocker_id PK,FK
