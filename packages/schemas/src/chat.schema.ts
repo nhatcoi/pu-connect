@@ -183,6 +183,31 @@ export interface ChatMessageMeta {
   durationMs?: number // N7AI: thời gian xử lý (nhận câu hỏi → xong)
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
   actions?: AiAction[] // N7AI: nút dẫn tới trang trong app / hành động cần người dùng xác nhận
+  sharedPost?: ChatSharedPost // tin chia sẻ bài viết (thẻ xem trước)
+}
+
+// Bài viết chia sẻ vào chat: ảnh chụp lúc gửi ⇒ thẻ xem trước không cần tải thêm
+// Shared post snapshot stored in message meta
+export interface ChatSharedPost {
+  id: string
+  title: string
+  excerpt: string
+  image: string | null
+  author: { username: string; displayName: string; avatarUrl: string | null }
+}
+
+// POST /chat/share: gửi bài viết tới nhiều hội thoại / người (DM tự mở)
+export const CHAT_SHARE_MAX_TARGETS = 10
+export interface SharePostInput {
+  postId: string
+  conversationIds: string[]
+  userIds: string[]
+  note?: string
+}
+export interface SharePostResult {
+  sent: number
+  failed: number
+  conversationIds: string[]
 }
 
 // Nút dưới câu trả lời N7AI (server kiểm trước khi lưu): link = mở trang trong app; join_group = tham gia nhóm học khi người dùng bấm xác nhận

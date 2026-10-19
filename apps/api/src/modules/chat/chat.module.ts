@@ -39,6 +39,8 @@ import { N7AiController } from './n7ai/n7ai.controller'
 import { N7AiService } from './n7ai/n7ai.service'
 import { ChatRefsController } from './refs/chat-refs.controller'
 import { ChatRefsService } from './refs/chat-refs.service'
+import { ChatShareController } from './share/chat-share.controller'
+import { ChatShareService } from './share/chat-share.service'
 
 // Nhắn tin (Domain 10) + N7AI (Domain 13)
 // AiModule (LLM, quota, truy xuất) ← n7ai; core · notify (Web Push) ← conversations ← study-group-chat / messages (không vòng phụ thuộc)
@@ -56,6 +58,7 @@ import { ChatRefsService } from './refs/chat-refs.service'
     AiLibraryController,
     AiSkillsController,
     ChatRefsController,
+    ChatShareController,
     AiSettingsController,
     AiAdminController
   ],
@@ -82,7 +85,8 @@ import { ChatRefsService } from './refs/chat-refs.service'
     N7AiService,
     ConversationsService,
     StudyGroupChatService,
-    MessagesService
+    MessagesService,
+    ChatShareService
   ],
   exports: [ConversationsService, StudyGroupChatService]
 })

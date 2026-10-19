@@ -1,6 +1,16 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
 import type { PoolClient } from 'pg'
-import type { AiThread, ChatAttachment, ChatMessage, ChatMessageMeta, ChatReactionDetail, EditMessageInput, MessagesPage, SendMessageInput } from '@pu/schemas'
+import type {
+  AiThread,
+  ChatAttachment,
+  ChatMessage,
+  ChatMessageMeta,
+  ChatReactionDetail,
+  ChatSharedPost,
+  EditMessageInput,
+  MessagesPage,
+  SendMessageInput
+} from '@pu/schemas'
 import { SimpleRateLimiter } from '../../auth/rate-limit.util'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
@@ -58,6 +68,14 @@ export class MessagesService {
     this.sendLimiter.consume(userId)
     const { message, asksAi } = await this.persist(userId, conversationId, input)
     if (asksAi) void this.n7ai.reply(conversationId, userId, message.id)
+    return message
+  }
+
+  // Chia sẻ bài viết: tin của người dùng kèm thẻ xem trước (meta.sharedPost); không gọi N7AI
+  // Shared post message; never triggers an AI reply
+  async sendShared(userId: string, conversationId: string, input: SendMessageInput, sharedPost: ChatSharedPost): Promise<ChatMessage> {
+    this.sendLimiter.consume(userId)
+    const { message } = await this.persist(userId, conversationId, input, { sharedPost })
     return message
   }
 

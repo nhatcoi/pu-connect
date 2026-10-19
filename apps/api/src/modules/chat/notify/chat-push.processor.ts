@@ -19,6 +19,7 @@ const STATE_SQL = `
                    AND mmsg.deleted_at IS NULL) AS mentioned,
          (SELECT json_build_object('content', m.content, 'files', COALESCE(jsonb_array_length(m.attachments), 0),
                                    'images', (SELECT COUNT(*) FROM jsonb_array_elements(COALESCE(m.attachments, '[]'::jsonb)) a WHERE a->>'kind' = 'image'),
+                                   'sharedPost', m.meta->'sharedPost'->>'title',
                                    'sender', s.display_name)
           FROM messages m LEFT JOIN users s ON s.id = m.sender_id
           WHERE m.conversation_id = c.id AND m.id > me.last_read_message_id AND m.deleted_at IS NULL
@@ -29,7 +30,7 @@ const STATE_SQL = `
   JOIN users u ON u.id = me.user_id
   WHERE me.conversation_id = $1 AND me.user_id = $2 AND me.left_at IS NULL AND u.account_type = 'human'`
 
-type LastMessage = { content: string | null; files: number; images: number; sender: string | null }
+type LastMessage = { content: string | null; files: number; images: number; sharedPost: string | null; sender: string | null }
 
 // Worker: tại thời điểm chạy mới quyết định — đã đọc / đang mở app / tắt thông báo / giờ yên tĩnh ⇒ bỏ hoặc hoãn
 @Processor(CHAT_PUSH_QUEUE, { concurrency: 5 })
@@ -96,6 +97,7 @@ export class ChatPushProcessor extends WorkerHost {
   private preview(m: LastMessage): string {
     const text = snippet(markdownToPlainText(m.content || ''), 140)
     if (text) return text
+    if (m.sharedPost !== null && m.sharedPost !== undefined) return m.sharedPost ? `🔗 Đã chia sẻ bài viết: ${snippet(m.sharedPost, 100)}` : '🔗 Đã chia sẻ một bài viết'
     if (m.images && m.images === m.files) return m.images > 1 ? `🖼️ ${m.images} ảnh` : '🖼️ Ảnh'
     if (m.files) return `📎 ${m.files} tệp đính kèm`
     return 'Tin nhắn mới'

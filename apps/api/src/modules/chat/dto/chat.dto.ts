@@ -6,6 +6,7 @@ import type {
   EditMessageInput,
   MemberSettingsInput,
   SendMessageInput,
+  SharePostInput,
   UpdateGroupInput
 } from '@pu/schemas'
 
@@ -141,6 +142,21 @@ export const MemberSettingsBodySchema = z.object({
 
 export const MarkReadBodySchema = z.object({ messageId: z.string().regex(/^\d+$/, { message: 'Tin nhắn không hợp lệ' }) })
 
+// Chia sẻ bài viết: tối đa 10 đích (hội thoại có sẵn + người ⇒ mở DM), kèm lời nhắn tùy chọn
+export const CHAT_SHARE_MAX_TARGETS = 10
+export const SharePostBodySchema = z
+  .object({
+    postId: z.string().uuid({ message: 'Bài viết không hợp lệ' }),
+    conversationIds: z.array(z.string().uuid()).max(CHAT_SHARE_MAX_TARGETS).default([]),
+    userIds: z.array(z.string().uuid()).max(CHAT_SHARE_MAX_TARGETS).default([]),
+    note: z.string().trim().max(1000, { message: 'Lời nhắn tối đa 1000 ký tự' }).optional()
+  })
+  .refine((v) => v.conversationIds.length + v.userIds.length > 0, { message: 'Chọn người hoặc nhóm để gửi', path: ['conversationIds'] })
+  .refine((v) => v.conversationIds.length + v.userIds.length <= CHAT_SHARE_MAX_TARGETS, {
+    message: `Gửi tối đa ${CHAT_SHARE_MAX_TARGETS} nơi mỗi lần`,
+    path: ['conversationIds']
+  })
+
 // Báo lỗi biên dịch nếu lệch với @pu/schemas
 const _send: SendMessageInput = {} as z.infer<typeof SendMessageBodySchema>
 const _edit: EditMessageInput = {} as z.infer<typeof EditMessageBodySchema>
@@ -149,4 +165,5 @@ const _update: UpdateGroupInput = {} as z.infer<typeof UpdateGroupBodySchema>
 const _settings: MemberSettingsInput = {} as z.infer<typeof MemberSettingsBodySchema>
 const _thread: AiThreadUpdateInput = {} as z.infer<typeof AiThreadUpdateBodySchema>
 const _skill: AiSkillInput = {} as z.infer<typeof AiSkillBodySchema>
-void [_send, _edit, _group, _update, _settings, _thread, _skill]
+const _share: z.infer<typeof SharePostBodySchema> = {} as SharePostInput // API không strict ⇒ kiểm chiều ngược
+void [_send, _edit, _group, _update, _settings, _thread, _skill, _share]
