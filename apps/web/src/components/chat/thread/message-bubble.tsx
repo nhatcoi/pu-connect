@@ -14,6 +14,7 @@ import { AI_MODE_META } from '../ai/ai-modes'
 import { messagePreview, timeOf } from '../utils'
 import { AttachmentView } from './attachment-view'
 import { SharedPostCard } from './shared-post-card'
+import { MessageEmbedCard } from './message-embed-card'
 import { MessageActions, type MessageHandlers } from './message-actions'
 import { MessageAiBadges, MessageRefs, MessageText } from './message-text'
 import { ReactionsDialog } from './reactions-dialog'
@@ -134,6 +135,7 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
                 )}
               </div>
             )}
+            {m.meta?.embeds?.[0] && !m.deleted && <MessageEmbedCard embed={m.meta.embeds[0]} mine={mine} />}
             {!m.deleted && <MessageRefs meta={m.meta} mine={mine} />}
             {isAi && !m.deleted && m.status === 'done' && interactive && <AiMessageFooter messageId={m.id} meta={m.meta} />}
           </div>

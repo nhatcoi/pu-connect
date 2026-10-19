@@ -21,6 +21,7 @@ import { AiSkillsService } from '../n7ai/ai-skills.service'
 import { deriveThreadTitle, mapThread } from '../n7ai/ai-threads.service'
 import { N7AiService, type ReplyOutcome } from '../n7ai/n7ai.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
+import { MessageEmbedService } from '../embeds/message-embed.service'
 import { N7AI_MENTION } from '../../ai/ai.constants'
 
 type Membership = { type: string; role: string }
@@ -41,7 +42,8 @@ export class MessagesService {
     private readonly chatPush: ChatPushService,
     private readonly mentions: ChatMentionsService,
     private readonly refs: ChatRefsService,
-    private readonly skills: AiSkillsService
+    private readonly skills: AiSkillsService,
+    private readonly embeds: MessageEmbedService
   ) {}
 
   private get db() {
@@ -133,7 +135,7 @@ export class MessagesService {
          WHERE conversation_id = $1 AND user_id = $2`,
         [conversationId, userId, messageId]
       )
-      const mentioned = await this.attachEntities(client, userId, conversationId, String(messageId), member, input)
+      const mentioned = await this.attachEntities(client, userId, conversationId, String(messageId), member, input, !!extraMeta.sharedPost)
       const thread = member.type === 'ai' ? await this.autoTitle(client, conversationId, input.content) : null
       return { message: await this.core.fetchMessage(client, messageId), type: member.type, created: true, mentioned, thread }
     })
@@ -142,7 +144,26 @@ export class MessagesService {
     await this.core.broadcast(conversationId, 'message.new', message)
     if (thread) this.core.emitTo([userId], 'ai.thread.updated', thread)
     void this.chatPush.onNewMessage(conversationId, userId, mentioned) // Web Push (trễ, gộp tin; bị nhắc ⇒ vượt tắt tiếng)
+    if (type !== 'ai' && !message.meta?.embeds?.length && !extraMeta.sharedPost) void this.attachExternalEmbed(conversationId, String(message.id), input.content)
     return { message, asksAi: this.asksAi(type, input.content, message.meta) }
+  }
+
+  // Link ngoài: lấy Open Graph nền (không chặn gửi tin) rồi cập nhật tin + phát message.updated
+  // Background Open Graph fetch; message is already delivered, card appears when ready
+  private async attachExternalEmbed(conversationId: string, messageId: string, content: string): Promise<void> {
+    try {
+      const url = this.embeds.firstUrl(content)
+      if (!url || this.embeds.isInternal(url)) return
+      const embed = await this.embeds.resolveExternal(url)
+      if (!embed) return
+      const res = await this.db.query(
+        `UPDATE messages SET meta = COALESCE(meta, '{}'::jsonb) || $2::jsonb WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+        [messageId, JSON.stringify({ embeds: [embed] })]
+      )
+      if (res.rows[0]) await this.publishUpdate(conversationId, messageId)
+    } catch {
+      // Xem trước chỉ là phụ trợ: lỗi không ảnh hưởng tin đã gửi
+    }
   }
 
   // Chế độ học / Research / connector chỉ có nghĩa khi hỏi N7AI (thread AI hoặc nhóm)
@@ -162,9 +183,16 @@ export class MessagesService {
     conversationId: string,
     messageId: string,
     member: Membership,
-    input: SendMessageInput
+    input: SendMessageInput,
+    skipEmbeds: boolean
   ): Promise<string[]> {
     const extra: ChatMessageMeta = {}
+    // Link nội bộ ⇒ thẻ xem trước ngay (DB, kiểm quyền người gửi); link ngoài xử lý nền sau commit
+    if (!skipEmbeds && member.type !== 'ai') {
+      const url = this.embeds.firstUrl(input.content)
+      const embed = url && this.embeds.isInternal(url) ? await this.embeds.resolveInternal(client, userId, url) : null
+      if (embed) extra.embeds = [embed]
+    }
     const refs = await this.refs.resolve(client, userId, input.refs, member.type === 'ai')
     if (refs.length) extra.refs = refs
     if (member.type !== 'direct') {

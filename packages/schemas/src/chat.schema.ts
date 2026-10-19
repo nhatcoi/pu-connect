@@ -184,6 +184,18 @@ export interface ChatMessageMeta {
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
   actions?: AiAction[] // N7AI: nút dẫn tới trang trong app / hành động cần người dùng xác nhận
   sharedPost?: ChatSharedPost // tin chia sẻ bài viết (thẻ xem trước)
+  embeds?: ChatEmbed[] // thẻ xem trước link trong tin (nội bộ: server kiểm quyền; ngoài: Open Graph)
+}
+
+// Thẻ xem trước link: nội bộ (path trong app) hoặc link ngoài (URL tuyệt đối, đã qua chặn SSRF)
+// Link preview card stored in message meta; internal kinds are permission-checked at send time
+export interface ChatEmbed {
+  kind: 'post' | 'profile' | 'community' | 'course' | 'page' | 'link'
+  url: string
+  title: string
+  description: string
+  image: string | null
+  siteName: string | null // link ngoài: tên miền / og:site_name; nội bộ: nhãn loại ("Bài viết")
 }
 
 // Bài viết chia sẻ vào chat: ảnh chụp lúc gửi ⇒ thẻ xem trước không cần tải thêm

@@ -38,6 +38,7 @@ import { AiThreadsService } from './n7ai/ai-threads.service'
 import { N7AiController } from './n7ai/n7ai.controller'
 import { N7AiService } from './n7ai/n7ai.service'
 import { ChatRefsController } from './refs/chat-refs.controller'
+import { MessageEmbedService } from './embeds/message-embed.service'
 import { ChatRefsService } from './refs/chat-refs.service'
 import { ChatShareController } from './share/chat-share.controller'
 import { ChatShareService } from './share/chat-share.service'
@@ -67,6 +68,7 @@ import { ChatShareService } from './share/chat-share.service'
     ChatPushService,
     ChatPushProcessor,
     ChatMentionsService,
+    MessageEmbedService,
     ChatRefsService,
     AiSkillsService,
     AiSkillDraftService,
