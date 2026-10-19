@@ -188,11 +188,5 @@ Hệ thống mạng xã hội học thuật PU Connector áp dụng mô hình **
 ### 5.2. Công Thức Đề Xuất Bài Viết Cá Nhân Hóa (Hybrid Ranking Formula)
 Hệ thống xếp hạng bài viết trên Tab *"Dành cho bạn"* theo công thức:
 
-$$S(u, p) = w_1 \cdot C(u, p) + w_2 \cdot F(u, p) + w_3 \cdot Follow(u, p) + w_4 \cdot E(p) - \lambda \cdot \Delta t$$
-
-* $C(u, p)$: Điểm trùng khớp môn học ($+40$ nếu bài viết thuộc môn học user đã chọn).
-* $F(u, p)$: Điểm trùng khớp Khoa/Viện ($+20$ nếu tác giả cùng Khoa).
-* $Follow(u, p)$: Điểm quan hệ mạng lưới ($+25$ nếu user đang follow tác giả).
-* $E(p)$: Điểm tương tác ($2 \times \text{Likes} + 5 \times \text{Comments} + 10 \times \text{Downloads}$).
-* $\lambda \cdot \Delta t$: Hệ số suy giảm theo thời gian (giảm dần bài cũ sau 7-14 ngày).
+Hot rank: `(10 + độ hợp + 12·ln(1 + 2·Likes + 5·Comments)) / (giờ tuổi + 2)^1.2`, nhân giảm cho bài đã xem và bài thứ 3+ của cùng tác giả. Chi tiết: [`docs/core/01-social-feed-and-posts.md` §1.2](core/01-social-feed-and-posts.md).
 

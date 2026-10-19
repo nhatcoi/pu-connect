@@ -146,9 +146,9 @@ sequenceDiagram
   participant DB as Postgres
 
   W->>P: GET /api/posts?feedType=for_you&limit&offset
-  P->>DB: Một query: JOIN users/courses/communities<br/>+ recommendation_score
-  Note right of DB: +30 cùng khoa · +15 cùng khóa · +35 đang theo dõi<br/>+35 tag ∩ interests · +25 tag ∩ skills · +10 đã giải<br/>+0..40 khớp hồ sơ quan tâm (user_interests: môn + tag)<br/>+ likes×2 + comments×5 − 2/ngày tuổi
-  DB-->>P: ORDER BY score DESC, created_at DESC LIMIT/OFFSET<br/>(chỉ bài created_at ≤ before = snapshotAt)
+  P->>DB: Một query: JOIN users/courses/communities<br/>+ LEFT JOIN seen (post_view) + LATERAL rk.score
+  Note right of DB: hot rank (feed-ranking.sql.ts):<br/>(10 + độ hợp + 10 đã giải + 12·ln(1+2L+5C)) / (giờ tuổi+2)^1.2<br/>độ hợp: khoa 30 · khóa 15 · follow 35 · interests 35 · skills 25 · hồ sơ 0..40<br/>× 0.7^lần đã xem × 0.5^(thứ hạng cùng tác giả − 2)
+  DB-->>P: ORDER BY score DESC, created_at DESC LIMIT/OFFSET<br/>(chỉ bài created_at ≤ before = snapshotAt; tuổi tính theo snapshotAt)
   par Batch theo trang
     P->>DB: poll của các bài
   and
@@ -338,6 +338,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-19 — Feed "Dành cho bạn" đổi sang hot rank (log tương tác / tuổi^1.2, giảm bài đã xem, đa dạng tác giả).
 - 2026-10-18 — `message.progress` trước/sau mỗi tool call; tin hoàn tất lưu `meta.steps`.
 - 2026-10-18 — MCP server = `workspace-mcp` tự host thay MCP chính thức của Google.
 - 2026-10-17 — Luồng N7AI: Google MCP discovery → model tool loop → streaming; cách ly dữ liệu theo tài khoản và loại hội thoại.

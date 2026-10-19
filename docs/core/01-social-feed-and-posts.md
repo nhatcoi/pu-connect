@@ -7,24 +7,26 @@
 Bảng tin `Home Feed` là trục xương sống tương tác của sinh viên và giảng viên, được thiết kế theo cấu trúc **3 cột chuẩn X** với cơ chế phân phối nội dung thông minh.
 
 ### 1.1. Các Luồng Bài Viết Bảng Tin (Feed Streams)
-* **Tab "Dành cho bạn" (`for_you`):** Phân phối bài viết thông qua **Thuật toán đề xuất lai (Hybrid Recommendation Engine)** kết hợp Môn học ($+40$), Cùng Khoa ($+30$), Cùng Khóa ($+15$), Người đang Follow ($+35$) và Tương tác.
+* **Tab "Dành cho bạn" (`for_you`):** Phân phối bài viết thông qua **Thuật toán đề xuất lai (Hybrid Recommendation Engine)** kết hợp độ hợp (khoa, khóa, follow, sở thích, hồ sơ quan tâm), tương tác dạng log và suy giảm theo giờ kiểu hot rank (§1.2).
 * **Tab "Đang theo dõi" (`following`):** Dòng thời gian đảo ngược thời gian thực (Reverse Chronological - `created_at DESC`) từ Giảng viên, Trợ giảng và bạn bè mà sinh viên đang bấm theo dõi (`user_follows`).
 * **Tab "Hỏi đáp" (`qa`):** Lọc riêng các câu hỏi bài tập và thắc mắc học thuật (`post_type = 'question'`), hỗ trợ duyệt lời giải chính xác (`Accepted Solution` +15 Rep).
 
-### 1.2. Thuật Toán Xếp Hạng Bài Viết (Hybrid Recommendation Formula)
-Hệ thống chấm điểm bài viết động dựa trên ma trận ngữ cảnh người dùng:
+### 1.2. Thuật Toán Xếp Hạng Bài Viết (Hot Rank)
+Mã nguồn: `apps/api/src/modules/posts/feed-ranking.sql.ts` (dùng chung REST `PostsService.findAll` và GraphQL `feed`). Áp dụng cho tab sắp theo điểm (`for_you`, `qa`, `courses`); `following` / `bookmarks` / tab hoạt động hồ sơ sắp theo thời gian.
 
-$$S(u, p) = w_1 \cdot C(u, p) + w_2 \cdot F(u, p) + w_3 \cdot Y(u, p) + w_4 \cdot Follow(u, p) + w_5 \cdot Tag(u, p) + w_6 \cdot E(p) - \lambda \cdot \Delta t$$
+$$S(u, p) = \frac{10 + A(u, p) + 10 \cdot \text{resolved} + 12 \cdot \ln(1 + 2L + 5C)}{(\Delta h + 2)^{1.2}} \cdot 0.7^{\min(seen, 5)} \cdot 0.5^{\max(r_a - 2,\,0)}$$
 
-| Tham Số | Trọng Số Điểm | Ý Nghĩa Kỹ Thuật |
+| Tham số | Giá trị | Ý nghĩa |
 |---|---|---|
-| $C(u, p)$ | $+40.0$ | Trùng khớp môn học mà sinh viên đang quan tâm hoặc đăng ký trong kỳ. |
-| $F(u, p)$ | $+30.0$ | Tác giả bài viết thuộc cùng **Khoa/Viện** (`FIT`, `FEE`, `FBA`...). |
-| $Y(u, p)$ | $+15.0$ | Tác giả bài viết thuộc cùng **Niên khóa** (`K15`, `K16`...). |
-| $Follow(u, p)$ | $+35.0$ | Người dùng hiện tại đang bấm theo dõi tác giả bài viết. |
-| $Tag(u, p)$ | $+35.0$ / $+25.0$ | Tags bài viết trùng khớp với `interests` ($+35$) hoặc `skills` ($+25$) của user. |
-| $E(p)$ | $2 \cdot L + 5 \cdot C$ | Điểm tương tác: Mỗi Like $+2.0$, Mỗi Bình luận $+5.0$, Q&A có lời giải $+10.0$. |
-| $\lambda \cdot \Delta t$ | $-2.0 / 24\text{h}$ | Hệ số suy giảm theo thời gian thực để ưu tiên hiển thị nội dung mới. |
+| $A(u, p)$ | cùng khoa $+30$, cùng khóa $+15$, follow $+35$, tag ∩ interests $+35$, tag ∩ skills $+25$, hồ sơ quan tâm $0..40$ | Độ hợp với người xem (khách = 0). |
+| $\ln(1 + 2L + 5C)$ | $\times 12$ | Tương tác **log** ⇒ bài 100 like không đè mãi bài mới. |
+| $\Delta h$ | giờ tuổi bài, tính theo mốc `snapshotAt` | Chia theo tuổi (gravity 1.2, kiểu Hacker News) ⇒ bài cũ tự tụt sau 1–2 ngày. Không dùng `NOW()` ⇒ phân trang offset ổn định. |
+| $seen$ | số `user_events.post_view` của người xem trước `snapshotAt` | Bài đã lướt qua nhân 0.7 mỗi lần ⇒ feed đổi giữa các lần vào. |
+| $r_a$ | thứ hạng bài trong nhóm cùng tác giả (`ROW_NUMBER() OVER (PARTITION BY author_id)`) | Bài thứ 3+ của cùng tác giả giảm ×0.5 dần ⇒ một người/bot đăng dồn không chiếm cả trang. |
+
+Thực thi: điểm tính một lần qua `CROSS JOIN LATERAL (…) rk`, `LEFT JOIN` gộp `post_view` (alias `seen`), window function cho đa dạng tác giả. Hằng số tinh chỉnh ở `FEED_RANKING`.
+
+**Lịch sử (2026-10-19):** công thức cũ cộng tuyến tính `likes×2 + comments×5 − 2/ngày` ⇒ bài 21 like/14 comment (~112 điểm) cần ~56 ngày mới tụt, 43 bài mới/ngày (0 tương tác) bị đẩy khỏi trang đầu. Đổi sang hot rank ở trên; test `apps/api/test/feed-ranking.e2e-spec.ts`.
 
 ---
 
