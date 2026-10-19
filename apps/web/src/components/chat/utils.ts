@@ -1,3 +1,4 @@
+import type { ChatMessageMeta } from '@pu/schemas'
 import type { UiMessage } from '@/hooks/chat'
 import { markdownToPlainText } from '@/lib/plain-text'
 
@@ -38,9 +39,10 @@ export function fileSize(bytes: number): string {
 export const fileExt = (name: string) => (name.split('.').pop() || 'FILE').slice(0, 4).toUpperCase()
 
 // Xem trước 1 dòng cho danh sách / trích dẫn (bỏ ký hiệu Markdown)
-export function messagePreview(m: { content: string; attachments: { kind: string }[] | null; deleted: boolean }): string {
+export function messagePreview(m: { content: string; attachments: { kind: string }[] | null; deleted: boolean; meta?: ChatMessageMeta | null }): string {
   if (m.deleted) return 'Tin nhắn đã thu hồi'
   if (m.content) return markdownToPlainText(m.content) || '…'
+  if (m.meta?.sharedPost) return `🔗 Đã chia sẻ bài viết${m.meta.sharedPost.title ? `: ${m.meta.sharedPost.title}` : ''}`
   const n = m.attachments?.length ?? 0
   if (!n) return '…'
   return m.attachments!.every((a) => a.kind === 'image') ? `📷 ${n} ảnh` : `📎 ${n} tệp`

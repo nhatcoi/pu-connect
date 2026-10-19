@@ -5,8 +5,9 @@ import { DocumentSlice, createDocumentSlice } from './slices/document-slice'
 import { CourseSlice, createCourseSlice } from './slices/course-slice'
 import { StudyGroupSlice, createStudyGroupSlice } from './slices/study-group-slice'
 import { CampusSlice, createCampusSlice } from './slices/campus-slice'
+import { AiHandoffSlice, createAiHandoffSlice } from './slices/ai-handoff-slice'
 
-export type AppStore = AuthSlice & FeedSlice & DocumentSlice & CourseSlice & StudyGroupSlice & CampusSlice
+export type AppStore = AuthSlice & FeedSlice & DocumentSlice & CourseSlice & StudyGroupSlice & CampusSlice & AiHandoffSlice
 
 export const useAppStore = create<AppStore>()((...a) => ({
   ...createAuthSlice(...a),
@@ -14,5 +15,6 @@ export const useAppStore = create<AppStore>()((...a) => ({
   ...createDocumentSlice(...a),
   ...createCourseSlice(...a),
   ...createStudyGroupSlice(...a),
-  ...createCampusSlice(...a)
+  ...createCampusSlice(...a),
+  ...createAiHandoffSlice(...a)
 }))

@@ -141,6 +141,21 @@ export function Composer({
     if (editing || replyTo) ref.current?.focus()
   }, [editing, replyTo])
 
+  // Nhận ngữ cảnh chuyển sang từ trang khác ("Hỏi N7AI về bài viết"): gắn chip + điền sẵn câu hỏi (chưa gửi)
+  const aiHandoff = useAppStore((s) => s.aiHandoff)
+  const setAiHandoff = useAppStore((s) => s.setAiHandoff)
+  useEffect(() => {
+    if (!isAi || !aiHandoff) return
+    setRefs([aiHandoff.ref])
+    setText(aiHandoff.prompt)
+    setAiHandoff(null)
+    requestAnimationFrame(() => {
+      const el = ref.current
+      el?.focus()
+      el?.setSelectionRange(el.value.length, el.value.length)
+    })
+  }, [isAi, aiHandoff, setAiHandoff])
+
   // Tự giãn chiều cao theo nội dung (tối đa ~6 dòng)
   useLayoutEffect(() => {
     const el = ref.current

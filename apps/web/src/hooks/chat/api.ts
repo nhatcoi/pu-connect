@@ -34,6 +34,8 @@ import type {
   MemberSettingsInput,
   MessagesPage,
   PresenceMap,
+  SharePostInput,
+  SharePostResult,
   UpdateGroupInput
 } from '@pu/schemas'
 import { API_BASE_URL, apiClient } from '@/lib/api-client'
@@ -74,6 +76,8 @@ export const chatApi = {
   openDirect: (userId: string) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/direct', json('POST', { userId }))),
   // N7AI chat nhanh: thread gần nhất, chưa có thì tạo
   openAi: () => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations/ai', json('POST'))),
+  // Chia sẻ bài viết tới nhiều hội thoại / người (server tự mở DM)
+  sharePost: (body: SharePostInput) => unwrap(apiClient<Envelope<SharePostResult>>('/chat/share/post', json('POST', body))),
   openStudyGroup: (groupId: string) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/study-groups/${groupId}`, json('POST'))),
   createGroup: (title: string, memberIds: string[]) => unwrap(apiClient<Envelope<ConversationSummary>>('/conversations', json('POST', { title, memberIds }))),
   updateGroup: (id: string, body: UpdateGroupInput) => unwrap(apiClient<Envelope<ConversationSummary>>(`/conversations/${id}`, json('PATCH', body))),

@@ -13,6 +13,7 @@ import { AiMessageFooter } from '../ai/ai-message-footer'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { messagePreview, timeOf } from '../utils'
 import { AttachmentView } from './attachment-view'
+import { SharedPostCard } from './shared-post-card'
 import { MessageActions, type MessageHandlers } from './message-actions'
 import { MessageAiBadges, MessageRefs, MessageText } from './message-text'
 import { ReactionsDialog } from './reactions-dialog'
@@ -94,6 +95,7 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
         <div className={cn('flex items-center gap-1.5 max-w-full', mine && 'flex-row-reverse', isAi && 'w-full')}>
           <div className={cn('min-w-0 flex flex-col gap-1', isAi && 'flex-1')} onClick={() => interactive && isTouch() && setActionsOpen((v) => !v)}>
             {m.attachments && m.attachments.length > 0 && !m.deleted && <AttachmentView attachments={m.attachments} mine={mine} />}
+            {m.meta?.sharedPost && !m.deleted && <SharedPostCard post={m.meta.sharedPost} mine={mine} />}
             {(hasText || m.deleted || (isAi && !m.attachments)) && (
               <div
                 className={cn(

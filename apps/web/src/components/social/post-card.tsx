@@ -3,7 +3,7 @@
 import { FEATURES } from '@/lib/features'
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import type { PostItem } from '@pu/schemas'
 import {
   Heart,
@@ -45,6 +45,9 @@ import { PostMediaGallery } from './post-media-gallery'
 import { PostCommentsSection } from './comments/post-comments-section'
 import { FeaturedCommentPreview } from './comments/featured-comment-preview'
 import { PostSummary } from './post-summary'
+import { SharePostDialog } from '@/components/chat/share-post-dialog'
+import { N7AiMark } from '@/components/brand/pu-logo'
+import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { useAppStore } from '@/store'
 import { useFeatureEnabled } from '@/hooks/use-settings'
 import { apiClient } from '@/lib/api-client'
@@ -148,6 +151,7 @@ export function PostCard({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
+  const [isShareChatOpen, setIsShareChatOpen] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
   const [hiddenReason, setHiddenReason] = useState('')
@@ -172,6 +176,8 @@ export function PostCard({
   const [isFollowing, setIsFollowing] = useState(initialPost.isAuthorFollowedByMe || false)
 
   const user = useAppStore((state) => state.user)
+  const setAiHandoff = useAppStore((state) => state.setAiHandoff)
+  const router = useRouter()
   // Feature plugs (Cài đặt → Tính năng)
   const showFeaturedComment = useFeatureEnabled('featuredComment')
   const showAiSummary = useFeatureEnabled('aiSummary')
@@ -336,8 +342,14 @@ export function PostCard({
     setTimeout(() => setIsCopied(false), 2000)
   }
 
-  const handleShareViaChat = () => {
-    toast.success('Đã chia sẻ bài viết vào phòng chat')
+  // Hỏi N7AI: mở chat mới, gắn bài làm ngữ cảnh + điền sẵn câu hỏi (người dùng sửa rồi gửi)
+  // Ask N7AI: hand the post to a fresh N7AI chat as context
+  const handleAskN7Ai = () => {
+    setAiHandoff({
+      ref: { type: 'post', id: post.id, title: post.title || markdownToPlainText(post.content).slice(0, 80) || 'Bài viết' },
+      prompt: 'Tóm tắt ý chính và giải thích bài viết này giúp mình'
+    })
+    router.push(N7AI_HOME)
   }
 
   const authorInitials = (post.author?.displayName || post.author?.username || 'PU').slice(0, 2).toUpperCase()
@@ -731,20 +743,29 @@ export function PostCard({
                     <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
                   </DropdownMenuItem>
 
-                  {FEATURES.directMessage && (
-                    <DropdownMenuItem
-                      onClick={handleShareViaChat}
-                      className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
-                    >
-                      <Send className="h-4 w-4 text-muted-foreground" />
-                      <span>Gửi tin nhắn</span>
-                    </DropdownMenuItem>
+                  {user && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={() => setIsShareChatOpen(true)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
+                      >
+                        <Send className="h-4 w-4 text-muted-foreground" />
+                        <span>Gửi qua tin nhắn</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={handleAskN7Ai}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
+                      >
+                        <N7AiMark className="h-4 w-4" />
+                        <span>Hỏi N7AI về bài này</span>
+                      </DropdownMenuItem>
+                    </>
                   )}
 
                   <DropdownMenuItem
                     onClick={() => {
                       const text = encodeURIComponent(`Xem bài viết: ${post.title || markdownToPlainText(post.content).slice(0, 80)}`)
-                      const url = encodeURIComponent(window.location.href)
+                      const url = encodeURIComponent(`${window.location.origin}/post/${post.id}`)
                       window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
                     }}
                     className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
@@ -785,6 +806,9 @@ export function PostCard({
 
       {/* Post Analytics Dialog */}
       {isAnalyticsOpen && <PostAnalyticsDialog post={post} open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen} />}
+
+      {/* Gửi bài qua tin nhắn (chỉ mount khi mở) */}
+      {isShareChatOpen && <SharePostDialog post={post} open={isShareChatOpen} onOpenChange={setIsShareChatOpen} />}
     </>
   )
 }
