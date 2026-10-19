@@ -4,7 +4,7 @@ import { MentionsService, type MentionedUser } from '../mentions/mentions.servic
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
-import { interestBoostSql } from '../personalization/interest-profile.sql'
+import { hotScoreSql, rankedScoreSql, seenFactorSql, seenJoinSql } from './feed-ranking.sql'
 import { featuredCommentsSql } from './featured-comment.sql'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
@@ -103,32 +103,24 @@ export class PostsService {
     // Snapshot window keeps offset pagination stable while new posts arrive
     const snapshotAt = parseIsoDate(window.before) ?? new Date()
     params.push(snapshotAt.toISOString())
-    whereClause += ` AND p.created_at <= $${params.length}`
+    const snapshot = `$${params.length}`
+    whereClause += ` AND p.created_at <= ${snapshot}`
     const after = parseIsoDate(window.after)
     if (after) {
       params.push(after.toISOString())
       whereClause += ` AND p.created_at > $${params.length}`
     }
 
-    let scoreCalculation = `0.0`
-    if (currentUserId) {
-      scoreCalculation = `(
-        (CASE WHEN u.faculty IS NOT NULL AND cu.faculty IS NOT NULL AND u.faculty = cu.faculty THEN 30.0 ELSE 0.0 END)
-        + (CASE WHEN u.academic_year IS NOT NULL AND cu.academic_year IS NOT NULL AND u.academic_year = cu.academic_year THEN 15.0 ELSE 0.0 END)
-        + (CASE WHEN EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = cu.id AND uf.following_id = p.author_id) THEN 35.0 ELSE 0.0 END)
-        + (CASE WHEN cu.interests IS NOT NULL AND array_length(cu.interests, 1) > 0 AND p.tags && cu.interests THEN 35.0 ELSE 0.0 END)
-        + (CASE WHEN cu.skills IS NOT NULL AND array_length(cu.skills, 1) > 0 AND p.tags && cu.skills THEN 25.0 ELSE 0.0 END)
-        + ${interestBoostSql('$1', 'p')}
-        + (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
-        + (p.likes_count * 2.0 + p.comments_count * 5.0)
-        - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
-      )`
-    } else {
-      scoreCalculation = `(
-        (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
-        + (p.likes_count * 2.0 + p.comments_count * 5.0)
-        - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
-      )`
+    // Hot-rank chỉ khi feed sắp theo điểm (for_you / qa / courses); tab theo thời gian bỏ qua
+    // Ranked feeds: score once via LATERAL, seen penalty + author diversity in the select
+    const ranked = orderBy.includes('recommendation_score')
+    let rankJoins = ''
+    let scoreSelect = `0.0`
+    if (ranked) {
+      const viewer = currentUserId ? '$1' : undefined
+      if (viewer) rankJoins += seenJoinSql(viewer, snapshot)
+      rankJoins += ` CROSS JOIN LATERAL (SELECT ${hotScoreSql(snapshot, viewer)}${viewer ? ` * ${seenFactorSql}` : ''} AS score) rk`
+      scoreSelect = rankedScoreSql
     }
 
     // 1. Get total count
@@ -144,7 +136,7 @@ export class PostsService {
              u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
              c.code as course_code, c.name as course_name,
              comm.slug as community_slug, comm.name as community_name,
-             ${scoreCalculation} as recommendation_score
+             ${scoreSelect} as recommendation_score
     `
 
     if (currentUserId) {
@@ -155,7 +147,7 @@ export class PostsService {
       sql += `, FALSE as is_liked_by_me, FALSE as is_bookmarked_by_me, FALSE as is_author_followed_by_me`
     }
 
-    sql += `${joins} ${whereClause}`
+    sql += `${joins}${rankJoins} ${whereClause}`
 
     params.push(safeLimit, safeOffset)
     sql += ` ${orderBy} LIMIT $${params.length - 1} OFFSET $${params.length}`

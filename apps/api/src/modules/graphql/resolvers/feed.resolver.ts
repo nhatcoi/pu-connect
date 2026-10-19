@@ -4,6 +4,7 @@ import { PostType } from '../types/post.type'
 import { CreatePostInput } from '../dto/create-post.input'
 import { DatabaseService } from '../../../database/database.service'
 import { UnauthorizedException } from '@nestjs/common'
+import { hotScoreSql } from '../../posts/feed-ranking.sql'
 
 @Resolver(() => PostType)
 export class FeedResolver {
@@ -30,23 +31,10 @@ export class FeedResolver {
     if (currentUserId) {
       params.push(currentUserId)
       sql += `, EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = $1) as is_liked_by_me`
-      sql += `, (
-        (CASE WHEN u.faculty IS NOT NULL AND cu.faculty IS NOT NULL AND u.faculty = cu.faculty THEN 30.0 ELSE 0.0 END)
-        + (CASE WHEN u.academic_year IS NOT NULL AND cu.academic_year IS NOT NULL AND u.academic_year = cu.academic_year THEN 15.0 ELSE 0.0 END)
-        + (CASE WHEN EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = cu.id AND uf.following_id = p.author_id) THEN 35.0 ELSE 0.0 END)
-        + (CASE WHEN cu.interests IS NOT NULL AND array_length(cu.interests, 1) > 0 AND p.tags && cu.interests THEN 35.0 ELSE 0.0 END)
-        + (CASE WHEN cu.skills IS NOT NULL AND array_length(cu.skills, 1) > 0 AND p.tags && cu.skills THEN 25.0 ELSE 0.0 END)
-        + (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
-        + (p.likes_count * 2.0 + p.comments_count * 5.0)
-        - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
-      ) as recommendation_score`
+      sql += `, ${hotScoreSql('NOW()', '$1')} as recommendation_score`
     } else {
       sql += `, FALSE as is_liked_by_me`
-      sql += `, (
-        (CASE WHEN p.is_resolved THEN 10.0 ELSE 0.0 END)
-        + (p.likes_count * 2.0 + p.comments_count * 5.0)
-        - (EXTRACT(EPOCH FROM (NOW() - p.created_at)) / 86400.0 * 2.0)
-      ) as recommendation_score`
+      sql += `, ${hotScoreSql('NOW()')} as recommendation_score`
     }
 
     sql += ` FROM posts p JOIN users u ON p.author_id = u.id`
