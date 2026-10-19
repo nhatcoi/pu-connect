@@ -104,6 +104,17 @@ Bài học:
 3. Cosine của nguồn đúng: thấp nhất 0.519, p10 0.610, trung vị 0.735 ⇒ `MIN_SIMILARITY` 0.5 (từ 0.45: câu lạc đề vector còn 5 nguồn).
 4. Các lần trượt còn lại chủ yếu là bài viết gần như trùng nhau (nhiều bài bot cùng chủ đề sửa CV trên Figma) — câu hỏi mơ hồ giữa các bài đúng như nhau.
 
+**Sau pipeline v2 (làm sạch + tiêu đề mục + tách đoạn theo mục; 253 → 421 đoạn, 0 đoạn không NFC):**
+
+| Chế độ | hit@1 | hit@5 | Tài liệu hit@1 | Bài viết hit@1 |
+|---|---|---|---|---|
+| Full-text | 47.9% | 68.6% | 65.3% | 37.1% |
+| Vector thuần | 85.6% (+2.6) | 97.9% | 93.1% (+7.0) | 81.0% |
+| Hybrid, full-text × 0.5 (đang dùng) | 79.8% (−1.6) | 96.8% | 87.5% (−4.2) | 75.0% |
+| Hybrid, full-text × 0.3 | 81.9% | 96.3% | 88.9% | 77.6% |
+
+Tiêu đề mục + làm sạch giúp vector tìm tài liệu đúng hơn rõ (+7 điểm hit@1). Hybrid giảm nhẹ ở tài liệu vì đoạn nhỏ hơn ⇒ full-text dễ khớp đoạn lệch ở tài liệu khác. Các mức trọng số chênh 1–2% (2–4 câu / 188) ⇒ trong ngưỡng nhiễu, giữ 0.5. Bộ câu hỏi chưa có câu dạng mã môn / tên riêng chính xác (chỗ full-text mạnh) ⇒ việc tiếp theo: bổ sung loại câu này vào bộ eval rồi mới quyết bỏ hay giảm full-text.
+
 Chạy lại sau khi đổi model / ngưỡng / trọng số: cùng `--set` ⇒ so sánh được. Gateway rate-limit (429) ⇒ CLI tự chờ rồi thử lại; model sinh câu hỏi đổi bằng `RAG_EVAL_MODEL` (mặc định không dùng `AI_MODEL` đang phục vụ người dùng).
 
 ## 7. Hạn chế đã biết (rà soát 2026-10-19)
