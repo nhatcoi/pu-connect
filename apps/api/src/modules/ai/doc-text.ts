@@ -9,14 +9,14 @@ const MAX_PDF_PAGES = 40
 
 export const isExtractableMime = (mime: string) => TEXT_MIMES.includes(mime) || mime === PDF_MIME || mime === DOCX_MIME
 
-export async function bufferToText(buf: Buffer, mime: string): Promise<string> {
+export async function bufferToText(buf: Buffer, mime: string, maxPages = MAX_PDF_PAGES): Promise<string> {
   let text: string
   if (mime === PDF_MIME) {
     const parser = new PDFParse({ data: new Uint8Array(buf) })
     try {
-      const res = await parser.getText({ first: MAX_PDF_PAGES })
+      const res = await parser.getText({ first: maxPages })
       text = res.text.replace(/\n-- \d+ of \d+ --\n/g, '\n')
-      if (res.total > MAX_PDF_PAGES) text += `\n…(chỉ đọc ${MAX_PDF_PAGES}/${res.total} trang đầu)`
+      if (res.total > maxPages) text += `\n…(chỉ đọc ${maxPages}/${res.total} trang đầu)`
     } finally {
       await parser.destroy()
     }

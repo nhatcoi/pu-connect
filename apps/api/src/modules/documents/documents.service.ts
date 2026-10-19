@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { RagIndexQueue } from '../ai/rag/rag-index.processor'
 import type { CreateDocumentInput, DocumentItem } from '@pu/schemas'
 
 @Injectable()
 export class DocumentsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly ragIndex: RagIndexQueue
+  ) {}
 
   async findAll(type?: string, search?: string, course?: string): Promise<DocumentItem[]> {
     let sql = `
@@ -82,6 +86,8 @@ export class DocumentsService {
         data.visibility || 'public'
       ]
     )
+    // Trích nội dung tệp cho N7AI (RAG) ngay, không chờ lịch quét
+    this.ragIndex.kick()
     return this.findOne(insertRes.rows[0].id)
   }
 

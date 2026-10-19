@@ -35,7 +35,8 @@ export const MIGRATIONS = [
   'comment-reactions-upgrade.sql',
   'study-tools-upgrade.sql',
   'ai-study-connector-upgrade.sql',
-  'ai-agent-upgrade.sql'
+  'ai-agent-upgrade.sql',
+  'rag-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

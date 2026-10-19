@@ -206,7 +206,7 @@ CREATE TABLE IF NOT EXISTS document_chunks (
     chunk_index INT NOT NULL,
     content_text TEXT NOT NULL,
     token_count INT NOT NULL DEFAULT 0,
-    embedding VECTOR(1536),
+    embedding VECTOR(1024),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(document_id, chunk_index)
 );

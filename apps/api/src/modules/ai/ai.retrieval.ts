@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { WebReaderService } from './connectors/web-reader.service'
+import { RagSearchService, type RagQuery } from './rag/rag-search.service'
 
 export type Source = {
   type: 'post' | 'document' | 'course' | 'thread' | 'study_set' | 'group' | 'drive' | 'calendar' | 'web'
@@ -37,7 +38,7 @@ const MAX_KEYWORDS = 8
 
 // Từ khóa → tsquery "khớp ≥ 2 từ" (1 từ ⇒ chính nó); từ ≥ 3 ký tự khớp tiền tố
 // Keywords → tsquery requiring ≥ 2 matched terms ('' if none)
-function toTsQuery(question: string): string {
+export function toTsQuery(question: string): string {
   const words = Array.from(
     new Set(
       unaccent(question)
@@ -60,17 +61,21 @@ export class AiRetrieval {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly web: WebReaderService
+    private readonly web: WebReaderService,
+    private readonly rag: RagSearchService
   ) {}
 
   async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Retrieved> {
     const connectors = new Set(opts.connectors ?? ['library'])
-    const tsquery = toTsQuery(question)
     const research = !!opts.research
     const tasks: Promise<Source[]>[] = []
     const failures: ConnectorFailure[] = []
-    if (connectors.has('library') && tsquery) tasks.push(this.safe('library', () => this.library(tsquery, requesterId, research)))
-    if (connectors.has('my_documents') && tsquery) tasks.push(this.safe('my_documents', () => this.myDocuments(tsquery, requesterId, research)))
+    // Thư viện / tài liệu của tôi: tìm kết hợp full-text + vector (vector tính 1 lần cho cả hai)
+    if (connectors.has('library') || connectors.has('my_documents')) {
+      const query = this.rag.prepare(question, toTsQuery(question))
+      if (connectors.has('library')) tasks.push(this.safe('library', async () => this.library(await query, requesterId, research)))
+      if (connectors.has('my_documents')) tasks.push(this.safe('my_documents', async () => this.myDocuments(await query, requesterId, research)))
+    }
     if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
     if (connectors.has('web')) tasks.push(this.safe('web', () => this.webPages(question, research)))
     if (connectors.has('web_search')) tasks.push(this.safe('web_search', () => this.webSearch(question, research)))
@@ -99,53 +104,21 @@ export class AiRetrieval {
     return results.map((r) => ({ type: 'web' as const, id: r.id, title: r.title, body: r.body }))
   }
 
-  // Thư viện PU: full-text bài viết & tài liệu công khai (+ của mình), kèm lời giải đã duyệt
-  private async library(tsquery: string, requesterId: string, research: boolean): Promise<Source[]> {
-    const [posts, docs, body] = research ? [8, 4, 2500] : [4, 2, 1500]
-    const res = await this.db.query(
-      `WITH q AS (SELECT to_tsquery('simple', $1) AS tsq)
-       (SELECT 'post' AS type, p.id, COALESCE(NULLIF(p.title, ''), left(p.content, 80)) AS title,
-               left(p.content, $5) AS body,
-               (SELECT left(c.content, 1000) FROM comments c WHERE c.post_id = p.id AND c.is_solution LIMIT 1) AS solution,
-               ts_rank(p.search_tsv, q.tsq) AS rank
-        FROM posts p, q
-        WHERE p.search_tsv @@ q.tsq AND p.hidden_at IS NULL
-          AND (p.visibility = 'public' OR p.author_id = $2)
-        ORDER BY rank DESC LIMIT $3)
-       UNION ALL
-       (SELECT 'document', d.id, d.title, left(COALESCE(d.description, ''), $5), NULL, ts_rank(d.search_tsv, q.tsq)
-        FROM documents d, q
-        WHERE d.search_tsv @@ q.tsq AND (d.visibility = 'public' OR d.owner_id = $2)
-        ORDER BY 6 DESC LIMIT $4)`,
-      [tsquery, requesterId, posts, docs, body]
-    )
-    return res.rows
-      .filter((r) => r.rank > 0)
-      .map((r) => ({
-        type: r.type,
-        id: r.id,
-        title: r.title,
-        body: r.solution ? `${r.body}\n\n[Lời giải đã được tác giả duyệt]\n${r.solution}` : r.body
-      }))
+  // Thư viện PU: bài viết & tài liệu công khai (+ của mình), kèm lời giải đã duyệt
+  private async library(query: RagQuery, requesterId: string, research: boolean): Promise<Source[]> {
+    if (!query.tsquery && !query.vector) return []
+    const [posts, docs, bodyChars] = research ? [8, 4, 2500] : [4, 2, 1500]
+    const [p, d] = await Promise.all([
+      this.rag.posts(query, requesterId, { limit: posts, bodyChars }),
+      this.rag.documents(query, requesterId, { limit: docs, bodyChars })
+    ])
+    return [...p, ...d]
   }
 
-  // Tài liệu của tôi: đoạn nội dung tệp (document_chunks) khớp câu hỏi — chỉ quét tài liệu của mình
-  private async myDocuments(tsquery: string, requesterId: string, research: boolean): Promise<Source[]> {
-    const res = await this.db.query(
-      `WITH q AS (SELECT to_tsquery('simple', $1) AS tsq)
-       SELECT d.id, d.title, left(x.content_text, 1500) AS body
-       FROM documents d
-       CROSS JOIN q
-       CROSS JOIN LATERAL (
-         SELECT c.content_text, ts_rank(to_tsvector('simple', immutable_unaccent(lower(c.content_text))), q.tsq) AS rank
-         FROM document_chunks c WHERE c.document_id = d.id
-         ORDER BY rank DESC LIMIT 1
-       ) x
-       WHERE d.owner_id = $2 AND x.rank > 0
-       ORDER BY x.rank DESC LIMIT $3`,
-      [tsquery, requesterId, research ? 4 : 2]
-    )
-    return res.rows.map((r) => ({ type: 'document' as const, id: r.id, title: r.title, body: r.body }))
+  // Tài liệu của tôi: đoạn nội dung tệp khớp câu hỏi — chỉ tài liệu của mình (kể cả riêng tư)
+  private async myDocuments(query: RagQuery, requesterId: string, research: boolean): Promise<Source[]> {
+    if (!query.tsquery && !query.vector) return []
+    return this.rag.documents(query, requesterId, { limit: research ? 4 : 2, bodyChars: 1500, ownerOnly: true })
   }
 
   // Nhóm học của tôi: tóm tắt ngắn (không phụ thuộc câu hỏi, ≤ 5 nhóm)
