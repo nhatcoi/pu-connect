@@ -16,6 +16,19 @@ const SETTINGS_LABELS: Record<string, string> = {
   blocked: 'Chặn & An toàn'
 }
 
+// Trang chung của app (không cần quyền riêng) ⇒ thẻ theo tên trang; trang chủ có thẻ thương hiệu
+const APP_PAGES: Record<string, { title: string; description: string }> = {
+  home: { title: 'Bảng tin', description: 'Bài viết mới từ cộng đồng sinh viên' },
+  communities: { title: 'Cộng đồng', description: 'Cộng đồng học tập và câu lạc bộ' },
+  courses: { title: 'Học phần', description: 'Danh sách học phần và tài liệu' },
+  tools: { title: 'Công cụ', description: 'Flashcard, Quiz và công cụ học tập' },
+  search: { title: 'Tìm kiếm', description: 'Tìm bài viết, người dùng, học phần' },
+  messages: { title: 'Tin nhắn', description: 'Trò chuyện với bạn bè và nhóm' },
+  n7ai: { title: 'N7AI', description: 'Trợ lý AI học tập của PU Connector' },
+  notifications: { title: 'Thông báo', description: 'Thông báo từ PU Connector' }
+}
+const BRAND_EMBED = { title: 'PU Connector', description: 'Mạng xã hội học tập của sinh viên Phenikaa University' }
+
 const clip = (text: string | null | undefined, max = DESC_MAX) => {
   const plain = markdownToPlainText(text || '').replace(/\s+/g, ' ').trim()
   return plain.length > max ? `${plain.slice(0, max - 1)}…` : plain
@@ -53,8 +66,9 @@ export class MessageEmbedService {
   async resolveInternal(db: Queryable, userId: string, url: URL): Promise<ChatEmbed | null> {
     const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent)
     const [head, key] = parts
-    if (!head) return null
     const path = url.pathname
+    if (!head) return { kind: 'page', url: '/', ...BRAND_EMBED, image: null, siteName: 'PU Connector' }
+    if (parts.length === 1 && APP_PAGES[head]) return { kind: 'page', url: path, ...APP_PAGES[head], image: null, siteName: 'PU Connector' }
 
     if (head === 'post' && key) {
       if (!/^[0-9a-f-]{36}$/i.test(key)) return null

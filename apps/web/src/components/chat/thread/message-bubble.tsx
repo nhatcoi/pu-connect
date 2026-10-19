@@ -6,6 +6,7 @@ import { Pin, RotateCcw } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import type { UiMessage } from '@/hooks/chat'
+import { isLinkOnly } from '@/lib/message-links'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { AiMessageBody } from '../ai/ai-message-body'
@@ -43,7 +44,8 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
   const reactionCount = m.reactions.reduce((n, r) => n + r.userIds.length, 0)
   const isAi = m.kind === 'ai'
   const interactive = !m.deleted && !m.id.startsWith('tmp-') && m.status !== 'streaming'
-  const hasText = !!m.content && !m.deleted
+  // Tin chỉ có một URL và đã có thẻ xem trước ⇒ chỉ hiện thẻ (chưa có thẻ ⇒ vẫn hiện link)
+  const hasText = !!m.content && !m.deleted && !(m.meta?.embeds?.length && !m.attachments?.length && isLinkOnly(m.content))
   const mode = m.meta?.aiMode
 
   return (

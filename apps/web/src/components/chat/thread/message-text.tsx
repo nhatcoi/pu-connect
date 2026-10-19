@@ -2,9 +2,11 @@
 
 import React, { useMemo } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { CalendarClock, Telescope, Wand2 } from 'lucide-react'
 import type { ChatMessageMeta } from '@pu/schemas'
 import { N7AI_USERNAME } from '@/lib/mention'
+import { splitByUrls } from '@/lib/message-links'
 import { cn } from '@/lib/utils'
 import { REF_META, refHref } from '../refs'
 
@@ -13,38 +15,72 @@ const MENTION_RE = /(^|[^a-zA-Z0-9_@./])@([a-zA-Z0-9_]{3,30})(?![a-zA-Z0-9_])/g
 
 // Nội dung tin văn bản: @tên có trong meta (đã được server xác nhận) thành link; mình được nhắc ⇒ nền vàng
 export function MessageText({ content, meta, mine, myUsername }: { content: string; meta: ChatMessageMeta | null; mine: boolean; myUsername?: string }) {
+  const router = useRouter()
   const parts = useMemo(() => {
     const known = new Set((meta?.mentions ?? []).map((m) => m.username.toLowerCase()))
     known.add(N7AI_USERNAME)
     if (meta?.mentionAll) known.add('all').add('everyone')
     const out: React.ReactNode[] = []
-    let last = 0
-    for (const match of content.matchAll(MENTION_RE)) {
-      const username = match[2].toLowerCase()
-      if (!known.has(username)) continue
-      const at = match.index! + match[1].length
-      out.push(content.slice(last, at))
-      const isMe = username === myUsername?.toLowerCase() || ((username === 'all' || username === 'everyone') && !mine)
-      const cls = cn(
-        'rounded px-0.5 font-semibold',
-        isMe ? 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/30 dark:text-amber-100' : mine ? 'underline underline-offset-2' : 'text-primary'
-      )
-      out.push(
-        username === 'all' || username === 'everyone' || username === N7AI_USERNAME ? (
-          <span key={at} className={cls}>
-            @{match[2]}
-          </span>
-        ) : (
-          <Link key={at} href={`/${username}`} className={cn(cls, 'hover:underline')}>
-            @{match[2]}
-          </Link>
+    // Mỗi đoạn chữ xử lý @mention riêng; URL thành thẻ <a> (cùng origin ⇒ điều hướng trong app)
+    let offset = 0
+    for (const seg of splitByUrls(content)) {
+      const base = offset
+      offset += seg.text.length
+      if (seg.url) {
+        out.push(
+          <a
+            key={`u${base}`}
+            href={seg.url}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+              try {
+                const u = new URL(seg.url!)
+                if (u.origin === window.location.origin) {
+                  e.preventDefault()
+                  router.push(u.pathname + u.search + u.hash)
+                }
+              } catch {
+                // URL lỗi ⇒ để trình duyệt xử lý
+              }
+            }}
+            className={cn('break-all underline underline-offset-2', !mine && 'text-primary')}
+          >
+            {seg.text}
+          </a>
         )
-      )
-      last = at + match[2].length + 1
+        continue
+      }
+      const text = seg.text
+      let last = 0
+      for (const match of text.matchAll(MENTION_RE)) {
+        const username = match[2].toLowerCase()
+        if (!known.has(username)) continue
+        const at = match.index! + match[1].length
+        out.push(text.slice(last, at))
+        const isMe = username === myUsername?.toLowerCase() || ((username === 'all' || username === 'everyone') && !mine)
+        const cls = cn(
+          'rounded px-0.5 font-semibold',
+          isMe ? 'bg-amber-200/70 text-amber-950 dark:bg-amber-400/30 dark:text-amber-100' : mine ? 'underline underline-offset-2' : 'text-primary'
+        )
+        out.push(
+          username === 'all' || username === 'everyone' || username === N7AI_USERNAME ? (
+            <span key={base + at} className={cls}>
+              @{match[2]}
+            </span>
+          ) : (
+            <Link key={base + at} href={`/${username}`} className={cn(cls, 'hover:underline')}>
+              @{match[2]}
+            </Link>
+          )
+        )
+        last = at + match[2].length + 1
+      }
+      out.push(text.slice(last))
     }
-    out.push(content.slice(last))
     return out
-  }, [content, meta, mine, myUsername])
+  }, [content, meta, mine, myUsername, router])
 
   return <div>{parts}</div>
 }
