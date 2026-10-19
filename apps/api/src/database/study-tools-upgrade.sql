@@ -45,3 +45,19 @@ CREATE INDEX IF NOT EXISTS idx_study_items_due ON study_items (set_id, due_at);
 
 -- Tùy chọn cấp bộ: mẫu flashcard (basic / vocab), ngôn ngữ phát âm — {"template": "vocab", "lang": "en-US"}
 ALTER TABLE study_sets ADD COLUMN IF NOT EXISTS options JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Nhật ký học: 1 dòng / lượt chấm thẻ hoặc lần làm quiz ⇒ chuỗi ngày, lịch nhiệt (GET tools/stats)
+-- Study activity log; set/item deleted ⇒ keep the row (streak history stays)
+CREATE TABLE IF NOT EXISTS study_events (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    set_id UUID REFERENCES study_sets(id) ON DELETE SET NULL,
+    item_id UUID REFERENCES study_items(id) ON DELETE SET NULL,
+    event VARCHAR(10) NOT NULL CHECK (event IN ('review', 'attempt')),
+    grade VARCHAR(5) CHECK (grade IN ('again', 'hard', 'good', 'easy')), -- review
+    score SMALLINT,                                                      -- attempt: % đúng
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Thống kê theo người, mới trước
+CREATE INDEX IF NOT EXISTS idx_study_events_user_time ON study_events (user_id, created_at DESC);
