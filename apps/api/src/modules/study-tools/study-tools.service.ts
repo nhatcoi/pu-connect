@@ -9,6 +9,7 @@ import type {
   StudySetDetail,
   StudySetOptions,
   StudySetSummary,
+  StudyStats,
   StudyToolKind,
   StudyToolsOverview
 } from '@pu/schemas'
@@ -26,6 +27,26 @@ const SUMMARY_COLUMNS = `s.id, s.kind, s.title, s.description, s.source, s.optio
        ELSE 0 END::int AS due_count`
 
 const iso = (d: Date | null) => (d ? new Date(d).toISOString() : null)
+
+// Ngày học tính theo giờ VN / Study days in Vietnam time
+const VN_DAY = (col: string) => `(${col} AT TIME ZONE 'Asia/Ho_Chi_Minh')::date`
+const HEATMAP_DAYS = 112 // = STUDY_HEATMAP_DAYS (@pu/schemas, chỉ import type)
+const FORECAST_DAYS = 7
+const DAY_MS = 86_400_000
+
+// Chuỗi ngày liên tiếp từ danh sách ngày YYYY-MM-DD tăng dần: hiện tại (tới hôm nay / hôm qua) + dài nhất
+export function studyStreaks(days: string[], today: string): { streak: number; bestStreak: number } {
+  const ts = days.map((d) => Date.parse(`${d}T00:00:00Z`))
+  let best = 0
+  let run = 0
+  ts.forEach((t, i) => {
+    run = i > 0 && t - ts[i - 1] === DAY_MS ? run + 1 : 1
+    best = Math.max(best, run)
+  })
+  const last = ts[ts.length - 1]
+  const gap = last === undefined ? Infinity : (Date.parse(`${today}T00:00:00Z`) - last) / DAY_MS
+  return { streak: gap <= 1 ? run : 0, bestStreak: best }
+}
 
 const toSummary = (r: any): StudySetSummary => ({
   id: r.id,
@@ -182,6 +203,7 @@ export class StudyToolsService {
         `UPDATE study_items SET due_at = $2, interval_days = $3, ease = $4, reps = $5, lapses = $6 WHERE id = $1 RETURNING *`,
         [itemId, next.dueAt, next.intervalDays, next.ease, next.reps, next.lapses]
       )
+      await client.query(`INSERT INTO study_events (user_id, set_id, item_id, event, grade) VALUES ($1, $2, $3, 'review', $4)`, [userId, setId, itemId, grade])
       const due = await client.query(
         `UPDATE study_sets SET attempts = attempts + 1, last_studied_at = NOW() WHERE id = $1
          RETURNING (SELECT COUNT(*) FROM study_items i WHERE i.set_id = $1 AND (i.due_at IS NULL OR i.due_at <= NOW()))::int AS due_count`,
@@ -197,14 +219,61 @@ export class StudyToolsService {
   // Kết quả 1 lần làm quiz ⇒ cập nhật điểm cao nhất
   async attempt(userId: string, setId: string, input: StudyAttemptInput): Promise<StudySetSummary> {
     const score = Math.round((input.correct / input.total) * 100)
+    // CTE: cập nhật điểm + ghi nhật ký cùng 1 câu lệnh (nguyên tử)
     const res = await this.db.query(
-      `UPDATE study_sets s SET attempts = attempts + 1, best_score = GREATEST(COALESCE(best_score, 0), $3), last_studied_at = NOW()
-       WHERE s.id = $1 AND s.owner_id = $2 AND s.kind = 'quiz' RETURNING ${SUMMARY_COLUMNS}`,
+      `WITH upd AS (
+         UPDATE study_sets s SET attempts = attempts + 1, best_score = GREATEST(COALESCE(best_score, 0), $3), last_studied_at = NOW()
+         WHERE s.id = $1 AND s.owner_id = $2 AND s.kind = 'quiz' RETURNING ${SUMMARY_COLUMNS}
+       ), ev AS (
+         INSERT INTO study_events (user_id, set_id, event, score) SELECT $2, id, 'attempt', $3 FROM upd
+       )
+       SELECT * FROM upd`,
       [setId, userId, score]
     )
     if (!res.rows[0]) throw new NotFoundException('Không tìm thấy quiz')
     this.progressMemory.record(userId, setId)
     return toSummary(res.rows[0])
+  }
+
+  // Thống kê học: chuỗi ngày, lịch nhiệt 16 tuần, thẻ đến hạn 7 ngày tới (setId ⇒ chỉ dự báo của bộ đó)
+  async stats(userId: string, setId?: string): Promise<StudyStats> {
+    const [days, forecast] = await Promise.all([
+      this.db.query(
+        `SELECT to_char(${VN_DAY('created_at')}, 'YYYY-MM-DD') AS day, COUNT(*)::int AS count,
+                to_char(${VN_DAY('NOW()')}, 'YYYY-MM-DD') AS today
+         FROM study_events WHERE user_id = $1 GROUP BY 1 ORDER BY 1`,
+        [userId]
+      ),
+      this.db.query(
+        `SELECT to_char(${VN_DAY('GREATEST(i.due_at, NOW())')}, 'YYYY-MM-DD') AS day, COUNT(*)::int AS count, FALSE AS fresh
+         FROM study_items i JOIN study_sets s ON s.id = i.set_id
+         WHERE s.owner_id = $1 AND s.kind = 'flashcards' AND ($2::uuid IS NULL OR s.id = $2)
+           AND i.due_at IS NOT NULL AND i.due_at < (${VN_DAY('NOW()')} + ${FORECAST_DAYS}) AT TIME ZONE 'Asia/Ho_Chi_Minh'
+         GROUP BY 1
+         UNION ALL
+         SELECT NULL, COUNT(*)::int, TRUE FROM study_items i JOIN study_sets s ON s.id = i.set_id
+         WHERE s.owner_id = $1 AND s.kind = 'flashcards' AND ($2::uuid IS NULL OR s.id = $2) AND i.due_at IS NULL`,
+        [userId, setId ?? null]
+      )
+    ])
+    const rows = days.rows as { day: string; count: number; today: string }[]
+    const today = rows[0]?.today ?? new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date())
+    const todayMs = Date.parse(`${today}T00:00:00Z`)
+    const shift = (n: number) => new Date(todayMs + n * DAY_MS).toISOString().slice(0, 10)
+    const from = shift(-(HEATMAP_DAYS - 1))
+    const heatmap = rows.filter((r) => r.day >= from).map((r) => ({ day: r.day, count: r.count }))
+    const due = new Map((forecast.rows as { day: string | null; count: number; fresh: boolean }[]).filter((r) => !r.fresh).map((r) => [r.day, r.count]))
+    return {
+      ...studyStreaks(
+        rows.map((r) => r.day),
+        today
+      ),
+      today: rows.find((r) => r.day === today)?.count ?? 0,
+      activeDays: heatmap.length,
+      heatmap,
+      forecast: Array.from({ length: FORECAST_DAYS }, (_, i) => ({ day: shift(i), count: due.get(shift(i)) ?? 0 })),
+      newCards: forecast.rows.find((r) => r.fresh)?.count ?? 0
+    }
   }
 
   // Dự phòng: model tự viết khối ```flashcards / ```quiz thay vì gọi tool ⇒ lưu khối đầu tiên (lỗi không chặn câu trả lời)

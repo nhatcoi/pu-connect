@@ -11,6 +11,7 @@ export interface StudyKindDef<C extends StudyItemContent = StudyItemContent> {
   label: string // "Flashcard"
   itemLabel: string // "thẻ"
   item: z.ZodType<C, z.ZodTypeDef, unknown> // nội dung 1 mục (kiểm khi lưu, sinh JSON Schema cho N7AI)
+  aiItem?: z.ZodType<C, z.ZodTypeDef, unknown> // bản N7AI được tạo (bỏ trường chỉ người dùng đặt, vd. ảnh); mặc định = item
   options: z.ZodType<StudySetOptions, z.ZodTypeDef, unknown> // tùy chọn cấp bộ (lỗi ⇒ bỏ trường, không từ chối bộ)
   // Khối ```<fence> trong tin chat (web hiển thị, Thư viện › Học liệu) — JSON { title, ...options, [itemsKey]: [] }
   fence: string

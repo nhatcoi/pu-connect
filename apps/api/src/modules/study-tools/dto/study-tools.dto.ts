@@ -48,6 +48,8 @@ export const StudySetListQuerySchema = z.object({
   q: z.string().trim().max(100).default('')
 })
 
+export const StudyStatsQuerySchema = z.object({ setId: z.string().uuid().optional() })
+
 export const StudyReviewBodySchema = z.object({
   itemId: z.string().uuid(),
   grade: z.enum(['again', 'hard', 'good', 'easy'])

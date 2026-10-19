@@ -12,7 +12,7 @@ export const STUDY_SET_MAX_ITEMS = 200
 
 // Mẫu bộ flashcard: chỉ quyết định ô nào hiện trong trình soạn / màn ôn (dữ liệu thẻ chung 1 kiểu)
 // Flashcard template: which optional fields the editor and reviewer show
-export const FLASHCARD_TEMPLATES = ['basic', 'vocab'] as const
+export const FLASHCARD_TEMPLATES = ['basic', 'vocab', 'cloze'] as const
 export type FlashcardTemplate = (typeof FLASHCARD_TEMPLATES)[number]
 
 // Ngôn ngữ phát âm (Web Speech API, BCP 47); không đặt ⇒ tự nhận theo nội dung thẻ
@@ -25,13 +25,21 @@ export interface StudySetOptions {
   lang?: SpeechLang // ngôn ngữ mặt trước (từ cần học)
 }
 
-// Thẻ ghi nhớ / câu trắc nghiệm (nội dung Markdown); phiên âm + ví dụ không bắt buộc
-export const FlashcardContentSchema = z.object({
-  front: z.string().trim().min(1, { message: 'Mặt trước trống' }).max(500),
-  back: z.string().trim().min(1, { message: 'Mặt sau trống' }).max(2000),
-  phonetic: z.string().trim().max(120).optional(),
-  example: z.string().trim().max(600).optional()
-})
+// Điền chỗ trống: mặt trước chứa {{đáp án}} hoặc {{đáp án::gợi ý}} ⇒ khi ôn ẩn đi, mặt sau thành ghi chú (không bắt buộc)
+// Cloze deletion markers inside the front text
+export const CLOZE_PATTERN = /\{\{([^{}]+?)\}\}/g
+export const hasCloze = (text: string) => /\{\{[^{}]+?\}\}/.test(text)
+
+// Thẻ ghi nhớ / câu trắc nghiệm (nội dung Markdown); phiên âm, ví dụ, ảnh không bắt buộc
+export const FlashcardContentSchema = z
+  .object({
+    front: z.string().trim().min(1, { message: 'Mặt trước trống' }).max(500),
+    back: z.string().trim().max(2000).default(''),
+    phonetic: z.string().trim().max(120).optional(),
+    example: z.string().trim().max(600).optional(),
+    image: z.string().trim().url({ message: 'Link ảnh không hợp lệ' }).max(500).startsWith('https://', { message: 'Ảnh phải là link https' }).optional()
+  })
+  .refine((c) => c.back.length > 0 || hasCloze(c.front), { message: 'Mặt sau trống', path: ['back'] })
 export type FlashcardContent = z.infer<typeof FlashcardContentSchema>
 
 export const QuizQuestionContentSchema = z
@@ -114,6 +122,18 @@ export interface StudyAttemptInput {
   correct: number
   total: number
 }
+
+// Thống kê học (nhật ký study_events, ngày theo giờ VN): chuỗi ngày, lịch nhiệt, thẻ đến hạn 7 ngày tới
+export interface StudyStats {
+  streak: number // số ngày liên tiếp có học, tính tới hôm nay (hoặc hôm qua nếu hôm nay chưa học)
+  bestStreak: number
+  today: number // lượt ôn + lần làm quiz hôm nay
+  activeDays: number // số ngày có học trong lịch nhiệt
+  heatmap: { day: string; count: number }[] // YYYY-MM-DD, chỉ ngày có học, STUDY_HEATMAP_DAYS ngày gần nhất
+  forecast: { day: string; count: number }[] // 7 ngày tới (hôm nay gồm cả thẻ quá hạn, không gồm thẻ mới)
+  newCards: number // thẻ chưa ôn lần nào
+}
+export const STUDY_HEATMAP_DAYS = 112 // 16 tuần
 
 // Gắn vào tin N7AI khi bộ thẻ / quiz đã tự lưu vào Công cụ
 export interface ChatStudySetRef {

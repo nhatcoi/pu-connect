@@ -3,7 +3,8 @@ import type { DatabaseService } from '../src/database/database.service'
 import { ChatRefsService } from '../src/modules/chat/refs/chat-refs.service'
 import { StudyAgentToolsService } from '../src/modules/study-tools/study-agent-tools.service'
 import { StudyCreateToolsService } from '../src/modules/study-tools/study-create-tools.service'
-import { StudyToolsService } from '../src/modules/study-tools/study-tools.service'
+import { STUDY_KINDS, validateAiSet } from '../src/modules/study-tools/kinds/study-kinds.registry'
+import { StudyToolsService, studyStreaks } from '../src/modules/study-tools/study-tools.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
 // Công cụ học tập (docs/core/15-study-tools.md): CRUD bộ, ôn flashcard, quiz, tự lưu từ câu trả lời N7AI
@@ -113,6 +114,49 @@ describe('Study tools (e2e)', () => {
     expect(upd.options).toEqual({ template: 'vocab', lang: 'en-US' })
   })
 
+  it('Điền chỗ trống (mặt sau không bắt buộc) + ảnh https; N7AI không đặt ảnh', async () => {
+    const agent = await loginAgent(app, await createUser(db))
+    const cloze = { front: 'Thủ đô của Pháp là {{Paris}}', back: '' }
+    const set = (
+      await agent
+        .post('/api/tools/sets')
+        .send({ kind: 'flashcards', title: 'Cloze', options: { template: 'cloze' }, items: [{ content: cloze }, { content: { front: 'Atom', back: 'Nguyên tử', image: 'https://cdn.example.com/a.png' } }] })
+        .expect(201)
+    ).body.data
+    expect(set.options).toEqual({ template: 'cloze' })
+    expect(set.items[1].content.image).toBe('https://cdn.example.com/a.png')
+    // Không có chỗ trống ⇒ mặt sau bắt buộc; ảnh phải https
+    await agent.post('/api/tools/sets').send({ kind: 'flashcards', title: 'X', items: [{ content: { front: 'A', back: '' } }] }).expect(400)
+    await agent.post('/api/tools/sets').send({ kind: 'flashcards', title: 'X', items: [{ content: { front: 'A', back: 'B', image: 'javascript:alert(1)' } }] }).expect(400)
+
+    const checked = validateAiSet(STUDY_KINDS.flashcards, { title: 'T', cards: [{ ...cloze, image: 'https://x.dev/i.png' }] })
+    expect('set' in checked && checked.set.items).toEqual([cloze])
+  })
+
+  it('Thống kê: nhật ký ôn + quiz ⇒ chuỗi ngày, lịch nhiệt, dự báo thẻ đến hạn', async () => {
+    const agent = await loginAgent(app, await createUser(db))
+    const empty = (await agent.get('/api/tools/stats').expect(200)).body.data
+    expect(empty).toMatchObject({ streak: 0, bestStreak: 0, today: 0, heatmap: [], newCards: 0 })
+    expect(empty.forecast).toHaveLength(7)
+
+    const deck = (await agent.post('/api/tools/sets').send({ kind: 'flashcards', title: 'D', items: cards }).expect(201)).body.data
+    await agent.post(`/api/tools/sets/${deck.id}/review`).send({ itemId: deck.items[0].id, grade: 'again' }).expect(201)
+    const quiz = (await agent.post('/api/tools/sets').send({ kind: 'quiz', title: 'Q', items: [{ content: { q: '1?', options: ['a', 'b'], answer: 0 } }] }).expect(201)).body
+      .data
+    await agent.post(`/api/tools/sets/${quiz.id}/attempts`).send({ correct: 1, total: 1 }).expect(201)
+
+    const stats = (await agent.get('/api/tools/stats').expect(200)).body.data
+    expect(stats).toMatchObject({ streak: 1, bestStreak: 1, today: 2, activeDays: 1, newCards: 1 })
+    expect(stats.forecast[0].count).toBe(1) // thẻ "Quên" gặp lại hôm nay (10 phút)
+    expect((await agent.get(`/api/tools/stats?setId=${quiz.id}`).expect(200)).body.data.newCards).toBe(0)
+  })
+
+  it('Chuỗi ngày: tính tới hôm nay / hôm qua, đứt quãng ⇒ 0', () => {
+    expect(studyStreaks(['2026-10-10', '2026-10-11', '2026-10-13', '2026-10-14', '2026-10-15'], '2026-10-16')).toEqual({ streak: 3, bestStreak: 3 })
+    expect(studyStreaks(['2026-10-01', '2026-10-02'], '2026-10-16')).toEqual({ streak: 0, bestStreak: 2 })
+    expect(studyStreaks([], '2026-10-16')).toEqual({ streak: 0, bestStreak: 0 })
+  })
+
   it('Tool N7AI create_flashcards: kiểm tham số theo registry, lưu phần hợp lệ, 1 bộ / tin, khối chuẩn cho chat', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
@@ -122,7 +166,9 @@ describe('Study tools (e2e)', () => {
 
     const session = app.get(StudyCreateToolsService).open(user.id, String(msg))
     const tool = session.tools.find((t) => t.type === 'function' && t.function.name === 'my_study__create_flashcards')
-    expect(tool && tool.type === 'function' && (tool.function.parameters as any).properties.cards.items.required).toEqual(['front', 'back'])
+    const cardSchema = tool && tool.type === 'function' && (tool.function.parameters as any).properties.cards.items
+    expect(cardSchema.required).toEqual(['front']) // mặt sau có thể trống ở thẻ điền chỗ trống
+    expect(cardSchema.properties.image).toBeUndefined() // N7AI không đặt ảnh
     expect(session.describe('my_study__create_flashcards', { title: 'Space' })).toEqual({ provider: 'my_study', label: 'Tạo bộ Flashcard', detail: 'Space' })
 
     // Khung hỏng ⇒ lỗi kèm issues để model sửa

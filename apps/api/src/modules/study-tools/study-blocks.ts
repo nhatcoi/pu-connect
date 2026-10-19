@@ -29,7 +29,7 @@ export function parseStudyBlocks(text: string): ParsedStudyBlock[] {
     const raw: unknown = Array.isArray(json) ? json : json?.[def.itemsKey]
     if (!Array.isArray(raw)) continue
     const items = raw
-      .map((it) => def.item.safeParse(it))
+      .map((it) => (def.aiItem ?? def.item).safeParse(it)) // khối do N7AI viết ⇒ bỏ trường chỉ người dùng đặt (ảnh)
       .filter((r) => r.success)
       .map((r) => r.data as StudyItemContent)
       .slice(0, STUDY_SET_MAX_ITEMS)

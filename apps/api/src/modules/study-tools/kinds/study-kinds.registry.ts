@@ -23,7 +23,8 @@ export function aiFrameSchema(def: StudyKindDef) {
     options: def.options.optional()
   })
 }
-export const aiInputSchema = (def: StudyKindDef) => aiFrameSchema(def).extend({ [def.itemsKey]: z.array(def.item).min(1).max(STUDY_AI_MAX_ITEMS) })
+const aiItem = (def: StudyKindDef) => def.aiItem ?? def.item
+export const aiInputSchema = (def: StudyKindDef) => aiFrameSchema(def).extend({ [def.itemsKey]: z.array(aiItem(def)).min(1).max(STUDY_AI_MAX_ITEMS) })
 
 // JSON Schema cho tool calling (OpenAI-compatible); sinh 1 lần
 const jsonSchemas = new Map<StudyToolKind, Record<string, unknown>>()
@@ -60,7 +61,7 @@ export function validateAiSet(def: StudyKindDef, args: Record<string, unknown>):
   const items: StudyItemContent[] = []
   const skipped: string[] = []
   raw.slice(0, STUDY_SET_MAX_ITEMS).forEach((it, i) => {
-    const r = def.item.safeParse(it)
+    const r = aiItem(def).safeParse(it)
     if (r.success) items.push(r.data)
     else skipped.push(`${def.itemsKey}.${i}.${r.error.issues[0]?.path.join('.') ?? ''}: ${r.error.issues[0]?.message ?? 'invalid'}`)
   })

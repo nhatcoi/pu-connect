@@ -10,6 +10,7 @@ import {
   StudySetBodySchema,
   StudySetDraftBodySchema,
   StudySetListQuerySchema,
+  StudyStatsQuerySchema,
   type StudySetBody
 } from './dto/study-tools.dto'
 import { StudyDraftService } from './study-draft.service'
@@ -27,6 +28,12 @@ export class StudyToolsController {
   @Get('overview')
   overview(@Req() req: Request) {
     return this.tools.overview(requireUserId(req))
+  }
+
+  // Thống kê: chuỗi ngày học, lịch nhiệt, thẻ đến hạn 7 ngày tới (?setId= ⇒ dự báo của 1 bộ)
+  @Get('stats')
+  stats(@Query(new ZodValidationPipe(StudyStatsQuerySchema)) query: { setId?: string }, @Req() req: Request) {
+    return this.tools.stats(requireUserId(req), query.setId)
   }
 
   @Get('sets')
