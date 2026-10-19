@@ -13,7 +13,6 @@ import {
   FileText,
   MoreHorizontal,
   Copy,
-  MessageSquareShare,
   Send,
   Check,
   Pencil,
@@ -723,7 +722,7 @@ export function PostCard({
                 </button>
               )}
 
-              {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Chia sẻ X) */}
+              {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Hỏi N7AI) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -761,18 +760,6 @@ export function PostCard({
                       </DropdownMenuItem>
                     </>
                   )}
-
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const text = encodeURIComponent(`Xem bài viết: ${post.title || markdownToPlainText(post.content).slice(0, 80)}`)
-                      const url = encodeURIComponent(`${window.location.origin}/post/${post.id}`)
-                      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank')
-                    }}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
-                  >
-                    <MessageSquareShare className="h-4 w-4 text-muted-foreground" />
-                    <span>Chia sẻ lên X</span>
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

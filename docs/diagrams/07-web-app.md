@@ -132,6 +132,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-19 — `PostCard` › Chia sẻ: bỏ *Chia sẻ lên X*.
 - 2026-10-19 — `PostCard` › Chia sẻ: *Gửi qua tin nhắn* (`SharePostDialog`, `POST chat/share/post`) và *Hỏi N7AI về bài này* (`aiHandoff` → `/n7ai`); bong bóng tin `SharedPostCard`.
 - 2026-10-19 — `/tools`: `StudyStatsCard` (chuỗi ngày, lịch nhiệt 16 tuần, thẻ đến hạn 7 ngày); ôn flashcard thêm cách *Trắc nghiệm*, thẻ điền chỗ trống, ảnh minh họa (tải lên trong trình soạn).
 - 2026-10-18 — `/tools*` ẩn cột phải (`isFullWidthPath`), cột giữa rộng `WIDE_MAIN_WIDTH` (1040px).
