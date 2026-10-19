@@ -98,6 +98,23 @@ Bài học:
 
 Chạy lại sau khi đổi model / ngưỡng / trọng số: cùng `--set` ⇒ so sánh được. Gateway rate-limit (429) ⇒ CLI tự chờ rồi thử lại; model sinh câu hỏi đổi bằng `RAG_EVAL_MODEL` (mặc định không dùng `AI_MODEL` đang phục vụ người dùng).
 
-## 7. Test
+## 7. Hạn chế đã biết & việc tiếp theo (rà soát 2026-10-19)
+
+Eval chạy trên PDF sạch do hệ thống tự render; tệp người dùng thật (slide xuất PDF, scan, font cũ) bẩn hơn. Kiểm tra trên prod: 78/253 đoạn không ở dạng Unicode NFC.
+
+| # | Vấn đề | Ảnh hưởng | Hướng sửa |
+|---|---|---|---|
+| 1 | **Lô embedding độc**: 1 input làm server lỗi ⇒ cả lô 64 lỗi, lượt quét sau lấy lại đúng lô đó; bài viết (bước sau trong `sweep`) không bao giờ tới; lỗi dữ liệu bị coi là server sập ⇒ tắt vector 60s cho mọi câu hỏi | Kẹt hàng đợi | Lô lỗi ⇒ thử từng mục; mục hỏng đánh dấu (vd. `embedding_model = 'error:<model>'`) và bỏ qua; chỉ lỗi mạng / 5xx mới `markDown` |
+| 2 | **Làm sạch mỏng** (chỉ gộp dòng trống, bỏ dấu trang) | Full-text trượt tiếng Việt, embedding nhiễu | Chuẩn hóa NFC; bỏ dòng header/footer lặp ở nhiều trang; nối dòng bị ngắt giữa câu; phát hiện chữ rác (TCVN3/VNI, tỉ lệ ký tự lạ cao) ⇒ `index_status = 'garbled'` |
+| 3 | Đoạn không mang heading mục chứa nó | Đoạn giữa mục mất ngữ cảnh | Gắn đường dẫn heading gần nhất vào input embedding: `Tiêu đề › 3. Dijkstra` |
+| 4 | Đề thi: đề bài và lời giải cách xa nhau | Hỏi "lời giải câu 3" có thể chỉ ra đề | Ghép đoạn đề với đoạn lời giải cùng số câu, hoặc trả thêm đoạn kề |
+| 5 | Không OCR | PDF scan ⇒ `empty`, N7AI chỉ đọc tiêu đề + mô tả | OCR (Tesseract / model vision) cho tài liệu `empty` |
+| 6 | Cắt im lặng: > 150 trang hoặc > 300 đoạn | Sách dài mất nửa sau | Ghi trạng thái `partial` + số trang đã đọc |
+| 7 | Không chống trùng tệp | Cùng tệp đăng 2 lần ⇒ 2 nguồn giống nhau | Lưu hash nội dung, gộp kết quả trùng khi tìm |
+| 8 | Đổi tiêu đề tài liệu không embedding lại đoạn (tiêu đề nằm trong input) | Lệch nhẹ | Lưu hash input như `post_embeddings.source_hash` |
+
+Ưu tiên: 1 → 2 → 3, sau mỗi thay đổi index lại và chạy `rag:eval` cùng bộ câu hỏi để so số.
+
+## 8. Test
 
 `apps/api/test/rag-search.e2e-spec.ts` (server embedding giả theo nhóm từ đồng nghĩa + R2 giả): cắt đoạn, worker trích tệp R2 / từ chối URL ngoài, embedding lại bài đã sửa, câu hỏi khác chữ chỉ hybrid tìm ra, quyền xem tài liệu riêng tư / bài ẩn, hybrid loại kết quả full-text khớp chữ nhưng xa nghĩa.
