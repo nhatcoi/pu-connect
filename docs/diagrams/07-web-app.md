@@ -24,7 +24,7 @@ flowchart LR
     post["<b>/post/[id]</b><br/>?comment= highlight"]
     courses["<b>/courses</b><br/>danh mục học phần"]
     course["<b>/courses/[code]</b><br/>thảo luận · tài liệu · nhóm học"]
-    tools["<b>/tools</b><br/>Công cụ: Flashcard · Quiz"]
+    tools["<b>/tools</b><br/>Công cụ: Flashcard · Quiz<br/>thống kê: chuỗi ngày · lịch nhiệt · dự báo"]
     toolkind["<b>/tools/[kind]</b><br/>danh sách bộ · tạo (N7AI / tự soạn)"]
     toolset["<b>/tools/[kind]/[id]</b><br/>ôn thẻ (SRS) · làm quiz · sửa"]
     msgs["<b>/messages</b><br/>DM · nhóm · lọc · tạo nhóm<br/>lối vào N7AI"]
@@ -122,7 +122,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
 | `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
-| `/tools`, `/tools/[kind]`, `/tools/[kind]/[id]` | `tools/overview`, `tools/sets*` (gồm `draft`, `review`, `attempts`) | — | — |
+| `/tools`, `/tools/[kind]`, `/tools/[kind]/[id]` | `tools/overview`, `tools/stats`, `tools/sets*` (gồm `draft`, `review`, `attempts`), `upload/file` (ảnh thẻ) | — | — |
 | `/n7ai`, `/n7ai/[id]`, `/n7ai/library`, `/n7ai/settings*` | `ai/threads`, `ai/library`, `ai/quota`, `ai/settings`, `ai/*` (skills, connectors, memories, tasks…), `conversations/:id*` | — | như dòng dưới (thread AI không vá danh sách Tin nhắn; tệp / quiz mới ⇒ làm mới Thư viện) |
 | `/messages`, `/messages/[id]`, badge Tin nhắn (không gồm thread AI) | `conversations*`, `messages/:id*`, `ai/*` (threads, skills, connectors), `chat/refs`, `upload/file?folder=chat`, `search?type=users`, `presence` | localStorage `pu.ai.connectors` | `message.new/updated/delta`, `conv.read/updated/removed`, `ai.thread.updated`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |
 | `/settings/[section]` | `users/privacy`, `users/preferences`, `users/verify-university`, `blocks`, `notifications/settings`, `push/*` | — | — |
@@ -132,6 +132,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-19 — `/tools`: `StudyStatsCard` (chuỗi ngày, lịch nhiệt 16 tuần, thẻ đến hạn 7 ngày); ôn flashcard thêm cách *Trắc nghiệm*, thẻ điền chỗ trống, ảnh minh họa (tải lên trong trình soạn).
 - 2026-10-18 — `/tools*` ẩn cột phải (`isFullWidthPath`), cột giữa rộng `WIDE_MAIN_WIDTH` (1040px).
 - 2026-10-18 — `AiSteps` trong `AiMessageBody`: tiến trình N7AI (gọi Gmail / Drive / Lịch) từ socket `message.progress`, thu gọn "Đã dùng N bước" khi xong; logo Gmail trong `ConnectorIcon`.
 - 2026-10-18 — thêm `/tools`, `/tools/[kind]`, `/tools/[kind]/[id]` (Công cụ: Flashcard ôn lặp lại ngắt quãng, Quiz); sidebar có mục Công cụ; tin N7AI có `meta.studySet` hiện nhãn "Đã lưu vào Công cụ".

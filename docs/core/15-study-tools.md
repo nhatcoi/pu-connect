@@ -9,7 +9,8 @@ Migration `study-tools-upgrade.sql` (chạy sau `comment-reactions-upgrade.sql`)
 | Bảng | Vai trò |
 | --- | --- |
 | `study_sets` | 1 bộ: `kind` (`flashcards` / `quiz`), `title`, `description`, `options` JSONB (`{template: basic|vocab, lang}`), `source` (`manual` / `n7ai`), `source_message_id` (tin N7AI sinh ra bộ, unique ⇒ không lưu trùng), `item_count`, `attempts`, `best_score`, `last_studied_at` |
-| `study_items` | 1 mục: `position`, `content` JSONB (`{front, back, phonetic?, example?}` hoặc `{q, options, answer, explain}`), lịch ôn `due_at` (NULL = thẻ mới), `interval_days`, `ease`, `reps`, `lapses` |
+| `study_items` | 1 mục: `position`, `content` JSONB (`{front, back, phonetic?, example?, image?}` hoặc `{q, options, answer, explain}`), lịch ôn `due_at` (NULL = thẻ mới), `interval_days`, `ease`, `reps`, `lapses` |
+| `study_events` | nhật ký học: 1 dòng / lượt chấm thẻ (`event = 'review'`, `grade`) hoặc lần làm quiz (`'attempt'`, `score`); xóa bộ / thẻ ⇒ giữ dòng (`SET NULL`) để chuỗi ngày không mất |
 
 Giới hạn: 200 mục / bộ, 300 bộ / người.
 
@@ -23,6 +24,7 @@ Giới hạn: 200 mục / bộ, 300 bộ / người.
 | `POST tools/sets/draft` | N7AI soạn nháp từ chủ đề / nội dung dán vào (chưa lưu, tốn 1 lượt, `ai_runs.trigger = 'tool'`) |
 | `POST tools/sets/:id/review` | chấm 1 thẻ `again / hard / good / easy` ⇒ lịch ôn kế tiếp |
 | `POST tools/sets/:id/attempts` | ghi kết quả quiz ⇒ cập nhật `best_score` |
+| `GET tools/stats?setId=` | chuỗi ngày học (hiện tại + kỷ lục), lượt hôm nay, lịch nhiệt 16 tuần, thẻ đến hạn 7 ngày tới + số thẻ mới (`setId` ⇒ chỉ dự báo của bộ đó). Ngày tính theo giờ VN |
 
 Nội dung mục được kiểm theo loại bộ: `StudySetBodySchema` (`dto/study-tools.dto.ts`) lấy schema mục + tùy chọn từ registry. Tùy chọn hỏng (vd. `lang` lạ) bị bỏ, không từ chối bộ.
 
@@ -33,6 +35,7 @@ Mỗi loại công cụ dạng "bộ nhiều mục" khai báo 1 lần trong `kin
 | Trường | Ý nghĩa |
 | --- | --- |
 | `item` | zod schema 1 mục; `.describe()` từng trường = hướng dẫn cho N7AI |
+| `aiItem` | (tùy chọn) bản N7AI được tạo — bỏ trường chỉ người dùng đặt (flashcard: `image`, link bịa dễ hỏng). Dùng cho JSON Schema tool, `validateAiSet`, khối dự phòng |
 | `options` | zod schema tùy chọn cấp bộ (`.catch` ⇒ trường hỏng bị bỏ) |
 | `fence`, `itemsKey` | khối ```` ```flashcards ```` / ```` ```quiz ```` trong tin chat: `{title, ...options, cards|questions}` |
 | `ai.tool`, `ai.description`, `ai.instructions` | tên tool, khi nào gọi, quy tắc nội dung |
@@ -62,9 +65,14 @@ Prompt nội dung (8–12 thẻ khi chỉ nêu chủ đề, giữ đủ danh sá
 
 ## Flashcard: mẫu, phát âm, cách ôn
 
-- **Mẫu bộ** (`options.template`): *Cơ bản* (mặt trước / sau; nút "+ Chi tiết" mở ô phiên âm, ví dụ) hoặc *Từ vựng* (ô phiên âm, ví dụ luôn hiện, có phát âm). Mẫu chỉ đổi giao diện, dữ liệu thẻ chung 1 kiểu.
+- **Mẫu bộ** (`options.template`): *Cơ bản* (mặt trước / sau; nút "+ Chi tiết" mở ô ảnh, phiên âm, ví dụ), *Từ vựng* (các ô đó luôn hiện, có phát âm) hoặc *Điền chỗ trống*. Mẫu chỉ đổi giao diện, dữ liệu thẻ chung 1 kiểu.
+- **Điền chỗ trống (cloze)**: mặt trước chứa `{{đáp án}}` hoặc `{{đáp án::gợi ý}}` (`CLOZE_PATTERN`, `components/tools/card-cloze.ts`). Thẻ có chỗ trống được nhận theo nội dung, không theo mẫu ⇒ trộn trong bộ nào cũng được; mặt sau thành ghi chú, được để trống (zod `refine`: mặt sau bắt buộc khi không có chỗ trống). Ôn: câu hiện `[…]` / `[gợi ý]`, lật ⇒ đáp án in đậm; tất cả chỗ trống của 1 thẻ ẩn / hiện cùng nhau. Trình soạn: bôi đen chữ ở mặt trước + nút `{{ }}`; dán danh sách: dòng có `{{…}}` = 1 thẻ.
+- **Ảnh minh họa** (`image`, link `https`): tải lên qua `POST upload/file?folder=posts/images` (≤ 5 MB, jpeg/png/webp/gif/avif), hiện trong khung cố định trên thẻ ở mọi cách ôn và trong chat. N7AI không đặt ảnh.
 - **Phát âm**: Web Speech API trên trình duyệt (`components/tools/card-speech.ts`, không tốn lượt / server). Bật khi bộ là *Từ vựng* hoặc đã chọn `options.lang`; không chọn ngôn ngữ ⇒ đoán theo chữ (Nhật, Hàn, Trung, Nga, tiếng Việt có dấu, còn lại tiếng Anh). Bỏ Markdown, LaTeX, loại từ "(n)" trước khi đọc. Nút loa trên mặt từ, phím `P`, tùy chọn "Tự đọc từ".
-- **Cách ôn** (tùy chọn của người xem, lưu `localStorage`, không gắn vào bộ): *Lật thẻ* · *Đảo mặt* (nhìn nghĩa nhớ từ) · *Gõ đáp án* (so khớp bỏ dấu, hoa thường, loại từ; mặt trước "a / b" gõ 1 trong 2 cũng đúng; đúng ⇒ gợi ý *Nhớ*, sai ⇒ *Quên*, Enter chấm theo gợi ý). Ví dụ chứa từ cần nhớ ⇒ ở 2 cách sau chỉ hiện sau khi lật.
+- **Cách ôn** (tùy chọn của người xem, lưu `localStorage`, không gắn vào bộ): *Lật thẻ* · *Đảo mặt* (nhìn nghĩa nhớ từ) · *Gõ đáp án* (so khớp bỏ dấu, hoa thường, loại từ; mặt trước "a / b" gõ 1 trong 2 cũng đúng; đúng ⇒ gợi ý *Nhớ*, sai ⇒ *Quên*, Enter chấm theo gợi ý) · *Trắc nghiệm* (nhìn từ, chọn nghĩa trong 4 lựa chọn, phím 1–4; 3 đáp án nhiễu lấy ngẫu nhiên từ thẻ khác cùng dạng trong bộ; chọn đúng / sai ⇒ gợi ý chấm như Gõ đáp án). Ví dụ chứa từ cần nhớ ⇒ ở Đảo mặt / Gõ chỉ hiện sau khi lật.
+  - Thẻ điền chỗ trống: Đảo mặt ⇒ như Lật thẻ; Gõ ⇒ gõ đủ phần bị ẩn theo thứ tự; Trắc nghiệm ⇒ chọn phần bị ẩn (nhiễu từ chỗ trống của thẻ khác).
+  - Trắc nghiệm thiếu thẻ nhiễu (bộ chỉ 1 thẻ cùng dạng) ⇒ thẻ đó tự về Lật thẻ.
+- **Thống kê** (`/tools`, `StudyStatsCard`): chuỗi ngày học liên tiếp (tính tới hôm nay, hoặc hôm qua nếu hôm nay chưa học), kỷ lục, lượt hôm nay, lịch nhiệt 16 tuần (cột = tuần, T2 → CN, 5 mức màu), cột thẻ đến hạn 7 ngày tới. Đọc từ `study_events` (bắt đầu ghi từ đợt 2 ⇒ lượt ôn trước đó không có trong lịch nhiệt).
 - **Dán danh sách**: `từ - nghĩa` như cũ, hoặc cột `|`: `từ | nghĩa | ví dụ`, `từ | /phiên âm/ | nghĩa | ví dụ`.
 
 **3. Bộ nhớ tự ghi tiến độ.** Sau mỗi lần ôn / làm quiz, `StudyProgressMemoryService` ghi đè 1 mục bộ nhớ N7AI cho bộ đó (chi tiết: [`core/16` §6](./16-n7ai-agent-tools.md)).
@@ -81,4 +89,4 @@ Prompt nội dung (8–12 thẻ khi chỉ nêu chủ đề, giữ đủ danh sá
 
 ## Hướng mở rộng
 
-Flashcard đợt 2: ảnh minh họa, điền chỗ trống (cloze), thống kê chuỗi ngày ôn, học kiểu trắc nghiệm. Đếm ngược Pomodoro + thống kê giờ học, tính GPA / điểm cần đạt, lịch thi & deadline (kết nối Google Calendar), sổ công thức, sơ đồ tư duy do N7AI tạo, đề thi thử bấm giờ từ tài liệu học phần.
+Quiz: bấm giờ, xem lại câu sai, ngân hàng câu theo học phần. Flashcard: nhắc ôn hằng ngày (push), N7AI tìm ảnh minh họa có nguồn. Đếm ngược Pomodoro + thống kê giờ học, tính GPA / điểm cần đạt, lịch thi & deadline (kết nối Google Calendar), sổ công thức, sơ đồ tư duy do N7AI tạo, đề thi thử bấm giờ từ tài liệu học phần.
