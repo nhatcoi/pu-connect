@@ -82,9 +82,27 @@ Web (`components/chat/ai/ai-actions.tsx`):
 ## 7. Dữ liệu & vận hành
 
 - Migration `ai-agent-upgrade.sql`: 3 cột hồ sơ, `ai_memories.pinned`, `ai_memories.study_set_id` (+ unique theo người dùng). Bật `my_chats` **đúng 1 lần** cho người đã có cài đặt, với mốc là DEFAULT của cột ⇒ người tự tắt không bị bật lại.
-- Bước tiến trình: provider `my_chats` (icon hội thoại), `puc` (logo PU). `AiStep.provider: AiToolProvider = AiConnectorId | 'puc'`.
+- Bước tiến trình: provider `my_chats` (icon hội thoại), `puc` (logo PU). `AiStep.provider: AiStepSource = AiConnectorId | 'puc' | 'refs' | 'files' | 'memory'`.
 
-## 8. Kiểm thử
+## 8. Tiến trình trả lời & khung tin N7AI (2026-10-19)
+
+Gateway (`v9`) không stream phần suy nghĩ của model (delta chỉ có `content`, và gửi theo vài cục lớn) ⇒ không hiện được "suy nghĩ thô". UI hiện **tiến trình thật** mà server biết, không có dữ liệu nguồn (chỉ nhãn + số lượng):
+
+| Bước | Nguồn (`provider`) | Ví dụ |
+|---|---|---|
+| Mục gắn @ | `refs` | Đọc mục bạn gắn kèm · 2 mục |
+| Bộ nhớ dài hạn | `memory` | Nhớ lại điều đã biết về bạn · 3 mục |
+| Tệp đính kèm / tài liệu đang thảo luận | `files` | Đọc tệp đính kèm · bai-giang.pdf → 1 tệp |
+| Tìm nguồn lấy sẵn | `library`, `my_documents`, `my_groups`, `web_search`, `web` (chỉ khi đọc được trang) | Tìm trong Thư viện PU · <câu hỏi> → 4 nguồn |
+| Tool của agent | connector / `puc` | Tìm học phần · giải tích |
+
+- `AiProgress` (`chat/n7ai/agent/ai-progress.ts`) gộp bước chuẩn bị + bước tool, mỗi lần đổi phát lại cả danh sách qua `message.progress`. `AiRetrieval.retrieve(..., { onStage })` báo từng connector (chạy / xong + số nguồn / lỗi).
+- Tin xong lưu `meta.steps` + `meta.durationMs` ⇒ thu gọn "Đã xử lý 6.2s · 4 nguồn · 2 công cụ", bấm mở lại timeline.
+- Web `AiSteps`: đang trả lời ⇒ timeline (icon theo nguồn, spinner / ✓ / lỗi) + dòng trạng thái "Đang suy nghĩ / Đang xử lý / Đang viết câu trả lời · 3.4s" (đồng hồ tính từ lúc tạo tin).
+- Khung tin N7AI rộng hơn tin chat thường: cột tối đa `min(94%, 52rem)` (mobile 100%), bong bóng co theo nội dung (câu ngắn gọn gàng, dài thì giãn hết cột).
+- Gateway cắt luồng trước khi có chữ / tool call (`terminated`, socket reset — lỗi "N7AI gặp lỗi" 15:00 ngày 2026-10-19) ⇒ `McpAgentService` thử lại vòng đó 1 lần; đã có chữ thì không thử lại (tránh lặp nội dung).
+
+## 9. Kiểm thử
 
 `apps/api/test/n7ai-agent-tools.e2e-spec.ts` gồm 4 nhóm:
 - **Hội thoại cũ:** tìm bỏ dấu, đọc lại, chặn thread hiện tại / thread của người khác.
@@ -92,6 +110,8 @@ Web (`components/chat/ai/ai-actions.tsx`):
 - **Nút:** chặn link ngoài / sai định dạng, nhóm không hợp lệ bị bỏ, không lẫn vào câu gợi ý.
 - **Hồ sơ học & ghim:** lưu / xóa từng trường, giới hạn độ dài, mục ghim luôn được nhớ.
 - **Bộ nhớ tiến độ:** 2 lượt ôn vẫn 1 mục; nội dung có thẻ hay quên; quiz ghi điểm; tắt ghi nhớ ⇒ không ghi; xóa bộ ⇒ xóa mục.
+- **Tiến trình:** gộp bước chuẩn bị / tìm nguồn / tool, `web` chỉ hiện khi đọc được trang, `onStage` của retrieval.
+- **Luồng bị cắt:** cắt trước khi có chữ ⇒ thử lại 1 lần và trả lời bình thường; đã có chữ ⇒ báo lỗi.
 
 **Model thật (2026-10-18):** script chạy trên VPS với model đang dùng, prompt và tool thật, kết quả tool giả (không chạm dữ liệu người dùng).
 - "nhóm học Giải tích đang tuyển" ⇒ `puc__search`, kèm nút tham gia + mở học phần.
@@ -100,6 +120,8 @@ Web (`components/chat/ai/ai-actions.tsx`):
 - Câu hỏi gợi ý không lẫn dòng nút.
 
 ## Changelog
+
+- 2026-10-19 — Tiến trình trả lời (tệp, bộ nhớ, tìm nguồn kèm số nguồn, tool, thời gian xử lý), khung tin N7AI rộng hơn, tự thử lại khi gateway cắt luồng sớm.
 
 - 2026-10-18 — Bộ nhớ tự ghi tiến độ: 1 mục / bộ sau mỗi lần ôn / làm quiz (thay bản tóm tắt `<study_progress>` tính lúc hỏi, đã gỡ); kiểm hành vi model thật.
 - 2026-10-18 — Bản đầu: `my_chats`, `puc__search` / `puc__app_help`, `meta.actions` (link + tham gia nhóm có xác nhận), hồ sơ học, ghim bộ nhớ.

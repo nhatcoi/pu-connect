@@ -18,6 +18,17 @@ export class McpModelError extends Error {
   }
 }
 
+// Luồng SSE bị cắt giữa chừng (undici "terminated", socket reset) — khác lỗi model / timeout của lượt
+const isStreamDrop = (err: unknown) => {
+  const e = err as { message?: string; name?: string; cause?: { code?: string } } | null
+  return (
+    !!e &&
+    e.name !== 'AbortError' &&
+    e.name !== 'TimeoutError' &&
+    (/terminated|socket|ECONNRESET|premature close/i.test(e.message ?? '') || ['ECONNRESET', 'UND_ERR_SOCKET'].includes(e.cause?.code ?? ''))
+  )
+}
+
 // Shared model loop: model selects tools/arguments, the owning session executes, model continues.
 // Sessions: Google MCP (by connector) + local read-only tools passed by the caller (vd. Học tập của tôi).
 // No Google credentials or raw tool results are stored in chat history.
@@ -59,6 +70,7 @@ export class McpAgentService {
         ].join('\n')
       })
     }
+    let retried = false
     try {
       for (let round = 0; round < MAX_ROUNDS; round++) {
         const remaining = MAX_OUTPUT_TOKENS - budgetUsed
@@ -85,26 +97,35 @@ export class McpAgentService {
         let content = ''
         let finishReason: string | null = null
         let roundUsage: LlmUsage | undefined
-        for await (const chunk of stream) {
-          const choice = chunk.choices[0]
-          const text = choice?.delta?.content
-          if (text) {
-            content += text
-            if (content.length > 64_000) throw new Error('Model output exceeds turn limit')
-            emit(text)
+        try {
+          for await (const chunk of stream) {
+            const choice = chunk.choices[0]
+            const text = choice?.delta?.content
+            if (text) {
+              content += text
+              if (content.length > 64_000) throw new Error('Model output exceeds turn limit')
+              emit(text)
+            }
+            for (const fragment of choice?.delta?.tool_calls ?? []) {
+              const call = pending.get(fragment.index) ?? { id: '', name: '', arguments: '' }
+              if (fragment.id) call.id += fragment.id
+              if (fragment.function?.name) call.name += fragment.function.name
+              if (fragment.function?.arguments) call.arguments += fragment.function.arguments
+              if (call.arguments.length > MAX_CALL_ARGS || (!pending.has(fragment.index) && pending.size >= MAX_CALLS))
+                throw new Error('Tool call exceeds size limit')
+              pending.set(fragment.index, call)
+            }
+            if (choice?.finish_reason) finishReason = choice.finish_reason
+            if (chunk.usage) {
+              roundUsage = chunk.usage
+            }
           }
-          for (const fragment of choice?.delta?.tool_calls ?? []) {
-            const call = pending.get(fragment.index) ?? { id: '', name: '', arguments: '' }
-            if (fragment.id) call.id += fragment.id
-            if (fragment.function?.name) call.name += fragment.function.name
-            if (fragment.function?.arguments) call.arguments += fragment.function.arguments
-            if (call.arguments.length > MAX_CALL_ARGS || (!pending.has(fragment.index) && pending.size >= MAX_CALLS)) throw new Error('Tool call exceeds size limit')
-            pending.set(fragment.index, call)
-          }
-          if (choice?.finish_reason) finishReason = choice.finish_reason
-          if (chunk.usage) {
-            roundUsage = chunk.usage
-          }
+        } catch (err) {
+          // Gateway đóng luồng trước khi có chữ / tool call (vd. "terminated") ⇒ thử lại vòng này 1 lần, người dùng không thấy lỗi
+          if (retried || content || pending.size || !isStreamDrop(err)) throw err
+          retried = true
+          round--
+          continue
         }
         usage.prompt_tokens += roundUsage?.prompt_tokens ?? 0
         usage.completion_tokens += roundUsage?.completion_tokens ?? 0

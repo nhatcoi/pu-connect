@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react'
 import Link from 'next/link'
-import { FileText, Globe, Loader2, MessageSquare, Sparkles } from 'lucide-react'
+import { FileText, Globe, Loader2, MessageSquare } from 'lucide-react'
 import type { ChatCitation } from '@pu/schemas'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { ConnectorIcon } from '@/components/n7ai/connector-icon'
@@ -16,35 +16,32 @@ import { QuizCard } from './quiz-card'
 import { splitStudyBlocks } from './study-blocks'
 
 // Phần tin cần để hiển thị (dùng lại cho trang chia sẻ công khai)
-export type AiBodyMessage = Pick<UiMessage, 'content' | 'status' | 'blocks' | 'meta'>
+export type AiBodyMessage = Pick<UiMessage, 'content' | 'status' | 'blocks' | 'meta'> & { createdAt?: string }
 
-// Nội dung tin N7AI: Markdown + quiz/flashcard tương tác + nguồn tham khảo
+// Nội dung tin N7AI: tiến trình (tìm nguồn, tool) + Markdown + quiz/flashcard tương tác + nguồn tham khảo
 export function AiMessageBody({ message: m }: { message: AiBodyMessage }) {
   const segments = useMemo(() => splitStudyBlocks(m.content), [m.content])
   const mode = m.meta?.aiMode
 
   const steps = m.meta?.steps ?? []
   const live = m.status === 'streaming'
+  const progress = (
+    <AiSteps
+      steps={steps}
+      live={live}
+      startedAt={m.createdAt}
+      durationMs={m.meta?.durationMs}
+      writing={!!m.content}
+      idleLabel={mode ? `Đang soạn ${AI_MODE_META[mode].label.toLowerCase()}` : 'Đang suy nghĩ'}
+    />
+  )
 
-  // Chưa có chữ: các bước đang chạy (Gmail / Drive / Lịch) hoặc "Đang suy nghĩ…"
-  if (live && !m.content) {
-    const running = steps.some((s) => s.status === 'running')
-    return (
-      <div>
-        <AiSteps steps={steps} live />
-        {!running && (
-          <span className="flex items-center gap-1.5 text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5 animate-pulse text-primary" />
-            {steps.length ? 'Đang soạn câu trả lời…' : mode ? `Đang soạn ${AI_MODE_META[mode].label.toLowerCase()}…` : 'Đang suy nghĩ…'}
-          </span>
-        )}
-      </div>
-    )
-  }
+  // Chưa có chữ: chỉ tiến trình
+  if (live && !m.content) return progress
 
   return (
     <div className="space-y-1">
-      <AiSteps steps={steps} live={live} />
+      {progress}
       {segments.map((s, i) =>
         s.type === 'markdown' ? (
           <MarkdownPreview key={i} content={s.text} className="prose-sm max-w-none" />

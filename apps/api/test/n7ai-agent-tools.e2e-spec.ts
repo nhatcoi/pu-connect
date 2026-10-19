@@ -1,5 +1,9 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
+import type { AiStep } from '@pu/schemas'
 import type { DatabaseService } from '../src/database/database.service'
+import { AiRetrieval } from '../src/modules/ai/ai.retrieval'
+import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
+import { AiProgress } from '../src/modules/chat/n7ai/agent/ai-progress'
 import { parseActionLines, safeAppHref, toActions } from '../src/modules/chat/n7ai/agent/ai-actions'
 import { HistoryToolsService } from '../src/modules/chat/n7ai/agent/history-tools.service'
 import { PucToolsService } from '../src/modules/chat/n7ai/agent/puc-tools.service'
@@ -61,7 +65,11 @@ describe('N7AI agent tools (e2e)', () => {
 
     const other = app.get(HistoryToolsService).open(stranger.id, current)
     expect(JSON.parse(await other.call('my_chats__get_thread', { thread_id: old })).data.error).toBe('Không tìm thấy hội thoại')
-    expect(session.describe('my_chats__search_threads', { query: 'dao ham' })).toEqual({ provider: 'my_chats', label: 'Tìm trong hội thoại cũ', detail: 'dao ham' })
+    expect(session.describe('my_chats__search_threads', { query: 'dao ham' })).toEqual({
+      provider: 'my_chats',
+      label: 'Tìm trong hội thoại cũ',
+      detail: 'dao ham'
+    })
   })
 
   it('PU Connector: tìm nhóm học / cộng đồng, hướng dẫn app; chỉ nhóm còn nhận người mới thành nút tham gia', async () => {
@@ -124,15 +132,38 @@ describe('N7AI agent tools (e2e)', () => {
   it('Hồ sơ học: lưu / xóa từng trường, vào system prompt; mục nhớ ghim luôn được nhớ', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
-    const saved = (await agent.patch('/api/ai/settings').send({ profile: { goal: 'IELTS 6.5', style: 'Ngắn gọn' } }).expect(200)).body.data
+    const saved = (
+      await agent
+        .patch('/api/ai/settings')
+        .send({ profile: { goal: 'IELTS 6.5', style: 'Ngắn gọn' } })
+        .expect(200)
+    ).body.data
     expect(saved.profile).toEqual({ goal: 'IELTS 6.5', about: null, style: 'Ngắn gọn' })
-    const cleared = (await agent.patch('/api/ai/settings').send({ profile: { style: '' } }).expect(200)).body.data
+    const cleared = (
+      await agent
+        .patch('/api/ai/settings')
+        .send({ profile: { style: '' } })
+        .expect(200)
+    ).body.data
     expect(cleared.profile).toEqual({ goal: 'IELTS 6.5', about: null, style: null })
-    await agent.patch('/api/ai/settings').send({ profile: { goal: 'x'.repeat(301) } }).expect(400)
+    await agent
+      .patch('/api/ai/settings')
+      .send({ profile: { goal: 'x'.repeat(301) } })
+      .expect(400)
 
-    expect(learnerPrompt({ name: 'An', school: null, faculty: null, major: 'CNTT', className: null, academicYear: 'K17', goal: 'IELTS 6.5', about: null, style: null })).toContain(
-      '- Mục tiêu học: IELTS 6.5'
-    )
+    expect(
+      learnerPrompt({
+        name: 'An',
+        school: null,
+        faculty: null,
+        major: 'CNTT',
+        className: null,
+        academicYear: 'K17',
+        goal: 'IELTS 6.5',
+        about: null,
+        style: null
+      })
+    ).toContain('- Mục tiêu học: IELTS 6.5')
 
     const memories = app.get(AiMemoriesService)
     const pinned = (await agent.post('/api/ai/memories').send({ content: 'Thi cuối kỳ Giải tích ngày 20/12' }).expect(201)).body.data
@@ -149,7 +180,11 @@ describe('N7AI agent tools (e2e)', () => {
     const set = (
       await agent
         .post('/api/tools/sets')
-        .send({ kind: 'flashcards', title: 'Vũ trụ', items: [{ content: { front: 'Wormhole', back: 'Lỗ sâu' } }, { content: { front: 'Galaxy', back: 'Thiên hà' } }] })
+        .send({
+          kind: 'flashcards',
+          title: 'Vũ trụ',
+          items: [{ content: { front: 'Wormhole', back: 'Lỗ sâu' } }, { content: { front: 'Galaxy', back: 'Thiên hà' } }]
+        })
         .expect(201)
     ).body.data
     const progress = app.get(StudyProgressMemoryService)
@@ -175,5 +210,56 @@ describe('N7AI agent tools (e2e)', () => {
     expect(await progress.write(user.id, set.id)).toBeNull()
     await agent.delete(`/api/tools/sets/${set.id}`).expect(204)
     expect((await db.query(`SELECT 1 FROM ai_memories WHERE study_set_id = $1`, [set.id])).rows).toHaveLength(0) // xóa bộ ⇒ xóa mục
+  })
+
+  it('Tiến trình: bước chuẩn bị + tìm nguồn (số nguồn) + tool gộp thành 1 danh sách; "web" chỉ hiện khi đọc được trang', async () => {
+    const emitted: AiStep[][] = []
+    const progress = new AiProgress((steps) => emitted.push(steps))
+    progress.note('refs', 'refs', 'Đọc mục bạn gắn kèm', '2 mục')
+    progress.retrieval('library', 'running', 0, 'cách nhận biết data leakage khi tiền xử lý')
+    progress.retrieval('web', 'running')
+    progress.retrieval('web', 'done', 0)
+    progress.retrieval('library', 'done', 4)
+    progress.setTools([{ id: 't1', provider: 'puc', label: 'Tìm học phần', status: 'running' }])
+    expect(progress.steps.map((s) => [s.provider, s.status, s.detail])).toEqual([
+      ['refs', 'done', '2 mục'],
+      ['library', 'done', '4 nguồn'],
+      ['puc', 'running', undefined]
+    ])
+    expect(emitted.at(-1)).toEqual(progress.steps)
+
+    // AiRetrieval báo từng connector (chạy ⇒ xong + số nguồn)
+    const user = await createUser(db)
+    const stages: string[] = []
+    await app
+      .get(AiRetrieval)
+      .retrieve('đạo hàm riêng', user.id, { connectors: ['library', 'my_groups'], onStage: (c, state, n) => stages.push(`${c}:${state}:${n ?? ''}`) })
+    expect(stages).toEqual(expect.arrayContaining(['library:running:', 'my_groups:running:', expect.stringMatching(/^library:done:\d+$/), 'my_groups:done:0']))
+  })
+
+  it('Gateway cắt luồng trước khi có chữ ("terminated") ⇒ thử lại 1 lần; đã có chữ thì không thử lại', async () => {
+    let calls = 0
+    const stream = (fail: boolean, text: string) => ({
+      async *[Symbol.asyncIterator]() {
+        if (text) yield { choices: [{ delta: { content: text } }] }
+        if (fail) throw new TypeError('terminated')
+        yield { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 1, completion_tokens: 1 } }
+      }
+    })
+    const llm = (failFirst: boolean, partial: string) => ({
+      model: 'fake',
+      client: { chat: { completions: { create: () => Promise.resolve(stream(calls++ === 0 && failFirst, calls === 1 ? partial : 'Trả lời')) } } }
+    })
+    const mcp = { open: async () => ({ tools: [], instructions: [], describe: () => null, call: async () => '{}', close: async () => undefined, errors: [] }) }
+    const run = (failFirst: boolean, partial = '') => {
+      calls = 0
+      const out: string[] = []
+      const agent = new McpAgentService(llm(failFirst, partial) as never, mcp as never)
+      return agent.stream([{ role: 'user', content: 'hi' }], 'u', [], (t) => out.push(t)).then((r) => ({ ...r, out: out.join(''), calls }))
+    }
+    const retried = await run(true)
+    expect(retried.calls).toBe(2)
+    expect(retried.out).toBe('Trả lời')
+    await expect(run(true, 'Đã có chữ')).rejects.toThrow('terminated')
   })
 })

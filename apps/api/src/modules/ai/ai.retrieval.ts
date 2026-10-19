@@ -15,10 +15,11 @@ export type Source = {
 export type ConnectorFailure = { name: string; message: string }
 export type Retrieved = { sources: Source[]; failures: ConnectorFailure[] }
 
-
 export interface RetrieveOptions {
   connectors?: AiConnectorId[] // mặc định: ['library']
   research?: boolean // truy xuất sâu hơn (nhiều nguồn, thân dài hơn)
+  // Tiến trình từng connector (UI "Đang tìm trong Thư viện PU…" → "4 nguồn")
+  onStage?: (connector: AiConnectorId, state: 'running' | 'done' | 'error', found?: number) => void
 }
 
 // Bỏ dấu tiếng Việt (khớp cột search_tsv đã unaccent)
@@ -70,24 +71,29 @@ export class AiRetrieval {
     const research = !!opts.research
     const tasks: Promise<Source[]>[] = []
     const failures: ConnectorFailure[] = []
+    const safe = (name: AiConnectorId, fn: () => Promise<Source[]>) => this.safe(name, fn, opts.onStage)
     // Thư viện / tài liệu của tôi: tìm kết hợp full-text + vector (vector tính 1 lần cho cả hai)
     if (connectors.has('library') || connectors.has('my_documents')) {
       const query = this.rag.prepare(question, toTsQuery(question))
-      if (connectors.has('library')) tasks.push(this.safe('library', async () => this.library(await query, requesterId, research)))
-      if (connectors.has('my_documents')) tasks.push(this.safe('my_documents', async () => this.myDocuments(await query, requesterId, research)))
+      if (connectors.has('library')) tasks.push(safe('library', async () => this.library(await query, requesterId, research)))
+      if (connectors.has('my_documents')) tasks.push(safe('my_documents', async () => this.myDocuments(await query, requesterId, research)))
     }
-    if (connectors.has('my_groups')) tasks.push(this.safe('my_groups', () => this.myGroups(requesterId)))
-    if (connectors.has('web')) tasks.push(this.safe('web', () => this.webPages(question, research)))
-    if (connectors.has('web_search')) tasks.push(this.safe('web_search', () => this.webSearch(question, research)))
+    if (connectors.has('my_groups')) tasks.push(safe('my_groups', () => this.myGroups(requesterId)))
+    if (connectors.has('web')) tasks.push(safe('web', () => this.webPages(question, research)))
+    if (connectors.has('web_search')) tasks.push(safe('web_search', () => this.webSearch(question, research)))
     return { sources: (await Promise.all(tasks)).flat(), failures }
   }
 
   // Lỗi 1 connector không làm hỏng câu trả lời
-  private async safe(name: string, fn: () => Promise<Source[]>): Promise<Source[]> {
+  private async safe(name: AiConnectorId, fn: () => Promise<Source[]>, onStage: RetrieveOptions['onStage']): Promise<Source[]> {
+    onStage?.(name, 'running')
     try {
-      return await fn()
+      const found = await fn()
+      onStage?.(name, 'done', found.length)
+      return found
     } catch (err: any) {
       this.logger.warn(`Truy xuất ${name} thất bại: ${err?.message}`)
+      onStage?.(name, 'error')
       return []
     }
   }

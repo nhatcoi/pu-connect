@@ -12,6 +12,7 @@ import { StudyToolsService } from '../../study-tools/study-tools.service'
 import { ChatCoreService } from '../chat-core.service'
 import { ChatPushService } from '../notify/chat-push.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
+import { AiProgress } from './agent/ai-progress'
 import { toActions } from './agent/ai-actions'
 import { HistoryToolsService } from './agent/history-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
@@ -155,12 +156,14 @@ export class N7AiService {
     }
 
     const question = stripN7AiMention(trigger.content)
-    const retrieved = await this.gatherSources(trigger, question, requesterId, settings)
-    const messages = await this.buildMessages(conversationId, botId, trigger, question, retrieved, settings)
+    // Danh sách thành viên lấy 1 lần (tiến trình / delta đến liên tục)
+    const memberIds = await this.core.memberIds(conversationId)
+    // Tiến trình (đọc tệp / bộ nhớ, tìm nguồn, gọi tool) ⇒ client hiện từng bước khi đang trả lời
+    const progress = new AiProgress((steps) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps }))
+    const retrieved = await this.gatherSources(trigger, question, requesterId, settings, progress)
+    const messages = await this.buildMessages(conversationId, botId, trigger, question, retrieved, settings, progress)
 
     try {
-      // Danh sách thành viên lấy 1 lần (delta đến liên tục)
-      const memberIds = await this.core.memberIds(conversationId)
       const emit = (delta: string) => this.core.emitTo(memberIds, 'message.delta', { conversationId, messageId: placeholder.id, delta })
       // Phần sau dấu mốc = câu hỏi gợi ý tiếp theo ⇒ không đẩy ra màn hình
       const splitter = new FollowUpSplitter()
@@ -175,7 +178,7 @@ export class N7AiService {
         ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []),
         ...(connectors.includes('my_chats') ? [this.historyTools.open(requesterId, conversationId)] : [])
       ]
-      const { finishReason, usage, steps } = await this.agent.stream(
+      const { finishReason, usage } = await this.agent.stream(
         messages,
         requesterId,
         connectors,
@@ -183,8 +186,7 @@ export class N7AiService {
           const shown = splitter.push(delta)
           if (shown) emit(shown)
         },
-        // Tiến trình gọi Gmail / Drive / Lịch ⇒ client hiện từng bước khi đang trả lời
-        (progress) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps: progress }),
+        (toolSteps) => progress.setTools(toolSteps),
         local
       )
 
@@ -209,7 +211,8 @@ export class N7AiService {
         ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
         ...(remembered.length ? { memoryUpdated: remembered } : {}),
         ...(studySet ? { studySet } : {}),
-        ...(steps.length ? { steps } : {}),
+        ...(progress.steps.length ? { steps: progress.steps } : {}),
+        durationMs: Date.now() - started,
         ...(actions.length && finishReason !== 'content_filter' ? { actions } : {})
       })
       await this.llm.finishRun(runId, { usage, startedAt: started })
@@ -260,12 +263,17 @@ export class N7AiService {
 
   // Ngữ cảnh ghim (refs) trước, rồi nguồn truy xuất theo connector (bỏ trùng)
   // Nhóm chat: chỉ Thư viện PU — không đưa tài liệu riêng của người hỏi cho cả nhóm
-  private async gatherSources(trigger: Trigger, question: string, requesterId: string, settings: AiSettings | null): Promise<Retrieved> {
+  private async gatherSources(trigger: Trigger, question: string, requesterId: string, settings: AiSettings | null, progress: AiProgress): Promise<Retrieved> {
     const connectors: AiConnectorId[] = settings ? (trigger.connectors ?? settings.defaultConnectors) : ['library']
     const [pinned, found] = await Promise.all([
       this.refs.sources(requesterId, trigger.refs),
-      this.retrieval.retrieve(question, requesterId, { connectors, research: trigger.research })
+      this.retrieval.retrieve(question, requesterId, {
+        connectors,
+        research: trigger.research,
+        onStage: (connector, state, count) => progress.retrieval(connector, state, count, question)
+      })
     ])
+    if (pinned.length) progress.note('refs', 'refs', 'Đọc mục bạn gắn kèm', `${pinned.length} mục`)
     const seen = new Set(pinned.map((s) => `${s.type}:${s.id}`))
     return { sources: [...pinned, ...found.sources.filter((s) => !seen.has(`${s.type}:${s.id}`))], failures: found.failures }
   }
@@ -277,7 +285,8 @@ export class N7AiService {
     trigger: Trigger,
     question: string,
     { sources, failures }: Retrieved,
-    settings: AiSettings | null
+    settings: AiSettings | null,
+    progress: AiProgress = new AiProgress()
   ): Promise<Msg[]> {
     const inGroup = trigger.type === 'group'
     const memoryOn = !!settings?.memoryEnabled
@@ -300,13 +309,19 @@ export class N7AiService {
       (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : '') + ACTIONS_PROMPT) +
       (sources.length ? SOURCES_PROMPT : '')
 
+    if (profile.length) progress.note('memory', 'memory', 'Nhớ lại điều đã biết về bạn', `${profile.length} mục`)
+    const files = trigger.attachments ?? []
+    if (files.length) progress.start('files', 'files', 'Đọc tệp đính kèm', files.map((a) => a.name).join(', '))
     const { parts, notes } = await attachmentParts(trigger.attachments)
+    if (files.length) progress.done('files', notes.length ? `chưa đọc được ${notes.length} tệp` : `${files.length} tệp`)
     // Không gửi kèm tệp ⇒ dùng lại tài liệu gần nhất trong chủ đề (hỏi tiếp về cùng PDF/DOCX)
     let docNote = ''
     if (!trigger.attachments?.length) {
       const recent = await this.recentDocuments(conversationId, trigger.id)
       if (recent.length) {
+        progress.start('files', 'files', 'Đọc lại tài liệu đang thảo luận', recent.map((a) => a.name).join(', '))
         const prev = await attachmentParts(recent, { images: false })
+        progress.done('files')
         parts.push(...prev.parts)
         if (prev.parts.length) docNote = `\n\n(Tài liệu đang thảo luận, gửi ở tin trước: ${recent.map((a) => a.name).join(', ')})`
       }
@@ -398,7 +413,7 @@ export class N7AiService {
     text: string,
     blocks: ChatCitation[] | null,
     status: 'done' | 'error',
-    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions'> = {}
+    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs'> = {}
   ) {
     // Gợi ý tiếp theo / bộ nhớ vừa cập nhật gộp vào meta (giữ aiMode sẵn có)
     await this.db.query(

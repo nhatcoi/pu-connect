@@ -66,7 +66,14 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
         </div>
       )}
 
-      <div className={cn('flex flex-col min-w-0 max-w-[85%] sm:max-w-[78%]', mine ? 'items-end' : 'items-start')}>
+      {/* Tin N7AI (Markdown, bảng, code) cần rộng hơn tin chat thường */}
+      <div
+        className={cn(
+          'flex flex-col min-w-0',
+          isAi && !mine ? 'max-w-full flex-1 sm:max-w-[min(94%,52rem)]' : 'max-w-[85%] sm:max-w-[78%]',
+          mine ? 'items-end' : 'items-start'
+        )}
+      >
         {showName && !continued && m.sender && <span className="text-[11px] text-muted-foreground px-3 mb-0.5">{m.sender.displayName}</span>}
 
         {m.replyTo && !m.deleted && (
@@ -84,13 +91,15 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
           </button>
         )}
 
-        <div className={cn('flex items-center gap-1.5 max-w-full', mine && 'flex-row-reverse')}>
-          <div className="min-w-0 flex flex-col gap-1" onClick={() => interactive && isTouch() && setActionsOpen((v) => !v)}>
+        <div className={cn('flex items-center gap-1.5 max-w-full', mine && 'flex-row-reverse', isAi && 'w-full')}>
+          <div className={cn('min-w-0 flex flex-col gap-1', isAi && 'flex-1')} onClick={() => interactive && isTouch() && setActionsOpen((v) => !v)}>
             {m.attachments && m.attachments.length > 0 && !m.deleted && <AttachmentView attachments={m.attachments} mine={mine} />}
             {(hasText || m.deleted || (isAi && !m.attachments)) && (
               <div
                 className={cn(
                   'relative rounded-2xl px-3.5 py-2 text-sm break-words transition-shadow',
+                  // N7AI: co theo nội dung (câu ngắn gọn gàng), dài thì giãn tới hết cột
+                  isAi && !mine && 'w-fit max-w-full',
                   m.deleted
                     ? 'bg-transparent border border-dashed text-muted-foreground italic'
                     : mine

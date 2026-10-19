@@ -179,7 +179,8 @@ export interface ChatMessageMeta {
   actorName?: string
   targetNames?: string[]
   followUps?: string[] // N7AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
-  steps?: AiStep[] // N7AI: các bước đã chạy (gọi Gmail / Drive / Lịch…) — hiện khi đang trả lời, thu gọn khi xong
+  steps?: AiStep[] // N7AI: tiến trình (đọc tệp / bộ nhớ, tìm nguồn, gọi tool) — hiện khi đang trả lời, thu gọn khi xong
+  durationMs?: number // N7AI: thời gian xử lý (nhận câu hỏi → xong)
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
   actions?: AiAction[] // N7AI: nút dẫn tới trang trong app / hành động cần người dùng xác nhận
 }
@@ -357,9 +358,11 @@ export interface AiQuota {
 // Bước N7AI đang làm (tool call: Google MCP / Học tập của tôi): provider = connector, label tiếng Việt, detail = từ khóa / phạm vi ngắn (không có dữ liệu trả về)
 // Nguồn tool của bước: connector hoặc 'puc' (tool về chính PU Connector: tìm kiếm, hướng dẫn app — luôn có trong thread riêng)
 export type AiToolProvider = AiConnectorId | 'puc'
+// Nguồn của 1 bước tiến trình: tool / connector truy xuất (library, web…) hoặc bước nội bộ — đọc mục gắn @, tệp đính kèm, bộ nhớ
+export type AiStepSource = AiToolProvider | 'refs' | 'files' | 'memory'
 export interface AiStep {
   id: string
-  provider: AiToolProvider
+  provider: AiStepSource
   label: string
   detail?: string
   status: 'running' | 'done' | 'error'
