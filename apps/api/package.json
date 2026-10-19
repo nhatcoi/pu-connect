@@ -14,7 +14,8 @@
     "seed:social": "ts-node src/database/seed-social/index.ts",
     "lint": "eslint src test",
     "test": "jest",
-    "test:e2e": "jest --runInBand"
+    "test:e2e": "jest --runInBand",
+    "rag:eval": "node dist/apps/api/src/modules/ai/rag/rag-eval.cli.js"
   },
   "dependencies": {
     "@apollo/server": "^4.13.0",

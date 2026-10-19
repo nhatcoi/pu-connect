@@ -7,18 +7,21 @@ const RRF_K = 60 // Reciprocal Rank Fusion: điểm = Σ 1 / (K + hạng) qua c�
 const CANDIDATES = 24 // ứng viên mỗi danh sách trước khi gộp
 const DOC_LEVEL_CANDIDATES = 10
 const CHUNKS_PER_DOC = 2
-// Cosine tối thiểu để kết quả vector được tính (dưới ngưỡng ≈ không liên quan) — hiệu chỉnh bằng `pnpm rag:eval`
-export const MIN_SIMILARITY = 0.45
+// Cosine tối thiểu để một nguồn được tính là liên quan — hiệu chỉnh bằng `rag:eval` (2026-10-19: nguồn đúng thấp nhất 0.519, p10 0.61)
+export const MIN_SIMILARITY = 0.5
 
 // Câu hỏi đã chuẩn bị: tsquery (full-text) + vector (null ⇒ chỉ full-text)
 export type RagQuery = { tsquery: string; vector: number[] | null }
 export type RagMode = 'hybrid' | 'fulltext' | 'vector'
 type SearchOpts = { limit: number; bodyChars: number; mode?: RagMode }
 
-// Gộp nhiều danh sách xếp hạng (id đã bỏ trùng theo thứ tự) bằng RRF
-export function fuseRankings(lists: string[][]): Map<string, number> {
+// Trọng số danh sách full-text khi gộp với vector (eval 2026-10-19: vector xếp hạng đúng hơn, full-text giữ vai trò cộng điểm)
+export const FULLTEXT_WEIGHT = Number(process.env.RAG_FULLTEXT_WEIGHT ?? 0.5)
+
+// Gộp nhiều danh sách xếp hạng (id đã bỏ trùng theo thứ tự) bằng RRF có trọng số
+export function fuseRankings(lists: string[][], weights: number[] = []): Map<string, number> {
   const scores = new Map<string, number>()
-  for (const list of lists) list.forEach((id, rank) => scores.set(id, (scores.get(id) ?? 0) + 1 / (RRF_K + rank + 1)))
+  lists.forEach((list, i) => list.forEach((id, rank) => scores.set(id, (scores.get(id) ?? 0) + (weights[i] ?? 1) / (RRF_K + rank + 1))))
   return scores
 }
 
@@ -44,17 +47,25 @@ export class RagSearchService {
     return { tsquery, vector: await this.embedding.embedQuery(question) }
   }
 
+  // Hybrid có vector ⇒ ứng viên full-text phải đủ gần câu hỏi ($3 vector, $4 model); full-text khớp ≥ 2 từ rất nhiễu
+  // (eval: câu hỏi lạc đề vẫn ra hàng chục nguồn). Nguồn chưa có embedding thì giữ nguyên
+  private gate(q: RagQuery, mode: RagMode): unknown[] | null {
+    return mode === 'hybrid' && q.vector ? [toVectorLiteral(q.vector), this.embedding.model] : null
+  }
+
   // Bài viết công khai (+ của mình), chưa bị ẩn; kèm lời giải đã duyệt
   async posts(q: RagQuery, userId: string, opts: SearchOpts): Promise<Source[]> {
     const mode = opts.mode ?? 'hybrid'
+    const gate = this.gate(q, mode)
     const [fts, vec] = await Promise.all([
       mode !== 'vector' && q.tsquery
         ? this.ids(
             `WITH q AS (SELECT to_tsquery('simple', $1) AS tsq)
              SELECT p.id FROM posts p, q
              WHERE p.search_tsv @@ q.tsq AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)
+               ${gate ? `AND NOT EXISTS (SELECT 1 FROM post_embeddings e WHERE e.post_id = p.id AND e.model = $4 AND 1 - (e.embedding <=> $3::vector) < ${MIN_SIMILARITY})` : ''}
              ORDER BY ts_rank(p.search_tsv, q.tsq) DESC LIMIT ${CANDIDATES}`,
-            [q.tsquery, userId]
+            [q.tsquery, userId, ...(gate ?? [])]
           )
         : [],
       mode !== 'fulltext' && q.vector
@@ -67,7 +78,7 @@ export class RagSearchService {
           )
         : []
     ])
-    const ids = topIds(fuseRankings([fts, vec.map((r) => r.id)]), opts.limit)
+    const ids = topIds(fuseRankings([fts, vec.map((r) => r.id)], [FULLTEXT_WEIGHT, 1]), opts.limit)
     if (!ids.length) return []
     const rows = (
       await this.db.query(
@@ -94,22 +105,26 @@ export class RagSearchService {
   async documents(q: RagQuery, userId: string, opts: SearchOpts & { ownerOnly?: boolean }): Promise<Source[]> {
     const mode = opts.mode ?? 'hybrid'
     const visible = opts.ownerOnly ? 'd.owner_id = $2' : `(d.visibility = 'public' OR d.owner_id = $2)`
+    const gate = this.gate(q, mode)
+    const embedded = `SELECT 1 FROM document_chunks g WHERE g.document_id = d.id AND g.embedding_model = $4`
     const [chunkFts, docFts, chunkVec] = await Promise.all([
       mode !== 'vector' && q.tsquery
         ? this.rows(
             `WITH q AS (SELECT to_tsquery('simple', $1) AS tsq)
              SELECT c.id, c.document_id AS doc FROM document_chunks c JOIN documents d ON d.id = c.document_id, q
              WHERE c.search_tsv @@ q.tsq AND ${visible}
+               ${gate ? `AND (c.embedding_model IS DISTINCT FROM $4 OR 1 - (c.embedding <=> $3::vector) >= ${MIN_SIMILARITY})` : ''}
              ORDER BY ts_rank(c.search_tsv, q.tsq) DESC LIMIT ${CANDIDATES}`,
-            [q.tsquery, userId]
+            [q.tsquery, userId, ...(gate ?? [])]
           )
         : [],
       mode !== 'vector' && q.tsquery
         ? this.ids(
             `WITH q AS (SELECT to_tsquery('simple', $1) AS tsq)
              SELECT d.id FROM documents d, q WHERE d.search_tsv @@ q.tsq AND ${visible}
+               ${gate ? `AND (NOT EXISTS (${embedded}) OR EXISTS (${embedded} AND 1 - (g.embedding <=> $3::vector) >= ${MIN_SIMILARITY}))` : ''}
              ORDER BY ts_rank(d.search_tsv, q.tsq) DESC LIMIT ${DOC_LEVEL_CANDIDATES}`,
-            [q.tsquery, userId]
+            [q.tsquery, userId, ...(gate ?? [])]
           )
         : [],
       mode !== 'fulltext' && q.vector
@@ -123,10 +138,13 @@ export class RagSearchService {
         : []
     ])
 
-    const docIds = topIds(fuseRankings([unique(chunkFts.map((r) => r.doc)), docFts, unique(chunkVec.map((r) => r.doc))]), opts.limit)
+    const docIds = topIds(
+      fuseRankings([unique(chunkFts.map((r) => r.doc)), docFts, unique(chunkVec.map((r) => r.doc))], [FULLTEXT_WEIGHT, FULLTEXT_WEIGHT, 1]),
+      opts.limit
+    )
     if (!docIds.length) return []
     // Đoạn tốt nhất của từng tài liệu theo điểm gộp ở mức đoạn
-    const chunkScores = fuseRankings([chunkFts.map((r) => r.id), chunkVec.map((r) => r.id)])
+    const chunkScores = fuseRankings([chunkFts.map((r) => r.id), chunkVec.map((r) => r.id)], [FULLTEXT_WEIGHT, 1])
     const docOf = new Map([...chunkFts, ...chunkVec].map((r) => [r.id, r.doc as string]))
     const bestChunks = new Map<string, string[]>()
     for (const id of topIds(chunkScores, chunkScores.size)) {

@@ -187,4 +187,20 @@ describe('RAG: index tài liệu + tìm kết hợp full-text/vector (e2e)', () 
     expect(ids).not.toContain(hidden)
     expect(ids).not.toContain(mine)
   })
+
+  it('Hybrid lọc nhiễu full-text: khớp chữ nhưng xa nghĩa (cosine thấp) bị loại; chế độ full-text thuần vẫn ra', async () => {
+    const author = await createUser(db)
+    const noise = (
+      await db.query(`INSERT INTO posts (author_id, title, content, visibility) VALUES ($1, 'Lịch thi học kỳ', 'Lịch thi học kỳ này dời sang tuần sau', 'public') RETURNING id`, [
+        author.id
+      ])
+    ).rows[0].id
+    await app.get(RagIndexService).sweep()
+
+    const rag = app.get(RagSearchService)
+    const question = 'lịch học kỳ derivative'
+    const query = await rag.prepare(question, toTsQuery(question))
+    expect((await rag.posts(query, author.id, { limit: 10, bodyChars: 200, mode: 'fulltext' })).map((s) => s.id)).toContain(noise)
+    expect((await rag.posts(query, author.id, { limit: 10, bodyChars: 200 })).map((s) => s.id)).not.toContain(noise)
+  })
 })
