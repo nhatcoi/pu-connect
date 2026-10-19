@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, ChevronLeft, ChevronRight, RotateCcw, Settings2, Shuffle } from 'lucide-react'
 import { toast } from 'sonner'
-import type { ReviewGrade, StudyItem, StudySetDetail } from '@pu/schemas'
+import type { FlashcardContent, ReviewGrade, StudyItem, StudySetDetail } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -13,8 +13,10 @@ import { toolsApi } from '@/hooks/use-study-tools'
 import { errorMessage } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
+import { MarkdownPreview } from '@/components/renderer/markdown-preview'
+import { clozeAnswers, clozePlain, isClozeCard } from './card-cloze'
 import { speechText, useSpeech } from './card-speech'
-import { MeaningFace, TermFace } from './flashcard-face'
+import { CardImage, MeaningFace, TermFace } from './flashcard-face'
 import { asCard, hasSpeech } from './tool-catalog'
 
 const GRADES: { grade: ReviewGrade; label: string; hint: string; key: string; className: string }[] = [
@@ -24,12 +26,14 @@ const GRADES: { grade: ReviewGrade; label: string; hint: string; key: string; cl
   { grade: 'easy', label: 'Dễ', hint: 'lâu hơn', key: '4', className: 'border-sky-500/40 text-sky-600 dark:text-sky-400 hover:bg-sky-500/10' }
 ]
 
-// Cách ôn (tùy chọn từng phiên, không gắn vào bộ): lật thẻ · đảo mặt (nhìn nghĩa đoán từ) · gõ đáp án
-type ReviewMode = 'flip' | 'reverse' | 'type'
+// Cách ôn (tùy chọn từng phiên, không gắn vào bộ): lật thẻ · đảo mặt (nhìn nghĩa đoán từ) · gõ đáp án · trắc nghiệm
+// Thẻ điền chỗ trống: đảo mặt ⇒ như lật thẻ; gõ / trắc nghiệm ⇒ điền phần bị ẩn
+type ReviewMode = 'flip' | 'reverse' | 'type' | 'choice'
 const MODES: { mode: ReviewMode; label: string; hint: string }[] = [
   { mode: 'flip', label: 'Lật thẻ', hint: 'Nhìn mặt trước, nhớ mặt sau' },
   { mode: 'reverse', label: 'Đảo mặt', hint: 'Nhìn nghĩa, nhớ từ' },
-  { mode: 'type', label: 'Gõ đáp án', hint: 'Nhìn nghĩa, gõ lại từ' }
+  { mode: 'type', label: 'Gõ đáp án', hint: 'Nhìn nghĩa, gõ lại từ' },
+  { mode: 'choice', label: 'Trắc nghiệm', hint: 'Nhìn từ, chọn nghĩa đúng (đáp án nhiễu lấy từ thẻ khác)' }
 ]
 
 // Tùy chọn ôn của người xem (chỉ trình duyệt này) / Per-viewer review preferences
@@ -75,7 +79,36 @@ const matches = (typed: string, front: string) => {
   return !!t && (t === normalize(front) || front.split(/[/,;]/).some((alt) => normalize(alt) === t))
 }
 
+// Thẻ điền chỗ trống: gõ đủ các phần bị ẩn (theo thứ tự), 1 chỗ trống thì chấp nhận cả biến thể "a / b"
+const matchesCloze = (typed: string, answers: string[]) =>
+  normalize(typed) === normalize(answers.join(' ')) || (answers.length === 1 && matches(typed, answers[0]))
+
 const isDue = (it: StudyItem, now: number) => !it.dueAt || new Date(it.dueAt).getTime() <= now
+
+// Đáp án dùng cho trắc nghiệm: nghĩa (mặt sau) hoặc các phần bị ẩn
+const answerOf = (c: FlashcardContent) => (isClozeCard(c) ? clozeAnswers(c.front).join(', ') : c.back)
+const CHOICES = 4
+
+// Trắc nghiệm: đáp án đúng + tối đa 3 đáp án nhiễu từ thẻ khác cùng dạng; không đủ thẻ ⇒ null (về lật thẻ)
+function buildChoices(current: StudyItem, items: StudyItem[]): { options: string[]; answer: number } | null {
+  const card = asCard(current.content)
+  const cloze = isClozeCard(card)
+  const right = answerOf(card)
+  const seen = new Set([normalize(right)])
+  const pool: string[] = []
+  for (const it of [...items].sort(() => Math.random() - 0.5)) {
+    const c = asCard(it.content)
+    if (it.id === current.id || isClozeCard(c) !== cloze) continue
+    const a = answerOf(c)
+    if (!a || seen.has(normalize(a))) continue
+    seen.add(normalize(a))
+    pool.push(a)
+    if (pool.length === CHOICES - 1) break
+  }
+  if (!pool.length) return null
+  const options = [...pool, right].sort(() => Math.random() - 0.5)
+  return { options, answer: options.indexOf(right) }
+}
 
 // Ôn thẻ: hàng đợi thẻ đến hạn (thẻ mới trước), lật ⇒ chấm ⇒ lịch ôn kế tiếp; "Quên" ⇒ gặp lại cuối phiên
 // Trước / Sau: quay lại thẻ vừa xem hoặc bỏ qua thẻ (chưa chấm ⇒ dời cuối hàng)
@@ -102,6 +135,8 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
   // Gõ đáp án: nội dung gõ + kết quả (null = chưa kiểm)
   const [typed, setTyped] = useState('')
   const [correct, setCorrect] = useState<boolean | null>(null)
+  // Trắc nghiệm: lựa chọn đã bấm
+  const [picked, setPicked] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
     setQueue(initialQueue)
@@ -113,14 +148,23 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
   const byId = useMemo(() => new Map(set.items.map((it) => [it.id, it])), [set.items])
   const current = queue[0] ? byId.get(queue[0]) : undefined
   const card = current ? asCard(current.content) : null
-  const mode = prefs.mode
-  // Mặt từ đang hiện? (lật thẻ: luôn; đảo mặt / gõ: sau khi lật)
-  const termVisible = mode === 'flip' || flipped
+  const cloze = !!card && isClozeCard(card)
+  // Đáp án trắc nghiệm: dựng lại khi sang thẻ khác (không xáo lại khi cache bộ đổi giữa chừng)
+  const choices = useMemo(
+    () => (current && prefs.mode === 'choice' ? buildChoices(current, set.items) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [current?.id, prefs.mode]
+  )
+  // Cách ôn áp cho thẻ này: điền chỗ trống không đảo mặt; trắc nghiệm thiếu thẻ nhiễu ⇒ lật thẻ
+  const mode: ReviewMode = (prefs.mode === 'reverse' && cloze) || (prefs.mode === 'choice' && !choices) ? 'flip' : prefs.mode
+  // Mặt từ đang hiện đầy đủ? (điền chỗ trống / đảo mặt / gõ: sau khi lật)
+  const termVisible = cloze ? flipped : mode === 'flip' || mode === 'choice' || flipped
 
-  // Thẻ mới / đổi cách ôn ⇒ úp thẻ, xóa ô gõ
+  // Thẻ mới / đổi cách ôn ⇒ úp thẻ, xóa ô gõ / lựa chọn
   useEffect(() => {
     setTyped('')
     setCorrect(null)
+    setPicked(null)
   }, [current?.id, mode])
   useEffect(() => setFlipped(false), [mode])
   useEffect(() => {
@@ -128,8 +172,8 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
   }, [mode, flipped, current?.id])
 
   const speakTerm = useCallback(() => {
-    if (card && speechOn) speak(card.front, set.options.lang)
-  }, [card, speechOn, speak, set.options.lang])
+    if (card && speechOn) speak(cloze ? clozePlain(card.front) : card.front, set.options.lang)
+  }, [card, cloze, speechOn, speak, set.options.lang])
   // Tự đọc khi mặt từ vừa hiện
   useEffect(() => {
     if (prefs.autoSpeak && termVisible) speakTerm()
@@ -146,6 +190,8 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
         qc.setQueryData<StudySetDetail>(queryKeys.toolSet(set.id), (old) =>
           old ? { ...old, dueCount: res.dueCount, items: old.items.map((it) => (it.id === res.item.id ? res.item : it)) } : old
         )
+        // Tổng quan / thống kê / danh sách cũ đi (không refetch ngay nếu không đang mở)
+        void qc.invalidateQueries({ queryKey: queryKeys.toolsAll, predicate: (k) => k.queryKey[1] !== 'set' })
         setHistory((h) => [...h, current.id])
         setQueue((q) => (g === 'again' ? [...q.slice(1), q[0]] : q.slice(1)))
         setDoneIds((d) => {
@@ -184,11 +230,21 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
   // Gõ đáp án: kiểm ⇒ lật, gợi ý chấm (đúng ⇒ Nhớ, sai ⇒ Quên)
   const check = useCallback(() => {
     if (!card) return
-    setCorrect(matches(typed, card.front))
+    setCorrect(cloze ? matchesCloze(typed, clozeAnswers(card.front)) : matches(typed, card.front))
     setFlipped(true)
     inputRef.current?.blur()
-  }, [card, typed])
-  const suggested: ReviewGrade | null = mode === 'type' && correct !== null ? (correct ? 'good' : 'again') : null
+  }, [card, cloze, typed])
+  // Trắc nghiệm: chọn ⇒ lật + gợi ý chấm
+  const pick = useCallback(
+    (i: number) => {
+      if (!choices || flipped || i >= choices.options.length) return
+      setPicked(i)
+      setCorrect(i === choices.answer)
+      setFlipped(true)
+    },
+    [choices, flipped]
+  )
+  const suggested: ReviewGrade | null = (mode === 'type' || mode === 'choice') && correct !== null ? (correct ? 'good' : 'again') : null
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -201,6 +257,7 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
       else if (e.key === 'ArrowRight') next()
       else if (e.key.toLowerCase() === 'p' && termVisible) speakTerm()
       else if (e.key === 'Enter' && suggested) void grade(suggested)
+      else if (mode === 'choice' && !flipped && /^[1-9]$/.test(e.key)) pick(Number(e.key) - 1)
       else if (flipped) {
         const g = GRADES.find((x) => x.key === e.key)
         if (g) void grade(g.grade)
@@ -208,7 +265,7 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [mode, flipped, termVisible, suggested, check, prev, next, speakTerm, grade])
+  }, [mode, flipped, termVisible, suggested, check, pick, prev, next, speakTerm, grade])
 
   const done = doneIds.size
   const total = initialQueue.length
@@ -236,37 +293,67 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
   const speech = speechOn ? { onSpeak: speakTerm, speaking } : null
   const status = current.reps ? `đã ôn ${current.reps} lần` : 'thẻ mới'
   const meaningOnly = { ...card, example: undefined }
-  const face =
-    mode === 'flip' ? (
-      // Lật thẻ: từ ⇒ (lật) từ nhỏ + nghĩa + ví dụ
-      <>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          {flipped ? 'Mặt sau' : 'Mặt trước'} · {status}
-        </span>
-        <TermFace card={card} size={flipped ? 'sm' : 'lg'} speech={speech} />
-        {flipped && (
-          <div className="pt-2 border-t w-full">
-            <MeaningFace card={card} />
-          </div>
-        )}
-        {!flipped && <span className="text-[11px] text-muted-foreground pt-2">Chạm hoặc nhấn Space để lật</span>}
-      </>
-    ) : (
-      // Đảo mặt / gõ: nghĩa ⇒ (lật) nghĩa nhỏ + từ + ví dụ (ví dụ chứa từ ⇒ chỉ hiện sau khi lật)
-      <>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          {flipped ? 'Đáp án' : mode === 'type' ? 'Gõ từ có nghĩa này' : 'Nghĩa này là từ gì?'} · {status}
-        </span>
-        <MeaningFace card={meaningOnly} size={flipped ? 'sm' : 'lg'} />
-        {flipped && (
-          <div className="pt-2 border-t w-full space-y-1.5">
-            <TermFace card={card} speech={speech} />
-            {card.example && <MeaningFace card={{ ...card, back: '' }} />}
-          </div>
-        )}
-        {!flipped && mode === 'reverse' && <span className="text-[11px] text-muted-foreground pt-2">Chạm hoặc nhấn Space để lật</span>}
-      </>
-    )
+  const tapHint = !flipped && (mode === 'flip' || mode === 'reverse') && <span className="text-[11px] text-muted-foreground pt-2">Chạm hoặc nhấn Space để lật</span>
+  const label = cloze
+    ? flipped
+      ? 'Đáp án'
+      : mode === 'type'
+        ? 'Gõ phần bị ẩn'
+        : mode === 'choice'
+          ? 'Chọn phần bị ẩn'
+          : 'Điền chỗ trống'
+    : mode === 'flip'
+      ? flipped
+        ? 'Mặt sau'
+        : 'Mặt trước'
+      : flipped
+        ? 'Đáp án'
+        : mode === 'type'
+          ? 'Gõ từ có nghĩa này'
+          : mode === 'choice'
+            ? 'Chọn nghĩa đúng'
+            : 'Nghĩa này là từ gì?'
+  const face = (
+    <>
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        {label} · {status}
+      </span>
+      {card.image && <CardImage src={card.image} />}
+      {cloze ? (
+        // Điền chỗ trống: câu ẩn đáp án ⇒ (lật) hiện đáp án + ghi chú
+        <>
+          <TermFace card={card} reveal={flipped} speech={speech} />
+          {flipped && (card.back || card.example) && (
+            <div className="pt-2 border-t w-full">
+              <MeaningFace card={card} />
+            </div>
+          )}
+        </>
+      ) : mode === 'flip' || mode === 'choice' ? (
+        // Lật thẻ / trắc nghiệm: từ ⇒ (lật) nghĩa + ví dụ
+        <>
+          <TermFace card={card} size={flipped && mode === 'flip' ? 'sm' : 'lg'} speech={speech} />
+          {flipped && (
+            <div className="pt-2 border-t w-full">
+              <MeaningFace card={card} />
+            </div>
+          )}
+        </>
+      ) : (
+        // Đảo mặt / gõ: nghĩa ⇒ (lật) nghĩa nhỏ + từ + ví dụ (ví dụ chứa từ ⇒ chỉ hiện sau khi lật)
+        <>
+          <MeaningFace card={meaningOnly} size={flipped ? 'sm' : 'lg'} />
+          {flipped && (
+            <div className="pt-2 border-t w-full space-y-1.5">
+              <TermFace card={card} speech={speech} />
+              {card.example && <MeaningFace card={{ ...card, back: '' }} />}
+            </div>
+          )}
+        </>
+      )}
+      {tapHint}
+    </>
+  )
 
   const actions = flipped ? (
     <div className="grid grid-cols-4 gap-2">
@@ -289,6 +376,20 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
         </button>
       ))}
     </div>
+  ) : mode === 'choice' && choices ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {choices.options.map((o, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => pick(i)}
+          className="flex items-start gap-2 rounded-xl border bg-card px-3 py-2 text-left text-sm hover:border-primary/40 hover:bg-primary/5 transition-colors"
+        >
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold text-muted-foreground">{i + 1}</span>
+          <MarkdownPreview content={o} className="min-w-0 leading-snug [&>p]:m-0" />
+        </button>
+      ))}
+    </div>
   ) : mode === 'type' ? (
     <form
       className="flex gap-2"
@@ -301,7 +402,7 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
         ref={inputRef}
         value={typed}
         onChange={(e) => setTyped(e.target.value)}
-        placeholder="Gõ từ rồi Enter…"
+        placeholder={cloze ? 'Gõ phần bị ẩn rồi Enter…' : 'Gõ từ rồi Enter…'}
         className="h-10 rounded-xl"
         autoComplete="off"
         autoCapitalize="off"
@@ -356,7 +457,13 @@ export function FlashcardReview({ set }: { set: StudySetDetail }) {
       >
         {flipped && correct !== null && (
           <span className={cn('text-xs font-semibold', correct ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-            {correct ? 'Chính xác ✓' : typed.trim() ? `Chưa đúng — bạn gõ "${typed.trim()}"` : 'Đáp án'}
+            {correct
+              ? 'Chính xác ✓'
+              : picked !== null && choices
+                ? `Chưa đúng — bạn chọn "${speechText(choices.options[picked])}"`
+                : typed.trim()
+                  ? `Chưa đúng — bạn gõ "${typed.trim()}"`
+                  : 'Đáp án'}
           </span>
         )}
         {face}

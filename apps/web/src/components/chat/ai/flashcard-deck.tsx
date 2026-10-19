@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import { ChevronLeft, ChevronRight, Shuffle } from 'lucide-react'
 import { useSpeech } from '@/components/tools/card-speech'
-import { MeaningFace, TermFace } from '@/components/tools/flashcard-face'
+import { clozePlain, isClozeCard } from '@/components/tools/card-cloze'
+import { CardImage, MeaningFace, TermFace } from '@/components/tools/flashcard-face'
 import { hasSpeech } from '@/components/tools/tool-catalog'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -17,7 +18,8 @@ export function FlashcardDeck({ data }: { data: FlashcardData }) {
   const [known, setKnown] = useState<Set<number>>(new Set())
   const card = data.cards[order[pos]]
   const { supported, speaking, speak } = useSpeech()
-  const speech = supported && hasSpeech(data) ? { onSpeak: () => speak(card.front, data.lang), speaking } : null
+  const cloze = isClozeCard(card)
+  const speech = supported && hasSpeech(data) ? { onSpeak: () => speak(cloze ? clozePlain(card.front) : card.front, data.lang), speaking } : null
 
   const go = (next: number) => {
     setFlipped(false)
@@ -53,7 +55,18 @@ export function FlashcardDeck({ data }: { data: FlashcardData }) {
           )}
         >
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{flipped ? 'Mặt sau' : 'Mặt trước'} · chạm để lật</span>
-          {flipped ? <MeaningFace card={card} /> : <TermFace card={card} speech={speech} />}
+          {card.image && <CardImage src={card.image} size="sm" />}
+          {cloze ? (
+            // Điền chỗ trống: lật ⇒ hiện đáp án + ghi chú
+            <>
+              <TermFace card={card} reveal={flipped} speech={speech} />
+              {flipped && (card.back || card.example) && <MeaningFace card={card} />}
+            </>
+          ) : flipped ? (
+            <MeaningFace card={card} />
+          ) : (
+            <TermFace card={card} speech={speech} />
+          )}
         </button>
         <div className="mt-2.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">

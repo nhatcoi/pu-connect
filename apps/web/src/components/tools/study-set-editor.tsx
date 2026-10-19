@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { ClipboardPaste, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Braces, ClipboardPaste, ImagePlus, Loader2, Plus, Sparkles, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   FLASHCARD_TEMPLATES,
   SPEECH_LANGS,
   STUDY_SET_MAX_ITEMS,
+  type FlashcardTemplate,
   type SpeechLang,
   type StudyItemContent,
   type StudySetDetail,
@@ -19,9 +20,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useStudySetActions } from '@/hooks/use-study-tools'
+import { errorMessage, uploadFileToR2 } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { SPEECH_LANG_LABELS } from './card-speech'
-import { FLASHCARD_TEMPLATE_META, TOOL_META, asCard, asQuestion, emptyContent, isVocab, parseCardLines } from './tool-catalog'
+import { FLASHCARD_TEMPLATE_META, TOOL_META, asCard, asQuestion, emptyContent, parseCardLines } from './tool-catalog'
 
 type Row = { key: string; id?: string; content: StudyItemContent }
 type Panel = 'ai' | 'paste' | null
@@ -164,7 +166,7 @@ export function StudySetEditor({
                 value={paste}
                 onChange={(e) => setPaste(e.target.value)}
                 rows={5}
-                placeholder={'Mỗi dòng 1 thẻ, vd.\nInvisible (adj) - Vô hình\nPhysicist: Nhà vật lý học\nOrbit (n) | /ˈɔː.bɪt/ | Quỹ đạo | The moon orbits the Earth.'}
+                placeholder={'Mỗi dòng 1 thẻ, vd.\nInvisible (adj) - Vô hình\nPhysicist: Nhà vật lý học\nOrbit (n) | /ˈɔː.bɪt/ | Quỹ đạo | The moon orbits the Earth.\nThủ đô của Pháp là {{Paris}}'}
                 className="text-sm bg-background font-mono"
                 autoFocus
               />
@@ -195,7 +197,7 @@ export function StudySetEditor({
                 </button>
               </div>
               {kind === 'flashcards' ? (
-                <CardFields content={r.content} vocab={isVocab(options)} onChange={(c) => setContent(r.key, c)} />
+                <CardFields content={r.content} template={options.template ?? 'basic'} onChange={(c) => setContent(r.key, c)} />
               ) : ( <QuestionFields content={r.content} onChange={(c) => setContent(r.key, c)} />
               )}
             </div>
@@ -265,29 +267,132 @@ function DeckOptions({ options, onChange }: { options: StudySetOptions; onChange
   )
 }
 
-// Thẻ: mặt trước / sau; phiên âm + ví dụ luôn hiện ở mẫu Từ vựng, mẫu Cơ bản mở bằng "+ Chi tiết"
-function CardFields({ content, vocab, onChange }: { content: StudyItemContent; vocab: boolean; onChange: (c: StudyItemContent) => void }) {
+const FIELD_HINTS: Record<FlashcardTemplate, { front: string; back: string }> = {
+  basic: { front: 'Mặt trước', back: 'Mặt sau' },
+  vocab: { front: 'Từ, vd. Orbit (n)', back: 'Nghĩa' },
+  cloze: { front: 'Câu có chỗ trống, vd. Thủ đô của Pháp là {{Paris}}', back: 'Ghi chú (không bắt buộc)' }
+}
+
+// Thẻ: mặt trước / sau; phiên âm + ví dụ + ảnh luôn hiện ở mẫu Từ vựng, mẫu khác mở bằng "+ Chi tiết"
+// Mẫu Điền chỗ trống: bôi đen chữ trong mặt trước ⇒ nút {{ }} bọc thành chỗ trống
+function CardFields({ content, template, onChange }: { content: StudyItemContent; template: FlashcardTemplate; onChange: (c: StudyItemContent) => void }) {
   const c = asCard(content)
-  const [more, setMore] = useState(() => !!(c.phonetic || c.example))
+  const vocab = template === 'vocab'
+  const [more, setMore] = useState(() => !!(c.phonetic || c.example || c.image))
+  const frontRef = useRef<HTMLTextAreaElement>(null)
   const showMore = vocab || more
+  const hints = FIELD_HINTS[template]
   // Ô trống ⇒ bỏ trường (không lưu chuỗi rỗng)
-  const set = (field: 'phonetic' | 'example', v: string) => onChange({ ...c, [field]: v || undefined })
+  const set = (field: 'phonetic' | 'example' | 'image', v: string) => onChange({ ...c, [field]: v || undefined })
+  const wrapCloze = () => {
+    const el = frontRef.current
+    if (!el) return
+    const { selectionStart: a, selectionEnd: b } = el
+    const picked = c.front.slice(a, b).trim()
+    if (!picked) return toast.info('Bôi đen phần cần ẩn trong mặt trước rồi bấm {{ }}')
+    onChange({ ...c, front: `${c.front.slice(0, a)}{{${picked}}}${c.front.slice(b)}` })
+  }
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <Textarea value={c.front} onChange={(e) => onChange({ ...c, front: e.target.value })} rows={2} maxLength={500} placeholder={vocab ? 'Từ, vd. Orbit (n)' : 'Mặt trước'} className="text-sm min-h-0" />
-        <Textarea value={c.back} onChange={(e) => onChange({ ...c, back: e.target.value })} rows={2} maxLength={2000} placeholder={vocab ? 'Nghĩa' : 'Mặt sau'} className="text-sm min-h-0" />
+        <div className="relative">
+          <Textarea
+            ref={frontRef}
+            value={c.front}
+            onChange={(e) => onChange({ ...c, front: e.target.value })}
+            rows={2}
+            maxLength={500}
+            placeholder={hints.front}
+            className={cn('text-sm min-h-0', template === 'cloze' && 'pr-9')}
+          />
+          {template === 'cloze' && (
+            <button
+              type="button"
+              // Giữ vùng bôi đen của ô mặt trước khi bấm
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={wrapCloze}
+              className="absolute right-1.5 top-1.5 rounded-md p-1 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+              aria-label="Tạo chỗ trống từ phần đang bôi đen"
+              title="Tạo chỗ trống từ phần đang bôi đen"
+            >
+              <Braces className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <Textarea value={c.back} onChange={(e) => onChange({ ...c, back: e.target.value })} rows={2} maxLength={2000} placeholder={hints.back} className="text-sm min-h-0" />
       </div>
       {showMore ? (
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-2">
-          <Input value={c.phonetic ?? ''} onChange={(e) => set('phonetic', e.target.value)} maxLength={120} placeholder="Phiên âm, vd. /ˈɔː.bɪt/" className="h-8 text-xs font-mono" />
-          <Input value={c.example ?? ''} onChange={(e) => set('example', e.target.value)} maxLength={600} placeholder="Câu ví dụ (không bắt buộc)" className="h-8 text-xs" />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <CardImageField value={c.image} onChange={(url) => set('image', url ?? '')} />
+          <div className="grid min-w-0 flex-1 grid-cols-1 sm:grid-cols-[1fr_2fr] gap-2 content-start">
+            <Input value={c.phonetic ?? ''} onChange={(e) => set('phonetic', e.target.value)} maxLength={120} placeholder="Phiên âm, vd. /ˈɔː.bɪt/" className="h-8 text-xs font-mono" />
+            <Input value={c.example ?? ''} onChange={(e) => set('example', e.target.value)} maxLength={600} placeholder="Câu ví dụ (không bắt buộc)" className="h-8 text-xs" />
+          </div>
         </div>
       ) : (
         <button type="button" onClick={() => setMore(true)} className="text-[11px] text-primary hover:underline">
-          + Chi tiết (phiên âm, ví dụ)
+          + Chi tiết (ảnh, phiên âm, ví dụ)
         </button>
       )}
+    </div>
+  )
+}
+
+const IMAGE_MAX_MB = 5
+
+// Ảnh minh họa thẻ: tải lên R2 (thư mục ảnh bài viết) ⇒ lưu link; khung cố định 64px
+function CardImageField({ value, onChange }: { value?: string; onChange: (url: string | undefined) => void }) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const upload = async (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) return toast.error('Chỉ nhận tệp ảnh')
+    if (file.size > IMAGE_MAX_MB * 1024 * 1024) return toast.error(`Ảnh tối đa ${IMAGE_MAX_MB} MB`)
+    setUploading(true)
+    try {
+      onChange((await uploadFileToR2(file, 'posts/images')).url)
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không tải được ảnh lên'))
+    } finally {
+      setUploading(false)
+    }
+  }
+  return (
+    <div className="relative h-16 w-16 shrink-0">
+      {value ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element -- ảnh R2 người dùng tải lên */}
+          <img src={value} alt="" className="h-16 w-16 rounded-lg border object-cover" />
+          <button
+            type="button"
+            onClick={() => onChange(undefined)}
+            className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-destructive"
+            aria-label="Bỏ ảnh"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </>
+      ) : (
+        <button
+          type="button"
+          disabled={uploading}
+          onClick={() => fileRef.current?.click()}
+          className="flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-lg border border-dashed text-[10px] text-muted-foreground hover:border-primary/40 hover:text-primary disabled:opacity-60"
+        >
+          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+          Ảnh
+        </button>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+        className="hidden"
+        onChange={(e) => {
+          void upload(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }

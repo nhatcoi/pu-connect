@@ -1,6 +1,7 @@
 import { Layers, ListChecks, type LucideIcon } from 'lucide-react'
 import {
   STUDY_TOOL_KINDS,
+  hasCloze,
   type FlashcardContent,
   type FlashcardTemplate,
   type QuizQuestionContent,
@@ -54,7 +55,8 @@ export const asQuestion = (c: StudyItemContent) => c as QuizQuestionContent
 // Mẫu bộ flashcard: Từ vựng hiện sẵn ô phiên âm, ví dụ + nút phát âm
 export const FLASHCARD_TEMPLATE_META: Record<FlashcardTemplate, { label: string; hint: string }> = {
   basic: { label: 'Cơ bản', hint: 'Mặt trước · mặt sau' },
-  vocab: { label: 'Từ vựng', hint: 'Thêm phiên âm, ví dụ, phát âm' }
+  vocab: { label: 'Từ vựng', hint: 'Thêm phiên âm, ví dụ, phát âm' },
+  cloze: { label: 'Điền chỗ trống', hint: 'Ẩn {{phần cần nhớ}} trong câu' }
 }
 
 export const isVocab = (options?: StudySetOptions | null) => options?.template === 'vocab'
@@ -74,11 +76,14 @@ export function parseCardLines(text: string): FlashcardContent[] {
       if (line.includes('|')) {
         const cols = line.split('|').map((c) => c.trim())
         const [front, second = '', third = '', fourth = ''] = cols
+        if (hasCloze(front)) return { front, back: second }
         if (IPA.test(second)) return { front, back: third, phonetic: second, ...(fourth ? { example: fourth } : {}) }
         return { front, back: second, ...(third ? { example: third } : {}) }
       }
+      // Câu có {{chỗ trống}} ⇒ 1 thẻ, không cần mặt sau
+      if (hasCloze(line)) return { front: line, back: '' }
       const m = /^(.+?)\s*(?:\t|\s[-–—:=]>?\s|\s?=>\s?|:\s)\s*(.+)$/.exec(line)
       return m ? { front: m[1].trim(), back: m[2].trim() } : null
     })
-    .filter((c): c is FlashcardContent => !!c && !!c.front && !!c.back)
+    .filter((c): c is FlashcardContent => !!c && !!c.front && (!!c.back || hasCloze(c.front)))
 }

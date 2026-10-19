@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronRight, Loader2, Wrench } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { StudySetRow } from '@/components/tools/study-set-row'
+import { StudyStatsCard } from '@/components/tools/study-stats-card'
 import { TOOLS, toolHref } from '@/components/tools/tool-catalog'
 import { useToolsOverview } from '@/hooks/use-study-tools'
 
@@ -50,6 +51,8 @@ export default function ToolsPage() {
             )
           })}
         </div>
+
+        <StudyStatsCard />
 
         <section className="space-y-2">
           <h2 className="px-2 sm:px-0 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gần đây</h2>

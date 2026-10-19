@@ -8,6 +8,7 @@ import type {
   StudySetDraftInput,
   StudySetInput,
   StudySetSummary,
+  StudyStats,
   StudyToolKind,
   StudyToolsOverview
 } from '@pu/schemas'
@@ -21,6 +22,7 @@ const json = (method: string, body?: unknown): RequestInit => ({ method, body: b
 // REST client Công cụ học tập (apps/api/src/modules/study-tools)
 export const toolsApi = {
   overview: () => unwrap(apiClient<Envelope<StudyToolsOverview>>('/tools/overview')),
+  stats: () => unwrap(apiClient<Envelope<StudyStats>>('/tools/stats')),
   list: (kind: StudyToolKind, q: string) => unwrap(apiClient<Envelope<StudySetSummary[]>>(`/tools/sets?kind=${kind}&q=${encodeURIComponent(q)}`)),
   get: (id: string) => unwrap(apiClient<Envelope<StudySetDetail>>(`/tools/sets/${id}`)),
   create: (body: StudySetInput) => unwrap(apiClient<Envelope<StudySetDetail>>('/tools/sets', json('POST', body))),
@@ -35,6 +37,11 @@ export const toolsApi = {
 
 export function useToolsOverview() {
   return useQuery({ queryKey: queryKeys.toolsOverview, queryFn: toolsApi.overview, staleTime: 30_000 })
+}
+
+// Chuỗi ngày học, lịch nhiệt, thẻ đến hạn 7 ngày tới
+export function useStudyStats() {
+  return useQuery({ queryKey: queryKeys.toolStats, queryFn: toolsApi.stats, staleTime: 60_000 })
 }
 
 export function useStudySets(kind: StudyToolKind, q: string) {

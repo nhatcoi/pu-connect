@@ -1,4 +1,4 @@
-import { FLASHCARD_TEMPLATES, SPEECH_LANGS, type FlashcardContent, type FlashcardTemplate, type SpeechLang } from '@pu/schemas'
+import { FLASHCARD_TEMPLATES, hasCloze, SPEECH_LANGS, type FlashcardContent, type FlashcardTemplate, type SpeechLang } from '@pu/schemas'
 
 // Tách câu trả lời AI thành đoạn Markdown + khối học tập tương tác (```quiz / ```flashcards chứa JSON)
 
@@ -42,12 +42,13 @@ function parseCards(raw: unknown): FlashcardData | null {
   const d = (Array.isArray(raw) ? { cards: raw } : raw) as FlashcardData
   if (!d || !Array.isArray(d.cards)) return null
   const cards = d.cards
-    .filter((c) => c && typeof c.front === 'string' && typeof c.back === 'string')
+    .filter((c) => c && typeof c.front === 'string' && c.front && (typeof c.back === 'string' ? !!c.back || hasCloze(c.front) : hasCloze(c.front)))
     .map((c) => ({
       front: c.front,
-      back: c.back,
+      back: typeof c.back === 'string' ? c.back : '',
       ...(typeof c.phonetic === 'string' && c.phonetic ? { phonetic: c.phonetic } : {}),
-      ...(typeof c.example === 'string' && c.example ? { example: c.example } : {})
+      ...(typeof c.example === 'string' && c.example ? { example: c.example } : {}),
+      ...(typeof c.image === 'string' && c.image.startsWith('https://') ? { image: c.image } : {})
     }))
   if (!cards.length) return null
   return {

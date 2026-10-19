@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronDown, Loader2, MoreHorizontal, PenLine, Trash2 } from
 import type { StudySetDetail } from '@pu/schemas'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
+import { clozeText } from '@/components/tools/card-cloze'
 import { FlashcardReview } from '@/components/tools/flashcard-review'
 import { QuizRunner } from '@/components/tools/quiz-runner'
 import { StudySetEditor } from '@/components/tools/study-set-editor'
@@ -96,9 +97,15 @@ function StudySetView({ set }: { set: StudySetDetail }) {
                   {set.kind === 'flashcards' ? (
                     <div className="grid grid-cols-[auto_1fr_1fr] gap-3">
                       <span className="text-[11px] text-muted-foreground pt-0.5">{i + 1}</span>
-                      <div className="min-w-0">
-                        <MarkdownPreview content={asCard(it.content).front} className="font-medium [&>p]:m-0" />
-                        {asCard(it.content).phonetic && <span className="text-[11px] font-mono text-muted-foreground">{asCard(it.content).phonetic}</span>}
+                      <div className="min-w-0 flex items-start gap-2">
+                        {asCard(it.content).image && (
+                          // eslint-disable-next-line @next/next/no-img-element -- ảnh R2 người dùng tải lên
+                          <img src={asCard(it.content).image} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-md border object-cover" />
+                        )}
+                        <div className="min-w-0">
+                          <MarkdownPreview content={clozeText(asCard(it.content).front, true)} className="font-medium [&>p]:m-0" />
+                          {asCard(it.content).phonetic && <span className="text-[11px] font-mono text-muted-foreground">{asCard(it.content).phonetic}</span>}
+                        </div>
                       </div>
                       <MarkdownPreview content={asCard(it.content).back} className="text-muted-foreground [&>p]:m-0" />
                     </div>
