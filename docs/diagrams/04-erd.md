@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **51 bảng**, **87 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **52 bảng**, **88 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -67,6 +67,7 @@ erDiagram
   users |o--o{ messages : "sender_id"
   users |o--o{ notifications : "actor_id"
   users ||--o{ notifications : "recipient_id"
+  posts ||--o{ post_embeddings : "post_id"
   post_polls ||--o{ post_poll_options : "poll_id"
   posts ||--o{ post_polls : "post_id"
   post_poll_options ||--o{ post_poll_votes : "option_id"
@@ -310,7 +311,7 @@ erDiagram
   posts ||--o{ saved_posts : "post_id"
 ```
 
-Liên kết ra ngoài nhóm: `comment_reactions.comment_id → comments`, `comments.author_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.community_id → communities`, `posts.course_id → courses`, `posts.hidden_by → users`, `post_summaries.post_id → posts`, `saved_posts.user_id → users`
+Liên kết ra ngoài nhóm: `comment_reactions.comment_id → comments`, `comments.author_id → users`, `post_embeddings.post_id → posts`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.community_id → communities`, `posts.course_id → courses`, `posts.hidden_by → users`, `post_summaries.post_id → posts`, `saved_posts.user_id → users`
 
 ## 4. Communities
 
@@ -393,6 +394,9 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
     tsvector search_tsv
+    varchar index_status
+    smallint index_attempts
+    timestamptz index_updated_at
   }
   document_chunks {
     uuid id PK
@@ -402,6 +406,8 @@ erDiagram
     integer token_count
     vector embedding
     timestamptz created_at
+    text embedding_model
+    tsvector search_tsv
   }
   study_groups {
     uuid id PK
@@ -664,6 +670,13 @@ erDiagram
     uuid pinned_by FK
     jsonb meta
   }
+  post_embeddings {
+    uuid post_id PK,FK
+    vector embedding
+    text model
+    text source_hash
+    timestamptz updated_at
+  }
   post_summaries {
     uuid post_id PK,FK
     character content_hash
@@ -787,4 +800,4 @@ erDiagram
   messages ||--o{ study_sets : "source_message_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `comment_reactions.comment_id → comments`, `comment_reactions.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_summaries.post_id → posts`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `comment_reactions.comment_id → comments`, `comment_reactions.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_embeddings.post_id → posts`, `post_summaries.post_id → posts`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`

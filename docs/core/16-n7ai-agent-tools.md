@@ -9,7 +9,7 @@ Không phải thứ gì cũng nên là tool. Mỗi lần gọi tool tốn thêm 
 | Loại dữ liệu | Đặt ở | Ví dụ |
 |---|---|---|
 | Nhỏ, lượt nào cũng cần | System prompt | Hồ sơ học, mục nhớ ghim, giờ hiện tại |
-| Truy xuất rẻ, hay dùng | Lấy sẵn trước khi gọi model | Thư viện PU (`AiRetrieval`) |
+| Truy xuất rẻ, hay dùng | Lấy sẵn trước khi gọi model | Thư viện PU (`AiRetrieval`, tìm kết hợp full-text + vector — [17](./17-rag-hybrid-search.md)) |
 | Lớn, có điều kiện, dữ liệu riêng | Tool | Hội thoại cũ, tiến độ học, Gmail / Drive, tìm trong PUC |
 | Giao diện | Tool hoặc dòng đánh dấu có cấu trúc | Bộ flashcard / quiz, nút dẫn đường |
 | Ghi / thay đổi dữ liệu | Đề xuất ⇒ người dùng bấm xác nhận | Tham gia nhóm học |

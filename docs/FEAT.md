@@ -128,6 +128,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 📑 **Phân loại tài liệu đa định dạng (`PDF`, `Code`, `Sheet`, `Markdown`)**: Tra cứu theo mã học phần và thẻ tag.
 - [x] 👁️ **Trình xem trước In-App (`PdfViewer` & `DocumentPreviewModal`)**: Xem trực tiếp file PDF với thanh công cụ phóng to/thu nhỏ.
 - [x] 📤 **Thêm & chia sẻ tài liệu**: Upload và lưu trữ Cloudflare R2 + PostgreSQL.
+- [x] 🔎 **RAG tìm kết hợp cho N7AI (2026-10-19)** ([thiết kế](./core/17-rag-hybrid-search.md)): worker BullMQ `rag-index` (2 phút/lần + quét ngay khi tạo tài liệu) trích nội dung PDF/DOCX/text từ R2 vào `document_chunks`, embedding đoạn và bài viết (`post_embeddings`, tính lại khi sửa / đổi lời giải) bằng Ollama `qwen3-embedding:0.6b` trên Mac mini qua reverse SSH tunnel (`scripts/ops/setup-embed-tunnel.sh`, env `EMBED_BASE_URL`/`EMBED_MODEL`). Thư viện PU và Tài liệu của tôi tìm full-text + vector (HNSW cosine) gộp RRF, trả đoạn khớp nhất thay vì chỉ mô tả; server embedding tắt ⇒ tự lùi về full-text. Migration `rag-upgrade.sql`; eval tự động `rag:eval`; 36 tài liệu/đề ôn tập mẫu do tài khoản bot đăng.
 
 ### 🏛️ Diễn Đàn & Tiểu Cộng Đồng (Reddit-style Sub-Communities)
 - [x] 🏛️ **Cơ sở dữ liệu Sub-Communities (`communities` & `community_members`)**: 5 cộng đồng cốt lõi Phenikaa (`c/phenikaa`, `c/fit`, `c/do-an-tot-nghiep`, `c/tim-phong-tro`, `c/clb-hoat-dong`).

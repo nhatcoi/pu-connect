@@ -78,9 +78,11 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 | `/var/www/pu-connector/.env` | `DATABASE_URL`, `SESSION_SECRET`, `APP_URL`, `GOOGLE_*`, `SMTP_*`, `R2_*`, `REDIS_URL`, `VAPID_*`, `BACKUP_PASSPHRASE`, `TELEGRAM_*` (tùy chọn) | Không bị rsync ghi đè; backup `.env.bak.*` |
 | `apps/web/.env` (VPS) | `INTERNAL_API_URL=http://localhost:4001` | Port API production là **4001** |
 | `/etc/nginx/sites-available/pu-connector.conf` | Routing `puc.vnhat.dev` + SSL | Backup `/root/pu-connector.conf.bak.*` |
+| Mac mini `~/Library/LaunchAgents/dev.vnhat.pu-embed-tunnel.plist` | Reverse SSH tunnel VPS `127.0.0.1:11435` → Ollama `qwen3-embedding:0.6b` (`scripts/ops/setup-embed-tunnel.sh`) | VPS `.env`: `EMBED_BASE_URL`, `EMBED_MODEL`; tunnel tắt ⇒ N7AI chỉ tìm full-text |
 | `scripts/ops/nginx-admin-puc.conf` | Routing `admin-puc.vnhat.dev` (`apps/admin/dist` Static SPA + `/api/` proxy) | 0 MB Node.js RAM runtime |
 
 **Changelog:**
+- 2026-10-19 — migration `rag-upgrade.sql`; env `EMBED_BASE_URL`, `EMBED_MODEL` (tùy chọn `EMBED_API_KEY`); queue BullMQ `rag-index`; server embedding Ollama trên Mac mini qua reverse SSH tunnel (launchd).
 - 2026-10-17 — Nginx `puc` + `admin-puc` include snippet `pu-cloudflare-realip.conf` (IP thật từ `CF-Connecting-IP`, chỉ tin dải IP Cloudflare); `index.html` admin `Cache-Control: no-cache`; migration `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security-upgrade.sql`.
 - 2026-10-17 — Thêm cổng quản trị độc lập `admin-puc.vnhat.dev` (`apps/admin/dist` Static SPA phục vụ trực tiếp từ Nginx, cấu hình mẫu `scripts/ops/nginx-admin-puc.conf`).
 - 2026-10-16 — migration `puai-settings-upgrade.sql`; env tùy chọn `TAVILY_API_KEY`; queue BullMQ mới `ai-maintenance` (cùng Redis).

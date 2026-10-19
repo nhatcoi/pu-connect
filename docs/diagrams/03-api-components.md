@@ -20,7 +20,7 @@ flowchart TB
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
     chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance<br/>agent: HistoryTools (my_chats) · PucTools (search · app_help) · ai-actions"]
-    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>McpAgentService (AgentToolSession) · GoogleMcpService · GoogleOAuth"]
+    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>RAG: EmbeddingService · RagSearchService (full-text + vector, RRF) · RagIndexService (worker rag-index)<br/>McpAgentService (AgentToolSession) · GoogleMcpService · GoogleOAuth"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
     tools["<b>StudyTools</b><br/>registry loại bộ (kinds/)<br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>N7AI soạn nháp · tool tạo bộ trong chat<br/>StudyAgentTools (tool my_study)"]
   end
@@ -130,6 +130,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-19 — `ai/rag/`: `EmbeddingService` (`/v1/embeddings`, Ollama trên Mac mini qua tunnel), `RagIndexService` + queue BullMQ `rag-index` (trích tệp R2 → `document_chunks`, embedding đoạn & bài viết), `RagSearchService` (tìm kết hợp cho `AiRetrieval` library / my_documents). `DocumentsService.create` gọi `RagIndexQueue.kick()`. Migration `rag-upgrade.sql`.
 - 2026-10-18 — Socket `message.progress` (bước tool MCP: nhãn, chi tiết ngắn, trạng thái) + `meta.steps` trên tin N7AI hoàn tất.
 - 2026-10-18 — Registry loại bộ `study-tools/kinds/` (schema mục, tùy chọn, hợp đồng tool N7AI); `StudyCreateToolsService` (`my_study__create_flashcards`, `my_study__create_quiz`) trong mọi thread N7AI riêng, server chèn khối ```` ```flashcards ```` chuẩn vào tin; `tools/sets/draft` dùng cùng JSON Schema. `study_sets.options` (mẫu, ngôn ngữ phát âm).
 - 2026-10-18 — `chat/n7ai/agent/`: `HistoryToolsService` (connector `my_chats`), `PucToolsService` (`puc__search` qua `SearchService`, `puc__app_help`), `ai-actions.ts` (`meta.actions`); ChatModule import SearchModule. Hồ sơ học + ghim bộ nhớ. Migration `ai-agent-upgrade.sql`.
