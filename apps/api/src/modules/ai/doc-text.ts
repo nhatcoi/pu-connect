@@ -27,3 +27,14 @@ export async function bufferToText(buf: Buffer, mime: string, maxPages = MAX_PDF
   }
   return text.replace(/\n{3,}/g, '\n\n').trim()
 }
+
+// PDF ⇒ chữ từng trang (RAG cần theo trang: bỏ header/footer lặp, OCR riêng trang scan)
+export async function pdfPageTexts(buf: Buffer, maxPages: number): Promise<{ pages: string[]; total: number }> {
+  const parser = new PDFParse({ data: new Uint8Array(buf) })
+  try {
+    const res = await parser.getText({ first: maxPages })
+    return { pages: res.pages.map((p) => p.text), total: res.total }
+  } finally {
+    await parser.destroy()
+  }
+}

@@ -13,6 +13,18 @@ const QUERY_CACHE = 200
 // Model embedding có chỉ dẫn cho câu truy vấn (Qwen3-Embedding); đoạn tài liệu thì không
 const queryPrefix = (model: string) => (/qwen3-embedding/i.test(model) ? 'Instruct: Given a student question, retrieve passages that answer it\nQuery: ' : '')
 
+// Lỗi kết nối / quá tải (thử lại sau) khác lỗi do input (bỏ qua mục đó)
+const TRANSIENT_STATUS = new Set([408, 429, 502, 503, 504])
+class EmbeddingError extends Error {
+  constructor(
+    message: string,
+    readonly transient: boolean
+  ) {
+    super(message)
+  }
+}
+const isTransient = (err: unknown) => err instanceof EmbeddingError && err.transient
+
 // pgvector nhận chuỗi '[x,y,…]'
 export const toVectorLiteral = (v: number[]) => `[${v.join(',')}]`
 
@@ -60,30 +72,56 @@ export class EmbeddingService {
     }
   }
 
-  // Đoạn tài liệu / bài viết ⇒ vector (theo lô); lỗi ném ra để worker thử lại lần sau
-  async embedDocuments(texts: string[]): Promise<number[][]> {
+  // Đoạn tài liệu / bài viết ⇒ vector theo lô; null = input bị server từ chối (worker đánh dấu, không chặn cả lô)
+  // Lỗi kết nối / quá tải ⇒ ném ra (server coi như tắt, worker thử lại lượt sau). Lô lỗi khác ⇒ thử từng mục để tìm mục hỏng;
+  // mục nào cũng lỗi ⇒ lỗi ở server, không phải dữ liệu
+  async embedEach(texts: string[]): Promise<(number[] | null)[]> {
     if (!this.available) throw new Error('Embedding server unavailable')
-    const out: number[][] = []
-    try {
-      for (let i = 0; i < texts.length; i += BATCH) out.push(...(await this.request(texts.slice(i, i + BATCH), DOCS_TIMEOUT_MS)))
-    } catch (err: any) {
-      this.markDown(err)
-      throw err
+    const out: (number[] | null)[] = []
+    for (let i = 0; i < texts.length; i += BATCH) {
+      const batch = texts.slice(i, i + BATCH)
+      try {
+        out.push(...(await this.request(batch, DOCS_TIMEOUT_MS)))
+      } catch (err) {
+        if (isTransient(err)) {
+          this.markDown(err)
+          throw err
+        }
+        const single = await Promise.all(
+          batch.map((t) =>
+            this.request([t], DOCS_TIMEOUT_MS).then(
+              ([v]) => v,
+              (e) => (isTransient(e) ? Promise.reject(e) : null)
+            )
+          )
+        )
+        if (single.every((v) => v === null)) {
+          this.markDown(err)
+          throw err
+        }
+        out.push(...single)
+      }
     }
     return out
   }
 
   private async request(input: string[], timeout: number): Promise<number[][]> {
-    const res = await fetch(this.url!, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) },
-      body: JSON.stringify({ model: this.model, input }),
-      signal: AbortSignal.timeout(timeout)
-    })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    let res: Response
+    try {
+      res = await fetch(this.url!, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) },
+        body: JSON.stringify({ model: this.model, input }),
+        signal: AbortSignal.timeout(timeout)
+      })
+    } catch (err: any) {
+      throw new EmbeddingError(`Không kết nối được server embedding: ${err?.message}`, true)
+    }
+    if (!res.ok) throw new EmbeddingError(`HTTP ${res.status}`, TRANSIENT_STATUS.has(res.status))
     const json = (await res.json()) as { data?: { index: number; embedding: number[] }[] }
     const data = [...(json.data ?? [])].sort((a, b) => a.index - b.index).map((d) => d.embedding)
-    if (data.length !== input.length || data.some((v) => v?.length !== EMBED_DIM)) throw new Error(`Embedding trả sai kích thước (cần ${input.length}×${EMBED_DIM})`)
+    if (data.length !== input.length || data.some((v) => v?.length !== EMBED_DIM))
+      throw new Error(`Embedding trả sai kích thước (cần ${input.length}×${EMBED_DIM})`)
     return data
   }
 

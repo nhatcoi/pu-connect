@@ -52,7 +52,11 @@ async function llmJson(prompt: string): Promise<Record<string, string>> {
   }
 }
 
-const QUESTION_PROMPT = (kind: Kind, title: string, body: string) => `Đây là một ${kind === 'post' ? 'bài viết hỏi đáp' : 'tài liệu học tập'} trên mạng xã hội học tập của sinh viên.
+const QUESTION_PROMPT = (
+  kind: Kind,
+  title: string,
+  body: string
+) => `Đây là một ${kind === 'post' ? 'bài viết hỏi đáp' : 'tài liệu học tập'} trên mạng xã hội học tập của sinh viên.
 Tiêu đề: ${title}
 Nội dung:
 ${body}
@@ -178,7 +182,8 @@ async function main() {
   lines.push('', `Câu hỏi lạc đề (${OFF_TOPIC.length} câu, tổng nguồn trả về): ${MODES.map((m) => `${m}=${offTopic[m]}`).join(', ')}`)
   lines.push(`Cosine của nguồn đúng: p10=${quantile(0.1)} p25=${quantile(0.25)} p50=${quantile(0.5)} min=${quantile(0)}`)
   lines.push('', `Hybrid trượt top-${K} (${misses.length}):`)
-  for (const m of misses.slice(0, 25)) lines.push(`- [${m.c.kind}/${m.c.style}] "${m.c.question}" → cần "${m.c.title}"; được: ${m.got.slice(0, 3).join(' | ') || '(trống)'}`)
+  for (const m of misses.slice(0, 25))
+    lines.push(`- [${m.c.kind}/${m.c.style}] "${m.c.question}" → cần "${m.c.title}"; được: ${m.got.slice(0, 3).join(' | ') || '(trống)'}`)
   const report = lines.join('\n')
   console.log(report)
   const out = arg('out')

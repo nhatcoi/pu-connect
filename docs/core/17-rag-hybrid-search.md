@@ -31,7 +31,9 @@ Câu hỏi N7AI ─▶ AiRetrieval ─▶ RagSearchService ───────
 | Thành phần | Tệp | Vai trò |
 |---|---|---|
 | `EmbeddingService` | `rag/embedding.service.ts` | Client `/v1/embeddings` OpenAI-compatible; câu hỏi có chỉ dẫn Qwen3; timeout câu hỏi 3s; lỗi ⇒ nghỉ 60s (lùi về full-text, không cộng độ trễ cho mọi câu hỏi); cache 200 câu hỏi |
-| `chunkText` | `rag/text-chunker.ts` | Gom đoạn văn tới ~1200 ký tự (tối đa 1600), đoạn quá dài tách theo câu, chồng lấn ~200 ký tự, ≤ 300 đoạn / tài liệu |
+| `cleanPages` / `needsOcr` | `rag/text-cleaner.ts` | Làm sạch theo trang: NFC, bỏ ký tự điều khiển / vô hình, bỏ header/footer lặp (dòng ở mép ≥ 50% số trang, ≥ 3 trang) và số trang, nối dòng bị ngắt giữa câu + gạch nối; nhận diện trang scan (< 30 ký tự) và chữ rác TCVN3/VNI (> 3% ký tự Latin-1 ngoài bảng chữ Việt) |
+| `OcrService` | `rag/ocr.service.ts` | Trang scan / chữ rác ⇒ render ảnh (pdf-parse `getScreenshot`, rộng 1400px) ⇒ model vision qua chat OpenAI-compatible; ≤ `OCR_MAX_PAGES` (30) trang / tài liệu; 429 ⇒ tài liệu quay lại hàng chờ, không tính lần lỗi |
+| `chunkText` | `rag/text-chunker.ts` | Gom đoạn văn tới ~1200 ký tự (tối đa 1600), đoạn quá dài tách theo câu, chồng lấn ~200 ký tự, ≤ 300 đoạn / tài liệu; nhận diện dòng tiêu đề (Chương/Phần, `1.2 …`, `Câu N`/`Lời giải Câu N`, chữ hoa, `#`) ⇒ mỗi đoạn mang đường dẫn tiêu đề (`document_chunks.heading`); mục mới khi đoạn đã ≥ 400 ký tự ⇒ mở đoạn mới (mỗi câu hỏi đứng đầu một đoạn) |
 | `RagIndexService` | `rag/rag-index.service.ts` | Worker 3 bước ở trên; chỉ tải tệp thuộc R2 của mình (chặn SSRF) |
 | `RagIndexProcessor` / `RagIndexQueue` | `rag/rag-index.processor.ts` | Lịch quét 2 phút; `kick()` gộp nhiều lần gọi thành 1 job chờ (`jobId: sweep-now`) |
 | `RagSearchService` | `rag/rag-search.service.ts` | Tìm kết hợp bài viết / tài liệu, có `mode` (`hybrid` \| `fulltext` \| `vector`) cho eval |
@@ -39,7 +41,11 @@ Câu hỏi N7AI ─▶ AiRetrieval ─▶ RagSearchService ───────
 
 ### Trạng thái trích nội dung tài liệu (`documents.index_status`)
 
-`pending` → `indexing` (worker giữ, hạn 15 phút) → `indexed` | `empty` (PDF scan, không có lớp chữ) | `unsupported` (không phải PDF/DOCX/text hoặc URL ngoài R2) | `failed` (lỗi 3 lần). Lỗi lần n ⇒ thử lại sau n × 5 phút. Nhận việc bằng `FOR UPDATE SKIP LOCKED` + chuyển sang `indexing` ⇒ lịch quét và "quét ngay" chạy song song không làm trùng (lỗi race này do e2e phát hiện).
+`pending` → `indexing` (worker giữ, hạn 15 phút) → `indexed` | `partial` (> 150 trang, > 300 đoạn, hoặc còn trang scan chưa OCR được) | `empty` (không có chữ kể cả sau OCR) | `garbled` (chữ rác, OCR không cứu được) | `unsupported` (không phải PDF/DOCX/text hoặc URL ngoài R2) | `failed` (lỗi 3 lần). `index_version` < `INDEX_VERSION` (code) ⇒ tài liệu đã xong được làm lại bằng pipeline mới, xếp sau tài liệu mới. Lỗi lần n ⇒ thử lại sau n × 5 phút. Nhận việc bằng `FOR UPDATE SKIP LOCKED` + chuyển sang `indexing` ⇒ lịch quét và "quét ngay" chạy song song không làm trùng (lỗi race này do e2e phát hiện).
+
+### Embedding chịu lỗi từng mục
+
+Input embedding của đoạn = `tiêu đề tài liệu › tiêu đề mục` + nội dung; `source_hash = md5(input)` ⇒ đổi tiêu đề tài liệu cũng tính lại. Lô lỗi do kết nối / 408 / 429 / 5xx gateway ⇒ server coi như tắt 60s, thử lại lượt sau. Lô lỗi khác ⇒ thử từng mục: mục hỏng được đánh dấu `embedding_model = 'error:<model>'` (bài viết: dòng `post_embeddings` không vector) và bỏ qua tới khi nội dung đổi; mục nào cũng lỗi ⇒ lỗi ở server. Trước đây 1 input hỏng làm kẹt cả hàng đợi.
 
 ### Bước extraction không phụ thuộc server embedding
 
@@ -54,6 +60,8 @@ Mỗi danh sách ứng viên lấy top 24, điểm = Σ trọng số / (60 + h�
 - **Lọc nhiễu full-text bằng vector**: khi có vector câu hỏi, ứng viên full-text (bài viết, đoạn, tài liệu) phải có cosine ≥ `MIN_SIMILARITY` (0.5) mới được gộp; nguồn chưa có embedding giữ nguyên. Kết quả vector dưới ngưỡng cũng bị bỏ ⇒ câu hỏi lạc đề không kéo nguồn rác vào prompt.
 - **RRF có trọng số**: danh sách full-text × `FULLTEXT_WEIGHT` = 0.5, vector × 1 (env `RAG_FULLTEXT_WEIGHT` chỉ để eval thử).
 - HNSW + bộ lọc quyền xem: `SET LOCAL hnsw.iterative_scan = relaxed_order` (pgvector ≥ 0.8) ⇒ vẫn đủ kết quả khi bộ lọc loại bớt.
+- Thân nguồn tài liệu: mô tả + các đoạn kèm `[tiêu đề mục]`, chia đều ngân sách ký tự cho từng đoạn. Đề thi (`midterm_exam`/`final_exam`): đoạn "Câu N" kéo theo đoạn phía bên kia (đề bài ↔ lời giải / đáp án) cùng số câu.
+- Tài liệu cùng `content_hash` (sha256 tệp) chỉ trả 1 nguồn.
 - Quyền xem giữ như cũ: bài viết công khai chưa ẩn (+ của mình); tài liệu công khai (+ của mình); `my_documents` chỉ tài liệu của mình.
 
 ## 4. Server embedding trên Mac mini
@@ -98,23 +106,36 @@ Bài học:
 
 Chạy lại sau khi đổi model / ngưỡng / trọng số: cùng `--set` ⇒ so sánh được. Gateway rate-limit (429) ⇒ CLI tự chờ rồi thử lại; model sinh câu hỏi đổi bằng `RAG_EVAL_MODEL` (mặc định không dùng `AI_MODEL` đang phục vụ người dùng).
 
-## 7. Hạn chế đã biết & việc tiếp theo (rà soát 2026-10-19)
+## 7. Hạn chế đã biết (rà soát 2026-10-19)
 
-Eval chạy trên PDF sạch do hệ thống tự render; tệp người dùng thật (slide xuất PDF, scan, font cũ) bẩn hơn. Kiểm tra trên prod: 78/253 đoạn không ở dạng Unicode NFC.
+Rà soát sau bản đầu tìm ra 8 lỗ hổng; đã sửa ở pipeline v2 (`INDEX_VERSION = 2`, 36 tài liệu cũ tự index lại):
 
-| # | Vấn đề | Ảnh hưởng | Hướng sửa |
-|---|---|---|---|
-| 1 | **Lô embedding độc**: 1 input làm server lỗi ⇒ cả lô 64 lỗi, lượt quét sau lấy lại đúng lô đó; bài viết (bước sau trong `sweep`) không bao giờ tới; lỗi dữ liệu bị coi là server sập ⇒ tắt vector 60s cho mọi câu hỏi | Kẹt hàng đợi | Lô lỗi ⇒ thử từng mục; mục hỏng đánh dấu (vd. `embedding_model = 'error:<model>'`) và bỏ qua; chỉ lỗi mạng / 5xx mới `markDown` |
-| 2 | **Làm sạch mỏng** (chỉ gộp dòng trống, bỏ dấu trang) | Full-text trượt tiếng Việt, embedding nhiễu | Chuẩn hóa NFC; bỏ dòng header/footer lặp ở nhiều trang; nối dòng bị ngắt giữa câu; phát hiện chữ rác (TCVN3/VNI, tỉ lệ ký tự lạ cao) ⇒ `index_status = 'garbled'` |
-| 3 | Đoạn không mang heading mục chứa nó | Đoạn giữa mục mất ngữ cảnh | Gắn đường dẫn heading gần nhất vào input embedding: `Tiêu đề › 3. Dijkstra` |
-| 4 | Đề thi: đề bài và lời giải cách xa nhau | Hỏi "lời giải câu 3" có thể chỉ ra đề | Ghép đoạn đề với đoạn lời giải cùng số câu, hoặc trả thêm đoạn kề |
-| 5 | Không OCR | PDF scan ⇒ `empty`, N7AI chỉ đọc tiêu đề + mô tả | OCR (Tesseract / model vision) cho tài liệu `empty` |
-| 6 | Cắt im lặng: > 150 trang hoặc > 300 đoạn | Sách dài mất nửa sau | Ghi trạng thái `partial` + số trang đã đọc |
-| 7 | Không chống trùng tệp | Cùng tệp đăng 2 lần ⇒ 2 nguồn giống nhau | Lưu hash nội dung, gộp kết quả trùng khi tìm |
-| 8 | Đổi tiêu đề tài liệu không embedding lại đoạn (tiêu đề nằm trong input) | Lệch nhẹ | Lưu hash input như `post_embeddings.source_hash` |
+| # | Vấn đề | Trạng thái |
+|---|---|---|
+| 1 | 1 input hỏng làm cả lô embedding lỗi, kẹt hàng đợi; lỗi dữ liệu bị coi là server sập | ✅ `embedEach` thử từng mục, đánh dấu `error:<model>` |
+| 2 | Làm sạch mỏng (78/253 đoạn không NFC, header/footer lặp, dòng ngắt, font cũ) | ✅ `text-cleaner.ts` |
+| 3 | Đoạn không mang tiêu đề mục | ✅ `document_chunks.heading` vào input embedding + thân nguồn |
+| 4 | Đề thi: đề và lời giải cách xa | ✅ ghép "Câu N" ↔ "Lời giải Câu N" khi trả nguồn |
+| 5 | Không OCR | ✅ `OcrService` (trang scan + trang chữ rác) |
+| 6 | Cắt im lặng khi tài liệu quá dài | ✅ trạng thái `partial` |
+| 7 | Tệp trùng ⇒ 2 nguồn giống nhau | ✅ `content_hash`, gộp khi tìm |
+| 8 | Đổi tiêu đề tài liệu không embedding lại | ✅ `source_hash` của input |
 
-Ưu tiên: 1 → 2 → 3, sau mỗi thay đổi index lại và chạy `rag:eval` cùng bộ câu hỏi để so số.
+Còn lại: OCR gọi gateway nên tốn quota gateway (không tính vào quota người dùng, không ghi `ai_runs`); OCR chạy ngay trong lượt quét (tài liệu scan 30 trang ≈ 6 phút chặn các tài liệu sau trong lượt đó); nhận diện tiêu đề dựa trên mẫu nên có thể nhầm dòng đánh số trong bài tập thành tiêu đề.
+
+### Chọn OCR: gateway hay model local
+
+Đo trên 2 trang giả bản scan (xoay 1.2°, JPEG chất lượng thấp, có dấu tiếng Việt, công thức, code SQL), CER = tỉ lệ ký tự sai so với lớp chữ gốc:
+
+| Model | CER | Thời gian/trang |
+|---|---|---|
+| Gateway `gemini-3.7-flash-medium` | **0.5–0.7%** | 11–15s |
+| Gateway `gemini-3.8-flash-low` | 0.5–0.7% | 10–16s |
+| Mac mini Ollama `qwen2.5vl:7b` | 1.0–7.6% | 40–60s (~6GB RAM) |
+| Mac mini Ollama `gemma3:4b` | lặp chữ, không dùng được | 140s |
+
+⇒ Mặc định gateway với model riêng `OCR_MODEL` (không phải `AI_MODEL` đang phục vụ người dùng). Chuyển sang local không sửa code: `OCR_BASE_URL=http://127.0.0.1:11435/v1`, `OCR_MODEL=qwen2.5vl:7b`. Tắt: `OCR_ENABLED=false`. Render trang trên VPS: ~0.8s, ~106MB RAM / trang.
 
 ## 8. Test
 
-`apps/api/test/rag-search.e2e-spec.ts` (server embedding giả theo nhóm từ đồng nghĩa + R2 giả): cắt đoạn, worker trích tệp R2 / từ chối URL ngoài, embedding lại bài đã sửa, câu hỏi khác chữ chỉ hybrid tìm ra, quyền xem tài liệu riêng tư / bài ẩn, hybrid loại kết quả full-text khớp chữ nhưng xa nghĩa.
+`apps/api/test/rag-search.e2e-spec.ts` (server embedding giả theo nhóm từ đồng nghĩa + R2 giả): cắt đoạn, worker trích tệp R2 / từ chối URL ngoài, embedding lại bài đã sửa, câu hỏi khác chữ chỉ hybrid tìm ra, quyền xem tài liệu riêng tư / bài ẩn, hybrid loại kết quả full-text khớp chữ nhưng xa nghĩa, làm sạch (NFC, header/footer, nối dòng, chữ rác TCVN3), đường dẫn tiêu đề mục, OCR trang scan / chữ rác (lớp chữ PDF được giả lập vì pdfjs không chạy trong VM của Jest), lô embedding có input hỏng, đổi tiêu đề / nâng phiên bản pipeline / tệp trùng, ghép đề ↔ lời giải.

@@ -32,6 +32,21 @@ const topIds = (scores: Map<string, number>, limit: number) =>
     .map(([id]) => id)
 
 const unique = (ids: string[]) => [...new Set(ids)]
+
+// Thân nguồn tài liệu: mô tả + các đoạn (kèm tiêu đề mục), chia đều ngân sách ký tự ⇒ đoạn lời giải đi sau không bị cắt mất
+function excerptBody(description: string, parts: { heading: string | null; text: string }[], budget: number): string {
+  const head = description ? `${description}\n\n` : ''
+  const per = Math.max(200, Math.floor((budget - head.length) / Math.max(parts.length, 1)))
+  return clip(head + parts.map((p) => clip(p.heading ? `[${p.heading}]\n${p.text}` : p.text, per)).join('\n…\n'), budget)
+}
+// Đề thi: đoạn đã chọn thuộc "Câu N" ⇒ thêm đoạn phía bên kia (đề bài ↔ lời giải / đáp án) cùng số câu (alias d = tài liệu, $2 = đoạn đã chọn)
+const SOLUTION_RE = `'lời giải|đáp án|hướng dẫn giải'`
+const EXAM_COMPANION_SQL = `
+  SELECT DISTINCT ON (b.id) o.id FROM document_chunks b JOIN document_chunks o ON o.document_id = b.document_id AND o.id <> b.id
+  WHERE b.id = ANY($2::uuid[]) AND b.document_id = d.id AND d.doc_type IN ('midterm_exam', 'final_exam')
+    AND substring(lower(b.heading) from 'câu\\s*(\\d+)') = substring(lower(o.heading) from 'câu\\s*(\\d+)')
+    AND (lower(b.heading) ~ ${SOLUTION_RE}) <> (lower(o.heading) ~ ${SOLUTION_RE})
+  ORDER BY b.id, o.chunk_index`
 const clip = (s: string, max: number) => (s.length > max ? `${s.slice(0, max - 1)}…` : s)
 
 // Tìm kết hợp cho N7AI: full-text (đúng mã môn, công thức, tên riêng) + vector (đúng ý dù khác chữ / khác ngôn ngữ), gộp RRF
@@ -138,11 +153,12 @@ export class RagSearchService {
         : []
     ])
 
-    const docIds = topIds(
+    // Lấy dư rồi gộp tài liệu trùng tệp (cùng content_hash) ⇒ không trả 2 nguồn giống nhau
+    const ranked = topIds(
       fuseRankings([unique(chunkFts.map((r) => r.doc)), docFts, unique(chunkVec.map((r) => r.doc))], [FULLTEXT_WEIGHT, FULLTEXT_WEIGHT, 1]),
-      opts.limit
+      opts.limit * 2
     )
-    if (!docIds.length) return []
+    if (!ranked.length) return []
     // Đoạn tốt nhất của từng tài liệu theo điểm gộp ở mức đoạn
     const chunkScores = fuseRankings([chunkFts.map((r) => r.id), chunkVec.map((r) => r.id)], [FULLTEXT_WEIGHT, 1])
     const docOf = new Map([...chunkFts, ...chunkVec].map((r) => [r.id, r.doc as string]))
@@ -152,25 +168,34 @@ export class RagSearchService {
       const list = bestChunks.get(doc) ?? []
       if (list.length < CHUNKS_PER_DOC) bestChunks.set(doc, [...list, id])
     }
+    const picked = [...bestChunks.values()].flat()
 
+    // Đoạn kèm theo: tài liệu không có đoạn khớp ⇒ đoạn đầu; đề thi ⇒ đoạn đề ↔ lời giải cùng số câu
     const rows = (
       await this.db.query(
-        `SELECT d.id, d.title, left(COALESCE(d.description, ''), 300) AS description,
-                COALESCE((SELECT string_agg(c.content_text, E'\\n…\\n' ORDER BY c.chunk_index) FROM document_chunks c WHERE c.id = ANY($2::uuid[]) AND c.document_id = d.id),
-                         (SELECT c.content_text FROM document_chunks c WHERE c.document_id = d.id ORDER BY c.chunk_index LIMIT 1), '') AS excerpt
+        `SELECT d.id, d.title, d.content_hash, left(COALESCE(d.description, ''), 200) AS description,
+                (SELECT json_agg(json_build_object('heading', x.heading, 'text', x.content_text) ORDER BY x.chunk_index)
+                 FROM (SELECT c.chunk_index, c.heading, c.content_text FROM document_chunks c
+                       WHERE c.document_id = d.id AND (c.id = ANY($2::uuid[]) OR c.id IN (${EXAM_COMPANION_SQL}))
+                       UNION
+                       SELECT c.chunk_index, c.heading, c.content_text FROM document_chunks c
+                       WHERE c.document_id = d.id AND NOT EXISTS (SELECT 1 FROM document_chunks k WHERE k.document_id = d.id AND k.id = ANY($2::uuid[]))
+                         AND c.chunk_index = 0) x) AS excerpt
          FROM documents d WHERE d.id = ANY($1::uuid[])`,
-        [docIds, [...bestChunks.values()].flat()]
+        [ranked, picked]
       )
     ).rows
     const byId = new Map(rows.map((r) => [r.id, r]))
-    return docIds
+    const seen = new Set<string>()
+    return ranked
       .map((id) => byId.get(id))
-      .filter(Boolean)
+      .filter((r) => r && (!r.content_hash || (!seen.has(r.content_hash) && seen.add(r.content_hash))))
+      .slice(0, opts.limit)
       .map((r) => ({
         type: 'document' as const,
         id: r.id,
         title: r.title,
-        body: clip([r.description, r.excerpt].filter(Boolean).join('\n\n'), opts.bodyChars)
+        body: excerptBody(r.description, r.excerpt ?? [], opts.bodyChars)
       }))
   }
 

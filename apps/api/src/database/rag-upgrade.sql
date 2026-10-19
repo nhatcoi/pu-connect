@@ -36,3 +36,16 @@ CREATE TABLE IF NOT EXISTS post_embeddings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_post_embeddings_hnsw ON post_embeddings USING hnsw (embedding vector_cosine_ops);
+
+-- 2026-10-19 (v2): làm sạch + tiêu đề mục + OCR + chống lô embedding độc
+-- Đường dẫn tiêu đề mục chứa đoạn ("3. Đồ thị › 3.2 Dijkstra") — đưa vào input embedding
+ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS heading TEXT;
+-- md5(input embedding): đổi tiêu đề tài liệu / heading ⇒ lệch ⇒ tính lại; embedding_model = 'error:<model>' ⇒ input hỏng, bỏ qua tới khi input đổi
+ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS source_hash TEXT;
+-- Phiên bản pipeline trích nội dung: code nâng INDEX_VERSION ⇒ worker tự index lại tài liệu cũ (ưu tiên sau tài liệu mới)
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS index_version SMALLINT NOT NULL DEFAULT 1;
+-- sha256 tệp: cùng tệp đăng nhiều lần ⇒ chỉ 1 nguồn khi tìm
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS content_hash TEXT;
+CREATE INDEX IF NOT EXISTS idx_documents_content_hash ON documents (content_hash) WHERE content_hash IS NOT NULL;
+-- Bài viết có input embedding hỏng: lưu dòng đánh dấu (model 'error:<model>', không vector)
+ALTER TABLE post_embeddings ALTER COLUMN embedding DROP NOT NULL;

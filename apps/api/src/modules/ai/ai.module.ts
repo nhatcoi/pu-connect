@@ -11,6 +11,7 @@ import { GoogleOAuthService } from './connectors/google-oauth.service'
 import { WebReaderService } from './connectors/web-reader.service'
 import { LlmService } from './llm.service'
 import { EmbeddingService } from './rag/embedding.service'
+import { OcrService } from './rag/ocr.service'
 import { RAG_INDEX_QUEUE, RagIndexProcessor, RagIndexQueue } from './rag/rag-index.processor'
 import { RagIndexService } from './rag/rag-index.service'
 import { RagSearchService } from './rag/rag-search.service'
@@ -30,6 +31,7 @@ import { RagSearchService } from './rag/rag-search.service'
     WebReaderService,
     AiConnectorsService,
     EmbeddingService,
+    OcrService,
     RagSearchService,
     RagIndexService,
     RagIndexProcessor,
