@@ -130,6 +130,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-20 — `posts/anonymity.ts` (che tác giả, `anonymizeNotification`, hạn mức 24h) dùng bởi `PostsService`, `CommentsService`, tìm kiếm, chat share / embed, post-ai; cột `is_anonymous` (migration `anonymous-upgrade.sql`).
 - 2026-10-19 — Chat: `ChatShareController` `POST chat/share/post` + `ChatShareService` (mở DM, `MessagesService.sendShared` với `meta.sharedPost`, cộng `shares_count`).
 - 2026-10-19 — `StudyToolsModule`: `GET tools/stats` (chuỗi ngày, lịch nhiệt, dự báo thẻ đến hạn) từ bảng mới `study_events` (ghi trong `review` / `attempt`); thẻ flashcard thêm `image`, điền chỗ trống `{{…}}` (mặt sau không bắt buộc), mẫu `cloze`; `StudyKindDef.aiItem` (N7AI không đặt ảnh).
 - 2026-10-19 — `ai/rag/`: `EmbeddingService` (`/v1/embeddings`, Ollama trên Mac mini qua tunnel), `RagIndexService` + queue BullMQ `rag-index` (trích tệp R2 → `document_chunks`, embedding đoạn & bài viết), `RagSearchService` (tìm kết hợp cho `AiRetrieval` library / my_documents). `DocumentsService.create` gọi `RagIndexQueue.kick()`. Migration `rag-upgrade.sql`.

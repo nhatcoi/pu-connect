@@ -48,6 +48,29 @@ Thực thi: điểm tính một lần qua `CROSS JOIN LATERAL (…) rk`, `LEFT J
 
 ---
 
+### 2.2. Đăng Ẩn Danh (Anonymous Posts & Comments)
+
+Dành cho câu hỏi nhạy cảm (điểm số, giảng viên, sức khỏe tinh thần). Cột `posts.is_anonymous`, `comments.is_anonymous` (migration `anonymous-upgrade.sql`).
+
+**Nguyên tắc:** *lưu thật, hiển thị ẩn* — `author_id` vẫn được lưu (admin truy vết khi có báo cáo, chủ bài xoá / sửa được); mọi phản hồi công khai thay tác giả bằng `ANONYMOUS_AUTHOR` (`id: anonymous`, `username: an-danh` — có dấu gạch ngang nên không ai đăng ký trùng được). Phản hồi thêm `isAnonymous` + `isMine` (chủ bài thấy "Ẩn danh (bạn)").
+
+**Quy tắc đăng:** bài chỉ ở loại hỏi đáp (`qa`), công khai, ngoài cộng đồng; bình luận ẩn danh được ở mọi bài. Hạn mức trượt 24 giờ: 3 bài + 20 bình luận (`assertAnonymousQuota`, HTTP 429).
+
+**Điểm che (đã rà từng đường lộ):**
+
+| Đường | Cách xử lý |
+|---|---|
+| Feed / chi tiết / tìm kiếm / `featuredComment` | Mapper che tác giả (`anonymousAuthor()`), `isAuthorFollowedByMe = false`, `facultyCode` không lấy từ tác giả |
+| Tab *Đang theo dõi*, pill bài mới | Loại bài ẩn danh khỏi tab theo dõi và danh sách tác giả của pill |
+| Lọc theo khoa (tìm kiếm) | Bài ẩn danh chỉ khớp theo khoa của học phần, không theo khoa tác giả |
+| GraphQL `feed` / `post` / `comments` / `user.posts` | Loại bỏ nội dung ẩn danh (resolver trả tác giả thật) |
+| Thông báo | `anonymizeNotification`: `actorId = null`, không `groupKey`, tiêu đề "Một người ẩn danh …" (bình luận, trả lời, mention, duyệt lời giải bài ẩn danh); không báo follower, không phát `feed:new_post` |
+| Chat | Ảnh chụp bài khi chia sẻ + link preview dùng tác giả ẩn |
+| AI | Tóm tắt / ngữ cảnh N7AI thay tên bằng "Ẩn danh" |
+| Gợi ý @mention, đóng góp học phần, hoạt động "đã bình luận" | Bỏ người viết ẩn danh |
+
+**Giới hạn đã biết:** chủ bài chưa có trang riêng liệt kê bài ẩn danh (tìm trong feed, có nhãn "bạn"); admin vẫn thấy tác giả thật. Test: `apps/api/test/anonymous.e2e-spec.ts`.
+
 ## 3. Hệ Thống Tương Tác: Like, Share, Bookmark
 
 ### 3.1. Like / Reaction (`post_reactions`)
