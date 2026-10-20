@@ -313,23 +313,32 @@ sequenceDiagram
 sequenceDiagram
   actor U as Người hỏi
   participant A as N7AiService
-  participant R as AiRetrieval
+  participant R as PUC / nguồn tools (RagSearch · AiRetrieval)
   participant L as McpAgentService / Model
   participant C as GoogleMcpService
   participant G as workspace-mcp (localhost) → Google APIs
   U->>A: Câu hỏi + connector được bật
-  A->>R: Truy xuất nguồn PU (không Google prefetch)
-  A->>L: Context + connector riêng của người hỏi
-  L->>C: Mở session OAuth theo user
-  C->>G: initialize + tools/list
-  G-->>C: Schema công cụ
-  C-->>L: Chỉ các công cụ đọc trong allowlist
-  loop Model cần thêm dữ liệu, trong budget
-    L->>C: Công cụ + tham số do model chọn
-    L-->>U: message.progress (bước running: "Tìm thư trong Gmail · từ khóa")
-    C->>G: tools/call với bearer của người hỏi
-    G-->>C: Kết quả
-    C-->>L: Tool result (dữ liệu không tin cậy)
+  A->>L: Context ghim + lịch sử + tools được cấp (không prefetch)
+  alt Model đủ thông tin
+    L-->>A: Trả lời trực tiếp, không tìm kiếm
+  else Model cần dữ liệu
+    loop Trong budget thường / Research
+      alt Tìm nội bộ
+        L->>R: puc__search / nguồn được bật (batch từ khóa)
+        R-->>L: Preview + href + nguồn n (read khi cần)
+      else Cần Google
+        L->>C: Tool được chọn (catalog cache hoặc discover_tools)
+        opt Chưa có client trong lượt này
+          C->>G: OAuth initialize + tools/list
+          G-->>C: Schema đọc trong allowlist
+        end
+        C->>G: tools/call với bearer người hỏi
+        G-->>C: Kết quả
+        C-->>L: Tool result (dữ liệu không tin cậy)
+      end
+      L-->>U: message.progress + thời gian tool
+      Note over L,C: Read độc lập song song / cache từng lượt; write tuần tự
+    end
   end
   L-->>A: Stream câu trả lời + tổng usage
   A-->>U: message.delta / message.updated
@@ -357,3 +366,31 @@ sequenceDiagram
 - 2026-10-04 — thêm 5.5 Web Push qua BullMQ.
 - 2026-10-04 — 5.3 cập nhật theo Notification v1 (dispatch, ưu tiên, gộp).
 - 2026-10-04 — tạo mới: auth email-first, Google OAuth, mention → realtime, feed ranking.
+
+- 2026-10-19 — Chat: bỏ prefetch, model chọn nguồn, read batching/cache, Google MCP lazy và stage timing.
+
+## PU Connector: extension authorization and remote MCP (2026-10-19)
+
+```mermaid
+sequenceDiagram
+  actor U as Student
+  participant W as PUC Web
+  participant A as PUC API
+  participant P as PKA service
+  participant E as Extension on PKA
+  U->>W: Connect PU Connector
+  W-->>U: Install extension guide
+  W->>A: Begin connection
+  A-->>P: Redirect with state and S256 challenge
+  E->>P: University SSO after user consent
+  P-->>A: One-time code and state
+  A->>P: Exchange code with PKCE verifier
+  P-->>A: Scoped academic-read grant
+  A-->>W: Connected, source enabled
+  U->>A: Ask about personal timetable
+  A->>P: Authenticated MCP tools/call
+  P-->>A: Bounded academic data
+  A-->>W: Stream model answer
+```
+
+University clients and SSO stay on PKA. PUC stores an encrypted scoped grant.

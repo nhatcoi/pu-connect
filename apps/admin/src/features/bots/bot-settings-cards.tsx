@@ -6,7 +6,7 @@ import { Badge, Button, Card, CardHeader, Field, Input, Select } from '@/compone
 import { Checkbox } from '@/components/ui/data'
 import { useBotMutation } from './use-bots'
 
-const AI_MODELS = ['v10', 'v9', 'puc-fast']
+const AI_MODELS = ['v10', 'v9', 'n7ai-fast']
 
 // AI dùng để tự viết bài/bình luận và viết lại nội dung import. Key API nằm ở env của server, không nhập ở đây.
 export function AiConfigCard({ data }: { data: AdminBotOverview }) {

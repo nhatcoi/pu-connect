@@ -31,6 +31,7 @@ import {
 import { ListFooter, ListSearch, useListState, usePaged } from '@/components/list/list-kit'
 import { SavedViews } from '@/components/list/saved-views'
 import { useHashQuery } from '@/hooks/use-hash-query'
+import { ModelsSection } from '@/features/ai-models/models-section'
 
 const REASON_LABEL: Record<string, string> = {
   wrong: 'Sai kiến thức',
@@ -57,7 +58,7 @@ function useAiMutation<V>(fn: (v: V) => Promise<unknown>, msg: string) {
 
 export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermission[]; openTickets?: number }) {
   const [params, set] = useHashQuery()
-  const tab = (['usage', 'feedback', 'skills'].includes(params.tab) ? params.tab : 'usage') as 'usage' | 'feedback' | 'skills'
+  const tab = (['usage', 'feedback', 'skills', 'models'].includes(params.tab) ? params.tab : 'usage') as 'usage' | 'feedback' | 'skills' | 'models'
   const canManage = permissions.includes('ai:manage')
 
   return (
@@ -72,7 +73,8 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
             items={[
               { id: 'usage', label: 'Sử dụng' },
               { id: 'feedback', label: 'Phản hồi & hỗ trợ', count: openTickets },
-              { id: 'skills', label: 'Skills' }
+              { id: 'skills', label: 'Skills' },
+              { id: 'models', label: 'Model' }
             ]}
           />
         }
@@ -80,6 +82,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
       {tab === 'usage' && <UsageSection />}
       {tab === 'feedback' && <FeedbackSection canManage={canManage} />}
       {tab === 'skills' && <SkillsSection canManage={canManage} />}
+      {tab === 'models' && <ModelsSection canManage={canManage} />}
     </>
   )
 }

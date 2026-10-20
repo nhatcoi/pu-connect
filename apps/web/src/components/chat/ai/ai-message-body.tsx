@@ -81,6 +81,7 @@ function citationHref({ ref, title }: ChatCitation): string {
     case 'calendar':
       return 'https://calendar.google.com/calendar/r/week'
     case 'web':
+    case 'paper':
       return /^https?:\/\//.test(ref.id) ? ref.id : '#'
   }
 }

@@ -30,7 +30,12 @@ export const AI_CONNECTORS = [
   'web_search',
   'google_drive',
   'google_calendar',
-  'google_gmail'
+  'google_gmail',
+  'google_forms',
+  'google_sheets',
+  'google_tasks',
+  'pu_connector',
+  'semantic_scholar'
 ] as const
 export type AiConnectorId = (typeof AI_CONNECTORS)[number]
 
@@ -114,10 +119,10 @@ export interface ChatMember extends ChatUser {
   joinedAt: string
 }
 
-// Nguồn N7AI thực sự dùng: bài / tài liệu PU, tệp Drive (id tệp), lịch Google, trang web (id = URL)
+// Nguồn N7AI thực sự dùng: bài / tài liệu PU, tệp Drive (id tệp), lịch Google, trang web (id = URL), bài báo khoa học (id = URL)
 export interface ChatCitation {
   type: 'citation'
-  ref: { type: 'post' | 'document' | 'drive' | 'calendar' | 'web'; id: string }
+  ref: { type: 'post' | 'document' | 'drive' | 'calendar' | 'web' | 'paper'; id: string }
   title: string
 }
 
@@ -181,6 +186,7 @@ export interface ChatMessageMeta {
   followUps?: string[] // N7AI: câu hỏi gợi ý tiếp theo (chip dưới câu trả lời)
   steps?: AiStep[] // N7AI: tiến trình (đọc tệp / bộ nhớ, tìm nguồn, gọi tool) — hiện khi đang trả lời, thu gọn khi xong
   durationMs?: number // N7AI: thời gian xử lý (nhận câu hỏi → xong)
+  timings?: AiRunTimings // Stage durations; tool/model intervals can overlap with MCP initialization
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
   actions?: AiAction[] // N7AI: nút dẫn tới trang trong app / hành động cần người dùng xác nhận
   sharedPost?: ChatSharedPost // tin chia sẻ bài viết (thẻ xem trước)
@@ -372,7 +378,7 @@ export interface AiConnectorInfo {
   available: boolean // false = server chưa cấu hình
   requiresAuth: boolean // cần kết nối tài khoản ngoài
   connected: boolean
-  account: string | null // email tài khoản đã kết nối
+  account: string | null // email hoặc nhãn tài khoản trường đã kết nối
   lastUsedAt: string | null
   lastError: string | null
 }
@@ -397,12 +403,25 @@ export interface AiQuota {
 export type AiToolProvider = AiConnectorId | 'puc'
 // Nguồn của 1 bước tiến trình: tool / connector truy xuất (library, web…) hoặc bước nội bộ — đọc mục gắn @, tệp đính kèm, bộ nhớ
 export type AiStepSource = AiToolProvider | 'refs' | 'files' | 'memory'
+export interface AiRunTimings {
+  preparationMs?: number
+  modelWaitMs: number
+  modelStreamMs: number
+  toolWallMs: number
+  mcpOpenMs: number
+  rounds: number
+  toolCalls: number
+  cacheHits: number
+}
+
 export interface AiStep {
   id: string
   provider: AiStepSource
   label: string
   detail?: string
   status: 'running' | 'done' | 'error'
+  durationMs?: number
+  resultCount?: number // số kết quả công cụ trả về (tìm kiếm); 0 ⇒ "không có kết quả"
 }
 // message.progress: danh sách bước đầy đủ (thay thế, không cộng dồn) của tin đang stream
 export interface MessageProgressEvent {
@@ -435,3 +454,22 @@ export type PresenceMap = Record<string, PresenceInfo>
 export interface PresenceUpdateEvent extends PresenceInfo {
   userId: string
 }
+
+// Chat tạm N7AI: không lưu hội thoại / bộ nhớ; lịch sử nằm ở client, mỗi lượt gửi lại toàn bộ (tối đa AI_TEMPORARY_MAX_TURNS tin)
+export const AI_TEMPORARY_MAX_TURNS = 30
+export interface AiTemporaryTurn {
+  role: 'user' | 'assistant'
+  content: string
+}
+export interface AiTemporaryInput {
+  messages: AiTemporaryTurn[]
+  aiMode?: AiMode
+  research?: boolean
+  connectors?: AiConnectorId[]
+}
+// Sự kiện SSE của POST /ai/temporary/stream
+export type AiTemporaryEvent =
+  | { type: 'progress'; steps: AiStep[] }
+  | { type: 'delta'; text: string }
+  | { type: 'done'; text: string; followUps: string[]; citations: ChatCitation[]; steps: AiStep[]; durationMs: number }
+  | { type: 'error'; message: string }

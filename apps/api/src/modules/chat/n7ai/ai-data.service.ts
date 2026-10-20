@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../../database/database.service'
 import { GOOGLE_PROVIDERS, GoogleOAuthService, type GoogleProvider } from '../../ai/connectors/google-oauth.service'
+import { PuConnectorService } from '../../ai/connectors/pu-connector.service'
 import { StorageService } from '../../storage/storage.service'
 import { ChatCoreService } from '../chat-core.service'
 
@@ -27,7 +28,8 @@ export class AiDataService {
     private readonly db: DatabaseService,
     private readonly core: ChatCoreService,
     private readonly storage: StorageService,
-    private readonly oauth: GoogleOAuthService
+    private readonly oauth: GoogleOAuthService,
+    private readonly puConnector: PuConnectorService
   ) {}
 
   // Xuất dữ liệu N7AI của mình (≤ 500 tin / thread, không gồm token kết nối)
@@ -62,6 +64,7 @@ export class AiDataService {
       return { result: res.rows[0], providers: linked.rows.map((r) => r.provider as string) }
     })
     for (const p of providers) {
+      if (p === 'pu_connector') await this.puConnector.disconnect(userId).catch(() => undefined)
       if (p in GOOGLE_PROVIDERS) await this.oauth.disconnect(userId, p as GoogleProvider).catch(() => undefined)
     }
     const threads = this.afterDelete(result)

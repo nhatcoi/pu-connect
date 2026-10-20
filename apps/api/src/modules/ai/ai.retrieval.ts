@@ -1,11 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { SemanticScholarService } from './connectors/semantic-scholar.service'
 import { WebReaderService } from './connectors/web-reader.service'
 import { RagSearchService, type RagQuery } from './rag/rag-search.service'
 
 export type Source = {
-  type: 'post' | 'document' | 'course' | 'thread' | 'study_set' | 'group' | 'drive' | 'calendar' | 'web'
+  type: 'post' | 'document' | 'course' | 'thread' | 'study_set' | 'group' | 'drive' | 'calendar' | 'web' | 'paper'
   id: string
   title: string
   body: string
@@ -40,11 +41,13 @@ const MAX_KEYWORDS = 8
 // Từ khóa → tsquery "khớp ≥ 2 từ" (1 từ ⇒ chính nó); từ ≥ 3 ký tự khớp tiền tố
 // Keywords → tsquery requiring ≥ 2 matched terms ('' if none)
 export function toTsQuery(question: string): string {
+  // Preserve explicit acronyms (AI), while lowercase Vietnamese 'ai' remains a stopword.
+  const acronyms = new Set((question.match(/\b[A-Z]{2,}\b/g) ?? []).map((word) => word.toLowerCase()))
   const words = Array.from(
     new Set(
       unaccent(question)
         .split(/[^a-z0-9]+/)
-        .filter((w) => w.length >= 2 && !STOPWORDS.has(w))
+        .filter((w) => w.length >= 2 && (!STOPWORDS.has(w) || acronyms.has(w)))
     )
   )
     .slice(0, MAX_KEYWORDS)
@@ -63,7 +66,8 @@ export class AiRetrieval {
   constructor(
     private readonly db: DatabaseService,
     private readonly web: WebReaderService,
-    private readonly rag: RagSearchService
+    private readonly rag: RagSearchService,
+    private readonly semanticScholar: SemanticScholarService
   ) {}
 
   async retrieve(question: string, requesterId: string, opts: RetrieveOptions = {}): Promise<Retrieved> {
@@ -71,7 +75,7 @@ export class AiRetrieval {
     const research = !!opts.research
     const tasks: Promise<Source[]>[] = []
     const failures: ConnectorFailure[] = []
-    const safe = (name: AiConnectorId, fn: () => Promise<Source[]>) => this.safe(name, fn, opts.onStage)
+    const safe = (name: AiConnectorId, fn: () => Promise<Source[]>) => this.safe(name, fn, opts.onStage, failures)
     // Thư viện / tài liệu của tôi: tìm kết hợp full-text + vector (vector tính 1 lần cho cả hai)
     if (connectors.has('library') || connectors.has('my_documents')) {
       const query = this.rag.prepare(question, toTsQuery(question))
@@ -81,11 +85,12 @@ export class AiRetrieval {
     if (connectors.has('my_groups')) tasks.push(safe('my_groups', () => this.myGroups(requesterId)))
     if (connectors.has('web')) tasks.push(safe('web', () => this.webPages(question, research)))
     if (connectors.has('web_search')) tasks.push(safe('web_search', () => this.webSearch(question, research)))
+    if (connectors.has('semantic_scholar')) tasks.push(safe('semantic_scholar', () => this.academicPapers(question, research)))
     return { sources: (await Promise.all(tasks)).flat(), failures }
   }
 
   // Lỗi 1 connector không làm hỏng câu trả lời
-  private async safe(name: AiConnectorId, fn: () => Promise<Source[]>, onStage: RetrieveOptions['onStage']): Promise<Source[]> {
+  private async safe(name: AiConnectorId, fn: () => Promise<Source[]>, onStage: RetrieveOptions['onStage'], failures: ConnectorFailure[] = []): Promise<Source[]> {
     onStage?.(name, 'running')
     try {
       const found = await fn()
@@ -94,6 +99,7 @@ export class AiRetrieval {
     } catch (err: any) {
       this.logger.warn(`Truy xuất ${name} thất bại: ${err?.message}`)
       onStage?.(name, 'error')
+      failures.push({ name, message: String(err?.message || 'Không truy cập được') })
       return []
     }
   }
@@ -108,6 +114,11 @@ export class AiRetrieval {
   private async webSearch(question: string, research: boolean): Promise<Source[]> {
     const results = await this.web.search(question, research ? 5 : 3)
     return results.map((r) => ({ type: 'web' as const, id: r.id, title: r.title, body: r.body }))
+  }
+
+  // Bài báo khoa học toàn cầu (Semantic Scholar & arXiv) — 3 kết quả, Research 6
+  private async academicPapers(question: string, research: boolean): Promise<Source[]> {
+    return this.semanticScholar.search(question, research ? 6 : 3)
   }
 
   // Thư viện PU: bài viết & tài liệu công khai (+ của mình), kèm lời giải đã duyệt

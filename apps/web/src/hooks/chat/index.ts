@@ -29,4 +29,4 @@ export {
   useRefSuggestions,
   useSkillLibrary
 } from './use-ai-tools'
-export { useAiMemories, useAiSettings, useAiTasks, useAiUsage, useSkillState } from './use-n7ai-settings'
+export { useAiMemories, useAiModelOptions, useAiSettings, useAiTasks, useAiUsage, useSkillState } from './use-n7ai-settings'

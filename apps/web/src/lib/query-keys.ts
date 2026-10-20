@@ -43,6 +43,7 @@ export const queryKeys = {
   chatMentions: (id: string, after: string) => ['chat-mentions', id, after] as const,
   chatRefs: (q: string, types: string) => ['chat-refs', q.trim().toLowerCase(), types] as const,
   aiQuota: ['ai-quota'] as const,
+  aiModels: ['ai-models'] as const,
   aiThreadsAll: ['ai-threads'] as const,
   aiThreads: (q: string) => ['ai-threads', q.trim().toLowerCase()] as const,
   aiDraftThread: ['ai-draft-thread'] as const,

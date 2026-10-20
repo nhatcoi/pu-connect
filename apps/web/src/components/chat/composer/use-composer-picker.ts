@@ -78,10 +78,11 @@ export function useComposerPicker({ textareaRef, text, setText, conversation, my
     if (!open) return []
     const out: PickerSection[] = []
     if (at) {
-      if (kind === 'group') {
+      // Nhóm: N7AI + thành viên; chat cá nhân: chỉ @n7ai (hỏi N7AI cho cả hai người)
+      if (kind === 'group' || kind === 'direct') {
         const people: MentionCandidate[] = [N7AI_CANDIDATE]
-        if (conversation?.myRole === 'owner') people.push(ALL_CANDIDATE)
-        for (const m of members ?? []) {
+        if (kind === 'group' && conversation?.myRole === 'owner') people.push(ALL_CANDIDATE)
+        for (const m of kind === 'group' ? (members ?? []) : []) {
           if (m.id !== myId && !m.isBot) people.push({ id: m.id, username: m.username, displayName: m.displayName, avatarUrl: m.avatarUrl, reason: 'other' })
         }
         const items = people.filter((c) => matchesCandidate(c, q)).slice(0, MAX_PER_SECTION)

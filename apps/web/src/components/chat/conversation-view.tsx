@@ -112,7 +112,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-3.5rem)]">
+    <div className="flex flex-col min-h-[calc(100dvh-var(--app-header-height,3.5rem))]">
       <ThreadHeader
         conversation={conv}
         typingLabel={typingLabel}
@@ -135,6 +135,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
               <MessageSquare className="h-9 w-9 mx-auto opacity-30" />
               <p className="text-sm">Gửi lời chào đầu tiên 👋</p>
               {conv?.type === 'group' && <p className="text-xs">Gõ @n7ai trong tin để hỏi N7AI cùng cả nhóm.</p>}
+              {conv?.type === 'direct' && <p className="text-xs">Gõ @n7ai trong tin để hỏi N7AI ngay trong cuộc trò chuyện này.</p>}
             </div>
           )}
         </div>
@@ -166,7 +167,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           onCommand={runCommand}
           disabled={!conv}
           placeholder={
-            isAi ? 'Hỏi N7AI… (/ lệnh · @ gắn ngữ cảnh)' : conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi N7AI)' : 'Nhắn tin… (@ gắn ngữ cảnh)'
+            isAi ? 'Hỏi N7AI… (/ lệnh · @ gắn ngữ cảnh)' : conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi N7AI)' : 'Nhắn tin… (@n7ai hỏi N7AI · @ gắn ngữ cảnh)'
           }
           replyTo={replyTo}
           editing={editing}

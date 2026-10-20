@@ -8,7 +8,14 @@ import { LlmService } from '../src/modules/ai/llm.service'
 import { N7AiService } from '../src/modules/chat/n7ai/n7ai.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
-const SCOPES = { drive: 'drive.readonly', calendar: 'calendar.readonly', gmail: 'gmail.readonly' }
+const SCOPES = {
+  drive: 'drive.readonly',
+  calendar: 'calendar.readonly',
+  gmail: 'gmail.readonly',
+  forms: 'forms',
+  sheets: 'spreadsheets',
+  tasks: 'tasks'
+}
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 // workspace-mcp advertises every service's tools (read + write) on one endpoint; N7AI filters per provider
 const MCP_URL = 'http://workspace-mcp.test/mcp'
@@ -21,10 +28,25 @@ const TOOLS = [
   'manage_event',
   'search_gmail_messages',
   'get_gmail_thread_content',
-  'send_gmail_message'
+  'send_gmail_message',
+  'create_form',
+  'batch_update_form',
+  'get_form',
+  'list_form_responses',
+  'read_sheet_values',
+  'create_spreadsheet',
+  'append_table_rows',
+  'list_tasks',
+  'manage_task'
 ]
 
 // Real SDK and DB; only Google / workspace-mcp network and model responses are intercepted.
+// LlmService tối giản: chat() thật chạy trên một provider giả (không DB / mạng)
+const llmStub = (create: unknown) => {
+  const client = { chat: { completions: { create } } }
+  return { client, model: 'test', providers: { chain: async () => [{ id: 't', name: 't', client, modelOverride: null, primary: true }], markDown: () => undefined }, logger: { warn: () => undefined }, isGatewayFailure: () => false, chat: LlmService.prototype.chat } as unknown as LlmService
+}
+
 describe('Google MCP connectors', () => {
   let app: NestExpressApplication
   let db: DatabaseService
@@ -97,42 +119,62 @@ describe('Google MCP connectors', () => {
   })
 
   async function connect(agent: Awaited<ReturnType<typeof loginAgent>>, provider: keyof typeof SCOPES, access = 'access-token') {
-    const scope = `https://www.googleapis.com/auth/${SCOPES[provider]}`
+    const scopes =
+      provider === 'forms'
+        ? ['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/forms.responses.readonly']
+        : [`https://www.googleapis.com/auth/${SCOPES[provider]}`]
     const start = await agent.get(`/api/ai/connectors/google-${provider}/connect`).expect(302)
     const auth = new URL(start.headers.location)
     expect(auth.searchParams.get('client_id')).toBe('mcp-cid')
-    expect(auth.searchParams.get('scope')).toContain(scope)
+    expect(auth.searchParams.get('scope')).toContain(scopes[0])
     expect(auth.searchParams.get('access_type')).toBe('offline')
     tokenResponse = () =>
       json({
         access_token: access,
         refresh_token: 'rt-secret',
         expires_in: 3600,
-        scope: `openid email ${scope}`,
+        scope: `openid email ${scopes.join(' ')}`,
         id_token: `x.${Buffer.from(JSON.stringify({ email: 'student@example.test' })).toString('base64url')}.y`
       })
     const result = await agent.get(`/api/auth/google/callback?code=c&state=${auth.searchParams.get('state')}`).expect(302)
     expect(result.headers.location).toContain('result=connected')
   }
 
-  it('connects Drive/Calendar/Gmail, discovers MCP tools, denies writes and isolates accounts', async () => {
+  it('connects Drive/Calendar/Gmail/Forms/Sheets/Tasks, discovers MCP tools, denies writes and isolates accounts', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
-    for (const provider of ['drive', 'calendar', 'gmail'] as const) await connect(agent, provider)
+    for (const provider of ['drive', 'calendar', 'gmail', 'forms', 'sheets', 'tasks'] as const) await connect(agent, provider)
     const row = await db.query('SELECT refresh_token_enc FROM user_connectors WHERE user_id = $1', [user.id])
     expect(row.rows[0].refresh_token_enc).not.toContain('rt-secret')
     const list = (await agent.get('/api/ai/connectors').expect(200)).body.data
-    expect(list.filter((c: { connected: boolean; requiresAuth: boolean }) => c.connected && c.requiresAuth)).toHaveLength(3)
+    expect(list.filter((c: { connected: boolean; requiresAuth: boolean }) => c.connected && c.requiresAuth)).toHaveLength(6)
     await agent
       .patch('/api/ai/settings')
-      .send({ defaultConnectors: ['google_gmail'] })
+      .send({ defaultConnectors: ['google_gmail', 'google_forms', 'google_sheets', 'google_tasks'] })
       .expect(200)
     const mcp = app.get(GoogleMcpService)
-    const session = await mcp.open(user.id, ['google_drive', 'google_calendar', 'google_gmail'], AbortSignal.timeout(15_000))
+    const session = await mcp.open(
+      user.id,
+      ['google_drive', 'google_calendar', 'google_gmail', 'google_forms', 'google_sheets', 'google_tasks'],
+      AbortSignal.timeout(15_000)
+    )
     try {
       expect(session.errors).toEqual([])
       const names = session.tools.map((t) => (t.type === 'function' ? t.function.name : ''))
       expect(names).toContain('google_gmail__search_gmail_messages')
+      expect(names).toContain('google_forms__create_form')
+      expect(names).toContain('google_forms__get_form')
+      expect(names).toContain('google_sheets__create_spreadsheet')
+      expect(names).toContain('google_sheets__read_sheet_values')
+      expect(names).toContain('google_tasks__manage_task')
+      expect(names).toContain('google_tasks__list_tasks')
+      expect(session.readOnly?.('google_forms__create_form')).toBe(false)
+      expect(session.readOnly?.('google_forms__get_form')).toBe(true)
+      expect(session.readOnly?.('google_sheets__create_spreadsheet')).toBe(false)
+      expect(session.readOnly?.('google_sheets__read_sheet_values')).toBe(true)
+      expect(session.readOnly?.('google_tasks__manage_task')).toBe(false)
+      expect(session.readOnly?.('google_tasks__list_tasks')).toBe(true)
+      expect(session.readOnly?.('google_drive__search_drive_files')).toBe(true)
       expect(names.join(' ')).not.toMatch(/create_drive_file|manage_event|send_gmail_message/)
       expect(await session.call('google_calendar__get_events', { calendarId: 'school', timeMin: '2030-06-01T00:00:00Z' })).toContain('school')
       expect(calls.find((c) => c.name === 'get_events')?.args?.timeMin).toBe('2030-06-01T00:00:00Z')
@@ -171,6 +213,8 @@ describe('Google MCP connectors', () => {
     const agent = await loginAgent(app, user)
     await connect(agent, 'calendar')
     await connect(agent, 'gmail')
+    const warmup = await app.get(GoogleMcpService).open(user.id, ['google_calendar', 'google_gmail'], AbortSignal.timeout(15_000))
+    await warmup.close()
     let turn = 0
     const create = jest.fn(() =>
       Promise.resolve(
@@ -186,7 +230,10 @@ describe('Google MCP connectors', () => {
         })()
       )
     )
-    const loop = new McpAgentService({ client: { chat: { completions: { create } } }, model: 'test' } as unknown as LlmService, app.get(GoogleMcpService))
+    const loop = new McpAgentService(
+      llmStub(create),
+      app.get(GoogleMcpService)
+    )
     const output: string[] = []
     const progress: AiStep[][] = []
     const result = await loop.stream(
@@ -240,6 +287,56 @@ describe('Google MCP connectors', () => {
     }
   })
 
+  it('defers MCP discovery until needed, caches schemas per account and checks disconnect before execution', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    await connect(agent, 'drive')
+    const mcp = app.get(GoogleMcpService)
+    const lazy = await mcp.open(user.id, ['google_drive'], AbortSignal.timeout(15_000), { lazy: true })
+    expect(calls).toHaveLength(0)
+    expect(lazy.tools).toEqual([expect.objectContaining({ function: expect.objectContaining({ name: 'google_drive__discover_tools' }) })])
+    expect(JSON.parse(await lazy.call('google_drive__discover_tools', {})).availableTools).toContain('google_drive__search_drive_files')
+    expect(lazy.tools.some((t) => t.type === 'function' && t.function.name === 'google_drive__search_drive_files')).toBe(true)
+    await lazy.close()
+    calls.length = 0
+    const warm = await mcp.open(user.id, ['google_drive'], AbortSignal.timeout(15_000), { lazy: true })
+    expect(calls).toHaveLength(0)
+    expect(warm.tools.some((t) => t.type === 'function' && t.function.name === 'google_drive__discover_tools')).toBe(false)
+    const other = await mcp.open((await createUser(db)).id, ['google_drive'], AbortSignal.timeout(15_000), { lazy: true })
+    expect(other.tools).toHaveLength(0) // tài khoản chưa kết nối Drive ⇒ model không thấy tool Drive (không gọi nhầm rồi báo lỗi)
+    await other.close()
+    await agent.delete('/api/ai/connectors/google-drive').expect(200)
+    expect(JSON.parse(await warm.call('google_drive__search_drive_files', { query: 'AI' })).error).toBeDefined()
+    expect(calls).toHaveLength(0)
+    await warm.close()
+  })
+
+  it('discovers a cold Google catalog inside the model loop and uses the newly exposed tools', async () => {
+    const user = await createUser(db)
+    await connect(await loginAgent(app, user), 'calendar')
+    let turn = 0
+    const create = jest.fn(async (params: { tools: { function?: { name: string } }[] }) => {
+      const current = turn++
+      const name = current === 0 ? 'google_calendar__discover_tools' : 'google_calendar__get_events'
+      if (current < 2) expect(params.tools.some((t) => t.function?.name === name)).toBe(true)
+      return (async function* () {
+        if (current < 2)
+          yield {
+            choices: [{ delta: { tool_calls: [{ index: 0, id: `cold-${current}`, function: { name, arguments: '{}' } }] }, finish_reason: 'tool_calls' }]
+          }
+        else yield { choices: [{ delta: { content: 'Đã đọc lịch' }, finish_reason: 'stop' }] }
+      })()
+    })
+    const loop = new McpAgentService(
+      llmStub(create),
+      app.get(GoogleMcpService)
+    )
+    const result = await loop.stream([{ role: 'user', content: 'Đọc lịch' }], user.id, ['google_calendar'], () => undefined)
+    expect(result.timings.rounds).toBe(3)
+    expect(result.calls.every((c) => c.ok)).toBe(true)
+    expect(calls.some((c) => c.name === 'get_events')).toBe(true)
+  })
+
   it('rejects a grant missing required scopes', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
@@ -277,10 +374,10 @@ describe('Google MCP connectors', () => {
         close
       })
     } as unknown as GoogleMcpService
-    const llm = { client: { chat: { completions: { create } } }, model: 'test' } as unknown as LlmService
+    const llm = { client: { chat: { completions: { create } } }, model: 'test', chat: LlmService.prototype.chat } as unknown as LlmService
     const result = await new McpAgentService(llm, mcp).stream([{ role: 'user', content: 'Search' }], 'account', ['google_drive'], () => undefined)
-    expect(rounds).toBe(5)
-    expect(call).toHaveBeenCalledTimes(4)
+    expect(rounds).toBe(4)
+    expect(call).toHaveBeenCalledTimes(3)
     expect(result.finishReason).toBe('length')
     expect(close).toHaveBeenCalledTimes(1)
   })
@@ -306,7 +403,8 @@ describe('Google MCP connectors', () => {
           }
         }
       },
-      model: 'test'
+      model: 'test',
+      chat: LlmService.prototype.chat
     } as unknown as LlmService
     await expect(new McpAgentService(llm, mcp).stream([], 'account', ['google_drive'], () => undefined)).rejects.toThrow('tool calling')
     expect(close).toHaveBeenCalledTimes(1)

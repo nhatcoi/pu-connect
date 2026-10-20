@@ -4,7 +4,13 @@ import type { AiConnectorId, AiMode, ChatCitation } from './chat.schema'
 // Cài đặt N7AI: bộ nhớ, tác vụ tự động, phản hồi, quyền riêng tư (docs/core/10-n7ai-settings.md)
 
 export const AI_RETENTION_DAYS = [30, 365] as const
+
+// Model N7AI người dùng chọn (id = tên model trên gateway); danh mục do admin quản lý ở bảng ai_models (GET /ai/models)
+export type AiModelId = string
+export const DEFAULT_AI_MODEL: AiModelId = 'n7ai-fast'
+
 export interface AiSettings {
+  aiModel: AiModelId
   memoryEnabled: boolean
   retentionDays: (typeof AI_RETENTION_DAYS)[number] | null // null = giữ vô hạn
   defaultConnectors: AiConnectorId[]

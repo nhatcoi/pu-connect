@@ -45,7 +45,7 @@ const TOOLS: AgentToolSession['tools'] = [
     type: 'function',
     function: {
       name: LIST_TOOL,
-      description: 'Học tập của tôi: list the user\'s saved Flashcard / Quiz sets with progress (cards learned, due, weak, new; quiz attempts and best score).',
+      description: "Học tập của tôi: list the user's saved Flashcard / Quiz sets with progress (cards learned, due, weak, new; quiz attempts and best score).",
       parameters: {
         type: 'object',
         properties: {
@@ -62,7 +62,7 @@ const TOOLS: AgentToolSession['tools'] = [
     function: {
       name: ITEMS_TOOL,
       description:
-        'Học tập của tôi: read flashcards / quiz questions from the user\'s saved sets with each card\'s review status. Filter by set, text, or status (due, weak, new, learning, learned).',
+        "Học tập của tôi: read flashcards / quiz questions from the user's saved sets with each card's review status. Filter by set, text, or status (due, weak, new, learning, learned).",
       parameters: {
         type: 'object',
         properties: {
@@ -92,6 +92,7 @@ export class StudyAgentToolsService {
   open(userId: string): AgentToolSession {
     return {
       tools: TOOLS,
+      readOnly: () => true,
       instructions: INSTRUCTIONS,
       describe: (name, args) => describe(name, args),
       call: async (name, args) => {
@@ -101,7 +102,12 @@ export class StudyAgentToolsService {
           const out = JSON.stringify({ provider: 'Học tập của tôi', data })
           return out.length <= MAX_RESULT_CHARS
             ? out
-            : JSON.stringify({ provider: 'Học tập của tôi', truncated: true, data: out.slice(0, MAX_RESULT_CHARS - 512), note: 'Kết quả dài, lọc theo bộ hoặc trạng thái để đọc tiếp' })
+            : JSON.stringify({
+                provider: 'Học tập của tôi',
+                truncated: true,
+                data: out.slice(0, MAX_RESULT_CHARS - 512),
+                note: 'Kết quả dài, lọc theo bộ hoặc trạng thái để đọc tiếp'
+              })
         } catch {
           return JSON.stringify({ error: 'Không đọc được dữ liệu học tập, thử lại sau' })
         }

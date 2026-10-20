@@ -45,6 +45,19 @@ describe('N7AI agent tools (e2e)', () => {
     return c as string
   }
 
+  it('Hội thoại của tôi: khớp BẤT KỲ từ khóa, xếp theo số từ khớp (1 lần gọi là đủ, không cần thử lại ít từ hơn)', async () => {
+    const user = await createUser(db)
+    const both = await thread(user.id, 'Ý tưởng NCKH', [['user', 'Mình muốn làm nghiên cứu y tế và AI phân loại ảnh X-quang']])
+    const one = await thread(user.id, 'Lịch ôn thi', [['user', 'Nhắc mình lịch thi y tế công cộng']])
+    await thread(user.id, 'Nấu ăn', [['user', 'Công thức nấu phở']])
+    const current = await thread(user.id, 'Hiện tại', [['user', 'tìm giúp']])
+
+    const session = app.get(HistoryToolsService).open(user.id, current)
+    // "NCKH y tế AI": không thread nào chứa đủ cả 3 từ trong CÙNG tin ⇒ kiểu "tất cả từ" sẽ trả rỗng
+    const found = JSON.parse(await session.call('my_chats__search_threads', { query: 'NCKH y tế AI' })).data as { id: string }[]
+    expect(found.map((t) => t.id)).toEqual([both, one]) // khớp nhiều từ hơn đứng trước; "Nấu ăn" không khớp
+  })
+
   it('Hội thoại của tôi: tìm theo nội dung (bỏ dấu), đọc lại; bỏ thread hiện tại & thread người khác', async () => {
     const user = await createUser(db)
     const old = await thread(user.id, 'Ôn giải tích', [
@@ -248,7 +261,8 @@ describe('N7AI agent tools (e2e)', () => {
     })
     const llm = (failFirst: boolean, partial: string) => ({
       model: 'fake',
-      client: { chat: { completions: { create: () => Promise.resolve(stream(calls++ === 0 && failFirst, calls === 1 ? partial : 'Trả lời')) } } }
+      client: {},
+      chat: () => Promise.resolve(stream(calls++ === 0 && failFirst, calls === 1 ? partial : 'Trả lời'))
     })
     const mcp = { open: async () => ({ tools: [], instructions: [], describe: () => null, call: async () => '{}', close: async () => undefined, errors: [] }) }
     const run = (failFirst: boolean, partial = '') => {

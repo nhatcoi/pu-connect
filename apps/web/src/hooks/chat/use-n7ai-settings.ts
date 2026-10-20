@@ -30,6 +30,11 @@ export function useAiSettings(enabled = true) {
   return { settings: query.data, isLoading: query.isPending, update }
 }
 
+// Danh mục model do admin quản lý (menu chọn ở ô soạn tin)
+export function useAiModelOptions(enabled = true) {
+  return useQuery({ queryKey: queryKeys.aiModels, queryFn: chatApi.aiModels, staleTime: 5 * 60 * 1000, enabled })
+}
+
 const sortMemories = (list: AiMemory[]) =>
   [...list].sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.createdAt.localeCompare(a.createdAt))
 

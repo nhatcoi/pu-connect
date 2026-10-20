@@ -19,8 +19,8 @@ flowchart TB
     others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
-    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance<br/>agent: HistoryTools (my_chats) · PucTools (search · app_help) · ai-actions"]
-    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>RAG: EmbeddingService · RagSearchService (full-text + vector, RRF) · RagIndexService (worker rag-index)<br/>McpAgentService (AgentToolSession) · GoogleMcpService · GoogleOAuth"]
+    chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance<br/>agent: HistoryTools (my_chats) · PucTools (hybrid search · read · app_help) · ai-actions<br/>context: ConversationContext · ConversationTools (chat__earlier)"]
+    ai["<b>Ai</b><br/>LlmService (client · quota · ai_runs)<br/>AiRetrieval (nguồn PU) · prompts<br/>RAG: EmbeddingService · RagSearchService (full-text + vector, RRF) · RagIndexService (worker rag-index)<br/>RetrievalToolsService · AgentSources<br/>McpAgentService (AgentToolRunner · read cache · timing) · GoogleMcpService · GoogleOAuth · PuConnectorMcpService · PuConnectorService"]
     perso["<b>Personalization</b><br/>user_events → user_interests<br/>gợi ý N7AI · worker BullMQ"]
     tools["<b>StudyTools</b><br/>registry loại bộ (kinds/)<br/>bộ Flashcard / Quiz · lịch ôn SM-2<br/>nhật ký học study_events · tools/stats<br/>N7AI soạn nháp · tool tạo bộ trong chat<br/>StudyAgentTools (tool my_study)"]
   end
@@ -56,7 +56,9 @@ flowchart TB
   posts -->|PostAiService: @n7ai trong bình luận (PostContext · PostThreadTools) · tóm tắt bài| ai
   posts -->|PucTools công khai| chat
   ai -->|chat/completions| llm["LLM gateway"]
-  ai -->|"OAuth · MCP initialize / tools/list / tools/call"| gdrive["workspace-mcp (localhost) → Google Drive / Calendar / Gmail API"]
+  ai -->|"lazy OAuth · cached catalog · MCP tools/list / tools/call"| gdrive["workspace-mcp (localhost) → Google Drive / Calendar / Gmail API"]
+  ai -->|"PKCE grant · authenticated MCP reads"| pka["PKA service → Canvas / QLĐT"]
+  extension["Student Hub extension (PKA origin)"] -->|"university SSO on explicit consent"| pka
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
   others -->|StudyGroupChatService: đồng bộ thành viên| chat
   blocks -->|block.changed| rt
@@ -99,6 +101,7 @@ flowchart TB
 | Storage | `POST upload/file` · `POST upload/multiple` |
 | Push | `GET push/config` · `POST/DELETE push/subscriptions` · `POST push/test` |
 | Admin (RBAC `AdminGuard` + `@RequireAdminPermission`) | `GET admin/me` · `GET admin/stats` · `GET admin/reports?status=pending\|resolved` · `GET admin/posts?q=&filter=&type=&sort=&dir=&page=&pageSize=` · `POST admin/posts/bulk` · `POST admin/posts/:id/{hide,unhide,pin,dismiss-reports}` · `GET admin/comments?q=&filter=&sort=&page=` · `POST admin/comments/bulk` · `DELETE admin/comments/:id` · `GET admin/users?q=&role=&status=&verified=&auth=&activity=&joined=&faculty=&reported=&sort=&dir=&page=&pageSize=` · `GET admin/users/summary` · `GET admin/users/export` (CSV) · `POST admin/users/bulk` · `GET admin/users/:id` · `POST/DELETE admin/users/:id/notes` · `POST/DELETE admin/users/:id/sanctions` · `PATCH admin/users/:id/role` · `PATCH admin/users/:id/verify` · `POST admin/users/:id/{suspend,unsuspend,revoke-sessions}` · `GET admin/users/:id/insight` · `GET admin/ai/overview` · `GET admin/ai-feedback` · `PATCH admin/ai/tickets/:id` · `GET/PATCH admin/ai/skills` · `GET/POST/PATCH admin/courses` · `GET/DELETE admin/documents` · `GET admin/communities` · `GET admin/search/{zero-results,top}` · `POST admin/broadcast` · `GET admin/audit-logs` · `GET admin/bots` · `GET admin/bots/activity` · `PATCH admin/bots/control` · `PATCH admin/bots/profiles/:username` · `PUT admin/bots/topics` · `DELETE admin/bots/topics/:slug` · `POST/PATCH/DELETE admin/bots/accounts[/:username]` · `DELETE admin/bots/commands/:id` · `POST admin/bots/commands` · `POST admin/bots/import` · `POST admin/bots/import/map-columns` (`bots:manage`) · `POST bots/ingest/images` (token `BOT_INGEST_TOKEN`, multipart; chỉ cho tool crawl xin URL ảnh R2) |
+| Model N7AI | `GET ai/models` (đăng nhập) · `GET/POST admin/ai/models` · `PATCH/DELETE admin/ai/models/:id` (`ai:read` / `ai:manage`) |
 | Đơn vị học thuật | `GET academic-units` (công khai) · `GET/POST admin/academic-units` · `PATCH/DELETE admin/academic-units/:id` · `POST admin/academic-units/:id/{reorder,merge}` (`academic:read` / `academic:manage`) |
 | Personalization | `POST events` (lô ≤ 50 sự kiện hành vi, 204) · `GET ai/suggestions?mode=` (`{ personalized, items[] }`) |
 | Presence | `GET presence` (`{ [userId]: { online, lastSeenAt } }` của người cùng hội thoại) |
@@ -132,8 +135,8 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
-- 2026-10-20 — N7AI theo ngữ cảnh ([22](../core/22-n7ai-context.md)): `PostContextService` + `PostThreadToolsService` (Posts), `ConversationContextService` + `ConversationToolsService` (Chat); PostsModule import ChatModule (xuất PucToolsService); model nền mặc định `puc-fast`.
 - 2026-10-20 — `StudyToolsController`: `GET sets/:id/attempts` + `StudyToolsService.attempts` (lịch sử quiz); quiz thêm loại câu `multi` / `truefalse` (`QuizQuestionContentSchema`), migration `quiz-upgrade.sql`.
+- 2026-10-20 — `AiModelCatalogService` (ai/, cache 30s, bảng `ai_models`) + `AdminAiModelsService/Controller` `admin/ai/models` (CRUD, audit `ai_model.*`); `GET ai/models` cấp menu; `AiSettingsService` kiểm model theo danh mục. Migration `ai-models-upgrade.sql`.
 - 2026-10-20 — `AcademicUnitsController` `GET academic-units` (công khai, cache 60s) + `AdminUnitsService/Controller` `admin/academic-units` (CRUD, `reorder`, `merge`; ghi audit `academic_unit.*`); `findUnitNames` (academic-units/unit-names.ts) cho `users/profile` + onboarding nhận `unitId`; admin users lọc `unit` (đệ quy đơn vị con). Migration `academic-units-upgrade.sql`.
 - 2026-10-20 — `posts/anonymity.ts` (che tác giả, `anonymizeNotification`, hạn mức 24h) dùng bởi `PostsService`, `CommentsService`, tìm kiếm, chat share / embed, post-ai; cột `is_anonymous` (migration `anonymous-upgrade.sql`).
 - 2026-10-19 — Chat: `ChatShareController` `POST chat/share/post` + `ChatShareService` (mở DM, `MessagesService.sendShared` với `meta.sharedPost`, cộng `shares_count`).
@@ -192,3 +195,9 @@ flowchart TB
 - 2026-10-04 — PushModule + QueueModule (BullMQ), endpoint push, event `presence`.
 - 2026-10-04 — Notification v1: `dispatch()` từ Posts/Comments/UserResolver/Auth, endpoint settings/unread-count, event `notification.read`; vá mạo danh (requireUserId).
 - 2026-10-04 — tạo mới; thêm MentionsModule, RealtimeGateway có xác thực, NotificationsModule đẩy realtime.
+
+- 2026-10-19 — Demand-driven retrieval tools, AgentToolRunner, source registry, lazy MCP and timing ([18](../core/18-agent-harness-performance.md)).
+
+- 2026-10-19: Added PU Connector controller/service and remote PKA MCP; university SSO remains on PKA.
+
+- 2026-10-20 — N7AI theo ngữ cảnh ([22](../core/22-n7ai-context.md)): `PostContextService` + `PostThreadToolsService` (Posts), `ConversationContextService` + `ConversationToolsService` (Chat); PostsModule import ChatModule (xuất PucToolsService); model nền mặc định `n7ai-fast`.

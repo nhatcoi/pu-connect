@@ -66,8 +66,10 @@ export class AiThreadShareService {
       role: r.kind === 'ai' ? 'ai' : 'user',
       content: r.content || '',
       aiMode: r.ai_mode ?? null,
-      // Drive / Calendar / tài liệu có thể riêng tư ⇒ chỉ giữ bài công khai & trang web
-      citations: citationsOf(r.blocks).filter((c) => c.ref.type === 'web' || (c.ref.type === 'post' && publicPosts.has(c.ref.id))),
+      // Drive / Calendar / tài liệu có thể riêng tư ⇒ chỉ giữ bài công khai, trang web & bài báo khoa học
+      citations: citationsOf(r.blocks).filter(
+        (c) => c.ref.type === 'web' || c.ref.type === 'paper' || (c.ref.type === 'post' && publicPosts.has(c.ref.id))
+      ),
       attachmentCount: Number(r.attachment_count),
       createdAt: new Date(r.created_at).toISOString()
     }))

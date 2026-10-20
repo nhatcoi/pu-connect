@@ -7,7 +7,7 @@
 
 | Vấn đề | Quyết định | Lý do |
 |---|---|---|
-| Vị trí | Route `/n7ai` trong route group `(app)`; `AppLayout` thấy `/n7ai*` ⇒ ẩn Sidebar chính + cột phải, `N7AiShell` dựng thanh bên riêng | Header, socket, dialog toàn cục không mount lại khi chuyển qua lại |
+| Vị trí | Route `/n7ai` trong route group `(app)`; `AppLayout` thấy `/n7ai*` ⇒ ẩn Header chung, Sidebar chính + cột phải, `N7AiShell` dựng thanh bên riêng | Chỉ hiện header N7AI; socket, dialog toàn cục vẫn nằm trong layout chung |
 | Dữ liệu | **Giữ nguyên** `conversations (type='ai')` / `messages` / `ai/threads`; không migration | Tách giao diện, không tách dữ liệu |
 | Tin nhắn | `GET conversations` giữ **1 thread N7AI chat nhanh** = thread gần nhất (`LATEST_AI_ONLY`, rank 2 ⇒ luôn đứng đầu), mở tại `/messages/[id]` như Meta AI trong Threads; `unread-count` loại `c.type = 'ai'` | Hỏi nhanh không rời hộp thư; AI không chiếm badge (dòng AI vẫn có chấm chưa đọc) |
 | Lối vào `/n7ai` | Đầu thread chat nhanh: nút ⤢ mở `/n7ai/[id]`; nút nổi (FAB) logo N7AI góc phải dưới ⇒ `/n7ai`, gắn 1 lần trong `AppLayout`: desktop mọi trang (trừ `/n7ai*` và hội thoại `/messages/[id]`), mobile chỉ trang Tin nhắn; cột phải thread chat nhanh = `ConversationInfo` bản N7AI (avatar, @n7ai, Mở trong N7AI · Cài đặt N7AI, tìm tin, Ảnh · Tệp · Đã ghim) như DM; chưa có thread ⇒ dòng "N7AI" gọi `POST conversations/ai` | Chat nhanh ở hộp thư, làm việc sâu ở không gian riêng |
@@ -24,6 +24,7 @@
 |---|---|
 | `/n7ai` | Chat mới (màn chào + gợi ý), `useAiDraftThread` |
 | `/n7ai/[id]` | 1 thread; `?m=<messageId>` cuộn tới tin |
+| `/n7ai/temporary` | Chat tạm — không lưu lịch sử / bộ nhớ ([`19`](./19-n7ai-temporary-chat.md)) |
 | `/n7ai/library` | Tab Ảnh · Tài liệu · Học liệu (cuộn vô hạn, quiz/flashcard mở ra ôn ngay) |
 | `/n7ai/settings` · `/n7ai/settings/[item]` | Các panel ở [`10`](./10-n7ai-settings.md) |
 
@@ -43,6 +44,12 @@ Truy vấn: `conversations (type='ai', created_by)` (idx_conversations_ai_thread
 - Tin có tệp trong thread AI ⇒ làm mới Thư viện; câu trả lời xong có quiz/flashcard ⇒ làm mới tab Học liệu.
 
 ## 5. Kiểm thử
+
+### Sửa layout topbar (2026-10-17)
+
+- Nguyên nhân: `AppLayout` luôn dựng Header chung, trong khi N7AI đã có header riêng; các vị trí sticky desktop vẫn chừa 56px cho topbar.
+- Giải pháp: ẩn Header chung cho `/n7ai` và mọi route con, kể cả skeleton xác thực. `N7AiShell` đặt `--app-header-height: 0rem`; header hội thoại, tin ghim và chiều cao hội thoại dùng biến này, sidebar/trang con bám đỉnh viewport. Thanh điều hướng đáy mobile giữ nguyên.
+- Kết quả: không còn hai thanh đầu trang hoặc khoảng trống topbar trong không gian N7AI; hội thoại tại `/messages/[id]` vẫn dùng khoảng cách topbar mặc định.
 
 `apps/api/test/n7ai-space.e2e-spec.ts`: Tin nhắn chỉ 1 thread AI chat nhanh (gần nhất, = `POST conversations/ai`), badge không đếm; thư viện theo loại, chỉ của mình, keyset, tham số sai ⇒ 400. Cập nhật `chat-mention-ai` / `google-connectors` (callback mới).
 

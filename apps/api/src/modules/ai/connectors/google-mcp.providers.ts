@@ -21,8 +21,62 @@ export const GOOGLE_MCP_PROVIDERS = {
     slug: 'google-gmail',
     scopes: ['https://www.googleapis.com/auth/gmail.readonly'],
     tools: ['search_gmail_messages', 'get_gmail_message_content', 'get_gmail_messages_content_batch', 'get_gmail_thread_content', 'list_gmail_labels']
+  },
+  google_forms: {
+    name: 'Google Forms',
+    slug: 'google-forms',
+    scopes: ['https://www.googleapis.com/auth/forms.body', 'https://www.googleapis.com/auth/forms.responses.readonly'],
+    tools: ['create_form', 'batch_update_form', 'get_form', 'list_form_responses', 'get_form_response', 'set_publish_settings']
+  },
+  google_sheets: {
+    name: 'Google Sheets',
+    slug: 'google-sheets',
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    tools: [
+      'list_spreadsheets',
+      'get_spreadsheet_info',
+      'read_sheet_values',
+      'modify_sheet_values',
+      'create_spreadsheet',
+      'create_sheet',
+      'append_table_rows',
+      'list_sheet_tables',
+      'manage_sheet_tab'
+    ]
+  },
+  google_tasks: {
+    name: 'Google Tasks',
+    slug: 'google-tasks',
+    scopes: ['https://www.googleapis.com/auth/tasks'],
+    tools: [
+      'list_task_lists',
+      'get_task_list',
+      'list_tasks',
+      'get_task',
+      'manage_task',
+      'manage_task_list'
+    ]
   }
 } as const
+
+// Các tool ghi dữ liệu (không được chạy đồng thời, không cache kết quả)
+export const GOOGLE_WRITE_TOOLS = new Set([
+  'create_form',
+  'batch_update_form',
+  'set_publish_settings',
+  'create_spreadsheet',
+  'modify_sheet_values',
+  'append_table_rows',
+  'create_sheet',
+  'manage_sheet_tab',
+  'manage_task',
+  'manage_task_list'
+])
+
+export function isGoogleWriteTool(name: string): boolean {
+  const raw = name.includes('__') ? name.split('__')[1] : name
+  return GOOGLE_WRITE_TOOLS.has(raw)
+}
 
 // Nhãn bước hiển thị khi N7AI gọi tool (message.progress) / Step labels shown while N7AI runs a tool
 const TOOL_LABELS: Record<string, string> = {
@@ -36,13 +90,34 @@ const TOOL_LABELS: Record<string, string> = {
   get_gmail_message_content: 'Đọc thư',
   get_gmail_messages_content_batch: 'Đọc thư',
   get_gmail_thread_content: 'Đọc chuỗi thư',
-  list_gmail_labels: 'Xem nhãn Gmail'
+  list_gmail_labels: 'Xem nhãn Gmail',
+  create_form: 'Tạo Google Form',
+  batch_update_form: 'Cập nhật câu hỏi biểu mẫu',
+  get_form: 'Đọc cấu trúc biểu mẫu',
+  list_form_responses: 'Đọc câu trả lời biểu mẫu',
+  get_form_response: 'Đọc phản hồi biểu mẫu',
+  set_publish_settings: 'Cài đặt xuất bản biểu mẫu',
+  list_spreadsheets: 'Tìm bảng tính Sheets',
+  get_spreadsheet_info: 'Đọc cấu trúc bảng tính',
+  read_sheet_values: 'Đọc dữ liệu bảng tính',
+  modify_sheet_values: 'Cập nhật ô bảng tính',
+  create_spreadsheet: 'Tạo bảng tính Google Sheets',
+  create_sheet: 'Tạo trang tính mới',
+  append_table_rows: 'Thêm hàng vào bảng tính',
+  list_sheet_tables: 'Xem bảng dữ liệu',
+  manage_sheet_tab: 'Quản lý trang tính',
+  list_task_lists: 'Xem danh sách việc cần làm',
+  get_task_list: 'Đọc danh mục việc',
+  list_tasks: 'Xem các việc cần làm',
+  get_task: 'Đọc chi tiết việc cần làm',
+  manage_task: 'Tạo / Cập nhật việc cần làm',
+  manage_task_list: 'Quản lý danh mục việc'
 }
 
 const clip = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? (v.trim().length > max ? `${v.trim().slice(0, max - 1)}…` : v.trim()) : undefined)
 const day = (v: unknown) => (typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? new Date(v).toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : undefined)
 
-// Nhãn + chi tiết ngắn (từ khóa, khoảng ngày, số thư) — không chứa dữ liệu Google trả về
+// Nhãn + chi tiết ngắn (từ khóa, khoảng ngày, số thư, tiêu đề form/sheet/task) — không chứa dữ liệu Google trả về
 export function describeToolCall(tool: string, args: Record<string, unknown>): { label: string; detail?: string } {
   const label = TOOL_LABELS[tool] ?? tool
   const ids = args.message_ids ?? args.messageIds
@@ -52,6 +127,10 @@ export function describeToolCall(tool: string, args: Record<string, unknown>): {
     clip(args.query) ??
     (Array.isArray(ids) ? `${ids.length} thư` : undefined) ??
     (from || to ? [from, to].filter(Boolean).join(' – ') : undefined) ??
+    clip(args.spreadsheet_title ?? args.spreadsheetTitle) ??
+    clip(args.range) ??
+    clip(args.task_title ?? args.taskTitle ?? args.title) ??
+    clip(args.form_id ?? args.formId) ??
     clip(args.file_name ?? args.fileName)
   return detail ? { label, detail } : { label }
 }

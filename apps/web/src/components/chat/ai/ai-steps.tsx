@@ -45,7 +45,7 @@ function StepIcon({ provider }: { provider: AiStep['provider'] }) {
 
 function StepRow({ step: s }: { step: AiStep }) {
   return (
-    <li className="relative flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+    <li className={cn('relative flex min-w-0 items-center gap-2 text-xs text-muted-foreground', s.resultCount === 0 && s.status === 'done' && 'opacity-60')}>
       <span className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-card ring-1 ring-border">
         <StepIcon provider={s.provider} />
       </span>
@@ -53,6 +53,9 @@ function StepRow({ step: s }: { step: AiStep }) {
         {s.label}
         {s.status === 'running' && '…'}
         {s.detail && <span className="text-muted-foreground"> · {s.detail}</span>}
+        {s.resultCount !== undefined && s.status === 'done' && (
+          <span className="text-muted-foreground"> · {s.resultCount ? `${s.resultCount} kết quả` : 'không có kết quả'}</span>
+        )}
       </span>
       {s.status === 'running' ? (
         <Loader2 className="ml-auto h-3 w-3 shrink-0 animate-spin" aria-label="Đang chạy" />
@@ -89,11 +92,15 @@ function useElapsed(since: string | undefined, running: boolean) {
   return since ? Math.max(0, now - new Date(since).getTime()) : 0
 }
 
-// Tóm tắt khi xong: "4 nguồn · 2 công cụ"
+// Tóm tắt khi xong: "3 công cụ · 4 nguồn" — công cụ = mọi bước không phải chuẩn bị (tệp, mục gắn @, bộ nhớ); nguồn = tổng kết quả
+const PREP: AiStep['provider'][] = ['refs', 'files', 'memory']
 function summary(steps: AiStep[]) {
-  const sources = steps.reduce((n, s) => n + (Number(/^(\d+) (nguồn|trang)/.exec(s.detail ?? '')?.[1]) || 0), 0)
-  const tools = steps.filter((s) => !['library', 'my_documents', 'my_groups', 'web', 'web_search', 'refs', 'files', 'memory'].includes(s.provider)).length
-  return [sources ? `${sources} nguồn` : null, tools ? `${tools} công cụ` : null].filter(Boolean).join(' · ')
+  const tools = steps.filter((s) => !PREP.includes(s.provider))
+  const sources = tools.reduce(
+    (n, s) => n + (s.resultCount ?? (Number(/^(\d+) (nguồn|trang)/.exec(s.detail ?? '')?.[1]) || 0)), // tin cũ: số nằm trong detail
+    0
+  )
+  return [tools.length ? `${tools.length} công cụ` : null, sources ? `${sources} nguồn` : null].filter(Boolean).join(' · ')
 }
 
 // Tiến trình N7AI: đọc tệp / bộ nhớ, tìm nguồn, gọi tool — đang trả lời ⇒ timeline + đồng hồ; xong ⇒ thu gọn "Đã xử lý 6.2s · 4 nguồn"

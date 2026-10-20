@@ -29,3 +29,5 @@ export function toolResult(provider: string, data: unknown, maxChars = 12_000): 
 }
 
 export const toolError = (message: string) => JSON.stringify({ error: message })
+// Nguồn ngoài đang lỗi / quá tải: bộ chạy công cụ chặn gọi lại tool này trong cùng lượt hỏi
+export const toolUnavailable = (message: string) => JSON.stringify({ error: message, unavailable: true })

@@ -111,7 +111,7 @@ Nếu trong lượt này người học vừa cho biết dữ kiện BỀN về 
 
 // Ghi nguồn đã dùng (khi có <context>): chỉ hiện nguồn N7AI thực sự dựa vào, không phải mọi kết quả tìm được
 export const SOURCES_PROMPT = `
-Mỗi nguồn trong <context> có số thứ tự n. Sau khi trả lời, xuống dòng, viết dòng ${FOLLOWUP_MARKER} rồi ngay dòng sau viết "[nguồn] <các số n bạn thực sự dùng để trả lời, cách nhau dấu phẩy>" (trước mọi dòng khác sau dấu mốc). Nguồn không liên quan thì bỏ qua, không nhắc tới trong câu trả lời; không dùng nguồn nào thì không viết dòng [nguồn]. Không ghi số n trong phần trả lời.`
+Mỗi nguồn trong <context> hoặc kết quả công cụ có trường n là số thứ tự nguồn. Chỉ các nguồn được cấp n mới được ghi số nguồn. Sau khi trả lời, xuống dòng, viết dòng ${FOLLOWUP_MARKER} rồi ngay dòng sau viết "[nguồn] <các số n bạn thực sự dùng để trả lời, cách nhau dấu phẩy>" (trước mọi dòng khác sau dấu mốc). Nguồn không liên quan thì bỏ qua, không nhắc tới trong câu trả lời; không dùng nguồn nào thì không viết dòng [nguồn]. Không ghi số n trong phần trả lời.`
 
 // Nút dẫn đường / hành động cần xác nhận (thread riêng, có tool puc__*): cú pháp xem agent/ai-actions.ts
 export const ACTIONS_PROMPT = `

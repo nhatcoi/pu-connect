@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { AiModule } from '../ai/ai.module'
 import { AuthModule } from '../auth/auth.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PersonalizationModule } from '../personalization/personalization.module'
@@ -10,6 +11,8 @@ import { AdminListsService } from './admin-lists.service'
 import { AdminViewsService } from './admin-views.service'
 import { AdminUserDataService } from './admin-user-data.service'
 import { AdminRiskService } from './admin-risk.service'
+import { AdminAiModelsController } from './admin-ai-models.controller'
+import { AdminAiModelsService } from './admin-ai-models.service'
 import { AdminUnitsController } from './admin-units.controller'
 import { AdminUnitsService } from './admin-units.service'
 import { BotIngestController } from './bot-import/bot-ingest.controller'
@@ -22,8 +25,8 @@ import { AdminBotsService } from './admin-bots.service'
 import { AdminGuard } from './admin.guard'
 
 @Module({
-  imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule],
-  controllers: [AdminController, AdminBotsController, BotIngestController, AdminUnitsController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminGuard]
+  imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule],
+  controllers: [AdminController, AdminBotsController, BotIngestController, AdminUnitsController, AdminAiModelsController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminGuard]
 })
 export class AdminModule {}

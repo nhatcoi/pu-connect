@@ -4,12 +4,12 @@
 
 ## 1. Nguyên tắc: dữ liệu đặt ở đâu
 
-Không phải thứ gì cũng nên là tool. Mỗi lần gọi tool tốn thêm 1 lượt LLM (chậm 1–3 s), mô tả tool đi kèm mọi request, và quá nhiều tool làm model chọn sai.
+Ngữ cảnh nhỏ, cần thiết được nạp sẵn; tìm dữ liệu theo yêu cầu là tool do model chọn. Một lượt model có thể yêu cầu nhiều tool độc lập, harness chạy song song có giới hạn. Chi tiết tối ưu: [18-agent-harness-performance.md](./18-agent-harness-performance.md).
 
 | Loại dữ liệu | Đặt ở | Ví dụ |
 |---|---|---|
 | Nhỏ, lượt nào cũng cần | System prompt | Hồ sơ học, mục nhớ ghim, giờ hiện tại |
-| Truy xuất rẻ, hay dùng | Lấy sẵn trước khi gọi model | Thư viện PU (`AiRetrieval`, tìm kết hợp full-text + vector — [17](./17-rag-hybrid-search.md)) |
+| Truy xuất thư viện / nguồn được bật | Tool khi cần | `puc__search` dùng full-text + vector; không tìm trước mọi câu hỏi |
 | Lớn, có điều kiện, dữ liệu riêng | Tool | Hội thoại cũ, tiến độ học, Gmail / Drive, tìm trong PUC |
 | Giao diện | Tool hoặc dòng đánh dấu có cấu trúc | Bộ flashcard / quiz, nút dẫn đường |
 | Ghi / thay đổi dữ liệu | Đề xuất ⇒ người dùng bấm xác nhận | Tham gia nhóm học |
@@ -30,10 +30,11 @@ Không làm tool cho bộ nhớ: dòng `[nhớ]` ghi trong cùng lượt trả l
 ## 3. Tool PU Connector (`puc`, luôn có trong thread riêng)
 
 `chat/n7ai/agent/puc-tools.service.ts`:
-- `puc__search(query, type?)` dùng lại `SearchService.search`, nên đúng quyền xem như trang Tìm kiếm. Limit ≤ 5 để không ghi `search_logs`. Thêm cộng đồng bằng truy vấn riêng.
+- `puc__search(query, queries?, type?)` tìm tối đa 3 biến thể từ khóa cùng lúc: bài/tài liệu qua `RagSearchService`, học phần/người/nhóm qua `SearchService`, cộng đồng qua SQL có giới hạn. Bài/tài liệu theo connector `library`. Kết quả ngắn, loại trùng, tối đa 5 mỗi loại.
+- `puc__read(type, id)` đọc sâu bài/tài liệu đã tìm thấy; kiểm quyền lại, không dùng khi chỉ cần liệt kê tài liệu.
 - Mỗi kết quả có `href` trong app. Nhóm học kèm `id`, sĩ số, `status`.
 - `puc__app_help(topic?)` đọc danh mục tính năng `agent/puc-app-guide.ts` (tên, trang, cách dùng). Khớp từ khóa bỏ dấu; không khớp thì trả cả danh mục rút gọn.
-- Nhóm chat không có tool này.
+- Nhóm chat chỉ có search/read bài và tài liệu công khai; không có nguồn riêng hay app_help.
 
 ## 4. Nút dẫn đường & hành động cần xác nhận
 
@@ -125,3 +126,35 @@ Gateway (`v9`) không stream phần suy nghĩ của model (delta chỉ có `cont
 
 - 2026-10-18 — Bộ nhớ tự ghi tiến độ: 1 mục / bộ sau mỗi lần ôn / làm quiz (thay bản tóm tắt `<study_progress>` tính lúc hỏi, đã gỡ); kiểm hành vi model thật.
 - 2026-10-18 — Bản đầu: `my_chats`, `puc__search` / `puc__app_help`, `meta.actions` (link + tham gia nhóm có xác nhận), hồ sơ học, ghim bộ nhớ.
+
+- 2026-10-19 — Chat bỏ prefetch bắt buộc; tìm nội bộ theo model, batch từ khóa, search/read riêng; harness cache/scheduling/timing và MCP lazy ([18](./18-agent-harness-performance.md)).
+
+## 10. Tìm chủ động, ít bước (2026-10-20)
+
+Nguyên nhân một câu như "tìm cho mình với idea mình đang có trên Semantic Scholar" tốn 5 bước mà không ra kết quả:
+
+- `my_chats__search_threads` yêu cầu **mọi từ** khớp (AND) ⇒ "NCKH y tế AI" rỗng, model thử lại "y tế", rồi "NCKH" (3 bước). Nay khớp **bất kỳ** từ, xếp theo số từ khớp (tiêu đề / tóm tắt tính gấp đôi) rồi mới nhất; mô tả tool dặn gọi **một lần**, không thử lại với ít từ hơn.
+- Model chưa có chỉ dẫn "hành động trước, hỏi sau" nên tra hội thoại cũ / tài liệu rồi quay sang hỏi người dùng. Nay prompt agent dặn: gọi tool phù hợp ngay với từ khóa đoán từ hội thoại / bộ nhớ / hồ sơ, tra nguồn riêng tối đa 1 lần rồi sang nguồn ngoài (bài báo, web) trong cùng lượt; chỉ hỏi lại khi không thể hiểu yêu cầu. `semantic_scholar__search` được dặn gọi thẳng với 1–2 từ khóa tiếng Anh.
+- Google lazy MCP cấp tool `*__discover_tools` cho mọi dịch vụ được chọn kể cả **chưa kết nối** ⇒ model gọi Drive rồi báo lỗi. Nay chỉ cấp cho dịch vụ có grant trong `user_connectors`.
+- Nhãn bước bộ nhớ trở lại "Nhớ lại điều đã biết về bạn".
+
+Ranh giới của model chỉ là các công tắc connector của người dùng (menu Connectors); ngoài đó model tự chọn tool.
+
+## 11. Bớt lời thừa, bước rõ ràng (2026-10-20)
+
+- Prompt agent: dữ liệu riêng (hội thoại cũ, tài liệu, nhóm, tiến độ học) **chỉ tra khi câu hỏi nhắc tới** ("của mình", "mình đang có", "lần trước", "tài liệu mình đã up"), một lần, rồi sang nguồn ngoài; câu hỏi chung đi thẳng nguồn công khai. Tra không thấy gì ⇒ **không nhắc** ("Chưa có … trong hồ sơ, chat cũ, tài liệu" bị bỏ), chỉ nói "không tìm thấy" khi người dùng hỏi chính dữ liệu đó; giả định thiếu thông tin ghi 1 dòng ở cuối.
+- `AiStep.resultCount`: `AgentToolRunner` đếm kết quả của tool đọc thành công (`countResults`: mảng ⇒ độ dài, object ⇒ tổng các mảng con; đọc 1 mục / MCP ⇒ không đếm). Web (`ai-steps.tsx`) hiện "· 3 kết quả" / "· không có kết quả" và làm mờ bước rỗng.
+- Tóm tắt khi xong đếm đúng: **công cụ** = mọi bước trừ bước chuẩn bị (tệp, mục gắn @, bộ nhớ) — trước đây bỏ sót "Tài liệu của tôi", "Thư viện PU"…; **nguồn** = tổng `resultCount` (tin cũ vẫn đọc số trong `detail`).
+- Test: `apps/api/test/agent-step-results.e2e-spec.ts`.
+
+## 12. Tìm bài báo ổn định, câu trả lời sạch (2026-10-20)
+
+So sánh với Claude cho câu "nghiên cứu train AI cho y tế": N7AI có Scholar mất 41 s, gọi Scholar 4 lần đều rỗng, mở đầu bằng kể quá trình, danh sách mất dấu đầu dòng. Đo trên VPS: Semantic Scholar không key ⇒ **429 mọi lần**; arXiv giới hạn ~1 yêu cầu / 3 s, gọi song song ⇒ hết giờ 8 s; cả hai lỗi bị nuốt thành "rỗng".
+
+- `SemanticScholarService`: lỗi ≠ rỗng — cả S2 và arXiv đều lỗi ⇒ `AcademicSearchUnavailableError`; arXiv xếp hàng tuần tự (cách ≥ 3,1 s, timeout 15 s); cache 10 phút / từ khóa (≤ 200 mục). Có `SEMANTIC_SCHOLAR_API_KEY` thì hết 429.
+- `AiRetrieval.retrieve` ghi `failures` thật (trước đây luôn rỗng); `RetrievalToolsService` trả `toolUnavailable` khi nguồn lỗi mà không có kết quả.
+- `AgentToolRunner`: tool trả `unavailable: true` ⇒ không gọi lại tool đó trong cùng lượt.
+- Prompt: không tường thuật công cụ / quá trình (UI đã hiện bước), nguồn ngoài lỗi ⇒ tối đa 1 dòng ở cuối; chỉ nhắc người dùng / nhóm trong app khi câu hỏi về người; câu hỏi tổng quan / nghiên cứu ⇒ cụ thể như trợ lý nghiên cứu (phương pháp, dataset, benchmark, venue, bước bắt đầu) với tiêu đề + gạch đầu dòng.
+- Web: `.markdown-body ul/ol/li` có lại dấu đầu dòng / số thứ tự (Tailwind preflight đã xóa) — ảnh hưởng mọi nơi dùng `MarkdownPreview`.
+- Test: `apps/api/test/agent-step-results.e2e-spec.ts` (chặn gọi lại, S2 429 ⇒ arXiv, cache, cả hai lỗi ⇒ ném lỗi).
+

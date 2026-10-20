@@ -4,6 +4,7 @@ import type {
   AiFeedbackInput,
   AiLearnerProfile,
   AiMemory,
+  AiModelOption,
   AiSettings,
   AiSupportInput,
   AiTask,
@@ -106,6 +107,7 @@ export const chatApi = {
   attachments: (id: string, kind: 'image' | 'file') => unwrap(apiClient<Envelope<ChatMessage[]>>(`/conversations/${id}/attachments?kind=${kind}`)),
   search: (id: string, q: string) => unwrap(apiClient<Envelope<ChatMessage[]>>(`/conversations/${id}/messages/search?q=${encodeURIComponent(q)}`)),
 
+  aiModels: () => unwrap(apiClient<Envelope<AiModelOption[]>>('/ai/models')),
   aiQuota: () => unwrap(apiClient<Envelope<AiQuota>>('/ai/quota')),
   aiSuggestions: (mode: AiMode) => unwrap(apiClient<Envelope<AiSuggestionsResponse>>(`/ai/suggestions?mode=${mode}`)),
   presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),

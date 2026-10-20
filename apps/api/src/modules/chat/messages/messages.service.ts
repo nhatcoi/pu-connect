@@ -222,9 +222,10 @@ export class MessagesService {
     return res.rows[0] ? mapThread(res.rows[0]) : null
   }
 
-  // Thread AI luôn hỏi; nhóm: @n7ai, hoặc chọn chế độ / skill / Research qua "/" hay "+"
+  // Thread AI luôn hỏi; nhóm: @n7ai, hoặc chọn chế độ / skill / Research qua "/" hay "+"; chat cá nhân (direct): chỉ khi gõ @n7ai
   private asksAi(type: string, content: string, meta: ChatMessageMeta | null): boolean {
     if (type === 'ai') return true
+    if (type === 'direct') return N7AI_MENTION.test(content)
     return type === 'group' && (N7AI_MENTION.test(content) || !!meta?.aiMode || !!meta?.skill || !!meta?.research)
   }
 

@@ -33,6 +33,7 @@ describe('N7AI settings (e2e)', () => {
   it('cài đặt: mặc định, cập nhật từng phần, kiểm tra hợp lệ', async () => {
     const agent = await loginAgent(app, await createUser(db))
     expect((await agent.get('/api/ai/settings').expect(200)).body.data).toEqual({
+      aiModel: 'n7ai-fast',
       memoryEnabled: true,
       retentionDays: null,
       defaultConnectors: ['library', 'web', 'my_study', 'my_chats'],
@@ -46,6 +47,10 @@ describe('N7AI settings (e2e)', () => {
         .expect(200)
     ).body.data
     expect(s).toMatchObject({ memoryEnabled: false, retentionDays: 30, defaultConnectors: ['library', 'my_documents'] })
+    // Mức model: lưu được, giữ nguyên khi cập nhật trường khác, tên lạ ⇒ 400
+    expect((await agent.patch('/api/ai/settings').send({ aiModel: 'n7ai-perfect' }).expect(200)).body.data.aiModel).toBe('n7ai-perfect')
+    expect((await agent.patch('/api/ai/settings').send({ memoryEnabled: true }).expect(200)).body.data.aiModel).toBe('n7ai-perfect')
+    await agent.patch('/api/ai/settings').send({ aiModel: 'gpt-x' }).expect(400)
     await agent.patch('/api/ai/settings').send({ retentionDays: 7 }).expect(400)
     await agent.patch('/api/ai/settings').send({ defaultConnectors: [] }).expect(400)
   })

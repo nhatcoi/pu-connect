@@ -3,12 +3,33 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **60 bảng**, **98 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **67 bảng**, **98 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
 ```mermaid
 erDiagram
+  ai_models {
+    string no_fk
+  }
+  archive_bot_cleanup_comments {
+    string no_fk
+  }
+  archive_bot_cleanup_conversations {
+    string no_fk
+  }
+  archive_bot_cleanup_messages {
+    string no_fk
+  }
+  archive_bot_cleanup_notifications {
+    string no_fk
+  }
+  archive_bot_cleanup_posts {
+    string no_fk
+  }
+  archive_bot_cleanup_reactions {
+    string no_fk
+  }
   bot_activity {
     string no_fk
   }
@@ -147,6 +168,7 @@ erDiagram
     text_array interests
     timestamptz created_at
     timestamptz updated_at
+    varchar school
     varchar major
     varchar class_name
     boolean is_verified
@@ -154,9 +176,8 @@ erDiagram
     jsonb privacy_settings
     varchar location
     varchar website
-    varchar birth_date
+    date birth_date
     varchar banner_url
-    varchar school
     varchar google_id
     varchar auth_provider
     boolean email_verified
@@ -175,6 +196,7 @@ erDiagram
     varchar suspended_reason
     timestamptz last_seen_at
     timestamptz interests_updated_at
+    jsonb preferences
     timestamptz suspended_until
     timestamptz restricted_at
     timestamptz restricted_until
@@ -182,7 +204,6 @@ erDiagram
     smallint risk_score
     jsonb risk_factors
     timestamptz risk_updated_at
-    jsonb preferences
     boolean is_bot
     boolean must_reset_password
     uuid unit_id FK
@@ -568,6 +589,18 @@ erDiagram
     boolean pinned
     uuid study_set_id FK
   }
+  ai_models {
+    varchar id PK
+    varchar label
+    varchar hint
+    smallint cost
+    boolean visible
+    boolean enabled
+    boolean is_default
+    integer sort_order
+    timestamptz created_at
+    timestamptz updated_at
+  }
   ai_runs {
     uuid id PK
     uuid bot_id FK
@@ -649,6 +682,102 @@ erDiagram
     bigint until_message_id
     timestamptz created_at
     timestamptz updated_at
+  }
+  archive_bot_cleanup_comments {
+    uuid id
+    uuid post_id
+    uuid author_id
+    uuid parent_id
+    text content
+    integer likes_count
+    boolean is_solution
+    timestamptz created_at
+    timestamptz updated_at
+    timestamptz edited_at
+    boolean is_anonymous
+  }
+  archive_bot_cleanup_conversations {
+    uuid id
+    varchar type
+    varchar title
+    varchar avatar_url
+    uuid created_by
+    varchar direct_key
+    bigint last_message_id
+    timestamptz last_message_at
+    timestamptz created_at
+    uuid study_group_id
+    text ai_summary
+    bigint ai_summary_upto
+  }
+  archive_bot_cleanup_messages {
+    bigint id
+    uuid conversation_id
+    uuid sender_id
+    uuid client_msg_id
+    varchar kind
+    text content
+    jsonb blocks
+    bigint reply_to_id
+    varchar status
+    timestamptz deleted_at
+    timestamptz created_at
+    jsonb attachments
+    timestamptz edited_at
+    timestamptz pinned_at
+    uuid pinned_by
+    jsonb meta
+  }
+  archive_bot_cleanup_notifications {
+    uuid id
+    uuid recipient_id
+    uuid actor_id
+    notification_type_enum type
+    varchar title
+    text message
+    varchar entity_id
+    varchar entity_type
+    boolean is_read
+    timestamptz created_at
+    varchar group_key
+    uuid_array actor_ids
+    integer actors_count
+    varchar link
+    timestamptz updated_at
+    timestamptz push_sent_at
+  }
+  archive_bot_cleanup_posts {
+    uuid id
+    uuid author_id
+    uuid course_id
+    post_type_enum post_type
+    varchar title
+    varchar slug
+    text content
+    text_array tags
+    text_array media_urls
+    text_array attached_document_ids
+    varchar visibility
+    boolean is_pinned
+    boolean is_resolved
+    integer likes_count
+    integer comments_count
+    integer shares_count
+    integer views_count
+    timestamptz created_at
+    timestamptz updated_at
+    uuid community_id
+    tsvector search_tsv
+    timestamptz hidden_at
+    uuid hidden_by
+    varchar hidden_reason
+    boolean is_anonymous
+  }
+  archive_bot_cleanup_reactions {
+    uuid post_id
+    uuid user_id
+    reaction_type_enum reaction
+    timestamptz created_at
   }
   bot_activity {
     bigint id PK

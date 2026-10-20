@@ -24,7 +24,12 @@ export const AI_CONNECTORS = [
   'web_search',
   'google_drive',
   'google_calendar',
-  'google_gmail'
+  'google_gmail',
+  'google_forms',
+  'google_sheets',
+  'google_tasks',
+  'pu_connector',
+  'semantic_scholar'
 ] as const
 export const CHAT_MAX_REFS = 5
 export const AI_SKILL_LIMIT = 30

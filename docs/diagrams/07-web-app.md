@@ -75,9 +75,10 @@ flowchart LR
 flowchart TB
   subgraph Shell["app/(app)/layout.tsx — AppLayout dựng 1 lần cho mọi trang cần đăng nhập"]
     direction LR
-    header["Header<br/>search · Đăng bài · NotificationsPopover · avatar<br/>VerifyEmailBanner"]
+    header["Header (ẩn trên /n7ai* và Home chế độ Tập trung)<br/>search · Đăng bài · NotificationsPopover · avatar<br/>VerifyEmailBanner"]
     sidebar["Sidebar<br/>nav + Highlight trượt (animate-ui)<br/>/n7ai* ⇒ ẩn, N7AiSidebar thay thế"]
-    main["Nội dung trang<br/>SlidingTabs · AcademicPostComposer · PostCard[]"]
+    main["Nội dung trang<br/>SlidingTabs · FeedModeSwitch<br/>Danh sách: VirtualPostList · PostCard<br/>Tập trung: FocusFeed · FocusFeedCard · detail sheet"]
+    feedmode["useFeedViewMode<br/>preferences.feedViewMode: list/focus<br/>Zustand: override trong phiên theo tài khoản"]
     right["RightSidebar (mặc định)<br/>hoặc PageAside của trang"]
     dialogs["Hộp thoại toàn cục<br/>soạn bài · tài liệu · nhóm · xem tài liệu"]
     mnav["MobileBottomNav"]
@@ -91,6 +92,8 @@ flowchart TB
   flags["lib/features.ts<br/>feature flags"]
 
   main -->|useQuery / useInfiniteQuery| rq
+  main --> feedmode
+  feedmode -->|mặc định: PATCH /users/preferences| rest
   right -->|useQuery suggestedUsers| rq
   rq --> rest & gql
   sidebar -.-> flags
@@ -145,6 +148,8 @@ Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắ
 - 2026-10-17 — `ConnectorIcon` (logo Google Drive / Calendar) ở Trình kết nối, menu `+`, "Nguồn tham khảo"; trích dẫn Drive / Calendar / web mở tab mới.
 - 2026-10-17 — Thư viện skill: `SkillLibraryRow` dùng chung, nhóm Chính thức / Cộng đồng, ẩn lượt cài = 0.
 - 2026-10-17 — Trình kết nối có Gmail, kết nối lại khi lỗi và skeleton tải đầu; hoàn tất trả lời AI làm mới trạng thái connector MCP.
+- 2026-10-17 — Home có Danh sách / Tập trung (`FocusFeed` ảo hóa, switch, sheet chi tiết); mặc định trong Appearance settings lưu `preferences.feedViewMode`, override phiên trong Zustand; focus ẩn Header/cột phụ.
+- 2026-10-17 — Ẩn topbar chung trên `/n7ai` và route con (cả skeleton xác thực); đồng bộ sticky header/tin ghim/sidebar với không gian không topbar.
 - 2026-10-17 — Đổi tên PU AI → N7AI: route `/n7ai*` (redirect 308 từ `/puai*`, `/settings/puai*`, `/c/puai`), `components/n7ai/`, `components/settings/n7ai/`, `lib/n7ai-routes.ts`.
 - 2026-10-17 — Skill: menu Tạo skill (N7AI · tự viết · tải `.md`), `lib/skill-file.ts`, hook `useAiSkillActions().draft`, badge chính thức ở Thư viện.
 - 2026-10-17 — Tách `/admin` khỏi `apps/web` sang ứng dụng Static SPA độc lập `apps/admin` (`admin-puc.vnhat.dev`) với 6 phân hệ điều hành và phân quyền RBAC.

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { AiModelPicker } from '../ai/ai-model-picker'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
 import { messagePreview } from '../utils'
@@ -331,6 +332,7 @@ export function Composer({
             }}
             className="flex-1 resize-none bg-transparent text-sm outline-none py-1.5 max-h-40"
           />
+          {isAi && !editing && <AiModelPicker />}
           <Button size="icon" className="h-8 w-8 rounded-full shrink-0" disabled={!canSend} onClick={submit} aria-label="Gửi">
             {uploads.uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <SendHorizontal className="h-4 w-4" />}
           </Button>

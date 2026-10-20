@@ -60,6 +60,31 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     expect((await summary(m1Agent, conv.id)).unreadMentions).toBe(0)
   })
 
+  it('chat cá nhân: @n7ai gọi N7AI trả lời ngay trong cuộc trò chuyện; không @ thì không', async () => {
+    const a = await createUser(db)
+    const b = await createUser(db)
+    const agentA = await loginAgent(app, a)
+    const agentB = await loginAgent(app, b)
+    const conv = (await agentA.post('/api/conversations/direct').send({ userId: b.id }).expect(200)).body.data
+
+    await agentA.post(`/api/conversations/${conv.id}/messages`).send({ content: 'chào cậu' }).expect(201)
+    await new Promise((r) => setTimeout(r, 300))
+    const plain = await agentA.get(`/api/conversations/${conv.id}/messages`).expect(200)
+    expect(plain.body.data.some((m: { kind: string }) => m.kind === 'ai')).toBe(false)
+
+    const asked = (await agentA.post(`/api/conversations/${conv.id}/messages`).send({ content: '@n7ai giải thích đệ quy' }).expect(201)).body.data
+    let reply: { kind: string; replyToId?: string; status: string } | undefined
+    for (let i = 0; i < 30 && !reply; i++) {
+      const list = await agentB.get(`/api/conversations/${conv.id}/messages`).expect(200) // cả hai người cùng thấy
+      reply = list.body.data.find((m: { kind: string; status: string }) => m.kind === 'ai' && m.status !== 'streaming')
+      if (!reply) await new Promise((r) => setTimeout(r, 100))
+    }
+    expect(reply).toBeDefined()
+    expect(reply?.replyToId).toBe(asked.id) // trả lời gắn vào tin đã hỏi
+    const runs = await db.query(`SELECT trigger FROM ai_runs WHERE requester_id = $1 ORDER BY created_at DESC LIMIT 1`, [a.id])
+    expect(runs.rows[0].trigger).toBe('mention') // dùng chế độ chia sẻ: chỉ dữ liệu công khai
+  })
+
   it('N7AI nhiều thread: tự đặt tiêu đề, chat mới dùng lại thread rỗng, danh sách / tìm / đổi tên / xóa', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
@@ -174,9 +199,31 @@ describe('Chat mention · AI threads · skills · refs (e2e)', () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
     const list = (await agent.get('/api/ai/connectors').expect(200)).body.data
-    expect(list.map((c: { id: string }) => c.id)).toEqual(['library', 'my_documents', 'my_groups', 'my_study', 'my_chats', 'web', 'web_search', 'google_drive', 'google_calendar', 'google_gmail'])
+    expect(list.map((c: { id: string }) => c.id)).toEqual([
+      'library',
+      'my_documents',
+      'my_groups',
+      'my_study',
+      'my_chats',
+      'web',
+      'web_search',
+      'semantic_scholar',
+      'pu_connector',
+      'google_drive',
+      'google_calendar',
+      'google_gmail',
+      'google_forms',
+      'google_sheets',
+      'google_tasks'
+    ])
     expect(list.find((c: { id: string }) => c.id === 'google_drive')).toMatchObject({ requiresAuth: true, connected: false })
+    expect(list.find((c: { id: string }) => c.id === 'google_forms')).toMatchObject({ requiresAuth: true, connected: false })
+    expect(list.find((c: { id: string }) => c.id === 'google_sheets')).toMatchObject({ requiresAuth: true, connected: false })
+    expect(list.find((c: { id: string }) => c.id === 'google_tasks')).toMatchObject({ requiresAuth: true, connected: false })
     await agent.delete('/api/ai/connectors/google-drive').expect(200)
+    await agent.delete('/api/ai/connectors/google-forms').expect(200)
+    await agent.delete('/api/ai/connectors/google-sheets').expect(200)
+    await agent.delete('/api/ai/connectors/google-tasks').expect(200)
     await agent.delete('/api/ai/connectors/dropbox').expect(400)
 
     // Callback không có state trong session ⇒ không lưu gì, về Cài đặt › Trình kết nối báo lỗi

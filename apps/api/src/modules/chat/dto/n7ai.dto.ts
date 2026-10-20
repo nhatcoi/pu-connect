@@ -22,6 +22,7 @@ export const AiLearnerProfileBodySchema = z
 export const AiSettingsBodySchema = z
   .object({
     profile: AiLearnerProfileBodySchema,
+    aiModel: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,39}$/, { message: 'Model không hợp lệ' }), // còn dùng được hay không do AiSettingsService kiểm theo danh mục
     memoryEnabled: z.boolean(),
     retentionDays: z.union([z.literal(30), z.literal(365)]).nullable(),
     defaultConnectors: z.array(z.enum(AI_CONNECTORS)).min(1, { message: 'Chọn ít nhất 1 nguồn' }).max(AI_CONNECTORS.length)

@@ -1,6 +1,6 @@
 # N7AI: ngữ cảnh theo nơi được gọi
 
-Implemented: 2026-10-20. Mặc định model nền là `puc-fast` (`AI_MODEL`, mã `llm.service.ts`). Mỗi nơi gọi N7AI có một "bộ dựng ngữ cảnh" riêng: AI đọc đúng thứ cần để hiểu, và chỉ đọc khi có người gọi `@n7ai`.
+Implemented: 2026-10-20. Mặc định model nền là `n7ai-fast` (`AI_MODEL`, mã `llm.service.ts`). Mỗi nơi gọi N7AI có một "bộ dựng ngữ cảnh" riêng: AI đọc đúng thứ cần để hiểu, và chỉ đọc khi có người gọi `@n7ai`.
 
 | Nơi gọi | AI đọc sẵn | Tool (chỉ đọc) | Quyền riêng tư |
 |---|---|---|---|

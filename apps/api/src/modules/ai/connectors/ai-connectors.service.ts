@@ -17,7 +17,10 @@ const INTERNAL: Static[] = [
 const GOOGLE: (Static & { id: GoogleProvider })[] = [
   { id: 'google_drive', name: 'Google Drive', description: 'Tìm và đọc tài liệu trong Google Drive qua MCP (chỉ đọc)' },
   { id: 'google_calendar', name: 'Google Calendar', description: 'Tìm sự kiện và đọc các lịch Google qua MCP (chỉ đọc)' },
-  { id: 'google_gmail', name: 'Gmail', description: 'Tìm và đọc email, chuỗi hội thoại qua MCP (chỉ đọc)' }
+  { id: 'google_gmail', name: 'Gmail', description: 'Tìm và đọc email, chuỗi hội thoại qua MCP (chỉ đọc)' },
+  { id: 'google_forms', name: 'Google Forms', description: 'Tạo biểu mẫu, khảo sát và đọc phản hồi qua MCP' },
+  { id: 'google_sheets', name: 'Google Sheets', description: 'Đọc, phân tích và cập nhật dữ liệu bảng tính qua MCP' },
+  { id: 'google_tasks', name: 'Google Tasks', description: 'Tạo, quản lý việc cần làm và nhắc hạn chót (deadline) qua MCP' }
 ]
 
 // Registry connector của N7AI (menu "+" › Connectors) kèm trạng thái kết nối của người xem
@@ -45,6 +48,18 @@ export class AiConnectorsService {
     return [
       ...INTERNAL.map((c) => internal(c)),
       internal({ id: 'web_search', name: 'Tìm kiếm web', description: 'Tìm trên Internet khi thư viện PU chưa đủ (Research)' }, this.web.canSearch()),
+      internal({
+        id: 'semantic_scholar',
+        name: 'Semantic Scholar',
+        description: 'Tìm bài báo khoa học, abstract, trích dẫn & link PDF (Semantic Scholar & arXiv)'
+      }),
+      {
+        id: 'pu_connector', name: 'PU Connector', description: 'Lịch học, điểm và deadline từ tài khoản trường',
+        available: true, requiresAuth: true, connected: linked.has('pu_connector'),
+        account: linked.get('pu_connector')?.account_email ?? null,
+        lastUsedAt: linked.get('pu_connector')?.last_used_at ? new Date(linked.get('pu_connector')!.last_used_at!).toISOString() : null,
+        lastError: linked.get('pu_connector')?.last_error ?? null
+      },
       ...GOOGLE.map((c) => {
         const row = linked.get(c.id)
         return {

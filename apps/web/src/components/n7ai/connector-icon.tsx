@@ -3,12 +3,21 @@ import { cn } from '@/lib/utils'
 
 // Logo chính thức của connector Google (public/brand/connectors) / Official Google connector logos (Drive, Calendar, Gmail)
 const ICONS: Partial<Record<string, string>> = {
+  pu_connector: '/brand/pu-mark.svg',
   google_drive: '/brand/connectors/google-drive.svg',
   google_calendar: '/brand/connectors/google-calendar.svg',
   google_gmail: '/brand/connectors/gmail.svg',
+  google_forms: '/brand/connectors/google-forms.svg',
+  google_sheets: '/brand/connectors/google-sheets.svg',
+  google_tasks: '/brand/connectors/google-tasks.svg',
   drive: '/brand/connectors/google-drive.svg',
   calendar: '/brand/connectors/google-calendar.svg',
-  gmail: '/brand/connectors/gmail.svg'
+  gmail: '/brand/connectors/gmail.svg',
+  forms: '/brand/connectors/google-forms.svg',
+  sheets: '/brand/connectors/google-sheets.svg',
+  tasks: '/brand/connectors/google-tasks.svg',
+  semantic_scholar: '/brand/connectors/semantic-scholar.svg',
+  paper: '/brand/connectors/semantic-scholar.svg'
 }
 
 // id: AiConnectorId (google_drive) hoặc loại nguồn trích dẫn (drive, calendar); không có logo ⇒ null

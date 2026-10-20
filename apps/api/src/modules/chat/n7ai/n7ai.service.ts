@@ -2,8 +2,12 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId, AiMode, AiSettings, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatRef } from '@pu/schemas'
 import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripN7AiMention } from '../../ai/ai.constants'
-import { AiRetrieval, contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
+import { contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
+import { AgentSources } from '../../ai/agent-sources'
+import { RetrievalToolsService } from '../../ai/retrieval-tools.service'
 import { McpAgentService, McpModelError } from '../../ai/mcp-agent.service'
+import { DEFAULT_AI_MODEL } from '../../ai/ai-models'
+import { clip } from '../../ai/context/context-budget'
 import { LlmService, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg } from '../../ai/llm.service'
 import { StudyAgentToolsService } from '../../study-tools/study-agent-tools.service'
 import { hasStudyFence } from '../../study-tools/study-blocks'
@@ -16,6 +20,8 @@ import { AiProgress } from './agent/ai-progress'
 import { toActions } from './agent/ai-actions'
 import { HistoryToolsService } from './agent/history-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
+import { ConversationContextService } from './context/conversation-context.service'
+import { ConversationToolsService } from './context/conversation-tools.service'
 import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
 import { AiMemoriesService } from './ai-memories.service'
 import { AiSettingsService } from './ai-settings.service'
@@ -25,7 +31,8 @@ import { ACTIONS_PROMPT, FOLLOWUP_PROMPT, FollowUpSplitter, MEMORY_PROMPT, SOURC
 import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, learnerPrompt, profilePrompt, skillPrompt, summaryPrompt, type LearnerContext } from './n7ai.prompts'
 
 const AI_HISTORY_LIMIT = 20
-const GROUP_HISTORY_LIMIT = 12
+const GROUP_HISTORY_LIMIT = 30 // Nhóm / chat cá nhân: nhiều tin gần nhất (cũ hơn ⇒ N7AI tự đọc ngược bằng tool chat__earlier)
+const GROUP_MESSAGE_CHARS = 1200
 
 type Trigger = {
   id: string
@@ -45,11 +52,11 @@ export type ReplyOutcome = 'done' | 'skipped' | 'error' // skipped = hết lư�
 
 // Nguồn hiện được ở "Nguồn tham khảo" (có trang / liên kết); nhóm học, khóa học, thread thì không
 type CitableType = ChatCitation['ref']['type']
-const CITABLE = new Set<Source['type']>(['post', 'document', 'drive', 'calendar', 'web'])
+const CITABLE = new Set<Source['type']>(['post', 'document', 'drive', 'calendar', 'web', 'paper'])
 const isCitable = (s: Source): s is Source & { type: CitableType } => CITABLE.has(s.type)
 
 // Chỉ nguồn N7AI ghi "[nguồn] n" — không phải mọi kết quả tìm được
-function citationsOf(sources: Source[], cited: number[]): ChatCitation[] {
+export function citationsOf(sources: Source[], cited: number[]): ChatCitation[] {
   return cited
     .map((n) => sources[n - 1])
     .filter((s): s is Source & { type: CitableType } => !!s && isCitable(s))
@@ -66,7 +73,7 @@ export class N7AiService {
     private readonly core: ChatCoreService,
     private readonly llm: LlmService,
     private readonly agent: McpAgentService,
-    private readonly retrieval: AiRetrieval,
+    private readonly retrievalTools: RetrievalToolsService,
     private readonly chatPush: ChatPushService,
     private readonly refs: ChatRefsService,
     private readonly skills: AiSkillsService,
@@ -77,7 +84,9 @@ export class N7AiService {
     private readonly studyAgentTools: StudyAgentToolsService,
     private readonly studyCreateTools: StudyCreateToolsService,
     private readonly historyTools: HistoryToolsService,
-    private readonly pucTools: PucToolsService
+    private readonly pucTools: PucToolsService,
+    private readonly conversationContext: ConversationContextService,
+    private readonly conversationTools: ConversationToolsService
   ) {}
 
   private get db() {
@@ -110,19 +119,21 @@ export class N7AiService {
     const started = Date.now()
     const trigger = await this.loadTrigger(triggerId)
     if (!trigger || trigger.senderId !== requesterId) return 'error'
-    const inGroup = trigger.type === 'group'
+    // Nhóm / chat cá nhân (direct): người khác cùng đọc câu trả lời ⇒ không dùng dữ liệu riêng của người hỏi (chỉ nội dung công khai)
+    const inGroup = trigger.type !== 'ai'
     // Nhóm chat: không dùng cài đặt / dữ liệu riêng của người hỏi
     const settings = inGroup ? null : await this.settings.get(trigger.senderId)
     const replyTo = inGroup ? trigger.id : null
 
     // Research tốn 2 lượt ⇒ còn 1 lượt thì báo rõ thay vì "hết lượt"
-    const cost = trigger.research ? RESEARCH_COST : 1
+    const model = settings?.aiModel ?? DEFAULT_AI_MODEL
+    const cost = Math.max(trigger.research ? RESEARCH_COST : 1, await this.settings.modelCost(model))
     const { used, limit } = await this.llm.quota(requesterId)
     if (used + cost > limit) {
       await this.llm.logRejected(requesterId, inGroup ? 'mention' : 'dm')
       const text =
         used < limit
-          ? `Research cần ${cost} lượt, bạn chỉ còn ${limit - used} lượt hôm nay. Tắt Research để hỏi thường nhé!`
+          ? `Câu hỏi này cần ${cost} lượt, bạn chỉ còn ${limit - used} lượt hôm nay. Chọn mức Nhanh/Cân bằng hoặc tắt Research để hỏi thường nhé!`
           : `Bạn đã dùng hết ${limit} lượt hỏi N7AI hôm nay. Hẹn bạn ngày mai nhé!`
       await this.postFinal(conversationId, botId, text, replyTo)
       return 'skipped'
@@ -144,6 +155,7 @@ export class N7AiService {
       requesterId,
       trigger: inGroup ? 'mention' : 'dm',
       task: trigger.research ? RESEARCH_TASK : trigger.aiMode === 'ask' ? 'chat' : trigger.aiMode,
+      model,
       source: { type: 'message', id: trigger.id },
       reply: { type: 'message', id: placeholder.id }
     })
@@ -160,7 +172,7 @@ export class N7AiService {
     const memberIds = await this.core.memberIds(conversationId)
     // Tiến trình (đọc tệp / bộ nhớ, tìm nguồn, gọi tool) ⇒ client hiện từng bước khi đang trả lời
     const progress = new AiProgress((steps) => this.core.emitTo(memberIds, 'message.progress', { conversationId, messageId: placeholder.id, steps }))
-    const retrieved = await this.gatherSources(trigger, question, requesterId, settings, progress)
+    const retrieved = await this.gatherSources(trigger, requesterId, progress)
     const messages = await this.buildMessages(conversationId, botId, trigger, question, retrieved, settings, progress)
 
     try {
@@ -172,13 +184,18 @@ export class N7AiService {
       // Thread riêng: luôn có tool tạo bộ Flashcard / Quiz (registry); tool đọc tiến độ theo connector my_study
       const creator = inGroup ? null : this.studyCreateTools.open(requesterId, placeholder.id)
       // Thread riêng: tool về chính PU Connector luôn có; hội thoại cũ / tiến độ học theo connector
+      const catalog = new AgentSources(retrieved.sources)
       const local = [
+        this.pucTools.open(requesterId, inGroup ? ['library'] : connectors, catalog, inGroup),
+        ...(inGroup ? [] : [this.retrievalTools.open(requesterId, connectors, catalog, trigger.research)]),
+        // Nhóm / chat cá nhân: đọc ngược tin cũ của chính hội thoại này khi người gọi hỏi tới
+        ...(inGroup ? [this.conversationTools.open(conversationId, requesterId, trigger.id)] : []),
         ...(creator ? [creator] : []),
-        ...(inGroup ? [] : [this.pucTools.open(requesterId)]),
         ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []),
         ...(connectors.includes('my_chats') ? [this.historyTools.open(requesterId, conversationId)] : [])
       ]
-      const { finishReason, usage } = await this.agent.stream(
+      const preparationMs = Date.now() - started
+      const { finishReason, usage, timings } = await this.agent.stream(
         messages,
         requesterId,
         connectors,
@@ -187,7 +204,8 @@ export class N7AiService {
           if (shown) emit(shown)
         },
         (toolSteps) => progress.setTools(toolSteps),
-        local
+        local,
+        { research: trigger.research, model }
       )
 
       const { rest, text: answer, followUps, memories, cited, actions: drafts } = splitter.finish()
@@ -213,6 +231,7 @@ export class N7AiService {
         ...(studySet ? { studySet } : {}),
         ...(progress.steps.length ? { steps: progress.steps } : {}),
         durationMs: Date.now() - started,
+        ...(timings ? { timings: { ...timings, preparationMs } } : {}),
         ...(actions.length && finishReason !== 'content_filter' ? { actions } : {})
       })
       await this.llm.finishRun(runId, { usage, startedAt: started })
@@ -261,21 +280,11 @@ export class N7AiService {
     }
   }
 
-  // Ngữ cảnh ghim (refs) trước, rồi nguồn truy xuất theo connector (bỏ trùng)
-  // Nhóm chat: chỉ Thư viện PU — không đưa tài liệu riêng của người hỏi cho cả nhóm
-  private async gatherSources(trigger: Trigger, question: string, requesterId: string, settings: AiSettings | null, progress: AiProgress): Promise<Retrieved> {
-    const connectors: AiConnectorId[] = settings ? (trigger.connectors ?? settings.defaultConnectors) : ['library']
-    const [pinned, found] = await Promise.all([
-      this.refs.sources(requesterId, trigger.refs),
-      this.retrieval.retrieve(question, requesterId, {
-        connectors,
-        research: trigger.research,
-        onStage: (connector, state, count) => progress.retrieval(connector, state, count, question)
-      })
-    ])
+  // Only explicit pinned context is loaded here. Search is chosen by the model in the tool loop.
+  private async gatherSources(trigger: Trigger, requesterId: string, progress: AiProgress): Promise<Retrieved> {
+    const pinned = await this.refs.sources(requesterId, trigger.refs)
     if (pinned.length) progress.note('refs', 'refs', 'Đọc mục bạn gắn kèm', `${pinned.length} mục`)
-    const seen = new Set(pinned.map((s) => `${s.type}:${s.id}`))
-    return { sources: [...pinned, ...found.sources.filter((s) => !seen.has(`${s.type}:${s.id}`))], failures: found.failures }
+    return { sources: pinned, failures: [] }
   }
 
   // System prompt (+ nhóm, chế độ học, Research, skill, trí nhớ) → lịch sử → lượt hỏi hiện tại (nguồn + tệp đính kèm)
@@ -288,18 +297,21 @@ export class N7AiService {
     settings: AiSettings | null,
     progress: AiProgress = new AiProgress()
   ): Promise<Msg[]> {
-    const inGroup = trigger.type === 'group'
+    const inGroup = trigger.type !== 'ai'
     const memoryOn = !!settings?.memoryEnabled
-    const [history, skill, summary, profile, learner] = await Promise.all([
+    const [history, skill, summary, profile, learner, convBlock] = await Promise.all([
       this.loadHistory(conversationId, botId, trigger.id, inGroup),
       trigger.skillId ? this.skills.instructions(trigger.senderId, trigger.skillId) : null,
       inGroup ? null : this.summaries.summary(conversationId),
       memoryOn ? this.memories.recall(trigger.senderId, question) : [],
-      settings ? this.loadLearner(trigger.senderId, settings) : null
+      settings ? this.loadLearner(trigger.senderId, settings) : null,
+      inGroup ? this.conversationContext.block(conversationId) : ''
     ])
     const system =
       SYSTEM_PROMPT +
-      (inGroup ? GROUP_PROMPT : '') +
+      (inGroup ? GROUP_PROMPT + (convBlock ? `
+
+${convBlock.trim()}` : '') : '') +
       MODE_PROMPTS[trigger.aiMode] +
       (trigger.research ? RESEARCH_PROMPT : '') +
       (skill ? skillPrompt(skill.name, skill.instructions) : '') +
@@ -307,7 +319,7 @@ export class N7AiService {
       (summary ? summaryPrompt(summary) : '') +
       (profile.length ? profilePrompt(profile) : '') +
       (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : '') + ACTIONS_PROMPT) +
-      (sources.length ? SOURCES_PROMPT : '')
+      SOURCES_PROMPT
 
     if (profile.length) progress.note('memory', 'memory', 'Nhớ lại điều đã biết về bạn', `${profile.length} mục`)
     const files = trigger.attachments ?? []
@@ -383,7 +395,7 @@ export class N7AiService {
     for (const row of res.rows.reverse()) {
       const role = row.sender_id === botId ? 'assistant' : 'user'
       const files = row.attachments?.length ? ` [đã gửi ${row.attachments.length} tệp]` : ''
-      const body = (inGroup && role === 'user' ? `${row.display_name}: ` : '') + (row.content || '') + files
+      const body = (inGroup && role === 'user' ? `${row.display_name}: ` : '') + (inGroup ? clip(row.content || '', GROUP_MESSAGE_CHARS) : row.content || '') + files
       if (!body.trim()) continue
       const last = turns[turns.length - 1]
       if (last && last.role === role) last.content = `${last.content}\n\n${body}`
@@ -413,7 +425,7 @@ export class N7AiService {
     text: string,
     blocks: ChatCitation[] | null,
     status: 'done' | 'error',
-    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs'> = {}
+    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs' | 'timings'> = {}
   ) {
     // Gợi ý tiếp theo / bộ nhớ vừa cập nhật gộp vào meta (giữ aiMode sẵn có)
     await this.db.query(
