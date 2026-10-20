@@ -19,7 +19,7 @@ export class CommentResolver {
              u.created_at as author_created_at
       FROM comments c
       JOIN users u ON c.author_id = u.id
-      WHERE c.post_id = $1
+      WHERE c.post_id = $1 AND NOT c.is_anonymous
       ORDER BY c.created_at ASC
     `
     const res = await this.db.query(sql, [postId])

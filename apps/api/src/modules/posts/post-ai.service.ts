@@ -136,7 +136,7 @@ export class PostAiService {
   // Bài viết + các bình luận trước trong cùng nhánh (gốc + trả lời)
   private async loadContext(comment: CommentItem): Promise<ThreadContext | null> {
     const post = await this.db.query(
-      `SELECT p.title, p.content, u.display_name AS author FROM posts p JOIN users u ON u.id = p.author_id
+      `SELECT p.title, p.content, CASE WHEN p.is_anonymous THEN 'Ẩn danh' ELSE u.display_name END AS author FROM posts p JOIN users u ON u.id = p.author_id
        WHERE p.id = $1 AND p.hidden_at IS NULL`,
       [comment.postId]
     )
@@ -147,7 +147,7 @@ export class PostAiService {
          UNION ALL
          SELECT c.id, c.parent_id, c.created_at FROM comments c JOIN up ON c.id = up.parent_id
        ), root AS (SELECT id FROM up WHERE parent_id IS NULL)
-       SELECT u.display_name AS name, c.content FROM comments c JOIN users u ON u.id = c.author_id
+       SELECT CASE WHEN c.is_anonymous THEN 'Ẩn danh' ELSE u.display_name END AS name, c.content FROM comments c JOIN users u ON u.id = c.author_id
        WHERE (c.id = (SELECT id FROM root) OR c.parent_id = (SELECT id FROM root))
          AND c.id <> $1 AND c.created_at <= (SELECT created_at FROM comments WHERE id = $1)
        ORDER BY c.created_at DESC LIMIT $2`,

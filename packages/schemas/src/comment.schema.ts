@@ -4,7 +4,9 @@ export const CreateCommentSchema = z.object({
   postId: z.string(),
   parentId: z.string().optional(),
   content: z.string().min(1, { message: 'Nội dung bình luận không được để trống' }),
-  mediaUrls: z.array(z.string().url()).default([])
+  mediaUrls: z.array(z.string().url()).default([]),
+  // Bình luận ẩn danh: người khác thấy "Ẩn danh"
+  isAnonymous: z.boolean().default(false)
 })
 
 export const CommentItemSchema = z.object({
@@ -17,6 +19,9 @@ export const CommentItemSchema = z.object({
   likesCount: z.number().default(0),
   isSolution: z.boolean().default(false),
   isLikedByMe: z.boolean().default(false),
+  // Ẩn danh: author bị che; isMine cho chủ bình luận tự nhận ra
+  isAnonymous: z.boolean().default(false),
+  isMine: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string().optional(),
   // Lần sửa gần nhất (null = chưa sửa)

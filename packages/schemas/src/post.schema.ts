@@ -43,7 +43,9 @@ export const CreatePostSchema = z.object({
   pollQuestion: z.string().optional(),
   pollOptions: z.array(z.string()).optional(),
   communityId: z.string().optional(),
-  communitySlug: z.string().optional()
+  communitySlug: z.string().optional(),
+  // Đăng ẩn danh (chỉ bài hỏi đáp): người khác thấy "Ẩn danh", admin vẫn truy vết được
+  isAnonymous: z.boolean().default(false)
 })
 
 export const UpdatePostSchema = z.object({
@@ -73,6 +75,8 @@ export const FeaturedCommentSchema = z.object({
   // solution: lời giải Q&A · top: nhiều tương tác nhất · earliest: bài chưa có tương tác
   reason: z.enum(['solution', 'top', 'earliest']),
   createdAt: z.string(),
+  // Bình luận ẩn danh: author đã bị che
+  isAnonymous: z.boolean().default(false),
   author: z.object({
     id: z.string(),
     username: z.string(),
@@ -119,6 +123,9 @@ export const PostItemSchema = z.object({
   isLikedByMe: z.boolean().default(false),
   isBookmarkedByMe: z.boolean().default(false),
   isAuthorFollowedByMe: z.boolean().default(false),
+  // Ẩn danh: author bị che với mọi người (kể cả chủ bài); isMine cho chủ bài biết đây là bài của mình
+  isAnonymous: z.boolean().default(false),
+  isMine: z.boolean().default(false),
   poll: PollDataSchema.nullable().optional(),
   featuredComment: FeaturedCommentSchema.nullable().optional(),
   createdAt: z.string(),

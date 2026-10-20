@@ -73,7 +73,7 @@ export class MessageEmbedService {
     if (head === 'post' && key) {
       if (!/^[0-9a-f-]{36}$/i.test(key)) return null
       const res = await db.query(
-        `SELECT p.title, p.content, p.media_urls, u.display_name, u.username
+        `SELECT p.title, p.content, p.media_urls, p.is_anonymous, u.display_name, u.username
          FROM posts p JOIN users u ON u.id = p.author_id
          WHERE p.id = $1 AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)`,
         [key, userId]
@@ -81,7 +81,7 @@ export class MessageEmbedService {
       const row = res.rows[0]
       if (!row) return null
       const image = ((row.media_urls as string[] | null) ?? []).find((m) => !/\.(mp4|webm|mov|m4v)(\?|$)/i.test(m)) ?? null
-      return { kind: 'post', url: path, title: clip(row.title, 120) || `Bài viết của ${row.display_name || row.username}`, description: clip(row.content), image, siteName: 'Bài viết' }
+      return { kind: 'post', url: path, title: clip(row.title, 120) || (row.is_anonymous ? 'Bài viết ẩn danh' : `Bài viết của ${row.display_name || row.username}`), description: clip(row.content), image, siteName: 'Bài viết' }
     }
     if (head === 'c' && key) {
       const res = await db.query(`SELECT name, description, avatar_url, banner_url FROM communities WHERE slug = $1`, [key])

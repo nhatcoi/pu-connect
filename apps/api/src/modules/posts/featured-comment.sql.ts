@@ -23,7 +23,7 @@ export function featuredCommentsSql(): string {
 
   return `
     WITH cand AS (
-      SELECT c.id, c.post_id, c.author_id, c.content, c.created_at, c.is_solution,
+      SELECT c.id, c.post_id, c.author_id, c.content, c.created_at, c.is_solution, c.is_anonymous,
              COALESCE(c.likes_count, 0) AS likes_count,
              (SELECT COUNT(*) FROM comments r WHERE r.parent_id = c.id AND ${visible('r')})::int AS replies_count,
              -- Relevance: tỉ lệ từ (unaccent) của bình luận xuất hiện trong search_tsv của bài
@@ -60,7 +60,7 @@ export function featuredCommentsSql(): string {
     )
     SELECT DISTINCT ON (t.post_id)
            t.id, t.post_id, left(t.content, ${maxLength}) AS content, t.created_at,
-           t.likes_count, t.replies_count,
+           t.likes_count, t.replies_count, t.is_anonymous,
            CASE WHEN t.has_solution THEN 'solution' WHEN t.max_engagement = 0 THEN 'earliest' ELSE 'top' END AS reason,
            u.id AS author_id, u.username AS author_username,
            u.display_name AS author_display_name, u.avatar_url AS author_avatar_url

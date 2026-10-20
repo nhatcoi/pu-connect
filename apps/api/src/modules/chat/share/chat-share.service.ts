@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import type { ChatSharedPost, SharePostInput, SharePostResult } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
 import { markdownToPlainText } from '../../notifications/notification.types'
+import { anonymousAuthor } from '../../posts/anonymity'
 import { ConversationsService } from '../conversations/conversations.service'
 import { MessagesService } from '../messages/messages.service'
 
@@ -43,7 +44,7 @@ export class ChatShareService {
   // Bài phải xem được bởi người chia sẻ (chưa bị ẩn, công khai hoặc của chính mình)
   private async snapshot(userId: string, postId: string): Promise<ChatSharedPost> {
     const res = await this.db.query(
-      `SELECT p.id, p.title, p.content, p.media_urls, u.username, u.display_name, u.avatar_url
+      `SELECT p.id, p.title, p.content, p.media_urls, p.is_anonymous, u.username, u.display_name, u.avatar_url
        FROM posts p JOIN users u ON u.id = p.author_id
        WHERE p.id = $1 AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)`,
       [postId, userId]
@@ -56,7 +57,8 @@ export class ChatShareService {
       title: (row.title || '').slice(0, 200),
       excerpt: plain.length > EXCERPT_MAX ? `${plain.slice(0, EXCERPT_MAX - 1)}…` : plain,
       image: ((row.media_urls as string[] | null) ?? []).find((url) => !VIDEO_URL.test(url)) ?? null,
-      author: { username: row.username, displayName: row.display_name || row.username, avatarUrl: row.avatar_url || null }
+      // Bài ẩn danh: tác giả bị che ngay trong ảnh chụp lưu vào tin nhắn
+      author: row.is_anonymous ? anonymousAuthor() : { username: row.username, displayName: row.display_name || row.username, avatarUrl: row.avatar_url || null }
     }
   }
 

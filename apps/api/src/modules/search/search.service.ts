@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { DatabaseService } from '../../database/database.service'
 import { parseQuery, type ParsedQuery } from './search-query'
 import { blockExistsSql } from '../blocks/blocks.sql'
+import { anonymousAuthor } from '../posts/anonymity'
 import type { SearchQueryInput, SearchResult, Course, DocumentItem, PostItem, UserSummary, StudyGroup } from '@pu/schemas'
 
 type Queryable = { query: (sql: string, params?: any[]) => Promise<{ rows: any[] }> }
@@ -263,7 +264,8 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
           AND (${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, 'p.author_id')})`
       if (faculty) {
         params.push(faculty)
-        sql += ` AND (u.faculty = $${params.length} OR c.faculty_code = $${params.length})`
+        // Bài ẩn danh không lọc theo khoa tác giả (lộ khoa của người viết)
+        sql += ` AND ((NOT p.is_anonymous AND u.faculty = $${params.length}) OR c.faculty_code = $${params.length})`
       }
       params.push(lim, off)
       // Phổ biến + mới (bán rã 90 ngày) + câu hỏi đã có lời giải được cộng nhẹ
@@ -288,20 +290,23 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
 
     return {
       id: row.id,
-      authorId: row.author_id,
-      author: {
-        id: row.author_user_id || row.author_id,
-        username: row.author_username || 'user',
-        displayName: row.author_display_name || 'Sinh viên Phenikaa',
-        avatarUrl: row.author_avatar_url || null
-      },
+      authorId: row.is_anonymous ? anonymousAuthor().id : row.author_id,
+      isAnonymous: !!row.is_anonymous,
+      author: row.is_anonymous
+        ? anonymousAuthor()
+        : {
+            id: row.author_user_id || row.author_id,
+            username: row.author_username || 'user',
+            displayName: row.author_display_name || 'Sinh viên Phenikaa',
+            avatarUrl: row.author_avatar_url || null
+          },
       title: row.title,
       content: row.content,
       postType,
       courseId: row.course_id,
       courseCode: row.course_code || null,
       courseName: row.course_name || null,
-      facultyCode: row.author_faculty || null,
+      facultyCode: row.is_anonymous ? null : row.author_faculty || null,
       targetAudience: 'everyone',
       isResolved: row.is_resolved || false,
       tags: row.tags || [],

@@ -58,12 +58,12 @@ export class CoursesService {
       this.db.query(
         `SELECT u.id, u.username, u.display_name, u.avatar_url, u.role, SUM(x.n)::int AS contributions
          FROM (
-           SELECT author_id AS uid, COUNT(*) AS n FROM posts WHERE course_id = $1 AND hidden_at IS NULL GROUP BY author_id
+           SELECT author_id AS uid, COUNT(*) AS n FROM posts WHERE course_id = $1 AND hidden_at IS NULL AND NOT is_anonymous GROUP BY author_id
            UNION ALL
            SELECT owner_id, COUNT(*) FROM documents WHERE course_id = $1 AND visibility = 'public' GROUP BY owner_id
            UNION ALL
            SELECT c.author_id, COUNT(*) FROM comments c JOIN posts p ON p.id = c.post_id
-           WHERE p.course_id = $1 AND c.is_solution GROUP BY c.author_id
+           WHERE p.course_id = $1 AND c.is_solution AND NOT c.is_anonymous GROUP BY c.author_id
          ) x JOIN users u ON u.id = x.uid
          WHERE u.status = 'active'
          GROUP BY u.id ORDER BY contributions DESC LIMIT 5`,

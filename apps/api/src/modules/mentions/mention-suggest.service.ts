@@ -22,9 +22,9 @@ export class MentionSuggestService {
     const match = q ? `c.hay LIKE '%' || immutable_unaccent($2) || '%'` : `(c.ctx_w > 0 OR c.is_following)`
     const res = await this.db.query(
       `WITH ctx AS (
-         SELECT p.author_id AS id, 2 AS w FROM posts p WHERE p.id = $3::uuid
+         SELECT p.author_id AS id, 2 AS w FROM posts p WHERE p.id = $3::uuid AND NOT p.is_anonymous
          UNION ALL
-         SELECT cm.author_id, 1 FROM comments cm WHERE cm.post_id = $3::uuid
+         SELECT cm.author_id, 1 FROM comments cm WHERE cm.post_id = $3::uuid AND NOT cm.is_anonymous
        ), ctx_best AS (
          SELECT id, MAX(w) AS w FROM ctx GROUP BY id
        ), c AS (

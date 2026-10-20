@@ -5,6 +5,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { snippet, type NotifyInput } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
+import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
 
 export interface CommentsResult {
   data: CommentItem[]
@@ -66,7 +67,7 @@ export class CommentsService {
        ORDER BY c.parent_id IS NOT NULL, c.is_solution DESC, c.created_at ASC, c.id ASC`,
       params
     )
-    const items = res.rows.map((row) => this.mapRowToCommentItem(row))
+    const items = res.rows.map((row) => this.mapRowToCommentItem(row, currentUserId))
     const rootsLoaded = items.filter((c) => !c.parentId).length
     const nextOffset = safeOffset + rootsLoaded
     const remainingCount = Math.max(0, rootsTotal - nextOffset)
@@ -84,6 +85,7 @@ export class CommentsService {
     let mentioned: MentionedUser[] = []
     let postAuthorId: string | null = null
     let parentAuthorId: string | null = null
+    const anonymous = !!data.isAnonymous
     const created = await this.db.transaction(async (client) => {
       // 1. Check if post exists with row-level lock
       const postRes = await client.query(`SELECT id, author_id FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [data.postId])
@@ -117,6 +119,9 @@ export class CommentsService {
       )
       if (blocked.rows.length) throw new ForbiddenException('Bạn không thể bình luận ở đây')
 
+      // 1.3. Ẩn danh: có hạn mức 24h
+      if (anonymous) await assertAnonymousQuota(client, 'comments', authorId)
+
       // 2. Fetch author details
       const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
         authorId
@@ -128,10 +133,10 @@ export class CommentsService {
 
       // 3. Insert comment
       const insertRes = await client.query(
-        `INSERT INTO comments (post_id, author_id, parent_id, content)
-         VALUES ($1, $2, $3, $4)
+        `INSERT INTO comments (post_id, author_id, parent_id, content, is_anonymous)
+         VALUES ($1, $2, $3, $4, $5)
          RETURNING *`,
-        [data.postId, authorId, rootId, data.content]
+        [data.postId, authorId, rootId, data.content, anonymous]
       )
 
       const commentRow = insertRes.rows[0]
@@ -147,7 +152,9 @@ export class CommentsService {
       return {
         id: commentRow.id,
         postId: commentRow.post_id,
-        authorId: author.id,
+        authorId: anonymous ? anonymousAuthor().id : author.id,
+        isAnonymous: anonymous,
+        isMine: true,
         parentId: commentRow.parent_id || null,
         content: commentRow.content,
         mediaUrls: data.mediaUrls || [],
@@ -157,15 +164,17 @@ export class CommentsService {
         createdAt: commentRow.created_at.toISOString(),
         updatedAt: commentRow.updated_at ? commentRow.updated_at.toISOString() : undefined,
         editedAt: null,
-        author: {
-          id: author.id,
-          username: author.username,
-          displayName: author.display_name,
-          avatarUrl: author.avatar_url,
-          role: author.role,
-          faculty: author.faculty,
-          reputationPoints: author.reputation_points || 0
-        }
+        author: anonymous
+          ? anonymousAuthor()
+          : {
+              id: author.id,
+              username: author.username,
+              displayName: author.display_name,
+              avatarUrl: author.avatar_url,
+              role: author.role,
+              faculty: author.faculty,
+              reputationPoints: author.reputation_points || 0
+            }
       }
     })
 
@@ -208,16 +217,17 @@ export class CommentsService {
         groupKey: `post_comment:${created.postId}`
       })
     }
-    void this.notifications.dispatch(events)
+    // Ẩn danh: mọi thông báo phát sinh không nêu người gửi
+    void this.notifications.dispatch(anonymous ? events.map(anonymizeNotification) : events)
     return created
   }
 
   async acceptSolution(commentId: string, currentUserId: string): Promise<{ isSolution: boolean; message: string }> {
-    let accepted: { authorId: string; postId: string; content: string } | null = null
+    let accepted: { authorId: string; postId: string; content: string; anonymousPost: boolean } | null = null
     const result = await this.db.transaction(async (client) => {
       // Find comment and post with locks
       const commentRes = await client.query(
-        `SELECT c.id, c.post_id, c.content, c.author_id as comment_author_id, c.is_solution, p.author_id as post_author_id
+        `SELECT c.id, c.post_id, c.content, c.author_id as comment_author_id, c.is_solution, p.author_id as post_author_id, p.is_anonymous as post_is_anonymous
          FROM comments c
          JOIN posts p ON c.post_id = p.id
          WHERE c.id = $1 LIMIT 1 FOR UPDATE`,
@@ -247,7 +257,7 @@ export class CommentsService {
       await client.query(`UPDATE posts SET is_resolved = $1 WHERE id = $2`, [newStatus, row.post_id])
 
       if (newStatus) {
-        accepted = { authorId: row.comment_author_id, postId: row.post_id, content: row.content }
+        accepted = { authorId: row.comment_author_id, postId: row.post_id, content: row.content, anonymousPost: !!row.post_is_anonymous }
       }
 
       return {
@@ -257,19 +267,19 @@ export class CommentsService {
     })
 
     if (accepted) {
-      const { authorId, postId, content } = accepted
-      void this.notifications.dispatch([
-        {
-          type: 'accepted_solution',
-          recipientId: authorId,
-          actorId: currentUserId,
-          verb: 'đã chọn câu trả lời của bạn làm lời giải',
-          message: snippet(content),
-          entityType: 'post',
-          entityId: postId,
-          link: `/post/${postId}?comment=${commentId}`
-        }
-      ])
+      const { authorId, postId, content, anonymousPost } = accepted
+      const event: NotifyInput = {
+        type: 'accepted_solution',
+        recipientId: authorId,
+        actorId: currentUserId,
+        verb: 'đã chọn câu trả lời của bạn làm lời giải',
+        message: snippet(content),
+        entityType: 'post',
+        entityId: postId,
+        link: `/post/${postId}?comment=${commentId}`
+      }
+      // Bài ẩn danh: người nhận không được biết ai là chủ bài
+      void this.notifications.dispatch([anonymousPost ? anonymizeNotification(event) : event])
     }
     return result
   }
@@ -296,7 +306,7 @@ export class CommentsService {
   async update(commentId: string, currentUserId: string, content: string): Promise<{ id: string; content: string; editedAt: string }> {
     let mentioned: MentionedUser[] = []
     const updated = await this.db.transaction(async (client) => {
-      const res = await client.query(`SELECT post_id, author_id FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`, [commentId])
+      const res = await client.query(`SELECT post_id, author_id, is_anonymous FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`, [commentId])
       const row = res.rows[0]
       if (!row) throw new NotFoundException('Không tìm thấy bình luận')
       if (row.author_id !== currentUserId) throw new ForbiddenException('Bạn chỉ sửa được bình luận của mình')
@@ -310,21 +320,21 @@ export class CommentsService {
       return {
         id: commentId,
         postId: row.post_id as string,
+        isAnonymous: !!row.is_anonymous,
         content: upd.rows[0].content as string,
         editedAt: (upd.rows[0].edited_at as Date).toISOString()
       }
     })
 
-    void this.notifications.dispatch(
-      this.mentions.toNotifications(mentioned, {
-        sourceType: 'comment',
-        sourceId: commentId,
-        authorId: currentUserId,
-        postId: updated.postId,
-        commentId,
-        snippet: updated.content
-      })
-    )
+    const editMentions = this.mentions.toNotifications(mentioned, {
+      sourceType: 'comment',
+      sourceId: commentId,
+      authorId: currentUserId,
+      postId: updated.postId,
+      commentId,
+      snippet: updated.content
+    })
+    void this.notifications.dispatch(updated.isAnonymous ? editMentions.map(anonymizeNotification) : editMentions)
     return { id: updated.id, content: updated.content, editedAt: updated.editedAt }
   }
 
@@ -358,11 +368,15 @@ export class CommentsService {
     })
   }
 
-  private mapRowToCommentItem(row: any): CommentItem {
+  // Bình luận ẩn danh: che tác giả với mọi người; isMine cho chủ bình luận tự nhận ra
+  private mapRowToCommentItem(row: any, viewerId?: string): CommentItem {
+    const anonymous = !!row.is_anonymous
     return {
       id: row.id,
       postId: row.post_id,
-      authorId: row.author_id,
+      authorId: anonymous ? anonymousAuthor().id : row.author_id,
+      isAnonymous: anonymous,
+      isMine: !!viewerId && row.author_id === viewerId,
       parentId: row.parent_id || null,
       content: row.content,
       mediaUrls: [],
@@ -372,15 +386,17 @@ export class CommentsService {
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
       editedAt: row.edited_at ? new Date(row.edited_at).toISOString() : null,
-      author: {
-        id: row.author_user_id || row.author_id,
-        username: row.author_username || 'user',
-        displayName: row.author_display_name || 'Sinh viên Phenikaa',
-        avatarUrl: row.author_avatar_url || null,
-        role: row.author_role || 'student',
-        faculty: row.author_faculty || null,
-        reputationPoints: row.author_reputation_points || 100
-      }
+      author: anonymous
+        ? anonymousAuthor()
+        : {
+            id: row.author_user_id || row.author_id,
+            username: row.author_username || 'user',
+            displayName: row.author_display_name || 'Sinh viên Phenikaa',
+            avatarUrl: row.author_avatar_url || null,
+            role: row.author_role || 'student',
+            faculty: row.author_faculty || null,
+            reputationPoints: row.author_reputation_points || 100
+          }
     }
   }
 }

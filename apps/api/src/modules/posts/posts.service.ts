@@ -6,6 +6,7 @@ import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import { hotScoreSql, rankedScoreSql, seenFactorSql, seenJoinSql } from './feed-ranking.sql'
 import { featuredCommentsSql } from './featured-comment.sql'
+import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
 
@@ -44,8 +45,9 @@ const ACTIVITY_SQL: Record<ProfileActivityType, { exists: (u: string) => string;
     at: (u) => `(SELECT a.saved_at FROM saved_posts a WHERE a.post_id = p.id AND a.user_id = ${u})`
   },
   commented: {
-    exists: (u) => `EXISTS(SELECT 1 FROM comments a WHERE a.post_id = p.id AND a.author_id = ${u})`,
-    at: (u) => `(SELECT MAX(a.created_at) FROM comments a WHERE a.post_id = p.id AND a.author_id = ${u})`
+    // Bình luận ẩn danh không hiện trong hoạt động công khai của người viết
+    exists: (u) => `EXISTS(SELECT 1 FROM comments a WHERE a.post_id = p.id AND a.author_id = ${u} AND NOT a.is_anonymous)`,
+    at: (u) => `(SELECT MAX(a.created_at) FROM comments a WHERE a.post_id = p.id AND a.author_id = ${u} AND NOT a.is_anonymous)`
   }
 }
 
@@ -162,7 +164,7 @@ export class PostsService {
     ])
 
     const items = res.rows.map((row) => ({
-      ...this.mapRowToPostItem(row, pollsMap.get(row.id)),
+      ...this.mapRowToPostItem(row, pollsMap.get(row.id), currentUserId),
       featuredComment: featuredMap.get(row.id) ?? null
     }))
 
@@ -194,14 +196,14 @@ export class PostsService {
     const followedSql = currentUserId ? `EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = f.author_id) DESC,` : ''
     const res = await this.db.query(
       `WITH fresh AS (
-         SELECT p.author_id, p.created_at ${joins} ${where}
+         SELECT p.author_id, p.created_at, p.is_anonymous ${joins} ${where}
          ORDER BY p.created_at DESC LIMIT ${NEW_POSTS_MAX}
        )
        SELECT (SELECT COUNT(*)::int FROM fresh) AS count,
               COALESCE((
                 SELECT json_agg(a) FROM (
                   SELECT u.id, u.username, u.display_name AS "displayName", u.avatar_url AS "avatarUrl"
-                  FROM (SELECT author_id, MAX(created_at) AS last_at FROM fresh GROUP BY author_id) f
+                  FROM (SELECT author_id, MAX(created_at) AS last_at FROM fresh WHERE NOT is_anonymous GROUP BY author_id) f
                   JOIN users u ON u.id = f.author_id
                   ORDER BY ${followedSql} f.last_at DESC
                   LIMIT 3
@@ -247,7 +249,8 @@ export class PostsService {
 
     if (feedType === 'following') {
       if (currentUserId) {
-        whereClause += ` AND EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = p.author_id)`
+        // Bài ẩn danh không vào tab Đang theo dõi (lọt vào đó là lộ tác giả)
+        whereClause += ` AND NOT p.is_anonymous AND EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = $1 AND uf.following_id = p.author_id)`
       } else {
         whereClause += ` AND 1=0`
       }
@@ -293,11 +296,12 @@ export class PostsService {
     }
 
     const pollsMap = await this.fetchPollsForPosts([id], currentUserId)
-    return this.mapRowToPostItem(res.rows[0], pollsMap.get(id))
+    return this.mapRowToPostItem(res.rows[0], pollsMap.get(id), currentUserId)
   }
 
   async create(authorId: string, data: CreatePostInput): Promise<PostItem> {
     let mentioned: MentionedUser[] = []
+    const anonymous = !!data.isAnonymous
     const created = await this.db.transaction(async (client) => {
       // 1. Resolve author details
       const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
@@ -350,11 +354,19 @@ export class PostsService {
         dbPostType = 'review'
       }
 
+      // 3.1. Ẩn danh: chỉ bài hỏi đáp công khai, có hạn mức 24h
+      if (anonymous) {
+        if (data.communityId || data.communitySlug) throw new BadRequestException('Bài ẩn danh không đăng vào cộng đồng được')
+        if (dbPostType !== 'question') throw new BadRequestException('Chỉ bài hỏi đáp mới đăng ẩn danh được')
+        if ((data.visibility || 'public') !== 'public') throw new BadRequestException('Bài ẩn danh phải ở chế độ công khai')
+        await assertAnonymousQuota(client, 'posts', authorId)
+      }
+
       // 4. Insert Post into PostgreSQL
       const insertRes = await client.query(
         `INSERT INTO posts (
-          author_id, course_id, community_id, post_type, title, content, tags, media_urls, attached_document_ids, visibility
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+          author_id, course_id, community_id, post_type, title, content, tags, media_urls, attached_document_ids, visibility, is_anonymous
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
          RETURNING *`,
         [
           authorId,
@@ -366,7 +378,8 @@ export class PostsService {
           data.tags || [],
           data.mediaUrls || [],
           data.attachedDocumentIds || [],
-          data.visibility || 'public'
+          data.visibility || 'public',
+          anonymous
         ]
       )
 
@@ -424,16 +437,20 @@ export class PostsService {
 
       return {
         id: postRow.id,
-        authorId: authorUser.id,
-        author: {
-          id: authorUser.id,
-          username: authorUser.username,
-          displayName: authorUser.display_name,
-          avatarUrl: authorUser.avatar_url,
-          role: authorUser.role,
-          faculty: authorUser.faculty,
-          reputationPoints: authorUser.reputation_points
-        },
+        authorId: anonymous ? anonymousAuthor().id : authorUser.id,
+        author: anonymous
+          ? anonymousAuthor()
+          : {
+              id: authorUser.id,
+              username: authorUser.username,
+              displayName: authorUser.display_name,
+              avatarUrl: authorUser.avatar_url,
+              role: authorUser.role,
+              faculty: authorUser.faculty,
+              reputationPoints: authorUser.reputation_points
+            },
+        isAnonymous: anonymous,
+        isMine: true,
         title: postRow.title,
         content: postRow.content,
         postType: data.postType || 'general',
@@ -443,7 +460,7 @@ export class PostsService {
         communityId: communityUuid,
         communitySlug,
         communityName,
-        facultyCode: authorUser.faculty,
+        facultyCode: anonymous ? null : authorUser.faculty,
         targetAudience: data.targetAudience || 'everyone',
         isPinned: false,
         isResolved: false,
@@ -464,17 +481,16 @@ export class PostsService {
       }
     })
 
-    // Thông báo mention sau khi commit
-    void this.notifications.dispatch(
-      this.mentions.toNotifications(mentioned, {
-        sourceType: 'post',
-        sourceId: created.id,
-        authorId,
-        postId: created.id,
-        snippet: created.title || created.content
-      })
-    )
-    void this.signalFollowers(authorId, created.id)
+    // Thông báo mention sau khi commit; ẩn danh: không nêu người gửi, không báo follower
+    const mentionEvents = this.mentions.toNotifications(mentioned, {
+      sourceType: 'post',
+      sourceId: created.id,
+      authorId,
+      postId: created.id,
+      snippet: created.title || created.content
+    })
+    void this.notifications.dispatch(anonymous ? mentionEvents.map(anonymizeNotification) : mentionEvents)
+    if (!anonymous) void this.signalFollowers(authorId, created.id)
     return created
   }
 
@@ -521,15 +537,14 @@ export class PostsService {
       return this.findOne(postId, userId)
     })
 
-    void this.notifications.dispatch(
-      this.mentions.toNotifications(mentioned, {
-        sourceType: 'post',
-        sourceId: postId,
-        authorId: userId,
-        postId,
-        snippet: updated.title || updated.content
-      })
-    )
+    const editMentions = this.mentions.toNotifications(mentioned, {
+      sourceType: 'post',
+      sourceId: postId,
+      authorId: userId,
+      postId,
+      snippet: updated.title || updated.content
+    })
+    void this.notifications.dispatch(updated.isAnonymous ? editMentions.map(anonymizeNotification) : editMentions)
     return updated
   }
 
@@ -780,12 +795,15 @@ export class PostsService {
           repliesCount: row.replies_count || 0,
           reason: row.reason,
           createdAt: new Date(row.created_at).toISOString(),
-          author: {
-            id: row.author_id,
-            username: row.author_username || 'user',
-            displayName: row.author_display_name || 'Sinh viên Phenikaa',
-            avatarUrl: row.author_avatar_url || null
-          }
+          isAnonymous: !!row.is_anonymous,
+          author: row.is_anonymous
+            ? anonymousAuthor()
+            : {
+                id: row.author_id,
+                username: row.author_username || 'user',
+                displayName: row.author_display_name || 'Sinh viên Phenikaa',
+                avatarUrl: row.author_avatar_url || null
+              }
         })
       }
     } catch (err) {
@@ -794,7 +812,10 @@ export class PostsService {
     return map
   }
 
-  private mapRowToPostItem(row: any, poll?: PollData | null): PostItem {
+  // Bài ẩn danh: che tác giả với mọi người; isMine cho chủ bài tự nhận ra
+  // Anonymous posts mask the author for everyone; isMine lets the owner recognise it
+  private mapRowToPostItem(row: any, poll?: PollData | null, viewerId?: string): PostItem {
+    const anonymous = !!row.is_anonymous
     let postType: any = 'general'
     if (row.post_type === 'question' || row.post_type === 'qa') {
       postType = 'qa'
@@ -810,16 +831,20 @@ export class PostsService {
 
     return {
       id: row.id,
-      authorId: row.author_id,
-      author: {
-        id: row.author_user_id || row.author_id,
-        username: row.author_username || 'user',
-        displayName: row.author_display_name || 'Sinh viên Phenikaa',
-        avatarUrl: row.author_avatar_url || null,
-        role: row.author_role || 'student',
-        faculty: row.author_faculty || null,
-        reputationPoints: row.author_reputation_points || 100
-      },
+      authorId: anonymous ? anonymousAuthor().id : row.author_id,
+      author: anonymous
+        ? anonymousAuthor()
+        : {
+            id: row.author_user_id || row.author_id,
+            username: row.author_username || 'user',
+            displayName: row.author_display_name || 'Sinh viên Phenikaa',
+            avatarUrl: row.author_avatar_url || null,
+            role: row.author_role || 'student',
+            faculty: row.author_faculty || null,
+            reputationPoints: row.author_reputation_points || 100
+          },
+      isAnonymous: anonymous,
+      isMine: !!viewerId && row.author_id === viewerId,
       title: row.title,
       content: row.content,
       postType,
@@ -829,7 +854,7 @@ export class PostsService {
       communityId: row.community_id || null,
       communitySlug: row.community_slug || null,
       communityName: row.community_name || null,
-      facultyCode: row.faculty_code || row.author_faculty || null,
+      facultyCode: row.faculty_code || (anonymous ? null : row.author_faculty) || null,
       targetAudience: 'everyone',
       isPinned: !!row.is_pinned,
       isResolved: row.is_resolved || false,
@@ -841,7 +866,7 @@ export class PostsService {
       sharesCount: row.shares_count || 0,
       isLikedByMe: row.is_liked_by_me || false,
       isBookmarkedByMe: row.is_bookmarked_by_me || false,
-      isAuthorFollowedByMe: !!row.is_author_followed_by_me,
+      isAuthorFollowedByMe: !anonymous && !!row.is_author_followed_by_me,
       poll: poll || null,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
