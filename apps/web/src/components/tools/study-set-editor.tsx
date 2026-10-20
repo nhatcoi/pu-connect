@@ -7,7 +7,10 @@ import {
   FLASHCARD_TEMPLATES,
   SPEECH_LANGS,
   STUDY_SET_MAX_ITEMS,
+  correctAnswers,
   type FlashcardTemplate,
+  type QuizQuestionContent,
+  type QuizQuestionType,
   type SpeechLang,
   type StudyItemContent,
   type StudySetDetail,
@@ -23,7 +26,7 @@ import { useStudySetActions } from '@/hooks/use-study-tools'
 import { errorMessage, uploadFileToR2 } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { SPEECH_LANG_LABELS } from './card-speech'
-import { FLASHCARD_TEMPLATE_META, TOOL_META, asCard, asQuestion, emptyContent, parseCardLines } from './tool-catalog'
+import { FLASHCARD_TEMPLATE_META, QUESTION_TYPE_META, TOOL_META, TRUE_FALSE_OPTIONS, asCard, asQuestion, emptyContent, parseCardLines } from './tool-catalog'
 
 type Row = { key: string; id?: string; content: StudyItemContent }
 type Panel = 'ai' | 'paste' | null
@@ -225,7 +228,8 @@ export function StudySetEditor({
 
 function isBlank(c: StudyItemContent) {
   if ('front' in c) return !c.front.trim() && !c.back.trim()
-  return !c.q.trim() && c.options.every((o) => !o.trim())
+  // Đúng/Sai luôn có sẵn 2 lựa chọn ⇒ chỉ xét câu hỏi
+  return !c.q.trim() && (c.type === 'truefalse' || c.options.every((o) => !o.trim()))
 }
 
 // Mẫu bộ + ngôn ngữ phát âm (chỉ flashcard)
@@ -397,30 +401,77 @@ function CardImageField({ value, onChange }: { value?: string; onChange: (url: s
   )
 }
 
-function QuestionFields({ content, onChange }: { content: StudyItemContent; onChange: (c: StudyItemContent) => void }) {
+function QuestionFields({ content, onChange }: { content: StudyItemContent; onChange: (c: QuizQuestionContent) => void }) {
   const q = asQuestion(content)
+  const type: QuizQuestionType = q.type ?? 'single'
+  const isMulti = type === 'multi'
+  const fixed = type === 'truefalse' // Đúng/Sai: 2 lựa chọn cố định
+  const correct = correctAnswers(q)
   const setOption = (i: number, v: string) => onChange({ ...q, options: q.options.map((o, j) => (j === i ? v : o)) })
-  const removeOption = (i: number) =>
-    onChange({ ...q, options: q.options.filter((_, j) => j !== i), answer: q.answer === i ? 0 : q.answer > i ? q.answer - 1 : q.answer })
+
+  // Đổi loại câu: giữ đáp án đã chọn nếu còn hợp lệ
+  const setType = (next: QuizQuestionType) => {
+    if (next === type) return
+    if (next === 'truefalse') return onChange({ ...q, type: next, options: TRUE_FALSE_OPTIONS, answer: 0, answers: undefined })
+    const options = type === 'truefalse' ? ['', '', '', ''] : q.options
+    if (next === 'multi') return onChange({ ...q, type: next, options, answer: q.answer, answers: [q.answer] })
+    onChange({ ...q, type: next === 'single' ? undefined : next, options, answer: correct[0] ?? 0, answers: undefined })
+  }
+  // Nhiều đáp án: bật / tắt từng lựa chọn (luôn còn ≥ 1); answer = đáp án nhỏ nhất
+  const pick = (i: number) => {
+    if (!isMulti) return onChange({ ...q, answer: i })
+    const next = correct.includes(i) ? correct.filter((x) => x !== i) : [...correct, i].sort((a, b) => a - b)
+    if (next.length) onChange({ ...q, answers: next, answer: next[0] })
+  }
+  const removeOption = (i: number) => {
+    const shift = (x: number) => (x > i ? x - 1 : x)
+    const options = q.options.filter((_, j) => j !== i)
+    if (!isMulti) return onChange({ ...q, options, answer: q.answer === i ? 0 : shift(q.answer) })
+    const next = correct.filter((x) => x !== i).map(shift)
+    const answers = next.length ? next : [0]
+    onChange({ ...q, options, answers, answer: answers[0] })
+  }
   return (
     <div className="space-y-1.5">
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Loại câu hỏi">
+        {(Object.keys(QUESTION_TYPE_META) as QuizQuestionType[]).map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setType(t)}
+            aria-pressed={type === t}
+            className={cn('rounded-full border px-2.5 py-0.5 text-[11px]', type === t ? 'border-primary bg-primary/10 font-semibold text-primary' : 'text-muted-foreground hover:border-foreground/40')}
+          >
+            {QUESTION_TYPE_META[t].label}
+          </button>
+        ))}
+      </div>
       <Textarea value={q.q} onChange={(e) => onChange({ ...q, q: e.target.value })} rows={2} maxLength={1000} placeholder="Câu hỏi" className="text-sm min-h-0" />
       {q.options.map((o, i) => (
         <div key={i} className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onChange({ ...q, answer: i })}
+            onClick={() => pick(i)}
             className={cn(
-              'h-6 w-6 shrink-0 rounded-full border text-[11px] font-semibold',
-              q.answer === i ? 'border-emerald-500 bg-emerald-500 text-white' : 'text-muted-foreground hover:border-foreground/40'
+              'h-6 w-6 shrink-0 border text-[11px] font-semibold',
+              isMulti ? 'rounded-md' : 'rounded-full',
+              correct.includes(i) ? 'border-emerald-500 bg-emerald-500 text-white' : 'text-muted-foreground hover:border-foreground/40'
             )}
-            aria-label={`Đặt lựa chọn ${String.fromCharCode(65 + i)} là đáp án đúng`}
+            aria-label={`${isMulti ? 'Bật / tắt' : 'Đặt'} lựa chọn ${String.fromCharCode(65 + i)} là đáp án đúng`}
+            aria-pressed={correct.includes(i)}
             title="Đáp án đúng"
           >
             {String.fromCharCode(65 + i)}
           </button>
-          <Input value={o} onChange={(e) => setOption(i, e.target.value)} maxLength={300} placeholder={`Lựa chọn ${String.fromCharCode(65 + i)}`} className="h-8 text-sm" />
-          {q.options.length > 2 && (
+          <Input
+            value={o}
+            onChange={(e) => setOption(i, e.target.value)}
+            disabled={fixed}
+            maxLength={300}
+            placeholder={`Lựa chọn ${String.fromCharCode(65 + i)}`}
+            className="h-8 text-sm"
+          />
+          {!fixed && q.options.length > 2 && (
             <button type="button" onClick={() => removeOption(i)} className="text-muted-foreground hover:text-destructive p-1" aria-label="Xóa lựa chọn">
               <Trash2 className="h-3 w-3" />
             </button>
@@ -428,7 +479,7 @@ function QuestionFields({ content, onChange }: { content: StudyItemContent; onCh
         </div>
       ))}
       <div className="flex items-center gap-2">
-        {q.options.length < 6 && (
+        {!fixed && q.options.length < 6 && (
           <button type="button" onClick={() => onChange({ ...q, options: [...q.options, ''] })} className="text-[11px] text-primary hover:underline">
             + Lựa chọn
           </button>

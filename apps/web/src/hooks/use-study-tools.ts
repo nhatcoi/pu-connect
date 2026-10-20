@@ -2,6 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { toast } from 'sonner'
 import type {
   ReviewGrade,
+  StudyAttemptRecord,
   StudyItem,
   StudySetDetail,
   StudySetDraft,
@@ -31,8 +32,9 @@ export const toolsApi = {
   draft: (body: StudySetDraftInput) => unwrap(apiClient<Envelope<StudySetDraft>>('/tools/sets/draft', json('POST', body))),
   review: (id: string, itemId: string, grade: ReviewGrade) =>
     unwrap(apiClient<Envelope<{ item: StudyItem; dueCount: number }>>(`/tools/sets/${id}/review`, json('POST', { itemId, grade }))),
-  attempt: (id: string, correct: number, total: number) =>
-    unwrap(apiClient<Envelope<StudySetSummary>>(`/tools/sets/${id}/attempts`, json('POST', { correct, total })))
+  attempt: (id: string, correct: number, total: number, seconds?: number) =>
+    unwrap(apiClient<Envelope<StudySetSummary>>(`/tools/sets/${id}/attempts`, json('POST', { correct, total, seconds }))),
+  attempts: (id: string) => unwrap(apiClient<Envelope<StudyAttemptRecord[]>>(`/tools/sets/${id}/attempts`))
 }
 
 export function useToolsOverview() {
@@ -42,6 +44,11 @@ export function useToolsOverview() {
 // Chuỗi ngày học, lịch nhiệt, thẻ đến hạn 7 ngày tới
 export function useStudyStats() {
   return useQuery({ queryKey: queryKeys.toolStats, queryFn: toolsApi.stats, staleTime: 60_000 })
+}
+
+// Lịch sử các lần làm quiz của 1 bộ (mới trước)
+export function useQuizAttempts(setId: string) {
+  return useQuery({ queryKey: queryKeys.toolAttempts(setId), queryFn: () => toolsApi.attempts(setId), staleTime: 30_000 })
 }
 
 export function useStudySets(kind: StudyToolKind, q: string) {

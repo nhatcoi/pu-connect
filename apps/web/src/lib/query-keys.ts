@@ -64,6 +64,7 @@ export const queryKeys = {
   toolsOverview: ['tools', 'overview'] as const,
   toolSets: (kind: string, q: string) => ['tools', 'sets', kind, q.trim().toLowerCase()] as const,
   toolSet: (id: string) => ['tools', 'set', id] as const,
+  toolAttempts: (id: string) => ['tools', 'attempts', id] as const,
   toolStats: ['tools', 'stats'] as const,
   admin: (section: string, ...args: unknown[]) => ['admin', section, ...args] as const
 }

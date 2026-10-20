@@ -1,10 +1,10 @@
-import { FLASHCARD_TEMPLATES, hasCloze, SPEECH_LANGS, type FlashcardContent, type FlashcardTemplate, type SpeechLang } from '@pu/schemas'
+import { FLASHCARD_TEMPLATES, hasCloze, SPEECH_LANGS, type FlashcardContent, type FlashcardTemplate, type QuizQuestionContent, type SpeechLang } from '@pu/schemas'
 
 // Tách câu trả lời AI thành đoạn Markdown + khối học tập tương tác (```quiz / ```flashcards chứa JSON)
 
 export interface QuizData {
   title?: string
-  questions: { q: string; options: string[]; answer: number; explain?: string }[]
+  questions: Pick<QuizQuestionContent, 'q' | 'options' | 'answer' | 'explain' | 'type' | 'answers'>[]
 }
 // Khối chuẩn do server chèn sau khi N7AI gọi tool create_flashcards (kèm mẫu + ngôn ngữ phát âm)
 export interface FlashcardData {
@@ -33,7 +33,9 @@ function parseQuiz(raw: unknown): QuizData | null {
       q.options.length >= 2 &&
       Number.isInteger(q.answer) &&
       q.answer >= 0 &&
-      q.answer < q.options.length
+      q.answer < q.options.length &&
+      // Câu nhiều đáp án cần danh sách đáp án hợp lệ; thiếu ⇒ coi như 1 đáp án
+      (q.type !== 'multi' || (Array.isArray(q.answers) && q.answers.length > 0 && q.answers.every((a) => Number.isInteger(a) && a >= 0 && a < q.options.length)))
   )
   return questions.length ? { title: d.title, questions } : null
 }

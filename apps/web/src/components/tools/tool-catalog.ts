@@ -5,6 +5,7 @@ import {
   type FlashcardContent,
   type FlashcardTemplate,
   type QuizQuestionContent,
+  type QuizQuestionType,
   type StudyItemContent,
   type StudySetOptions,
   type StudyToolKind
@@ -51,6 +52,14 @@ export const emptyContent = (kind: StudyToolKind): StudyItemContent =>
 
 export const asCard = (c: StudyItemContent) => c as FlashcardContent
 export const asQuestion = (c: StudyItemContent) => c as QuizQuestionContent
+
+// Loại câu quiz trong trình soạn
+export const QUESTION_TYPE_META: Record<QuizQuestionType, { label: string }> = {
+  single: { label: 'Một đáp án' },
+  multi: { label: 'Nhiều đáp án' },
+  truefalse: { label: 'Đúng / Sai' }
+}
+export const TRUE_FALSE_OPTIONS = ['Đúng', 'Sai']
 
 // Mẫu bộ flashcard: Từ vựng hiện sẵn ô phiên âm, ví dụ + nút phát âm
 export const FLASHCARD_TEMPLATE_META: Record<FlashcardTemplate, { label: string; hint: string }> = {

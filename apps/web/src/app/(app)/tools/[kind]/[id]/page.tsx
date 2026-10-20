@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
 import { ArrowLeft, ChevronDown, Loader2, MoreHorizontal, PenLine, Trash2 } from 'lucide-react'
-import type { StudySetDetail } from '@pu/schemas'
+import { correctAnswers, type StudySetDetail } from '@pu/schemas'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { clozeText } from '@/components/tools/card-cloze'
@@ -112,7 +112,9 @@ function StudySetView({ set }: { set: StudySetDetail }) {
                   ) : (
                     <div className="space-y-0.5">
                       <MarkdownPreview content={`${i + 1}. ${asQuestion(it.content).q}`} className="font-medium [&>p]:m-0" />
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400">✓ {asQuestion(it.content).options[asQuestion(it.content).answer]}</p>
+                      <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                        ✓ {correctAnswers(asQuestion(it.content)).map((a) => asQuestion(it.content).options[a]).join(' · ')}
+                      </p>
                     </div>
                   )}
                 </li>
