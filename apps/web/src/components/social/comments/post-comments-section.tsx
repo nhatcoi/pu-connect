@@ -38,6 +38,9 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   } = useComments(post.id, isOpen)
 
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({})
+  // Bình luận gốc vừa gửi trong phiên này: nổi lên đầu để người gửi thấy ngay (thứ tự lưu trên server không đổi)
+  const [highlighted, setHighlighted] = useState<string | null>(null)
+  const [freshIds, setFreshIds] = useState<string[]>([])
 
   // Hiển thị 2 cấp: mọi phản hồi gom về bình luận gốc (dữ liệu cũ có thể sâu hơn)
   const { topLevelComments, repliesByRoot, rootOf } = useMemo(() => {
@@ -54,8 +57,11 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
       repliesByRoot.set(root, [...(repliesByRoot.get(root) ?? []), c])
     }
     for (const list of repliesByRoot.values()) list.sort((a, b) => a.createdAt.localeCompare(b.createdAt))
-    return { topLevelComments: comments.filter((c) => !c.parentId), repliesByRoot, rootOf }
-  }, [comments])
+    const roots = comments.filter((c) => !c.parentId)
+    const fresh = freshIds.map((id) => roots.find((c) => c.id === id)).filter((c): c is (typeof roots)[number] => !!c)
+    const rest = roots.filter((c) => !freshIds.includes(c.id))
+    return { topLevelComments: [...fresh, ...rest], repliesByRoot, rootOf }
+  }, [comments, freshIds])
 
   // Người trong bài cho gợi ý @mention: tác giả trước, rồi người bình luận (mới nhất trước)
   const mentionContext = useMemo<MentionCandidate[]>(() => {
@@ -76,13 +82,23 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
     if (isOpen && isLoaded) onCountChange?.(totalCount)
   }, [isOpen, isLoaded, totalCount, onCountChange])
 
+  // Gửi bình luận gốc ⇒ đưa lên đầu, nháy viền ngắn và giữ khung nhìn ở form
+  const submitRoot = async (text: string, media?: string[], anonymous?: boolean) => {
+    const created = await addComment(text, undefined, media, anonymous)
+    if (created) {
+      setFreshIds((prev) => [created.id, ...prev])
+      setHighlighted(created.id)
+      setTimeout(() => setHighlighted((cur) => (cur === created.id ? null : cur)), 2000)
+    }
+    return created
+  }
+
   // Gửi phản hồi ⇒ mở luồng của bình luận gốc để thấy ngay
   const submitReply = async (text: string, parentId: string, media?: string[], anonymous?: boolean) => {
     const created = await addComment(text, parentId, media, anonymous)
     if (created) setExpandedReplies((prev) => ({ ...prev, [rootOf(parentId)]: true }))
     return created
   }
-  const [highlighted, setHighlighted] = useState<string | null>(null)
   const handledHighlight = useRef<string | null>(null)
 
   // Mở từ thông báo: mở phản hồi chứa bình luận đích, cuộn tới và nháy viền 3s
@@ -120,7 +136,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
     <div className="border-t border-border/40 bg-muted/[0.03] pt-3 pb-2 space-y-3">
       {/* Top Comment Input Box */}
       <CommentComposer
-        onSubmit={(text, media, anonymous) => addComment(text, undefined, media, anonymous)}
+        onSubmit={submitRoot}
         postId={post.id}
         mentionContext={mentionContext}
         draftKey={`comment:${post.id}`}
