@@ -1,11 +1,23 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AdminBotCommandInput, AdminBotControlInput } from '@pu/schemas'
+import type { AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminBotsService } from './admin-bots.service'
-import { BotActivityQuerySchema, BotCommandBodySchema, BotControlBodySchema, type BotActivityQuery } from './dto/admin-bots.dto'
+import {
+  BotActivityQuerySchema,
+  BotCommandBodySchema,
+  BotControlBodySchema,
+  BotFeedActionBodySchema,
+  BotFeedQuerySchema,
+  BotProfileBodySchema,
+  BotTopicBodySchema,
+  type BotActivityQuery,
+  type BotFeedQuery
+} from './dto/admin-bots.dto'
+
+const USERNAME = /^[a-zA-Z0-9._]{1,40}$/
 
 @Controller('admin/bots')
 @UseGuards(AdminGuard)
@@ -23,9 +35,34 @@ export class AdminBotsController {
     return this.bots.activity(q)
   }
 
+  @Get('feed')
+  feed(@Query(new ZodValidationPipe(BotFeedQuerySchema)) q: BotFeedQuery) {
+    return this.bots.feedItems(q)
+  }
+
+  @Patch('feed/:id')
+  reviewFeed(@Param('id', ParseIntPipe) id: number, @Body(new ZodValidationPipe(BotFeedActionBodySchema)) body: { action: 'approve' | 'reject' }, @Req() req: Request) {
+    return this.bots.reviewFeedItem(requireUserId(req), id, body.action)
+  }
+
   @Patch('control')
   control(@Body(new ZodValidationPipe(BotControlBodySchema)) body: AdminBotControlInput, @Req() req: Request) {
     return this.bots.setControl(requireUserId(req), body)
+  }
+
+  @Patch('profiles/:username')
+  profile(@Param('username') username: string, @Body(new ZodValidationPipe(BotProfileBodySchema)) body: AdminBotProfileInput, @Req() req: Request) {
+    return this.bots.updateProfile(requireUserId(req), USERNAME.test(username) ? username : '', body)
+  }
+
+  @Put('topics')
+  upsertTopic(@Body(new ZodValidationPipe(BotTopicBodySchema)) body: AdminBotTopicInput, @Req() req: Request) {
+    return this.bots.upsertTopic(requireUserId(req), body)
+  }
+
+  @Delete('topics/:slug')
+  deleteTopic(@Param('slug') slug: string, @Req() req: Request) {
+    return this.bots.deleteTopic(requireUserId(req), slug)
   }
 
   @Post('commands')

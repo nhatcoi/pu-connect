@@ -65,7 +65,11 @@ export const ACTION_LABELS: Record<string, string> = {
   'document.delete': 'Xóa tài liệu',
   'system.broadcast': 'Gửi thông báo',
   'bot.control': 'Điều khiển Bot (bật/tắt, tốc độ)',
-  'bot.command': 'Gửi lệnh thủ công cho Bot'
+  'bot.command': 'Gửi lệnh thủ công cho Bot',
+  'bot.profile': 'Sửa quyền/hạn mức Bot',
+  'bot.topic': 'Sửa chủ đề Bot',
+  'bot.topic_delete': 'Xóa chủ đề Bot',
+  'bot.feed_review': 'Duyệt bài crawl của Bot'
 }
 
 const ACTION_TONE = (action: string) =>

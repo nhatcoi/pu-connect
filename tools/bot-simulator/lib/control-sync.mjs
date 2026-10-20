@@ -63,8 +63,9 @@ export class ControlSync {
   }
 
   async pullControl() {
-    const { rows } = await this.pool.query(`SELECT enabled, speed FROM bot_control WHERE id = 1`)
-    const { enabled, speed } = rows[0]
+    const { rows } = await this.pool.query(`SELECT enabled, speed, ai_model, ai_base_url FROM bot_control WHERE id = 1`)
+    const { enabled, speed, ai_model: model, ai_base_url: baseUrl } = rows[0]
+    this.scheduler.contentGen.setAi({ model, baseUrl })
     if (this.scheduler.isPaused === enabled) logger.info(enabled ? 'Admin bật mô phỏng' : 'Admin tạm dừng mô phỏng')
     this.scheduler.isPaused = !enabled
     this.scheduler.speed = speed
@@ -100,16 +101,11 @@ export class ControlSync {
   async execute({ type, payload: p }) {
     const { scheduler } = this
     const known = (name) => !name || scheduler.clients.has(name)
-    const bots = [p.bot, p.botA, p.botB]
-    if (!bots.every(known)) throw new Error(`Bot không tồn tại trong daemon: ${bots.filter((b) => !known(b)).join(', ')}`)
+    if (!known(p.bot)) throw new Error(`Bot không tồn tại trong daemon: ${p.bot}`)
 
     switch (type) {
       case 'post':
         return scheduler.executePost(p.bot, p.topic)
-      case 'chat':
-        return scheduler.executeDirectChat(p.botA, p.botB, p.topic)
-      case 'group':
-        return scheduler.executeGroupChat(p.topic)
       case 'comment':
         return scheduler.executeCommentFeed(p.postId, p.bot)
       default:

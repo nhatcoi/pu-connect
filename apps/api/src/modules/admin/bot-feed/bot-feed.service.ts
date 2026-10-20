@@ -6,7 +6,7 @@ import { filterFeedContent } from './feed-content-filter'
 export type IngestResult = { status: 'queued' | 'duplicate' | 'rejected'; reason?: string }
 export type IngestImage = { buffer: Buffer; mimetype: string; originalname: string }
 
-// Nhận bài crawl, lọc, chống trùng, lưu ảnh lên R2 rồi xếp hàng cho daemon đăng
+// Nhận bài crawl, lọc thô, chống trùng, lưu ảnh lên R2; trạng thái 'new' ⇒ daemon dùng AI duyệt/viết lại trước khi đăng
 @Injectable()
 export class BotFeedService {
   private readonly logger = new Logger(BotFeedService.name)
@@ -35,7 +35,7 @@ export class BotFeedService {
 
     // UNIQUE ở DB chặn race giữa 2 request cùng lúc
     const res = await this.db.query(
-      `INSERT INTO bot_feed_items (source_key, content_hash, content, image_urls) VALUES ($1, $2, $3, $4)
+      `INSERT INTO bot_feed_items (source_key, content_hash, content, raw_content, image_urls) VALUES ($1, $2, $3, $3, $4)
        ON CONFLICT DO NOTHING RETURNING id`,
       [input.key, filtered.hash, filtered.content, imageUrls]
     )

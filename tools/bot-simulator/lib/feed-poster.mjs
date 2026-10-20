@@ -7,11 +7,12 @@ const QUIET_RECHECK_MS = 10 * 60_000
 
 const vnHour = () => (new Date().getUTCHours() + 7) % 24
 
-// Đăng bài từ hàng đợi bot_feed_items (dữ liệu crawl): 2 bot thay phiên, mỗi 30–120 phút/bài, không đăng trùng
+// Đăng bài đã được AI duyệt (status 'approved') từ hàng đợi bot_feed_items: các bot feed_poster thay phiên, mỗi 30–120 phút/bài, không đăng trùng
 export class FeedPoster {
-  constructor(pool, scheduler, config) {
+  constructor(pool, scheduler, config, policy) {
     this.pool = pool
     this.scheduler = scheduler
+    this.policy = policy
     this.cfg = config.feedPosting
     this.running = false
     this.nextAt = 0
@@ -57,11 +58,12 @@ export class FeedPoster {
     this.nextAt = Date.now() + (posted ? this.randomInterval() : EMPTY_QUEUE_RECHECK_MS)
   }
 
-  // Bot kế tiếp = bot còn lại so với người đăng gần nhất (thay phiên)
+  // Bot kế tiếp trong danh sách bot đăng bài feed (admin bật ở hồ sơ bot), thay phiên theo người đăng gần nhất
   async pickPoster() {
+    await this.policy.load()
     const last = await this.pool.query(`SELECT posted_by FROM bot_feed_items WHERE status = 'posted' ORDER BY posted_at DESC LIMIT 1`)
-    const bots = this.cfg.bots.filter((b) => this.scheduler.clients.has(b))
-    if (!bots.length) throw new Error('Không có bot nào trong feedPosting.bots khả dụng')
+    const bots = this.policy.feedPosters().filter((b) => this.scheduler.clients.has(b))
+    if (!bots.length) throw new Error('Chưa có bot nào được bật "đăng bài từ dữ liệu crawl"')
     const idx = bots.indexOf(last.rows[0]?.posted_by)
     return bots[(idx + 1) % bots.length]
   }
@@ -70,7 +72,7 @@ export class FeedPoster {
   async postNext() {
     // Một daemon duy nhất tiêu thụ hàng đợi: lấy bài cũ nhất, đánh dấu đã đăng sau khi tạo bài thành công
     const claimed = await this.pool.query(
-      `SELECT id, content, image_urls FROM bot_feed_items WHERE status = 'pending' ORDER BY id LIMIT 1`
+      `SELECT id, content, image_urls FROM bot_feed_items WHERE status = 'approved' ORDER BY id LIMIT 1`
     )
     const item = claimed.rows[0]
     if (!item) return false

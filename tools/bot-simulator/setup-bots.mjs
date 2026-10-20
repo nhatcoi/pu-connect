@@ -18,7 +18,7 @@ async function setup() {
   try {
     for (const p of personas) {
       const passwordHash = await bcrypt.hash(process.env.BOT_PASSWORD || p.password, 10)
-      await pool.query(
+      const { rows } = await pool.query(
         `INSERT INTO users (id, email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at, faculty, bio, is_bot, created_at)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), $6, $7, true, NOW())
          ON CONFLICT (username) DO UPDATE SET
@@ -27,9 +27,12 @@ async function setup() {
            role = EXCLUDED.role,
            status = 'active',
            email_verified = true,
-           is_bot = true`,
+           is_bot = true
+         RETURNING id`,
         [`${p.username}@seed.pu-connector.test`, p.username, passwordHash, p.displayName, SAFE_ROLES.has(p.role) ? p.role : 'student', p.faculty || 'FIT', p.tone || '']
       )
+      // Hồ sơ quyền mặc định: mọi quyền tắt, admin bật trong Admin → Bot
+      await pool.query(`INSERT INTO bot_profiles (user_id) VALUES ($1) ON CONFLICT DO NOTHING`, [rows[0].id])
       logger.success(`Bot @${p.username} sẵn sàng`)
     }
   } finally {

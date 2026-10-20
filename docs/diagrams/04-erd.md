@@ -3,13 +3,16 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **58 bảng**, **96 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **60 bảng**, **98 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
 ```mermaid
 erDiagram
   bot_activity {
+    string no_fk
+  }
+  bot_topics {
     string no_fk
   }
   campus_events {
@@ -46,6 +49,8 @@ erDiagram
   users |o--o{ bot_commands : "created_by"
   users |o--o{ bot_control : "updated_by"
   posts |o--o{ bot_feed_items : "post_id"
+  users |o--o{ bot_profiles : "updated_by"
+  users ||--o{ bot_profiles : "user_id"
   comments ||--o{ comment_reactions : "comment_id"
   users ||--o{ comment_reactions : "user_id"
   users ||--o{ comments : "author_id"
@@ -142,7 +147,6 @@ erDiagram
     text_array interests
     timestamptz created_at
     timestamptz updated_at
-    varchar school
     varchar major
     varchar class_name
     boolean is_verified
@@ -150,8 +154,9 @@ erDiagram
     jsonb privacy_settings
     varchar location
     varchar website
-    date birth_date
+    varchar birth_date
     varchar banner_url
+    varchar school
     varchar google_id
     varchar auth_provider
     boolean email_verified
@@ -170,7 +175,6 @@ erDiagram
     varchar suspended_reason
     timestamptz last_seen_at
     timestamptz interests_updated_at
-    jsonb preferences
     timestamptz suspended_until
     timestamptz restricted_at
     timestamptz restricted_until
@@ -178,6 +182,7 @@ erDiagram
     smallint risk_score
     jsonb risk_factors
     timestamptz risk_updated_at
+    jsonb preferences
     boolean is_bot
     boolean must_reset_password
     uuid unit_id FK
@@ -225,7 +230,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `users.unit_id → academic_units`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `users.unit_id → academic_units`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -673,6 +678,9 @@ erDiagram
     uuid updated_by FK
     timestamptz updated_at
     boolean feed_enabled
+    text ai_model
+    text ai_base_url
+    boolean feed_review
   }
   bot_feed_items {
     bigint id PK
@@ -686,6 +694,31 @@ erDiagram
     uuid post_id FK
     timestamptz created_at
     timestamptz posted_at
+    text raw_content
+    text topic
+    jsonb verdict
+  }
+  bot_profiles {
+    uuid user_id PK,FK
+    boolean enabled
+    text_array topics
+    boolean can_post
+    boolean can_comment
+    boolean can_like
+    boolean interact_humans
+    boolean feed_poster
+    smallint max_posts_per_day
+    smallint max_comments_per_day
+    smallint max_likes_per_day
+    uuid updated_by FK
+    timestamptz updated_at
+  }
+  bot_topics {
+    text slug PK
+    text label
+    text_array keywords
+    boolean enabled
+    timestamptz created_at
   }
   comment_reactions {
     uuid comment_id PK,FK
@@ -891,4 +924,4 @@ erDiagram
   messages ||--o{ study_sets : "source_message_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_feed_items.post_id → posts`, `comment_reactions.comment_id → comments`, `comment_reactions.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_embeddings.post_id → posts`, `post_summaries.post_id → posts`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `study_events.user_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_feed_items.post_id → posts`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.comment_id → comments`, `comment_reactions.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_embeddings.post_id → posts`, `post_summaries.post_id → posts`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `study_events.user_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`

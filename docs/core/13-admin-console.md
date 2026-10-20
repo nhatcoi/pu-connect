@@ -78,16 +78,24 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 - Đã công bố trong Chính sách bảo mật (Nghị định 13/2023).
 - IP thật lấy qua Nginx snippet `pu-cloudflare-realip.conf` (chỉ tin `CF-Connecting-IP` từ dải IP Cloudflare).
 
-## Bot mô phỏng (Admin → Bot)
+## Bot (Admin → Bot)
 
-- Bot = tài khoản `users.is_bot = true`, tự đăng bài / chat / bình luận để demo và thử tải. Logic ở `tools/bot-simulator` (daemon `pu-bot`), **không chạy trong API**.
-- Admin ↔ daemon giao tiếp qua DB, không mở cổng: `bot_control` (bật/tắt, tốc độ, heartbeat, số liệu), `bot_commands` (hàng đợi lệnh thủ công, nhận bằng `FOR UPDATE SKIP LOCKED`), `bot_activity` (nhật ký, giữ 7 ngày). Daemon hiện **Offline** nếu heartbeat quá 30 giây.
-- Endpoint `GET admin/bots`, `GET admin/bots/activity`, `PATCH admin/bots/control`, `POST admin/bots/commands`; quyền `bots:manage`; mọi thao tác ghi audit (`bot.control`, `bot.command`).
-- Mặc định **TẮT**: deploy không tự phát sinh nội dung, admin bấm *Bật mô phỏng*. Tài khoản bot luôn là `student/lecturer/ta`, không bao giờ `admin`; mật khẩu lấy từ `BOT_PASSWORD` trong `.env` trên VPS (tự sinh lần deploy đầu).
-- **Đăng bài từ dữ liệu crawl**: công tắc riêng *Đăng bài từ dữ liệu crawl* (`bot_control.feed_enabled`, mặc định tắt). `@tranngocbot` và `@tranminhbot` thay phiên, mỗi 30–120 phút ngẫu nhiên đăng 1 bài lấy từ hàng đợi `bot_feed_items` (bài cũ nhất trước, kèm ảnh nếu có, **bài riêng không dẫn link Facebook**), nghỉ 00:00–06:00 giờ VN. Không đăng trùng: `source_key` (id bài gốc) và `content_hash` (nội dung chuẩn hóa không dấu câu/hoa thường) đều UNIQUE.
-- Nguồn dữ liệu: `tools/fb-group-digest` (chạy ở máy cá nhân, cần đăng nhập Facebook) đẩy từng bài lên `POST /api/bots/ingest` (header `x-bot-ingest-token` = `BOT_INGEST_TOKEN` trên VPS, multipart `key`, `content`, `images`). API lọc (bỏ link Facebook, che SĐT/biển số/email, loại bài quá ngắn/dài hoặc có từ khóa tố cáo/bóc phốt), chống trùng rồi lưu ảnh lên R2. Lấy token: `ssh root@103.195.237.112 'grep BOT_INGEST_TOKEN /var/www/pu-connector/.env'`.
-- Lưu ý: bot làm méo số liệu hoạt động thật (like, người dùng hoạt động) — lọc theo `is_bot` khi thống kê.
-- Daemon: `journalctl -u pu-bot -f` · `systemctl restart pu-bot`. Local: `pnpm bot:setup` rồi `pnpm bot:sim`.
+Bot = tài khoản `users.is_bot = true`, chạy bởi daemon `pu-bot` (`tools/bot-simulator`, không nằm trong API). Admin ↔ daemon giao tiếp qua DB, không mở cổng. **Nguyên tắc: bot chỉ làm đúng việc admin cho phép, không tương tác lung tung.**
+
+**Kiểm soát từng bot** (nút *Cấu hình*, bảng `bot_profiles`; mặc định mọi quyền TẮT):
+- Việc được phép: đăng bài tự sinh · bình luận · thả tim · đăng bài từ dữ liệu crawl. Công tắc *Bot đang hoạt động* tắt ⇒ bot không làm gì, kể cả lệnh thủ công.
+- Chủ đề được phép (`bot_topics`, admin thêm/sửa/xóa + từ khóa): bài tự sinh chỉ trong chủ đề của bot; bot chỉ tương tác với bài khớp từ khóa chủ đề (khớp nguyên từ, không dấu) **và** AI xác nhận liên quan (không thì bỏ qua, không bình luận, không thả tim).
+- Hạn mức mỗi ngày (giờ VN) riêng từng bot cho bài/bình luận/tim; bảng hiện số đã dùng hôm nay.
+- *Tương tác bài của người thật* (mặc định tắt: bot chỉ tương tác với bài của bot). **Bot không bao giờ trả lời bình luận của người thật**; chỉ trả lời bình luận của bot, trên bài của bot.
+- Không còn: chat giữa các bot, bình chọn khảo sát, ảnh stock ngẫu nhiên, mẫu nội dung dự phòng. LLM lỗi hoặc không có gì hữu ích để nói ⇒ bỏ qua lượt đó. Bài/bình luận không bịa trải nghiệm hay số liệu cá nhân.
+
+**AI** (thẻ *AI duyệt & viết nội dung*): model (v10, v9, puc-fast hoặc tên khác) và Base URL do admin chọn (`bot_control.ai_model`, `ai_base_url`; key ở env `AI_API_KEY` của VPS, không lưu DB). Dùng cho duyệt dữ liệu crawl, sinh bài và bình luận.
+
+**Dữ liệu crawl** (`tools/fb-group-digest` → `POST /api/bots/ingest`, header `x-bot-ingest-token` = `BOT_INGEST_TOKEN`): server lọc thô (bỏ link Facebook, che SĐT/biển số/email, loại bài quá ngắn/dài hoặc có từ khóa tố cáo/bóc phốt), chống trùng (UNIQUE id bài gốc + hash nội dung chuẩn hóa), lưu ảnh R2. Hàng đợi `bot_feed_items`: `new` → **AI duyệt** (chọn chủ đề, từ chối rao vặt/tin đồn/drama/thông tin cá nhân/ngoài chủ đề, viết lại trung lập, không nhắc Facebook) → `approved` (hoặc `review` nếu bật *Admin duyệt tay*) → bot đăng. Admin xem/duyệt/từ chối từng bài ở thẻ *Dữ liệu crawl* (kèm lý do của AI). Bot có bật *Đăng bài từ dữ liệu crawl* thay phiên đăng mỗi 30–120 phút (kèm ảnh nếu có, không link Facebook), nghỉ 00:00–06:00 giờ VN; công tắc chung *Đăng bài từ dữ liệu crawl* (`feed_enabled`) mặc định tắt. Lấy token: `ssh root@103.195.237.112 'grep BOT_INGEST_TOKEN /var/www/pu-connector/.env'`.
+
+**Kỹ thuật**: `bot_control` (bật/tắt, tốc độ, AI, heartbeat), `bot_commands` (lệnh thủ công đăng bài/bình luận, `FOR UPDATE SKIP LOCKED`), `bot_activity` (nhật ký 7 ngày), `bot_feed_items`, `bot_profiles`, `bot_topics`. Endpoint `admin/bots*` (quyền `bots:manage`, mọi thao tác ghi audit `bot.*`). Daemon Offline nếu heartbeat quá 30 giây. Mặc định mọi thứ TẮT; tài khoản bot luôn là `student/lecturer/ta`; mật khẩu `BOT_PASSWORD` trên VPS. Bot làm méo số liệu hoạt động thật ⇒ lọc theo `is_bot`. Vận hành: `journalctl -u pu-bot -f` · `systemctl restart pu-bot` · local `pnpm bot:setup` rồi `pnpm bot:sim`.
+
+**Dọn dữ liệu bot cũ** (2026-10-20, `scripts/ops/sql/bot-cleanup.sql`): xóa bình luận/tim/chat của bot và 61 bài bot chưa có người thật tương tác; giữ 15 bài đã có người thật tương tác và hội thoại có người thật; xóa thông báo do bot gây ra, tính lại bộ đếm. Bản sao nằm ở `archive_bot_cleanup_*` (xóa khi không cần khôi phục).
 
 ## Vận hành
 

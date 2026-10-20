@@ -3,46 +3,49 @@
   "simulation": {
     "speed": "normal",
     "humanCircadianRhythm": true,
-    "mode": "hybrid",
     "intervals": {
-      "fast": { "minMinutes": 1, "maxMinutes": 3 },
-      "normal": { "minMinutes": 5, "maxMinutes": 15 },
-      "slow": { "minMinutes": 20, "maxMinutes": 60 }
+      "fast": {
+        "minMinutes": 1,
+        "maxMinutes": 3
+      },
+      "normal": {
+        "minMinutes": 5,
+        "maxMinutes": 15
+      },
+      "slow": {
+        "minMinutes": 20,
+        "maxMinutes": 60
+      }
     },
     "actionWeights": {
       "post": 35,
-      "commentFeed": 30,
-      "directChat": 20,
-      "groupChat": 15
+      "commentFeed": 65
     }
-  },
-  "chatSettings": {
-    "minMessagesPerConvo": 2,
-    "maxMessagesPerConvo": 5,
-    "typingDelaySeconds": {
-      "min": 2,
-      "max": 6
-    }
-  },
-  "postSettings": {
-    "allowPolls": true,
-    "pollProbability": 0.25,
-    "allowTags": true
   },
   "ai": {
     "baseUrl": "https://api-ai.vnhat.dev/v1",
-    "model": "v9",
-    "temperature": 0.8
+    "model": "v10",
+    "temperature": 0.7
   },
   "feedPosting": {
-    "bots": ["tranngocbot", "tranminhbot"],
     "minMinutes": 30,
     "maxMinutes": 120,
-    "quietHoursVN": { "from": 0, "to": 6 },
+    "quietHoursVN": {
+      "from": 0,
+      "to": 6
+    },
     "maxAttempts": 3
   },
   "safety": {
-    "blockedKeywords": ["hack", "ddos", "lộ đề", "mua điểm", "chửi bới", "spam", "scam"],
+    "blockedKeywords": [
+      "hack",
+      "ddos",
+      "lộ đề",
+      "mua điểm",
+      "chửi bới",
+      "spam",
+      "scam"
+    ],
     "maxPostsPerDayPerBot": 15,
     "maxMessagesPerDayPerBot": 60
   }

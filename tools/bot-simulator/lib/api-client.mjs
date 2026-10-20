@@ -76,7 +76,7 @@ export class BotApiClient {
     }
   }
 
-  async createPost({ title = '', content, tags = [], poll = null, mediaUrls = [] }) {
+  async createPost({ title = '', content, tags = [], mediaUrls = [] }) {
     if (!this.isLoggedIn) await this.login()
     const payload = {
       content,
@@ -88,10 +88,6 @@ export class BotApiClient {
     }
     if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
       payload.mediaUrls = mediaUrls
-    }
-    if (poll && poll.question && Array.isArray(poll.options)) {
-      payload.pollQuestion = poll.question
-      payload.pollOptions = poll.options
     }
 
     const res = await fetch(`${this.apiUrl}/posts`, {
@@ -136,20 +132,6 @@ export class BotApiClient {
     }
   }
 
-  async votePoll(postId, optionId) {
-    if (!this.isLoggedIn) await this.login()
-    try {
-      const res = await fetch(`${this.apiUrl}/posts/${postId}/vote-poll`, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify({ optionId })
-      })
-      return res.ok
-    } catch {
-      return false
-    }
-  }
-
   async toggleLike(postId) {
     if (!this.isLoggedIn) await this.login()
     const res = await fetch(`${this.apiUrl}/posts/${postId}/like`, {
@@ -179,66 +161,4 @@ export class BotApiClient {
     return data.data || data
   }
 
-  async openDirectConversation(otherUserId) {
-    if (!this.isLoggedIn) await this.login()
-    const res = await fetch(`${this.apiUrl}/conversations/direct`, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ userId: otherUserId })
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      throw new Error(`Open direct chat failed (${res.status}): ${err}`)
-    }
-
-    const data = await res.json()
-    return data.data || data
-  }
-
-  async createGroupConversation(title, memberIds) {
-    if (!this.isLoggedIn) await this.login()
-    const res = await fetch(`${this.apiUrl}/conversations`, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ title, memberIds: memberIds.filter(id => id !== this.userId) })
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      throw new Error(`Create group chat failed (${res.status}): ${err}`)
-    }
-
-    const data = await res.json()
-    return data.data || data
-  }
-
-  async listConversations(filter = 'all', limit = 20) {
-    if (!this.isLoggedIn) await this.login()
-    const res = await fetch(`${this.apiUrl}/conversations?filter=${filter}&limit=${limit}`, {
-      method: 'GET',
-      headers: this.headers
-    })
-
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.data || []
-  }
-
-  async sendMessage(conversationId, content) {
-    if (!this.isLoggedIn) await this.login()
-    const res = await fetch(`${this.apiUrl}/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ content })
-    })
-
-    if (!res.ok) {
-      const err = await res.text()
-      throw new Error(`Send message failed (${res.status}): ${err}`)
-    }
-
-    const data = await res.json()
-    return data.data || data
-  }
 }
