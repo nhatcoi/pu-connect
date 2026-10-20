@@ -5,6 +5,7 @@ import type { Stream } from 'openai/streaming'
 import type { AiQuota } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import type { AiRef, AiTrigger } from './ai.constants'
+import { AiProviderRegistry } from './ai-provider.registry'
 
 const DEFAULT_MODEL = 'n7ai-fast' // Model suy nghĩ qua gateway OpenAI-compatible; đổi bằng AI_MODEL
 export const MAX_OUTPUT_TOKENS = 8192 // Gồm cả token suy nghĩ (thinking counts toward cap)
@@ -14,9 +15,6 @@ export const RESEARCH_COST = 2 // truy xuất sâu + câu trả lời dài ⇒ t
 
 export type LlmMessage = OpenAI.Chat.Completions.ChatCompletionMessageParam
 export type LlmUsage = { prompt_tokens: number; completion_tokens: number }
-
-const PRIMARY_COOLDOWN_MS = 60_000 // gateway chính lỗi ⇒ 60s dùng thẳng gateway dự phòng / primary down ⇒ skip it for 60s
-const withV1 = (url?: string) => (url && !/\/v1\/?$/.test(url) ? url.replace(/\/+$/, '') + '/v1' : url)
 
 // Cho model biết tên model N7AI đang chạy (người dùng hỏi "bạn là model gì") — nối vào system prompt đầu tiên
 const identityLine = (name: string) => `\n\nBạn đang chạy model ${name} của N7AI. Hỏi về model ⇒ nói đúng tên này, không nhận là model hay hãng khác.`
@@ -30,30 +28,23 @@ function withIdentity(messages: LlmMessage[], name: string): LlmMessage[] {
 // Shared LLM core: one client, one quota across chat, comments and summaries
 @Injectable()
 export class LlmService {
-  readonly client: OpenAI | null
   readonly model: string
-  private readonly fallback: OpenAI | null
-  private readonly fallbackModel: string
-  private primaryDownUntil = 0
   private readonly dailyQuota: number
   private readonly logger = new Logger(LlmService.name)
   private botId: string | null = null
 
   constructor(
     private readonly db: DatabaseService,
-    config: ConfigService
+    config: ConfigService,
+    private readonly providers: AiProviderRegistry = new AiProviderRegistry(db, config)
   ) {
-    // Chưa cấu hình key ⇒ client = null, nơi gọi trả lời thông báo thay vì lỗi
-    const apiKey = config.get<string>('AI_API_KEY')
-    const baseURL = withV1(config.get<string>('AI_BASE_URL') || undefined)
-    this.client = apiKey ? new OpenAI({ apiKey, baseURL, timeout: 120_000, maxRetries: 1 }) : null
     this.model = config.get<string>('AI_MODEL') || DEFAULT_MODEL
-    // Gateway dự phòng (tùy chọn): AI_FALLBACK_BASE_URL + AI_FALLBACK_API_KEY (+ AI_FALLBACK_MODEL)
-    const fbKey = config.get<string>('AI_FALLBACK_API_KEY')
-    const fbUrl = withV1(config.get<string>('AI_FALLBACK_BASE_URL') || undefined)
-    this.fallback = fbKey && fbUrl ? new OpenAI({ apiKey: fbKey, baseURL: fbUrl, timeout: 120_000, maxRetries: 0 }) : null
-    this.fallbackModel = config.get<string>('AI_FALLBACK_MODEL') || this.model
     this.dailyQuota = Number(config.get('AI_DAILY_QUOTA') || 30)
+  }
+
+  // Client của provider chính; chưa có provider nào (DB trống, env thiếu key) ⇒ null, nơi gọi trả lời thông báo thay vì lỗi
+  get client(): OpenAI | null {
+    return this.providers.primaryClient()
   }
 
   async getBotId(): Promise<string> {
@@ -136,28 +127,29 @@ export class LlmService {
     return err instanceof OpenAI.APIError && [401, 403, 404, 408, 429].concat(err.status && err.status >= 500 ? [err.status] : []).includes(err.status ?? 0)
   }
 
-  // Gọi chat completion: gateway chính trước, lỗi gateway ⇒ gateway dự phòng (model riêng); params.model do nơi gọi không cần đặt
+  // Gọi chat completion: provider chính trước, lỗi gateway ⇒ lần lượt các provider dự phòng (xem AiProviderRegistry)
+  // params.model do nơi gọi không cần đặt; options.model = mức model N7AI (provider có modelOverride thì dùng tên riêng)
   async chat(params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming, 'model'>, options?: { signal?: AbortSignal; model?: string }): Promise<Stream<OpenAI.Chat.Completions.ChatCompletionChunk>>
   async chat(params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming, 'model'>, options?: { signal?: AbortSignal; model?: string }): Promise<OpenAI.Chat.Completions.ChatCompletion>
   async chat(params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParams, 'model'>, options?: { signal?: AbortSignal; model?: string }) {
-    if (!this.client) throw new Error('disabled')
     const { model: tier, ...request } = options ?? {}
-    // Mức model chỉ có trên gateway chính; gateway dự phòng dùng model dự phòng chung
-    const primaryModel = tier ?? this.model
-    const run = (client: OpenAI, model: string) => {
-      const name = model === primaryModel ? model : `${primaryModel} (dự phòng)`
-      return client.chat.completions.create({ ...params, messages: withIdentity(params.messages, name), model } as OpenAI.Chat.Completions.ChatCompletionCreateParams, request)
+    const wanted = tier ?? this.model
+    const chain = await this.providers.chain()
+    if (!chain.length) throw new Error('disabled')
+    for (let i = 0; i < chain.length; i++) {
+      const p = chain[i]
+      const model = p.modelOverride ?? wanted
+      const name = p.primary ? model : `${wanted} (dự phòng)`
+      try {
+        return await p.client.chat.completions.create({ ...params, messages: withIdentity(params.messages, name), model } as OpenAI.Chat.Completions.ChatCompletionCreateParams, request)
+      } catch (err) {
+        // Hết provider / người dùng hủy / lỗi yêu cầu (400, 422) ⇒ báo lỗi thẳng, không thử provider khác
+        if (i === chain.length - 1 || request.signal?.aborted || !this.isGatewayFailure(err)) throw err
+        this.providers.markDown(p.id)
+        this.logger.warn(`AI provider "${p.name}" lỗi (${(err as Error).message?.slice(0, 120)}), chuyển sang provider kế tiếp`)
+      }
     }
-    if (!this.fallback) return run(this.client, primaryModel)
-    if (Date.now() < this.primaryDownUntil) return run(this.fallback, this.fallbackModel)
-    try {
-      return await run(this.client, primaryModel)
-    } catch (err) {
-      if (request.signal?.aborted || !this.isGatewayFailure(err)) throw err
-      this.primaryDownUntil = Date.now() + PRIMARY_COOLDOWN_MS
-      this.logger.warn(`AI gateway chính lỗi (${(err as Error).message?.slice(0, 120)}), chuyển sang gateway dự phòng`)
-      return run(this.fallback, this.fallbackModel)
-    }
+    throw new Error('disabled') // không tới được (vòng lặp luôn return / throw) nhưng TypeScript cần
   }
 
   // Gọi 1 lần, không stream (bình luận, tóm tắt)

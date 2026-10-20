@@ -56,7 +56,7 @@ Integration tests simulate model and MCP network responses; they do not establis
 
 ## Gateway fallback
 
-`LlmService.chat()` (used by the agent loop and `complete()`) calls the primary gateway (`AI_BASE_URL`/`AI_MODEL`). On connection errors, timeouts, 401/403/404/408/429 or 5xx **before the response starts**, it retries once on the fallback (`AI_FALLBACK_BASE_URL`/`AI_FALLBACK_API_KEY`/`AI_FALLBACK_MODEL`) and routes all calls there for 60 s so users do not wait on a dead gateway. 400/422 are request errors and never fall back. Mid-stream drops keep the existing one-round retry. Prod: primary = tunnel (`v1`, first token ~3 s vs ~10 s on the old gateway), fallback = `api-ai.vnhat.dev` (`v9`). OCR keeps its own `OCR_BASE_URL`/`OCR_MODEL` because the tunnel exposes models under other names. Test: `llm-fallback.e2e-spec.ts`.
+`LlmService.chat()` (used by the agent loop and `complete()`) calls the primary gateway (`AI_BASE_URL`/`AI_MODEL`). On connection errors, timeouts, 401/403/404/408/429 or 5xx **before the response starts**, it retries on the next provider (env `AI_FALLBACK_BASE_URL`/`AI_FALLBACK_API_KEY`/`AI_FALLBACK_MODEL`, or the admin-managed `ai_providers` list that replaces env when non-empty — see [`20`](./20-n7ai-model-tiers.md)) and skips the failing one for 60 s so users do not wait on a dead gateway. 400/422 are request errors and never fall back. Mid-stream drops keep the existing one-round retry. Prod: primary = tunnel (`v1`, first token ~3 s vs ~10 s on the old gateway), fallback = `api-ai.vnhat.dev` (`v9`). OCR keeps its own `OCR_BASE_URL`/`OCR_MODEL` because the tunnel exposes models under other names. Test: `llm-fallback.e2e-spec.ts`.
 
 ## Changelog
 

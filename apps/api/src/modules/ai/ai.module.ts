@@ -15,6 +15,7 @@ import { GoogleOAuthService } from './connectors/google-oauth.service'
 import { SemanticScholarService } from './connectors/semantic-scholar.service'
 import { WebReaderService } from './connectors/web-reader.service'
 import { AiModelCatalogService } from './ai-model-catalog.service'
+import { AiProviderRegistry } from './ai-provider.registry'
 import { LlmService } from './llm.service'
 import { EmbeddingService } from './rag/embedding.service'
 import { OcrService } from './rag/ocr.service'
@@ -30,6 +31,7 @@ import { RagSearchService } from './rag/rag-search.service'
   controllers: [PuConnectorController, AiConnectorsController],
   providers: [
     LlmService,
+    AiProviderRegistry,
     AiModelCatalogService,
     AiRetrieval,
     GoogleOAuthService,
@@ -51,6 +53,7 @@ import { RagSearchService } from './rag/rag-search.service'
   exports: [
     PuConnectorService,
     LlmService,
+    AiProviderRegistry,
     AiModelCatalogService,
     AiRetrieval,
     GoogleOAuthService,

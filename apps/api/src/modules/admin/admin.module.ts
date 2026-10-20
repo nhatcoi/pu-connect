@@ -13,6 +13,8 @@ import { AdminUserDataService } from './admin-user-data.service'
 import { AdminRiskService } from './admin-risk.service'
 import { AdminAiModelsController } from './admin-ai-models.controller'
 import { AdminAiModelsService } from './admin-ai-models.service'
+import { AdminAiProvidersController } from './admin-ai-providers.controller'
+import { AdminAiProvidersService } from './admin-ai-providers.service'
 import { AdminUnitsController } from './admin-units.controller'
 import { AdminUnitsService } from './admin-units.service'
 import { BotIngestController } from './bot-import/bot-ingest.controller'
@@ -26,7 +28,7 @@ import { AdminGuard } from './admin.guard'
 
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule],
-  controllers: [AdminController, AdminBotsController, BotIngestController, AdminUnitsController, AdminAiModelsController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminGuard]
+  controllers: [AdminController, AdminBotsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminGuard]
 })
 export class AdminModule {}
