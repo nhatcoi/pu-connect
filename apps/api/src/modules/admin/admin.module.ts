@@ -14,6 +14,7 @@ import { AdminUnitsController } from './admin-units.controller'
 import { AdminUnitsService } from './admin-units.service'
 import { BotFeedController } from './bot-feed/bot-feed.controller'
 import { BotFeedService } from './bot-feed/bot-feed.service'
+import { BotImportService } from './bot-feed/bot-import.service'
 import { BotIngestGuard } from './bot-feed/bot-ingest.guard'
 import { StorageModule } from '../storage/storage.module'
 import { AdminBotsController } from './admin-bots.controller'
@@ -23,6 +24,6 @@ import { AdminGuard } from './admin.guard'
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule],
   controllers: [AdminController, AdminBotsController, BotFeedController, AdminUnitsController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotFeedService, BotIngestGuard, AdminUnitsService, AdminGuard]
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotFeedService, BotImportService, BotIngestGuard, AdminUnitsService, AdminGuard]
 })
 export class AdminModule {}

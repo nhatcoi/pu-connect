@@ -25,7 +25,7 @@ import { iso, pagedQuery, SqlParams, whereOf } from './admin-paging'
 import type { BotActivityQuery, BotFeedQuery } from './dto/admin-bots.dto'
 
 const ONLINE_WINDOW_SECONDS = 30
-const MAX_PENDING_COMMANDS = 50
+const MAX_PENDING_COMMANDS = 500
 const BCRYPT_ROUNDS = 10
 const FEED_STATUSES: BotFeedStatus[] = ['new', 'review', 'approved', 'rejected', 'scheduled', 'posted', 'skipped']
 

@@ -96,3 +96,14 @@ export const BotActivityQuerySchema = z.object({
   level: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['info', 'warn', 'error']).optional())
 })
 export type BotActivityQuery = z.infer<typeof BotActivityQuerySchema>
+
+export const BotImportBodySchema = z.object({
+  rows: z.array(z.record(z.unknown())).min(1, 'File không có dòng nào').max(200, 'Tối đa 200 dòng mỗi lần'),
+  dryRun: z.boolean().default(false),
+  spacingMinutes: z.number().int().min(1).max(1440).optional()
+})
+
+export const BotImportMapBodySchema = z.object({
+  headers: z.array(z.string().max(120)).min(1).max(60),
+  sample: z.array(z.array(z.string().max(300)).max(60)).max(5)
+})

@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "login": "node --env-file-if-exists=.env digest.mjs --login",
-    "digest": "node --env-file-if-exists=.env digest.mjs"
+    "digest": "node --env-file-if-exists=.env digest.mjs",
+    "export": "node --env-file-if-exists=.env digest.mjs --export"
   },
   "dependencies": {
-    "playwright": "1.49.1"
+    "playwright": "1.49.1",
+    "write-excel-file": "^4.1.1"
   }
 }

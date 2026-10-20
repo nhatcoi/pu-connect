@@ -2,6 +2,7 @@
 // Công cụ cá nhân: lấy bài mới của group Facebook thành bản tin markdown mỗi ngày.
 // Uses your own logged-in browser profile; no password stored. Use at your own risk (FB ToS).
 import { chromium } from 'playwright'
+import writeExcelFile from 'write-excel-file/node'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -17,6 +18,7 @@ const MAX_AGE_HOURS = Number(process.env.MAX_AGE_HOURS || 36)
 const INGEST_URL = process.env.BOT_INGEST_URL // vd https://puc.vnhat.dev/api/bots/ingest
 const INGEST_TOKEN = process.env.BOT_INGEST_TOKEN
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+const exportXlsx = process.argv.includes('--export')
 const login = process.argv.includes('--login')
 const headed = login || process.argv.includes('--headed')
 
@@ -71,6 +73,24 @@ async function pushToBots(item, files) {
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const json = await res.json()
   return (json.data ?? json).status
+}
+
+// Tải ảnh lên R2 qua server để file Excel có URL bền (URL ảnh Facebook hết hạn); không có token thì để trống
+async function uploadImages(files) {
+  if (!INGEST_URL || !INGEST_TOKEN || !files.length) return []
+  const form = new FormData()
+  for (const f of files) form.append('images', new Blob([f.body], { type: f.type }), f.name)
+  const res = await fetch(`${INGEST_URL.replace(/\/+$/, '')}/images`, { method: 'POST', headers: { 'x-bot-ingest-token': INGEST_TOKEN }, body: form })
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  const json = await res.json()
+  return (json.data ?? json).urls ?? []
+}
+
+// Xuất Excel đúng cột chuẩn của Admin → Bot → Import Excel (cột source_url/author chỉ để tham khảo, import bỏ qua)
+async function writeXlsx(items, file) {
+  const header = ['content', 'key', 'title', 'images', 'topic', 'bot', 'scheduled_at', 'enhance', 'source_url', 'author'].map((value) => ({ value, fontWeight: 'bold' }))
+  const rows = items.map((p) => [p.text, p.key, '', p.imageUrls.join('\n'), '', '', '', '', p.url, p.author].map((value) => (value ? { value: String(value), wrap: true } : null)))
+  await writeExcelFile([header, ...rows], { columns: [{ width: 80 }, { width: 18 }, { width: 24 }, { width: 50 }, { width: 18 }, { width: 16 }, { width: 18 }, { width: 10 }, { width: 40 }, { width: 24 }] }).toFile(file)
 }
 
 async function loadState() {
@@ -144,7 +164,17 @@ const fresh = [...collected.values()].filter((p) => {
 
 // Đẩy lên hàng đợi bot; bài đẩy lỗi mạng thì KHÔNG đánh dấu đã thấy để lần sau thử lại
 const failed = new Set()
-if (INGEST_URL && INGEST_TOKEN) {
+if (exportXlsx) {
+  // Chế độ xuất Excel: không đẩy lên bot, admin tự import ở Admin → Bot
+  for (const p of fresh) {
+    try {
+      p.imageUrls = await uploadImages(await downloadImages(ctx.request, p.images))
+    } catch (err) {
+      p.imageUrls = []
+      console.error(`Tải ảnh bài ${p.key} lỗi: ${err.message}`)
+    }
+  }
+} else if (INGEST_URL && INGEST_TOKEN) {
   const counts = { queued: 0, duplicate: 0, rejected: 0 }
   for (const p of fresh) {
     try {
@@ -175,4 +205,8 @@ await mkdir(OUT, { recursive: true })
 await writeFile(path.join(OUT, `${date}.md`), lines.join('\n'))
 await writeFile(path.join(OUT, `${date}.json`), JSON.stringify(fresh, null, 2))
 await writeFile(STATE, JSON.stringify({ seen: [...seen, ...fresh.filter((p) => !failed.has(p.key)).map((p) => p.key)].slice(-2000) }))
+if (exportXlsx) {
+  await writeXlsx(fresh, path.join(OUT, `${date}.xlsx`))
+  console.log(`Đã xuất Excel: ${fresh.length} bài → out/${date}.xlsx (import ở Admin → Bot → Nội dung & hành động → Import Excel)`)
+}
 console.log(`Xong: ${fresh.length} bài mới → out/${date}.md`)

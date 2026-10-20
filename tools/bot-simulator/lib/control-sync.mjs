@@ -127,7 +127,7 @@ export class ControlSync {
   async postFeedItem(p) {
     const { rows } = await this.pool.query(`SELECT content, image_urls FROM bot_feed_items WHERE id = $1 AND status = 'scheduled'`, [p.feedItemId])
     if (!rows[0]) throw new Error('Bài crawl không còn ở trạng thái đã hẹn')
-    const post = await this.scheduler.executeAdminPost(p.bot, { content: rows[0].content, imageUrls: rows[0].image_urls, enhance: p.enhance })
+    const post = await this.scheduler.executeAdminPost(p.bot, { title: p.title, content: rows[0].content, imageUrls: rows[0].image_urls, enhance: p.enhance })
     await this.pool.query(`UPDATE bot_feed_items SET status = 'posted', posted_by = $2, post_id = $3, posted_at = NOW() WHERE id = $1`, [p.feedItemId, p.bot, post?.id ?? null])
   }
 

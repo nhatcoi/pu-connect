@@ -16,6 +16,19 @@ export class BotFeedService {
     private readonly storage: StorageService
   ) {}
 
+  // Tool crawl xuất Excel: tải ảnh lên R2 lấy URL bền (URL ảnh Facebook hết hạn), file Excel ghi URL này
+  async uploadImages(images: IngestImage[]): Promise<{ urls: string[] }> {
+    const urls: string[] = []
+    for (const img of images) {
+      try {
+        urls.push((await this.storage.uploadFile(img.buffer, img.originalname, img.mimetype, 'posts/images')).url)
+      } catch (err: any) {
+        this.logger.warn(`Bỏ ảnh (upload lỗi): ${err?.message}`)
+      }
+    }
+    return { urls }
+  }
+
   async ingest(input: { key: string; content: string }, images: IngestImage[]): Promise<IngestResult> {
     const filtered = filterFeedContent(input.content)
     if ('reason' in filtered) return { status: 'rejected', reason: filtered.reason }

@@ -26,4 +26,11 @@ export class BotFeedController {
     const images = files.filter((f) => IMAGE_TYPES.includes(f.mimetype))
     return this.feed.ingest({ key: parsed.data.key, content: parsed.data.content }, images)
   }
+
+  @Post('images')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FilesInterceptor('images', MAX_IMAGES, { limits: { fileSize: MAX_IMAGE_BYTES } }))
+  uploadImages(@UploadedFiles() files: Express.Multer.File[] = []) {
+    return this.feed.uploadImages(files.filter((f) => IMAGE_TYPES.includes(f.mimetype)))
+  }
 }

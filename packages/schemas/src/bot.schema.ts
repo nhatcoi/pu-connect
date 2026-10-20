@@ -145,3 +145,54 @@ export type AdminBotCommandInput =
   | { type: 'post'; bot?: string; topic?: string; title?: string; content?: string; feedItemId?: string; enhance?: BotEnhance; scheduledAt?: string }
   | { type: 'comment'; postId: string; bot?: string; content?: string; enhance?: BotEnhance; scheduledAt?: string }
   | { type: 'like'; postId: string; bot: string; scheduledAt?: string }
+
+// ── Import Excel/CSV vào kho nội dung bot ─────────────────────────────
+
+// Cột chuẩn của file import (tool crawl hoặc Excel tự soạn đều phải ra các cột này)
+export const BOT_IMPORT_FIELDS = ['content', 'key', 'title', 'images', 'topic', 'bot', 'scheduledAt', 'enhance'] as const
+export type BotImportField = (typeof BOT_IMPORT_FIELDS)[number]
+
+// Một dòng đã chuẩn hóa. bot + scheduledAt ⇒ bot đó đăng đúng giờ; bot không giờ ⇒ giãn cách; không bot ⇒ vào kho (AI duyệt/xoay vòng).
+export interface BotImportRow {
+  content: string
+  key?: string
+  title?: string
+  images?: string[]
+  topic?: string
+  bot?: string
+  // ISO 8601; quá khứ ⇒ đăng ngay
+  scheduledAt?: string
+  enhance?: BotEnhance
+}
+
+export type BotImportRowStatus = 'ok' | 'duplicate' | 'invalid'
+
+export interface BotImportRowResult {
+  index: number
+  status: BotImportRowStatus
+  reason?: string
+  // Cảnh báo không chặn (vd ảnh tải lỗi nên bỏ ảnh)
+  warning?: string
+  // Dòng sẽ được xử lý thế nào nếu hợp lệ
+  plan?: 'now' | 'scheduled' | 'pool'
+}
+
+export interface BotImportResult {
+  dryRun: boolean
+  summary: Record<BotImportRowStatus, number>
+  rows: BotImportRowResult[]
+}
+
+export interface BotImportInput {
+  rows: Record<string, unknown>[]
+  dryRun: boolean
+  // Phút giữa các bài của dòng có bot nhưng không có giờ
+  spacingMinutes?: number
+}
+
+// AI đoán cột nào của file ứng với trường chuẩn (header lạ/khác ngôn ngữ)
+export interface BotImportMapRequest {
+  headers: string[]
+  sample: string[][]
+}
+export type BotImportMapping = Partial<Record<BotImportField, string>>

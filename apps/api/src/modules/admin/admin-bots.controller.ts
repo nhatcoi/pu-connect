@@ -1,12 +1,15 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AdminBotAccountInput, AdminBotAccountUpdate, AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
+import type { AdminBotAccountInput, AdminBotAccountUpdate, BotImportInput, BotImportMapRequest, AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminBotsService } from './admin-bots.service'
+import { BotImportService } from './bot-feed/bot-import.service'
 import {
   BotAccountCreateSchema,
+  BotImportBodySchema,
+  BotImportMapBodySchema,
   BotAccountUpdateSchema,
   BotActivityQuerySchema,
   BotCommandBodySchema,
@@ -25,7 +28,10 @@ const USERNAME = /^[a-zA-Z0-9._]{1,40}$/
 @UseGuards(AdminGuard)
 @RequireAdminPermission('bots:manage')
 export class AdminBotsController {
-  constructor(private readonly bots: AdminBotsService) {}
+  constructor(
+    private readonly bots: AdminBotsService,
+    private readonly importer: BotImportService
+  ) {}
 
   @Get()
   overview() {
@@ -85,6 +91,16 @@ export class AdminBotsController {
   @Delete('commands/:id')
   cancelCommand(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     return this.bots.cancelCommand(requireUserId(req), id)
+  }
+
+  @Post('import')
+  importRows(@Body(new ZodValidationPipe(BotImportBodySchema)) body: BotImportInput, @Req() req: Request) {
+    return this.importer.import(requireUserId(req), body)
+  }
+
+  @Post('import/map-columns')
+  mapColumns(@Body(new ZodValidationPipe(BotImportMapBodySchema)) body: BotImportMapRequest) {
+    return this.importer.mapColumns(body)
   }
 
   @Post('commands')

@@ -1,10 +1,11 @@
-import React from 'react'
-import { Plus, X } from 'lucide-react'
+import React, { useState } from 'react'
+import { FileSpreadsheet, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminBotCommand, AdminBotOverview, BotCommandType } from '@pu/schemas'
 import { adminApi, formatRelativeTime } from '@/lib/api'
 import { Badge, Button, Card, CardHeader, EmptyState, List } from '@/components/ui'
 import type { BotActionPreset } from './bot-action-dialog'
+import { BotImportDialog } from './bot-import-dialog'
 import { FeedQueueCard } from './feed-queue-card'
 import { useBotMutation } from './use-bots'
 
@@ -20,6 +21,7 @@ function describe(c: AdminBotCommand): string {
 
 // Kho nội dung (dữ liệu crawl) + hàng đợi hành động giao cho bot (ngay/hẹn giờ)
 export function BotContentTab({ data, onAct }: { data: AdminBotOverview; onAct: (preset: BotActionPreset) => void }) {
+  const [importing, setImporting] = useState(false)
   const cancel = useBotMutation(
     (id: string) => adminApi.delete<AdminBotOverview>(`/admin/bots/commands/${id}`),
     () => toast.success('Đã hủy lệnh')
@@ -32,9 +34,14 @@ export function BotContentTab({ data, onAct }: { data: AdminBotOverview; onAct: 
           title="Hàng đợi hành động"
           description="Việc admin giao cho bot: chạy ngay hoặc theo giờ hẹn. Lệnh đang chờ hủy được."
           action={
-            <Button variant="primary" onClick={() => onAct({})}>
-              <Plus /> Giao việc
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setImporting(true)}>
+                <FileSpreadsheet /> Import Excel
+              </Button>
+              <Button variant="primary" onClick={() => onAct({})}>
+                <Plus /> Giao việc
+              </Button>
+            </div>
           }
         />
         {data.commands.length === 0 ? (
@@ -63,6 +70,7 @@ export function BotContentTab({ data, onAct }: { data: AdminBotOverview; onAct: 
       </Card>
 
       <FeedQueueCard overview={data} onAssign={(item) => onAct({ type: 'post', feedItem: item })} />
+      <BotImportDialog open={importing} onClose={() => setImporting(false)} />
     </div>
   )
 }

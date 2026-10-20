@@ -10,6 +10,14 @@ npm run login      # đăng nhập FB 1 lần trong cửa sổ hiện ra, rồi 
 npm run digest     # chạy ẩn; thêm --headed để xem
 ```
 
+## Xuất Excel để import vào bot
+
+```bash
+npm run export     # như digest nhưng KHÔNG đẩy lên bot; ghi out/YYYY-MM-DD.xlsx
+```
+
+File đúng cột chuẩn (`content, key, title, images, topic, bot, scheduled_at, enhance` + `source_url, author` chỉ để tham khảo). Có `BOT_INGEST_TOKEN` thì ảnh được đưa lên R2 và cột `images` chứa URL bền (URL ảnh Facebook hết hạn). Mở file, điền cột `bot` / `scheduled_at` / `enhance` cho từng bài nếu muốn, rồi vào **Admin → Bot → Nội dung & hành động → Import Excel**. Dùng tool crawl khác cũng được, miễn ra đúng cột (nút *Tải file mẫu* trong hộp thoại import).
+
 ## Đẩy lên bot
 
 Copy `.env.example` thành `.env`, điền `BOT_INGEST_TOKEN` (lấy: `ssh root@103.195.237.112 'grep BOT_INGEST_TOKEN /var/www/pu-connector/.env'`).
