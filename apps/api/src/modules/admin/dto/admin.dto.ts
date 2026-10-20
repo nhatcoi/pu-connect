@@ -34,6 +34,7 @@ export const ADMIN_PERMISSIONS_RUNTIME: readonly AdminPermission[] = [
   'academic:manage',
   'search:read',
   'system:broadcast',
+  'bots:manage',
   'audit:read'
 ]
 

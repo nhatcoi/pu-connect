@@ -124,6 +124,9 @@ Cài một lần trên VPS (idempotent): `ssh root@<vps> 'bash /var/www/pu-conne
 - **Xem dữ liệu cá nhân hóa của 1 user** (chỉ đọc): `pnpm user:insight <username>` (DB stage qua SSH) hoặc thêm `--local`. In hồ sơ, `user_interests`, tín hiệu nguồn, `user_events` gần nhất, câu hỏi N7AI.
 - **Cảnh báo Telegram** (tùy chọn): thêm `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` vào `.env` trên VPS (tạo bot qua @BotFather). Không có thì ghi log `/var/log/pu-monitor.log`, `/var/log/pu-backup.log`.
 
+### 7b. Bot Simulator (demo / thử tải)
+`pnpm bot:setup` tạo tài khoản bot (`is_bot`), `pnpm bot:sim` chạy daemon; bật/tắt, tốc độ, lệnh thủ công trong **Admin → Bot**. Biến môi trường: `BOT_PASSWORD` (mật khẩu bot, mặc định theo `personas.json` khi chạy local), `BOT_API_URL` (API đích, mặc định `config.json`), `AI_API_KEY`/`AI_BASE_URL`/`AI_MODEL` (sinh nội dung). VPS: service `pu-bot`. Chi tiết: [`tools/bot-simulator/README.md`](tools/bot-simulator/README.md).
+
 ### 8. Sơ đồ hệ thống
 Sơ đồ C4, ERD, sequence, deployment ở [`docs/diagrams/`](docs/diagrams/README.md). Sau mỗi migration, sinh lại ERD từ DB local:
 ```bash

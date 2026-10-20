@@ -61,7 +61,9 @@ export const ACTION_LABELS: Record<string, string> = {
   'course.create': 'Tạo học phần',
   'course.update': 'Sửa học phần',
   'document.delete': 'Xóa tài liệu',
-  'system.broadcast': 'Gửi thông báo'
+  'system.broadcast': 'Gửi thông báo',
+  'bot.control': 'Điều khiển Bot (bật/tắt, tốc độ)',
+  'bot.command': 'Gửi lệnh thủ công cho Bot'
 }
 
 const ACTION_TONE = (action: string) =>

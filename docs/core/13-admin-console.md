@@ -21,6 +21,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | Telemetry, phản hồi, ticket, skill N7AI | **N7AI** |
 | Từ khóa tìm nhiều / không có kết quả | **Tìm kiếm** |
 | Gửi thông báo hệ thống | **Thông báo** |
+| Bật/tắt bot mô phỏng, tốc độ, lệnh thủ công, nhật ký bot | **Bot** |
 | Admin đã làm gì (không sửa được) | **Nhật ký › Thao tác quản trị** |
 | Đăng nhập / sai mật khẩu / bị chặn của mọi tài khoản (lọc theo IP, @username) | **Nhật ký › Đăng nhập** |
 | Bộ lọc hay dùng | nút **View** trên mỗi trang (có sẵn + lưu riêng / chia sẻ) |
@@ -61,9 +62,18 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 - Đã công bố trong Chính sách bảo mật (Nghị định 13/2023).
 - IP thật lấy qua Nginx snippet `pu-cloudflare-realip.conf` (chỉ tin `CF-Connecting-IP` từ dải IP Cloudflare).
 
+## Bot mô phỏng (Admin → Bot)
+
+- Bot = tài khoản `users.is_bot = true`, tự đăng bài / chat / bình luận để demo và thử tải. Logic ở `tools/bot-simulator` (daemon `pu-bot`), **không chạy trong API**.
+- Admin ↔ daemon giao tiếp qua DB, không mở cổng: `bot_control` (bật/tắt, tốc độ, heartbeat, số liệu), `bot_commands` (hàng đợi lệnh thủ công, nhận bằng `FOR UPDATE SKIP LOCKED`), `bot_activity` (nhật ký, giữ 7 ngày). Daemon hiện **Offline** nếu heartbeat quá 30 giây.
+- Endpoint `GET admin/bots`, `GET admin/bots/activity`, `PATCH admin/bots/control`, `POST admin/bots/commands`; quyền `bots:manage`; mọi thao tác ghi audit (`bot.control`, `bot.command`).
+- Mặc định **TẮT**: deploy không tự phát sinh nội dung, admin bấm *Bật mô phỏng*. Tài khoản bot luôn là `student/lecturer/ta`, không bao giờ `admin`; mật khẩu lấy từ `BOT_PASSWORD` trong `.env` trên VPS (tự sinh lần deploy đầu).
+- Lưu ý: bot làm méo số liệu hoạt động thật (like, người dùng hoạt động) — lọc theo `is_bot` khi thống kê.
+- Daemon: `journalctl -u pu-bot -f` · `systemctl restart pu-bot`. Local: `pnpm bot:setup` rồi `pnpm bot:sim`.
+
 ## Vận hành
 
-- Migration: `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security`, `profile-views-upgrade.sql` (đều trong `scripts/deploy.sh`).
+- Migration: `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security`, `profile-views-upgrade.sql`, `bot-simulator-upgrade.sql` (đều trong `scripts/deploy.sh`).
 - Job nền trong API: gỡ chế tài hết hạn (1 phút, `AdminUsersService`), điểm rủi ro + xóa nhật ký / lượt xem quá 90 ngày (10 phút, `AdminRiskService`).
 - **Chỉ một deploy tại một thời điểm**: `deploy.sh` build web vào slot rảnh `.next-a/.next-b`, hai deploy song song ghi đè slot của nhau. Kiểm tra trước: `ssh root@103.195.237.112 'pgrep -af "next build|rsync"'`.
 - `deploy.sh` rsync **thư mục làm việc** (cả file chưa commit). File ghi chú local `*.local.md` bị loại trừ.

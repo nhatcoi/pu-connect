@@ -20,6 +20,7 @@ export const ADMIN_PERMISSIONS = [
   'academic:manage', // Tạo/sửa môn học, xóa tài liệu vi phạm
   'search:read', // Xem phân tích tìm kiếm (Zero-result & Top queries)
   'system:broadcast', // Phát thông báo hệ thống toàn trường / theo nhóm vai trò
+  'bots:manage', // Điều khiển Bot Simulator (bật/tắt, tốc độ, lệnh thủ công)
   'audit:read' // Xem nhật ký kiểm toán bảo mật (admin_audit_logs)
 ] as const
 
@@ -77,6 +78,7 @@ export const ADMIN_PERMISSION_META: Record<AdminPermission, { label: string; gro
   'academic:manage': { label: 'Thêm/sửa Môn học & Xóa Tài liệu', group: 'Học thuật' },
   'search:read': { label: 'Xem xu hướng & từ khóa tìm trống', group: 'Hệ thống' },
   'system:broadcast': { label: 'Gửi thông báo hệ thống', group: 'Hệ thống' },
+  'bots:manage': { label: 'Điều khiển Bot Simulator', group: 'Hệ thống' },
   'audit:read': { label: 'Xem nhật ký kiểm toán (Audit Log)', group: 'Hệ thống' }
 }
 

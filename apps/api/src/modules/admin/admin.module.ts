@@ -9,11 +9,13 @@ import { AdminListsService } from './admin-lists.service'
 import { AdminViewsService } from './admin-views.service'
 import { AdminUserDataService } from './admin-user-data.service'
 import { AdminRiskService } from './admin-risk.service'
+import { AdminBotsController } from './admin-bots.controller'
+import { AdminBotsService } from './admin-bots.service'
 import { AdminGuard } from './admin.guard'
 
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule],
-  controllers: [AdminController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminGuard]
+  controllers: [AdminController, AdminBotsController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, AdminGuard]
 })
 export class AdminModule {}

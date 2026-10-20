@@ -1,6 +1,6 @@
 # 06 · Deployment (Production)
 
-> Hạ tầng chạy `https://puc.vnhat.dev`. Cập nhật lần cuối: **2026-10-16**.
+> Hạ tầng chạy `https://puc.vnhat.dev`. Cập nhật lần cuối: **2026-10-20**.
 
 ```mermaid
 flowchart LR
@@ -12,6 +12,7 @@ flowchart LR
     nginx["<b>nginx</b> :443 (Let's Encrypt)<br/>:80 → 301 HTTPS"]
     subgraph systemd["systemd"]
       web["<b>pu-web.service</b><br/>next start :3000"]
+      bot["<b>pu-bot.service</b><br/>node tools/bot-simulator/daemon.mjs<br/>điều khiển từ Admin (mặc định tắt)"]
       api["<b>pu-api.service</b><br/>node dist/main.js :4001<br/>NODE_ENV=production<br/>EnvironmentFile=.env"]
     end
     subgraph docker["Docker Compose"]
@@ -83,6 +84,7 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 
 **Changelog:**
 - 2026-10-19 — migration `rag-upgrade.sql`; env `EMBED_BASE_URL`, `EMBED_MODEL` (tùy chọn `EMBED_API_KEY`); queue BullMQ `rag-index`; server embedding Ollama trên Mac mini qua reverse SSH tunnel (launchd).
+- 2026-10-20 — Thêm service `pu-bot` (Bot Simulator daemon, `MemoryMax=200M`, đọc `.env`, `BOT_API_URL=https://puc.vnhat.dev/api`); `deploy.sh` loại `tools/fb-group-digest` khỏi rsync và tự tạo tài khoản bot lần đầu (`BOT_PASSWORD` sinh ngẫu nhiên).
 - 2026-10-17 — Nginx `puc` + `admin-puc` include snippet `pu-cloudflare-realip.conf` (IP thật từ `CF-Connecting-IP`, chỉ tin dải IP Cloudflare); `index.html` admin `Cache-Control: no-cache`; migration `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security-upgrade.sql`.
 - 2026-10-17 — Thêm cổng quản trị độc lập `admin-puc.vnhat.dev` (`apps/admin/dist` Static SPA phục vụ trực tiếp từ Nginx, cấu hình mẫu `scripts/ops/nginx-admin-puc.conf`).
 - 2026-10-16 — migration `puai-settings-upgrade.sql`; env tùy chọn `TAVILY_API_KEY`; queue BullMQ mới `ai-maintenance` (cùng Redis).

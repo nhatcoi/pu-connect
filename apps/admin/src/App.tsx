@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
   Bot,
+  Cpu,
   ExternalLink,
   Flag,
   History,
@@ -32,9 +33,10 @@ import { ModerationTab } from '@/tabs/moderation-tab'
 import { UsersPage } from '@/features/users/users-page'
 import { AiOpsTab } from '@/tabs/ai-ops-tab'
 import { AcademicTab } from '@/tabs/academic-tab'
+import { BotsTab } from '@/tabs/bots-tab'
 import { AuditLogsTab, BroadcastTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
 
-export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'audit'
+export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'audit'
 
 interface NavItem {
   id: NavId
@@ -44,7 +46,7 @@ interface NavItem {
   badge?: number
 }
 
-const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'audit']
+const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'bots', 'audit']
 
 // Điều hướng theo hash (#/users) — giữ trang khi F5
 function readHash(): NavId {
@@ -156,6 +158,7 @@ export function App() {
       items: [
         { id: 'search', label: 'Tìm kiếm', icon: Search, perm: 'search:read' },
         { id: 'broadcast', label: 'Thông báo', icon: Megaphone, perm: 'system:broadcast' },
+        { id: 'bots', label: 'Bot', icon: Cpu, perm: 'bots:manage' },
         { id: 'audit', label: 'Nhật ký', icon: History, perm: 'audit:read' }
       ]
     }
@@ -322,6 +325,7 @@ export function App() {
             {current === 'ai' && <AiOpsTab permissions={perms} openTickets={stats.data?.openSupportTickets} />}
             {current === 'search' && <SearchAnalyticsTab />}
             {current === 'broadcast' && <BroadcastTab />}
+            {current === 'bots' && <BotsTab />}
             {current === 'audit' && <AuditLogsTab />}
           </div>
         </main>
