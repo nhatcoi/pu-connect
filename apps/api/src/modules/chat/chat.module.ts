@@ -18,6 +18,8 @@ import { ChatPushService } from './notify/chat-push.service'
 import { ChatMentionsService } from './mentions/chat-mentions.service'
 import { HistoryToolsService } from './n7ai/agent/history-tools.service'
 import { PucToolsService } from './n7ai/agent/puc-tools.service'
+import { ConversationContextService } from './n7ai/context/conversation-context.service'
+import { ConversationToolsService } from './n7ai/context/conversation-tools.service'
 import { AiDataService } from './n7ai/ai-data.service'
 import { AiFeedbackService } from './n7ai/ai-feedback.service'
 import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './n7ai/ai-maintenance.processor'
@@ -84,6 +86,8 @@ import { ChatShareService } from './share/chat-share.service'
     AiLibraryService,
     HistoryToolsService,
     PucToolsService,
+    ConversationContextService,
+    ConversationToolsService,
     N7AiService,
     ConversationsService,
     StudyGroupChatService,

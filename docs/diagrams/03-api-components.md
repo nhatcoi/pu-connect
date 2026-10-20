@@ -53,7 +53,8 @@ flowchart TB
   chat -->|tool create_flashcards / create_quiz| tools
   chat -->|tool puc__search: SearchService| others
   tools --> ai
-  posts -->|PostAiService: @n7ai trong bình luận · tóm tắt bài| ai
+  posts -->|PostAiService: @n7ai trong bình luận (PostContext · PostThreadTools) · tóm tắt bài| ai
+  posts -->|PucTools công khai| chat
   ai -->|chat/completions| llm["LLM gateway"]
   ai -->|"OAuth · MCP initialize / tools/list / tools/call"| gdrive["workspace-mcp (localhost) → Google Drive / Calendar / Gmail API"]
   chat -->|publicUrlFor · isOwnedKey chat/ avatars/| storage
@@ -131,6 +132,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-20 — N7AI theo ngữ cảnh ([22](../core/22-n7ai-context.md)): `PostContextService` + `PostThreadToolsService` (Posts), `ConversationContextService` + `ConversationToolsService` (Chat); PostsModule import ChatModule (xuất PucToolsService); model nền mặc định `puc-fast`.
 - 2026-10-20 — `StudyToolsController`: `GET sets/:id/attempts` + `StudyToolsService.attempts` (lịch sử quiz); quiz thêm loại câu `multi` / `truefalse` (`QuizQuestionContentSchema`), migration `quiz-upgrade.sql`.
 - 2026-10-20 — `AcademicUnitsController` `GET academic-units` (công khai, cache 60s) + `AdminUnitsService/Controller` `admin/academic-units` (CRUD, `reorder`, `merge`; ghi audit `academic_unit.*`); `findUnitNames` (academic-units/unit-names.ts) cho `users/profile` + onboarding nhận `unitId`; admin users lọc `unit` (đệ quy đơn vị con). Migration `academic-units-upgrade.sql`.
 - 2026-10-20 — `posts/anonymity.ts` (che tác giả, `anonymizeNotification`, hạn mức 24h) dùng bởi `PostsService`, `CommentsService`, tìm kiếm, chat share / embed, post-ai; cột `is_anonymous` (migration `anonymous-upgrade.sql`).
