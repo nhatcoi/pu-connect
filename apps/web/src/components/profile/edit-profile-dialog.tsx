@@ -242,7 +242,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="p-0 max-w-[600px] w-full max-h-[90vh] bg-card text-card-foreground border border-border rounded-2xl overflow-hidden flex flex-col shadow-2xl transition-colors duration-200"
+        className="p-0 max-w-[720px] sm:max-w-[720px] w-full max-h-[92vh] bg-card text-card-foreground border border-border rounded-2xl overflow-hidden flex flex-col shadow-2xl transition-colors duration-200"
       >
         {/* Hidden File Inputs */}
         <input type="file" ref={avatarInputRef} onChange={handleAvatarUpload} accept="image/*" className="hidden" aria-hidden="true" />
