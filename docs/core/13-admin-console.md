@@ -16,6 +16,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | — lịch sử xử phạt, bậc đề xuất, hủy chế tài nhầm | tab **Xử phạt** |
 | — thao tác admin trên người này | tab **Kiểm duyệt** |
 | — ghi chú nội bộ (người dùng không thấy) | tab **Ghi chú** |
+| Đặt lại mật khẩu cho người dùng | menu **⋯** của hồ sơ / thanh thao tác hàng loạt (biểu tượng chìa khóa) › *Gửi link đặt lại mật khẩu* hoặc *Bắt đổi mật khẩu* |
 | Khóa nhanh | nút **Khóa** đầu hồ sơ (hộp Xử phạt chọn sẵn *Khóa*, chọn thời hạn) |
 | Học phần, tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
 | Telemetry, phản hồi, ticket, skill N7AI | **N7AI** |
@@ -35,6 +36,12 @@ Thang (đếm vi phạm 180 ngày, bỏ bản đã hủy): **Cảnh cáo → H�
 - **Hạn chế** = chỉ xem: không đăng / sửa bài, bình luận, nhắn tin, tạo hội thoại, tải tài liệu, tạo nhóm học (`NotRestrictedGuard`). Vẫn thả cảm xúc, theo dõi, báo cáo, hỏi N7AI. Web hiện banner vàng.
 - **Khóa** = không đăng nhập được, bị đăng xuất mọi thiết bị. Hết hạn ⇒ đăng nhập lại được ngay; job mỗi phút dọn dữ liệu.
 - Không khóa / hạn chế được tài khoản admin và chính mình.
+
+## Đặt lại mật khẩu (admin không đặt, không xem mật khẩu)
+
+- **Gửi link đặt lại mật khẩu** (`send_reset`): gửi email có link (30 phút, dùng một lần) tới email của chính người dùng. Mật khẩu cũ vẫn dùng được tới khi họ đổi. Dùng khi người dùng báo không đăng nhập được.
+- **Bắt đổi mật khẩu** (`force_reset`): đặt cờ `users.must_reset_password`, đăng xuất mọi thiết bị, gửi link như trên. Đăng nhập bằng mật khẩu bị chặn tới khi người dùng đặt mật khẩu mới (`resetPassword` xóa cờ). Đăng nhập Google không bị chặn. Dùng khi nghi lộ tài khoản.
+- Bỏ qua admin, tài khoản không có mật khẩu (chỉ Google) và chính mình. Ghi `admin_audit_logs` (`user.reset_link`, `user.force_reset`) và nhật ký bảo mật của người dùng (`password_reset_requested`, method `admin`, hiển thị "bởi quản trị viên").
 
 ## Đăng nhập từ nơi lạ
 

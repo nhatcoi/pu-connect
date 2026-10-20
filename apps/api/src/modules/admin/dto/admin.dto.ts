@@ -130,7 +130,7 @@ export type AdminUserQueryParsed = z.infer<typeof AdminUserQuerySchema>
 export const AdminBulkUserBodySchema = z
   .object({
     ids: z.array(z.string().uuid()).min(1).max(100),
-    action: z.enum(['verify', 'unverify', 'warn', 'restrict', 'unrestrict', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role']),
+    action: z.enum(['verify', 'unverify', 'warn', 'restrict', 'unrestrict', 'suspend', 'unsuspend', 'revoke_sessions', 'send_reset', 'force_reset', 'set_role']),
     role: z.enum(USER_ROLES_RUNTIME).optional(),
     reason: z.string().trim().max(255).optional(),
     durationDays: z.number().int().min(1).max(365).nullable().optional()

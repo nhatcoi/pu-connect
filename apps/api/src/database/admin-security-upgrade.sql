@@ -52,4 +52,6 @@ ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS country CHAR(2);
 ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS region VARCHAR(80);
 ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS city VARCHAR(80);
 ALTER TABLE user_security_events ADD COLUMN IF NOT EXISTS unusual BOOLEAN NOT NULL DEFAULT FALSE;
+-- 7. Admin bắt đổi mật khẩu: đăng nhập bằng mật khẩu bị chặn tới khi người dùng đặt mật khẩu mới qua email
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_reset_password BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE INDEX IF NOT EXISTS idx_security_events_unusual ON user_security_events (created_at DESC) WHERE unusual;

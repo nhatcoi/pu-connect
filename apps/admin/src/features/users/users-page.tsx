@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { BadgeCheck, BadgeX, Download, Gavel, LockOpen, LogOut, ShieldCheck, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
+import { BadgeCheck, BadgeX, Download, Gavel, KeyRound, LockOpen, LogOut, Mail, ShieldCheck, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
 import { USER_ROLES, type AdminUserRow, type AdminUserSort, type AdminUserSummary, type SanctionKind } from '@pu/schemas'
 import { apiUrl, cn, formatCompact, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
 import { useDebounced } from '@/hooks/use-debounced'
@@ -549,7 +549,7 @@ function BulkBar({
   includesSelf: boolean
   busy: boolean
   onClear: () => void
-  run: (action: 'verify' | 'unverify' | 'unrestrict' | 'unsuspend' | 'revoke_sessions' | 'set_role', role?: (typeof USER_ROLES)[number]) => void
+  run: (action: 'verify' | 'unverify' | 'unrestrict' | 'unsuspend' | 'revoke_sessions' | 'send_reset' | 'force_reset' | 'set_role', role?: (typeof USER_ROLES)[number]) => void
   onSanction: () => void
 }) {
   return (
@@ -591,6 +591,23 @@ function BulkBar({
       <Button size="sm" variant="ghost" disabled={busy} onClick={() => run('revoke_sessions')} title="Đăng xuất mọi thiết bị">
         <LogOut />
       </Button>
+      <Menu
+        align="start"
+        width={230}
+        trigger={(p) => (
+          <Button size="sm" variant="ghost" disabled={busy} title="Mật khẩu" {...p}>
+            <KeyRound />
+          </Button>
+        )}
+      >
+        <MenuLabel>Mật khẩu (bỏ qua admin / tài khoản Google)</MenuLabel>
+        <MenuItem icon={Mail} onSelect={() => run('send_reset')}>
+          Gửi link đặt lại mật khẩu
+        </MenuItem>
+        <MenuItem icon={KeyRound} onSelect={() => run('force_reset')}>
+          Bắt đổi mật khẩu + đăng xuất
+        </MenuItem>
+      </Menu>
       <Button size="sm" variant="ghost" disabled={busy} onClick={() => run('unrestrict')} title="Gỡ hạn chế">
         <ShieldCheck />
       </Button>

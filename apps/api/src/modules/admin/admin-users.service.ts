@@ -25,6 +25,7 @@ import { UserInsightService } from '../personalization/user-insight.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { writeAudit } from './admin-audit'
 import { SHARED_IP_MAX_ACCOUNTS } from './admin-risk.service'
+import { AuthService } from '../auth/auth.service'
 import { formatLocation } from '../auth/security-log.service'
 import type { AdminUserQueryParsed } from './dto/admin.dto'
 
@@ -113,7 +114,8 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     private readonly db: DatabaseService,
     private readonly realtime: RealtimeGateway,
     private readonly insight: UserInsightService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly auth: AuthService
   ) {}
 
   // ── Đọc ─────────────────────────────────────────────────────────────────
@@ -628,7 +630,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     const affectedIds = await this.db.transaction(async (client) => {
       // Khóa các dòng mục tiêu; bỏ qua bot
       const locked = await client.query(
-        `SELECT id, role FROM users WHERE id = ANY($1::uuid[]) AND account_type = 'human' ORDER BY id FOR UPDATE`,
+        `SELECT id, role, password_hash IS NOT NULL AS has_pw FROM users WHERE id = ANY($1::uuid[]) AND account_type = 'human' ORDER BY id FOR UPDATE`,
         [ids]
       )
       let targets: string[] = locked.rows.map((r) => r.id)
@@ -706,6 +708,26 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
           await this.deleteSessions(client, targets)
           changed = targets.map((id) => ({ id }))
           break
+        case 'send_reset':
+        case 'force_reset': {
+          // Chỉ tài khoản có mật khẩu và không phải admin (Google-only không có mật khẩu để đặt lại)
+          targets = locked.rows.filter((r) => r.role !== 'admin' && r.has_pw).map((r) => r.id)
+          if (input.action === 'force_reset') {
+            changed = (
+              await client.query(`UPDATE users SET must_reset_password = TRUE, updated_at = NOW() WHERE id = ANY($1::uuid[]) RETURNING id`, [targets])
+            ).rows
+            await this.deleteSessions(client, changed.map((r) => r.id))
+          } else {
+            changed = targets.map((id) => ({ id }))
+          }
+          // Nhật ký bảo mật của chính người dùng (method 'admin' = do quản trị viên kích hoạt)
+          await client.query(
+            `INSERT INTO user_security_events (user_id, event, success, method)
+             SELECT t, 'password_reset_requested', TRUE, 'admin' FROM unnest($1::uuid[]) t`,
+            [changed.map((r) => r.id)]
+          )
+          break
+        }
         case 'set_role': {
           const role = input.role as AdminUserRole
           const from = new Map(locked.rows.map((r) => [r.id, r.role]))
@@ -725,6 +747,8 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
         suspend: 'user.suspend',
         unsuspend: 'user.unsuspend',
         revoke_sessions: 'user.revoke_sessions',
+        send_reset: 'user.reset_link',
+        force_reset: 'user.force_reset',
         set_role: 'user.role_change'
       }[input.action]
       if (changed.length) {
@@ -744,7 +768,11 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     })
 
     // Hậu xử lý ngoài transaction: ngắt socket, gửi thông báo
-    if (input.action === 'suspend' || input.action === 'revoke_sessions') {
+    if (input.action === 'send_reset' || input.action === 'force_reset') {
+      // Gửi link ngoài transaction (email nền); mỗi người 1 token riêng
+      await Promise.all(affectedIds.map((id) => this.auth.issueResetLinkByAdmin(id).catch(() => false)))
+    }
+    if (input.action === 'suspend' || input.action === 'revoke_sessions' || input.action === 'force_reset') {
       affectedIds.forEach((id) => this.realtime.disconnectUser(id))
     }
     if (input.action === 'warn' || input.action === 'restrict') {

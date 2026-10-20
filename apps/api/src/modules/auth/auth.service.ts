@@ -53,7 +53,7 @@ export class AuthService {
 
   async validateUser(emailOrUsername: string, password: string): Promise<UserProfile | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, password_hash, display_name, student_id, school, faculty, academic_year,
+      `SELECT id, email, username, password_hash, must_reset_password, display_name, student_id, school, faculty, academic_year,
               major, class_name, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
               avatar_url, bio, role, ${EFFECTIVE_STATUS}, reputation_points, is_onboarded, email_verified, skills, interests, created_at,
@@ -78,6 +78,10 @@ export class AuthService {
     }
     // Chỉ báo bị khóa sau khi đúng mật khẩu (không lộ trạng thái tài khoản)
     assertNotSuspended(row.status, row.suspended_until)
+    // Admin bắt đổi mật khẩu (nghi lộ): chặn đăng nhập bằng mật khẩu cũ tới khi đặt mật khẩu mới
+    if (row.must_reset_password) {
+      throw new ForbiddenException('Tài khoản cần đặt lại mật khẩu. Hãy kiểm tra email (link do hệ thống gửi) hoặc dùng "Quên mật khẩu".')
+    }
 
     return this.mapUserRowToProfile(row)
   }
@@ -200,6 +204,24 @@ export class AuthService {
     // Tối đa 1 email / 60 giây / tài khoản (im lặng bỏ qua, không lộ trạng thái)
     if (row.reset_sent_at && Date.now() - new Date(row.reset_sent_at).getTime() < 60_000) return null
 
+    await this.sendResetLink(row)
+    return row.id
+  }
+
+  // Admin kích hoạt đặt lại: link gửi tới email của chính người dùng, admin không biết mật khẩu mới
+  // Admin-triggered reset: link goes to the user's own inbox; the admin never sees a password
+  async issueResetLinkByAdmin(userId: string): Promise<boolean> {
+    const res = await this.db.query(
+      `SELECT id, email, display_name FROM users WHERE id = $1 AND account_type = 'human' AND password_hash IS NOT NULL`,
+      [userId]
+    )
+    if (!res.rows[0]) return false
+    await this.sendResetLink(res.rows[0])
+    return true
+  }
+
+  // Tạo token (lưu hash, hết hạn 30 phút) và gửi email nền
+  private async sendResetLink(row: { id: string; email: string; display_name: string }): Promise<void> {
     const token = randomBytes(32).toString('hex')
     await this.db.query(
       `UPDATE users SET reset_token_hash = $1, reset_token_expires = NOW() + INTERVAL '30 minutes', reset_sent_at = NOW()
@@ -211,7 +233,6 @@ export class AuthService {
     void this.mail
       .sendPasswordResetEmail(row.email, row.display_name, `${base}/reset-password?token=${token}`)
       .catch((err) => this.logger.error(`Gửi email đặt lại mật khẩu thất bại (${row.email}): ${err?.message}`))
-    return row.id
   }
 
   // Đặt mật khẩu mới bằng token (dùng một lần) và đăng xuất mọi phiên cũ
@@ -224,7 +245,7 @@ export class AuthService {
     const res = await this.db.query(
       `UPDATE users
        SET password_hash = $1, reset_token_hash = NULL, reset_token_expires = NULL,
-           password_changed_at = NOW(), updated_at = NOW()
+           password_changed_at = NOW(), must_reset_password = FALSE, updated_at = NOW()
        WHERE reset_token_hash = $2 AND reset_token_expires > NOW() AND account_type = 'human'
        RETURNING id, email, display_name`,
       [passwordHash, this.hashToken(token)]

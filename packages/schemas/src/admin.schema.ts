@@ -395,7 +395,7 @@ export interface AdminUserDetail {
   recommendation: SanctionRecommendation
 }
 
-export const ADMIN_BULK_USER_ACTIONS = ['verify', 'unverify', 'warn', 'restrict', 'unrestrict', 'suspend', 'unsuspend', 'revoke_sessions', 'set_role'] as const
+export const ADMIN_BULK_USER_ACTIONS = ['verify', 'unverify', 'warn', 'restrict', 'unrestrict', 'suspend', 'unsuspend', 'revoke_sessions', 'send_reset', 'force_reset', 'set_role'] as const
 export type AdminBulkUserAction = (typeof ADMIN_BULK_USER_ACTIONS)[number]
 
 export const AdminBulkUserSchema = z.object({

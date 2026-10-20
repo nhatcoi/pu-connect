@@ -1,5 +1,5 @@
 import React from 'react'
-import { Activity, BadgeCheck, BadgeX, ExternalLink, Gavel, LockOpen, LogOut, PanelRight, ShieldCheck } from 'lucide-react'
+import { Activity, BadgeCheck, BadgeX, ExternalLink, Gavel, KeyRound, LockOpen, LogOut, Mail, PanelRight, ShieldCheck } from 'lucide-react'
 import { USER_ROLES, type AdminUserRow, type SanctionKind } from '@pu/schemas'
 import { ROLE_SHORT, WEB_PORTAL_URL } from '@/lib/api'
 import { Menu, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui'
@@ -60,6 +60,16 @@ export function UserActionsMenu({
           <MenuItem icon={LogOut} onSelect={() => run({ ids: [u.id], action: 'revoke_sessions' })}>
             Đăng xuất mọi thiết bị
           </MenuItem>
+          {u.role !== 'admin' && (
+            <>
+              <MenuItem icon={Mail} onSelect={() => run({ ids: [u.id], action: 'send_reset' })}>
+                Gửi link đặt lại mật khẩu
+              </MenuItem>
+              <MenuItem icon={KeyRound} onSelect={() => run({ ids: [u.id], action: 'force_reset' })}>
+                Bắt đổi mật khẩu
+              </MenuItem>
+            </>
+          )}
           {u.isRestricted && (
             <MenuItem icon={ShieldCheck} onSelect={() => run({ ids: [u.id], action: 'unrestrict' })}>
               Gỡ hạn chế

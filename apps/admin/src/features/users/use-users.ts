@@ -73,6 +73,8 @@ const BULK_MSG: Record<AdminBulkUserAction, (n: number, v: BulkVars) => string> 
   suspend: (n, v) => `Đã khóa ${n} tài khoản${v.durationDays ? ` trong ${v.durationDays} ngày` : ' vĩnh viễn'}`,
   unsuspend: (n) => `Đã mở khóa ${n} tài khoản`,
   revoke_sessions: (n) => `Đã đăng xuất ${n} tài khoản khỏi mọi thiết bị`,
+  send_reset: (n) => `Đã gửi link đặt lại mật khẩu cho ${n} người`,
+  force_reset: (n) => `Đã đăng xuất và bắt ${n} người đổi mật khẩu`,
   set_role: (n, v) => `Đã đổi ${n} người thành ${ROLE_SHORT[v.role ?? ''] ?? v.role}`
 }
 
