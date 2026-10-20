@@ -69,6 +69,8 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
 
   // Tên hiển thị chính hiện tại
   const currentPrimaryTitle = major || faculty || school || ''
+  // Dòng phụ: cấp trên của đơn vị đã chọn (bỏ trùng tên chính)
+  const parentLine = [school, faculty].filter((v) => v && v !== currentPrimaryTitle).join(' • ')
 
   return (
     <div className="space-y-3.5" ref={containerRef}>
@@ -124,52 +126,50 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
       ) : (
       /* 1. Ngành / Khoa (Phenikaa) */
       <div className="relative">
-        <label className="block text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
-          <span className="flex items-center gap-1.5">
-            <GraduationCap className="h-3.5 w-3.5 text-primary" />
-            <span>Ngành / Khoa</span>
-          </span>
-          {currentPrimaryTitle && !isCustomMode && (
-            <button
-              type="button"
-              onClick={handleClearUnit}
-              className="text-[10px] text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
-            >
-              Đặt lại
-            </button>
-          )}
-        </label>
-
         {!isCustomMode ? (
           <div className="relative">
-            {/* Thanh hiển thị & ô tìm kiếm thông minh */}
+            {/* Ô hiển thị: nhãn nằm trong ô, cùng kiểu các trường khác */}
             <div
               onClick={() => setIsOpen(true)}
               className={cn(
-                'min-h-[46px] w-full rounded-xl border border-input bg-background/60 hover:border-foreground/30 px-3 py-2 flex items-center justify-between gap-2 cursor-pointer transition-all',
+                'group w-full rounded-xl border border-input bg-background/50 hover:border-foreground/25 px-3 pt-2 pb-1.5 cursor-pointer transition-all',
                 isOpen && 'border-primary ring-1 ring-primary'
               )}
             >
-              {currentPrimaryTitle ? (
-                <div className="flex-1 min-w-0 pr-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-semibold text-sm text-foreground truncate">{currentPrimaryTitle}</span>
+              <div className="flex items-center justify-between">
+                <span className={cn('flex items-center gap-1.5 text-[11px] font-medium transition-colors', isOpen ? 'text-primary' : 'text-muted-foreground')}>
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Ngành / Khoa
+                </span>
+                {currentPrimaryTitle && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleClearUnit()
+                    }}
+                    className="text-[11px] text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
+                  >
+                    Đặt lại
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center justify-between gap-2 min-h-[24px]">
+                {currentPrimaryTitle ? (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{currentPrimaryTitle}</p>
+                    {parentLine && <p className="text-[11px] text-muted-foreground truncate">{parentLine}</p>}
                   </div>
-                  <div className="text-[11px] text-muted-foreground truncate">{[school, faculty].filter(Boolean).join(' • ') || PHENIKAA_UNIVERSITY_NAME}</div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 text-muted-foreground/70 text-sm">
-                  <Search className="h-4 w-4" />
-                  <span>Chọn ngành hoặc khoa (gõ để tìm: KTPM, AI, Luật...)</span>
-                </div>
-              )}
-
-              <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform shrink-0', isOpen && 'rotate-180 text-foreground')} />
+                ) : (
+                  <span className="text-sm text-muted-foreground/60 truncate">Chọn ngành hoặc khoa (gõ để tìm)</span>
+                )}
+                <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform shrink-0', isOpen && 'rotate-180 text-foreground')} />
+              </div>
             </div>
 
             {/* Dropdown danh sách kết quả */}
             {isOpen && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-border bg-card/95 backdrop-blur-md shadow-xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+              <div className="mt-1.5 rounded-xl border border-border bg-card shadow-lg overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
                 {/* Search input trong dropdown */}
                 <div className="p-2 border-b border-border flex items-center gap-2 bg-muted/30">
                   <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
