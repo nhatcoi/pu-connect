@@ -14,9 +14,9 @@ export class AdminBotsService {
   constructor(private readonly db: DatabaseService) {}
 
   async overview(): Promise<AdminBotOverview> {
-    const [control, bots, commands] = await Promise.all([
+    const [control, bots, commands, feed] = await Promise.all([
       this.db.query(
-        `SELECT enabled, speed, heartbeat_at, started_at, stats,
+        `SELECT enabled, feed_enabled, speed, heartbeat_at, started_at, stats,
                 heartbeat_at IS NOT NULL AND heartbeat_at > NOW() - make_interval(secs => $1) AS online
          FROM bot_control WHERE id = 1`,
         [ONLINE_WINDOW_SECONDS]
@@ -32,11 +32,19 @@ export class AdminBotsService {
         `SELECT c.id, c.type, c.payload, c.status, c.result, c.created_at, c.finished_at, u.username AS created_by
          FROM bot_commands c LEFT JOIN users u ON u.id = c.created_by
          ORDER BY c.id DESC LIMIT 15`
+      ),
+      this.db.query(
+        `SELECT COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
+                COUNT(*) FILTER (WHERE status = 'posted' AND posted_at > NOW() - INTERVAL '24 hours')::int AS posted_24h,
+                MAX(posted_at) AS last_posted_at
+         FROM bot_feed_items`
       )
     ])
     const c = control.rows[0]
     return {
       enabled: c.enabled,
+      feedEnabled: c.feed_enabled,
+      feed: { pending: feed.rows[0].pending, posted24h: feed.rows[0].posted_24h, lastPostedAt: iso(feed.rows[0].last_posted_at) },
       speed: c.speed,
       online: c.online,
       heartbeatAt: iso(c.heartbeat_at),
@@ -85,8 +93,8 @@ export class AdminBotsService {
   async setControl(adminId: string, input: AdminBotControlInput) {
     await this.db.transaction(async (client) => {
       await client.query(
-        `UPDATE bot_control SET enabled = COALESCE($1, enabled), speed = COALESCE($2, speed), updated_by = $3, updated_at = NOW() WHERE id = 1`,
-        [input.enabled ?? null, input.speed ?? null, adminId]
+        `UPDATE bot_control SET enabled = COALESCE($1, enabled), speed = COALESCE($2, speed), feed_enabled = COALESCE($3, feed_enabled), updated_by = $4, updated_at = NOW() WHERE id = 1`,
+        [input.enabled ?? null, input.speed ?? null, input.feedEnabled ?? null, adminId]
       )
       await writeAudit(client, adminId, { action: 'bot.control', targetType: 'bot', targetId: 'simulator', details: { ...input } })
     })

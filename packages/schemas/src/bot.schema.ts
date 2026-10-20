@@ -34,8 +34,17 @@ export interface AdminBotCommand {
   finishedAt: string | null
 }
 
+export interface AdminBotFeedStats {
+  pending: number
+  posted24h: number
+  lastPostedAt: string | null
+}
+
 export interface AdminBotOverview {
   enabled: boolean
+  // Đăng bài từ dữ liệu crawl (Trần Ngọc & Trần Minh thay phiên)
+  feedEnabled: boolean
+  feed: AdminBotFeedStats
   speed: BotSpeed
   // Daemon có heartbeat trong 30 giây gần nhất
   online: boolean
@@ -55,7 +64,7 @@ export interface AdminBotActivity {
   createdAt: string
 }
 
-export type AdminBotControlInput = { enabled?: boolean; speed?: BotSpeed }
+export type AdminBotControlInput = { enabled?: boolean; feedEnabled?: boolean; speed?: BotSpeed }
 
 export type AdminBotCommandInput =
   | { type: 'post'; bot?: string; topic?: string }

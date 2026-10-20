@@ -76,6 +76,29 @@ export function BotsTab() {
             </div>
           </Card>
 
+          <Card>
+            <CardHeader
+              title={
+                <span className="flex items-center gap-2">
+                  Đăng bài từ dữ liệu crawl
+                  <Badge tone={data.feedEnabled ? 'primary' : 'neutral'}>{data.feedEnabled ? 'Đang bật' : 'Tắt'}</Badge>
+                </span>
+              }
+              description="@tranngocbot và @tranminhbot thay phiên đăng 1 bài (kèm ảnh nếu có) mỗi 30–120 phút, không đăng trùng, nghỉ 00:00–06:00. Dữ liệu do tools/fb-group-digest đẩy lên."
+              action={
+                <Button variant={data.feedEnabled ? 'outline' : 'primary'} loading={control.isPending} onClick={() => control.mutate({ feedEnabled: !data.feedEnabled })}>
+                  {data.feedEnabled ? <Pause /> : <Play />}
+                  {data.feedEnabled ? 'Tạm dừng' : 'Bật đăng bài'}
+                </Button>
+              }
+            />
+            <div className="grid grid-cols-1 gap-3 p-4 pt-0 sm:grid-cols-3">
+              <Stat label="Chờ đăng" value={formatNumber(data.feed.pending)} icon={FileText} tone={data.feedEnabled && data.feed.pending === 0 ? 'warning' : undefined} sub={data.feed.pending === 0 ? 'Hết bài, chạy tool crawl' : undefined} />
+              <Stat label="Đã đăng 24 giờ" value={formatNumber(data.feed.posted24h)} icon={Send} />
+              <Stat label="Đăng lần cuối" value={formatRelativeTime(data.feed.lastPostedAt)} />
+            </div>
+          </Card>
+
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             <CommandForm bots={data.bots.map((b) => b.username)} />
             <CommandHistory commands={data.commands} />

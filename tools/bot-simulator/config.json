@@ -34,6 +34,13 @@
     "model": "v9",
     "temperature": 0.8
   },
+  "feedPosting": {
+    "bots": ["tranngocbot", "tranminhbot"],
+    "minMinutes": 30,
+    "maxMinutes": 120,
+    "quietHoursVN": { "from": 0, "to": 6 },
+    "maxAttempts": 3
+  },
   "safety": {
     "blockedKeywords": ["hack", "ddos", "lộ đề", "mua điểm", "chửi bới", "spam", "scam"],
     "maxPostsPerDayPerBot": 15,

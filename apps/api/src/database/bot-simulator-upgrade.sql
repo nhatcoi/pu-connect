@@ -41,3 +41,23 @@ CREATE TABLE IF NOT EXISTS bot_activity (
 );
 CREATE INDEX IF NOT EXISTS idx_bot_activity_created ON bot_activity (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_bot_activity_bot ON bot_activity (bot_username, created_at DESC);
+
+-- Bot đăng bài từ dữ liệu crawl (tools/fb-group-digest → POST /api/bots/ingest)
+ALTER TABLE bot_control ADD COLUMN IF NOT EXISTS feed_enabled BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Hàng đợi bài chờ đăng. UNIQUE source_key + content_hash ⇒ không bao giờ đăng trùng.
+CREATE TABLE IF NOT EXISTS bot_feed_items (
+  id BIGSERIAL PRIMARY KEY,
+  source_key TEXT NOT NULL UNIQUE,
+  content_hash TEXT NOT NULL UNIQUE,
+  content TEXT NOT NULL,
+  image_urls TEXT[] NOT NULL DEFAULT '{}',
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'posted', 'skipped')),
+  attempts SMALLINT NOT NULL DEFAULT 0,
+  posted_by TEXT,
+  post_id UUID REFERENCES posts(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  posted_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_bot_feed_items_pending ON bot_feed_items (id) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_bot_feed_items_posted ON bot_feed_items (posted_at DESC) WHERE status = 'posted';

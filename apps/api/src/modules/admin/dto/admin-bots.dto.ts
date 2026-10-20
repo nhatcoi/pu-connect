@@ -7,8 +7,8 @@ const username = z.string().trim().min(1).max(40).regex(/^[a-zA-Z0-9._]+$/)
 const topic = z.string().trim().max(200).optional()
 
 export const BotControlBodySchema = z
-  .object({ enabled: z.boolean().optional(), speed: z.enum(BOT_SPEEDS_RUNTIME).optional() })
-  .refine((v) => v.enabled !== undefined || v.speed !== undefined, { message: 'Cần enabled hoặc speed' })
+  .object({ enabled: z.boolean().optional(), feedEnabled: z.boolean().optional(), speed: z.enum(BOT_SPEEDS_RUNTIME).optional() })
+  .refine((v) => Object.values(v).some((x) => x !== undefined), { message: 'Cần ít nhất một trường' })
 
 export const BotCommandBodySchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('post'), bot: username.optional(), topic }),

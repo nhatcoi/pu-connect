@@ -47,3 +47,12 @@ VPS: service `pu-bot` do `scripts/deploy.sh` tạo (`journalctl -u pu-bot -f`).
 ## Lưu ý
 
 Bot làm méo số liệu hoạt động thật; lọc theo `users.is_bot` khi thống kê.
+
+## Đăng bài từ dữ liệu crawl (`FeedPoster`)
+
+`@tranngocbot` và `@tranminhbot` thay phiên đăng bài lấy từ hàng đợi `bot_feed_items` (do `tools/fb-group-digest` đẩy lên `POST /api/bots/ingest`).
+
+- Mỗi 30–120 phút ngẫu nhiên đăng 1 bài (cũ nhất trước), kèm ảnh nếu có, là bài riêng, nội dung đã bỏ link Facebook và che SĐT/biển số/email.
+- Không đăng trùng: UNIQUE theo id bài gốc và theo hash nội dung chuẩn hóa. Nghỉ 00:00–06:00 giờ VN. Lỗi 3 lần thì bỏ qua bài đó.
+- Bật/tắt bằng công tắc *Đăng bài từ dữ liệu crawl* ở Admin → Bot (mặc định tắt, độc lập với mô phỏng chung).
+- Cấu hình: `config.json` → `feedPosting` (`bots`, `minMinutes`, `maxMinutes`, `quietHoursVN`, `maxAttempts`).

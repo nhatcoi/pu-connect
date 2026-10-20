@@ -6,6 +6,7 @@ import { BotApiClient } from './lib/api-client.mjs'
 import { ContentGenerator } from './lib/content-generator.mjs'
 import { ControlSync } from './lib/control-sync.mjs'
 import { createPool } from './lib/database.mjs'
+import { FeedPoster } from './lib/feed-poster.mjs'
 import { logger } from './lib/logger.mjs'
 import { BotScheduler } from './lib/scheduler.mjs'
 
@@ -38,10 +39,13 @@ async function main() {
   const sync = new ControlSync(pool, scheduler)
   await sync.start()
   scheduler.start().catch((err) => logger.error('Scheduler crashed:', err))
+  const feedPoster = new FeedPoster(pool, scheduler, config)
+  feedPoster.start().catch((err) => logger.error('FeedPoster crashed:', err))
 
   const shutdown = async () => {
     logger.info('Đang tắt Bot Simulator...')
     scheduler.stop()
+    feedPoster.stop()
     await sync.stop()
     await pool.end()
     process.exit(0)

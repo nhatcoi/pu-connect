@@ -142,6 +142,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 
 # Bot Simulator: mật khẩu bot ngẫu nhiên trong .env (không dùng mật khẩu mặc định trong repo), tạo tài khoản bot lần đầu
 grep -q '^BOT_PASSWORD=' .env || echo "BOT_PASSWORD=$(openssl rand -hex 12)" >> .env
+grep -q '^BOT_INGEST_TOKEN=' .env || echo "BOT_INGEST_TOKEN=$(openssl rand -hex 24)" >> .env  # tool crawl đẩy bài qua POST /api/bots/ingest
 BOT_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users WHERE is_bot;" | tr -d '[:space:]')
 if [ "$BOT_COUNT" -eq "0" ]; then
   echo "Chưa có tài khoản bot. Đang tạo..."
