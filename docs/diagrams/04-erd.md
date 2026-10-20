@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **57 bảng**, **94 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **58 bảng**, **96 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -21,6 +21,7 @@ erDiagram
   user_sessions {
     string no_fk
   }
+  academic_units |o--o{ academic_units : "parent_id"
   users |o--o{ admin_audit_logs : "admin_id"
   users ||--o{ admin_saved_views : "admin_id"
   users |o--o{ admin_user_notes : "admin_id"
@@ -111,6 +112,7 @@ erDiagram
   users ||--o{ user_follows : "follower_id"
   users ||--o{ user_follows : "following_id"
   users ||--o{ user_interests : "user_id"
+  academic_units |o--o{ users : "unit_id"
   users |o--o{ user_sanctions : "admin_id"
   users |o--o{ user_sanctions : "revoked_by"
   users ||--o{ user_sanctions : "user_id"
@@ -140,6 +142,7 @@ erDiagram
     text_array interests
     timestamptz created_at
     timestamptz updated_at
+    varchar school
     varchar major
     varchar class_name
     boolean is_verified
@@ -147,9 +150,8 @@ erDiagram
     jsonb privacy_settings
     varchar location
     varchar website
-    varchar birth_date
+    date birth_date
     varchar banner_url
-    varchar school
     varchar google_id
     varchar auth_provider
     boolean email_verified
@@ -168,6 +170,7 @@ erDiagram
     varchar suspended_reason
     timestamptz last_seen_at
     timestamptz interests_updated_at
+    jsonb preferences
     timestamptz suspended_until
     timestamptz restricted_at
     timestamptz restricted_until
@@ -175,9 +178,9 @@ erDiagram
     smallint risk_score
     jsonb risk_factors
     timestamptz risk_updated_at
-    jsonb preferences
     boolean is_bot
     boolean must_reset_password
+    uuid unit_id FK
   }
   user_follows {
     uuid follower_id PK,FK
@@ -222,7 +225,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `users.unit_id → academic_units`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -371,6 +374,18 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
   }
+  academic_units {
+    uuid id PK
+    varchar code UK
+    uuid parent_id FK
+    varchar type
+    varchar name
+    varchar short_name
+    integer sort_order
+    boolean is_active
+    timestamptz created_at
+    timestamptz updated_at
+  }
   courses {
     uuid id PK
     varchar code UK
@@ -410,6 +425,8 @@ erDiagram
     varchar index_status
     smallint index_attempts
     timestamptz index_updated_at
+    smallint index_version
+    text content_hash
   }
   document_chunks {
     uuid id PK
@@ -421,6 +438,8 @@ erDiagram
     timestamptz created_at
     text embedding_model
     tsvector search_tsv
+    text heading
+    text source_hash
   }
   study_groups {
     uuid id PK
@@ -462,6 +481,7 @@ erDiagram
     text_array tags
     timestamptz created_at
   }
+  academic_units ||--o{ academic_units : "parent_id"
   faculties ||--o{ courses : "faculty_id"
   documents ||--o{ document_chunks : "document_id"
   courses ||--o{ documents : "course_id"
@@ -469,7 +489,7 @@ erDiagram
   courses ||--o{ study_groups : "course_id"
 ```
 
-Liên kết ra ngoài nhóm: `conversations.study_group_id → study_groups`, `documents.owner_id → users`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`
+Liên kết ra ngoài nhóm: `conversations.study_group_id → study_groups`, `documents.owner_id → users`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `users.unit_id → academic_units`
 
 ## 6. Personalization
 
