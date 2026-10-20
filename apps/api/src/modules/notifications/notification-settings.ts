@@ -27,7 +27,10 @@ export const PUSH_DEFAULTS: Record<PushChannel, boolean> = {
   accepted_solution: true,
   account_verified: true,
   account_notice: true,
-  ai_reply: true
+  ai_reply: true,
+  comment_like: false,
+  followed_post: false,
+  group_member_joined: true
 }
 
 // Kênh push người dùng bật/tắt được = loại thông báo cấu hình được + kênh chỉ push

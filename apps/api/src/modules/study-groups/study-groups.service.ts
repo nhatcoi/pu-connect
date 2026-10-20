@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import type { StudyGroup, CreateStudyGroupInput } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { StudyGroupChatService } from '../chat/conversations/study-group-chat.service'
+import { NotificationsService } from '../notifications/notifications.service'
 
 const GROUP_SELECT = `
   SELECT g.*, u.display_name AS leader_name,
@@ -21,7 +22,8 @@ const GROUP_SELECT = `
 export class StudyGroupsService {
   constructor(
     private readonly db: DatabaseService,
-    private readonly groupChat: StudyGroupChatService
+    private readonly groupChat: StudyGroupChatService,
+    private readonly notifications: NotificationsService
   ) {}
 
   // Lọc theo mã học phần hoặc course id
@@ -70,10 +72,12 @@ export class StudyGroupsService {
 
   // ACID: khóa hàng nhóm ⇒ không vượt quá số thành viên khi nhiều người cùng tham gia
   async join(groupId: string, userId: string, _displayName: string): Promise<StudyGroup> {
+    let joined: { leader_id: string; name: string; course_code: string | null } | undefined
     await this.db.transaction(async (client) => {
-      const g = await client.query(`SELECT id, max_members, current_members, status FROM study_groups WHERE id::text = $1 FOR UPDATE`, [groupId])
+      const g = await client.query(`SELECT id, max_members, current_members, status, leader_id, name, course_code FROM study_groups WHERE id::text = $1 FOR UPDATE`, [groupId])
       const group = g.rows[0]
       if (!group) throw new NotFoundException('Không tìm thấy nhóm học')
+      joined = group
       if (group.status !== 'recruiting' || group.current_members >= group.max_members) {
         throw new BadRequestException('Nhóm đã đủ thành viên')
       }
@@ -92,6 +96,20 @@ export class StudyGroupsService {
     })
     // Sau khi commit: đưa người mới vào nhóm chat của nhóm học (nếu đã có)
     await this.groupChat.onStudyGroupJoined(groupId, userId)
+    // Báo trưởng nhóm có thành viên mới (gộp: "A và N người khác đã tham gia nhóm …")
+    if (joined) {
+      void this.notifications.dispatch([
+        {
+          type: 'group_member_joined',
+          recipientId: joined.leader_id,
+          actorId: userId,
+          verb: `đã tham gia nhóm học "${joined.name}" của bạn`,
+          entityType: null,
+          link: joined.course_code ? `/courses/${joined.course_code}` : '/courses',
+          groupKey: `group_member_joined:${groupId}`
+        }
+      ])
+    }
     return this.findOne(groupId)
   }
 

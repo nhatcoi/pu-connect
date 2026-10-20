@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { BellRing, Loader2, Moon, Send } from 'lucide-react'
+import { BellRing, Loader2, Moon, Send, Volume2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Switch } from '@/components/ui/switch'
+import { isSoundEnabled, playNotificationSound, setSoundEnabled } from '@/lib/notification-sound'
 import { Button } from '@/components/ui/button'
 import { notificationsApi, type NotificationSettings, type NotificationSettingsPatch } from '@/hooks/use-notifications'
-import { disablePush, enablePush, getPushStatus, isIosNeedingInstall, sendTestPush, type PushStatus } from '@/lib/push'
+import { diagnosePush, disablePush, enablePush, getPushStatus, isIosNeedingInstall, sendTestPush, type PushDiagnosis, type PushStatus } from '@/lib/push'
 import { SettingsListSkeleton } from '@/components/skeletons/catalog-skeleton'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -15,7 +16,10 @@ const TYPE_LABELS: Record<string, string> = {
   accepted_solution: 'Được chọn làm lời giải',
   post_comment: 'Bình luận vào bài viết của bạn',
   post_like: 'Lượt thích bài viết',
-  user_follow: 'Người theo dõi mới'
+  comment_like: 'Lượt thích bình luận của bạn',
+  user_follow: 'Người theo dõi mới',
+  followed_post: 'Bài mới từ người bạn theo dõi',
+  group_member_joined: 'Có người tham gia nhóm học của bạn'
 }
 
 const PUSH_STATUS_TEXT: Record<PushStatus, string> = {
@@ -30,7 +34,10 @@ export function NotificationSettingsPanel() {
   const [settings, setSettings] = useState<NotificationSettings | null>(null)
   const [pushStatus, setPushStatus] = useState<PushStatus | null>(null)
   const [busy, setBusy] = useState(false)
+  const [sound, setSound] = useState(true) // theo thiết bị (localStorage)
+  const [diagnosis, setDiagnosis] = useState<PushDiagnosis | null>(null)
 
+  useEffect(() => setSound(isSoundEnabled()), [])
   useEffect(() => {
     notificationsApi
       .getSettings()
@@ -77,10 +84,24 @@ export function NotificationSettingsPanel() {
     setBusy(true)
     try {
       const r = await sendTestPush()
-      if (r.sent > 0) toast.success('Đã gửi thông báo thử')
+      if (r.sent > 0) {
+        toast.success('Đã gửi thông báo thử')
+        playNotificationSound('notification')
+      }
       else toast.error('Chưa có trình duyệt nào nhận được — hãy bật lại thông báo')
     } catch (e) {
       toast.error((e as Error)?.message || 'Gửi thử thất bại')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const diagnose = async () => {
+    setBusy(true)
+    try {
+      setDiagnosis(await diagnosePush())
+    } catch (e) {
+      toast.error((e as Error)?.message || 'Chẩn đoán thất bại')
     } finally {
       setBusy(false)
     }
@@ -110,6 +131,9 @@ export function NotificationSettingsPanel() {
         </div>
         {(pushStatus === 'enabled' || pushStatus === 'disabled') && (
           <div className="flex shrink-0 gap-1.5">
+            <Button size="sm" variant="ghost" onClick={diagnose} disabled={busy} className="h-8 rounded-full px-3 text-xs">
+              Chẩn đoán
+            </Button>
             {pushOn && (
               <Button size="sm" variant="ghost" onClick={test} disabled={busy} className="h-8 rounded-full px-3 text-xs">
                 <Send className="mr-1 h-3.5 w-3.5" /> Gửi thử
@@ -121,6 +145,19 @@ export function NotificationSettingsPanel() {
           </div>
         )}
       </div>
+
+      {diagnosis && (
+        <div className="space-y-1.5 rounded-xl border border-border/60 p-3 text-xs">
+          {diagnosis.lines.map((l) => (
+            <p key={l.label} className="flex gap-2">
+              <span className={l.ok ? 'text-primary' : 'text-destructive'}>{l.ok ? '✓' : '✗'}</span>
+              <span className="font-medium">{l.label}:</span>
+              <span className="min-w-0 break-words text-muted-foreground">{l.value}</span>
+            </p>
+          ))}
+          <p className="pt-1 text-muted-foreground">{diagnosis.hint}</p>
+        </div>
+      )}
 
       {/* Ma trận loại × kênh */}
       <div>
@@ -165,6 +202,29 @@ export function NotificationSettingsPanel() {
           })}
         </div>
         {!pushOn && <p className="mt-2 text-[11px] text-muted-foreground">Bật thông báo trên trình duyệt để chọn cột “Trình duyệt”.</p>}
+      </div>
+
+      {/* Âm báo trong app: theo thiết bị này */}
+      <div className="flex flex-wrap items-center gap-3 border-t border-border/60 pt-3 text-[13px]">
+        <Volume2 className="h-4 w-4 text-muted-foreground" />
+        <span className="font-medium">Âm báo (bíp)</span>
+        <Switch
+          checked={sound}
+          aria-label="Bật âm báo trong app"
+          onCheckedChange={(v) => {
+            setSound(v)
+            setSoundEnabled(v)
+            if (v) playNotificationSound('message', true)
+          }}
+        />
+        {sound && (
+          <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => playNotificationSound('message', true)}>
+            Thử âm thanh
+          </Button>
+        )}
+        <p className="w-full text-[11px] text-muted-foreground">
+          Bíp khi có tin nhắn hoặc thông báo mới lúc đang mở app (không phát cho hội thoại đang xem hay đã tắt tiếng). Chỉ áp dụng cho thiết bị này; thông báo khi đóng tab do hệ điều hành quyết định âm thanh.
+        </p>
       </div>
 
       {/* Giờ yên tĩnh (giờ Việt Nam) */}

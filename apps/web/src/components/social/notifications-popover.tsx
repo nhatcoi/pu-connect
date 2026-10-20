@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button'
 import { NotificationRow } from '@/components/notifications/notification-row'
 import { NotificationListSkeleton } from '@/components/skeletons/notification-skeleton'
-import { notificationsApi, openNotification, useNotificationsStore, useNotificationsSync, type NotificationItem } from '@/hooks/use-notifications'
+import { notificationsApi, openNotification, useNotificationsStore, type NotificationItem } from '@/hooks/use-notifications'
 
 export function NotificationsPopover() {
   const router = useRouter()
@@ -16,9 +16,6 @@ export function NotificationsPopover() {
   const items = useNotificationsStore((s) => s.items)
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
   const loaded = useNotificationsStore((s) => s.loaded)
-
-  // Tải + realtime + toast (chỉ gắn một lần ở Header)
-  useNotificationsSync((link) => router.push(link))
 
   const handleMarkAllAsRead = async () => {
     useNotificationsStore.getState().markRead('all', 0)

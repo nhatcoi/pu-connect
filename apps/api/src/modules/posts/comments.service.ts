@@ -287,9 +287,11 @@ export class CommentsService {
   // Thích / bỏ thích bình luận (comment_reactions); khóa dòng comment ⇒ đếm đúng khi bấm liên tục
   // Toggle comment like; row lock on the comment serializes concurrent toggles
   async toggleLike(commentId: string, userId: string): Promise<{ isLiked: boolean; likesCount: number }> {
-    return this.db.transaction(async (client) => {
-      const found = await client.query(`SELECT 1 FROM comments WHERE id = $1 FOR UPDATE`, [commentId])
+    let target: { author_id: string; post_id: string; content: string } | undefined
+    const result = await this.db.transaction(async (client) => {
+      const found = await client.query(`SELECT author_id, post_id, content FROM comments WHERE id = $1 FOR UPDATE`, [commentId])
       if (!found.rowCount) throw new NotFoundException('Không tìm thấy bình luận')
+      target = found.rows[0]
 
       const removed = await client.query(`DELETE FROM comment_reactions WHERE comment_id = $1 AND user_id = $2`, [commentId, userId])
       const isLiked = !removed.rowCount
@@ -300,6 +302,23 @@ export class CommentsService {
       )
       return { isLiked, likesCount: res.rows[0]?.likes_count ?? 0 }
     })
+    // Gộp: "A và N người khác đã thích bình luận của bạn" (chỉ khi thích, không khi bỏ thích)
+    if (result.isLiked && target) {
+      void this.notifications.dispatch([
+        {
+          type: 'comment_like',
+          recipientId: target.author_id,
+          actorId: userId,
+          verb: 'đã thích bình luận của bạn',
+          message: snippet(target.content),
+          entityType: 'post',
+          entityId: target.post_id,
+          link: `/post/${target.post_id}?comment=${commentId}`,
+          groupKey: `comment_like:${commentId}`
+        }
+      ])
+    }
+    return result
   }
 
   // Sửa nội dung + ghi mention mới trong cùng transaction

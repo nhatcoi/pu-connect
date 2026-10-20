@@ -8,12 +8,25 @@ export const NOTIFICATION_TYPES = [
   'accepted_solution',
   'account_verified',
   'account_notice',
-  'ai_reply'
+  'ai_reply',
+  'comment_like',
+  'followed_post',
+  'group_member_joined'
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
 // Loại người dùng được tắt/bật trong Cài đặt thông báo
-export const CONFIGURABLE_TYPES: NotificationType[] = ['post_like', 'post_comment', 'comment_reply', 'user_mention', 'user_follow', 'accepted_solution']
+export const CONFIGURABLE_TYPES: NotificationType[] = [
+  'post_like',
+  'comment_like',
+  'post_comment',
+  'comment_reply',
+  'user_mention',
+  'user_follow',
+  'followed_post',
+  'group_member_joined',
+  'accepted_solution'
+]
 
 // Kênh chỉ có push (không tạo bản ghi notifications): tin nhắn chat — in-app đã có badge "Tin nhắn"
 export const PUSH_ONLY_CHANNELS = ['chat_message'] as const

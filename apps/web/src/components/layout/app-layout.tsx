@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/auth-guard'
 import { AppShellSkeleton } from '@/components/skeletons/app-shell-skeleton'
 import { Header } from '@/components/social/header'
@@ -16,6 +16,7 @@ import { CreateGroupDialog } from '@/components/social/create-group-dialog'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
 import { AsideSlotProvider } from '@/components/layout/page-aside'
 import { useAppStore } from '@/store'
+import { useNotificationsSync } from '@/hooks/use-notifications'
 import { useChatRealtime } from '@/hooks/chat'
 import { useBlocksRealtime } from '@/hooks/use-blocks'
 import { cn } from '@/lib/utils'
@@ -24,6 +25,9 @@ import { isN7AiPath } from '@/lib/n7ai-routes'
 
 // Hộp thoại dùng chung: mở được từ mọi trang (soạn bài, tài liệu, nhóm, xem tài liệu)
 function GlobalDialogs() {
+  const router = useRouter()
+  // Notifications stay live while immersive pages hide the global Header.
+  useNotificationsSync((link) => router.push(link))
   // Socket nhắn tin / chặn → cache (một lần cho cả app)
   useChatRealtime()
   useBlocksRealtime()
@@ -54,7 +58,8 @@ function GlobalDialogs() {
 // (Header, Sidebar, RightSidebar, socket thông báo không bị mount lại)
 // Không gian N7AI (/n7ai) tự dựng thanh bên riêng ⇒ ẩn Sidebar & cột phải, cột giữa giãn hết
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const immersive = isN7AiPath(usePathname())
+  const pathname = usePathname()
+  const immersive = isN7AiPath(pathname)
   // Công cụ (/tools): không cần cột phải
   const fullWidth = isFullWidthPath(pathname)
   const [asideNode, setAsideNode] = useState<HTMLElement | null>(null)

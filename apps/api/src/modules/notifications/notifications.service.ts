@@ -45,6 +45,15 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  // Gửi cùng 1 sự kiện cho nhiều người (vd. bài mới ⇒ mọi follower) theo lô song song nhỏ, lỗi từng người không dừng cả lô
+  async fanOut(inputs: NotifyInput[], concurrency = 10): Promise<void> {
+    for (let i = 0; i < inputs.length; i += concurrency) {
+      await Promise.all(
+        inputs.slice(i, i + concurrency).map((input) => this.notify(input).catch((err) => this.logger.error(`fanOut ${input.type} → ${input.recipientId} failed: ${err?.message}`)))
+      )
+    }
+  }
+
   async notify(input: NotifyInput): Promise<void> {
     if (input.actorId && input.actorId === input.recipientId) return // không tự báo cho mình
 

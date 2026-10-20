@@ -58,6 +58,7 @@ export interface NewPostsSummary {
 
 // Đếm tối đa N bài mới (pill hiển thị "N+")
 const NEW_POSTS_MAX = 50
+const FOLLOWER_NOTIFY_LIMIT = 1000 // trần số follower được báo mỗi bài mới
 
 function parseIsoDate(value?: string): Date | null {
   if (!value) return null
@@ -491,6 +492,7 @@ export class PostsService {
     })
     void this.notifications.dispatch(anonymous ? mentionEvents.map(anonymizeNotification) : mentionEvents)
     if (!anonymous) void this.signalFollowers(authorId, created.id)
+    if (!anonymous) void this.notifyFollowers(authorId, created)
     return created
   }
 
@@ -506,6 +508,29 @@ export class PostsService {
       )
     } catch (err) {
       this.logger.warn(`[FeedSignal] skipped: ${(err as Error).message}`)
+    }
+  }
+
+  // Bài mới ⇒ thông báo trong app cho người đang theo dõi tác giả (mặc định không push); chỉ bài ai cũng xem được
+  // Notify followers in-app; fan-out runs after commit, capped, failures never affect posting
+  private async notifyFollowers(authorId: string, post: PostItem): Promise<void> {
+    if (post.targetAudience !== 'everyone' && post.targetAudience !== 'followers') return
+    try {
+      const res = await this.db.query(`SELECT follower_id FROM user_follows WHERE following_id = $1 LIMIT $2`, [authorId, FOLLOWER_NOTIFY_LIMIT])
+      await this.notifications.fanOut(
+        res.rows.map((r) => ({
+          type: 'followed_post' as const,
+          recipientId: r.follower_id as string,
+          actorId: authorId,
+          verb: 'đã đăng bài viết mới',
+          message: snippet(post.title || post.content),
+          entityType: 'post' as const,
+          entityId: post.id,
+          link: `/post/${post.id}`
+        }))
+      )
+    } catch (err) {
+      this.logger.warn(`[FollowedPost] skipped: ${(err as Error).message}`)
     }
   }
 

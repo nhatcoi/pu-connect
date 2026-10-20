@@ -342,3 +342,33 @@ Mặc định push: bật cho `comment_reply`, `user_mention`, `accepted_solutio
 - PWA đầy đủ (`manifest.webmanifest`, banner cài đặt) để Web Push chạy trên iOS.
 - Bull Board (dashboard hàng đợi) sau trang admin.
 
+## 8. Thông báo social mở rộng (2026-10-19)
+
+Migration `notifications-social-upgrade.sql` (ALTER TYPE ADD VALUE, chạy sau `notifications-upgrade.sql`) thêm 3 loại; đều cấu hình được in-app/push trong Cài đặt thông báo.
+
+| Loại | Khi nào | Người nhận | Gộp | Link | Push mặc định |
+|---|---|---|---|---|---|
+| `comment_like` | Thích bình luận (không khi bỏ thích / tự thích) | Tác giả bình luận | `comment_like:{commentId}` ("A và N người khác…") | `/post/{id}?comment={commentId}` | Tắt |
+| `followed_post` | Đăng bài mới (chỉ bài `everyone`/`followers`) | Người đang theo dõi tác giả (≤ 1.000/bài, fan-out theo lô 10 sau commit qua `NotificationsService.fanOut`) | Không (mỗi bài một thông báo) | `/post/{id}` | Tắt |
+| `group_member_joined` | Có người tham gia nhóm học | Trưởng nhóm | `group_member_joined:{groupId}` | `/courses/{mã}` | Bật |
+
+Chặn / tắt loại / bot / tự báo mình đều lọc ở `notify()` như cũ. Test: `apps/api/test/social-notifications.e2e-spec.ts`.
+
+Chưa có thông báo trong chuông cho tin nhắn chat (vẫn chỉ Web Push + badge Tin nhắn).
+
+## 9. Âm báo (bíp) trong app (2026-10-19)
+
+`lib/notification-sound.ts` tạo tiếng bíp bằng Web Audio (không tệp âm thanh): tin nhắn = 2 nốt lên, thông báo = 1 nốt; âm lượng nhỏ, tối thiểu 0,9 s giữa hai lần bíp. Bật/tắt theo **thiết bị** (`localStorage` `pu:notification-sound`, mặc định bật) ở Cài đặt › Thông báo › Âm báo, có nút "Thử âm thanh". Trình duyệt chỉ cho phát âm sau 1 lần bấm / gõ phím trên trang (`bindSoundUnlock`).
+
+- Tin nhắn (`useChatRealtime`): bíp khi tin của người khác tới mà không đang xem hội thoại đó (tab ẩn cũng tính), không phải tin hệ thống, hội thoại không tắt tiếng (trừ khi bị nhắc `@`). Tin N7AI: bíp lúc trả lời **xong** (placeholder đang stream không bíp).
+- Thông báo (`useNotifications`): mỗi sự kiện `notification` mới / gộp thêm người đều bíp.
+- Web Push khi đóng tab: service worker đặt `silent: false`; âm thanh do hệ điều hành / trình duyệt quyết định, không điều khiển được từ web.
+
+### 9.1. Chẩn đoán thông báo trình duyệt
+
+Nút **Chẩn đoán** (Cài đặt › Thông báo, `lib/push.ts › diagnosePush`) kiểm trên chính trình duyệt: quyền `Notification`, service worker, đăng ký push (nhận diện dịch vụ: WNS = Edge, FCM = Chrome…), trạng thái tab, rồi **hiện thử 1 thông báo trực tiếp** bằng `registration.showNotification` (không qua máy chủ). Dùng để phân biệt "push không tới" với "hệ điều hành / trình duyệt chặn hiển thị" (macOS: Thông báo › Chrome/Edge, tắt Focus; Windows: Cài đặt › Thông báo). Toast "Đã gửi thông báo thử" chỉ nghĩa là máy chủ đã giao push cho dịch vụ của trình duyệt (`sent > 0`), chưa chứng minh hệ điều hành đã hiện nó.
+
+### 9.2. Tab trình duyệt báo có tin
+
+`hooks/use-tab-attention.ts` (gắn qua `useNotificationsSync` trong AppLayout): tổng chưa đọc = thông báo + tin nhắn ⇒ tiêu đề tab `(3) tiêu đề trang` (`99+` khi nhiều), favicon thêm chấm đỏ (vẽ canvas từ favicon hiện tại), và khi tab **ẩn** mà có tin mới thì tiêu đề nhấp nháy "💬 Có tin mới" tới khi quay lại tab. `<title>` do Next đổi theo trang nên theo dõi bằng `MutationObserver` để giữ tiền tố; hết chưa đọc ⇒ trả lại tiêu đề và favicon gốc.
+

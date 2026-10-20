@@ -88,3 +88,56 @@ export async function sendTestPush(): Promise<{ sent: number; removed: number; f
   })
   return res.data
 }
+
+export interface PushDiagnosis {
+  lines: { label: string; value: string; ok: boolean }[]
+  hint: string
+}
+
+const pushService = (endpoint: string) => {
+  const host = new URL(endpoint).hostname
+  if (host.endsWith('notify.windows.com')) return 'Microsoft WNS (Edge)'
+  if (host.includes('googleapis.com') || host.includes('google.com')) return 'Google FCM (Chrome)'
+  if (host.includes('mozilla')) return 'Mozilla (Firefox)'
+  if (host.includes('apple')) return 'Apple (Safari)'
+  return host
+}
+
+// Chẩn đoán trên chính trình duyệt này: quyền, service worker, đăng ký push, và hiện thử 1 thông báo TRỰC TIẾP (không qua máy chủ)
+// ⇒ phân biệt "push không tới" với "hệ điều hành / trình duyệt chặn hiển thị"
+export async function diagnosePush(): Promise<PushDiagnosis> {
+  const lines: PushDiagnosis['lines'] = []
+  const add = (label: string, value: string, ok: boolean) => lines.push({ label, value, ok })
+  if (!isPushSupported()) {
+    add('Hỗ trợ', 'Trình duyệt không hỗ trợ thông báo đẩy', false)
+    return { lines, hint: 'Hãy dùng Chrome, Edge hoặc Firefox bản mới.' }
+  }
+  add('Quyền thông báo', Notification.permission, Notification.permission === 'granted')
+  const reg = await navigator.serviceWorker.getRegistration(SW_URL)
+  add('Service worker', reg?.active ? `đang chạy (${reg.active.state})` : 'chưa chạy', !!reg?.active)
+  const sub = await reg?.pushManager.getSubscription()
+  add('Đăng ký push', sub ? pushService(sub.endpoint) : 'chưa đăng ký', !!sub)
+  add('Tab đang hiển thị', `${document.visibilityState}${document.hasFocus() ? ', đang focus' : ''}`, true)
+  let shown = false
+  if (reg && Notification.permission === 'granted') {
+    try {
+      await reg.showNotification('Thử trực tiếp — PU Connector', {
+        body: 'Nếu bạn thấy thông báo này, trình duyệt và hệ điều hành đang hiển thị bình thường.',
+        icon: '/brand/icon-192.png',
+        tag: 'local-test'
+      })
+      shown = true
+      add('Hiện thông báo trực tiếp', 'đã yêu cầu hiển thị (kiểm tra góc màn hình / Trung tâm thông báo)', true)
+    } catch (e) {
+      add('Hiện thông báo trực tiếp', (e as Error).message, false)
+    }
+  }
+  let hint = 'Mọi thứ phía trình duyệt đều ổn.'
+  if (Notification.permission !== 'granted') hint = 'Trình duyệt chưa cho phép thông báo: bấm ổ khóa cạnh địa chỉ → Thông báo → Cho phép.'
+  else if (!reg?.active || !sub) hint = 'Hãy tắt rồi bật lại thông báo trên trình duyệt ở phía trên, rồi chẩn đoán lại.'
+  else if (shown)
+    hint =
+      'Nếu bạn KHÔNG thấy thông báo trực tiếp vừa rồi ⇒ hệ điều hành đang chặn: macOS: Cài đặt hệ thống › Thông báo › (Chrome / Edge) bật Cho phép + tắt Không làm phiền / Focus; Windows: Cài đặt › Hệ thống › Thông báo. Nếu THẤY nó mà "Gửi thử" thì không ⇒ lỗi đường push, hãy báo lại.'
+  return { lines, hint }
+}
+

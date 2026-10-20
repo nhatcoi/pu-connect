@@ -72,6 +72,13 @@ function mapLists(qc: QueryClient, fn: (data: ConversationListData, filter: stri
   }
 }
 
+// Tin mới có đáng bíp không: của người khác, không đang xem hội thoại đó, không tắt tiếng (trừ khi bị nhắc)
+export function shouldBeepForMessage(qc: QueryClient, msg: ChatMessage, myId: string | undefined): boolean {
+  if (msg.sender?.id === myId || msg.kind === 'system' || isViewing(msg.conversationId)) return false
+  const found = findConversation(qc, msg.conversationId)?.conversation
+  return !(found && isMuted(found) && !mentionsMe(msg, myId))
+}
+
 // Tìm trong mọi danh sách đã tải (kèm thời điểm tải để làm initialData)
 export function findConversation(qc: QueryClient, id: string): { conversation: ConversationSummary; updatedAt: number } | null {
   for (const [key, data] of qc.getQueriesData<ConversationListData>({ queryKey: queryKeys.conversationLists })) {

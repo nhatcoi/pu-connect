@@ -4,6 +4,7 @@ import { useCallback, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { AiThread, ChatMessage, MessageDeltaEvent, MessageProgressEvent, ReadEvent, TypingEvent } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
+import { bindSoundUnlock, playNotificationSound } from '@/lib/notification-sound'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
 import { getRealtimeSocket } from '@/lib/realtime'
 import { useAppStore } from '@/store'
@@ -12,6 +13,7 @@ import {
   applyRead,
   applyUpdatedMessage,
   isAiConversation,
+  shouldBeepForMessage,
   patchConversation,
   patchMessages,
   refreshConversationLists,
@@ -21,6 +23,9 @@ import {
 import { bumpAiThread, removeAiThread, upsertAiThread } from './use-ai-threads'
 import { useTypingStore } from './use-typing'
 import { usePresenceRealtime } from './use-presence'
+
+// Tin N7AI đang stream (placeholder) ⇒ bíp khi trả lời xong, không bíp lúc tạo placeholder
+const streamingReplies = new Set<string>()
 
 // Cầu nối socket → cache: gắn MỘT lần trong AppLayout
 export function useChatRealtime() {
@@ -38,8 +43,11 @@ export function useChatRealtime() {
     }
   }, [myId, refreshLists])
 
+  useEffect(bindSoundUnlock, [])
   useRealtimeEvent<ChatMessage>('message.new', (msg) => {
     upsertMessage(qc, msg)
+    if (msg.status === 'streaming') streamingReplies.add(msg.id)
+    else if (shouldBeepForMessage(qc, msg, myId)) playNotificationSound('message')
     applyNewMessage(qc, msg, myId)
     // Người gửi đã thôi nhập
     if (msg.sender) useTypingStore.getState().set({ conversationId: msg.conversationId, userId: msg.sender.id, isTyping: false })
@@ -53,6 +61,7 @@ export function useChatRealtime() {
     upsertMessage(qc, msg)
     syncPinned(qc, msg)
     applyUpdatedMessage(qc, msg)
+    if (msg.status !== 'streaming' && streamingReplies.delete(msg.id) && shouldBeepForMessage(qc, msg, myId)) playNotificationSound('message')
     if (msg.kind === 'ai' && msg.status !== 'streaming') {
       void qc.invalidateQueries({ queryKey: queryKeys.aiQuota })
       void qc.invalidateQueries({ queryKey: queryKeys.aiConnectors })

@@ -7,9 +7,12 @@ import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { apiClient } from '@/lib/api-client'
 import { useAppStore } from '@/store'
 import { useRealtimeEvent } from '@/hooks/use-realtime-event'
+import { playNotificationSound } from '@/lib/notification-sound'
+import { useUnreadMessages } from '@/hooks/chat'
+import { useTabAttention } from '@/hooks/use-tab-attention'
 
 export type NotificationType =
-  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'account_notice' | 'ai_reply'
+  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'account_notice' | 'ai_reply' | 'comment_like' | 'followed_post' | 'group_member_joined'
 
 export interface NotificationItem {
   id: string
@@ -87,10 +90,14 @@ export const notificationsApi = {
     })
 }
 
-// Gắn một lần ở Header: tải danh sách đầu, nghe realtime, đồng bộ đã đọc giữa các tab
+// Gắn một lần ở AppLayout: giữ realtime kể cả khi Header ẩn trong chế độ Tập trung / N7AI
 export function useNotificationsSync(onNavigate: (link: string) => void) {
   const userId = useAppStore((s) => s.user?.id)
   const { setList, upsert, markRead } = useNotificationsStore.getState()
+  // Tab trình duyệt: tiêu đề (N) + favicon chấm đỏ = thông báo + tin nhắn chưa đọc
+  const notificationUnread = useNotificationsStore((s) => s.unreadCount)
+  const messageUnread = useUnreadMessages()
+  useTabAttention(notificationUnread + messageUnread)
 
   const refresh = useCallback(async () => {
     try {
@@ -112,6 +119,7 @@ export function useNotificationsSync(onNavigate: (link: string) => void) {
   useRealtimeEvent<{ notification: NotificationItem; unreadCount: number }>('notification', (payload) => {
     if (!payload?.notification) return refresh()
     upsert(payload.notification, payload.unreadCount)
+    playNotificationSound('notification')
     const { notification } = payload
     toast(notification.title, {
       description: notification.message
