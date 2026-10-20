@@ -90,6 +90,6 @@ import { ChatShareService } from './share/chat-share.service'
     MessagesService,
     ChatShareService
   ],
-  exports: [ConversationsService, StudyGroupChatService]
+  exports: [ConversationsService, StudyGroupChatService, PucToolsService]
 })
 export class ChatModule {}
