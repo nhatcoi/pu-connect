@@ -159,7 +159,7 @@ export class StudyAgentToolsService {
       const c = r.content ?? {}
       const base = { set: r.set_title, setId: r.set_id }
       if (r.kind !== 'flashcards') {
-        return { ...base, question: c.q, answer: Array.isArray(c.options) ? c.options[c.answer] : undefined, explain: c.explain || undefined }
+        return { ...base, question: c.q, answer: Array.isArray(c.options) ? (c.type === 'multi' && Array.isArray(c.answers) ? c.answers.map((a: number) => c.options[a]) : c.options[c.answer]) : undefined, explain: c.explain || undefined }
       }
       return {
         ...base,

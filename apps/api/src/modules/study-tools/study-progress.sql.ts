@@ -16,4 +16,8 @@ export const DUE_CARD_SQL = `(s.kind = 'flashcards' AND i.due_at <= NOW())`
 // 1 dòng / mục cho ngữ cảnh N7AI: flashcard "mặt trước — mặt sau [trạng thái]" · quiz "Hỏi … · Đáp án …"
 export const ITEM_LINE_SQL = `CASE WHEN s.kind = 'flashcards'
   THEN concat(i.content->>'front', ' — ', i.content->>'back', ' [', ${CARD_STATUS_SQL}, CASE WHEN ${WEAK_CARD_SQL} THEN ', hay quên' ELSE '' END, ']')
-  ELSE concat('Hỏi: ', i.content->>'q', ' · Đáp án: ', i.content->'options'->>((i.content->>'answer')::int)) END`
+  ELSE concat('Hỏi: ', i.content->>'q', ' · Đáp án: ', (
+    -- Câu nhiều đáp án: liệt kê mọi đáp án đúng
+    SELECT string_agg(i.content->'options'->>(a.v)::int, '; ' ORDER BY a.v::int)
+    FROM jsonb_array_elements_text(CASE WHEN i.content->>'type' = 'multi' AND jsonb_typeof(i.content->'answers') = 'array' THEN i.content->'answers' ELSE jsonb_build_array(i.content->'answer') END) AS a(v)
+  )) END`

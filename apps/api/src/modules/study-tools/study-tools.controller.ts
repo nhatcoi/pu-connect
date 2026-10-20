@@ -74,6 +74,12 @@ export class StudyToolsController {
     return this.tools.review(requireUserId(req), id, body.itemId, body.grade)
   }
 
+  // Quiz: lịch sử các lần làm (mới trước)
+  @Get('sets/:id/attempts')
+  attempts(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.tools.attempts(requireUserId(req), id)
+  }
+
   // Quiz: ghi kết quả 1 lần làm
   @Post('sets/:id/attempts')
   attempt(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(StudyAttemptBodySchema)) body: StudyAttemptInput, @Req() req: Request) {

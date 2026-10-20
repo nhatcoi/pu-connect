@@ -42,15 +42,34 @@ export const FlashcardContentSchema = z
   .refine((c) => c.back.length > 0 || hasCloze(c.front), { message: 'Mặt sau trống', path: ['back'] })
 export type FlashcardContent = z.infer<typeof FlashcardContentSchema>
 
+// Loại câu: một đáp án (mặc định, dữ liệu cũ) · nhiều đáp án đúng · Đúng/Sai (2 lựa chọn)
+export const QUIZ_QUESTION_TYPES = ['single', 'multi', 'truefalse'] as const
+export type QuizQuestionType = (typeof QUIZ_QUESTION_TYPES)[number]
+
 export const QuizQuestionContentSchema = z
   .object({
     q: z.string().trim().min(1, { message: 'Câu hỏi trống' }).max(1000),
     options: z.array(z.string().trim().min(1, { message: 'Lựa chọn trống' }).max(300)).min(2, { message: 'Ít nhất 2 lựa chọn' }).max(6),
-    answer: z.number().int().min(0),
+    answer: z.number().int().min(0), // đáp án đúng (câu nhiều đáp án: đáp án đầu tiên, giữ tương thích dữ liệu cũ)
+    type: z.enum(QUIZ_QUESTION_TYPES).optional(),
+    answers: z.array(z.number().int().min(0)).max(6).optional(), // chỉ câu nhiều đáp án: mọi đáp án đúng
     explain: z.string().trim().max(1000).optional()
   })
   .refine((v) => v.answer < v.options.length, { message: 'Đáp án đúng không hợp lệ', path: ['answer'] })
+  .refine((v) => v.type !== 'truefalse' || v.options.length === 2, { message: 'Câu Đúng/Sai có đúng 2 lựa chọn', path: ['options'] })
+  .refine((v) => v.type !== 'multi' || (!!v.answers?.length && v.answers.every((a) => a < v.options.length)), { message: 'Chọn ít nhất 1 đáp án đúng', path: ['answers'] })
 export type QuizQuestionContent = z.infer<typeof QuizQuestionContentSchema>
+
+// Tập đáp án đúng của 1 câu (câu cũ không có type ⇒ [answer])
+export function correctAnswers(q: Pick<QuizQuestionContent, 'answer' | 'answers' | 'type'>): number[] {
+  return q.type === 'multi' && q.answers?.length ? Array.from(new Set(q.answers)).sort((a, b) => a - b) : [q.answer]
+}
+// Đúng khi chọn khớp hoàn toàn tập đáp án đúng
+export function isQuestionCorrect(q: Pick<QuizQuestionContent, 'answer' | 'answers' | 'type'>, picked: number[]): boolean {
+  const right = correctAnswers(q)
+  const got = Array.from(new Set(picked)).sort((a, b) => a - b)
+  return right.length === got.length && right.every((a, i) => a === got[i])
+}
 
 export type StudyItemContent = FlashcardContent | QuizQuestionContent
 
@@ -121,6 +140,16 @@ export interface StudyReviewInput {
 export interface StudyAttemptInput {
   correct: number
   total: number
+  seconds?: number // thời gian làm bài
+}
+
+// Một lần làm quiz trong lịch sử (từ study_events)
+export interface StudyAttemptRecord {
+  at: string
+  score: number // %
+  correct: number | null // bản ghi cũ không có
+  total: number | null
+  seconds: number | null
 }
 
 // Thống kê học (nhật ký study_events, ngày theo giờ VN): chuỗi ngày, lịch nhiệt, thẻ đến hạn 7 ngày tới

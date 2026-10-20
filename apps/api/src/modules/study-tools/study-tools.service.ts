@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import type { PoolClient } from 'pg'
 import type {
+  StudyAttemptRecord,
   ChatStudySetRef,
   ReviewGrade,
   StudyAttemptInput,
@@ -32,6 +33,7 @@ const iso = (d: Date | null) => (d ? new Date(d).toISOString() : null)
 const VN_DAY = (col: string) => `(${col} AT TIME ZONE 'Asia/Ho_Chi_Minh')::date`
 const HEATMAP_DAYS = 112 // = STUDY_HEATMAP_DAYS (@pu/schemas, chỉ import type)
 const FORECAST_DAYS = 7
+const ATTEMPT_HISTORY_LIMIT = 20 // lần làm quiz gần nhất trả về
 const DAY_MS = 86_400_000
 
 // Chuỗi ngày liên tiếp từ danh sách ngày YYYY-MM-DD tăng dần: hiện tại (tới hôm nay / hôm qua) + dài nhất
@@ -225,14 +227,33 @@ export class StudyToolsService {
          UPDATE study_sets s SET attempts = attempts + 1, best_score = GREATEST(COALESCE(best_score, 0), $3), last_studied_at = NOW()
          WHERE s.id = $1 AND s.owner_id = $2 AND s.kind = 'quiz' RETURNING ${SUMMARY_COLUMNS}
        ), ev AS (
-         INSERT INTO study_events (user_id, set_id, event, score) SELECT $2, id, 'attempt', $3 FROM upd
+         INSERT INTO study_events (user_id, set_id, event, score, correct, total, duration_seconds)
+         SELECT $2, id, 'attempt', $3, $4, $5, $6 FROM upd
        )
        SELECT * FROM upd`,
-      [setId, userId, score]
+      [setId, userId, score, input.correct, input.total, input.seconds ?? null]
     )
     if (!res.rows[0]) throw new NotFoundException('Không tìm thấy quiz')
     this.progressMemory.record(userId, setId)
     return toSummary(res.rows[0])
+  }
+
+  // Lịch sử các lần làm quiz của 1 bộ (mới trước), từ nhật ký study_events
+  async attempts(userId: string, setId: string, limit = ATTEMPT_HISTORY_LIMIT): Promise<StudyAttemptRecord[]> {
+    const res = await this.db.query(
+      `SELECT e.created_at, e.score, e.correct, e.total, e.duration_seconds
+       FROM study_events e JOIN study_sets s ON s.id = e.set_id
+       WHERE e.set_id = $1 AND e.user_id = $2 AND s.owner_id = $2 AND e.event = 'attempt'
+       ORDER BY e.created_at DESC LIMIT $3`,
+      [setId, userId, limit]
+    )
+    return res.rows.map((r) => ({
+      at: new Date(r.created_at).toISOString(),
+      score: r.score,
+      correct: r.correct ?? null,
+      total: r.total ?? null,
+      seconds: r.duration_seconds ?? null
+    }))
   }
 
   // Thống kê học: chuỗi ngày, lịch nhiệt 16 tuần, thẻ đến hạn 7 ngày tới (setId ⇒ chỉ dự báo của bộ đó)

@@ -56,7 +56,11 @@ export const StudyReviewBodySchema = z.object({
 })
 
 export const StudyAttemptBodySchema = z
-  .object({ correct: z.number().int().min(0), total: z.number().int().min(1).max(STUDY_SET_MAX_ITEMS) })
+  .object({
+    correct: z.number().int().min(0),
+    total: z.number().int().min(1).max(STUDY_SET_MAX_ITEMS),
+    seconds: z.number().int().min(0).max(86_400).optional()
+  })
   .refine((v) => v.correct <= v.total, { message: 'Số câu đúng không hợp lệ' })
 
 // Báo lỗi biên dịch nếu lệch với @pu/schemas (API không bật strict ⇒ kiểm chiều interface → schema)

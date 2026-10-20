@@ -81,6 +81,41 @@ describe('Study tools (e2e)', () => {
     expect(overview.recent[0].id).toBe(quiz.id)
   })
 
+  it('Quiz: câu nhiều đáp án / Đúng-Sai hợp lệ, sai định dạng bị từ chối; lịch sử làm bài có điểm + thời gian', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const items = [
+      { content: { q: 'Số nguyên tố?', type: 'multi', options: ['2', '3', '4', '9'], answer: 0, answers: [0, 1] } },
+      { content: { q: 'Trái đất tròn.', type: 'truefalse', options: ['Đúng', 'Sai'], answer: 0 } },
+      { content: { q: 'Câu cũ?', options: ['a', 'b'], answer: 1 } }
+    ]
+    const quiz = (await agent.post('/api/tools/sets').send({ kind: 'quiz', title: 'Hỗn hợp', items }).expect(201)).body.data
+    expect(quiz.items[0].content).toMatchObject({ type: 'multi', answers: [0, 1] })
+
+    // multi thiếu answers, Đúng/Sai 3 lựa chọn ⇒ 400
+    const bad = (content: object) =>
+      agent
+        .post('/api/tools/sets')
+        .send({ kind: 'quiz', title: 'X', items: [{ content }] })
+        .expect(400)
+    await bad({ q: 'q', type: 'multi', options: ['a', 'b'], answer: 0 })
+    await bad({ q: 'q', type: 'truefalse', options: ['a', 'b', 'c'], answer: 0 })
+
+    // Chưa làm ⇒ rỗng; sau 2 lần làm ⇒ mới trước, có số câu + thời gian
+    expect((await agent.get(`/api/tools/sets/${quiz.id}/attempts`).expect(200)).body.data).toEqual([])
+    await agent.post(`/api/tools/sets/${quiz.id}/attempts`).send({ correct: 1, total: 3, seconds: 95 }).expect(201)
+    await agent.post(`/api/tools/sets/${quiz.id}/attempts`).send({ correct: 3, total: 3 }).expect(201)
+    const history = (await agent.get(`/api/tools/sets/${quiz.id}/attempts`).expect(200)).body.data
+    expect(history).toHaveLength(2)
+    expect(history[0]).toMatchObject({ score: 100, correct: 3, total: 3, seconds: null })
+    expect(history[1]).toMatchObject({ score: 33, correct: 1, total: 3, seconds: 95 })
+
+    // Người khác không xem được lịch sử của bộ này
+    const other = await loginAgent(app, await createUser(db))
+    expect((await other.get(`/api/tools/sets/${quiz.id}/attempts`).expect(200)).body.data).toEqual([])
+    await other.post(`/api/tools/sets/${quiz.id}/attempts`).send({ correct: 1, total: 1 }).expect(404)
+  })
+
   it('Tự lưu khối ```flashcards trong câu trả lời N7AI (1 tin ⇒ 1 bộ)', async () => {
     const user = await createUser(db)
     const agent = await loginAgent(app, user)
