@@ -21,6 +21,7 @@ import { useChatRealtime } from '@/hooks/chat'
 import { useBlocksRealtime } from '@/hooks/use-blocks'
 import { cn } from '@/lib/utils'
 import { SHELL_WIDTH, MAIN_WIDTH, WIDE_MAIN_WIDTH, isFullWidthPath } from '@/lib/layout'
+import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
 import { isN7AiPath } from '@/lib/n7ai-routes'
 
 // Hộp thoại dùng chung: mở được từ mọi trang (soạn bài, tài liệu, nhóm, xem tài liệu)
@@ -56,10 +57,11 @@ function GlobalDialogs() {
 
 // Khung 3 cột dựng MỘT lần cho mọi trang cần đăng nhập: chuyển trang chỉ thay cột giữa
 // (Header, Sidebar, RightSidebar, socket thông báo không bị mount lại)
-// Không gian N7AI (/n7ai) tự dựng thanh bên riêng ⇒ ẩn Sidebar & cột phải, cột giữa giãn hết
+// Không gian N7AI (/n7ai) có header/thanh bên riêng ⇒ ẩn Header, Sidebar & cột phải
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const immersive = isN7AiPath(pathname)
+  const { mode } = useFeedViewMode()
+  const immersive = isN7AiPath(pathname) || (pathname === '/' && mode === 'focus')
   // Công cụ (/tools): không cần cột phải
   const fullWidth = isFullWidthPath(pathname)
   const [asideNode, setAsideNode] = useState<HTMLElement | null>(null)
@@ -67,10 +69,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const onCustomChange = React.useCallback((count: number) => setHasCustomAside(count > 0), [])
 
   return (
-    <AuthGuard fallback={<AppShellSkeleton />}>
+    <AuthGuard fallback={<AppShellSkeleton immersive={immersive} />}>
       <AsideSlotProvider node={asideNode} onCustomChange={onCustomChange}>
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
-          <Header />
+          {!immersive && <Header />}
           <RestrictionBanner />
           <GlobalDialogs />
           <div className={cn('mx-auto flex justify-center gap-6 px-0 sm:px-4 lg:px-6 min-h-screen', SHELL_WIDTH)}>

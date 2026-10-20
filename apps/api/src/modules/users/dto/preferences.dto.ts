@@ -3,14 +3,16 @@ import type { FeaturePreferences } from '@pu/schemas'
 
 // Giá trị runtime đặt tại API (@pu/schemas chỉ import type)
 export const DEFAULT_FEATURE_PREFERENCES: FeaturePreferences = {
+  feedViewMode: 'list',
   featuredComment: true,
   newPostsPill: true,
   aiSummary: true
 }
 
-// PATCH /users/preferences: chỉ nhận cờ boolean đã biết
+// PATCH /users/preferences: known flags and default feed layout
 export const UpdatePreferencesBodySchema = z
   .object({
+    feedViewMode: z.enum(['list', 'focus']),
     featuredComment: z.boolean(),
     newPostsPill: z.boolean(),
     aiSummary: z.boolean()

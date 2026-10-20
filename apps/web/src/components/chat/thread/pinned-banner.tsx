@@ -19,7 +19,7 @@ export function PinnedBanner({ conversationId, onJump }: { conversationId: strin
   return (
     <button
       onClick={() => onJump(top.id)}
-      className="sticky top-[56px] md:top-[112px] z-20 mx-3 sm:mx-1 mb-1 flex w-[calc(100%-1.5rem)] sm:w-[calc(100%-0.5rem)] items-center gap-2.5 rounded-xl bg-card/95 backdrop-blur px-3 py-2 text-left shadow-xs cursor-pointer hover:bg-muted/70"
+      className="sticky top-[56px] md:top-[calc(56px+var(--app-header-height,3.5rem))] z-20 mx-3 sm:mx-1 mb-1 flex w-[calc(100%-1.5rem)] sm:w-[calc(100%-0.5rem)] items-center gap-2.5 rounded-xl bg-card/95 backdrop-blur px-3 py-2 text-left shadow-xs cursor-pointer hover:bg-muted/70"
     >
       <Pin className="h-3.5 w-3.5 text-amber-500 shrink-0" />
       <span className="min-w-0 flex-1">

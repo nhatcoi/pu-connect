@@ -94,6 +94,8 @@ export function usePosts(options?: string | UsePostsOptions | null) {
     posts: flattenPages(query.data),
     newSince,
     isLoading: query.isPending,
+    isError: query.isError,
+    isLoadMoreError: query.isFetchNextPageError,
     isLoadingMore: isFetchingNextPage,
     hasMore: !!hasNextPage,
     refetch: query.refetch,

@@ -16,12 +16,33 @@ import { FollowSuggestionsDialog } from '@/components/social/follow-suggestions-
 import { useFeatureEnabled } from '@/hooks/use-settings'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/store'
+import type { FeedViewMode } from '@pu/schemas'
+import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
+import { FeedModeSwitch } from '@/components/social/feed-mode-switch'
+import { FocusFeed } from '@/components/social/focus-feed'
 
 type HomeFeedTab = 'for_you' | 'following' | 'qa'
 
 function HomeContent() {
   const searchParams = useSearchParams()
   const tabParam = searchParams.get('tab')
+  const { mode, setMode } = useFeedViewMode()
+  const activePost = useRef<string | null>(null)
+  const [restorePostId, setRestorePostId] = useState<string | null>(null)
+  const switchMode = (next: FeedViewMode) => {
+    if (next === mode) return
+    if (mode === 'list') {
+      const articles = Array.from(document.querySelectorAll<HTMLElement>('[data-track-post]'))
+      const current =
+        articles.find((el) => {
+          const box = el.getBoundingClientRect()
+          return box.top < window.innerHeight / 2 && box.bottom > window.innerHeight / 2
+        }) ?? articles.find((el) => el.getBoundingClientRect().bottom > 100)
+      activePost.current = current?.dataset.trackPost ?? null
+    }
+    setRestorePostId(activePost.current)
+    setMode(next)
+  }
 
   const [activeFeedTab, setActiveFeedTab] = useState<HomeFeedTab>('for_you')
 
@@ -41,7 +62,10 @@ function HomeContent() {
     isLoadingMore,
     hasMore,
     fetchMore,
-    newSince
+    newSince,
+    isError: isPostsError,
+    isLoadMoreError,
+    refetch
   } = usePosts({
     feedType: activeFeedTab
   })
@@ -73,16 +97,19 @@ function HomeContent() {
     }
 
     return () => observer.disconnect()
-  }, [hasMore, isLoadingMore, isPostsLoading, fetchMore])
+  }, [hasMore, isLoadingMore, isPostsLoading, fetchMore, mode])
 
-  return (
-    <>
-      {/* ── X-Style Sticky 3-Tab Feed Filter Bar ── */}
-      <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md">
+  const toolbar = (
+    <div className="flex min-h-12 items-center justify-between gap-1 px-2 sm:px-1">
+      <div className="min-w-0 flex-1 overflow-x-auto no-scrollbar">
         <SlidingTabs
-          className="px-4 sm:px-1"
+          className="gap-3 sm:gap-6"
           value={activeFeedTab}
-          onChange={setActiveFeedTab}
+          onChange={(tab) => {
+            activePost.current = null
+            setRestorePostId(null)
+            setActiveFeedTab(tab)
+          }}
           onItemHover={(id) => prefetchFeed(queryClient, id)}
           items={[
             { id: 'for_you', label: 'Dành cho bạn' },
@@ -91,6 +118,52 @@ function HomeContent() {
           ]}
         />
       </div>
+      <FeedModeSwitch mode={mode} onChange={switchMode} />
+    </div>
+  )
+
+  if (mode === 'focus')
+    return (
+      <div className="fixed inset-x-0 top-0 bottom-14 z-30 flex min-h-0 flex-col bg-surface text-foreground md:bottom-0">
+        <div className="z-10 shrink-0 bg-surface">{toolbar}</div>
+        {isPostsLoading ? (
+          <div className="mx-auto w-full max-w-3xl overflow-hidden">
+            <FeedSkeleton />
+          </div>
+        ) : posts.length > 0 ? (
+          <FocusFeed
+            key={activeFeedTab}
+            posts={posts}
+            hasMore={hasMore}
+            loadingMore={isLoadingMore}
+            loadMoreError={isLoadMoreError}
+            fetchMore={fetchMore}
+            initialPostId={restorePostId}
+            onActivePost={(id) => {
+              activePost.current = id
+            }}
+          />
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+            <p className="text-sm text-muted-foreground">{isPostsError ? 'Không tải được bảng tin.' : 'Chưa có bài viết trong bảng tin này.'}</p>
+            <Button
+              onClick={() => {
+                if (isPostsError) void refetch()
+                else if (isFollowingTab) setExploreOpen(true)
+                else setCreatePostOpen(true)
+              }}
+            >
+              {isPostsError ? 'Thử lại' : isFollowingTab ? 'Khám phá người để theo dõi' : 'Tạo bài viết'}
+            </Button>
+          </div>
+        )}
+        <FollowSuggestionsDialog open={exploreOpen} onOpenChange={setExploreOpen} />
+      </div>
+    )
+
+  return (
+    <>
+      <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md">{toolbar}</div>
 
       {showNewPostsPill && (
         <NewPostsPill count={newPosts.count} authors={newPosts.authors} isRevealing={newPosts.isRevealing} onClick={() => void newPosts.reveal()} />
@@ -108,7 +181,12 @@ function HomeContent() {
         ) : posts.length > 0 ? (
           <>
             {/* Ảo hóa: chỉ các bài gần màn hình nằm trong DOM */}
-            <VirtualPostList posts={posts} cacheKey={`feed:${activeFeedTab}`} renderPost={(post) => <PostCard post={post} variant="card" />} />
+            <VirtualPostList
+              posts={posts}
+              initialPostId={restorePostId}
+              cacheKey={`feed:${activeFeedTab}`}
+              renderPost={(post) => <PostCard post={post} variant="card" />}
+            />
 
             {/* Infinite Scroll Bottom Sentinel */}
             <div ref={sentinelRef} className="py-6 text-center">
@@ -137,6 +215,11 @@ function HomeContent() {
               ) : null}
             </div>
           </>
+        ) : isPostsError ? (
+          <div className="py-12 text-center">
+            <p className="mb-3 text-sm text-muted-foreground">Không tải được bảng tin.</p>
+            <Button onClick={() => void refetch()}>Thử lại</Button>
+          </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 m-3 sm:m-0 text-center">
             <MessageSquarePlus className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

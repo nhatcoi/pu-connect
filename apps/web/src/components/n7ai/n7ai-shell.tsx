@@ -9,8 +9,8 @@ import { N7AiSidebar } from './n7ai-sidebar'
 export function N7AiShell({ children }: { children: React.ReactNode }) {
   return (
     <N7AiNavProvider>
-      <div className="flex gap-4 lg:gap-6">
-        <aside className="hidden md:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)]">
+      <div className="flex gap-4 lg:gap-6 [--app-header-height:0rem]">
+        <aside className="hidden md:block w-64 xl:w-72 shrink-0 sticky top-0 h-dvh">
           <N7AiSidebar />
         </aside>
         <div className="mx-auto w-full min-w-0 max-w-[820px] flex-1">{children}</div>

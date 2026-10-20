@@ -39,10 +39,13 @@ Thực thi: điểm tính một lần qua `CROSS JOIN LATERAL (…) rk`, `LEFT J
 * **Tuyển nhóm đồ án (`group_recruit`):** Đăng bài tìm đồng đội làm bài tập lớn/PBL kèm số lượng slot (`recruit_slots_total`).
 * **Thông báo chính thức (`announcement`):** Dành riêng cho Giảng viên, Ban chủ nhiệm Khoa, Admin.
 
-### 2.2. Hỗ Trợ Đa Phương Tiện (Rich-Media Capabilities)
 * **LaTeX / KaTeX Formulas:** Hiển thị công thức toán, lý, hóa inline `$E=mc^2$` và block `$$\int_{a}^{b} f(x)dx$$`.
 * **Code Snippets:** Syntax highlighting đa ngôn ngữ (C++, Python, TypeScript, Java, SQL).
-* **Lưới ảnh chuẩn X ([`PostMediaGallery`](file:///home/nhatcoi/Documents/personal/pu-connector/apps/web/src/components/social/post-media-gallery.tsx)):** Hiển thị 1, 2, 3, 4 ảnh dạng mosaic grid với bo góc chuẩn $16\text{px}$, lightbox xem ảnh toàn màn hình.
+* **Hiển thị đa phương tiện chuẩn X ([`PostMediaGallery`](apps/web/src/components/social/post-media-gallery.tsx)):**
+  * **Ảnh đơn (1 ảnh):** Giữ nguyên tỉ lệ tự nhiên (`max-h-[520px] w-auto max-w-full rounded-2xl object-contain`, container `w-fit max-w-full`). Khắc phục triệt để lỗi ảnh dọc (ví dụ ảnh chụp đêm 9:16) bị container `max-h-[420px]` cắt xén thô bạo chỉ lấy phần đỉnh dẫn tới đen xì giao diện ngoài.
+  * **Lưới ảnh (2, 3, 4+ ảnh):** Mosaic collage chuẩn X/Threads với `object-cover`. Khi bài viết có $> 4$ ảnh, ô thứ tư tự động hiển thị overlay huy hiệu `+N` kèm hiệu ứng làm mờ nền kính.
+  * **Video đính kèm:** Nhận diện định dạng `.mp4`, `.webm`, `.mov`, `.m4v` để phát video native có controls thay vì cố hiển thị thẻ `<img>`.
+  * **Lightbox Modal toàn màn hình:** Phóng to ảnh không bị vỡ hạt, hỗ trợ chuyển ảnh Trước/Sau bằng nút bấm hoặc phím mũi tên bàn phím (`←` / `→` / `Esc`), hiển thị huy hiệu đếm vị trí `x / y`.
 * **Đính kèm File học phần:** Tích hợp trực tiếp ID tài liệu từ kho lưu trữ (`attached_document_ids`).
 * **Khảo sát & Bình chọn (Polls):** Hỗ trợ câu hỏi bình chọn nhiều phương án với thời hạn đóng vote.
 

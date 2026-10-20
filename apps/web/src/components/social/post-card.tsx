@@ -120,6 +120,7 @@ interface PostCardProps {
   variant?: 'flat' | 'card'
   // Trang chi tiết bài viết: mở sẵn bình luận và highlight bình luận từ thông báo
   defaultCommentsOpen?: boolean
+  defaultExpanded?: boolean
   highlightCommentId?: string | null
 }
 
@@ -134,6 +135,7 @@ export function PostCard({
   onDeleteSuccess,
   variant = 'flat',
   defaultCommentsOpen = false,
+  defaultExpanded = false,
   highlightCommentId
 }: PostCardProps) {
   const pathname = usePathname()
@@ -157,7 +159,7 @@ export function PostCard({
   const [hiddenReason, setHiddenReason] = useState('')
   // Thu gọn bài dài + "Xem thêm" (Collapse long content)
   const contentRef = useRef<HTMLDivElement>(null)
-  const [isExpanded, setIsExpanded] = useState(defaultCommentsOpen)
+  const [isExpanded, setIsExpanded] = useState(defaultCommentsOpen || defaultExpanded)
   const [isOverflowing, setIsOverflowing] = useState(false)
   const [isSummaryOpen, setIsSummaryOpen] = useState(false)
   // Bài hiện ≥ 2s trên bảng tin ⇒ tín hiệu quan tâm (trang chi tiết ghi post_open riêng)

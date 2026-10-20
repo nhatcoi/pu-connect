@@ -10,6 +10,7 @@ const measurementSnapshots = new Map<string, VirtualItem[]>()
 
 interface VirtualPostListProps {
   posts: PostItem[]
+  initialPostId?: string | null
   // Khóa duy nhất của danh sách (vd. feed:for_you, community:slug:hot)
   cacheKey: string
   renderPost: (post: PostItem) => React.ReactNode
@@ -19,7 +20,7 @@ interface VirtualPostListProps {
 
 // Danh sách bài ảo hóa theo cửa sổ: chỉ ~10–20 bài gần màn hình nằm trong DOM
 // (feed dài không làm nặng trang / tràn bộ nhớ trên điện thoại)
-export function VirtualPostList({ posts, cacheKey, renderPost, gap = 10, estimateSize = 420 }: VirtualPostListProps) {
+export function VirtualPostList({ posts, cacheKey, renderPost, initialPostId, gap = 10, estimateSize = 420 }: VirtualPostListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const [scrollMargin, setScrollMargin] = useState(0)
 
@@ -43,6 +44,19 @@ export function VirtualPostList({ posts, cacheKey, renderPost, gap = 10, estimat
     getItemKey: (index) => posts[index]?.id ?? index,
     initialMeasurementsCache: measurementSnapshots.get(cacheKey)
   })
+
+  const restored = useRef(false)
+  useEffect(() => {
+    if (restored.current || !initialPostId) return
+    const frame = requestAnimationFrame(() => {
+      const index = posts.findIndex((post) => post.id === initialPostId)
+      if (index >= 0) {
+        virtualizer.scrollToIndex(index, { align: 'start' })
+        restored.current = true
+      }
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [initialPostId, posts, virtualizer])
 
   // Lưu kích thước đã đo khi rời trang / đổi danh sách
   useEffect(() => {

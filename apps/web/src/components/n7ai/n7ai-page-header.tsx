@@ -10,7 +10,7 @@ import { useN7AiNav } from './n7ai-nav'
 export function N7AiPageHeader({ title, description, backHref }: { title: string; description?: string; backHref?: string }) {
   const { openNav } = useN7AiNav()
   return (
-    <div className="sticky top-0 md:top-14 z-30 flex items-start gap-2 bg-surface/90 px-2 pt-3 pb-2 backdrop-blur-md sm:px-3">
+    <div className="sticky top-0 z-30 flex items-start gap-2 bg-surface/90 px-2 pt-3 pb-2 backdrop-blur-md sm:px-3">
       {backHref ? (
         <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0 rounded-full">
           <Link href={backHref} aria-label="Quay lại">

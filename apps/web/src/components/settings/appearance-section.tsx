@@ -5,6 +5,7 @@ import { useTheme } from 'next-themes'
 import { Check, Monitor, Moon, Sun } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SettingsGroup } from './settings-ui'
+import { FeedAppearanceSection } from './feed-appearance-section'
 
 const THEMES = [
   { id: 'light', label: 'Sáng', icon: Sun },
@@ -44,36 +45,39 @@ export function AppearanceSection() {
   const current = mounted ? (theme ?? 'system') : null
 
   return (
-    <SettingsGroup label="Chủ đề" hint="Lưu trên trình duyệt này.">
-      <div role="radiogroup" aria-label="Chủ đề giao diện" className="grid grid-cols-3 gap-2.5 py-3">
-        {THEMES.map(({ id, label, icon: Icon }) => {
-          const selected = current === id
-          return (
-            <button
-              key={id}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              onClick={() => setTheme(id)}
-              className={cn(
-                'relative rounded-xl p-1.5 text-left ring-1 transition-[box-shadow,background-color] cursor-pointer',
-                selected ? 'bg-primary/[0.04] ring-2 ring-primary' : 'ring-border hover:ring-foreground/25'
-              )}
-            >
-              <ThemePreview mode={id} />
-              <span className="flex items-center gap-1.5 px-1 pt-2 pb-0.5 text-xs font-medium">
-                <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="truncate">{label}</span>
-              </span>
-              {selected && (
-                <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                  <Check className="h-2.5 w-2.5" strokeWidth={3} />
+    <>
+      <FeedAppearanceSection />
+      <SettingsGroup label="Chủ đề" hint="Lưu trên trình duyệt này.">
+        <div role="radiogroup" aria-label="Chủ đề giao diện" className="grid grid-cols-3 gap-2.5 py-3">
+          {THEMES.map(({ id, label, icon: Icon }) => {
+            const selected = current === id
+            return (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setTheme(id)}
+                className={cn(
+                  'relative rounded-xl p-1.5 text-left ring-1 transition-[box-shadow,background-color] cursor-pointer',
+                  selected ? 'bg-primary/[0.04] ring-2 ring-primary' : 'ring-border hover:ring-foreground/25'
+                )}
+              >
+                <ThemePreview mode={id} />
+                <span className="flex items-center gap-1.5 px-1 pt-2 pb-0.5 text-xs font-medium">
+                  <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="truncate">{label}</span>
                 </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-    </SettingsGroup>
+                {selected && (
+                  <span className="absolute top-2.5 right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <Check className="h-2.5 w-2.5" strokeWidth={3} />
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      </SettingsGroup>
+    </>
   )
 }

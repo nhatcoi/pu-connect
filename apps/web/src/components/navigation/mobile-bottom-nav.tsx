@@ -3,6 +3,7 @@
 import React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Home, Search, GraduationCap, FileText, Compass, MessageCircle } from 'lucide-react'
+import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
 import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { useUnreadMessages } from '@/hooks/chat'
 import { FEATURES } from '@/lib/features'
@@ -13,10 +14,11 @@ export function MobileBottomNav() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const unreadMessages = useUnreadMessages()
+  const { mode } = useFeedViewMode()
 
   // High-performance scroll state for fade/dimming on scroll
   const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
-  const isDimmed = !isAtTop && (!isHeaderVisible || isScrolling)
+  const isDimmed = !(pathname === '/' && mode === 'focus') && !isAtTop && (!isHeaderVisible || isScrolling)
 
   // Tin nhắn ở giữa thanh đáy
   const navItems = [

@@ -52,7 +52,11 @@ export const PrivacySettingsSchema = z.object({
 })
 
 // Tùy chọn tính năng (Feature plugs): chỉ ảnh hưởng trải nghiệm của chính mình
+export const FeedViewModeSchema = z.enum(['list', 'focus'])
+export type FeedViewMode = z.infer<typeof FeedViewModeSchema>
+
 export const FeaturePreferencesSchema = z.object({
+  feedViewMode: FeedViewModeSchema.default('list'),
   // Bảng tin: 1 bình luận nổi bật dưới mỗi bài (tắt ⇒ server bỏ luôn query)
   featuredComment: z.boolean().default(true),
   // Bảng tin: pill "N bài mới" (tắt ⇒ dừng polling + socket)
@@ -99,7 +103,7 @@ export const UserProfileSchema = z.object({
     showSavedPosts: false,
     showCommentedPosts: true
   }),
-  preferences: FeaturePreferencesSchema.default({ featuredComment: true, newPostsPill: true, aiSummary: true }),
+  preferences: FeaturePreferencesSchema.default({ featuredComment: true, newPostsPill: true, aiSummary: true, feedViewMode: 'list' }),
   skills: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),
   createdAt: z.string()
@@ -134,7 +138,7 @@ export type PrivacySettings = z.infer<typeof PrivacySettingsSchema>
 export const PROFILE_ACTIVITY_TYPES = ['liked', 'saved', 'commented'] as const
 export type ProfileActivityType = (typeof PROFILE_ACTIVITY_TYPES)[number]
 export type FeaturePreferences = z.infer<typeof FeaturePreferencesSchema>
-export type FeaturePreferenceKey = keyof FeaturePreferences
+export type FeaturePreferenceKey = { [K in keyof FeaturePreferences]: FeaturePreferences[K] extends boolean ? K : never }[keyof FeaturePreferences]
 
 // Điền mặc định cho privacy_settings cũ / thiếu trường (Fill defaults for legacy rows)
 export function resolvePrivacySettings(raw: unknown): PrivacySettings {
