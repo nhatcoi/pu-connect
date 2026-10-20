@@ -715,6 +715,7 @@ erDiagram
     timestamptz updated_at
     text tone
     text major
+    text soul
   }
   bot_topics {
     text slug PK

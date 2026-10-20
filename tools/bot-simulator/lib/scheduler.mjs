@@ -17,6 +17,7 @@ export class BotScheduler {
     this.speed = config.simulation.speed || 'normal'
     this.isRunning = false
     this.queue = Promise.resolve()
+    this.skippedReplies = new Set() // bình luận người thật AI đã bỏ qua (SKIP/lỗi) — không thử lại
     this.stats = { postsCount: 0, commentsCount: 0, likesCount: 0, startedAt: new Date() }
   }
 
@@ -55,12 +56,14 @@ export class BotScheduler {
     const options = []
     if (this.policy.eligible('post').length) options.push(['post', w.post])
     if (this.policy.eligible('comment').length || this.policy.eligible('like').length) options.push(['commentFeed', w.commentFeed])
+    if (this.policy.eligible('comment').some((u) => this.policy.profiles.get(u).interact_humans)) options.push(['replyHuman', w.replyHuman ?? 40])
     if (!options.length) return
 
     let r = Math.random() * options.reduce((sum, [, weight]) => sum + weight, 0)
     const [action] = options.find(([, weight]) => (r -= weight) <= 0) || options[0]
     try {
       if (action === 'post') await this.executePost()
+      else if (action === 'replyHuman') await this.executeReplyHuman()
       else await this.executeCommentFeed()
     } catch (err) {
       logger.error(`Lỗi hành động [${action}]:`, err)
@@ -186,8 +189,32 @@ export class BotScheduler {
     return ok
   }
 
+  // Người thật bình luận dưới bài của bot ⇒ bot (được bật "tương tác người thật") trả lời, bám nội dung bài + bình luận
+  async executeReplyHuman() {
+    await this.policy.load()
+    const names = this.policy.eligible('comment').filter((u) => this.policy.profiles.get(u).interact_humans)
+    for (const username of shuffled(names)) {
+      const client = this.clients.get(username)
+      if (!client) continue
+      const target = await this.policy.pendingHumanComment(client.userId)
+      if (!target || this.skippedReplies.has(target.id)) continue
+      const reply = await this.contentGen.generateReply({ title: target.title, content: target.post_content }, this.policy.personaOf(username), { content: target.content }, this.topicLabels(username))
+      if (!reply) {
+        this.skippedReplies.add(target.id)
+        logger.info(`@${username}: bỏ qua bình luận của người thật (không có gì hữu ích để thêm)`)
+        return
+      }
+      await sleep(2000 + Math.random() * 3000)
+      await client.addComment(target.post_id, { content: reply, parentId: target.id })
+      this.policy.record(username, 'comment')
+      this.stats.commentsCount++
+      logger.action(username, 'Replied Human', `"${reply}" vào bình luận của người dùng`)
+      return
+    }
+  }
+
   // 2. Lướt feed: chỉ bài liên quan chủ đề của bot; bài người thật chỉ khi bot được bật "tương tác người thật".
-  // Không bao giờ trả lời bình luận của người thật.
+  // Bình luận của người thật chỉ được trả lời dưới bài của chính bot (executeReplyHuman).
   async executeCommentFeed(targetPostId = null, targetUsername = null) {
     await this.policy.load()
     const username = targetUsername || pick([...new Set([...this.policy.eligible('comment'), ...this.policy.eligible('like')])])

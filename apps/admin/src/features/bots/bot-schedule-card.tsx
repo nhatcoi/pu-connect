@@ -6,7 +6,6 @@ import { adminApi, formatRelativeTime } from '@/lib/api'
 import { Badge, Button, Card, CardHeader, EmptyState, List } from '@/components/ui'
 import type { BotActionPreset } from './bot-action-dialog'
 import { BotImportDialog } from './bot-import-dialog'
-import { FeedQueueCard } from './feed-queue-card'
 import { useBotMutation } from './use-bots'
 
 const COMMAND_LABEL: Record<BotCommandType, string> = { post: 'Đăng bài', comment: 'Bình luận', like: 'Thả tim' }
@@ -15,12 +14,12 @@ const STATUS_LABEL = { pending: 'Chờ', running: 'Đang chạy', done: 'Xong', 
 
 function describe(c: AdminBotCommand): string {
   if (c.result && (c.status === 'failed' || c.status === 'cancelled')) return c.result
-  const p = c.payload as { bot?: string; content?: string; postId?: string; feedItemId?: string; enhance?: string }
-  return [p.bot ? `@${p.bot}` : 'Bot ngẫu nhiên', p.feedItemId && `bài crawl #${p.feedItemId}`, p.content?.slice(0, 60), p.postId && `bài ${p.postId.slice(0, 8)}…`, p.enhance === 'ai' && 'AI viết lại'].filter(Boolean).join(' · ')
+  const p = c.payload as { bot?: string; content?: string; postId?: string; enhance?: string; source?: string }
+  return [p.bot ? `@${p.bot}` : 'Bot ngẫu nhiên', p.source === 'import' && 'Excel', p.content?.slice(0, 60), p.postId && `bài ${p.postId.slice(0, 8)}…`, p.enhance === 'ai' && 'AI viết lại'].filter(Boolean).join(' · ')
 }
 
-// Kho nội dung (dữ liệu crawl) + hàng đợi hành động giao cho bot (ngay/hẹn giờ)
-export function BotContentTab({ data, onAct }: { data: AdminBotOverview; onAct: (preset: BotActionPreset) => void }) {
+// Lịch đăng & việc giao cho bot: import Excel (hẹn giờ theo file) hoặc giao tay, chạy ngay/hẹn giờ
+export function BotScheduleCard({ data, onAct }: { data: AdminBotOverview; onAct: (preset: BotActionPreset) => void }) {
   const [importing, setImporting] = useState(false)
   const cancel = useBotMutation(
     (id: string) => adminApi.delete<AdminBotOverview>(`/admin/bots/commands/${id}`),
@@ -28,11 +27,11 @@ export function BotContentTab({ data, onAct }: { data: AdminBotOverview; onAct: 
   )
 
   return (
-    <div className="space-y-5">
+    <>
       <Card>
         <CardHeader
-          title="Hàng đợi hành động"
-          description="Việc admin giao cho bot: chạy ngay hoặc theo giờ hẹn. Lệnh đang chờ hủy được."
+          title="Lịch đăng & việc giao"
+          description="Bài import từ Excel và việc admin giao tay: chạy ngay hoặc theo giờ hẹn. Lệnh đang chờ hủy được."
           action={
             <div className="flex gap-2">
               <Button onClick={() => setImporting(true)}>
@@ -69,8 +68,7 @@ export function BotContentTab({ data, onAct }: { data: AdminBotOverview; onAct: 
         )}
       </Card>
 
-      <FeedQueueCard overview={data} onAssign={(item) => onAct({ type: 'post', feedItem: item })} />
       <BotImportDialog open={importing} onClose={() => setImporting(false)} />
-    </div>
+    </>
   )
 }

@@ -8,26 +8,22 @@ import type {
   AdminBotCommand,
   AdminBotCommandInput,
   AdminBotControlInput,
-  AdminBotFeedAction,
-  AdminBotFeedItem,
   AdminBotOverview,
   AdminBotProfileInput,
   AdminBotTopic,
   AdminBotTopicInput,
   AdminPage,
-  BotFeedStatus,
   BotSessionStats
 } from '@pu/schemas'
 import type { PoolClient } from 'pg'
 import { DatabaseService } from '../../database/database.service'
 import { writeAudit } from './admin-audit'
 import { iso, pagedQuery, SqlParams, whereOf } from './admin-paging'
-import type { BotActivityQuery, BotFeedQuery } from './dto/admin-bots.dto'
+import type { BotActivityQuery } from './dto/admin-bots.dto'
 
 const ONLINE_WINDOW_SECONDS = 30
 const MAX_PENDING_COMMANDS = 500
 const BCRYPT_ROUNDS = 10
-const FEED_STATUSES: BotFeedStatus[] = ['new', 'review', 'approved', 'rejected', 'scheduled', 'posted', 'skipped']
 
 // Điều khiển Bot Simulator: admin ghi cấu hình/lệnh vào DB, daemon (tools/bot-simulator) đọc và thực thi
 @Injectable()
@@ -35,19 +31,18 @@ export class AdminBotsService {
   constructor(private readonly db: DatabaseService) {}
 
   async overview(): Promise<AdminBotOverview> {
-    const [control, bots, commands, feed, topics] = await Promise.all([
+    const [control, bots, commands, topics] = await Promise.all([
       this.db.query(
-        `SELECT enabled, feed_enabled, feed_review, ai_model, ai_base_url, speed, heartbeat_at, started_at, stats,
+        `SELECT enabled, ai_model, ai_base_url, speed, heartbeat_at, started_at, stats,
                 heartbeat_at IS NOT NULL AND heartbeat_at > NOW() - make_interval(secs => $1) AS online
          FROM bot_control WHERE id = 1`,
         [ONLINE_WINDOW_SECONDS]
       ),
-      // Hạn mức dùng hôm nay (giờ VN) đếm từ bảng thật, cùng cách daemon tính; bài từ dữ liệu crawl không tính vào bài tự sinh
+      // Hạn mức dùng hôm nay (giờ VN) đếm từ bảng thật, cùng cách daemon tính
       this.db.query(
         `WITH day AS (SELECT date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh' AS t)
          SELECT u.id, u.username, u.display_name, u.faculty, u.role, u.bio, p.*,
-           GREATEST(0, (SELECT COUNT(*) FROM posts x, day WHERE x.author_id = u.id AND x.created_at >= day.t)
-                     - (SELECT COUNT(*) FROM bot_feed_items f, day WHERE f.posted_by = u.username AND f.posted_at >= day.t))::int AS used_post,
+           (SELECT COUNT(*) FROM posts x, day WHERE x.author_id = u.id AND x.created_at >= day.t)::int AS used_post,
            (SELECT COUNT(*) FROM comments x, day WHERE x.author_id = u.id AND x.created_at >= day.t)::int AS used_comment,
            (SELECT COUNT(*) FROM post_reactions x, day WHERE x.user_id = u.id AND x.created_at >= day.t)::int AS used_like,
            (SELECT MAX(a.created_at) FROM bot_activity a WHERE a.bot_username = u.username AND a.action NOT IN ('warn', 'error')) AS last_action_at
@@ -59,29 +54,12 @@ export class AdminBotsService {
          FROM bot_commands c LEFT JOIN users u ON u.id = c.created_by
          ORDER BY c.id DESC LIMIT 30`
       ),
-      this.db.query(
-        `SELECT status, COUNT(*)::int AS n FROM bot_feed_items GROUP BY status
-         UNION ALL SELECT 'posted24h', COUNT(*)::int FROM bot_feed_items WHERE status = 'posted' AND posted_at > NOW() - INTERVAL '24 hours'
-         UNION ALL SELECT 'last', EXTRACT(EPOCH FROM MAX(posted_at))::int FROM bot_feed_items WHERE status = 'posted'`
-      ),
       this.db.query(`SELECT slug, label, keywords, enabled FROM bot_topics ORDER BY label`)
     ])
 
     const c = control.rows[0]
-    const byStatus = Object.fromEntries(FEED_STATUSES.map((s) => [s, 0])) as Record<BotFeedStatus, number>
-    let posted24h = 0
-    let lastPostedAt: string | null = null
-    for (const r of feed.rows) {
-      if (r.status === 'posted24h') posted24h = r.n
-      else if (r.status === 'last') lastPostedAt = r.n ? new Date(r.n * 1000).toISOString() : null
-      else byStatus[r.status as BotFeedStatus] = r.n
-    }
-
     return {
       enabled: c.enabled,
-      feedEnabled: c.feed_enabled,
-      feedReview: c.feed_review,
-      feed: { byStatus, posted24h, lastPostedAt },
       ai: { model: c.ai_model, baseUrl: c.ai_base_url },
       speed: c.speed,
       online: c.online,
@@ -99,6 +77,7 @@ export class AdminBotsService {
           bio: r.bio ?? '',
           tone: r.tone ?? '',
           major: r.major ?? '',
+          soul: r.soul ?? '',
           profile: {
             enabled: r.enabled,
             topics: r.topics,
@@ -106,7 +85,6 @@ export class AdminBotsService {
             canComment: r.can_comment,
             canLike: r.can_like,
             interactHumans: r.interact_humans,
-            feedPoster: r.feed_poster,
             maxPostsPerDay: r.max_posts_per_day,
             maxCommentsPerDay: r.max_comments_per_day,
             maxLikesPerDay: r.max_likes_per_day
@@ -145,42 +123,16 @@ export class AdminBotsService {
     })
   }
 
-  async feedItems(q: BotFeedQuery): Promise<AdminPage<AdminBotFeedItem>> {
-    const p = new SqlParams()
-    const where = whereOf([q.status && `status = ${p.add(q.status)}`])
-    return pagedQuery(this.db, {
-      select: 'id, status, topic, content, raw_content, cardinality(image_urls) AS images, verdict, posted_by, created_at, posted_at',
-      from: `bot_feed_items ${where}`,
-      params: p,
-      order: 'id DESC',
-      page: q.page,
-      pageSize: q.pageSize,
-      map: (r) => ({
-        id: String(r.id),
-        status: r.status,
-        topic: r.topic,
-        content: r.content,
-        rawContent: r.raw_content,
-        imageCount: r.images,
-        verdict: r.verdict,
-        postedBy: r.posted_by,
-        createdAt: iso(r.created_at)!,
-        postedAt: iso(r.posted_at)
-      })
-    })
-  }
-
   // ACID Transaction: update control row & write audit log
   async setControl(adminId: string, input: AdminBotControlInput) {
     await this.db.transaction(async (client) => {
       await client.query(
         `UPDATE bot_control SET
-           enabled = COALESCE($1, enabled), speed = COALESCE($2, speed), feed_enabled = COALESCE($3, feed_enabled),
-           feed_review = COALESCE($4, feed_review), ai_model = COALESCE($5, ai_model),
-           ai_base_url = CASE WHEN $6 THEN $7 ELSE ai_base_url END,
-           updated_by = $8, updated_at = NOW()
+           enabled = COALESCE($1, enabled), speed = COALESCE($2, speed), ai_model = COALESCE($3, ai_model),
+           ai_base_url = CASE WHEN $4 THEN $5 ELSE ai_base_url END,
+           updated_by = $6, updated_at = NOW()
          WHERE id = 1`,
-        [input.enabled ?? null, input.speed ?? null, input.feedEnabled ?? null, input.feedReview ?? null, input.aiModel ?? null, input.aiBaseUrl !== undefined, input.aiBaseUrl ?? null, adminId]
+        [input.enabled ?? null, input.speed ?? null, input.aiModel ?? null, input.aiBaseUrl !== undefined, input.aiBaseUrl ?? null, adminId]
       )
       await writeAudit(client, adminId, { action: 'bot.control', targetType: 'bot', targetId: 'simulator', details: { ...input } })
     })
@@ -201,9 +153,9 @@ export class AdminBotsService {
         `UPDATE bot_profiles SET
            enabled = COALESCE($2, enabled), topics = COALESCE($3, topics), can_post = COALESCE($4, can_post),
            can_comment = COALESCE($5, can_comment), can_like = COALESCE($6, can_like), interact_humans = COALESCE($7, interact_humans),
-           feed_poster = COALESCE($8, feed_poster), max_posts_per_day = COALESCE($9, max_posts_per_day),
-           max_comments_per_day = COALESCE($10, max_comments_per_day), max_likes_per_day = COALESCE($11, max_likes_per_day),
-           updated_by = $12, updated_at = NOW()
+           max_posts_per_day = COALESCE($8, max_posts_per_day),
+           max_comments_per_day = COALESCE($9, max_comments_per_day), max_likes_per_day = COALESCE($10, max_likes_per_day),
+           updated_by = $11, updated_at = NOW()
          WHERE user_id = $1`,
         [
           bot.rows[0].id,
@@ -213,7 +165,6 @@ export class AdminBotsService {
           input.canComment ?? null,
           input.canLike ?? null,
           input.interactHumans ?? null,
-          input.feedPoster ?? null,
           input.maxPostsPerDay ?? null,
           input.maxCommentsPerDay ?? null,
           input.maxLikesPerDay ?? null,
@@ -248,17 +199,6 @@ export class AdminBotsService {
     return this.overview()
   }
 
-  // Duyệt tay bài crawl: chỉ bài đang chờ duyệt/AI từ chối/chưa duyệt mới đổi được
-  async reviewFeedItem(adminId: string, id: number, action: AdminBotFeedAction) {
-    await this.db.transaction(async (client) => {
-      const next = action === 'approve' ? 'approved' : 'rejected'
-      const res = await client.query(`UPDATE bot_feed_items SET status = $2 WHERE id = $1 AND status IN ('new', 'review', 'rejected', 'approved') RETURNING id`, [id, next])
-      if (!res.rowCount) throw new BadRequestException('Bài không còn ở trạng thái duyệt được (đã đăng hoặc bỏ qua)')
-      await writeAudit(client, adminId, { action: 'bot.feed_review', targetType: 'bot', targetId: String(id), details: { action } })
-    })
-    return { id, status: action === 'approve' ? 'approved' : 'rejected' }
-  }
-
   // Mật khẩu chung của bot: daemon đăng nhập bằng cùng giá trị (BOT_PASSWORD); dev local dùng mặc định
   private botPassword() {
     const pw = process.env.BOT_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'BotPassword@123')
@@ -277,7 +217,7 @@ export class AdminBotsService {
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), $6, $7, true, NOW()) RETURNING id`,
         [`${input.username}@seed.pu-connector.test`, input.username, hash, input.displayName, input.role, input.faculty, input.bio ?? '']
       )
-      await client.query(`INSERT INTO bot_profiles (user_id, tone, major, updated_by) VALUES ($1, $2, $3, $4)`, [user.rows[0].id, input.tone ?? '', input.major ?? '', adminId])
+      await client.query(`INSERT INTO bot_profiles (user_id, tone, major, soul, updated_by) VALUES ($1, $2, $3, $4, $5)`, [user.rows[0].id, input.tone ?? '', input.major ?? '', input.soul ?? '', adminId])
       await writeAudit(client, adminId, { action: 'bot.account_create', targetType: 'bot', targetId: input.username, details: { ...input } })
     })
     return this.overview()
@@ -291,10 +231,11 @@ export class AdminBotsService {
         [username, input.displayName ?? null, input.role ?? null, input.faculty ?? null, input.bio ?? null]
       )
       if (!bot.rowCount) throw new NotFoundException('Không phải bot')
-      await client.query(`UPDATE bot_profiles SET tone = COALESCE($2, tone), major = COALESCE($3, major), updated_by = $4, updated_at = NOW() WHERE user_id = $1`, [
+      await client.query(`UPDATE bot_profiles SET tone = COALESCE($2, tone), major = COALESCE($3, major), soul = COALESCE($4, soul), updated_by = $5, updated_at = NOW() WHERE user_id = $1`, [
         bot.rows[0].id,
         input.tone ?? null,
         input.major ?? null,
+        input.soul ?? null,
         adminId
       ])
       await writeAudit(client, adminId, { action: 'bot.account_update', targetType: 'bot', targetId: username, details: { ...input } })
@@ -326,45 +267,28 @@ export class AdminBotsService {
     return this.overview()
   }
 
-  // Hủy lệnh chờ của 1 bot; bài crawl đã giao cho lệnh đó quay về hàng sẵn đăng
+  // Hủy lệnh chờ của 1 bot
   private async cancelPendingOf(client: PoolClient, username: string) {
-    const res = await client.query(
-      `UPDATE bot_commands SET status = 'cancelled', result = 'Bot đã bị xóa', finished_at = NOW()
-       WHERE status = 'pending' AND payload->>'bot' = $1 RETURNING payload`,
-      [username]
-    )
-    await this.releaseFeedItems(client, res.rows.map((r) => r.payload?.feedItemId))
-  }
-
-  private async releaseFeedItems(client: PoolClient, ids: (string | undefined)[]) {
-    const items = ids.filter((x): x is string => !!x).map(Number)
-    if (items.length) await client.query(`UPDATE bot_feed_items SET status = 'approved' WHERE id = ANY($1::bigint[]) AND status = 'scheduled'`, [items])
+    await client.query(`UPDATE bot_commands SET status = 'cancelled', result = 'Bot đã bị xóa', finished_at = NOW() WHERE status = 'pending' AND payload->>'bot' = $1`, [username])
   }
 
   // Hủy lệnh đang chờ (chưa tới giờ / chưa được daemon nhận)
   async cancelCommand(adminId: string, id: number) {
     await this.db.transaction(async (client) => {
-      const res = await client.query(`UPDATE bot_commands SET status = 'cancelled', result = 'Admin hủy', finished_at = NOW() WHERE id = $1 AND status = 'pending' RETURNING payload`, [id])
+      const res = await client.query(`UPDATE bot_commands SET status = 'cancelled', result = 'Admin hủy', finished_at = NOW() WHERE id = $1 AND status = 'pending'`, [id])
       if (!res.rowCount) throw new BadRequestException('Lệnh không còn ở trạng thái chờ')
-      await this.releaseFeedItems(client, [res.rows[0].payload?.feedItemId])
       await writeAudit(client, adminId, { action: 'bot.command_cancel', targetType: 'bot', targetId: String(id) })
     })
     return this.overview()
   }
 
-  // ACID Transaction: validate bot/bài crawl, cap queue, enqueue command & audit
+  // ACID Transaction: validate bot, cap queue, enqueue command & audit
   async enqueue(adminId: string, input: AdminBotCommandInput) {
     const { type, scheduledAt, ...payload } = input
     await this.db.transaction(async (client) => {
       if (input.bot) {
         const found = await client.query(`SELECT 1 FROM users WHERE is_bot AND username = $1`, [input.bot])
         if (!found.rowCount) throw new BadRequestException(`Không phải bot: ${input.bot}`)
-      }
-      if (input.type === 'post' && input.feedItemId) {
-        if (!input.bot) throw new BadRequestException('Đăng bài crawl cần chọn bot')
-        // Giữ bài khỏi FeedPoster: chỉ bài còn chờ mới giao được, đổi sang 'scheduled' trong cùng transaction
-        const held = await client.query(`UPDATE bot_feed_items SET status = 'scheduled' WHERE id = $1 AND status IN ('new', 'review', 'approved', 'rejected') RETURNING id`, [input.feedItemId])
-        if (!held.rowCount) throw new BadRequestException('Bài crawl không còn ở trạng thái giao được (đã đăng/đã hẹn)')
       }
       // Khóa dòng điều khiển để đếm hàng đợi không bị race giữa 2 admin
       await client.query(`SELECT 1 FROM bot_control WHERE id = 1 FOR UPDATE`)

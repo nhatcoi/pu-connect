@@ -29,12 +29,11 @@ export class BotPolicy {
     const [profiles, topics, usage] = await Promise.all([
       this.pool.query(`SELECT u.id, u.username, u.display_name, u.faculty, u.role, p.* FROM bot_profiles p JOIN users u ON u.id = p.user_id WHERE u.is_bot AND u.status = 'active'`),
       this.pool.query(`SELECT slug, label, keywords FROM bot_topics WHERE enabled`),
-      // Số việc đã làm hôm nay (giờ VN) đếm từ bảng thật; bài từ dữ liệu crawl không tính vào hạn mức bài tự sinh
+      // Số việc đã làm hôm nay (giờ VN) đếm từ bảng thật
       this.pool.query(`
         WITH day AS (SELECT date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh' AS t)
         SELECT u.username,
-          (SELECT COUNT(*) FROM posts x, day WHERE x.author_id = u.id AND x.created_at >= day.t)::int
-            - (SELECT COUNT(*) FROM bot_feed_items f, day WHERE f.posted_by = u.username AND f.posted_at >= day.t)::int AS post,
+          (SELECT COUNT(*) FROM posts x, day WHERE x.author_id = u.id AND x.created_at >= day.t)::int AS post,
           (SELECT COUNT(*) FROM comments x, day WHERE x.author_id = u.id AND x.created_at >= day.t)::int AS comment,
           (SELECT COUNT(*) FROM post_reactions x, day WHERE x.user_id = u.id AND x.created_at >= day.t)::int AS "like"
         FROM users u WHERE u.is_bot`)
@@ -42,11 +41,11 @@ export class BotPolicy {
     this.profiles = new Map(profiles.rows.map((r) => [r.username, r]))
     this.botIds = new Set(profiles.rows.map((r) => r.id))
     this.topics = new Map(topics.rows.map((r) => [r.slug, r]))
-    this.used = new Map(usage.rows.map((r) => [r.username, { post: Math.max(0, r.post), comment: r.comment, like: r.like }]))
+    this.used = new Map(usage.rows.map((r) => [r.username, { post: r.post, comment: r.comment, like: r.like }]))
     this.loadedAt = Date.now()
   }
 
-  // Persona dùng để viết nội dung: thông tin từ DB (admin sửa được), tone/major rơi về personas.json nếu DB trống
+  // Persona dùng để viết nội dung: thông tin từ DB (admin sửa được), tone/major rơi về personas.json nếu DB trống; soul chỉ có trong DB
   personaOf(username) {
     const p = this.profiles.get(username)
     const f = this.fallback.get(username)
@@ -56,7 +55,8 @@ export class BotPolicy {
       faculty: p?.faculty ?? f?.faculty ?? '',
       role: p?.role ?? f?.role ?? 'student',
       tone: p?.tone || f?.tone || '',
-      major: p?.major || f?.major || ''
+      major: p?.major || f?.major || '',
+      soul: p?.soul || ''
     }
   }
 
@@ -82,10 +82,6 @@ export class BotPolicy {
     return [...this.profiles.keys()].filter((u) => this.allows(u, action))
   }
 
-  feedPosters() {
-    return [...this.profiles.values()].filter((p) => p.enabled && p.feed_poster).map((p) => p.username).sort()
-  }
-
   topicsOf(username) {
     return (this.profiles.get(username)?.topics ?? []).map((s) => this.topics.get(s)).filter(Boolean)
   }
@@ -108,5 +104,18 @@ export class BotPolicy {
       [postId, userId]
     )
     return rowCount > 0
+  }
+
+  // Bình luận của người thật dưới bài của bot (3 ngày gần đây) mà bot chưa trả lời — cũ nhất trước
+  async pendingHumanComment(userId) {
+    const { rows } = await this.pool.query(
+      `SELECT c.id, c.post_id, c.content, p.title, p.content AS post_content
+       FROM comments c JOIN posts p ON p.id = c.post_id JOIN users a ON a.id = c.author_id
+       WHERE p.author_id = $1 AND c.author_id <> $1 AND NOT a.is_bot AND c.created_at > NOW() - INTERVAL '3 days'
+         AND NOT EXISTS (SELECT 1 FROM comments r WHERE r.parent_id = c.id AND r.author_id = $1)
+       ORDER BY c.created_at LIMIT 1`,
+      [userId]
+    )
+    return rows[0] ?? null
   }
 }

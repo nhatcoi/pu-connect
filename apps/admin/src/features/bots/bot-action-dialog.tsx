@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import type { AdminBotAccount, AdminBotCommandInput, AdminBotFeedItem, AdminBotOverview, BotCommandType } from '@pu/schemas'
+import type { AdminBotAccount, AdminBotCommandInput, AdminBotOverview, BotCommandType } from '@pu/schemas'
 import { adminApi } from '@/lib/api'
 import { Button, Dialog, Field, Input, Segmented, Select, Textarea } from '@/components/ui'
 import { Checkbox } from '@/components/ui/data'
@@ -11,7 +11,6 @@ const TYPE_LABEL: Record<BotCommandType, string> = { post: 'Đăng bài', commen
 export interface BotActionPreset {
   type?: BotCommandType
   bot?: string
-  feedItem?: AdminBotFeedItem
 }
 
 // datetime-local (giờ máy admin) → ISO; bỏ trống ⇒ chạy ngay
@@ -51,25 +50,23 @@ export function BotActionDialog({ preset, bots, onClose }: { preset: BotActionPr
   )
   if (!preset) return null
 
-  const feedItem = preset.feedItem
-  const hasText = !!feedItem || !!content.trim()
+  const hasText = !!content.trim()
   const scheduledAt = later ? toIso(when) : undefined
   const mode = enhance && hasText && type !== 'like' ? 'ai' : 'none'
 
   const build = (): AdminBotCommandInput => {
     if (type === 'like') return { type, bot, postId: postId.trim(), scheduledAt }
     if (type === 'comment') return { type, bot: bot || undefined, postId: postId.trim(), content: content.trim() || undefined, enhance: mode, scheduledAt }
-    if (feedItem) return { type, bot, feedItemId: feedItem.id, enhance: mode, scheduledAt }
     return { type, bot: bot || undefined, title: title.trim() || undefined, content: content.trim() || undefined, topic: content.trim() ? undefined : topic.trim() || undefined, enhance: mode, scheduledAt }
   }
-  const missing = (type === 'like' || !!feedItem) && !bot ? 'Chọn bot' : type !== 'post' && !postId.trim() ? 'Nhập ID bài viết' : later && !when ? 'Chọn giờ hẹn' : ''
+  const missing = type === 'like' && !bot ? 'Chọn bot' : type !== 'post' && !postId.trim() ? 'Nhập ID bài viết' : later && !when ? 'Chọn giờ hẹn' : ''
 
   return (
     <Dialog
       open
       onClose={onClose}
       size="lg"
-      title={feedItem ? 'Giao bài crawl cho bot' : 'Giao việc cho bot'}
+      title="Giao việc cho bot"
       description="Bỏ qua hạn mức ngày; bot đang tắt thì không chạy."
       footer={
         <>
@@ -83,11 +80,11 @@ export function BotActionDialog({ preset, bots, onClose }: { preset: BotActionPr
       }
     >
       <div className="space-y-4">
-        {!feedItem && <Segmented value={type} onChange={setType} items={(Object.keys(TYPE_LABEL) as BotCommandType[]).map((id) => ({ id, label: TYPE_LABEL[id] }))} />}
+        <Segmented value={type} onChange={setType} items={(Object.keys(TYPE_LABEL) as BotCommandType[]).map((id) => ({ id, label: TYPE_LABEL[id] }))} />
 
-        <Field label="Bot" hint={type === 'like' || feedItem ? 'Bắt buộc' : 'Để trống = bot đủ điều kiện ngẫu nhiên'}>
+        <Field label="Bot" hint={type === 'like' ? 'Bắt buộc' : 'Để trống = bot đủ điều kiện ngẫu nhiên'}>
           <Select value={bot} onChange={(e) => setBot(e.target.value)}>
-            <option value="">{type === 'like' || feedItem ? 'Chọn bot…' : 'Ngẫu nhiên'}</option>
+            <option value="">{type === 'like' ? 'Chọn bot…' : 'Ngẫu nhiên'}</option>
             {bots.map((b) => (
               <option key={b.id} value={b.username}>
                 {b.displayName} (@{b.username}){b.profile.enabled ? '' : ' — đang tắt'}
@@ -102,21 +99,19 @@ export function BotActionDialog({ preset, bots, onClose }: { preset: BotActionPr
           </Field>
         )}
 
-        {feedItem && <p className="line-clamp-5 whitespace-pre-line rounded-md border border-border bg-muted/40 p-3 text-sm">{feedItem.content}</p>}
-
-        {type === 'post' && !feedItem && (
+        {type === 'post' && (
           <Field label="Tiêu đề" hint="Tùy chọn">
             <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
           </Field>
         )}
 
-        {type !== 'like' && !feedItem && (
-          <Field label="Nội dung" hint="Để trống = AI tự viết theo chủ đề của bot">
+        {type !== 'like' && (
+          <Field label="Nội dung" hint="Để trống = AI tự viết theo soul + chủ đề của bot">
             <Textarea rows={5} value={content} onChange={(e) => setContent(e.target.value)} maxLength={5000} />
           </Field>
         )}
 
-        {type === 'post' && !feedItem && !content.trim() && (
+        {type === 'post' && !content.trim() && (
           <Field label="Gợi ý chủ đề" hint="Tùy chọn, trong chủ đề của bot">
             <Input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={200} placeholder="VD: mẹo ôn thi cuối kỳ" />
           </Field>

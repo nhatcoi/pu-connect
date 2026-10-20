@@ -10,10 +10,10 @@ const PHONE = /(?:\+?84|0)[\s.-]?\d{2,3}[\s.-]?\d{3}[\s.-]?\d{3,4}\b/g
 const PLATE = /\b\d{2}[A-Z]{1,2}[-\s]?\d{3}\.?\d{2}\b/g
 const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/g
 
-export type FeedFilterResult = { content: string; hash: string } | { reason: 'too_short' | 'too_long' | 'blocked_keyword' }
+export type ImportFilterResult = { content: string; hash: string } | { reason: 'too_short' | 'too_long' | 'blocked_keyword' }
 
 // Bỏ link Facebook, che SĐT/biển số/email, chuẩn hóa dòng trống
-export function cleanFeedContent(raw: string): string {
+export function cleanImportContent(raw: string): string {
   return raw
     .normalize('NFC')
     .replace(FB_LINK, '')
@@ -27,7 +27,7 @@ export function cleanFeedContent(raw: string): string {
 }
 
 // Băm theo nội dung đã chuẩn hóa (không dấu cách/dấu câu/hoa thường) ⇒ cùng nội dung chỉ khác định dạng vẫn bị coi là trùng
-export function feedContentHash(content: string): string {
+export function importContentHash(content: string): string {
   const normalized = content
     .toLowerCase()
     .normalize('NFC')
@@ -35,11 +35,11 @@ export function feedContentHash(content: string): string {
   return createHash('sha256').update(normalized).digest('hex')
 }
 
-export function filterFeedContent(raw: string): FeedFilterResult {
-  const content = cleanFeedContent(raw)
+export function filterImportContent(raw: string): ImportFilterResult {
+  const content = cleanImportContent(raw)
   if (content.length < MIN_LENGTH) return { reason: 'too_short' }
   if (content.length > MAX_LENGTH) return { reason: 'too_long' }
   const lower = content.toLowerCase()
   if (BLOCKED.some((k) => lower.includes(k))) return { reason: 'blocked_keyword' }
-  return { content, hash: feedContentHash(content) }
+  return { content, hash: importContentHash(content) }
 }

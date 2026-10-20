@@ -70,9 +70,14 @@ export class ContentGenerator {
     return null
   }
 
+  // Dòng giọng văn + soul chèn vào system prompt. Soul chỉ định tính cách/cách nhìn, KHÔNG phải nguồn sự kiện để bịa.
+  voice(persona) {
+    return `${persona.tone ? `\nGiọng văn: ${persona.tone}.` : ''}${persona.soul ? `\nLinh hồn của bạn (tính cách, sở thích, cách viết — hãy viết đúng chất này, nhưng không biến nó thành sự kiện/trải nghiệm có thật): ${persona.soul}` : ''}`
+  }
+
   // Bài đăng trong 1 chủ đề được phép: kiến thức chung, không bịa trải nghiệm/số liệu cá nhân, không ảnh ngẫu nhiên
   async generatePost(persona, topic, hint = null) {
-    const system = `Bạn viết bài cho mạng xã hội học thuật của Đại học Phenikaa, dưới tài khoản "${persona.displayName}" (khoa ${persona.faculty}, vai trò ${persona.role}).${persona.tone ? `\nGiọng văn: ${persona.tone}.` : ''}
+    const system = `Bạn viết bài cho mạng xã hội học thuật của Đại học Phenikaa, dưới tài khoản "${persona.displayName}" (khoa ${persona.faculty}, vai trò ${persona.role}).${this.voice(persona)}
 Quy tắc bắt buộc:
 - Chỉ viết đúng chủ đề: "${topic.label}". Không lạc sang chủ đề khác.
 - Chỉ chia sẻ kiến thức, mẹo, hướng dẫn chung, chính xác và hữu ích. KHÔNG bịa trải nghiệm cá nhân, số liệu, sự kiện, tên người, tên môn/lớp cụ thể.
@@ -93,7 +98,7 @@ Quy tắc bắt buộc:
 
   // Bình luận bám sát nội dung bài; trả null nếu không có gì hữu ích để thêm
   async generateComment(post, persona, topicLabels = []) {
-    const system = `Bạn là "${persona.displayName}" (khoa ${persona.faculty}, ${persona.role}) bình luận trên mạng xã hội trường Đại học Phenikaa.
+    const system = `Bạn là "${persona.displayName}" (khoa ${persona.faculty}, ${persona.role}) bình luận trên mạng xã hội trường Đại học Phenikaa.${this.voice(persona)}
 Quy tắc bắt buộc:
 - Bạn CHỈ được bình luận về các chủ đề: ${topicLabels.join('; ') || 'không có'}. Nếu bài không thuộc các chủ đề này (chuyện cá nhân, đời thường, quảng cáo, tuyển dụng, rao vặt…), trả về đúng một từ: ${SKIP}
 - Chỉ bình luận khi bạn thật sự có điều cụ thể và hữu ích để thêm (bổ sung, hỏi làm rõ, nêu lưu ý) dựa trên NỘI DUNG bài. Nếu không, trả về đúng một từ: ${SKIP}
@@ -103,9 +108,9 @@ Quy tắc bắt buộc:
     return this.cleanShort(await this.generateWithLLM(prompt, system, { temperature: 0.5 }))
   }
 
-  // Trả lời một bình luận (chỉ dùng cho bình luận của chính các bot)
+  // Trả lời một bình luận (của bot khác, hoặc của người thật dưới bài của chính bot)
   async generateReply(post, persona, targetComment, topicLabels = []) {
-    const system = `Bạn là "${persona.displayName}" (khoa ${persona.faculty}) trả lời một bình luận dưới bài viết trên mạng xã hội trường.
+    const system = `Bạn là "${persona.displayName}" (khoa ${persona.faculty}) trả lời một bình luận dưới bài viết trên mạng xã hội trường.${this.voice(persona)}
 Quy tắc: chỉ nói về các chủ đề: ${topicLabels.join('; ') || 'không có'}; ngoài chủ đề thì trả về ${SKIP}. Chỉ trả lời nếu có điều cụ thể, hữu ích bám sát bài và bình luận; nếu không, trả về đúng một từ: ${SKIP}. 1–2 câu, không bịa, không khen chung chung, không @mention.`
     const prompt = `Bài viết: ${String(post.content || '').slice(0, 600)}\n\nBình luận cần trả lời: ${String(targetComment.content || '').slice(0, 400)}`
     return this.cleanShort(await this.generateWithLLM(prompt, system, { temperature: 0.5 }))
@@ -114,7 +119,7 @@ Quy tắc: chỉ nói về các chủ đề: ${topicLabels.join('; ') || 'không
   // Viết lại nội dung do admin đưa cho tự nhiên, giữ nguyên sự thật; trả null nếu AI lỗi
   async enhance(text, persona, kind) {
     const what = kind === 'post' ? 'bài đăng' : 'bình luận'
-    const system = `Bạn biên tập ${what} cho mạng xã hội của Đại học Phenikaa, đăng dưới tài khoản "${persona.displayName}".
+    const system = `Bạn biên tập ${what} cho mạng xã hội của Đại học Phenikaa, đăng dưới tài khoản "${persona.displayName}".${this.voice(persona)}
 Quy tắc bắt buộc: giữ NGUYÊN mọi sự thật, số liệu, ngày giờ, tên riêng; KHÔNG thêm thông tin mới; không link, SĐT, email; giọng tự nhiên, gọn, tiếng Việt; ${kind === 'post' ? 'giữ Markdown, có thể xuống dòng/gạch đầu dòng' : '1–3 câu'}. Chỉ trả về nội dung đã viết lại, không giải thích.`
     const out = await this.generateWithLLM(String(text).slice(0, 4000), system, { temperature: 0.4 })
     if (!out) return null

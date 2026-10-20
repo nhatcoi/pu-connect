@@ -5,7 +5,7 @@ import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminBotsService } from './admin-bots.service'
-import { BotImportService } from './bot-feed/bot-import.service'
+import { BotImportService } from './bot-import/bot-import.service'
 import {
   BotAccountCreateSchema,
   BotImportBodySchema,
@@ -14,12 +14,9 @@ import {
   BotActivityQuerySchema,
   BotCommandBodySchema,
   BotControlBodySchema,
-  BotFeedActionBodySchema,
-  BotFeedQuerySchema,
   BotProfileBodySchema,
   BotTopicBodySchema,
-  type BotActivityQuery,
-  type BotFeedQuery
+  type BotActivityQuery
 } from './dto/admin-bots.dto'
 
 const USERNAME = /^[a-zA-Z0-9._]{1,40}$/
@@ -41,16 +38,6 @@ export class AdminBotsController {
   @Get('activity')
   activity(@Query(new ZodValidationPipe(BotActivityQuerySchema)) q: BotActivityQuery) {
     return this.bots.activity(q)
-  }
-
-  @Get('feed')
-  feed(@Query(new ZodValidationPipe(BotFeedQuerySchema)) q: BotFeedQuery) {
-    return this.bots.feedItems(q)
-  }
-
-  @Patch('feed/:id')
-  reviewFeed(@Param('id', ParseIntPipe) id: number, @Body(new ZodValidationPipe(BotFeedActionBodySchema)) body: { action: 'approve' | 'reject' }, @Req() req: Request) {
-    return this.bots.reviewFeedItem(requireUserId(req), id, body.action)
   }
 
   @Patch('control')

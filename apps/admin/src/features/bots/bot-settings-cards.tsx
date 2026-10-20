@@ -8,18 +8,17 @@ import { useBotMutation } from './use-bots'
 
 const AI_MODELS = ['v10', 'v9', 'puc-fast']
 
-// AI dùng để duyệt/viết lại dữ liệu crawl và sinh nội dung. Key API nằm ở env của server, không nhập ở đây.
+// AI dùng để tự viết bài/bình luận và viết lại nội dung import. Key API nằm ở env của server, không nhập ở đây.
 export function AiConfigCard({ data }: { data: AdminBotOverview }) {
   const [custom, setCustom] = useState(!AI_MODELS.includes(data.ai.model))
   const [model, setModel] = useState(data.ai.model)
   const [baseUrl, setBaseUrl] = useState(data.ai.baseUrl ?? '')
   const save = useBotMutation((v: { aiModel: string; aiBaseUrl: string | null }) => adminApi.patch<AdminBotOverview>('/admin/bots/control', v))
-  const feedReview = useBotMutation((feedReview: boolean) => adminApi.patch<AdminBotOverview>('/admin/bots/control', { feedReview }))
   const dirty = model !== data.ai.model || (baseUrl.trim() || null) !== data.ai.baseUrl
 
   return (
     <Card>
-      <CardHeader title="AI duyệt & viết nội dung" description="Dữ liệu crawl phải qua AI: chọn chủ đề, loại bài không sạch, viết lại trung lập. Bình luận/bài tự sinh cũng dùng model này." />
+      <CardHeader title="AI viết nội dung" description="Model dùng khi bot tự đăng theo soul, bình luận/trả lời, và khi “AI viết lại” nội dung import." />
       <div className="space-y-4 p-4 pt-0">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Model" hint="api-ai.vnhat.dev">
@@ -44,13 +43,7 @@ export function AiConfigCard({ data }: { data: AdminBotOverview }) {
             <Input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api-ai.vnhat.dev/v1" />
           </Field>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox checked={data.feedReview} onChange={(v) => feedReview.mutate(v)} label="Admin duyệt tay" />
-            <span>
-              <span className="font-medium">Admin duyệt tay</span> <span className="text-muted-foreground">— bài AI đã duyệt vẫn chờ bạn bấm Duyệt mới đăng</span>
-            </span>
-          </label>
+        <div className="flex justify-end">
           <Button variant="primary" disabled={!dirty || !model.trim()} loading={save.isPending} onClick={() => save.mutate({ aiModel: model.trim(), aiBaseUrl: baseUrl.trim() || null })}>
             Lưu AI
           </Button>
@@ -70,7 +63,7 @@ export function TopicsCard({ topics }: { topics: AdminBotTopic[] }) {
 
   return (
     <Card>
-      <CardHeader title={`Chủ đề được phép (${topics.length})`} description="Bài của bot và dữ liệu crawl chỉ được đăng/tương tác nếu thuộc một chủ đề đang bật. Từ khóa cách nhau bằng dấu phẩy." />
+      <CardHeader title={`Chủ đề được phép (${topics.length})`} description="Bot chỉ đăng/tương tác trong chủ đề được cấp và đang bật. Từ khóa cách nhau bằng dấu phẩy." />
       <div className="divide-y divide-border border-t border-border">
         {topics.map((t) => (
           <div key={t.slug} className="flex items-start gap-3 px-4 py-2.5 text-sm">

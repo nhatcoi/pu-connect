@@ -5,7 +5,6 @@ export type BotSpeed = (typeof BOT_SPEEDS)[number]
 
 export type BotCommandType = 'post' | 'comment' | 'like'
 export type BotCommandStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled'
-export type BotFeedStatus = 'new' | 'review' | 'approved' | 'rejected' | 'scheduled' | 'posted' | 'skipped'
 // AI viết lại nội dung trước khi bot đăng (none = giữ nguyên)
 export type BotEnhance = 'none' | 'ai'
 export const BOT_ROLES = ['student', 'lecturer', 'ta'] as const
@@ -26,8 +25,6 @@ export interface BotProfile {
   canLike: boolean
   // Được tương tác bài của người thật (mặc định chỉ giữa các bot)
   interactHumans: boolean
-  // Đăng bài từ dữ liệu crawl (thay phiên với bot khác cùng bật)
-  feedPoster: boolean
   maxPostsPerDay: number
   maxCommentsPerDay: number
   maxLikesPerDay: number
@@ -42,6 +39,8 @@ export interface AdminBotAccount {
   bio: string
   tone: string
   major: string
+  // Linh hồn: tính cách, sở thích, cách viết — AI bám theo khi tự đăng/bình luận
+  soul: string
   profile: BotProfile
   usedToday: { post: number; comment: number; like: number }
   lastActionAt: string | null
@@ -66,27 +65,7 @@ export interface AdminBotCommand {
   finishedAt: string | null
 }
 
-export interface AdminBotFeedStats {
-  byStatus: Record<BotFeedStatus, number>
-  posted24h: number
-  lastPostedAt: string | null
-}
-
-export interface AdminBotFeedItem {
-  id: string
-  status: BotFeedStatus
-  topic: string | null
-  content: string
-  rawContent: string | null
-  imageCount: number
-  // Lý do/ghi chú của AI duyệt
-  verdict: { reason?: string; model?: string } | null
-  postedBy: string | null
-  createdAt: string
-  postedAt: string | null
-}
-
-// AI dùng để duyệt/viết lại dữ liệu crawl và sinh nội dung (key nằm ở env, không lưu DB)
+// AI dùng để sinh/viết lại nội dung (key nằm ở env, không lưu DB)
 export interface AdminBotAi {
   model: string
   baseUrl: string | null
@@ -94,11 +73,6 @@ export interface AdminBotAi {
 
 export interface AdminBotOverview {
   enabled: boolean
-  // Đăng bài từ dữ liệu crawl
-  feedEnabled: boolean
-  // Bài AI đã duyệt vẫn chờ admin bấm Duyệt trước khi đăng
-  feedReview: boolean
-  feed: AdminBotFeedStats
   ai: AdminBotAi
   speed: BotSpeed
   // Daemon có heartbeat trong 30 giây gần nhất
@@ -122,8 +96,6 @@ export interface AdminBotActivity {
 
 export type AdminBotControlInput = {
   enabled?: boolean
-  feedEnabled?: boolean
-  feedReview?: boolean
   speed?: BotSpeed
   aiModel?: string
   aiBaseUrl?: string | null
@@ -133,26 +105,24 @@ export type AdminBotProfileInput = Partial<BotProfile>
 
 export type AdminBotTopicInput = { slug: string; label: string; keywords: string[]; enabled: boolean }
 
-export type AdminBotFeedAction = 'approve' | 'reject'
-
 // Tạo/sửa tài khoản bot (mật khẩu do hệ thống cấp, không nhập từ UI)
-export type AdminBotAccountInput = { username: string; displayName: string; role: BotRole; faculty: string; bio?: string; tone?: string; major?: string }
+export type AdminBotAccountInput = { username: string; displayName: string; role: BotRole; faculty: string; bio?: string; tone?: string; major?: string; soul?: string }
 export type AdminBotAccountUpdate = Partial<Omit<AdminBotAccountInput, 'username'>>
 
 // Hành động giao cho bot. scheduledAt: ISO, bỏ trống/quá khứ ⇒ chạy ngay.
-// post: content (viết tay) | feedItemId (từ kho crawl) | không có gì ⇒ AI tự sinh theo chủ đề của bot
+// post: content (viết tay/Excel) | không có gì ⇒ AI tự sinh theo soul + chủ đề của bot
 export type AdminBotCommandInput =
-  | { type: 'post'; bot?: string; topic?: string; title?: string; content?: string; feedItemId?: string; enhance?: BotEnhance; scheduledAt?: string }
+  | { type: 'post'; bot?: string; topic?: string; title?: string; content?: string; enhance?: BotEnhance; scheduledAt?: string }
   | { type: 'comment'; postId: string; bot?: string; content?: string; enhance?: BotEnhance; scheduledAt?: string }
   | { type: 'like'; postId: string; bot: string; scheduledAt?: string }
 
-// ── Import Excel/CSV vào kho nội dung bot ─────────────────────────────
+// ── Import Excel/CSV thành lịch đăng của bot ─────────────────────────────
 
 // Cột chuẩn của file import (tool crawl hoặc Excel tự soạn đều phải ra các cột này)
 export const BOT_IMPORT_FIELDS = ['content', 'key', 'title', 'images', 'topic', 'bot', 'scheduledAt', 'enhance'] as const
 export type BotImportField = (typeof BOT_IMPORT_FIELDS)[number]
 
-// Một dòng đã chuẩn hóa. bot + scheduledAt ⇒ bot đó đăng đúng giờ; bot không giờ ⇒ giãn cách; không bot ⇒ vào kho (AI duyệt/xoay vòng).
+// Một dòng đã chuẩn hóa = một bài hẹn giờ. Có giờ ⇒ đăng đúng giờ; không giờ ⇒ giãn cách. Không bot ⇒ hệ thống chia đều cho bot được phép đăng (đúng chủ đề nếu có).
 export interface BotImportRow {
   content: string
   key?: string
@@ -174,7 +144,9 @@ export interface BotImportRowResult {
   // Cảnh báo không chặn (vd ảnh tải lỗi nên bỏ ảnh)
   warning?: string
   // Dòng sẽ được xử lý thế nào nếu hợp lệ
-  plan?: 'now' | 'scheduled' | 'pool'
+  plan?: 'now' | 'scheduled'
+  // Bot được giao (tự chia khi dòng không ghi bot)
+  bot?: string
 }
 
 export interface BotImportResult {
@@ -186,7 +158,7 @@ export interface BotImportResult {
 export interface BotImportInput {
   rows: Record<string, unknown>[]
   dryRun: boolean
-  // Phút giữa các bài của dòng có bot nhưng không có giờ
+  // Phút giữa các bài không có giờ hẹn
   spacingMinutes?: number
 }
 

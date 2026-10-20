@@ -12,10 +12,10 @@ import { AdminUserDataService } from './admin-user-data.service'
 import { AdminRiskService } from './admin-risk.service'
 import { AdminUnitsController } from './admin-units.controller'
 import { AdminUnitsService } from './admin-units.service'
-import { BotFeedController } from './bot-feed/bot-feed.controller'
-import { BotFeedService } from './bot-feed/bot-feed.service'
-import { BotImportService } from './bot-feed/bot-import.service'
-import { BotIngestGuard } from './bot-feed/bot-ingest.guard'
+import { BotIngestController } from './bot-import/bot-ingest.controller'
+import { BotImageUploadService } from './bot-import/bot-image-upload.service'
+import { BotImportService } from './bot-import/bot-import.service'
+import { BotIngestGuard } from './bot-import/bot-ingest.guard'
 import { StorageModule } from '../storage/storage.module'
 import { AdminBotsController } from './admin-bots.controller'
 import { AdminBotsService } from './admin-bots.service'
@@ -23,7 +23,7 @@ import { AdminGuard } from './admin.guard'
 
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule],
-  controllers: [AdminController, AdminBotsController, BotFeedController, AdminUnitsController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotFeedService, BotImportService, BotIngestGuard, AdminUnitsService, AdminGuard]
+  controllers: [AdminController, AdminBotsController, BotIngestController, AdminUnitsController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminGuard]
 })
 export class AdminModule {}

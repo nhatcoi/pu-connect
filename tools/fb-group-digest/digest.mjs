@@ -1,5 +1,5 @@
-// Personal tool: pull latest posts of a Facebook group into a daily markdown digest.
-// Công cụ cá nhân: lấy bài mới của group Facebook thành bản tin markdown mỗi ngày.
+// Personal tool: pull latest posts of a Facebook group into a daily digest (md/json) + Excel for Admin → Bot → Import.
+// Công cụ cá nhân (tách khỏi hệ bot): lấy bài mới của group Facebook ra bản tin md/json + file Excel để import vào Admin → Bot.
 // Uses your own logged-in browser profile; no password stored. Use at your own risk (FB ToS).
 import { chromium } from 'playwright'
 import writeExcelFile from 'write-excel-file/node'
@@ -15,10 +15,9 @@ const GROUP = process.env.FB_GROUP_ID || '276158668840731'
 const MAX_POSTS = Number(process.env.MAX_POSTS || 30)
 const MAX_SCROLLS = Number(process.env.MAX_SCROLLS || 12)
 const MAX_AGE_HOURS = Number(process.env.MAX_AGE_HOURS || 36)
-const INGEST_URL = process.env.BOT_INGEST_URL // vd https://puc.vnhat.dev/api/bots/ingest
+const INGEST_URL = process.env.BOT_INGEST_URL // vd https://puc.vnhat.dev/api/bots/ingest — chỉ dùng để đưa ảnh lên R2
 const INGEST_TOKEN = process.env.BOT_INGEST_TOKEN
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
-const exportXlsx = process.argv.includes('--export')
 const login = process.argv.includes('--login')
 const headed = login || process.argv.includes('--headed')
 
@@ -61,18 +60,6 @@ async function downloadImages(request, urls) {
     }
   }
   return files
-}
-
-// Đẩy 1 bài lên hàng đợi bot (multipart: key, content, images). Trả status của server / Push one item to the bot queue
-async function pushToBots(item, files) {
-  const form = new FormData()
-  form.set('key', item.key)
-  form.set('content', item.text)
-  for (const f of files) form.append('images', new Blob([f.body], { type: f.type }), f.name)
-  const res = await fetch(INGEST_URL, { method: 'POST', headers: { 'x-bot-ingest-token': INGEST_TOKEN }, body: form })
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const json = await res.json()
-  return (json.data ?? json).status
 }
 
 // Tải ảnh lên R2 qua server để file Excel có URL bền (URL ảnh Facebook hết hạn); không có token thì để trống
@@ -162,33 +149,14 @@ const fresh = [...collected.values()].filter((p) => {
   return !seen.has(p.key) && (h === null || h <= MAX_AGE_HOURS)
 })
 
-// Đẩy lên hàng đợi bot; bài đẩy lỗi mạng thì KHÔNG đánh dấu đã thấy để lần sau thử lại
-const failed = new Set()
-if (exportXlsx) {
-  // Chế độ xuất Excel: không đẩy lên bot, admin tự import ở Admin → Bot
-  for (const p of fresh) {
-    try {
-      p.imageUrls = await uploadImages(await downloadImages(ctx.request, p.images))
-    } catch (err) {
-      p.imageUrls = []
-      console.error(`Tải ảnh bài ${p.key} lỗi: ${err.message}`)
-    }
+// Mỗi bài: tải ảnh, đưa lên R2 lấy URL bền (nếu có token); lỗi ảnh thì bài vẫn xuất, không ảnh
+for (const p of fresh) {
+  try {
+    p.imageUrls = await uploadImages(await downloadImages(ctx.request, p.images))
+  } catch (err) {
+    p.imageUrls = []
+    console.error(`Tải ảnh bài ${p.key} lỗi: ${err.message}`)
   }
-} else if (INGEST_URL && INGEST_TOKEN) {
-  const counts = { queued: 0, duplicate: 0, rejected: 0 }
-  for (const p of fresh) {
-    try {
-      const files = await downloadImages(ctx.request, p.images)
-      const status = await pushToBots(p, files)
-      counts[status] = (counts[status] ?? 0) + 1
-    } catch (err) {
-      failed.add(p.key)
-      console.error(`Đẩy bài ${p.key} lỗi: ${err.message}`)
-    }
-  }
-  console.log(`Đã đẩy lên bot: ${counts.queued} mới · ${counts.duplicate} trùng · ${counts.rejected} bị lọc · ${failed.size} lỗi`)
-} else {
-  console.log('Chưa đặt BOT_INGEST_URL / BOT_INGEST_TOKEN ⇒ chỉ lưu file local.')
 }
 await ctx.close()
 
@@ -204,9 +172,7 @@ fresh.forEach((p, i) => {
 await mkdir(OUT, { recursive: true })
 await writeFile(path.join(OUT, `${date}.md`), lines.join('\n'))
 await writeFile(path.join(OUT, `${date}.json`), JSON.stringify(fresh, null, 2))
-await writeFile(STATE, JSON.stringify({ seen: [...seen, ...fresh.filter((p) => !failed.has(p.key)).map((p) => p.key)].slice(-2000) }))
-if (exportXlsx) {
-  await writeXlsx(fresh, path.join(OUT, `${date}.xlsx`))
-  console.log(`Đã xuất Excel: ${fresh.length} bài → out/${date}.xlsx (import ở Admin → Bot → Nội dung & hành động → Import Excel)`)
-}
+await writeFile(STATE, JSON.stringify({ seen: [...seen, ...fresh.map((p) => p.key)].slice(-2000) }))
+await writeXlsx(fresh, path.join(OUT, `${date}.xlsx`))
+console.log(`Đã xuất Excel: ${fresh.length} bài → out/${date}.xlsx (import ở Admin → Bot → Import Excel)`)
 console.log(`Xong: ${fresh.length} bài mới → out/${date}.md`)

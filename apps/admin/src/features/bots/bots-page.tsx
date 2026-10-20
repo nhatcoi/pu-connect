@@ -6,7 +6,7 @@ import { Badge, Button, Card, CardHeader, Field, LoadingRows, PageHeader, Segmen
 import { BotAccountsTab } from './bot-accounts-tab'
 import { BotActionDialog, type BotActionPreset } from './bot-action-dialog'
 import { BotActivityLog } from './bot-activity-log'
-import { BotContentTab } from './bot-content-tab'
+import { BotScheduleCard } from './bot-schedule-card'
 import { AiConfigCard, TopicsCard } from './bot-settings-cards'
 import { useBotMutation, useBotOverview } from './use-bots'
 
@@ -21,7 +21,7 @@ export function BotsPage() {
     <>
       <PageHeader
         title="Bot"
-        description="Bot chỉ làm việc admin cho phép: đúng chủ đề, có hạn mức mỗi ngày, không chen vào cuộc trò chuyện của người thật. Bot chạy ở tiến trình riêng; trang này chỉ điều khiển."
+        description="Tạo bot, viết soul, cấp quyền. Bot tự đăng theo soul hoặc theo lịch import từ Excel, và tương tác (bình luận, thả tim) với bot khác và người thật. Chỉ làm đúng chủ đề, trong hạn mức ngày. Tool crawl dữ liệu là phần riêng, ra file Excel."
       />
 
       {overview.isPending || !data ? (
@@ -34,7 +34,7 @@ export function BotsPage() {
             <AiConfigCard key={`${data.ai.model}|${data.ai.baseUrl}`} data={data} />
             <TopicsCard topics={data.topics} />
           </div>
-          <BotContentTab data={data} onAct={setAction} />
+          <BotScheduleCard data={data} onAct={setAction} />
           <BotActivityLog bots={data.bots.map((b) => b.username)} />
         </div>
       )}
@@ -44,7 +44,7 @@ export function BotsPage() {
   )
 }
 
-// Công tắc daemon, tốc độ, đăng bài crawl
+// Công tắc daemon (tự đăng + tương tác), tốc độ, thống kê
 function ControlCards({ data }: { data: AdminBotOverview }) {
   const control = useBotMutation((body: Parameters<typeof adminApi.patch>[1]) => adminApi.patch<AdminBotOverview>('/admin/bots/control', body))
   return (
@@ -83,25 +83,6 @@ function ControlCards({ data }: { data: AdminBotOverview }) {
           </div>
         </div>
       </Card>
-
-      <Card>
-        <CardHeader
-          title={
-            <span className="flex items-center gap-2">
-              Đăng bài từ dữ liệu crawl
-              <Badge tone={data.feedEnabled ? 'primary' : 'neutral'}>{data.feedEnabled ? 'Đang bật' : 'Tắt'}</Badge>
-            </span>
-          }
-          description="Các bot được bật “đăng bài từ dữ liệu crawl” thay phiên đăng 1 bài đã được AI duyệt mỗi 30–120 phút (kèm ảnh nếu có, không link Facebook, không trùng), nghỉ 00:00–06:00."
-          action={
-            <Button variant={data.feedEnabled ? 'outline' : 'primary'} loading={control.isPending} onClick={() => control.mutate({ feedEnabled: !data.feedEnabled })}>
-              {data.feedEnabled ? <Pause /> : <Play />}
-              {data.feedEnabled ? 'Tạm dừng' : 'Bật đăng bài'}
-            </Button>
-          }
-        />
-      </Card>
-
     </div>
   )
 }

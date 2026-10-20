@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "login": "node --env-file-if-exists=.env digest.mjs --login",
-    "digest": "node --env-file-if-exists=.env digest.mjs",
-    "export": "node --env-file-if-exists=.env digest.mjs --export"
+    "digest": "node --env-file-if-exists=.env digest.mjs"
   },
   "dependencies": {
     "playwright": "1.49.1",

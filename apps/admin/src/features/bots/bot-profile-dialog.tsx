@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/data'
 type Draft = Required<AdminBotProfileInput>
 
 const FLAGS: { key: 'canPost' | 'canComment' | 'canLike'; label: string; hint: string }[] = [
-  { key: 'canPost', label: 'Đăng bài tự sinh', hint: 'AI viết bài trong chủ đề được phép' },
+  { key: 'canPost', label: 'Đăng bài', hint: 'AI tự viết theo soul trong chủ đề được phép; cũng là điều kiện để được chia bài import' },
   { key: 'canComment', label: 'Bình luận', hint: 'Chỉ bình luận bài liên quan chủ đề, bám nội dung' },
   { key: 'canLike', label: 'Thả tim', hint: 'Chỉ bài liên quan chủ đề' }
 ]
@@ -73,13 +73,7 @@ export function BotProfileDialog({
             <label className="flex items-start gap-2 text-sm">
               <Checkbox checked={draft.interactHumans} onChange={(v) => set('interactHumans', v)} label="Tương tác bài người thật" className="mt-0.5" />
               <span>
-                <span className="font-medium">Tương tác bài của người thật</span> <span className="text-muted-foreground">— tắt: chỉ tương tác với bài của bot. Bot không bao giờ trả lời bình luận của người thật.</span>
-              </span>
-            </label>
-            <label className="flex items-start gap-2 text-sm">
-              <Checkbox checked={draft.feedPoster} onChange={(v) => set('feedPoster', v)} label="Đăng bài từ dữ liệu crawl" className="mt-0.5" />
-              <span>
-                <span className="font-medium">Đăng bài từ dữ liệu crawl</span> <span className="text-muted-foreground">— thay phiên với các bot khác cùng bật</span>
+                <span className="font-medium">Tương tác bài của người thật</span> <span className="text-muted-foreground">— tắt: chỉ tương tác với bot. Bật: bình luận/thả tim bài người thật liên quan chủ đề và trả lời người thật bình luận dưới bài của chính bot.</span>
               </span>
             </label>
           </div>

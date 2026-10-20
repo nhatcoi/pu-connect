@@ -9,7 +9,7 @@ export const IMPORT_COLUMNS: { field: BotImportField; header: string; label: str
   { field: 'title', header: 'title', label: 'Tiêu đề', hint: 'Tùy chọn', aliases: ['title', 'tieude', 'ten', 'tenbai', 'headline'] },
   { field: 'images', header: 'images', label: 'Ảnh', hint: 'URL https, nhiều ảnh cách nhau bằng xuống dòng hoặc |', aliases: ['images', 'image', 'anh', 'hinhanh', 'linkanh', 'photo', 'photos', 'imageurls'] },
   { field: 'topic', header: 'topic', label: 'Chủ đề', hint: 'Mã hoặc tên chủ đề đã có', aliases: ['topic', 'chude', 'category', 'danhmuc'] },
-  { field: 'bot', header: 'bot', label: 'Bot đăng', hint: 'Username bot; bỏ trống = vào kho cho AI/xoay vòng', aliases: ['bot', 'botdang', 'nguoidang', 'username', 'account', 'taikhoan'] },
+  { field: 'bot', header: 'bot', label: 'Bot đăng', hint: 'Username bot; bỏ trống = tự chia đều cho bot được phép đăng', aliases: ['bot', 'botdang', 'nguoidang', 'username', 'account', 'taikhoan'] },
   { field: 'scheduledAt', header: 'scheduled_at', label: 'Giờ đăng', hint: 'VD 2026-10-21 08:30 hoặc 21/10/2026 08:30', aliases: ['scheduledat', 'scheduled', 'gio', 'giodang', 'thoigian', 'hengio', 'ngaydang', 'time', 'date', 'postat', 'publishat'] },
   { field: 'enhance', header: 'enhance', label: 'AI viết lại', hint: 'ai / none (có/không)', aliases: ['enhance', 'ai', 'aiviet', 'vietlai', 'aienhance', 'rewrite'] }
 ]

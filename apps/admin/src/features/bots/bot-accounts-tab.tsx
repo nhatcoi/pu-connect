@@ -10,7 +10,7 @@ import { BotProfileDialog } from './bot-profile-dialog'
 import { useBotMutation } from './use-bots'
 
 function permissions(p: BotProfile): string[] {
-  return [p.canPost && 'đăng bài', p.canComment && 'bình luận', p.canLike && 'thả tim', p.feedPoster && 'đăng crawl'].filter(Boolean) as string[]
+  return [p.canPost && 'đăng bài', p.canComment && 'bình luận', p.canLike && 'thả tim'].filter(Boolean) as string[]
 }
 
 // CRUD tài khoản bot + quyền/chủ đề/hạn mức + giao việc
@@ -28,7 +28,7 @@ export function BotAccountsTab({ data, onAct }: { data: AdminBotOverview; onAct:
     }
   )
   const saveAccount = useBotMutation(
-    (v: AdminBotAccountInput) => (account?.bot ? adminApi.patch<AdminBotOverview>(`/admin/bots/accounts/${account.bot.username}`, { displayName: v.displayName, role: v.role, faculty: v.faculty, bio: v.bio, tone: v.tone, major: v.major }) : adminApi.post<AdminBotOverview>('/admin/bots/accounts', v)),
+    (v: AdminBotAccountInput) => (account?.bot ? adminApi.patch<AdminBotOverview>(`/admin/bots/accounts/${account.bot.username}`, { displayName: v.displayName, role: v.role, faculty: v.faculty, bio: v.bio, tone: v.tone, major: v.major, soul: v.soul }) : adminApi.post<AdminBotOverview>('/admin/bots/accounts', v)),
     () => {
       toast.success(account?.bot ? 'Đã lưu hồ sơ bot' : 'Đã tạo bot, daemon sẽ đăng nhập trong ≤ 30 giây')
       setAccount(null)
@@ -47,7 +47,7 @@ export function BotAccountsTab({ data, onAct }: { data: AdminBotOverview; onAct:
       <Card>
         <CardHeader
           title={`Tài khoản bot (${data.bots.length})`}
-          description="Tạo, sửa, xóa bot; cấu hình quyền/chủ đề/hạn mức; giao việc. Bot mới mặc định mọi quyền tắt."
+          description="Tạo, sửa, xóa bot; viết soul; cấp quyền/chủ đề/hạn mức; giao việc. Bot mới mặc định mọi quyền tắt."
           action={
             <Button variant="primary" onClick={() => setAccount({ bot: null })}>
               <Plus /> Tạo bot

@@ -3,13 +3,13 @@ import { BOT_ROLES, type AdminBotAccount, type AdminBotAccountInput, type BotRol
 import { Button, Dialog, Field, Input, Select, Textarea } from '@/components/ui'
 
 const ROLE_LABEL: Record<BotRole, string> = { student: 'Sinh viên', lecturer: 'Giảng viên', ta: 'Trợ giảng' }
-const EMPTY: AdminBotAccountInput = { username: '', displayName: '', role: 'student', faculty: 'FIT', bio: '', tone: '', major: '' }
+const EMPTY: AdminBotAccountInput = { username: '', displayName: '', role: 'student', faculty: 'FIT', bio: '', tone: '', major: '', soul: '' }
 
 // Tạo hoặc sửa hồ sơ tài khoản bot (bot=null & open ⇒ tạo mới). Mật khẩu do hệ thống cấp.
 export function BotAccountDialog({ open, bot, saving, onClose, onSave }: { open: boolean; bot: AdminBotAccount | null; saving: boolean; onClose: () => void; onSave: (v: AdminBotAccountInput) => void }) {
   const [draft, setDraft] = useState<AdminBotAccountInput>(EMPTY)
   useEffect(() => {
-    if (open) setDraft(bot ? { username: bot.username, displayName: bot.displayName, role: bot.role, faculty: bot.faculty ?? '', bio: bot.bio, tone: bot.tone, major: bot.major } : EMPTY)
+    if (open) setDraft(bot ? { username: bot.username, displayName: bot.displayName, role: bot.role, faculty: bot.faculty ?? '', bio: bot.bio, tone: bot.tone, major: bot.major, soul: bot.soul } : EMPTY)
   }, [open, bot])
   if (!open) return null
   const set = <K extends keyof AdminBotAccountInput>(k: K, v: AdminBotAccountInput[K]) => setDraft({ ...draft, [k]: v })
@@ -63,7 +63,12 @@ export function BotAccountDialog({ open, bot, saving, onClose, onSave }: { open:
           </Field>
         </div>
         <div className="sm:col-span-2">
-          <Field label="Giọng văn" hint="AI dùng khi viết bài/bình luận">
+          <Field label="Soul" hint="Linh hồn của bot: tính cách, sở thích, cách viết. Bot tự đăng/bình luận bám theo đây">
+            <Textarea rows={4} value={draft.soul ?? ''} onChange={(e) => set('soul', e.target.value)} maxLength={2000} placeholder="VD: Sinh viên năm 3 CNTT, thích backend và tối ưu truy vấn, hay chia sẻ mẹo ngắn gọn, hài hước nhẹ, không dùng emoji." />
+          </Field>
+        </div>
+        <div className="sm:col-span-2">
+          <Field label="Giọng văn" hint="Tùy chọn, mô tả ngắn">
             <Textarea rows={2} value={draft.tone ?? ''} onChange={(e) => set('tone', e.target.value)} maxLength={300} placeholder="VD: thân thiện, gọn, hay chia sẻ mẹo học tập" />
           </Field>
         </div>

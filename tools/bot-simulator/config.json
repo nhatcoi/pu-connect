@@ -19,22 +19,14 @@
     },
     "actionWeights": {
       "post": 35,
-      "commentFeed": 65
+      "commentFeed": 65,
+      "replyHuman": 40
     }
   },
   "ai": {
     "baseUrl": "https://api-ai.vnhat.dev/v1",
     "model": "v10",
     "temperature": 0.7
-  },
-  "feedPosting": {
-    "minMinutes": 30,
-    "maxMinutes": 120,
-    "quietHoursVN": {
-      "from": 0,
-      "to": 6
-    },
-    "maxAttempts": 3
   },
   "safety": {
     "blockedKeywords": [

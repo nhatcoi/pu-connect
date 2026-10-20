@@ -4,7 +4,7 @@ import type { BotImportInput, BotImportMapRequest, BotImportMapping, BotImportRe
 import { DatabaseService } from '../../../database/database.service'
 import { StorageService } from '../../storage/storage.service'
 import { writeAudit } from '../admin-audit'
-import { filterFeedContent } from './feed-content-filter'
+import { filterImportContent } from './import-content-filter'
 import { fetchImage } from './import-image-fetcher'
 
 const MAX_PENDING_COMMANDS = 500
@@ -24,9 +24,9 @@ const RowSchema = z.object({
   enhance: z.enum(['none', 'ai']).optional()
 })
 
-type Prepared = { index: number; row: z.infer<typeof RowSchema>; content: string; hash: string; key: string; topic: string | null; plan: 'now' | 'scheduled' | 'pool'; runAt: Date | null; enhance: 'none' | 'ai' }
+type Prepared = { index: number; row: z.infer<typeof RowSchema>; content: string; hash: string; key: string; topic: string | null; bot: string; plan: 'now' | 'scheduled'; runAt: Date; enhance: 'none' | 'ai' }
 
-// Import Excel/CSV (đã parse ở trình duyệt) vào kho nội dung bot: kiểm tra từng dòng, chống trùng, tải ảnh về R2, tạo lịch đăng
+// Import Excel/CSV (đã parse ở trình duyệt) thành lịch đăng: mỗi dòng hợp lệ = 1 lệnh `post` hẹn giờ trong bot_commands
 @Injectable()
 export class BotImportService {
   private readonly logger = new Logger(BotImportService.name)
@@ -40,10 +40,12 @@ export class BotImportService {
     const results: BotImportRowResult[] = []
     const prepared: Prepared[] = []
     const [bots, topics] = await Promise.all([
-      this.db.query(`SELECT username FROM users WHERE is_bot`),
+      this.db.query(`SELECT u.username, p.enabled AND p.can_post AS can_post, p.topics FROM users u JOIN bot_profiles p ON p.user_id = u.id WHERE u.is_bot`),
       this.db.query(`SELECT slug, label FROM bot_topics`)
     ])
     const botSet = new Set<string>(bots.rows.map((r) => r.username))
+    const posters = bots.rows.filter((r) => r.can_post) as { username: string; topics: string[] }[]
+    const assigned = new Map<string, number>() // số bài đã chia cho từng bot trong lần import này
     const topicBy = new Map<string, string>(topics.rows.flatMap((r) => [[r.slug.toLowerCase(), r.slug] as const, [r.label.toLowerCase(), r.slug] as const]))
     const spacing = (input.spacingMinutes ?? 30) * 60_000
     const now = Date.now()
@@ -56,39 +58,34 @@ export class BotImportService {
       const parsed = RowSchema.safeParse(raw)
       if (!parsed.success) return fail(parsed.error.issues[0].message)
       const row = parsed.data
-      const filtered = filterFeedContent(row.content)
+      const filtered = filterImportContent(row.content)
       if ('reason' in filtered) return fail({ too_short: 'nội dung quá ngắn (< 40 ký tự)', too_long: 'nội dung quá dài (> 3000 ký tự)', blocked_keyword: 'chứa từ khóa bị chặn (tố cáo/bóc phốt…)' }[filtered.reason])
       if (row.bot && !botSet.has(row.bot)) return fail(`bot không tồn tại: @${row.bot}`)
       const topic = row.topic ? topicBy.get(row.topic.toLowerCase()) : undefined
       if (row.topic && !topic) return fail(`chủ đề không tồn tại: ${row.topic}`)
-      if (row.scheduledAt && !row.bot) return fail('có giờ hẹn nhưng thiếu bot')
+
+      // Không ghi bot ⇒ chia đều cho bot được phép đăng (đúng chủ đề nếu dòng có chủ đề), ưu tiên bot đang ít việc nhất
+      let bot = row.bot
+      if (!bot) {
+        const pool = posters.filter((b) => !topic || b.topics.includes(topic))
+        if (!pool.length) return fail(topic ? `chưa có bot nào được đăng chủ đề "${row.topic}"` : 'chưa có bot nào được phép đăng bài, hãy ghi cột bot hoặc cấp quyền đăng bài')
+        bot = pool.reduce((best, b) => ((assigned.get(b.username) ?? 0) < (assigned.get(best.username) ?? 0) ? b : best)).username
+      }
 
       const key = row.key || `xlsx:${filtered.hash.slice(0, 20)}`
       if (seenHashes.has(filtered.hash) || seenKeys.has(key)) return results.push({ index, status: 'duplicate', reason: 'trùng dòng khác trong file' })
       seenHashes.add(filtered.hash)
       seenKeys.add(key)
 
-      let runAt: Date | null = null
-      if (row.bot) {
-        const at = row.scheduledAt ? new Date(row.scheduledAt).getTime() : now + spread++ * spacing
-        if (at > now + MAX_AHEAD_MS) return fail('giờ hẹn quá xa (> 1 năm)')
-        runAt = new Date(Math.max(at, now))
-      }
-      const plan = !row.bot ? 'pool' : runAt!.getTime() - now > 60_000 ? 'scheduled' : 'now'
-      prepared.push({ index, row, content: filtered.content, hash: filtered.hash, key, topic: topic ?? null, plan, runAt, enhance: row.enhance ?? (row.bot ? 'none' : 'ai') })
+      const at = row.scheduledAt ? new Date(row.scheduledAt).getTime() : now + spread++ * spacing
+      if (at > now + MAX_AHEAD_MS) return fail('giờ hẹn quá xa (> 1 năm)')
+      const runAt = new Date(Math.max(at, now))
+      assigned.set(bot, (assigned.get(bot) ?? 0) + 1)
+      prepared.push({ index, row, content: filtered.content, hash: filtered.hash, key, topic: topic ?? null, bot, plan: runAt.getTime() - now > 60_000 ? 'scheduled' : 'now', runAt, enhance: row.enhance ?? 'none' })
     })
 
-    // Trùng với kho hiện có (key hoặc nội dung đã chuẩn hóa)
-    const dups = await this.db.query(`SELECT source_key, content_hash FROM bot_feed_items WHERE source_key = ANY($1::text[]) OR content_hash = ANY($2::text[])`, [prepared.map((p) => p.key), prepared.map((p) => p.hash)])
-    const dupKeys = new Set<string>(dups.rows.map((r) => r.source_key))
-    const dupHashes = new Set<string>(dups.rows.map((r) => r.content_hash))
-    const fresh = prepared.filter((p) => {
-      if (!dupKeys.has(p.key) && !dupHashes.has(p.hash)) return true
-      results.push({ index: p.index, status: 'duplicate', reason: 'đã có trong kho nội dung' })
-      return false
-    })
-
-    if (input.dryRun) fresh.forEach((p) => results.push({ index: p.index, status: 'ok', plan: p.plan }))
+    const fresh = await this.withoutDuplicates(prepared, results)
+    if (input.dryRun) fresh.forEach((p) => results.push({ index: p.index, status: 'ok', plan: p.plan, bot: p.bot }))
     else await this.write(adminId, fresh, results)
 
     results.sort((a, b) => a.index - b.index)
@@ -100,36 +97,39 @@ export class BotImportService {
     return { dryRun: input.dryRun, summary, rows: results }
   }
 
-  // Mỗi dòng 1 transaction: bài vào kho + lệnh đăng (nếu có bot) cùng thành công hoặc cùng hủy
-  private async write(adminId: string, items: Prepared[], results: BotImportRowResult[]) {
-    const withBot = items.filter((p) => p.row.bot).length
-    const pending = await this.db.query(`SELECT COUNT(*)::int AS n FROM bot_commands WHERE status IN ('pending', 'running')`)
-    if (pending.rows[0].n + withBot > MAX_PENDING_COMMANDS) throw new BadRequestException('Hàng đợi lệnh quá đầy, chia nhỏ file hoặc chờ bot xử lý')
+  // Trùng với lịch đăng đang có / đã chạy (key hoặc nội dung đã chuẩn hóa)
+  private async withoutDuplicates(items: Prepared[], results: BotImportRowResult[], db: Pick<DatabaseService, 'query'> = this.db) {
+    const dups = await db.query(
+      `SELECT payload->>'key' AS k, payload->>'hash' AS h FROM bot_commands
+       WHERE type = 'post' AND status IN ('pending', 'running', 'done') AND (payload->>'key' = ANY($1::text[]) OR payload->>'hash' = ANY($2::text[]))`,
+      [items.map((p) => p.key), items.map((p) => p.hash)]
+    )
+    const dupKeys = new Set<string>(dups.rows.map((r) => r.k))
+    const dupHashes = new Set<string>(dups.rows.map((r) => r.h))
+    return items.filter((p) => {
+      if (!dupKeys.has(p.key) && !dupHashes.has(p.hash)) return true
+      results.push({ index: p.index, status: 'duplicate', reason: 'đã có trong lịch đăng' })
+      return false
+    })
+  }
 
-    for (const p of items) {
-      const { urls, warning } = await this.resolveImages(p.row.images ?? [])
-      try {
-        const done = await this.db.transaction(async (client) => {
-          const status = p.row.bot ? 'scheduled' : p.enhance === 'ai' ? 'new' : 'approved'
-          const verdict = JSON.stringify({ source: 'import', title: p.row.title ?? null })
-          const ins = await client.query(
-            `INSERT INTO bot_feed_items (source_key, content_hash, content, raw_content, image_urls, status, topic, verdict) VALUES ($1, $2, $3, $3, $4, $5, $6, $7)
-             ON CONFLICT DO NOTHING RETURNING id`,
-            [p.key, p.hash, p.content, urls, status, p.topic, verdict]
-          )
-          if (!ins.rowCount) return false
-          if (p.row.bot) {
-            const payload = { bot: p.row.bot, feedItemId: String(ins.rows[0].id), enhance: p.enhance, ...(p.row.title && { title: p.row.title }) }
-            await client.query(`INSERT INTO bot_commands (type, payload, created_by, scheduled_at) VALUES ('post', $1, $2, $3)`, [JSON.stringify(payload), adminId, p.runAt])
-          }
-          return true
-        })
-        results.push(done ? { index: p.index, status: 'ok', plan: p.plan, warning } : { index: p.index, status: 'duplicate', reason: 'đã có trong kho nội dung' })
-      } catch (err: any) {
-        this.logger.warn(`Import dòng ${p.index} lỗi: ${err?.message}`)
-        results.push({ index: p.index, status: 'invalid', reason: 'lỗi ghi dữ liệu, thử lại' })
+  // ACID Transaction: khóa hàng điều khiển, kiểm tra hạn mức hàng đợi + trùng lần nữa, rồi ghi cả lô lệnh hẹn giờ
+  private async write(adminId: string, items: Prepared[], results: BotImportRowResult[]) {
+    const payloads = new Map<number, { urls: string[]; warning?: string }>()
+    for (const p of items) payloads.set(p.index, await this.resolveImages(p.row.images ?? []))
+
+    await this.db.transaction(async (client) => {
+      await client.query(`SELECT 1 FROM bot_control WHERE id = 1 FOR UPDATE`)
+      const pending = await client.query(`SELECT COUNT(*)::int AS n FROM bot_commands WHERE status IN ('pending', 'running')`)
+      if (pending.rows[0].n + items.length > MAX_PENDING_COMMANDS) throw new BadRequestException('Hàng đợi lệnh quá đầy, chia nhỏ file hoặc chờ bot xử lý')
+      const fresh = await this.withoutDuplicates(items, results, client)
+      for (const p of fresh) {
+        const img = payloads.get(p.index)!
+        const payload = { bot: p.bot, content: p.content, imageUrls: img.urls, enhance: p.enhance, hash: p.hash, key: p.key, source: 'import', ...(p.row.title && { title: p.row.title }), ...(p.topic && { topic: p.topic }) }
+        await client.query(`INSERT INTO bot_commands (type, payload, created_by, scheduled_at) VALUES ('post', $1, $2, $3)`, [JSON.stringify(payload), adminId, p.runAt])
+        results.push({ index: p.index, status: 'ok', plan: p.plan, bot: p.bot, warning: img.warning })
       }
-    }
+    })
   }
 
   // Ảnh của chính R2 giữ nguyên; URL ngoài tải về và lưu R2. Ảnh lỗi bị bỏ kèm cảnh báo, bài vẫn nhập.

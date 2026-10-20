@@ -11,7 +11,7 @@ import { buildRows, downloadTemplate, guessMapping, IMPORT_COLUMNS, readSheetFil
 type Sheet = { name: string; headers: string[]; data: unknown[][]; mapping: BotImportMapping }
 const TONE: Record<BotImportRowStatus, 'success' | 'warning' | 'danger'> = { ok: 'success', duplicate: 'warning', invalid: 'danger' }
 const LABEL: Record<BotImportRowStatus, string> = { ok: 'Hợp lệ', duplicate: 'Trùng', invalid: 'Lỗi' }
-const PLAN = { now: 'Đăng ngay', scheduled: 'Hẹn giờ', pool: 'Vào kho' } as const
+const PLAN = { now: 'Đăng ngay', scheduled: 'Hẹn giờ' } as const
 
 // Import Excel/CSV: chọn file → ghép cột (tự động, AI nếu header lạ) → kiểm tra từng dòng → nhập
 export function BotImportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -28,7 +28,6 @@ export function BotImportDialog({ open, onClose }: { open: boolean; onClose: () 
       if (!res.dryRun) {
         toast.success(`Đã nhập ${res.summary.ok} dòng (${res.summary.duplicate} trùng, ${res.summary.invalid} lỗi)`)
         void qc.invalidateQueries({ queryKey: BOTS_KEY })
-        void qc.invalidateQueries({ queryKey: ['admin', 'bots', 'feed'] })
       }
     },
     onError: (e: Error) => toast.error(e.message)
@@ -82,7 +81,7 @@ export function BotImportDialog({ open, onClose }: { open: boolean; onClose: () 
       onClose={close}
       size="lg"
       title="Import Excel / CSV"
-      description="Mỗi dòng là một bài. Có bot + giờ ⇒ bot đó đăng đúng giờ; có bot không giờ ⇒ giãn cách; không có bot ⇒ vào kho cho AI duyệt rồi xoay vòng."
+      description="Mỗi dòng là một bài hẹn giờ. Có giờ ⇒ đăng đúng giờ, không giờ ⇒ giãn cách. Không ghi bot ⇒ hệ thống chia đều cho bot được phép đăng bài."
       footer={
         <>
           <Button variant="ghost" onClick={close}>
@@ -139,7 +138,7 @@ export function BotImportDialog({ open, onClose }: { open: boolean; onClose: () 
             </Field>
             <div className="flex flex-wrap items-end gap-3">
               <div className="w-44">
-                <Field label="Giãn cách (phút)" hint="dòng có bot, không giờ">
+                <Field label="Giãn cách (phút)" hint="dòng không có giờ">
                   <Input type="number" min={1} max={1440} value={spacing} onChange={(e) => setSpacing(Math.min(1440, Math.max(1, Number(e.target.value) || 1)))} />
                 </Field>
               </div>
@@ -180,7 +179,7 @@ export function BotImportDialog({ open, onClose }: { open: boolean; onClose: () 
                           {(r.reason || r.warning) && <p className="mt-0.5 text-xs text-muted-foreground">{r.reason ?? r.warning}</p>}
                         </Td>
                         <Td className="max-w-[16rem] truncate text-xs">{String(row?.content ?? '').slice(0, 90)}</Td>
-                        <Td className="hidden text-xs sm:table-cell">{row?.bot ? `@${String(row.bot)}` : '—'}</Td>
+                        <Td className="hidden text-xs sm:table-cell">{r.bot || row?.bot ? `@${String(r.bot ?? row?.bot)}` : '—'}</Td>
                         <Td className="text-xs">{r.plan ? PLAN[r.plan] : '—'}</Td>
                       </Tr>
                     )

@@ -36,11 +36,6 @@ export class ControlSync {
 
   async start() {
     await this.pool.query(`UPDATE bot_commands SET status = 'failed', result = 'Daemon khởi động lại', finished_at = NOW() WHERE status = 'running'`)
-    // Bài crawl đã giao cho lệnh không còn chờ/chạy ⇒ trả về hàng sẵn đăng
-    await this.pool.query(
-      `UPDATE bot_feed_items SET status = 'approved' WHERE status = 'scheduled'
-         AND id::text NOT IN (SELECT payload->>'feedItemId' FROM bot_commands WHERE status IN ('pending', 'running') AND payload ? 'feedItemId')`
-    )
     await this.pool.query(`UPDATE bot_control SET started_at = NOW(), heartbeat_at = NOW() WHERE id = 1`)
     logger.setSink((entry) => this.buffer.push(entry))
 
@@ -99,7 +94,6 @@ export class ControlSync {
       status = 'failed'
       result = String(err.message || err).slice(0, 500)
       logger.error(`Lệnh #${cmd.id} (${cmd.type}) lỗi:`, err)
-      if (cmd.payload.feedItemId) await this.pool.query(`UPDATE bot_feed_items SET status = 'approved' WHERE id = $1 AND status = 'scheduled'`, [cmd.payload.feedItemId])
     }
     await this.pool.query(`UPDATE bot_commands SET status = $2, result = $3, finished_at = NOW() WHERE id = $1`, [cmd.id, status, result])
   }
@@ -110,8 +104,7 @@ export class ControlSync {
 
     switch (type) {
       case 'post':
-        if (p.feedItemId) return this.postFeedItem(p)
-        if (p.content) return scheduler.executeAdminPost(p.bot, { title: p.title, content: p.content, enhance: p.enhance })
+        if (p.content) return scheduler.executeAdminPost(p.bot, { title: p.title, content: p.content, imageUrls: p.imageUrls, enhance: p.enhance })
         return scheduler.executePost(p.bot, p.topic)
       case 'comment':
         if (p.content) return scheduler.executeAdminComment(p.bot, p.postId, p.content, p.enhance)
@@ -121,14 +114,6 @@ export class ControlSync {
       default:
         throw new Error(`Lệnh không hỗ trợ: ${type}`)
     }
-  }
-
-  // Đăng bài crawl do admin giao (đã giữ ở trạng thái 'scheduled'), đánh dấu 'posted' khi xong
-  async postFeedItem(p) {
-    const { rows } = await this.pool.query(`SELECT content, image_urls FROM bot_feed_items WHERE id = $1 AND status = 'scheduled'`, [p.feedItemId])
-    if (!rows[0]) throw new Error('Bài crawl không còn ở trạng thái đã hẹn')
-    const post = await this.scheduler.executeAdminPost(p.bot, { title: p.title, content: rows[0].content, imageUrls: rows[0].image_urls, enhance: p.enhance })
-    await this.pool.query(`UPDATE bot_feed_items SET status = 'posted', posted_by = $2, post_id = $3, posted_at = NOW() WHERE id = $1`, [p.feedItemId, p.bot, post?.id ?? null])
   }
 
   // Ghi hàng loạt 1 câu SQL (unnest) thay vì mỗi dòng 1 query
