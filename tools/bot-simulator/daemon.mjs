@@ -28,6 +28,11 @@ async function main() {
   if (online === 0) logger.warn('Không bot nào đăng nhập được. Kiểm tra API đang chạy và đã chạy: pnpm bot:setup')
   else logger.success(`${online}/${personas.length} bot online`)
 
+  // Bot offline (API vừa restart, lỗi mạng) ⇒ thử đăng nhập lại mỗi phút
+  setInterval(async () => {
+    for (const client of clients.values()) if (!client.isLoggedIn) await client.login()
+  }, 60_000).unref()
+
   const scheduler = new BotScheduler(config, personas, clients, new ContentGenerator(config))
   const pool = createPool()
   const sync = new ControlSync(pool, scheduler)

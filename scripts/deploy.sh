@@ -144,7 +144,7 @@ grep -q '^BOT_PASSWORD=' .env || echo "BOT_PASSWORD=$(openssl rand -hex 12)" >> 
 BOT_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users WHERE is_bot;" | tr -d '[:space:]')
 if [ "$BOT_COUNT" -eq "0" ]; then
   echo "Chưa có tài khoản bot. Đang tạo..."
-  (set -a; . ./.env; set +a; node tools/bot-simulator/setup-bots.mjs)
+  node --env-file=.env tools/bot-simulator/setup-bots.mjs  # không source .env: file có thể chứa ký tự đặc biệt của shell
 fi
 USER_COUNT=$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -t -c "SELECT count(*) FROM users;" 2>/dev/null | tr -d '[:space:]' || echo "0")
 if [ "$USER_COUNT" -eq "0" ]; then
@@ -213,8 +213,6 @@ UNIT
 cd /var/www/pu-connector
 mv .web-slot.env.next .web-slot.env  # chuyển slot (rollback: ghi lại slot cũ rồi restart pu-web)
 
-systemctl daemon-reload
-systemctl enable pu-api pu-web pu-bot
 # Bot Simulator daemon (điều khiển từ Admin → Bot; mặc định TẮT cho tới khi admin bật)
 cat > /etc/systemd/system/pu-bot.service << 'UNIT'
 [Unit]
@@ -239,9 +237,10 @@ UNIT
 
 systemctl restart pu-api
 systemctl restart pu-web
+systemctl daemon-reload
+systemctl enable pu-api pu-web pu-bot
 
 # Wait 3s for API and Web to start
-systemctl restart pu-bot
 sleep 3
 
 # Verify services running
@@ -249,6 +248,8 @@ systemctl is-active --quiet pu-api && echo "pu-api (NestJS): ACTIVE" || { echo "
 systemctl is-active --quiet pu-web && echo "pu-web (Next.js): ACTIVE" || { echo "pu-web: FAILED"; exit 1; }
 
 # Cấu hình Nginx cho Admin Console (admin-puc.vnhat.dev — Static SPA 0 MB RAM)
+systemctl restart pu-bot  # sau khi API đã sẵn sàng (bot đăng nhập lúc khởi động)
+sleep 2
 systemctl is-active --quiet pu-bot && echo "pu-bot (Bot Simulator): ACTIVE" || echo "pu-bot: FAILED (không chặn deploy, xem journalctl -u pu-bot)"
 cp scripts/ops/nginx-admin-puc.conf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf
 ln -sf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf /etc/nginx/sites-enabled/admin-puc.vnhat.dev.conf
