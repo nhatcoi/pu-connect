@@ -245,6 +245,7 @@ erDiagram
     timestamptz hidden_at
     uuid hidden_by FK
     varchar hidden_reason
+    boolean is_anonymous
   }
   comments {
     uuid id PK
@@ -257,6 +258,7 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
     timestamptz edited_at
+    boolean is_anonymous
   }
   post_reactions {
     uuid post_id PK,FK
@@ -559,6 +561,7 @@ erDiagram
     varchar profile_goal
     varchar profile_about
     varchar profile_style
+    varchar ai_model
   }
   ai_skills {
     uuid id PK
