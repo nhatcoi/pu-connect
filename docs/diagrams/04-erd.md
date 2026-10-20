@@ -796,6 +796,9 @@ erDiagram
     varchar grade
     smallint score
     timestamptz created_at
+    smallint correct
+    smallint total
+    integer duration_seconds
   }
   study_items {
     uuid id PK

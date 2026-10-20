@@ -135,6 +135,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-agent-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/rag-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/anonymous-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/quiz-upgrade.sql
 
 # Seed initial users if empty
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/bot-simulator-upgrade.sql
