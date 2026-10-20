@@ -3,6 +3,7 @@ import { DatabaseService } from '../../database/database.service'
 import { parseQuery, type ParsedQuery } from './search-query'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import { anonymousAuthor } from '../posts/anonymity'
+import { userFacultySql } from '../academic-units/faculty-filter.sql'
 import type { SearchQueryInput, SearchResult, Course, DocumentItem, PostItem, UserSummary, StudyGroup } from '@pu/schemas'
 
 type Queryable = { query: (sql: string, params?: any[]) => Promise<{ rows: any[] }> }
@@ -203,7 +204,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
           AND (d.visibility = 'public' OR d.owner_id = ${viewer}::uuid)`
       if (faculty) {
         params.push(faculty)
-        sql += ` AND (c.faculty_code = $${params.length} OR u.faculty = $${params.length})`
+        sql += ` AND (c.faculty_code = $${params.length} OR ${userFacultySql(params, faculty)})`
       }
       params.push(lim, off)
       sql += `
@@ -264,8 +265,9 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
           AND (${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, 'p.author_id')})`
       if (faculty) {
         params.push(faculty)
+        const courseParam = `$${params.length}`
         // Bài ẩn danh không lọc theo khoa tác giả (lộ khoa của người viết)
-        sql += ` AND ((NOT p.is_anonymous AND u.faculty = $${params.length}) OR c.faculty_code = $${params.length})`
+        sql += ` AND ((NOT p.is_anonymous AND ${userFacultySql(params, faculty)}) OR c.faculty_code = ${courseParam})`
       }
       params.push(lim, off)
       // Phổ biến + mới (bán rã 90 ngày) + câu hỏi đã có lời giải được cộng nhẹ
@@ -338,10 +340,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         FROM users u
         WHERE ${m.where}
           AND u.status = 'active' AND u.account_type IN ('human', 'bot')`
-      if (faculty) {
-        params.push(faculty)
-        sql += ` AND u.faculty = $${params.length}`
-      }
+      if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
       params.push(lim, off)
       // Username khớp hệt/tiền tố được ưu tiên; người có uy tín & đã xác thực nhỉnh hơn
       sql += `
@@ -379,10 +378,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         FROM study_groups g
         JOIN users u ON g.leader_id = u.id
         WHERE ${m.where}`
-      if (faculty) {
-        params.push(faculty)
-        sql += ` AND u.faculty = $${params.length}`
-      }
+      if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
       params.push(lim, off)
       // Nhóm đang tuyển được ưu tiên
       sql += `

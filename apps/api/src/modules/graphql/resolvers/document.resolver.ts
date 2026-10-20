@@ -1,3 +1,4 @@
+import { userFacultySql } from '../../academic-units/faculty-filter.sql'
 import { Resolver, Query, Args } from '@nestjs/graphql'
 import { DocumentType } from '../types/document.type'
 import { DatabaseService } from '../../../database/database.service'
@@ -25,10 +26,7 @@ export class DocumentResolver {
     `
     const params: any[] = []
 
-    if (faculty) {
-      params.push(faculty)
-      sql += ` AND u.faculty = $${params.length}`
-    }
+    if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
     if (type) {
       params.push(type)
       sql += ` AND d.type = $${params.length}`
