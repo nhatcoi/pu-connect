@@ -6,6 +6,7 @@ import type { AiQuota } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import type { AiRef, AiTrigger } from './ai.constants'
 import { AiProviderRegistry } from './ai-provider.registry'
+import { AiModelCatalogService } from './ai-model-catalog.service'
 
 const DEFAULT_MODEL = 'n7ai-fast' // Model suy nghĩ qua gateway OpenAI-compatible; đổi bằng AI_MODEL
 export const MAX_OUTPUT_TOKENS = 8192 // Gồm cả token suy nghĩ (thinking counts toward cap)
@@ -24,6 +25,30 @@ function withIdentity(messages: LlmMessage[], name: string): LlmMessage[] {
   return messages.map((m, j) => (j === i ? { ...m, content: (m.content as string) + identityLine(name) } : m)) as LlmMessage[]
 }
 
+const CHARS_PER_TOKEN = 3 // ước lượng thô, thiên về dư (tiếng Việt ~2–3 ký tự / token)
+
+const textLength = (m: LlmMessage) =>
+  (typeof m.content === 'string' ? m.content.length : JSON.stringify(m.content ?? '').length) +
+  ('tool_calls' in m ? JSON.stringify(m.tool_calls ?? '').length : 0)
+
+// Giữ system + tin mới nhất, bỏ dần tin cũ nhất tới khi vừa giới hạn input của model; không để lại tin `tool` mồ côi
+export function fitInput(messages: LlmMessage[], maxTokens: number | null): LlmMessage[] {
+  if (!maxTokens) return messages
+  const budget = maxTokens * CHARS_PER_TOKEN
+  const out = [...messages]
+  const total = () => out.reduce((n, m) => n + textLength(m), 0)
+  const first = () => out.findIndex((m) => m.role !== 'system')
+  while (total() > budget && out.length - out.filter((m) => m.role === 'system').length > 1) {
+    const i = first()
+    const dropped = out.splice(i, 1)[0]
+    if (dropped.role === 'assistant' && 'tool_calls' in dropped && dropped.tool_calls?.length) {
+      while (out[i]?.role === 'tool') out.splice(i, 1)
+    }
+    while (out[first()]?.role === 'tool' && out.length > 1) out.splice(first(), 1)
+  }
+  return out
+}
+
 // Lõi gọi LLM dùng chung: client, model, tài khoản @n7ai, quota/ngày và nhật ký ai_runs
 // Shared LLM core: one client, one quota across chat, comments and summaries
 @Injectable()
@@ -36,7 +61,8 @@ export class LlmService {
   constructor(
     private readonly db: DatabaseService,
     config: ConfigService,
-    private readonly providers: AiProviderRegistry = new AiProviderRegistry(db, config)
+    private readonly providers: AiProviderRegistry = new AiProviderRegistry(db, config),
+    private readonly catalog: AiModelCatalogService = new AiModelCatalogService(db)
   ) {
     this.model = config.get<string>('AI_MODEL') || DEFAULT_MODEL
     this.dailyQuota = Number(config.get('AI_DAILY_QUOTA') || 30)
@@ -129,19 +155,36 @@ export class LlmService {
 
   // Gọi chat completion: provider chính trước, lỗi gateway ⇒ lần lượt các provider dự phòng (xem AiProviderRegistry)
   // params.model do nơi gọi không cần đặt; options.model = mức model N7AI (provider có modelOverride thì dùng tên riêng)
-  async chat(params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming, 'model'>, options?: { signal?: AbortSignal; model?: string }): Promise<Stream<OpenAI.Chat.Completions.ChatCompletionChunk>>
-  async chat(params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming, 'model'>, options?: { signal?: AbortSignal; model?: string }): Promise<OpenAI.Chat.Completions.ChatCompletion>
+  async chat(
+    params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming, 'model'>,
+    options?: { signal?: AbortSignal; model?: string }
+  ): Promise<Stream<OpenAI.Chat.Completions.ChatCompletionChunk>>
+  async chat(
+    params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming, 'model'>,
+    options?: { signal?: AbortSignal; model?: string }
+  ): Promise<OpenAI.Chat.Completions.ChatCompletion>
   async chat(params: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParams, 'model'>, options?: { signal?: AbortSignal; model?: string }) {
     const { model: tier, ...request } = options ?? {}
     const wanted = tier ?? this.model
-    const chain = await this.providers.chain()
+    const entry = await this.catalog.find(wanted) // provider / tên thật / effort / giới hạn của model; không có ⇒ dùng tên nguyên bản
+    const upstream = entry?.upstream ?? wanted
+    const chain = await this.providers.chain(entry?.providerId)
     if (!chain.length) throw new Error('disabled')
+    const maxOut = entry?.maxOutputTokens
     for (let i = 0; i < chain.length; i++) {
       const p = chain[i]
-      const model = p.modelOverride ?? wanted
-      const name = p.primary ? model : `${wanted} (dự phòng)`
+      const model = entry?.providerId === p.id ? upstream : (p.modelOverride ?? upstream)
+      const name = p.primary ? wanted : `${wanted} (dự phòng)`
+      const body = {
+        ...params,
+        messages: withIdentity(fitInput(params.messages, entry?.maxInputTokens ?? null), name),
+        model,
+        // Effort chỉ gửi khi dùng đúng tên model đã cấu hình (model dự phòng đổi tên có thể không hỗ trợ)
+        ...(entry?.effort && model === upstream ? { reasoning_effort: entry.effort } : {}),
+        ...(maxOut ? { max_tokens: Math.min(params.max_tokens ?? maxOut, maxOut) } : {})
+      }
       try {
-        return await p.client.chat.completions.create({ ...params, messages: withIdentity(params.messages, name), model } as OpenAI.Chat.Completions.ChatCompletionCreateParams, request)
+        return await p.client.chat.completions.create(body as OpenAI.Chat.Completions.ChatCompletionCreateParams, request)
       } catch (err) {
         // Hết provider / người dùng hủy / lỗi yêu cầu (400, 422) ⇒ báo lỗi thẳng, không thử provider khác
         if (i === chain.length - 1 || request.signal?.aborted || !this.isGatewayFailure(err)) throw err

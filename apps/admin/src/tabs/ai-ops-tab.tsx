@@ -31,8 +31,7 @@ import {
 import { ListFooter, ListSearch, useListState, usePaged } from '@/components/list/list-kit'
 import { SavedViews } from '@/components/list/saved-views'
 import { useHashQuery } from '@/hooks/use-hash-query'
-import { ModelsSection } from '@/features/ai-models/models-section'
-import { ProvidersSection } from '@/features/ai-providers/providers-section'
+import { LlmSection } from '@/features/llm/llm-section'
 
 const REASON_LABEL: Record<string, string> = {
   wrong: 'Sai kiến thức',
@@ -59,7 +58,7 @@ function useAiMutation<V>(fn: (v: V) => Promise<unknown>, msg: string) {
 
 export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermission[]; openTickets?: number }) {
   const [params, set] = useHashQuery()
-  const tab = (['usage', 'feedback', 'skills', 'models', 'providers'].includes(params.tab) ? params.tab : 'usage') as 'usage' | 'feedback' | 'skills' | 'models' | 'providers'
+  const tab = (['usage', 'feedback', 'skills', 'llm'].includes(params.tab) ? params.tab : 'usage') as 'usage' | 'feedback' | 'skills' | 'llm'
   const canManage = permissions.includes('ai:manage')
 
   return (
@@ -75,8 +74,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
               { id: 'usage', label: 'Sử dụng' },
               { id: 'feedback', label: 'Phản hồi & hỗ trợ', count: openTickets },
               { id: 'skills', label: 'Skills' },
-              { id: 'models', label: 'Model' },
-              { id: 'providers', label: 'Provider' }
+              { id: 'llm', label: 'LLM' }
             ]}
           />
         }
@@ -84,8 +82,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
       {tab === 'usage' && <UsageSection />}
       {tab === 'feedback' && <FeedbackSection canManage={canManage} />}
       {tab === 'skills' && <SkillsSection canManage={canManage} />}
-      {tab === 'models' && <ModelsSection canManage={canManage} />}
-      {tab === 'providers' && <ProvidersSection canManage={canManage} />}
+      {tab === 'llm' && <LlmSection canManage={canManage} />}
     </>
   )
 }

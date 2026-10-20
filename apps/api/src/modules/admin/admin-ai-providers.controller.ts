@@ -50,6 +50,13 @@ export class AdminAiProvidersController {
     return this.providers.move(requireUserId(req), id, body.direction)
   }
 
+  // Dò danh sách model của provider (gọi ra ngoài bằng key đã lưu)
+  @Get(':id/models')
+  @RequireAdminPermission('ai:manage')
+  models(@Param('id', ParseUUIDPipe) id: string) {
+    return this.providers.discover(id)
+  }
+
   // Thử kết nối: gọi ra ngoài bằng key đã lưu ⇒ cần quyền quản lý như các thao tác ghi
   @Post(':id/test')
   @HttpCode(200)

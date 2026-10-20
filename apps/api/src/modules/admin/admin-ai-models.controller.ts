@@ -1,11 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
 import type { AdminAiModelInput, AdminAiModelPatch } from '@pu/schemas'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminAiModelsService } from './admin-ai-models.service'
-import { AiModelCreateBodySchema, AiModelPatchBodySchema } from './dto/admin-ai-models.dto'
+import { AiModelBulkBodySchema, AiModelCreateBodySchema, AiModelPatchBodySchema } from './dto/admin-ai-models.dto'
 
 @Controller('admin/ai/models')
 @UseGuards(AdminGuard)
@@ -22,6 +22,14 @@ export class AdminAiModelsController {
   @RequireAdminPermission('ai:manage')
   create(@Body(new ZodValidationPipe(AiModelCreateBodySchema)) body: AdminAiModelInput, @Req() req: Request) {
     return this.models.create(requireUserId(req), body)
+  }
+
+  // Thêm nhiều model một lần (chọn từ danh sách provider báo về)
+  @Post('bulk')
+  @HttpCode(200)
+  @RequireAdminPermission('ai:manage')
+  bulk(@Body(new ZodValidationPipe(AiModelBulkBodySchema)) body: { items: AdminAiModelInput[] }, @Req() req: Request) {
+    return this.models.createMany(requireUserId(req), body.items)
   }
 
   @Patch(':id')

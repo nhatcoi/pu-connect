@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { PoolClient } from 'pg'
-import type { AdminAiProvider, AdminAiProviderInput, AdminAiProviderList, AdminAiProviderPatch, AdminAiProviderTest } from '@pu/schemas'
+import type { AdminAiDiscovery, AdminAiProvider, AdminAiProviderInput, AdminAiProviderList, AdminAiProviderPatch, AdminAiProviderTest } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { AiProviderRegistry, readEnvProviders, withV1 } from '../ai/ai-provider.registry'
 import { TokenCipher } from '../ai/connectors/token-cipher'
@@ -42,12 +42,19 @@ export class AdminAiProvidersService {
     return { source: items.some((i) => i.enabled) ? 'database' : 'env', items, env }
   }
 
-  async create(adminId: string, input: AdminAiProviderInput): Promise<void> {
-    await this.db.transaction(async (client) => {
+  async create(adminId: string, input: AdminAiProviderInput): Promise<{ id: string }> {
+    const id = await this.db.transaction(async (client) => {
       const id = await this.insert(client, { name: input.name, baseUrl: input.baseUrl, apiKey: input.apiKey, modelOverride: input.modelOverride ?? null })
-      await writeAudit(client, adminId, { action: 'ai_provider.create', targetType: 'ai_provider', targetId: id, details: { name: input.name, host: this.host(input.baseUrl) } })
+      await writeAudit(client, adminId, {
+        action: 'ai_provider.create',
+        targetType: 'ai_provider',
+        targetId: id,
+        details: { name: input.name, host: this.host(input.baseUrl) }
+      })
+      return id
     })
     this.registry.invalidate()
+    return { id }
   }
 
   // Chuyển cấu hình env sang DB (key mã hóa) để quản lý trên admin; chỉ làm khi DB còn trống
@@ -59,7 +66,12 @@ export class AdminAiProvidersService {
       if (count.rows[0].n > 0) throw new ConflictException('Đã có provider trong danh sách')
       for (const c of envs) {
         // Thiếu AI_BASE_URL ⇒ SDK dùng mặc định của OpenAI
-        await this.insert(client, { name: c.name.replace(/ \(env\)$/, ''), baseUrl: c.baseUrl ?? 'https://api.openai.com/v1', apiKey: c.apiKey, modelOverride: c.modelOverride })
+        await this.insert(client, {
+          name: c.name.replace(/ \(env\)$/, ''),
+          baseUrl: c.baseUrl ?? 'https://api.openai.com/v1',
+          apiKey: c.apiKey,
+          modelOverride: c.modelOverride
+        })
       }
       await writeAudit(client, adminId, { action: 'ai_provider.import_env', targetType: 'ai_provider', targetId: 'env', details: { count: envs.length } })
       return envs.length
@@ -88,7 +100,12 @@ export class AdminAiProvidersService {
       vals.push(id)
       await client.query(`UPDATE ai_providers SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${vals.length}`, vals)
       // Nhật ký chỉ ghi tên trường đã đổi, không ghi giá trị key
-      await writeAudit(client, adminId, { action: 'ai_provider.update', targetType: 'ai_provider', targetId: id, details: { name: cur.name, fields: Object.keys(patch) } })
+      await writeAudit(client, adminId, {
+        action: 'ai_provider.update',
+        targetType: 'ai_provider',
+        targetId: id,
+        details: { name: cur.name, fields: Object.keys(patch) }
+      })
     })
     this.registry.invalidate()
   }
@@ -112,7 +129,8 @@ export class AdminAiProvidersService {
       const to = direction === 'up' ? from - 1 : from + 1
       if (to < 0 || to >= ids.length) return
       ;[ids[from], ids[to]] = [ids[to], ids[from]]
-      for (let i = 0; i < ids.length; i++) await client.query(`UPDATE ai_providers SET priority = $2, updated_at = NOW() WHERE id = $1`, [ids[i], (i + 1) * STEP])
+      for (let i = 0; i < ids.length; i++)
+        await client.query(`UPDATE ai_providers SET priority = $2, updated_at = NOW() WHERE id = $1`, [ids[i], (i + 1) * STEP])
       await writeAudit(client, adminId, { action: 'ai_provider.move', targetType: 'ai_provider', targetId: id, details: { direction } })
     })
     this.registry.invalidate()
@@ -130,14 +148,64 @@ export class AdminAiProvidersService {
     }
     const started = Date.now()
     try {
-      const r = await fetch(`${withV1(res.rows[0].base_url)}/models`, { headers: { Authorization: `Bearer ${apiKey}` }, signal: AbortSignal.timeout(PROBE_TIMEOUT_MS) })
+      const r = await fetch(`${withV1(res.rows[0].base_url)}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
+      })
       const latencyMs = Date.now() - started
-      if (!r.ok) return { ok: false, latencyMs, models: null, error: r.status === 401 || r.status === 403 ? `Key bị từ chối (HTTP ${r.status})` : `Gateway trả HTTP ${r.status}` }
+      if (!r.ok)
+        return {
+          ok: false,
+          latencyMs,
+          models: null,
+          error: r.status === 401 || r.status === 403 ? `Key bị từ chối (HTTP ${r.status})` : `Gateway trả HTTP ${r.status}`
+        }
       const body = (await r.json().catch(() => null)) as { data?: unknown[] } | null
       return { ok: true, latencyMs, models: Array.isArray(body?.data) ? body.data.length : null }
     } catch (err) {
       const timeout = (err as Error).name === 'TimeoutError'
       return { ok: false, latencyMs: Date.now() - started, models: null, error: timeout ? 'Quá thời gian chờ' : 'Không kết nối được tới URL này' }
+    }
+  }
+
+  // Dò model: GET {baseUrl}/models bằng key đã lưu ⇒ danh sách tên model (chỉ tên, không trả phần còn lại của phản hồi) + đã thêm vào danh mục chưa
+  async discover(id: string): Promise<AdminAiDiscovery> {
+    const res = await this.db.query(`SELECT base_url, api_key_enc FROM ai_providers WHERE id = $1`, [id])
+    if (!res.rows[0]) throw new NotFoundException('Provider không tồn tại')
+    let apiKey: string
+    try {
+      apiKey = this.cipher.decrypt(res.rows[0].api_key_enc)
+    } catch {
+      return { ok: false, latencyMs: 0, models: [], error: 'Không giải mã được API key — nhập lại key' }
+    }
+    const started = Date.now()
+    try {
+      const r = await fetch(`${withV1(res.rows[0].base_url)}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
+      })
+      const latencyMs = Date.now() - started
+      if (!r.ok)
+        return {
+          ok: false,
+          latencyMs,
+          models: [],
+          error: r.status === 401 || r.status === 403 ? `Key bị từ chối (HTTP ${r.status})` : `Gateway trả HTTP ${r.status}`
+        }
+      const body = (await r.json().catch(() => null)) as { data?: { id?: unknown }[] } | null
+      const names = [
+        ...new Set(
+          (Array.isArray(body?.data) ? body.data : [])
+            .map((m) => m?.id)
+            .filter((n): n is string => typeof n === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,119}$/.test(n))
+        )
+      ].sort()
+      const used = await this.db.query(`SELECT COALESCE(upstream_model, id) AS name FROM ai_models WHERE provider_id = $1`, [id])
+      const imported = new Set<string>(used.rows.map((u) => u.name))
+      return { ok: true, latencyMs, models: names.map((name) => ({ name, imported: imported.has(name) })) }
+    } catch (err) {
+      const timeout = (err as Error).name === 'TimeoutError'
+      return { ok: false, latencyMs: Date.now() - started, models: [], error: timeout ? 'Quá thời gian chờ' : 'Không kết nối được tới URL này' }
     }
   }
 

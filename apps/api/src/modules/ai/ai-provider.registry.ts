@@ -33,7 +33,14 @@ export type ChainEntry = AiProvider & { primary: boolean }
 export function readEnvProviders(config: ConfigService): ProviderConfig[] {
   const out: ProviderConfig[] = []
   const key = config.get<string>('AI_API_KEY')
-  if (key) out.push({ id: 'env:primary', name: 'Gateway chính (env)', baseUrl: withV1(config.get<string>('AI_BASE_URL') || undefined), apiKey: key, modelOverride: null })
+  if (key)
+    out.push({
+      id: 'env:primary',
+      name: 'Gateway chính (env)',
+      baseUrl: withV1(config.get<string>('AI_BASE_URL') || undefined),
+      apiKey: key,
+      modelOverride: null
+    })
   const fbKey = config.get<string>('AI_FALLBACK_API_KEY')
   const fbUrl = withV1(config.get<string>('AI_FALLBACK_BASE_URL') || undefined)
   if (fbKey && fbUrl) {
@@ -79,11 +86,15 @@ export class AiProviderRegistry implements OnModuleInit {
   }
 
   // Thứ tự thử: provider khỏe theo priority; tất cả đang lỗi ⇒ thử lại toàn bộ (còn hơn không gọi)
-  async chain(): Promise<ChainEntry[]> {
+  // preferredId (provider gắn với model) được đưa lên đầu nếu đang bật; chính nó lỗi thì rơi về các provider còn lại
+  async chain(preferredId?: string | null): Promise<ChainEntry[]> {
     const rows = await this.load()
     const now = Date.now()
     const healthy = rows.filter((p) => (this.downUntil.get(p.id) ?? 0) <= now)
-    return (healthy.length ? healthy : rows).map((p) => ({ ...p, primary: p.id === rows[0].id }))
+    const list = [...(healthy.length ? healthy : rows)]
+    const at = preferredId ? list.findIndex((p) => p.id === preferredId) : -1
+    if (at > 0) list.unshift(...list.splice(at, 1))
+    return list.map((p, i) => ({ ...p, primary: i === 0 }))
   }
 
   markDown(id: string) {
