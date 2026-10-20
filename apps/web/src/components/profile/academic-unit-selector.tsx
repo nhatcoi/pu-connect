@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { searchAcademicUnits, inferAcademicHierarchy, PHENIKAA_ACADEMIC_YEARS, type AcademicUnitItem } from '@pu/schemas'
+import { searchAcademicUnits, inferAcademicHierarchy, PHENIKAA_ACADEMIC_YEARS, PHENIKAA_UNIVERSITY_NAME, type AcademicUnitItem } from '@pu/schemas'
 import { GraduationCap, Search, Check, X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -18,6 +18,10 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
   const [searchQuery, setSearchQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [isCustomMode, setIsCustomMode] = useState(false)
+  // Đại học: mặc định Phenikaa (school = trường thành viên suy từ ngành); trường khác ⇒ school lưu tên đại học, khoa/ngành nhập tay
+  // University: Phenikaa by default; other university ⇒ `school` holds its name, faculty/major typed by hand
+  const [forceOther, setForceOther] = useState(false)
+  const isOtherUni = forceOther || (!!school && !/phenikaa/i.test(school))
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Đóng dropdown khi click ra ngoài
@@ -68,12 +72,62 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
 
   return (
     <div className="space-y-3.5" ref={containerRef}>
-      {/* 1. Đơn vị học thuật / Chuyên ngành đào tạo */}
+      {/* 0. Đại học (mặc định Phenikaa) */}
+      <div className="group rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 px-3 pt-2 pb-1.5 transition-all">
+        <label className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">Trường đại học</label>
+        <select
+          value={isOtherUni ? 'other' : 'phenikaa'}
+          onChange={(e) => {
+            const other = e.target.value === 'other'
+            setForceOther(other)
+            setIsCustomMode(false)
+            // Đổi đại học ⇒ xóa khoa/ngành cũ (không thuộc trường mới)
+            onChange({ school: null, faculty: null, major: null, academicYear: academicYear || null, className: className || null })
+          }}
+          className="w-full bg-transparent p-0 text-sm text-foreground focus:outline-none border-none cursor-pointer"
+        >
+          <option value="phenikaa" className="bg-card text-foreground">
+            {PHENIKAA_UNIVERSITY_NAME}
+          </option>
+          <option value="other" className="bg-card text-foreground">
+            Trường khác...
+          </option>
+        </select>
+      </div>
+
+      {isOtherUni ? (
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={school || ''}
+            onChange={(e) => onChange({ school: e.target.value || null, faculty: faculty || null, major: major || null, academicYear: academicYear || null, className: className || null })}
+            placeholder="Tên trường đại học"
+            className="w-full bg-background text-sm rounded-xl px-3 py-2.5 border border-input focus:outline-none focus:border-primary"
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              type="text"
+              value={faculty || ''}
+              onChange={(e) => onChange({ school: school || null, faculty: e.target.value || null, major: major || null, academicYear: academicYear || null, className: className || null })}
+              placeholder="Khoa (tùy chọn)"
+              className="w-full bg-background text-sm rounded-xl px-3 py-2.5 border border-input focus:outline-none focus:border-primary"
+            />
+            <input
+              type="text"
+              value={major || ''}
+              onChange={(e) => onChange({ school: school || null, faculty: faculty || null, major: e.target.value || null, academicYear: academicYear || null, className: className || null })}
+              placeholder="Ngành học"
+              className="w-full bg-background text-sm rounded-xl px-3 py-2.5 border border-input focus:outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+      ) : (
+      /* 1. Ngành / Khoa (Phenikaa) */
       <div className="relative">
         <label className="block text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <GraduationCap className="h-3.5 w-3.5 text-primary" />
-            <span>Học đường - Đại học và Khoa</span>
+            <span>Ngành / Khoa</span>
           </span>
           {currentPrimaryTitle && !isCustomMode && (
             <button
@@ -101,12 +155,12 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                   <div className="flex items-center gap-1.5">
                     <span className="font-semibold text-sm text-foreground truncate">{currentPrimaryTitle}</span>
                   </div>
-                  <div className="text-[11px] text-muted-foreground truncate">{[school, faculty].filter(Boolean).join(' • ') || 'Đại học Phenikaa'}</div>
+                  <div className="text-[11px] text-muted-foreground truncate">{[school, faculty].filter(Boolean).join(' • ') || PHENIKAA_UNIVERSITY_NAME}</div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-muted-foreground/70 text-sm">
                   <Search className="h-4 w-4" />
-                  <span>Chọn ngành hoặc gõ tìm kiếm (vd: KTPM, AI, Luật, Nano...)</span>
+                  <span>Chọn ngành hoặc khoa (gõ để tìm: KTPM, AI, Luật...)</span>
                 </div>
               )}
 
@@ -180,7 +234,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                               )}
                             </div>
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                              {[item.schoolName, item.facultyName].filter(Boolean).join(' • ') || 'Đơn vị trực thuộc Đại học Phenikaa'}
+                              {[item.schoolName, item.facultyName].filter(Boolean).join(' • ') || `Thuộc ${PHENIKAA_UNIVERSITY_NAME}`}
                             </p>
                           </div>
                           {isSelected && <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />}
@@ -201,7 +255,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                       }}
                       className="w-full text-center py-1.5 text-xs text-primary hover:underline font-medium cursor-pointer"
                     >
-                      + Nhập ngành / đơn vị tùy chỉnh khác
+                      + Không có trong danh sách? Nhập tay
                     </button>
                   </div>
                 </div>
@@ -212,27 +266,12 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
           /* Chế độ nhập tự do (Custom Mode) */
           <div className="space-y-2 p-3 bg-muted/30 rounded-xl border border-border animate-in fade-in duration-150">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-foreground">Nhập thông tin đào tạo tùy chỉnh:</span>
+              <span className="text-xs font-semibold text-foreground">Nhập khoa / ngành:</span>
               <button type="button" onClick={() => setIsCustomMode(false)} className="text-xs text-primary hover:underline cursor-pointer">
-                Quay lại danh mục chuẩn
+                Quay lại danh sách
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <input
-                type="text"
-                value={school || ''}
-                onChange={(e) =>
-                  onChange({
-                    school: e.target.value || null,
-                    faculty: faculty || null,
-                    major: major || null,
-                    academicYear: academicYear || null,
-                    className: className || null
-                  })
-                }
-                placeholder="Tên Trường (vd: Trường CNTT)"
-                className="w-full bg-background text-xs rounded-lg px-2.5 py-1.5 border border-border focus:outline-none focus:border-primary"
-              />
               <input
                 type="text"
                 value={faculty || ''}
@@ -245,7 +284,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                     className: className || null
                   })
                 }
-                placeholder="Tên Khoa / Viện (vd: Khoa KHMT)"
+                placeholder="Khoa / Viện"
                 className="w-full bg-background text-xs rounded-lg px-2.5 py-1.5 border border-border focus:outline-none focus:border-primary"
               />
             </div>
@@ -261,19 +300,21 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                   className: className || null
                 })
               }
-              placeholder="Tên Chuyên ngành đào tạo"
+              placeholder="Ngành học"
               className="w-full bg-background text-xs rounded-lg px-2.5 py-1.5 border border-border focus:outline-none focus:border-primary"
             />
           </div>
         )}
       </div>
 
+      )}
+
       {/* 2. Niên khóa & Lớp sinh hoạt (Optional & Tùy chọn) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Niên khóa / Khóa sinh viên */}
         <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3 pt-2 pb-1.5 transition-all">
           <label className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">
-            Khóa sinh viên (Cohort)
+            Khóa (tùy chọn)
           </label>
           <select
             value={academicYear || ''}
@@ -289,7 +330,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
             className="w-full bg-transparent p-0 text-sm text-foreground focus:outline-none border-none cursor-pointer"
           >
             <option value="" className="bg-card text-foreground">
-              -- Chọn khóa (Optional) --
+              Chọn khóa
             </option>
             {PHENIKAA_ACADEMIC_YEARS.map((y) => (
               <option key={y.code} value={y.code} className="bg-card text-foreground">
@@ -301,7 +342,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
 
         {/* Lớp sinh hoạt */}
         <div className="group relative rounded-xl border border-input focus-within:border-primary focus-within:ring-1 focus-within:ring-primary bg-background/50 hover:border-foreground/25 px-3 pt-2 pb-1.5 transition-all">
-          <label className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">Lớp sinh hoạt (Class)</label>
+          <label className="block text-[11px] font-medium text-muted-foreground group-focus-within:text-primary transition-colors">Lớp (tùy chọn)</label>
           <input
             type="text"
             value={className || ''}

@@ -23,15 +23,19 @@ export function ProfileCompletionCard() {
 
   if (!user || dismissed) return null
 
+  // Bắt buộc: trường + ngành/khoa (trường mặc định Phenikaa). Còn lại là tùy chọn
+  // Core: university + major/faculty (Phenikaa by default). Everything else is optional
   const steps = [
-    { label: 'Ảnh đại diện', done: !!user.avatarUrl && !user.avatarUrl.includes('dicebear') },
-    { label: 'Tiểu sử', done: !!user.bio?.trim() },
-    { label: 'Khoa & khóa học', done: !!user.faculty && !!user.academicYear },
-    { label: 'Môn học quan tâm', done: (user.interests?.length ?? 0) > 0 },
-    { label: 'Liên kết cá nhân', done: !!user.website?.trim() }
+    { label: 'Trường & ngành / khoa', done: !!(user.major?.trim() || user.faculty?.trim()), core: true },
+    { label: 'Ảnh đại diện', done: !!user.avatarUrl && !user.avatarUrl.includes('dicebear'), core: false },
+    { label: 'Tiểu sử', done: !!user.bio?.trim(), core: false },
+    { label: 'Khóa & lớp', done: !!user.academicYear || !!user.className?.trim(), core: false },
+    { label: 'Môn học quan tâm', done: (user.interests?.length ?? 0) > 0, core: false },
+    { label: 'Liên kết cá nhân', done: !!user.website?.trim(), core: false }
   ]
   const doneCount = steps.filter((s) => s.done).length
   if (doneCount === steps.length) return null
+  const coreDone = steps.filter((s) => s.core).every((s) => s.done)
   const percent = Math.round((doneCount / steps.length) * 100)
 
   const dismiss = () => {
@@ -47,8 +51,10 @@ export function ProfileCompletionCard() {
     <section className="rounded-xl bg-card p-4 space-y-3" aria-label="Hoàn thiện hồ sơ">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h3 className="text-[13px] font-semibold text-foreground">Hoàn thiện hồ sơ</h3>
-          <p className="text-xs text-muted-foreground">{percent}% · giúp bạn bè dễ tìm thấy bạn</p>
+          <h3 className="text-[13px] font-semibold text-foreground">{coreDone ? 'Bổ sung hồ sơ' : 'Hoàn thiện hồ sơ'}</h3>
+          <p className="text-xs text-muted-foreground">
+            {coreDone ? `${percent}% · các mục dưới đây đều tùy chọn` : `${percent}% · chọn trường & ngành để bạn bè dễ tìm thấy bạn`}
+          </p>
         </div>
         <button type="button" onClick={dismiss} aria-label="Ẩn thẻ hoàn thiện hồ sơ" className="text-muted-foreground hover:text-foreground cursor-pointer">
           <X className="h-4 w-4" />
@@ -71,6 +77,7 @@ export function ProfileCompletionCard() {
               {step.done && <Check className="h-3 w-3" />}
             </span>
             <span className={step.done ? 'text-muted-foreground line-through' : 'text-foreground'}>{step.label}</span>
+            {!step.done && !step.core && <span className="text-[10px] text-muted-foreground/70">tùy chọn</span>}
           </li>
         ))}
       </ul>
