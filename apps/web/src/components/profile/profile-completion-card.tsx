@@ -26,11 +26,10 @@ export function ProfileCompletionCard() {
   // Bắt buộc: trường + ngành/khoa (trường mặc định Phenikaa). Còn lại là tùy chọn
   // Core: university + major/faculty (Phenikaa by default). Everything else is optional
   const steps = [
-    { label: 'Trường & ngành / khoa', done: !!(user.major?.trim() || user.faculty?.trim()), core: true },
+    { label: 'Trường & ngành / khoa', done: !!(user.major?.trim() || user.faculty?.trim() || user.school?.trim()), core: true },
     { label: 'Ảnh đại diện', done: !!user.avatarUrl && !user.avatarUrl.includes('dicebear'), core: false },
     { label: 'Tiểu sử', done: !!user.bio?.trim(), core: false },
     { label: 'Khóa & lớp', done: !!user.academicYear || !!user.className?.trim(), core: false },
-    { label: 'Môn học quan tâm', done: (user.interests?.length ?? 0) > 0, core: false },
     { label: 'Liên kết cá nhân', done: !!user.website?.trim(), core: false }
   ]
   const doneCount = steps.filter((s) => s.done).length
