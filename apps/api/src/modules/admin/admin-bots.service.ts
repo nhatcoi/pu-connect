@@ -1,6 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import * as bcrypt from 'bcryptjs'
 import type {
   AdminBotAccount,
+  AdminBotAccountInput,
+  AdminBotAccountUpdate,
   AdminBotActivity,
   AdminBotCommand,
   AdminBotCommandInput,
@@ -15,14 +18,16 @@ import type {
   BotFeedStatus,
   BotSessionStats
 } from '@pu/schemas'
+import type { PoolClient } from 'pg'
 import { DatabaseService } from '../../database/database.service'
 import { writeAudit } from './admin-audit'
 import { iso, pagedQuery, SqlParams, whereOf } from './admin-paging'
 import type { BotActivityQuery, BotFeedQuery } from './dto/admin-bots.dto'
 
 const ONLINE_WINDOW_SECONDS = 30
-const MAX_PENDING_COMMANDS = 10
-const FEED_STATUSES: BotFeedStatus[] = ['new', 'review', 'approved', 'rejected', 'posted', 'skipped']
+const MAX_PENDING_COMMANDS = 50
+const BCRYPT_ROUNDS = 10
+const FEED_STATUSES: BotFeedStatus[] = ['new', 'review', 'approved', 'rejected', 'scheduled', 'posted', 'skipped']
 
 // Điều khiển Bot Simulator: admin ghi cấu hình/lệnh vào DB, daemon (tools/bot-simulator) đọc và thực thi
 @Injectable()
@@ -40,7 +45,7 @@ export class AdminBotsService {
       // Hạn mức dùng hôm nay (giờ VN) đếm từ bảng thật, cùng cách daemon tính; bài từ dữ liệu crawl không tính vào bài tự sinh
       this.db.query(
         `WITH day AS (SELECT date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh' AS t)
-         SELECT u.id, u.username, u.display_name, u.faculty, p.*,
+         SELECT u.id, u.username, u.display_name, u.faculty, u.role, u.bio, p.*,
            GREATEST(0, (SELECT COUNT(*) FROM posts x, day WHERE x.author_id = u.id AND x.created_at >= day.t)
                      - (SELECT COUNT(*) FROM bot_feed_items f, day WHERE f.posted_by = u.username AND f.posted_at >= day.t))::int AS used_post,
            (SELECT COUNT(*) FROM comments x, day WHERE x.author_id = u.id AND x.created_at >= day.t)::int AS used_comment,
@@ -50,9 +55,9 @@ export class AdminBotsService {
          WHERE u.is_bot ORDER BY u.username`
       ),
       this.db.query(
-        `SELECT c.id, c.type, c.payload, c.status, c.result, c.created_at, c.finished_at, u.username AS created_by
+        `SELECT c.id, c.type, c.payload, c.status, c.result, c.scheduled_at, c.created_at, c.finished_at, u.username AS created_by
          FROM bot_commands c LEFT JOIN users u ON u.id = c.created_by
-         ORDER BY c.id DESC LIMIT 15`
+         ORDER BY c.id DESC LIMIT 30`
       ),
       this.db.query(
         `SELECT status, COUNT(*)::int AS n FROM bot_feed_items GROUP BY status
@@ -89,7 +94,11 @@ export class AdminBotsService {
           id: r.id,
           username: r.username,
           displayName: r.display_name,
+          role: r.role,
           faculty: r.faculty,
+          bio: r.bio ?? '',
+          tone: r.tone ?? '',
+          major: r.major ?? '',
           profile: {
             enabled: r.enabled,
             topics: r.topics,
@@ -112,6 +121,7 @@ export class AdminBotsService {
           type: r.type,
           payload: r.payload,
           status: r.status,
+          scheduledAt: iso(r.scheduled_at)!,
           result: r.result,
           createdBy: r.created_by,
           createdAt: iso(r.created_at)!,
@@ -249,20 +259,124 @@ export class AdminBotsService {
     return { id, status: action === 'approve' ? 'approved' : 'rejected' }
   }
 
-  // ACID Transaction: validate target bot, cap queue, enqueue command & audit
-  async enqueue(adminId: string, input: AdminBotCommandInput) {
-    const { type, ...payload } = input
+  // Mật khẩu chung của bot: daemon đăng nhập bằng cùng giá trị (BOT_PASSWORD); dev local dùng mặc định
+  private botPassword() {
+    const pw = process.env.BOT_PASSWORD || (process.env.NODE_ENV === 'production' ? '' : 'BotPassword@123')
+    if (!pw) throw new BadRequestException('Thiếu BOT_PASSWORD trên server, chưa thể tạo bot')
+    return pw
+  }
+
+  // ACID Transaction: tạo user (is_bot) + hồ sơ bot (mọi quyền tắt) + audit
+  async createAccount(adminId: string, input: AdminBotAccountInput) {
+    const hash = await bcrypt.hash(this.botPassword(), BCRYPT_ROUNDS)
     await this.db.transaction(async (client) => {
-      if ('bot' in input && input.bot) {
+      const taken = await client.query(`SELECT 1 FROM users WHERE username = $1 OR email = $2`, [input.username, `${input.username}@seed.pu-connector.test`])
+      if (taken.rowCount) throw new ConflictException('Username đã tồn tại')
+      const user = await client.query(
+        `INSERT INTO users (id, email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at, faculty, bio, is_bot, created_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), $6, $7, true, NOW()) RETURNING id`,
+        [`${input.username}@seed.pu-connector.test`, input.username, hash, input.displayName, input.role, input.faculty, input.bio ?? '']
+      )
+      await client.query(`INSERT INTO bot_profiles (user_id, tone, major, updated_by) VALUES ($1, $2, $3, $4)`, [user.rows[0].id, input.tone ?? '', input.major ?? '', adminId])
+      await writeAudit(client, adminId, { action: 'bot.account_create', targetType: 'bot', targetId: input.username, details: { ...input } })
+    })
+    return this.overview()
+  }
+
+  async updateAccount(adminId: string, username: string, input: AdminBotAccountUpdate) {
+    await this.db.transaction(async (client) => {
+      const bot = await client.query(
+        `UPDATE users SET display_name = COALESCE($2, display_name), role = COALESCE($3::user_role_enum, role), faculty = COALESCE($4, faculty), bio = COALESCE($5, bio)
+         WHERE username = $1 AND is_bot RETURNING id`,
+        [username, input.displayName ?? null, input.role ?? null, input.faculty ?? null, input.bio ?? null]
+      )
+      if (!bot.rowCount) throw new NotFoundException('Không phải bot')
+      await client.query(`UPDATE bot_profiles SET tone = COALESCE($2, tone), major = COALESCE($3, major), updated_by = $4, updated_at = NOW() WHERE user_id = $1`, [
+        bot.rows[0].id,
+        input.tone ?? null,
+        input.major ?? null,
+        adminId
+      ])
+      await writeAudit(client, adminId, { action: 'bot.account_update', targetType: 'bot', targetId: username, details: { ...input } })
+    })
+    return this.overview()
+  }
+
+  // ACID Transaction: xóa hẳn bot (bài/bình luận/tim của bot xóa theo, CASCADE), tính lại bộ đếm các bài bị ảnh hưởng, hủy lệnh đang chờ của bot
+  async deleteAccount(adminId: string, username: string) {
+    await this.db.transaction(async (client) => {
+      const bot = await client.query(`SELECT id FROM users WHERE username = $1 AND is_bot FOR UPDATE`, [username])
+      if (!bot.rowCount) throw new NotFoundException('Không phải bot')
+      const id = bot.rows[0].id
+      const touched = await client.query(
+        `SELECT post_id FROM comments WHERE author_id = $1 UNION SELECT post_id FROM post_reactions WHERE user_id = $1`,
+        [id]
+      )
+      await this.cancelPendingOf(client, username)
+      await client.query(`DELETE FROM users WHERE id = $1`, [id])
+      await client.query(
+        `UPDATE posts p SET
+           likes_count = (SELECT COUNT(*) FROM post_reactions r WHERE r.post_id = p.id),
+           comments_count = (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id)
+         WHERE p.id = ANY($1::uuid[])`,
+        [touched.rows.map((r) => r.post_id)]
+      )
+      await writeAudit(client, adminId, { action: 'bot.account_delete', targetType: 'bot', targetId: username })
+    })
+    return this.overview()
+  }
+
+  // Hủy lệnh chờ của 1 bot; bài crawl đã giao cho lệnh đó quay về hàng sẵn đăng
+  private async cancelPendingOf(client: PoolClient, username: string) {
+    const res = await client.query(
+      `UPDATE bot_commands SET status = 'cancelled', result = 'Bot đã bị xóa', finished_at = NOW()
+       WHERE status = 'pending' AND payload->>'bot' = $1 RETURNING payload`,
+      [username]
+    )
+    await this.releaseFeedItems(client, res.rows.map((r) => r.payload?.feedItemId))
+  }
+
+  private async releaseFeedItems(client: PoolClient, ids: (string | undefined)[]) {
+    const items = ids.filter((x): x is string => !!x).map(Number)
+    if (items.length) await client.query(`UPDATE bot_feed_items SET status = 'approved' WHERE id = ANY($1::bigint[]) AND status = 'scheduled'`, [items])
+  }
+
+  // Hủy lệnh đang chờ (chưa tới giờ / chưa được daemon nhận)
+  async cancelCommand(adminId: string, id: number) {
+    await this.db.transaction(async (client) => {
+      const res = await client.query(`UPDATE bot_commands SET status = 'cancelled', result = 'Admin hủy', finished_at = NOW() WHERE id = $1 AND status = 'pending' RETURNING payload`, [id])
+      if (!res.rowCount) throw new BadRequestException('Lệnh không còn ở trạng thái chờ')
+      await this.releaseFeedItems(client, [res.rows[0].payload?.feedItemId])
+      await writeAudit(client, adminId, { action: 'bot.command_cancel', targetType: 'bot', targetId: String(id) })
+    })
+    return this.overview()
+  }
+
+  // ACID Transaction: validate bot/bài crawl, cap queue, enqueue command & audit
+  async enqueue(adminId: string, input: AdminBotCommandInput) {
+    const { type, scheduledAt, ...payload } = input
+    await this.db.transaction(async (client) => {
+      if (input.bot) {
         const found = await client.query(`SELECT 1 FROM users WHERE is_bot AND username = $1`, [input.bot])
         if (!found.rowCount) throw new BadRequestException(`Không phải bot: ${input.bot}`)
+      }
+      if (input.type === 'post' && input.feedItemId) {
+        if (!input.bot) throw new BadRequestException('Đăng bài crawl cần chọn bot')
+        // Giữ bài khỏi FeedPoster: chỉ bài còn chờ mới giao được, đổi sang 'scheduled' trong cùng transaction
+        const held = await client.query(`UPDATE bot_feed_items SET status = 'scheduled' WHERE id = $1 AND status IN ('new', 'review', 'approved', 'rejected') RETURNING id`, [input.feedItemId])
+        if (!held.rowCount) throw new BadRequestException('Bài crawl không còn ở trạng thái giao được (đã đăng/đã hẹn)')
       }
       // Khóa dòng điều khiển để đếm hàng đợi không bị race giữa 2 admin
       await client.query(`SELECT 1 FROM bot_control WHERE id = 1 FOR UPDATE`)
       const pending = await client.query(`SELECT COUNT(*)::int AS n FROM bot_commands WHERE status IN ('pending', 'running')`)
       if (pending.rows[0].n >= MAX_PENDING_COMMANDS) throw new BadRequestException('Hàng đợi lệnh đầy, chờ bot xử lý xong')
-      const res = await client.query(`INSERT INTO bot_commands (type, payload, created_by) VALUES ($1, $2, $3) RETURNING id`, [type, JSON.stringify(payload), adminId])
-      await writeAudit(client, adminId, { action: 'bot.command', targetType: 'bot', targetId: String(res.rows[0].id), details: { type, ...payload } })
+      const res = await client.query(`INSERT INTO bot_commands (type, payload, created_by, scheduled_at) VALUES ($1, $2, $3, COALESCE($4::timestamptz, NOW())) RETURNING id`, [
+        type,
+        JSON.stringify(payload),
+        adminId,
+        scheduledAt ?? null
+      ])
+      await writeAudit(client, adminId, { action: 'bot.command', targetType: 'bot', targetId: String(res.rows[0].id), details: { type, scheduledAt, ...payload } })
     })
     return this.overview()
   }

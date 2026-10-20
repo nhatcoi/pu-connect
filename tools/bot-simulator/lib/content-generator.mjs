@@ -1,3 +1,4 @@
+import { sanitizeContent } from './content-sanitizer.mjs'
 import { logger } from './logger.mjs'
 
 const SKIP = 'SKIP'
@@ -71,7 +72,7 @@ export class ContentGenerator {
 
   // Bài đăng trong 1 chủ đề được phép: kiến thức chung, không bịa trải nghiệm/số liệu cá nhân, không ảnh ngẫu nhiên
   async generatePost(persona, topic, hint = null) {
-    const system = `Bạn viết bài cho mạng xã hội học thuật của Đại học Phenikaa, dưới tài khoản "${persona.displayName}" (khoa ${persona.faculty}, vai trò ${persona.role}).
+    const system = `Bạn viết bài cho mạng xã hội học thuật của Đại học Phenikaa, dưới tài khoản "${persona.displayName}" (khoa ${persona.faculty}, vai trò ${persona.role}).${persona.tone ? `\nGiọng văn: ${persona.tone}.` : ''}
 Quy tắc bắt buộc:
 - Chỉ viết đúng chủ đề: "${topic.label}". Không lạc sang chủ đề khác.
 - Chỉ chia sẻ kiến thức, mẹo, hướng dẫn chung, chính xác và hữu ích. KHÔNG bịa trải nghiệm cá nhân, số liệu, sự kiện, tên người, tên môn/lớp cụ thể.
@@ -108,6 +109,17 @@ Quy tắc bắt buộc:
 Quy tắc: chỉ nói về các chủ đề: ${topicLabels.join('; ') || 'không có'}; ngoài chủ đề thì trả về ${SKIP}. Chỉ trả lời nếu có điều cụ thể, hữu ích bám sát bài và bình luận; nếu không, trả về đúng một từ: ${SKIP}. 1–2 câu, không bịa, không khen chung chung, không @mention.`
     const prompt = `Bài viết: ${String(post.content || '').slice(0, 600)}\n\nBình luận cần trả lời: ${String(targetComment.content || '').slice(0, 400)}`
     return this.cleanShort(await this.generateWithLLM(prompt, system, { temperature: 0.5 }))
+  }
+
+  // Viết lại nội dung do admin đưa cho tự nhiên, giữ nguyên sự thật; trả null nếu AI lỗi
+  async enhance(text, persona, kind) {
+    const what = kind === 'post' ? 'bài đăng' : 'bình luận'
+    const system = `Bạn biên tập ${what} cho mạng xã hội của Đại học Phenikaa, đăng dưới tài khoản "${persona.displayName}".
+Quy tắc bắt buộc: giữ NGUYÊN mọi sự thật, số liệu, ngày giờ, tên riêng; KHÔNG thêm thông tin mới; không link, SĐT, email; giọng tự nhiên, gọn, tiếng Việt; ${kind === 'post' ? 'giữ Markdown, có thể xuống dòng/gạch đầu dòng' : '1–3 câu'}. Chỉ trả về nội dung đã viết lại, không giải thích.`
+    const out = await this.generateWithLLM(String(text).slice(0, 4000), system, { temperature: 0.4 })
+    if (!out) return null
+    const clean = sanitizeContent(out.replace(/^["“]|["”]$/g, ''))
+    return clean.length >= 10 ? clean : null
   }
 
   cleanShort(text) {

@@ -13,8 +13,10 @@ export const fold = (s) =>
     .replace(/đ/g, 'd')
 
 export class BotPolicy {
-  constructor(pool) {
+  // fallbackPersonas: personas.json (tone/major cho bot cũ chưa có trong DB)
+  constructor(pool, fallbackPersonas = []) {
     this.pool = pool
+    this.fallback = new Map(fallbackPersonas.map((p) => [p.username, p]))
     this.loadedAt = 0
     this.profiles = new Map() // username → profile
     this.topics = new Map() // slug → { slug, label, keywords[] } (chỉ chủ đề đang bật)
@@ -25,7 +27,7 @@ export class BotPolicy {
   async load(force = false) {
     if (!force && Date.now() - this.loadedAt < CACHE_MS) return
     const [profiles, topics, usage] = await Promise.all([
-      this.pool.query(`SELECT u.id, u.username, p.* FROM bot_profiles p JOIN users u ON u.id = p.user_id WHERE u.is_bot AND u.status = 'active'`),
+      this.pool.query(`SELECT u.id, u.username, u.display_name, u.faculty, u.role, p.* FROM bot_profiles p JOIN users u ON u.id = p.user_id WHERE u.is_bot AND u.status = 'active'`),
       this.pool.query(`SELECT slug, label, keywords FROM bot_topics WHERE enabled`),
       // Số việc đã làm hôm nay (giờ VN) đếm từ bảng thật; bài từ dữ liệu crawl không tính vào hạn mức bài tự sinh
       this.pool.query(`
@@ -42,6 +44,20 @@ export class BotPolicy {
     this.topics = new Map(topics.rows.map((r) => [r.slug, r]))
     this.used = new Map(usage.rows.map((r) => [r.username, { post: Math.max(0, r.post), comment: r.comment, like: r.like }]))
     this.loadedAt = Date.now()
+  }
+
+  // Persona dùng để viết nội dung: thông tin từ DB (admin sửa được), tone/major rơi về personas.json nếu DB trống
+  personaOf(username) {
+    const p = this.profiles.get(username)
+    const f = this.fallback.get(username)
+    return {
+      username,
+      displayName: p?.display_name ?? f?.displayName ?? username,
+      faculty: p?.faculty ?? f?.faculty ?? '',
+      role: p?.role ?? f?.role ?? 'student',
+      tone: p?.tone || f?.tone || '',
+      major: p?.major || f?.major || ''
+    }
   }
 
   isBotId(userId) {
@@ -78,6 +94,11 @@ export class BotPolicy {
   matchesTopics(username, ...texts) {
     const haystack = fold(texts.flat().join(' '))
     return this.topicsOf(username).some((t) => t.keywords.some((k) => new RegExp(`(?<![a-z0-9])${fold(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![a-z0-9])`).test(haystack)))
+  }
+
+  async hasLiked(userId, postId) {
+    const { rowCount } = await this.pool.query(`SELECT 1 FROM post_reactions WHERE post_id = $1 AND user_id = $2`, [postId, userId])
+    return rowCount > 0
   }
 
   // Bot đã bình luận/thả tim bài này chưa (toggleLike sẽ bỏ tim nếu gọi lần 2)

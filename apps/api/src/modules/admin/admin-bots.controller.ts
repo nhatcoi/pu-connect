@@ -1,11 +1,13 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
+import type { AdminBotAccountInput, AdminBotAccountUpdate, AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
 import { AdminBotsService } from './admin-bots.service'
 import {
+  BotAccountCreateSchema,
+  BotAccountUpdateSchema,
   BotActivityQuerySchema,
   BotCommandBodySchema,
   BotControlBodySchema,
@@ -63,6 +65,26 @@ export class AdminBotsController {
   @Delete('topics/:slug')
   deleteTopic(@Param('slug') slug: string, @Req() req: Request) {
     return this.bots.deleteTopic(requireUserId(req), slug)
+  }
+
+  @Post('accounts')
+  createAccount(@Body(new ZodValidationPipe(BotAccountCreateSchema)) body: AdminBotAccountInput, @Req() req: Request) {
+    return this.bots.createAccount(requireUserId(req), body)
+  }
+
+  @Patch('accounts/:username')
+  updateAccount(@Param('username') username: string, @Body(new ZodValidationPipe(BotAccountUpdateSchema)) body: AdminBotAccountUpdate, @Req() req: Request) {
+    return this.bots.updateAccount(requireUserId(req), USERNAME.test(username) ? username : '', body)
+  }
+
+  @Delete('accounts/:username')
+  deleteAccount(@Param('username') username: string, @Req() req: Request) {
+    return this.bots.deleteAccount(requireUserId(req), USERNAME.test(username) ? username : '')
+  }
+
+  @Delete('commands/:id')
+  cancelCommand(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    return this.bots.cancelCommand(requireUserId(req), id)
   }
 
   @Post('commands')

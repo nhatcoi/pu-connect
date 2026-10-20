@@ -1,18 +1,18 @@
 import React, { useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, X } from 'lucide-react'
+import { Check, Send, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminBotFeedItem, AdminBotOverview, AdminPage, BotFeedStatus } from '@pu/schemas'
 import { adminApi, formatNumber, formatRelativeTime } from '@/lib/api'
 import { Badge, Button, Card, CardHeader, EmptyState, LoadingRows, Tabs } from '@/components/ui'
 import { BOTS_KEY, POLL_MS } from './use-bots'
 
-const STATUS_LABEL: Record<BotFeedStatus, string> = { new: 'Chờ AI', review: 'Chờ duyệt', approved: 'Sẵn đăng', rejected: 'Từ chối', posted: 'Đã đăng', skipped: 'Bỏ qua' }
-const TABS: BotFeedStatus[] = ['review', 'approved', 'new', 'rejected', 'posted']
-const TONE = { new: 'neutral', review: 'warning', approved: 'primary', rejected: 'danger', posted: 'success', skipped: 'neutral' } as const
+const STATUS_LABEL: Record<BotFeedStatus, string> = { new: 'Chờ AI', review: 'Chờ duyệt', approved: 'Sẵn đăng', rejected: 'Từ chối', scheduled: 'Đã hẹn', posted: 'Đã đăng', skipped: 'Bỏ qua' }
+const TABS: BotFeedStatus[] = ['review', 'approved', 'scheduled', 'new', 'rejected', 'posted']
+const TONE = { new: 'neutral', review: 'warning', approved: 'primary', rejected: 'danger', scheduled: 'warning', posted: 'success', skipped: 'neutral' } as const
 
 // Hàng đợi dữ liệu crawl: AI duyệt → (admin duyệt tay nếu bật) → bot đăng
-export function FeedQueueCard({ overview }: { overview: AdminBotOverview }) {
+export function FeedQueueCard({ overview, onAssign }: { overview: AdminBotOverview; onAssign: (item: AdminBotFeedItem) => void }) {
   const qc = useQueryClient()
   const [status, setStatus] = useState<BotFeedStatus>('review')
   const [page, setPage] = useState(1)
@@ -70,11 +70,16 @@ export function FeedQueueCard({ overview }: { overview: AdminBotOverview }) {
                   AI{it.verdict.model ? ` (${it.verdict.model})` : ''}: {it.verdict.reason}
                 </p>
               )}
-              {(it.status === 'review' || it.status === 'rejected' || it.status === 'new') && (
+              {(it.status === 'review' || it.status === 'rejected' || it.status === 'new' || it.status === 'approved') && (
                 <div className="flex gap-2 pt-1">
-                  <Button size="sm" variant="primary" loading={review.isPending && review.variables?.id === it.id && review.variables.action === 'approve'} onClick={() => review.mutate({ id: it.id, action: 'approve' })}>
-                    <Check /> Duyệt đăng
+                  <Button size="sm" onClick={() => onAssign(it)}>
+                    <Send /> Giao bot đăng
                   </Button>
+                  {it.status !== 'approved' && (
+                    <Button size="sm" variant="primary" loading={review.isPending && review.variables?.id === it.id && review.variables.action === 'approve'} onClick={() => review.mutate({ id: it.id, action: 'approve' })}>
+                      <Check /> Duyệt đăng
+                    </Button>
+                  )}
                   {it.status !== 'rejected' && (
                     <Button size="sm" variant="danger-soft" onClick={() => review.mutate({ id: it.id, action: 'reject' })}>
                       <X /> Từ chối

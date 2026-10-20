@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 // Chỉ type từ @pu/schemas; hằng runtime khai báo lại ở đây (xem admin.dto.ts)
 export const BOT_SPEEDS_RUNTIME = ['slow', 'normal', 'fast'] as const
+export const BOT_ROLES_RUNTIME = ['student', 'lecturer', 'ta'] as const
 
 const username = z.string().trim().min(1).max(40).regex(/^[a-zA-Z0-9._]+$/)
 const topicHint = z.string().trim().max(200).optional()
@@ -41,17 +42,50 @@ export const BotTopicBodySchema = z.object({
   enabled: z.boolean()
 })
 
+const scheduledAt = z.string().datetime({ offset: true }).optional()
+const enhance = z.enum(['none', 'ai']).optional()
+
 export const BotCommandBodySchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('post'), bot: username.optional(), topic: topicHint }),
-  z.object({ type: z.literal('comment'), postId: z.string().uuid(), bot: username.optional() })
+  z.object({
+    type: z.literal('post'),
+    bot: username.optional(),
+    topic: topicHint,
+    title: z.string().trim().max(200).optional(),
+    content: z.string().trim().min(1).max(5000).optional(),
+    feedItemId: z.string().regex(/^\d{1,18}$/).optional(),
+    enhance,
+    scheduledAt
+  }),
+  z.object({ type: z.literal('comment'), postId: z.string().uuid(), bot: username.optional(), content: z.string().trim().min(1).max(1000).optional(), enhance, scheduledAt }),
+  z.object({ type: z.literal('like'), postId: z.string().uuid(), bot: username, scheduledAt })
 ])
+
+const accountFields = {
+  displayName: z.string().trim().min(2).max(60),
+  role: z.enum(BOT_ROLES_RUNTIME),
+  faculty: z.string().trim().min(1).max(50),
+  bio: z.string().trim().max(300),
+  tone: z.string().trim().max(300),
+  major: z.string().trim().max(80)
+}
+export const BotAccountCreateSchema = z.object({
+  username: z.string().trim().min(3).max(30).regex(/^[a-z0-9._]+$/, 'username: chữ thường, số, dấu chấm/gạch dưới'),
+  ...accountFields,
+  bio: accountFields.bio.optional(),
+  tone: accountFields.tone.optional(),
+  major: accountFields.major.optional()
+})
+export const BotAccountUpdateSchema = z
+  .object(accountFields)
+  .partial()
+  .refine((v) => Object.values(v).some((x) => x !== undefined), { message: 'Cần ít nhất một trường' })
 
 export const BotFeedActionBodySchema = z.object({ action: z.enum(['approve', 'reject']) })
 
 export const BotFeedQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).default(1),
   pageSize: z.coerce.number().int().min(10).max(100).default(20),
-  status: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['new', 'review', 'approved', 'rejected', 'posted', 'skipped']).optional())
+  status: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['new', 'review', 'approved', 'rejected', 'scheduled', 'posted', 'skipped']).optional())
 })
 export type BotFeedQuery = z.infer<typeof BotFeedQuerySchema>
 

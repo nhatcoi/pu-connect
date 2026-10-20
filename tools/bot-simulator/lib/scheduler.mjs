@@ -7,9 +7,8 @@ const shuffled = (arr) => [...arr].sort(() => 0.5 - Math.random())
 // Bot hoạt động trong khuôn khổ BotPolicy (quyền, chủ đề, hạn mức do admin đặt):
 // chỉ đăng trong chủ đề được phép, chỉ tương tác bài liên quan, không chen vào bình luận của người thật.
 export class BotScheduler {
-  constructor(config, personas, clients, contentGen, policy) {
+  constructor(config, clients, contentGen, policy) {
     this.config = config
-    this.personas = new Map(personas.map((p) => [p.username, p]))
     this.clients = clients // Map<username, BotApiClient>
     this.contentGen = contentGen
     this.policy = policy
@@ -81,7 +80,7 @@ export class BotScheduler {
     const client = this.clients.get(username)
     const topic = pick(topics)
     logger.action(username, 'Posting', `Soạn bài chủ đề "${topic.label}"`)
-    const postData = await this.contentGen.generatePost(this.personas.get(username), topic, hint)
+    const postData = await this.contentGen.generatePost(this.policy.personaOf(username), topic, hint)
     if (!postData) return logger.warn(`@${username}: LLM không sinh được bài, bỏ qua`)
 
     const post = await client.createPost({ title: postData.title, content: postData.content, tags: postData.tags })
@@ -108,7 +107,7 @@ export class BotScheduler {
     const commenter = shuffled(others.filter((x) => this.policy.allows(x, 'comment')))[0]
     if (!commenter) return
     await sleep(2500 + Math.random() * 3000)
-    const text = await this.contentGen.generateComment(postData, this.personas.get(commenter), this.topicLabels(commenter))
+    const text = await this.contentGen.generateComment(postData, this.policy.personaOf(commenter), this.topicLabels(commenter))
     if (!text) return
     const comment = await this.clients.get(commenter).addComment(post.id, { content: text })
     this.policy.record(commenter, 'comment')
@@ -117,13 +116,59 @@ export class BotScheduler {
 
     if (comment?.id && this.policy.allows(authorName, 'comment') && Math.random() < 0.5) {
       await sleep(2500 + Math.random() * 2000)
-      const reply = await this.contentGen.generateReply(postData, this.personas.get(authorName), comment, this.topicLabels(authorName))
+      const reply = await this.contentGen.generateReply(postData, this.policy.personaOf(authorName), comment, this.topicLabels(authorName))
       if (!reply) return
       await authorClient.addComment(post.id, { content: reply, parentId: comment.id })
       this.policy.record(authorName, 'comment')
       this.stats.commentsCount++
       logger.action(authorName, 'Author Reply', `"${reply}"`)
     }
+  }
+
+  // Hành động do admin giao: bỏ qua quyền/hạn mức, vẫn cần bot tồn tại và đang bật
+  botFor(username) {
+    const client = this.clients.get(username)
+    if (!client || !this.policy.profiles.get(username)?.enabled) throw new Error(`Bot @${username} không tồn tại hoặc đang tắt`)
+    return client
+  }
+
+  // AI viết lại nội dung admin đưa (enhance = 'ai'); lỗi AI ⇒ dừng, không đăng bản chưa xử lý ngoài ý admin
+  async enhanced(text, username, kind, enhance) {
+    if (enhance !== 'ai') return text
+    const out = await this.contentGen.enhance(text, this.policy.personaOf(username), kind)
+    if (!out) throw new Error('AI không viết lại được nội dung (thử lại hoặc bỏ AI enhance)')
+    return out
+  }
+
+  // Admin tự viết bài hoặc lấy từ kho crawl: đăng nguyên văn hoặc qua AI enhance
+  async executeAdminPost(username, { title, content, imageUrls = [], enhance }) {
+    await this.policy.load()
+    const client = this.botFor(username)
+    const body = await this.enhanced(content, username, 'post', enhance)
+    const post = await client.createPost({ title, content: body, mediaUrls: imageUrls })
+    this.stats.postsCount++
+    logger.action(username, 'Admin Post', `"${body.slice(0, 60).replace(/\s+/g, ' ')}…" [Ảnh: ${imageUrls.length}]${enhance === 'ai' ? ' [AI]' : ''}`)
+    return post
+  }
+
+  async executeAdminComment(username, postId, content, enhance) {
+    await this.policy.load()
+    const client = this.botFor(username)
+    const text = await this.enhanced(content, username, 'comment', enhance)
+    await client.addComment(postId, { content: text })
+    this.stats.commentsCount++
+    logger.action(username, 'Admin Comment', `"${text.slice(0, 80)}" vào bài ${String(postId).slice(0, 8)}…`)
+  }
+
+  async executeLike(username, postId) {
+    await this.policy.load()
+    const client = this.botFor(username)
+    // Lệnh của admin: chỉ cần chưa thả tim (toggleLike sẽ bỏ tim nếu đã tim), dù bot đã bình luận
+    if (await this.policy.hasLiked(client.userId, postId)) throw new Error(`@${username} đã thả tim bài này`)
+    if (!(await client.toggleLike(postId))) throw new Error(`@${username} không thả tim được`)
+    this.policy.record(username, 'like')
+    this.stats.likesCount++
+    logger.action(username, 'Admin Like', `Bài ${String(postId).slice(0, 8)}…`)
   }
 
   topicLabels(username) {
@@ -173,7 +218,7 @@ export class BotScheduler {
     // AI đã bảo "không liên quan" (SKIP) thì cũng không thả tim
     let relevant = true
     if (explicit || this.policy.allows(username, 'comment')) {
-      const text = await this.contentGen.generateComment(post, this.personas.get(username), this.topicLabels(username))
+      const text = await this.contentGen.generateComment(post, this.policy.personaOf(username), this.topicLabels(username))
       relevant = !!text
       if (text) {
         await client.addComment(post.id, { content: text })
@@ -192,7 +237,7 @@ export class BotScheduler {
       const comments = (await client.getPostComments(post.id)).filter((c) => this.policy.isBotId(c.author?.id) && c.author?.id !== client.userId)
       const target = pick(comments)
       if (!target) return
-      const reply = await this.contentGen.generateReply(post, this.personas.get(username), target, this.topicLabels(username))
+      const reply = await this.contentGen.generateReply(post, this.policy.personaOf(username), target, this.topicLabels(username))
       if (!reply) return
       await sleep(2000)
       await client.addComment(post.id, { content: reply, parentId: target.id })

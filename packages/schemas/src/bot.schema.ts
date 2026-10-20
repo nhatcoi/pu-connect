@@ -3,9 +3,13 @@
 export const BOT_SPEEDS = ['slow', 'normal', 'fast'] as const
 export type BotSpeed = (typeof BOT_SPEEDS)[number]
 
-export type BotCommandType = 'post' | 'comment'
-export type BotCommandStatus = 'pending' | 'running' | 'done' | 'failed'
-export type BotFeedStatus = 'new' | 'review' | 'approved' | 'rejected' | 'posted' | 'skipped'
+export type BotCommandType = 'post' | 'comment' | 'like'
+export type BotCommandStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled'
+export type BotFeedStatus = 'new' | 'review' | 'approved' | 'rejected' | 'scheduled' | 'posted' | 'skipped'
+// AI viết lại nội dung trước khi bot đăng (none = giữ nguyên)
+export type BotEnhance = 'none' | 'ai'
+export const BOT_ROLES = ['student', 'lecturer', 'ta'] as const
+export type BotRole = (typeof BOT_ROLES)[number]
 
 export interface BotSessionStats {
   postsCount: number
@@ -33,7 +37,11 @@ export interface AdminBotAccount {
   id: string
   username: string
   displayName: string
+  role: BotRole
   faculty: string | null
+  bio: string
+  tone: string
+  major: string
   profile: BotProfile
   usedToday: { post: number; comment: number; like: number }
   lastActionAt: string | null
@@ -51,6 +59,7 @@ export interface AdminBotCommand {
   type: BotCommandType
   payload: Record<string, unknown>
   status: BotCommandStatus
+  scheduledAt: string
   result: string | null
   createdBy: string | null
   createdAt: string
@@ -126,4 +135,13 @@ export type AdminBotTopicInput = { slug: string; label: string; keywords: string
 
 export type AdminBotFeedAction = 'approve' | 'reject'
 
-export type AdminBotCommandInput = { type: 'post'; bot?: string; topic?: string } | { type: 'comment'; postId: string; bot?: string }
+// Tạo/sửa tài khoản bot (mật khẩu do hệ thống cấp, không nhập từ UI)
+export type AdminBotAccountInput = { username: string; displayName: string; role: BotRole; faculty: string; bio?: string; tone?: string; major?: string }
+export type AdminBotAccountUpdate = Partial<Omit<AdminBotAccountInput, 'username'>>
+
+// Hành động giao cho bot. scheduledAt: ISO, bỏ trống/quá khứ ⇒ chạy ngay.
+// post: content (viết tay) | feedItemId (từ kho crawl) | không có gì ⇒ AI tự sinh theo chủ đề của bot
+export type AdminBotCommandInput =
+  | { type: 'post'; bot?: string; topic?: string; title?: string; content?: string; feedItemId?: string; enhance?: BotEnhance; scheduledAt?: string }
+  | { type: 'comment'; postId: string; bot?: string; content?: string; enhance?: BotEnhance; scheduledAt?: string }
+  | { type: 'like'; postId: string; bot: string; scheduledAt?: string }

@@ -18,6 +18,7 @@ Admin (Bot tab) ──API──> Postgres <──poll 3s── daemon pu-bot ─
 
 | Module | Việc |
 |---|---|
+| `lib/bot-roster.mjs` | Đồng bộ danh sách bot từ DB mỗi 30 giây: tạo client/đăng nhập bot mới, gỡ bot đã xóa, đăng nhập lại bot offline |
 | `lib/policy.mjs` | Đọc hồ sơ/chủ đề/hạn mức từ DB, quyết định bot nào được làm gì |
 | `lib/scheduler.mjs` | Vòng tự động: chọn việc mà ít nhất một bot được phép, thực thi trong khuôn khổ policy |
 | `lib/content-generator.mjs` | Sinh bài/bình luận bằng AI (model do admin chọn), trả `SKIP` nếu không phù hợp |
@@ -32,7 +33,7 @@ pnpm bot:setup   # tạo/đồng bộ tài khoản bot (is_bot = true, hồ sơ 
 pnpm bot:sim     # chạy daemon (local); API khác: --api https://puc.vnhat.dev/api
 ```
 
-VPS: service `pu-bot` do `scripts/deploy.sh` tạo (`journalctl -u pu-bot -f`). Cần migration `bot-simulator-upgrade.sql` và `bot-governance-upgrade.sql`.
+VPS: service `pu-bot` do `scripts/deploy.sh` tạo (`journalctl -u pu-bot -f`). Cần migration `bot-simulator-upgrade.sql`, `bot-governance-upgrade.sql` và `bot-actions-upgrade.sql`. Tài khoản bot tạo/xóa từ Admin → Bot; `personas.json` chỉ còn dùng để seed (`pnpm bot:setup`) và làm dự phòng giọng văn cho bot cũ.
 
 ## Biến môi trường
 

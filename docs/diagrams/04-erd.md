@@ -667,6 +667,7 @@ erDiagram
     uuid created_by FK
     timestamptz created_at
     timestamptz finished_at
+    timestamptz scheduled_at
   }
   bot_control {
     smallint id PK
@@ -712,6 +713,8 @@ erDiagram
     smallint max_likes_per_day
     uuid updated_by FK
     timestamptz updated_at
+    text tone
+    text major
   }
   bot_topics {
     text slug PK

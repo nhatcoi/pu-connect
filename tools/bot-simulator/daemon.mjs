@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { BotApiClient } from './lib/api-client.mjs'
+import { BotRoster } from './lib/bot-roster.mjs'
 import { ContentGenerator } from './lib/content-generator.mjs'
 import { ControlSync } from './lib/control-sync.mjs'
 import { createPool } from './lib/database.mjs'
@@ -23,23 +23,21 @@ const apiFlag = process.argv.indexOf('--api')
 config.apiUrl = (apiFlag !== -1 && process.argv[apiFlag + 1]) || process.env.BOT_API_URL || config.apiUrl
 
 async function main() {
-  logger.info(`Bot Simulator → ${config.apiUrl} | ${personas.length} persona`)
-
-  const clients = new Map(personas.map((p) => [p.username, new BotApiClient(config.apiUrl, p)]))
-  let online = 0
-  for (const client of clients.values()) if (await client.login()) online++
-  if (online === 0) logger.warn('Không bot nào đăng nhập được. Kiểm tra API đang chạy và đã chạy: pnpm bot:setup')
-  else logger.success(`${online}/${personas.length} bot online`)
-
-  // Bot offline (API vừa restart, lỗi mạng) ⇒ thử đăng nhập lại mỗi phút
-  setInterval(async () => {
-    for (const client of clients.values()) if (!client.isLoggedIn) await client.login()
-  }, 60_000).unref()
+  logger.info(`Bot Simulator → ${config.apiUrl}`)
 
   const pool = createPool()
+  const policy = new BotPolicy(pool, personas)
+  // Bot lấy từ DB (Admin → Bot tạo/xóa); personas.json chỉ là dữ liệu dự phòng cho bot cũ
+  const clients = new Map()
+  const roster = new BotRoster(config.apiUrl, clients, policy, personas)
+  await roster.sync()
+  const online = [...clients.values()].filter((c) => c.isLoggedIn).length
+  if (online === 0) logger.warn('Không bot nào đăng nhập được. Kiểm tra API đang chạy và tài khoản bot đã được tạo (Admin → Bot)')
+  else logger.success(`${online}/${clients.size} bot online`)
+  roster.start()
+
   const contentGen = new ContentGenerator(config)
-  const policy = new BotPolicy(pool)
-  const scheduler = new BotScheduler(config, personas, clients, contentGen, policy)
+  const scheduler = new BotScheduler(config, clients, contentGen, policy)
   const sync = new ControlSync(pool, scheduler)
   await sync.start()
   scheduler.start().catch((err) => logger.error('Scheduler crashed:', err))
@@ -53,6 +51,7 @@ async function main() {
     scheduler.stop()
     feedPoster.stop()
     curator.stop()
+    roster.stop()
     await sync.stop()
     await pool.end()
     process.exit(0)

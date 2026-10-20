@@ -80,6 +80,12 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 
 ## Bot (Admin → Bot)
 
+Trang chia 5 tab: **Tổng quan** (daemon, tốc độ, đăng bài crawl) · **Nội dung & hành động** (hàng đợi hành động + kho dữ liệu crawl) · **Tài khoản bot** (CRUD) · **AI & chủ đề** · **Nhật ký**.
+
+**CRUD tài khoản bot** (tab *Tài khoản bot*): *Tạo bot* (username, tên, vai trò `student/lecturer/ta`, khoa, ngành, bio, giọng văn; mật khẩu hệ thống cấp từ `BOT_PASSWORD`, bot mới mặc định không có quyền nào), *Sửa hồ sơ*, *Cấu hình* (quyền/chủ đề/hạn mức), *Xóa* (xóa hẳn bot kèm bài/bình luận/tim của bot, tính lại bộ đếm, hủy lệnh đang chờ; muốn chỉ dừng bot thì tắt *Bot đang hoạt động*). Daemon đọc danh sách bot từ DB mỗi 30 giây nên bot mới tự đăng nhập, bot đã xóa tự bị gỡ, không cần restart. Endpoint `POST/PATCH/DELETE admin/bots/accounts[/:username]`.
+
+**Hành động giao cho bot** (nút *Giao việc*, hàng đợi `bot_commands`): *Đăng bài* (nội dung tự viết, bài từ kho crawl hoặc để AI tự viết theo chủ đề của bot), *Bình luận* (nội dung tự viết hoặc AI), *Thả tim*. Mỗi việc chạy **ngay** hoặc **hẹn giờ** (`scheduled_at`; lệnh chờ hủy được), tùy chọn **AI viết lại** (giữ nguyên sự thật, không thêm thông tin; AI lỗi ⇒ lệnh thất bại, không đăng bản chưa xử lý). Việc admin giao bỏ qua hạn mức ngày nhưng bot phải tồn tại và đang bật. Bài crawl giao cho bot chuyển sang trạng thái `scheduled` (FeedPoster không lấy), hủy lệnh hoặc xóa bot ⇒ quay về `approved`. Endpoint `POST admin/bots/commands`, `DELETE admin/bots/commands/:id`.
+
 Bot = tài khoản `users.is_bot = true`, chạy bởi daemon `pu-bot` (`tools/bot-simulator`, không nằm trong API). Admin ↔ daemon giao tiếp qua DB, không mở cổng. **Nguyên tắc: bot chỉ làm đúng việc admin cho phép, không tương tác lung tung.**
 
 **Kiểm soát từng bot** (nút *Cấu hình*, bảng `bot_profiles`; mặc định mọi quyền TẮT):
@@ -93,13 +99,13 @@ Bot = tài khoản `users.is_bot = true`, chạy bởi daemon `pu-bot` (`tools/b
 
 **Dữ liệu crawl** (`tools/fb-group-digest` → `POST /api/bots/ingest`, header `x-bot-ingest-token` = `BOT_INGEST_TOKEN`): server lọc thô (bỏ link Facebook, che SĐT/biển số/email, loại bài quá ngắn/dài hoặc có từ khóa tố cáo/bóc phốt), chống trùng (UNIQUE id bài gốc + hash nội dung chuẩn hóa), lưu ảnh R2. Hàng đợi `bot_feed_items`: `new` → **AI duyệt** (chọn chủ đề, từ chối rao vặt/tin đồn/drama/thông tin cá nhân/ngoài chủ đề, viết lại trung lập, không nhắc Facebook) → `approved` (hoặc `review` nếu bật *Admin duyệt tay*) → bot đăng. Admin xem/duyệt/từ chối từng bài ở thẻ *Dữ liệu crawl* (kèm lý do của AI). Bot có bật *Đăng bài từ dữ liệu crawl* thay phiên đăng mỗi 30–120 phút (kèm ảnh nếu có, không link Facebook), nghỉ 00:00–06:00 giờ VN; công tắc chung *Đăng bài từ dữ liệu crawl* (`feed_enabled`) mặc định tắt. Lấy token: `ssh root@103.195.237.112 'grep BOT_INGEST_TOKEN /var/www/pu-connector/.env'`.
 
-**Kỹ thuật**: `bot_control` (bật/tắt, tốc độ, AI, heartbeat), `bot_commands` (lệnh thủ công đăng bài/bình luận, `FOR UPDATE SKIP LOCKED`), `bot_activity` (nhật ký 7 ngày), `bot_feed_items`, `bot_profiles`, `bot_topics`. Endpoint `admin/bots*` (quyền `bots:manage`, mọi thao tác ghi audit `bot.*`). Daemon Offline nếu heartbeat quá 30 giây. Mặc định mọi thứ TẮT; tài khoản bot luôn là `student/lecturer/ta`; mật khẩu `BOT_PASSWORD` trên VPS. Bot làm méo số liệu hoạt động thật ⇒ lọc theo `is_bot`. Vận hành: `journalctl -u pu-bot -f` · `systemctl restart pu-bot` · local `pnpm bot:setup` rồi `pnpm bot:sim`.
+**Kỹ thuật**: `bot_control` (bật/tắt, tốc độ, AI, heartbeat), `bot_commands` (hành động đăng bài/bình luận/thả tim, hẹn giờ `scheduled_at`, `FOR UPDATE SKIP LOCKED`), `bot_activity` (nhật ký 7 ngày), `bot_feed_items`, `bot_profiles`, `bot_topics`. Endpoint `admin/bots*` (quyền `bots:manage`, mọi thao tác ghi audit `bot.*`). Daemon Offline nếu heartbeat quá 30 giây. Mặc định mọi thứ TẮT; tài khoản bot luôn là `student/lecturer/ta`; mật khẩu `BOT_PASSWORD` trên VPS. Bot làm méo số liệu hoạt động thật ⇒ lọc theo `is_bot`. Vận hành: `journalctl -u pu-bot -f` · `systemctl restart pu-bot` · local `pnpm bot:setup` rồi `pnpm bot:sim`.
 
 **Dọn dữ liệu bot cũ** (2026-10-20, `scripts/ops/sql/bot-cleanup.sql`): xóa bình luận/tim/chat của bot và 61 bài bot chưa có người thật tương tác; giữ 15 bài đã có người thật tương tác và hội thoại có người thật; xóa thông báo do bot gây ra, tính lại bộ đếm. Bản sao nằm ở `archive_bot_cleanup_*` (xóa khi không cần khôi phục).
 
 ## Vận hành
 
-- Migration: `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security`, `profile-views-upgrade.sql`, `bot-simulator-upgrade.sql` (đều trong `scripts/deploy.sh`).
+- Migration: `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security`, `profile-views-upgrade.sql`, `bot-simulator-upgrade.sql`, `bot-governance-upgrade.sql`, `bot-actions-upgrade.sql` (đều trong `scripts/deploy.sh`).
 - Job nền trong API: gỡ chế tài hết hạn (1 phút, `AdminUsersService`), điểm rủi ro + xóa nhật ký / lượt xem quá 90 ngày (10 phút, `AdminRiskService`).
 - **Chỉ một deploy tại một thời điểm**: `deploy.sh` build web vào slot rảnh `.next-a/.next-b`, hai deploy song song ghi đè slot của nhau. Kiểm tra trước: `ssh root@103.195.237.112 'pgrep -af "next build|rsync"'`.
 - `deploy.sh` rsync **thư mục làm việc** (cả file chưa commit). File ghi chú local `*.local.md` bị loại trừ.
