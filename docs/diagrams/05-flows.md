@@ -338,6 +338,7 @@ sequenceDiagram
 ```
 
 **Changelog:**
+- 2026-10-20 — Quiz: `POST tools/sets/:id/attempts` nhận `seconds`, ghi `correct` / `total` / `duration_seconds` vào `study_events`; thêm `GET tools/sets/:id/attempts` (lịch sử làm bài).
 - 2026-10-20 — Đăng ẩn danh: `POST /posts` / `POST /posts/:id/comments` nhận `isAnonymous` (hạn mức 24h), phản hồi che tác giả, thông báo không nêu actor, không báo follower.
 - 2026-10-19 — Feed "Dành cho bạn" đổi sang hot rank (log tương tác / tuổi^1.2, giảm bài đã xem, đa dạng tác giả).
 - 2026-10-18 — `message.progress` trước/sau mỗi tool call; tin hoàn tất lưu `meta.steps`.

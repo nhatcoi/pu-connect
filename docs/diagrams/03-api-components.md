@@ -131,6 +131,7 @@ flowchart TB
 | Client ↔ server | `typing` | `{ conversationId, isTyping }` — server kiểm tra membership rồi chuyển cho thành viên khác |
 
 **Changelog:**
+- 2026-10-20 — `StudyToolsController`: `GET sets/:id/attempts` + `StudyToolsService.attempts` (lịch sử quiz); quiz thêm loại câu `multi` / `truefalse` (`QuizQuestionContentSchema`), migration `quiz-upgrade.sql`.
 - 2026-10-20 — `AcademicUnitsController` `GET academic-units` (công khai, cache 60s) + `AdminUnitsService/Controller` `admin/academic-units` (CRUD, `reorder`, `merge`; ghi audit `academic_unit.*`); `findUnitNames` (academic-units/unit-names.ts) cho `users/profile` + onboarding nhận `unitId`; admin users lọc `unit` (đệ quy đơn vị con). Migration `academic-units-upgrade.sql`.
 - 2026-10-20 — `posts/anonymity.ts` (che tác giả, `anonymizeNotification`, hạn mức 24h) dùng bởi `PostsService`, `CommentsService`, tìm kiếm, chat share / embed, post-ai; cột `is_anonymous` (migration `anonymous-upgrade.sql`).
 - 2026-10-19 — Chat: `ChatShareController` `POST chat/share/post` + `ChatShareService` (mở DM, `MessagesService.sendShared` với `meta.sharedPost`, cộng `shares_count`).

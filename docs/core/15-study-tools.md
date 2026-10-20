@@ -10,7 +10,7 @@ Migration `study-tools-upgrade.sql` (chạy sau `comment-reactions-upgrade.sql`)
 | --- | --- |
 | `study_sets` | 1 bộ: `kind` (`flashcards` / `quiz`), `title`, `description`, `options` JSONB (`{template: basic|vocab, lang}`), `source` (`manual` / `n7ai`), `source_message_id` (tin N7AI sinh ra bộ, unique ⇒ không lưu trùng), `item_count`, `attempts`, `best_score`, `last_studied_at` |
 | `study_items` | 1 mục: `position`, `content` JSONB (`{front, back, phonetic?, example?, image?}` hoặc `{q, options, answer, explain}`), lịch ôn `due_at` (NULL = thẻ mới), `interval_days`, `ease`, `reps`, `lapses` |
-| `study_events` | nhật ký học: 1 dòng / lượt chấm thẻ (`event = 'review'`, `grade`) hoặc lần làm quiz (`'attempt'`, `score`); xóa bộ / thẻ ⇒ giữ dòng (`SET NULL`) để chuỗi ngày không mất |
+| `study_events` | nhật ký học: 1 dòng / lượt chấm thẻ (`event = 'review'`, `grade`) hoặc lần làm quiz (`'attempt'`, `score`, `correct`, `total`, `duration_seconds` — migration `quiz-upgrade.sql`, lần làm cũ để NULL); xóa bộ / thẻ ⇒ giữ dòng (`SET NULL`) để chuỗi ngày không mất |
 
 Giới hạn: 200 mục / bộ, 300 bộ / người.
 
@@ -23,7 +23,8 @@ Giới hạn: 200 mục / bộ, 300 bộ / người.
 | `POST tools/sets` · `PATCH tools/sets/:id` · `DELETE tools/sets/:id` | tạo / sửa / xóa. Sửa: mục giữ `id` ⇒ giữ lịch ôn, mục bị bỏ ⇒ xóa, không đổi được `kind` |
 | `POST tools/sets/draft` | N7AI soạn nháp từ chủ đề / nội dung dán vào (chưa lưu, tốn 1 lượt, `ai_runs.trigger = 'tool'`) |
 | `POST tools/sets/:id/review` | chấm 1 thẻ `again / hard / good / easy` ⇒ lịch ôn kế tiếp |
-| `POST tools/sets/:id/attempts` | ghi kết quả quiz ⇒ cập nhật `best_score` |
+| `POST tools/sets/:id/attempts` | ghi kết quả quiz `{correct, total, seconds?}` ⇒ cập nhật `best_score` + nhật ký |
+| `GET tools/sets/:id/attempts` | lịch sử các lần làm quiz của bộ (mới trước, ≤ 20): điểm %, số câu đúng / tổng, thời gian |
 | `GET tools/stats?setId=` | chuỗi ngày học (hiện tại + kỷ lục), lượt hôm nay, lịch nhiệt 16 tuần, thẻ đến hạn 7 ngày tới + số thẻ mới (`setId` ⇒ chỉ dự báo của bộ đó). Ngày tính theo giờ VN |
 
 Nội dung mục được kiểm theo loại bộ: `StudySetBodySchema` (`dto/study-tools.dto.ts`) lấy schema mục + tùy chọn từ registry. Tùy chọn hỏng (vd. `lang` lạ) bị bỏ, không từ chối bộ.
@@ -63,6 +64,14 @@ Tham số 1 lượt gọi tool tối đa 48 000 ký tự (`MAX_CALL_ARGS`, `mcp-
 
 Prompt nội dung (8–12 thẻ khi chỉ nêu chủ đề, giữ đủ danh sách người dùng đưa, tối đa 60; từ vựng ngoại ngữ ⇒ mẫu `vocab` + `lang` + phiên âm + ví dụ) nằm ở `ai.instructions` của từng loại.
 
+## Quiz: loại câu, làm bài, lịch sử
+
+- **Loại câu** (`content.type`, bỏ trống = một đáp án nên dữ liệu cũ vẫn chạy): `single` · `multi` (nhiều đáp án đúng: `answers: number[]`, `answer` = đáp án nhỏ nhất để tương thích) · `truefalse` (đúng 2 lựa chọn "Đúng", "Sai"). Câu nhiều đáp án chỉ tính đúng khi chọn khớp **hoàn toàn** tập đáp án (`isQuestionCorrect` trong `@pu/schemas`). Schema kiểm: multi phải có `answers` hợp lệ, Đúng/Sai đúng 2 lựa chọn. N7AI cũng được dùng `multi` / `truefalse` (mô tả trong `quiz.kind.ts`).
+- **Màn bắt đầu** (`QuizRunner`): trộn thứ tự câu, trộn thứ tự lựa chọn (đáp án giữ chỉ số gốc ⇒ chấm đúng; câu Đúng/Sai không trộn), giới hạn giờ 5–60 phút. Chọn riêng từng lượt, không lưu vào bộ.
+- **Làm bài**: đồng hồ (đếm lên, hoặc đếm ngược khi có giới hạn, hết giờ tự nộp, câu bỏ trống tính sai); câu nhiều đáp án chọn nhiều rồi bấm *Kiểm tra đáp án*.
+- **Kết quả**: điểm + thời gian, xem lại từng câu (bạn chọn / đáp án / giải thích, lọc *chỉ câu sai*), *Làm lại*, *Luyện câu sai* (chạy lại đúng các câu sai, **không tính điểm**), *Đổi cấu hình*. Mỗi lần nộp tính điểm ghi 1 dòng `study_events` ⇒ `QuizHistory` hiện lịch sử (điểm, số câu, thời gian).
+- Thẻ quiz trong chat (`QuizCard`) cũng hỗ trợ câu nhiều đáp án.
+
 ## Flashcard: mẫu, phát âm, cách ôn
 
 - **Mẫu bộ** (`options.template`): *Cơ bản* (mặt trước / sau; nút "+ Chi tiết" mở ô ảnh, phiên âm, ví dụ), *Từ vựng* (các ô đó luôn hiện, có phát âm) hoặc *Điền chỗ trống*. Mẫu chỉ đổi giao diện, dữ liệu thẻ chung 1 kiểu.
@@ -89,4 +98,4 @@ Prompt nội dung (8–12 thẻ khi chỉ nêu chủ đề, giữ đủ danh sá
 
 ## Hướng mở rộng
 
-Quiz: bấm giờ, xem lại câu sai, ngân hàng câu theo học phần. Flashcard: nhắc ôn hằng ngày (push), N7AI tìm ảnh minh họa có nguồn. Đếm ngược Pomodoro + thống kê giờ học, tính GPA / điểm cần đạt, lịch thi & deadline (kết nối Google Calendar), sổ công thức, sơ đồ tư duy do N7AI tạo, đề thi thử bấm giờ từ tài liệu học phần.
+Quiz: ngân hàng câu theo học phần. Flashcard: nhắc ôn hằng ngày (push), N7AI tìm ảnh minh họa có nguồn. Đếm ngược Pomodoro + thống kê giờ học, tính GPA / điểm cần đạt, lịch thi & deadline (kết nối Google Calendar), sổ công thức, sơ đồ tư duy do N7AI tạo, đề thi thử bấm giờ từ tài liệu học phần.

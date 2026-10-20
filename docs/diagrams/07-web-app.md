@@ -132,6 +132,7 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 Tính năng chưa hoàn thiện bị ẩn bằng flag (QR app mobile, lối tắt danh mục, môn học sôi nổi, xu hướng…). Bật flag ⇒ cập nhật bảng trên và sơ đồ route.
 
 **Changelog:**
+- 2026-10-20 — `/tools/quiz/[id]`: `QuizRunner` có màn bắt đầu (trộn, giới hạn giờ), đồng hồ, câu nhiều đáp án / Đúng-Sai, xem lại + luyện câu sai; `QuizHistory`; `quiz-deck.ts` (trộn + chấm); trình soạn có chọn loại câu.
 - 2026-10-20 — `AnonymousToggle` (trình soạn bài hỏi đáp + ô bình luận), `AnonymousAvatar` / `anonymousName`; `PostCard`, `CommentItemCard`, `FeaturedCommentPreview` không link hồ sơ khi `isAnonymous`, chủ bài dùng `isMine`.
 - 2026-10-20 — Hồ sơ: `AcademicUnitSelector` thêm chọn trường đại học (mặc định Phenikaa, "Trường khác" nhập tay), nhãn tiếng Việt; `ProfileCompletionCard` chỉ bắt buộc trường + ngành/khoa, còn lại tùy chọn (hết lỗi vẫn báo thiếu dù đã cập nhật).
 - 2026-10-19 — `PostCard` › Chia sẻ: bỏ *Chia sẻ lên X*.
