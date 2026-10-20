@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg'
 
-export type AuditTargetType = 'post' | 'comment' | 'user' | 'course' | 'document' | 'ai_ticket' | 'ai_skill' | 'bot' | 'system'
+export type AuditTargetType = 'post' | 'comment' | 'user' | 'course' | 'document' | 'ai_ticket' | 'ai_skill' | 'bot' | 'academic_unit' | 'system'
 export type AuditEntry = { action: string; targetType: AuditTargetType; targetId: string; details?: Record<string, unknown> }
 
 // Ghi nhật ký thao tác admin — luôn chạy trong transaction của thao tác (ACID)

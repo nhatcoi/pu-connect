@@ -4,6 +4,7 @@ export type CommunitySort = 'hot' | 'new' | 'top'
 
 export const queryKeys = {
   me: ['me'] as const,
+  academicUnits: ['academic-units'] as const,
   feed: (feedType: FeedType, tag?: string | null) => ['feed', feedType, tag ?? null] as const,
   feedAll: ['feed'] as const,
   post: (id: string) => ['post', id] as const,

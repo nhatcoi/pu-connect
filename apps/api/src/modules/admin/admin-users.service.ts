@@ -145,6 +145,12 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     if (f.auth === 'google') where.push(`u.google_id IS NOT NULL`)
     if (f.auth === 'password') where.push(`u.password_hash IS NOT NULL`)
     if (f.faculty) where.push(`u.faculty = ${p(f.faculty)}`)
+    // Đơn vị đã chọn + toàn bộ đơn vị con (chọn khoa ⇒ gồm các ngành)
+    if (f.unit) {
+      where.push(
+        `u.unit_id IN (WITH RECURSIVE sub(id) AS (SELECT ${p(f.unit)}::uuid UNION ALL SELECT c.id FROM academic_units c JOIN sub s ON c.parent_id = s.id) SELECT id FROM sub)`
+      )
+    }
     if (f.risk === 'high') where.push('u.risk_score >= 50')
     if (f.risk === 'medium') where.push('u.risk_score BETWEEN 25 AND 49')
     if (f.reported) where.push(`EXISTS (SELECT 1 FROM post_reports r JOIN posts p ON p.id = r.post_id WHERE p.author_id = u.id)`)

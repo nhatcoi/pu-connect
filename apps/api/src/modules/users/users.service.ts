@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings, FeaturePreferences } from '@pu/schemas'
+import { findUnitNames } from '../academic-units/unit-names'
 import { UserEventsService } from '../personalization/user-events.service'
 import { resolvePrivacySettings } from './dto/privacy.dto'
 import { resolveFeaturePreferences, type UpdatePreferencesInput } from './dto/preferences.dto'
@@ -98,21 +99,42 @@ export class UsersService {
       values.push(data.bannerUrl)
       setClauses.push(`banner_url = $${values.length}`)
     }
-    if (data.school !== undefined) {
-      values.push(data.school ? data.school.trim() : null)
-      setClauses.push(`school = $${values.length}`)
-    }
-    if (data.faculty !== undefined) {
-      values.push(data.faculty ? data.faculty.trim() : null)
-      setClauses.push(`faculty = $${values.length}`)
+    // Đơn vị học thuật: chọn từ cây ⇒ trường / khoa / ngành suy ra từ cây; nhập tay ⇒ unit_id = NULL
+    // Academic unit: picked from the tree ⇒ names derive from it; typed by hand ⇒ unit_id cleared
+    const manual = (v: string | null | undefined) => (v ? v.trim() : null)
+    if (typeof data.unitId === 'string') {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.unitId)) throw new BadRequestException('Đơn vị không hợp lệ')
+      const names = await findUnitNames(this.db, data.unitId)
+      if (!names) throw new BadRequestException('Đơn vị không tồn tại hoặc đã bị tắt')
+      values.push(data.unitId, names.school, names.faculty, names.major ?? manual(data.major))
+      setClauses.push(`unit_id = $${values.length - 3}`, `school = $${values.length - 2}`, `faculty = $${values.length - 1}`, `major = $${values.length}`)
+    } else {
+      if (data.school !== undefined) {
+        values.push(manual(data.school))
+        setClauses.push(`school = $${values.length}`)
+      }
+      if (data.faculty !== undefined) {
+        values.push(manual(data.faculty))
+        setClauses.push(`faculty = $${values.length}`)
+      }
+      if (data.major !== undefined) {
+        values.push(manual(data.major))
+        setClauses.push(`major = $${values.length}`)
+      }
+      // Chữ đổi so với hiện tại (hoặc unitId = null) ⇒ không còn khớp đơn vị nào
+      if (data.unitId === null) {
+        setClauses.push(`unit_id = NULL`)
+      } else if (data.school !== undefined || data.faculty !== undefined || data.major !== undefined) {
+        const cmp = ['school', 'faculty', 'major'].map((c) => {
+          const idx = setClauses.findIndex((s) => s.startsWith(`${c} = $`))
+          return idx < 0 ? 'TRUE' : `${c} IS NOT DISTINCT FROM ${setClauses[idx].split('= ')[1]}`
+        })
+        setClauses.push(`unit_id = CASE WHEN ${cmp.join(' AND ')} THEN unit_id ELSE NULL END`)
+      }
     }
     if (data.academicYear !== undefined) {
       values.push(data.academicYear ? data.academicYear.trim() : null)
       setClauses.push(`academic_year = $${values.length}`)
-    }
-    if (data.major !== undefined) {
-      values.push(data.major ? data.major.trim() : null)
-      setClauses.push(`major = $${values.length}`)
     }
     if (data.className !== undefined) {
       values.push(data.className ? data.className.trim() : null)

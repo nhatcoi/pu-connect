@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useAdminUnits, flattenUnits } from '@/features/units/use-units'
 import { BadgeCheck, BadgeX, Download, Gavel, KeyRound, LockOpen, LogOut, Mail, ShieldCheck, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
 import { USER_ROLES, type AdminUserRow, type AdminUserSort, type AdminUserSummary, type SanctionKind } from '@pu/schemas'
 import { apiUrl, cn, formatCompact, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
@@ -434,9 +435,11 @@ function Toolbar({
 
   const popoverKeys = ['status', 'risk', 'verified', 'activity', 'joined', 'auth', 'reported'] as const
   const activeChips = FILTER_KEYS.filter((k) => k !== 'q' && params[k])
-  const advancedCount = [...popoverKeys, 'faculty' as const].filter((k) => params[k]).length
+  const advancedCount = [...popoverKeys, 'unit' as const].filter((k) => params[k]).length
 
-  const facultyOptions = useMemo(() => summary?.faculties ?? [], [summary])
+  const { data: unitList } = useAdminUnits()
+  const unitOptions = useMemo(() => flattenUnits(unitList ?? []).filter((n) => n.unit.userTotal > 0 || n.unit.id === params.unit), [unitList, params.unit])
+  const unitName = (id: string) => unitList?.find((u) => u.id === id)?.name ?? id
 
   return (
     <div className="mb-3 space-y-2.5">
@@ -491,14 +494,15 @@ function Toolbar({
                 </div>
               )
             })}
-            {facultyOptions.length > 0 && (
+            {unitOptions.length > 0 && (
               <div>
-                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Khoa</p>
-                <Select value={params.faculty ?? ''} onChange={(e) => setParams({ faculty: e.target.value })}>
-                  <option value="">Mọi khoa</option>
-                  {facultyOptions.map((f) => (
-                    <option key={f.faculty} value={f.faculty}>
-                      {f.faculty} ({f.count})
+                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Đơn vị (gồm đơn vị con)</p>
+                <Select value={params.unit ?? ''} onChange={(e) => setParams({ unit: e.target.value })}>
+                  <option value="">Mọi đơn vị</option>
+                  {unitOptions.map(({ unit: u, depth }) => (
+                    <option key={u.id} value={u.id}>
+                      {'— '.repeat(depth)}
+                      {u.shortName || u.name} ({u.userTotal})
                     </option>
                   ))}
                 </Select>
@@ -515,8 +519,8 @@ function Toolbar({
           {activeChips.map((k) => (
             <FilterChip
               key={k}
-              label={k === 'role' ? 'Vai trò' : k === 'faculty' ? 'Khoa' : (FILTER_OPTIONS[k as FilterKey]?.label ?? k)}
-              value={k === 'role' ? (ROLE_SHORT[params[k]] ?? params[k]) : k === 'faculty' ? params[k] : filterValueLabel(k, params[k])}
+              label={k === 'role' ? 'Vai trò' : k === 'faculty' ? 'Khoa' : k === 'unit' ? 'Đơn vị' : (FILTER_OPTIONS[k as FilterKey]?.label ?? k)}
+              value={k === 'role' ? (ROLE_SHORT[params[k]] ?? params[k]) : k === 'faculty' ? params[k] : k === 'unit' ? unitName(params[k]) : filterValueLabel(k, params[k])}
               onRemove={() => setParams({ [k]: undefined })}
             />
           ))}

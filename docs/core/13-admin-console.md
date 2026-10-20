@@ -17,6 +17,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | — thao tác admin trên người này | tab **Kiểm duyệt** |
 | — ghi chú nội bộ (người dùng không thấy) | tab **Ghi chú** |
 | Đặt lại mật khẩu cho người dùng | menu **⋯** của hồ sơ / thanh thao tác hàng loạt (biểu tượng chìa khóa) › *Gửi link đặt lại mật khẩu* hoặc *Bắt đổi mật khẩu* |
+| Cây đơn vị (trường / khoa / ngành, viện, trung tâm): thêm, sửa, sắp xếp, gộp | **Học thuật** › tab **Đơn vị** |
 | Khóa nhanh | nút **Khóa** đầu hồ sơ (hộp Xử phạt chọn sẵn *Khóa*, chọn thời hạn) |
 | Học phần, tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
 | Telemetry, phản hồi, ticket, skill N7AI | **N7AI** |
@@ -28,6 +29,14 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | Bộ lọc hay dùng | nút **View** trên mỗi trang (có sẵn + lưu riêng / chia sẻ) |
 
 Mọi bộ lọc, trang, tab, hồ sơ đang mở đều nằm trên URL (`#/users?risk=high&user=<id>`) ⇒ gửi link là mở đúng màn hình.
+
+## Đơn vị học thuật (trường → khoa → ngành)
+
+- Bảng `academic_units` (không còn hằng số trong code). Người dùng chọn đơn vị ở form sửa hồ sơ; `users.unit_id` lưu đơn vị cụ thể nhất, cột chữ `school` / `faculty` / `major` suy ra từ cây. **Khoa hiển thị bằng tên viết tắt** (CNTT, KHMT, QTKD…) thay các mã cũ FIT / FCS / FBA.
+- **Học thuật › Đơn vị**: thêm / sửa tên và tên viết tắt / sắp xếp (lên, xuống) / tắt (không còn trong danh sách chọn) / **gộp** (chuyển người dùng + đơn vị con sang đơn vị đích) / xóa (chỉ khi trống). Đổi tên hay tên viết tắt tự cập nhật hồ sơ mọi người trong nhánh. Mỗi thao tác ghi nhật ký (`academic_unit.*`).
+- Danh sách người dùng có bộ lọc **Đơn vị** (chọn khoa ⇒ gồm cả các ngành).
+- Migration `academic-units-upgrade.sql` chạy mỗi lần deploy: seed (không ghi đè), gán `unit_id` cho người dùng chưa có (khớp ngành > khoa > mã cũ > trường) và đồng bộ lại cột chữ. Người dùng ghi trường khác / nhập tay giữ nguyên, `unit_id` rỗng.
+- Chưa đổi: `courses.faculty_code`, `posts.faculty_code` vẫn là mã khoa riêng của học phần / bài viết.
 
 ## Xử phạt
 

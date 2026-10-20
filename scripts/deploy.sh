@@ -138,6 +138,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 
 # Seed initial users if empty
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/bot-simulator-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/academic-units-upgrade.sql
 
 # Bot Simulator: mật khẩu bot ngẫu nhiên trong .env (không dùng mật khẩu mặc định trong repo), tạo tài khoản bot lần đầu
 grep -q '^BOT_PASSWORD=' .env || echo "BOT_PASSWORD=$(openssl rand -hex 12)" >> .env

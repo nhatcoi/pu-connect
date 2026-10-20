@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import type { AdminCommunityRow, AdminCourseInput, AdminCourseRow, AdminDocumentRow, AdminPermission } from '@pu/schemas'
 import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/lib/api'
 import { SavedViews } from '@/components/list/saved-views'
+import { UnitsSection } from '@/features/units/units-panel'
 import { useHashQuery } from '@/hooks/use-hash-query'
 import {
   Badge,
@@ -30,7 +31,7 @@ import {
 } from '@/components/ui'
 import { ListFooter, ListSearch, ParamSelect, useListState, usePaged, type ListState } from '@/components/list/list-kit'
 
-type Sub = 'courses' | 'documents' | 'communities'
+type Sub = 'courses' | 'documents' | 'communities' | 'units'
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   midterm_exam: 'Đề giữa kỳ',
@@ -52,7 +53,7 @@ const COMMUNITY_TYPE_LABELS: Record<string, string> = {
 
 export function AcademicTab({ permissions }: { permissions: AdminPermission[] }) {
   const [params, set] = useHashQuery()
-  const tab = (['courses', 'documents', 'communities'].includes(params.tab) ? params.tab : 'courses') as Sub
+  const tab = (['courses', 'documents', 'communities', 'units'].includes(params.tab) ? params.tab : 'courses') as Sub
   const [createOpen, setCreateOpen] = useState(false)
   const canManage = permissions.includes('academic:manage')
 
@@ -77,7 +78,8 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
             items={[
               { id: 'courses', label: 'Học phần' },
               { id: 'documents', label: 'Tài liệu' },
-              { id: 'communities', label: 'Cộng đồng' }
+              { id: 'communities', label: 'Cộng đồng' },
+              { id: 'units', label: 'Đơn vị' }
             ]}
           />
         }
@@ -85,6 +87,7 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
       {tab === 'courses' && <CoursesSection />}
       {tab === 'documents' && <DocumentsSection canManage={canManage} />}
       {tab === 'communities' && <CommunitiesSection />}
+      {tab === 'units' && <UnitsSection canManage={canManage} />}
       {canManage && <CreateCourseDialog open={createOpen} onClose={() => setCreateOpen(false)} />}
     </>
   )

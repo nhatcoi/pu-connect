@@ -118,6 +118,7 @@ export const AdminUserQuerySchema = z.object({
   activity: optEnum(['online', '24h', '7d', '30d', 'dormant', 'never'] as const),
   joined: optEnum(['24h', '7d', '30d', '90d'] as const),
   faculty: z.string().trim().max(50).optional(),
+  unit: z.string().uuid().optional(), // đơn vị trong cây học thuật (gồm đơn vị con)
   reported: optEnum(['yes'] as const),
   risk: optEnum(['high', 'medium'] as const),
   sort: optEnum(['created', 'last_seen', 'reputation', 'posts', 'reports', 'name', 'risk'] as const).default('created'),

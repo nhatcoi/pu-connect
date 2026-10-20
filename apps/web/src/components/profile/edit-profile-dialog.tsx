@@ -77,6 +77,8 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
   const [major, setMajor] = useState(initialData.major || '')
   const [academicYear, setAcademicYear] = useState(initialData.academicYear || '')
   const [className, setClassName] = useState(initialData.className || '')
+  // Đơn vị chọn từ cây học thuật: undefined = không đổi, string = đơn vị mới, null = nhập tay / xóa
+  const [unitId, setUnitId] = useState<string | null | undefined>(undefined)
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl || '')
   const [bannerUrl, setBannerUrl] = useState(initialData.bannerUrl || '')
   const [location, setLocation] = useState(initialData.location || '')
@@ -108,6 +110,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
       setMajor(initialData.major || '')
       setAcademicYear(initialData.academicYear || '')
       setClassName(initialData.className || '')
+      setUnitId(undefined)
       setAvatarUrl(initialData.avatarUrl || '')
       setBannerUrl(initialData.bannerUrl || '')
       setLocation(initialData.location || '')
@@ -215,6 +218,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
           major: major.trim() || null,
           academicYear: academicYear.trim() || null,
           className: className.trim() || null,
+          ...(unitId !== undefined ? { unitId } : {}),
           avatarUrl: avatarUrl.trim() || null,
           bannerUrl: bannerUrl ? bannerUrl.trim() : null,
           location: location.trim() || null,
@@ -483,6 +487,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
                 setMajor(values.major || '')
                 setAcademicYear(values.academicYear || '')
                 setClassName(values.className || '')
+                if (values.unitId !== undefined) setUnitId(values.unitId)
               }}
             />
 

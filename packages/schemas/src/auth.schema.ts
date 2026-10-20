@@ -27,6 +27,7 @@ export const OnboardingSchema = z.object({
   school: z.string().optional().nullable(),
   faculty: z.string().optional().nullable(),
   major: z.string().optional().nullable(),
+  unitId: z.string().uuid().optional().nullable(), // đơn vị chọn từ cây học thuật (null = nhập tay)
   className: z.string().optional().nullable(),
   academicYear: z.string().min(2, { message: 'Vui lòng chọn Khóa học / Niên khóa' }),
   courses: z.array(z.string()).default([]),
@@ -112,6 +113,7 @@ export const UpdateProfileSchema = z.object({
   school: z.string().max(100).optional().nullable(),
   faculty: z.string().max(100).optional().nullable(),
   major: z.string().max(100).optional().nullable(),
+  unitId: z.string().uuid().optional().nullable(), // đơn vị chọn từ cây học thuật (null = nhập tay)
   academicYear: z.string().max(20).optional().nullable(),
   className: z.string().max(50).optional().nullable(),
   location: z.string().max(100).optional().nullable(),

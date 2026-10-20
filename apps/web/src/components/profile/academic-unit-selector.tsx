@@ -1,9 +1,11 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect } from 'react'
-import { searchAcademicUnits, inferAcademicHierarchy, PHENIKAA_ACADEMIC_YEARS, PHENIKAA_UNIVERSITY_NAME, type AcademicUnitItem } from '@pu/schemas'
+import { PHENIKAA_ACADEMIC_YEARS, PHENIKAA_UNIVERSITY_NAME, type AcademicUnit } from '@pu/schemas'
 import { GraduationCap, Search, Check, X, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useAcademicUnits } from '@/hooks/use-academic-units'
+import { searchUnits, unitParentLine, unitProfileValues } from '@/lib/academic-units'
 
 interface AcademicUnitSelectorProps {
   school?: string | null
@@ -11,7 +13,8 @@ interface AcademicUnitSelectorProps {
   major?: string | null
   academicYear?: string | null
   className?: string | null
-  onChange: (values: { school: string | null; faculty: string | null; major: string | null; academicYear: string | null; className: string | null }) => void
+  // unitId: có mặt khi đổi đơn vị (id = chọn từ cây, null = nhập tay / xóa); vắng mặt khi chỉ đổi khóa / lớp
+  onChange: (values: { school: string | null; faculty: string | null; major: string | null; academicYear: string | null; className: string | null; unitId?: string | null }) => void
 }
 
 export function AcademicUnitSelector({ school, faculty, major, academicYear, className, onChange }: AcademicUnitSelectorProps) {
@@ -23,6 +26,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
   const [forceOther, setForceOther] = useState(false)
   const isOtherUni = forceOther || (!!school && !/phenikaa/i.test(school))
   const containerRef = useRef<HTMLDivElement>(null)
+  const { data: units = [] } = useAcademicUnits()
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -36,17 +40,13 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
   }, [])
 
   // Tìm kiếm kết quả
-  const searchResults = useMemo(() => {
-    return searchAcademicUnits(searchQuery, 12)
-  }, [searchQuery])
+  const searchResults = useMemo(() => searchUnits(units, searchQuery, 12), [units, searchQuery])
 
   // Lựa chọn một đơn vị học thuật
-  const handleSelectUnit = (unit: AcademicUnitItem) => {
-    const inferred = inferAcademicHierarchy(unit.name)
+  const handleSelectUnit = (unit: AcademicUnit) => {
     onChange({
-      school: inferred.school,
-      faculty: inferred.faculty,
-      major: inferred.major,
+      ...unitProfileValues(units, unit),
+      unitId: unit.id,
       academicYear: academicYear || null,
       className: className || null
     })
@@ -61,6 +61,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
       school: null,
       faculty: null,
       major: null,
+      unitId: null,
       academicYear: academicYear || null,
       className: className || null
     })
@@ -84,7 +85,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
             setForceOther(other)
             setIsCustomMode(false)
             // Đổi đại học ⇒ xóa khoa/ngành cũ (không thuộc trường mới)
-            onChange({ school: null, faculty: null, major: null, academicYear: academicYear || null, className: className || null })
+            onChange({ school: null, faculty: null, major: null, unitId: null, academicYear: academicYear || null, className: className || null })
           }}
           className="w-full bg-transparent p-0 text-sm text-foreground focus:outline-none border-none cursor-pointer"
         >
@@ -102,7 +103,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
           <input
             type="text"
             value={school || ''}
-            onChange={(e) => onChange({ school: e.target.value || null, faculty: faculty || null, major: major || null, academicYear: academicYear || null, className: className || null })}
+            onChange={(e) => onChange({ school: e.target.value || null, faculty: faculty || null, major: major || null, unitId: null, academicYear: academicYear || null, className: className || null })}
             placeholder="Tên trường đại học"
             className="w-full bg-background text-sm rounded-xl px-3 py-2.5 border border-input focus:outline-none focus:border-primary"
           />
@@ -110,14 +111,14 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
             <input
               type="text"
               value={faculty || ''}
-              onChange={(e) => onChange({ school: school || null, faculty: e.target.value || null, major: major || null, academicYear: academicYear || null, className: className || null })}
+              onChange={(e) => onChange({ school: school || null, faculty: e.target.value || null, major: major || null, unitId: null, academicYear: academicYear || null, className: className || null })}
               placeholder="Khoa (tùy chọn)"
               className="w-full bg-background text-sm rounded-xl px-3 py-2.5 border border-input focus:outline-none focus:border-primary"
             />
             <input
               type="text"
               value={major || ''}
-              onChange={(e) => onChange({ school: school || null, faculty: faculty || null, major: e.target.value || null, academicYear: academicYear || null, className: className || null })}
+              onChange={(e) => onChange({ school: school || null, faculty: faculty || null, major: e.target.value || null, unitId: null, academicYear: academicYear || null, className: className || null })}
               placeholder="Ngành học"
               className="w-full bg-background text-sm rounded-xl px-3 py-2.5 border border-input focus:outline-none focus:border-primary"
             />
@@ -192,7 +193,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                 <div className="max-h-60 overflow-y-auto p-1.5 space-y-1 divide-y divide-border/40">
                   {searchResults.length > 0 ? (
                     searchResults.map((item) => {
-                      const isSelected = item.name === major || item.name === faculty || item.name === school
+                      const isSelected = item.name === major || item.name === school || (item.type !== 'major' && (item.name === faculty || item.shortName === faculty))
 
                       return (
                         <button
@@ -234,7 +235,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                               )}
                             </div>
                             <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                              {[item.schoolName, item.facultyName].filter(Boolean).join(' • ') || `Thuộc ${PHENIKAA_UNIVERSITY_NAME}`}
+                              {unitParentLine(units, item) || `Thuộc ${PHENIKAA_UNIVERSITY_NAME}`}
                             </p>
                           </div>
                           {isSelected && <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />}
@@ -280,6 +281,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                     school: school || null,
                     faculty: e.target.value || null,
                     major: major || null,
+                    unitId: null,
                     academicYear: academicYear || null,
                     className: className || null
                   })
@@ -296,6 +298,7 @@ export function AcademicUnitSelector({ school, faculty, major, academicYear, cla
                   school: school || null,
                   faculty: faculty || null,
                   major: e.target.value || null,
+                  unitId: null,
                   academicYear: academicYear || null,
                   className: className || null
                 })

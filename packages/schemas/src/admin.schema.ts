@@ -310,6 +310,7 @@ export interface AdminUserQuery {
   activity?: AdminUserActivity
   joined?: AdminUserJoined
   faculty?: string
+  unit?: string
   reported?: 'yes'
   risk?: 'high' | 'medium'
   sort?: AdminUserSort

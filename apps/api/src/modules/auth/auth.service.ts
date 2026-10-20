@@ -16,6 +16,7 @@ import { resolveFeaturePreferences } from '../users/dto/preferences.dto'
 import * as bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'crypto'
 import { ConfigService } from '@nestjs/config'
+import { findUnitNames } from '../academic-units/unit-names'
 import { MailService } from './mail.service'
 import { inferStudentInfoFromEmail, isPhenikaaEmail } from './email-profile.util'
 import { isReservedUsername } from './reserved-usernames'
@@ -396,6 +397,10 @@ export class AuthService {
     const interests = Array.from(new Set([...(data.courses || [])]))
     const skills = Array.from(new Set([...(data.skills || [])]))
 
+    // Đơn vị chọn từ cây học thuật ⇒ trường / khoa / ngành suy ra từ cây
+    const unitId = typeof data.unitId === 'string' ? data.unitId : null
+    const unit = unitId ? await findUnitNames(this.db, unitId) : null
+
     // Update user profile (loại bỏ điểm thưởng gamification)
     const updateRes = await this.db.query(
       `UPDATE users
@@ -408,6 +413,7 @@ export class AuthService {
            bio = COALESCE($7, bio),
            skills = $8,
            interests = $9,
+           unit_id = CASE WHEN $11::uuid IS NOT NULL THEN $11::uuid ELSE unit_id END,
            is_onboarded = TRUE,
            updated_at = NOW()
        WHERE id = $10
@@ -417,15 +423,16 @@ export class AuthService {
                  avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at`,
       [
         data.studentId || null,
-        data.school || null,
-        data.faculty || null,
-        data.major || null,
+        unit ? unit.school : data.school || null,
+        unit ? unit.faculty : data.faculty || null,
+        unit ? (unit.major ?? data.major ?? null) : data.major || null,
         data.className || null,
         data.academicYear || null,
         data.bio || null,
         skills,
         interests,
-        userId
+        userId,
+        unit ? unitId : null
       ]
     )
 
