@@ -7,6 +7,7 @@ import { N7AiMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { N7AI_USERNAME } from '@/lib/mention'
 import { cn, formatRelativeTime } from '@/lib/utils'
+import { AnonymousAvatar } from '../anonymous-author'
 import type { FeaturedComment } from '@pu/schemas'
 
 interface FeaturedCommentPreviewProps {
@@ -30,7 +31,9 @@ export function FeaturedCommentPreview({ comment, onOpen }: FeaturedCommentPrevi
       )}
       title="Xem bình luận"
     >
-      {isBot ? (
+      {comment.isAnonymous ? (
+        <AnonymousAvatar className="h-6 w-6" />
+      ) : isBot ? (
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted">
           <N7AiMark className="h-[68%] w-[68%]" />
         </span>

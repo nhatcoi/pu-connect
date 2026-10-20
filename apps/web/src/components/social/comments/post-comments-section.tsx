@@ -77,8 +77,8 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   }, [isOpen, isLoaded, totalCount, onCountChange])
 
   // Gửi phản hồi ⇒ mở luồng của bình luận gốc để thấy ngay
-  const submitReply = async (text: string, parentId: string, media?: string[]) => {
-    const created = await addComment(text, parentId, media)
+  const submitReply = async (text: string, parentId: string, media?: string[], anonymous?: boolean) => {
+    const created = await addComment(text, parentId, media, anonymous)
     if (created) setExpandedReplies((prev) => ({ ...prev, [rootOf(parentId)]: true }))
     return created
   }
@@ -106,7 +106,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
 
   if (!isOpen) return null
 
-  const isPostAuthor = user?.id === post.authorId || user?.id === post.author?.id
+  const isPostAuthor = !!post.isMine || user?.id === post.authorId || user?.id === post.author?.id
   const isQaPost = post.postType === 'qa'
 
   const toggleReplies = (commentId: string) => {
@@ -120,7 +120,7 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
     <div className="border-t border-border/40 bg-muted/[0.03] pt-3 pb-2 space-y-3">
       {/* Top Comment Input Box */}
       <CommentComposer
-        onSubmit={(text, media) => addComment(text, undefined, media)}
+        onSubmit={(text, media, anonymous) => addComment(text, undefined, media, anonymous)}
         postId={post.id}
         mentionContext={mentionContext}
         draftKey={`comment:${post.id}`}

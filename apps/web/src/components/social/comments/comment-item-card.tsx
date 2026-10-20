@@ -14,6 +14,7 @@ import type { CommentItem, MentionCandidate } from '@pu/schemas'
 import { useQueryClient } from '@tanstack/react-query'
 import { prefetchProfile } from '@/hooks/use-profile'
 import { N7AI_USERNAME } from '@/lib/mention'
+import { AnonymousAvatar, anonymousName } from '../anonymous-author'
 
 interface CommentItemCardProps {
   comment: CommentItem
@@ -23,7 +24,7 @@ interface CommentItemCardProps {
   onLikeToggle: (commentId: string) => void
   onAcceptSolution?: (commentId: string) => void
   onDeleteComment?: (commentId: string) => void
-  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[]) => Promise<unknown>
+  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[], anonymous?: boolean) => Promise<unknown>
   onEditComment?: (commentId: string, content: string) => Promise<boolean>
   mentionContext?: MentionCandidate[]
   // Bình luận được mở từ thông báo (cuộn tới + viền nổi bật)
@@ -49,7 +50,7 @@ export function CommentItemCard({
 
   const authorInitials = (comment.author?.displayName || comment.author?.username || 'PU').slice(0, 2).toUpperCase()
 
-  const isMyComment = currentUserId === comment.authorId
+  const isMyComment = comment.isMine || currentUserId === comment.authorId
 
   return (
     <div
@@ -72,10 +73,13 @@ export function CommentItemCard({
       <div className="flex items-start justify-between">
         <Link
           href={`/${comment.author?.username || 'user'}`}
-          onMouseEnter={() => prefetchProfile(queryClient, comment.author?.username || '')}
-          className="flex items-center space-x-2.5 group/author cursor-pointer"
+          onMouseEnter={() => !comment.isAnonymous && prefetchProfile(queryClient, comment.author?.username || '')}
+          className={cn('flex items-center space-x-2.5 group/author cursor-pointer', comment.isAnonymous && 'pointer-events-none')}
+          tabIndex={comment.isAnonymous ? -1 : undefined}
         >
-          {comment.author?.username === N7AI_USERNAME ? (
+          {comment.isAnonymous ? (
+            <AnonymousAvatar className="h-7 w-7" />
+          ) : comment.author?.username === N7AI_USERNAME ? (
             // N7AI trả lời khi được @n7ai
             <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-muted">
               <N7AiMark className="h-[68%] w-[68%]" />
@@ -88,8 +92,14 @@ export function CommentItemCard({
           )}
 
           <div className="flex items-center gap-2">
-            <span className="font-bold text-xs text-foreground group-hover/author:underline">{comment.author?.displayName || 'Sinh viên Phenikaa'}</span>
-            <span className="text-[11px] text-muted-foreground">@{comment.author?.username || 'student'}</span>
+            {comment.isAnonymous ? (
+              <span className="font-bold text-xs text-foreground">{anonymousName(comment.isMine)}</span>
+            ) : (
+              <>
+                <span className="font-bold text-xs text-foreground group-hover/author:underline">{comment.author?.displayName || 'Sinh viên Phenikaa'}</span>
+                <span className="text-[11px] text-muted-foreground">@{comment.author?.username || 'student'}</span>
+              </>
+            )}
             <span className="text-muted-foreground text-[10px]">•</span>
             <span className="text-[10px] text-muted-foreground">{formatRelativeTime(comment.createdAt)}</span>
             {comment.editedAt && (
@@ -195,12 +205,12 @@ export function CommentItemCard({
             <CommentComposer
               parentId={comment.id}
               autoFocus
-              initialContent={`@${comment.author?.username || 'user'} `}
+              initialContent={comment.isAnonymous ? '' : `@${comment.author?.username || 'user'} `}
               postId={comment.postId}
               mentionContext={mentionContext}
               draftKey={`reply:${comment.id}`}
-              onSubmit={async (text, media) => {
-                const created = await onReplySubmit(text, comment.id, media)
+              onSubmit={async (text, media, anonymous) => {
+                const created = await onReplySubmit(text, comment.id, media, anonymous)
                 if (created) setShowReplyComposer(false)
                 return created
               }}

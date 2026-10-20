@@ -12,10 +12,11 @@ import { useDraft } from '@/hooks/use-draft'
 import { uploadFileToR2 } from '@/lib/api-client'
 import { N7AI_MENTION } from '@/lib/mention'
 import { Image as ImageIcon, Binary, Code2, Loader2, X } from 'lucide-react'
+import { AnonymousToggle } from '../anonymous-toggle'
 import { toast } from 'sonner'
 
 interface CommentComposerProps {
-  onSubmit: (content: string, mediaUrls?: string[]) => Promise<unknown>
+  onSubmit: (content: string, mediaUrls?: string[], anonymous?: boolean) => Promise<unknown>
   parentId?: string
   placeholder?: string
   autoFocus?: boolean
@@ -47,6 +48,7 @@ export function CommentComposer({
   const [content, setContent] = useState(initialContent)
   const [attachedImages, setAttachedImages] = useState<{ id: string; url: string; file?: File }[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [anonymous, setAnonymous] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -129,11 +131,12 @@ export function CommentComposer({
         }
       }
 
-      const ok = await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined)
+      const ok = await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined, !isEdit && anonymous)
       // onSubmit trả null/false = lỗi ⇒ giữ nguyên nội dung để gửi lại
       if (ok === null || ok === false) return
       clearDraft()
       setContent('')
+      setAnonymous(false)
       setAttachedImages([])
     } catch {
       toast.error('Không thể gửi bình luận')
@@ -259,6 +262,7 @@ export function CommentComposer({
           </div>
 
           <div className="flex items-center gap-2">
+            {!isEdit && <AnonymousToggle variant="comment" checked={anonymous} onChange={setAnonymous} />}
             {onCancel && (
               <Button
                 type="button"

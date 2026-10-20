@@ -11,6 +11,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { onPostCreated as notifyPostCreated } from '@/lib/post-cache'
 import { toast } from 'sonner'
 import { Loader2, Sparkles, X, Users, Tag, BarChart2 } from 'lucide-react'
+import { AnonymousToggle } from '../anonymous-toggle'
 import { apiClient, uploadFileToR2, errorMessage } from '@/lib/api-client'
 import type { PostItem, PostType, TargetAudience } from '@pu/schemas'
 
@@ -47,6 +48,7 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
   const [content, setContent] = useState('')
   const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(defaultCourseId)
   const [targetAudience, setTargetAudience] = useState<TargetAudience>('everyone')
+  const [isAnonymous, setIsAnonymous] = useState(false)
   const [tags, setTags] = useState<string[]>([])
   const [tagInputValue, setTagInputValue] = useState('')
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([])
@@ -219,7 +221,8 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
         recruitSlotsTotal: postType === 'group_recruit' ? slotsTotal : undefined,
         recruitSlotsFilled: postType === 'group_recruit' ? slotsFilled : undefined,
         pollQuestion: showPollCreator && pollQuestion.trim() ? pollQuestion.trim() : undefined,
-        pollOptions: showPollCreator && validPollOptions.length >= 2 ? validPollOptions : undefined
+        pollOptions: showPollCreator && validPollOptions.length >= 2 ? validPollOptions : undefined,
+        isAnonymous: canBeAnonymous && isAnonymous
       }
 
       const response = await apiClient<{ success: boolean; data: PostItem }>('/posts', {
@@ -239,6 +242,7 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
       // Reset form
       setTitle('')
       setContent('')
+      setIsAnonymous(false)
       setSelectedCourseId(defaultCourseId)
       setTags([])
       setAttachedFiles([])
@@ -255,6 +259,9 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
       setUploadStatus('')
     }
   }
+
+  // Ẩn danh chỉ cho bài hỏi đáp ngoài cộng đồng
+  const canBeAnonymous = postType === 'qa' && !defaultCommunityId && !defaultCommunitySlug
 
   const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
@@ -310,6 +317,8 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
               />
             </div>
           )}
+
+          {isExpanded && canBeAnonymous && <AnonymousToggle checked={isAnonymous} onChange={setIsAnonymous} />}
 
           {/* Group Recruit Extra Slots Fields */}
           {isExpanded && postType === 'group_recruit' && (

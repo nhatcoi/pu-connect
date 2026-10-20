@@ -32,6 +32,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { AnonymousAvatar, anonymousName } from './anonymous-author'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AcademicBadge } from '@/components/ui/academic-badge'
@@ -190,7 +191,7 @@ export function PostCard({
   }, [initialPost])
 
   // Check if current user is owner or admin
-  const isOwner = user?.id && post.author?.id && String(user.id) === String(post.author.id)
+  const isOwner = post.isMine || (user?.id && post.author?.id && String(user.id) === String(post.author.id))
 
   // Optimistic Like Toggle
   const handleLike = async () => {
@@ -403,16 +404,20 @@ export function PostCard({
         <div className="flex items-start gap-3">
           {/* 1. Left Column: Author Avatar */}
           <div className="shrink-0 pt-0.5">
-            <Link
-              href={`/${post.author?.username || 'user'}`}
-              onMouseEnter={() => prefetchProfile(queryClient, post.author?.username || '')}
-              className="cursor-pointer group block"
-            >
-              <Avatar className="h-9 w-9 transition-transform group-hover:scale-105">
-                <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.displayName || ''} />
-                <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{authorInitials}</AvatarFallback>
-              </Avatar>
-            </Link>
+            {post.isAnonymous ? (
+              <AnonymousAvatar className="h-9 w-9" />
+            ) : (
+              <Link
+                href={`/${post.author?.username || 'user'}`}
+                onMouseEnter={() => prefetchProfile(queryClient, post.author?.username || '')}
+                className="cursor-pointer group block"
+              >
+                <Avatar className="h-9 w-9 transition-transform group-hover:scale-105">
+                  <AvatarImage src={post.author?.avatarUrl || ''} alt={post.author?.displayName || ''} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{authorInitials}</AvatarFallback>
+                </Avatar>
+              </Link>
+            )}
           </div>
 
           {/* 2. Right Column: Main Content (Indented aligned with author name) */}
@@ -420,19 +425,25 @@ export function PostCard({
             {/* Header row: Author Name + Handle + Time + Badges + More Dropdown */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center space-x-1.5 flex-wrap min-w-0">
-                <Link
-                  href={`/${post.author?.username || 'user'}`}
-                  onMouseEnter={() => prefetchProfile(queryClient, post.author?.username || '')}
-                  className="font-semibold text-[13px] text-foreground hover:underline transition-colors truncate"
-                >
-                  {post.author?.displayName || 'Sinh viên Phenikaa'}
-                </Link>
-                <span className="text-xs text-muted-foreground truncate">@{post.author?.username || 'student'}</span>
+                {post.isAnonymous ? (
+                  <span className="font-semibold text-[13px] text-foreground truncate">{anonymousName(post.isMine)}</span>
+                ) : (
+                  <>
+                    <Link
+                      href={`/${post.author?.username || 'user'}`}
+                      onMouseEnter={() => prefetchProfile(queryClient, post.author?.username || '')}
+                      className="font-semibold text-[13px] text-foreground hover:underline transition-colors truncate"
+                    >
+                      {post.author?.displayName || 'Sinh viên Phenikaa'}
+                    </Link>
+                    <span className="text-xs text-muted-foreground truncate">@{post.author?.username || 'student'}</span>
+                  </>
+                )}
                 <span className="text-xs text-muted-foreground">·</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">{formatRelativeTime(post.createdAt)}</span>
 
                 {/* Academic Role Badge */}
-                <AcademicBadge role={post.author?.role} />
+                {!post.isAnonymous && <AcademicBadge role={post.author?.role} />}
               </div>
 
               {/* Right: Badges & More dropdown */}
@@ -501,23 +512,25 @@ export function PostCard({
                   <DropdownMenuContent align="end" className="w-56 p-1.5 rounded-2xl shadow-xl border border-border/80 bg-popover/95 backdrop-blur-md">
                     {!isOwner ? (
                       <>
-                        {/* 1. Follow / Unfollow User */}
-                        <DropdownMenuItem
-                          onClick={handleToggleFollowAuthor}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          {isFollowing ? (
-                            <>
-                              <UserMinus className="h-4 w-4 text-muted-foreground shrink-0" />
-                              <span className="truncate">Bỏ theo dõi @{post.author?.username || 'user'}</span>
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="h-4 w-4 text-primary shrink-0" />
-                              <span className="truncate">Theo dõi @{post.author?.username || 'user'}</span>
-                            </>
-                          )}
-                        </DropdownMenuItem>
+                        {/* 1. Follow / Unfollow User (bài ẩn danh: không có người để theo dõi) */}
+                        {!post.isAnonymous && (
+                          <DropdownMenuItem
+                            onClick={handleToggleFollowAuthor}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
+                          >
+                            {isFollowing ? (
+                              <>
+                                <UserMinus className="h-4 w-4 text-muted-foreground shrink-0" />
+                                <span className="truncate">Bỏ theo dõi @{post.author?.username || 'user'}</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="h-4 w-4 text-primary shrink-0" />
+                                <span className="truncate">Theo dõi @{post.author?.username || 'user'}</span>
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        )}
 
                         {/* 2. Không quan tâm bài viết này */}
                         <DropdownMenuItem
