@@ -80,7 +80,7 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 
 ## Bot (Admin → Bot)
 
-Trang chia 5 tab: **Tổng quan** (daemon, tốc độ, đăng bài crawl) · **Nội dung & hành động** (hàng đợi hành động + kho dữ liệu crawl) · **Tài khoản bot** (CRUD) · **AI & chủ đề** · **Nhật ký**.
+Trang gồm một trang dọc, theo thứ tự: **công tắc daemon & đăng bài crawl** · **tài khoản bot** (CRUD, quyền, giao việc) · **AI & chủ đề** · **hàng đợi hành động + Import Excel + dữ liệu crawl** · **nhật ký**.
 
 **CRUD tài khoản bot** (tab *Tài khoản bot*): *Tạo bot* (username, tên, vai trò `student/lecturer/ta`, khoa, ngành, bio, giọng văn; mật khẩu hệ thống cấp từ `BOT_PASSWORD`, bot mới mặc định không có quyền nào), *Sửa hồ sơ*, *Cấu hình* (quyền/chủ đề/hạn mức), *Xóa* (xóa hẳn bot kèm bài/bình luận/tim của bot, tính lại bộ đếm, hủy lệnh đang chờ; muốn chỉ dừng bot thì tắt *Bot đang hoạt động*). Daemon đọc danh sách bot từ DB mỗi 30 giây nên bot mới tự đăng nhập, bot đã xóa tự bị gỡ, không cần restart. Endpoint `POST/PATCH/DELETE admin/bots/accounts[/:username]`.
 

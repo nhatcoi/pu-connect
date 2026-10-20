@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { FileText, Heart, MessageCircle, Pause, Play } from 'lucide-react'
 import { BOT_SPEEDS, type AdminBotOverview } from '@pu/schemas'
 import { adminApi, formatNumber, formatRelativeTime } from '@/lib/api'
-import { Badge, Button, Card, CardHeader, Field, LoadingRows, PageHeader, Segmented, Stat, Tabs } from '@/components/ui'
+import { Badge, Button, Card, CardHeader, Field, LoadingRows, PageHeader, Segmented, Stat } from '@/components/ui'
 import { BotAccountsTab } from './bot-accounts-tab'
 import { BotActionDialog, type BotActionPreset } from './bot-action-dialog'
 import { BotActivityLog } from './bot-activity-log'
@@ -12,19 +12,9 @@ import { useBotMutation, useBotOverview } from './use-bots'
 
 const SPEED_LABEL = { slow: 'Chậm (20–60 phút)', normal: 'Vừa (5–15 phút)', fast: 'Nhanh (1–3 phút)' } as const
 
-type BotTab = 'overview' | 'content' | 'accounts' | 'settings' | 'log'
-const TABS: { id: BotTab; label: string }[] = [
-  { id: 'overview', label: 'Tổng quan' },
-  { id: 'content', label: 'Nội dung & hành động' },
-  { id: 'accounts', label: 'Tài khoản bot' },
-  { id: 'settings', label: 'AI & chủ đề' },
-  { id: 'log', label: 'Nhật ký' }
-]
-
 export function BotsPage() {
   const overview = useBotOverview()
   const data = overview.data
-  const [tab, setTab] = useState<BotTab>('overview')
   const [action, setAction] = useState<BotActionPreset | null>(null)
 
   return (
@@ -38,17 +28,14 @@ export function BotsPage() {
         <LoadingRows rows={4} />
       ) : (
         <div className="space-y-5">
-          <Tabs value={tab} onChange={setTab} items={TABS.map((t) => (t.id === 'content' ? { ...t, count: data.commands.filter((c) => c.status === 'pending').length } : t))} />
-          {tab === 'overview' && <OverviewTab data={data} />}
-          {tab === 'content' && <BotContentTab data={data} onAct={setAction} />}
-          {tab === 'accounts' && <BotAccountsTab data={data} onAct={setAction} />}
-          {tab === 'settings' && (
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-              <AiConfigCard key={`${data.ai.model}|${data.ai.baseUrl}`} data={data} />
-              <TopicsCard topics={data.topics} />
-            </div>
-          )}
-          {tab === 'log' && <BotActivityLog bots={data.bots.map((b) => b.username)} />}
+          <ControlCards data={data} />
+          <BotAccountsTab data={data} onAct={setAction} />
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <AiConfigCard key={`${data.ai.model}|${data.ai.baseUrl}`} data={data} />
+            <TopicsCard topics={data.topics} />
+          </div>
+          <BotContentTab data={data} onAct={setAction} />
+          <BotActivityLog bots={data.bots.map((b) => b.username)} />
         </div>
       )}
 
@@ -58,7 +45,7 @@ export function BotsPage() {
 }
 
 // Công tắc daemon, tốc độ, đăng bài crawl
-function OverviewTab({ data }: { data: AdminBotOverview }) {
+function ControlCards({ data }: { data: AdminBotOverview }) {
   const control = useBotMutation((body: Parameters<typeof adminApi.patch>[1]) => adminApi.patch<AdminBotOverview>('/admin/bots/control', body))
   return (
     <div className="space-y-5">
