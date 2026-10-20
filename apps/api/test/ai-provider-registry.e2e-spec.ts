@@ -62,7 +62,7 @@ describe('AiProviderRegistry + LlmService (DB providers)', () => {
     const registry = new AiProviderRegistry(db, cfg)
     expect((await registry.chain()).map((p) => [p.id, p.primary])).toEqual([['a', true], ['b', false]])
     registry.markDown('a')
-    expect((await registry.chain()).map((p) => [p.id, p.primary])).toEqual([['b', false]])
+    expect((await registry.chain()).map((p) => [p.id, p.primary])).toEqual([['b', true]]) // primary = provider được thử đầu tiên
     registry.invalidate()
     expect((await registry.chain()).map((p) => p.id)).toEqual(['a', 'b'])
   })

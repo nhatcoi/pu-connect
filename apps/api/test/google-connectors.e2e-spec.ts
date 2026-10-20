@@ -4,9 +4,8 @@ import type { DatabaseService } from '../src/database/database.service'
 import { GoogleOAuthService } from '../src/modules/ai/connectors/google-oauth.service'
 import { GoogleMcpService } from '../src/modules/ai/connectors/google-mcp.service'
 import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
-import { LlmService } from '../src/modules/ai/llm.service'
 import { N7AiService } from '../src/modules/chat/n7ai/n7ai.service'
-import { createTestApp, createUser, loginAgent } from './helpers'
+import { createTestApp, createUser, loginAgent, stubLlm, stubProviders } from './helpers'
 
 const SCOPES = {
   drive: 'drive.readonly',
@@ -41,12 +40,6 @@ const TOOLS = [
 ]
 
 // Real SDK and DB; only Google / workspace-mcp network and model responses are intercepted.
-// LlmService tối giản: chat() thật chạy trên một provider giả (không DB / mạng)
-const llmStub = (create: unknown) => {
-  const client = { chat: { completions: { create } } }
-  return { client, model: 'test', providers: { chain: async () => [{ id: 't', name: 't', client, modelOverride: null, primary: true }], markDown: () => undefined }, logger: { warn: () => undefined }, isGatewayFailure: () => false, chat: LlmService.prototype.chat } as unknown as LlmService
-}
-
 describe('Google MCP connectors', () => {
   let app: NestExpressApplication
   let db: DatabaseService
@@ -231,7 +224,7 @@ describe('Google MCP connectors', () => {
       )
     )
     const loop = new McpAgentService(
-      llmStub(create),
+      stubLlm(create),
       app.get(GoogleMcpService)
     )
     const output: string[] = []
@@ -270,9 +263,7 @@ describe('Google MCP connectors', () => {
       `INSERT INTO messages (conversation_id, sender_id, kind, content, meta) VALUES ($1, $2, 'text', 'Hỏi lịch', $3) RETURNING id`,
       [conv.id, owner.id, JSON.stringify({ connectors: ['google_gmail', 'google_calendar'] })]
     )
-    const llm = app.get(LlmService)
-    const original = llm.client
-    Object.assign(llm, { client: {} })
+    const restoreLlm = stubProviders(app, {})
     const spy = jest.spyOn(app.get(McpAgentService), 'stream').mockImplementation(async (_messages, _userId, connectors, emit) => {
       expect(connectors).toEqual([])
       emit('Trả lời trong nhóm')
@@ -283,7 +274,7 @@ describe('Google MCP connectors', () => {
       expect(spy).toHaveBeenCalledTimes(1)
     } finally {
       spy.mockRestore()
-      Object.assign(llm, { client: original })
+      restoreLlm()
     }
   })
 
@@ -328,7 +319,7 @@ describe('Google MCP connectors', () => {
       })()
     })
     const loop = new McpAgentService(
-      llmStub(create),
+      stubLlm(create),
       app.get(GoogleMcpService)
     )
     const result = await loop.stream([{ role: 'user', content: 'Đọc lịch' }], user.id, ['google_calendar'], () => undefined)
@@ -374,7 +365,7 @@ describe('Google MCP connectors', () => {
         close
       })
     } as unknown as GoogleMcpService
-    const llm = { client: { chat: { completions: { create } } }, model: 'test', chat: LlmService.prototype.chat } as unknown as LlmService
+    const llm = stubLlm(create)
     const result = await new McpAgentService(llm, mcp).stream([{ role: 'user', content: 'Search' }], 'account', ['google_drive'], () => undefined)
     expect(rounds).toBe(4)
     expect(call).toHaveBeenCalledTimes(3)
@@ -393,19 +384,9 @@ describe('Google MCP connectors', () => {
         close
       })
     } as unknown as GoogleMcpService
-    const llm = {
-      client: {
-        chat: {
-          completions: {
-            create: async () => {
-              throw { status: 400 }
-            }
-          }
-        }
-      },
-      model: 'test',
-      chat: LlmService.prototype.chat
-    } as unknown as LlmService
+    const llm = stubLlm(async () => {
+      throw { status: 400 }
+    })
     await expect(new McpAgentService(llm, mcp).stream([], 'account', ['google_drive'], () => undefined)).rejects.toThrow('tool calling')
     expect(close).toHaveBeenCalledTimes(1)
   })

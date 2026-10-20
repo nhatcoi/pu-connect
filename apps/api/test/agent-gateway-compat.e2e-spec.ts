@@ -1,6 +1,6 @@
 import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
 import { GoogleMcpService } from '../src/modules/ai/connectors/google-mcp.service'
-import { LlmService } from '../src/modules/ai/llm.service'
+import { stubLlm } from './helpers'
 
 describe('Agent gateway streamed arguments', () => {
   it.each(['', '  ', '{"query":"AI"}'])('round-trips tool arguments %j as a JSON object', async (argumentsText) => {
@@ -37,7 +37,7 @@ describe('Agent gateway streamed arguments', () => {
         close
       })
     } as unknown as GoogleMcpService
-    const llm = { client: { chat: { completions: { create } } }, model: 'test', chat: LlmService.prototype.chat } as unknown as LlmService
+    const llm = stubLlm(create)
     const result = await new McpAgentService(llm, mcp).stream([], 'fixture-account', ['google_drive'], () => undefined)
     expect(result.finishReason).toBe('stop')
     expect(result.timings.rounds).toBe(2)

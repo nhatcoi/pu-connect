@@ -6,11 +6,10 @@ import { AgentToolRunner } from '../src/modules/ai/agent-tool-runner'
 import { AgentSources } from '../src/modules/ai/agent-sources'
 import { AiRetrieval, toTsQuery } from '../src/modules/ai/ai.retrieval'
 import { GoogleOAuthService } from '../src/modules/ai/connectors/google-oauth.service'
-import { LlmService } from '../src/modules/ai/llm.service'
 import { RagSearchService } from '../src/modules/ai/rag/rag-search.service'
 import { PucToolsService } from '../src/modules/chat/n7ai/agent/puc-tools.service'
 import { N7AiService } from '../src/modules/chat/n7ai/n7ai.service'
-import { createTestApp, createUser, loginAgent } from './helpers'
+import { createTestApp, createUser, loginAgent, stubProviders } from './helpers'
 
 const metrics = (): AiRunTimings => ({ modelWaitMs: 0, modelStreamMs: 0, toolWallMs: 0, mcpOpenMs: 0, rounds: 0, toolCalls: 0, cacheHits: 0 })
 const request = (name: string, args = '{}', id = name) => ({ id, name, arguments: args })
@@ -120,15 +119,13 @@ describe('N7AI demand-driven retrieval', () => {
     const retrieval = jest.spyOn(app.get(AiRetrieval), 'retrieve')
     const embedding = jest.spyOn(app.get(RagSearchService), 'prepare')
     const oauth = jest.spyOn(app.get(GoogleOAuthService), 'accessToken')
-    const llm = app.get(LlmService)
-    const original = llm.client
     const create = jest.fn(async () =>
       (async function* () {
         yield { choices: [{ delta: { content: '“Xin chào” là lời chào khi gặp nhau.' }, finish_reason: 'stop' }] }
         yield { choices: [], usage: { prompt_tokens: 12, completion_tokens: 8 } }
       })()
     )
-    Object.assign(llm, { client: { chat: { completions: { create } } } })
+    const restoreLlm = stubProviders(app, { chat: { completions: { create } } })
     try {
       expect(await app.get(N7AiService).reply(thread.id, user.id, String(trigger))).toBe('done')
       expect(create).toHaveBeenCalledTimes(1)
@@ -140,7 +137,7 @@ describe('N7AI demand-driven retrieval', () => {
       expect(typeof reply.meta.timings.preparationMs).toBe('number')
       expect(reply.meta.steps).toBeUndefined()
     } finally {
-      Object.assign(llm, { client: original })
+      restoreLlm()
       retrieval.mockRestore()
       embedding.mockRestore()
       oauth.mockRestore()
