@@ -79,7 +79,7 @@ export function BotProfileDialog({
           </div>
         </Field>
 
-        <Field label="Chủ đề được phép" hint="Bài đăng và tương tác chỉ trong các chủ đề này">
+        <Field label="Chủ đề được phép">
           <div className="flex flex-wrap gap-x-4 gap-y-2">
             {topics.map((t) => (
               <label key={t.slug} className="flex items-center gap-2 text-sm">

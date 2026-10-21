@@ -180,17 +180,17 @@ function UnitDialog({
               ))}
             </Select>
           </Field>
-          <Field label="Tên viết tắt" hint="Hiện trên hồ sơ (CNTT, KHMT…)">
-            <Input value={form.shortName} maxLength={40} onChange={(e) => setForm({ ...form, shortName: e.target.value })} />
+          <Field label="Tên viết tắt">
+            <Input value={form.shortName} maxLength={40} placeholder="CNTT, KHMT…" onChange={(e) => setForm({ ...form, shortName: e.target.value })} />
           </Field>
         </div>
         <Field label="Tên đầy đủ">
           <Input required autoFocus value={form.name} maxLength={200} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </Field>
         {allowed.length > 0 && (
-          <Field label="Thuộc" hint={form.type === 'major' ? 'Ngành thuộc một khoa' : 'Để trống nếu khoa độc lập'}>
+          <Field label="Đơn vị cha">
             <Select value={form.parentId} required={form.type === 'major'} onChange={(e) => setForm({ ...form, parentId: e.target.value })}>
-              <option value="">{form.type === 'major' ? 'Chọn khoa…' : '— Không (độc lập) —'}</option>
+              <option value="">{form.type === 'major' ? 'Chọn khoa…' : '— Độc lập (không có) —'}</option>
               {parents.map((p) => (
                 <option key={p.id} value={p.id}>
                   {UNIT_TYPE_LABEL[p.type]} · {p.name}

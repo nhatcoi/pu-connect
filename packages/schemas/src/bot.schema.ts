@@ -116,6 +116,31 @@ export type AdminBotCommandInput =
   | { type: 'comment'; postId: string; bot?: string; content?: string; enhance?: BotEnhance; scheduledAt?: string }
   | { type: 'like'; postId: string; bot: string; scheduledAt?: string }
 
+export interface BotRecentPost {
+  id: string
+  title: string
+  snippet: string
+  likesCount: number
+  commentsCount: number
+  createdAt: string
+  authorName: string
+  authorUsername: string
+  authorIsBot: boolean
+}
+
+export interface BotGenerateContentInput {
+  bot: string
+  type: 'post' | 'comment'
+  prompt?: string
+  postId?: string
+}
+
+export interface BotGenerateContentResult {
+  title?: string
+  content: string
+  tags?: string[]
+}
+
 // ── Import Excel/CSV thành lịch đăng của bot ─────────────────────────────
 
 // Cột chuẩn của file import (tool crawl hoặc Excel tự soạn đều phải ra các cột này)

@@ -7,6 +7,11 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Tối giản giao diện Admin Console, lược bỏ các hint văn bản dài gây rối mắt (2026-10-22)**:
+  - Lược bỏ toàn bộ các chuỗi `hint="..."` dài dòng tại các hộp thoại Admin Console: Model Mapping (`models-panel.tsx`), AI Providers (`providers-panel.tsx`), Bot Account & Actions (`bot-account-dialog.tsx`, `bot-action-dialog.tsx`, `bot-profile-dialog.tsx`), Đơn vị học thuật (`units-panel.tsx`, `academic-tab.tsx`), và Thông báo hệ thống (`system-ops-tab.tsx`).
+  - Thay thế bằng placeholder trực quan, tinh gọn giúp layout dialog cân đối, thoáng đãng và chuyên nghiệp.
+
+
 - [x] **Khắc phục triệt để lỗi cạn ngân sách Token & Cải thiện phản hồi sau khi sinh Slide/Học liệu N7AI (2026-10-22)**:
   - **Tăng trần Output Tokens (`MAX_OUTPUT_TOKENS = 16384`)**: Nâng giới hạn output tokens từ 8.192 lên 16.384 tokens trong [`llm.service.ts`](apps/api/src/modules/ai/llm.service.ts) để các model suy luận (reasoning/thinking) và các tool trả về JSON lớn (như tạo bộ 9 slide thuyết trình) không bị nghẽn trần.
   - **Đảm bảo ngân sách token cho vòng kết luận sau Tool (`round > 0 ? 2048 : 0`)**: Trong [`mcp-agent.service.ts`](apps/api/src/modules/ai/mcp-agent.service.ts), luôn dự trữ tối thiểu 2.048 token cho vòng sau khi chạy tool để LLM luôn có đủ token suy nghĩ và tạo câu kết luận chào mừng người dùng thay vì bị ngắt đột ngột. Đồng thời chuyển đổi cách tính `budgetUsed` từ byte length sang token xấp xỉ (chia 3) tránh làm hao hụt ảo ngân sách.

@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AdminBotAccountInput, AdminBotAccountUpdate, BotImportInput, BotImportMapRequest, AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
+import type { AdminBotAccountInput, AdminBotAccountUpdate, BotGenerateContentInput, BotImportInput, BotImportMapRequest, AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
@@ -14,6 +14,7 @@ import {
   BotActivityQuerySchema,
   BotCommandBodySchema,
   BotControlBodySchema,
+  BotGenerateContentSchema,
   BotProfileBodySchema,
   BotTopicBodySchema,
   type BotActivityQuery
@@ -88,6 +89,16 @@ export class AdminBotsController {
   @Post('import/map-columns')
   mapColumns(@Body(new ZodValidationPipe(BotImportMapBodySchema)) body: BotImportMapRequest) {
     return this.importer.mapColumns(body)
+  }
+
+  @Get('recent-posts')
+  recentPosts() {
+    return this.bots.recentPosts()
+  }
+
+  @Post('generate-content')
+  generateContent(@Body(new ZodValidationPipe(BotGenerateContentSchema)) body: BotGenerateContentInput) {
+    return this.bots.generateContent(body)
   }
 
   @Post('commands')

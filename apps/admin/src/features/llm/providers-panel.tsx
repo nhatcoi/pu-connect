@@ -197,17 +197,18 @@ function ProviderDialog({
         <Field label="Tên">
           <Input required autoFocus value={form.name} maxLength={60} onChange={(e) => setForm({ ...form, name: e.target.value })} />
         </Field>
-        <Field label="Base URL" hint="OpenAI-compatible, vd. https://host/v1">
+        <Field label="Base URL">
           <Input
             required
             type="url"
             value={form.baseUrl}
             maxLength={300}
             className="font-mono"
+            placeholder="https://host/v1"
             onChange={(e) => setForm({ ...form, baseUrl: e.target.value })}
           />
         </Field>
-        <Field label="API key" hint={editing ? `Đang lưu …${editing.keyHint}; trống = giữ nguyên` : undefined}>
+        <Field label="API key" hint={editing ? `Đang lưu …${editing.keyHint}` : undefined}>
           <Input
             required={!editing}
             type="password"
@@ -221,8 +222,8 @@ function ProviderDialog({
         <details className="text-sm">
           <summary className="cursor-pointer text-muted-foreground">Nâng cao</summary>
           <div className="mt-3">
-            <Field label="Model dự phòng" hint="Dùng khi provider này đứng sau, tên model khác">
-              <Input value={form.modelOverride} maxLength={60} className="font-mono" onChange={(e) => setForm({ ...form, modelOverride: e.target.value })} />
+            <Field label="Model dự phòng">
+              <Input value={form.modelOverride} maxLength={60} className="font-mono" placeholder="Tên model thay thế khi đứng sau" onChange={(e) => setForm({ ...form, modelOverride: e.target.value })} />
             </Field>
           </div>
         </details>

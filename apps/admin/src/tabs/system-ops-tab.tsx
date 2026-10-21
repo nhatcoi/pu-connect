@@ -217,8 +217,8 @@ export function BroadcastTab() {
             <Field label="Nội dung" hint={`${form.message.length}/500`}>
               <Textarea required minLength={5} maxLength={500} rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
             </Field>
-            <Field label="Liên kết" hint="Không bắt buộc">
-              <Input value={form.link || ''} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="/courses" />
+            <Field label="Liên kết">
+              <Input value={form.link || ''} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="Tùy chọn (/courses...)" />
             </Field>
             <div className="flex justify-end pt-1">
               <Button type="submit" variant="primary" loading={send.isPending}>

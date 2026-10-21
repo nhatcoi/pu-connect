@@ -82,7 +82,7 @@ export function BotActionDialog({ preset, bots, onClose }: { preset: BotActionPr
       <div className="space-y-4">
         <Segmented value={type} onChange={setType} items={(Object.keys(TYPE_LABEL) as BotCommandType[]).map((id) => ({ id, label: TYPE_LABEL[id] }))} />
 
-        <Field label="Bot" hint={type === 'like' ? 'Bắt buộc' : 'Để trống = bot đủ điều kiện ngẫu nhiên'}>
+        <Field label="Bot">
           <Select value={bot} onChange={(e) => setBot(e.target.value)}>
             <option value="">{type === 'like' ? 'Chọn bot…' : 'Ngẫu nhiên'}</option>
             {bots.map((b) => (
@@ -100,20 +100,20 @@ export function BotActionDialog({ preset, bots, onClose }: { preset: BotActionPr
         )}
 
         {type === 'post' && (
-          <Field label="Tiêu đề" hint="Tùy chọn">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+          <Field label="Tiêu đề">
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="Tùy chọn" />
           </Field>
         )}
 
         {type !== 'like' && (
-          <Field label="Nội dung" hint="Để trống = AI tự viết theo soul + chủ đề của bot">
-            <Textarea rows={5} value={content} onChange={(e) => setContent(e.target.value)} maxLength={5000} />
+          <Field label="Nội dung">
+            <Textarea rows={5} value={content} onChange={(e) => setContent(e.target.value)} maxLength={5000} placeholder="Để trống = AI tự viết theo soul và chủ đề của bot" />
           </Field>
         )}
 
         {type === 'post' && !content.trim() && (
-          <Field label="Gợi ý chủ đề" hint="Tùy chọn, trong chủ đề của bot">
-            <Input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={200} placeholder="VD: mẹo ôn thi cuối kỳ" />
+          <Field label="Gợi ý chủ đề">
+            <Input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={200} placeholder="Tùy chọn (VD: mẹo ôn thi cuối kỳ)" />
           </Field>
         )}
 

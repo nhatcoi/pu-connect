@@ -35,8 +35,8 @@ export function BotAccountDialog({ open, bot, saving, onClose, onSave }: { open:
     >
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {!bot && (
-          <Field label="Username" hint="a–z, 0–9, . _ (3–30)">
-            <Input value={draft.username} onChange={(e) => set('username', e.target.value.toLowerCase())} maxLength={30} placeholder="vd: minhanhbot" />
+          <Field label="Username">
+            <Input value={draft.username} onChange={(e) => set('username', e.target.value.toLowerCase())} maxLength={30} placeholder="a–z, 0–9, . _ (3–30)" />
           </Field>
         )}
         <Field label="Tên hiển thị">
@@ -63,13 +63,13 @@ export function BotAccountDialog({ open, bot, saving, onClose, onSave }: { open:
           </Field>
         </div>
         <div className="sm:col-span-2">
-          <Field label="Soul" hint="Linh hồn của bot: tính cách, sở thích, cách viết. Bot tự đăng/bình luận bám theo đây">
-            <Textarea rows={4} value={draft.soul ?? ''} onChange={(e) => set('soul', e.target.value)} maxLength={2000} placeholder="VD: Sinh viên năm 3 CNTT, thích backend và tối ưu truy vấn, hay chia sẻ mẹo ngắn gọn, hài hước nhẹ, không dùng emoji." />
+          <Field label="Soul">
+            <Textarea rows={4} value={draft.soul ?? ''} onChange={(e) => set('soul', e.target.value)} maxLength={2000} placeholder="Tính cách, sở thích, văn phong bot bám theo để đăng bài..." />
           </Field>
         </div>
         <div className="sm:col-span-2">
-          <Field label="Giọng văn" hint="Tùy chọn, mô tả ngắn">
-            <Textarea rows={2} value={draft.tone ?? ''} onChange={(e) => set('tone', e.target.value)} maxLength={300} placeholder="VD: thân thiện, gọn, hay chia sẻ mẹo học tập" />
+          <Field label="Giọng văn">
+            <Textarea rows={2} value={draft.tone ?? ''} onChange={(e) => set('tone', e.target.value)} maxLength={300} placeholder="VD: Thân thiện, ngắn gọn, chia sẻ mẹo học tập" />
           </Field>
         </div>
       </div>

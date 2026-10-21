@@ -48,13 +48,21 @@ export const BotCommandBodySchema = z.discriminatedUnion('type', [
     bot: username.optional(),
     topic: topicHint,
     title: z.string().trim().max(200).optional(),
-    content: z.string().trim().min(1).max(5000).optional(),
+    content: z.string().trim().max(5000).optional(),
     enhance,
     scheduledAt
   }),
-  z.object({ type: z.literal('comment'), postId: z.string().uuid(), bot: username.optional(), content: z.string().trim().min(1).max(1000).optional(), enhance, scheduledAt }),
+  z.object({ type: z.literal('comment'), postId: z.string().uuid(), bot: username.optional(), content: z.string().trim().max(1000).optional(), enhance, scheduledAt }),
   z.object({ type: z.literal('like'), postId: z.string().uuid(), bot: username, scheduledAt })
 ])
+
+export const BotGenerateContentSchema = z.object({
+  bot: username,
+  type: z.enum(['post', 'comment']),
+  prompt: z.string().trim().max(1000).optional(),
+  postId: z.string().uuid().optional()
+})
+export type BotGenerateContentDto = z.infer<typeof BotGenerateContentSchema>
 
 const accountFields = {
   displayName: z.string().trim().min(2).max(60),

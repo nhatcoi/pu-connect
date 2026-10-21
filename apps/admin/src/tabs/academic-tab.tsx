@@ -237,8 +237,8 @@ function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => v
         <Field label="Tên học phần">
           <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Trí tuệ nhân tạo" />
         </Field>
-        <Field label="Mô tả" hint="Không bắt buộc">
-          <Textarea rows={3} value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <Field label="Mô tả">
+          <Textarea rows={3} value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Tùy chọn..." />
         </Field>
       </form>
     </Dialog>

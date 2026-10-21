@@ -206,7 +206,7 @@ function ModelDialog({
         className="space-y-4"
       >
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Tên hiển thị" hint="hiện cho người dùng">
+          <Field label="Tên hiển thị">
             <Input
               required
               autoFocus
@@ -216,7 +216,7 @@ function ModelDialog({
               onChange={(e) => set({ label: e.target.value })}
             />
           </Field>
-          <Field label="Tên model map" hint="mã định danh N7AI, vd. n7ai-fast">
+          <Field label="Model map">
             <Input
               required
               value={form.id}
@@ -334,16 +334,16 @@ function ModelDialog({
               <option value="high">Cao</option>
             </Select>
           </Field>
-          <Field label="Max input" hint="token">
+          <Field label="Max input (token)">
             <Input type="number" min={1000} max={2000000} placeholder="Không giới hạn" value={form.maxIn} onChange={(e) => set({ maxIn: e.target.value })} />
           </Field>
-          <Field label="Max output" hint="token">
+          <Field label="Max output (token)">
             <Input type="number" min={256} max={200000} placeholder="Mặc định" value={form.maxOut} onChange={(e) => set({ maxOut: e.target.value })} />
           </Field>
         </div>
         <div className="grid grid-cols-4 gap-3">
           <div className="col-span-3">
-            <Field label="Mô tả ngắn" hint="hiện trong menu">
+            <Field label="Mô tả ngắn">
               <Input value={form.hint} maxLength={160} onChange={(e) => set({ hint: e.target.value })} />
             </Field>
           </div>
