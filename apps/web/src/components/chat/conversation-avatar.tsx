@@ -48,7 +48,7 @@ export function ConversationAvatar({ conversation, className }: { conversation: 
     <div className={cn('relative h-10 w-10 shrink-0', className)}>
       <Avatar className="h-full w-full">
         <AvatarImage src={other?.avatarUrl || ''} />
-        <AvatarFallback className="text-xs font-bold">{initials(other?.displayName)}</AvatarFallback>
+        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">{initials(other?.displayName)}</AvatarFallback>
       </Avatar>
       {conversation.blockState === 'none' && <PresenceDot userId={other?.id} />}
     </div>

@@ -113,12 +113,13 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 📱 **Kiến Trúc Responsive Chuẩn X & Điều Hướng Di Động Hoàn Hảo**:
   - Tablet: Sidebar tự động thu gọn về dạng cột icon (`w-16`), loại bỏ 100% horizontal scroll.
   - Mobile (< 768px): Header chuẩn X tinh gọn, Tab bar dính chuẩn, Mobile Bottom Navigation Bar (5 phân hệ chính).
-- [x] 💬 **Giao Diện Tin Nhắn 2 Cột Chuẩn X (Split-Pane Messaging & Empty State)**:
-  - Sidebar tự động thu gọn thành icon-only (`w-16` / 64px) mượt mà bằng `transition-[width] duration-300 ease-in-out`.
-  - Nút Đăng bài chuẩn X trên Sidebar: nút tròn `w-10 h-10` icon `PenSquare` khi compact, thanh dài `w-full` khi mở rộng.
-  - Cột giữa: Danh sách hội thoại (Chat List) cố định 360px–390px với tìm kiếm tức thì, bộ lọc (Tất cả, Chưa đọc, Nhóm), highlight cuộc trò chuyện đang mở.
-  - Cột phải: Khung chat chi tiết (`ConversationView`) hoặc Empty State chuẩn X ("Bắt đầu cuộc trò chuyện", icon chat tròn, nút "Tin nhắn mới").
-  - Ẩn hoàn toàn RightSidebar tin tức xu hướng ở `/messages`, dành trọn không gian cho nhắn tin.
+- [x] 💬 **Giao Diện Tin Nhắn 2 Cột Chuẩn X & Chuyển Động Sidebar Mượt Mà (Split-Pane Messaging & Zero-Shift Fluid Sidebar)**:
+  - Sidebar cố định trục tọa độ icon tuyệt đối ở tâm 32px (`left: 8px + slot: 48px / 2 = 32px`) trên cả 2 trạng thái: khi chuyển từ Bảng tin `/` sang `/messages`, icon, nút Đăng bài và Avatar người dùng không bị dịch chuyển dù chỉ 1 pixel.
+  - Hiệu ứng thu hẹp / mở rộng mượt mà (`transition-[width] duration-300 ease-in-out`): nhãn chữ, tên người dùng và nhãn nút mờ dần (`opacity-0` êm qua `transition-opacity duration-200`) thay vì unmount đột ngột gây khựng giật.
+  - Cột phải (`<aside>`): khi chuyển sang Công cụ (`/tools`) hoặc Tin nhắn (`/messages`), cột phải co dần chiều rộng về 0 (`w-0 -ml-6 opacity-0 pointer-events-none`) qua `transition-[width,opacity,margin] duration-300 ease-in-out` thay vì biến mất đột ngột.
+  - Nút Đăng bài chuẩn X trên Sidebar: nút tròn `w-12 h-11` icon `PenSquare` khi compact, mở rộng tự nhiên theo sidebar `w-full` khi ở Bảng tin.
+  - Cột giữa: Danh sách hội thoại dạng thẻ bo góc (`rounded-xl`), avatar tên viết tắt viền xanh (`bg-primary/10 text-primary font-bold`), thanh tìm kiếm bo cong mềm mại, bộ lọc chữ phẳng (Tất cả, Chưa đọc, Nhóm), thẻ đang chọn phủ xanh dịu.
+  - Cột phải: Khung chat chi tiết với chấm xanh đang hoạt động (`● Đang hoạt động`), bong bóng tin nhắn đến màu xám êm dịu (`bg-muted/80`) và tin đi xanh Phenikaa (`bg-primary text-primary-foreground`), hoặc Empty State chuẩn X.
   - Cân bằng toán học 1320px tuyệt đối giữa Home, Tools (`/tools`) và Messages (`/messages`): Sidebar (224/64px) + gap-6 (24px) + Main/Workspace (760/1072/1232px) + Aside (288/0px) = 1320px, loại bỏ 100% xê dịch layout khi chuyển trang (Zero CLS).
 - [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`, `/communities`...).
 - [x] 🏛️ **Bảng tin 3 cột chuẩn X (`/home`)**: Sidebar điều hướng $\rightarrow$ Feed học thuật với Tab dính (*Dành cho bạn / Môn học / Kho tài liệu*) $\rightarrow$ Xu hướng & Gợi ý kết nối.

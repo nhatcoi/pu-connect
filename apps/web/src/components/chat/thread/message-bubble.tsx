@@ -113,7 +113,7 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
                       ? 'bg-primary text-primary-foreground whitespace-pre-wrap'
                       : isAi
                         ? 'bg-card'
-                        : 'bg-card whitespace-pre-wrap',
+                        : 'bg-muted/80 text-foreground whitespace-pre-wrap',
                   !m.deleted && (mine ? (continued ? 'rounded-tr-md' : 'rounded-br-md') : continued ? 'rounded-tl-md' : 'rounded-bl-md'),
                   m.status === 'failed' && 'opacity-60',
                   highlighted && 'ring-2 ring-amber-400'

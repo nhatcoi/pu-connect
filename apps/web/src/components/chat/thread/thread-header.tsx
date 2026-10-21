@@ -37,6 +37,8 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
   const onlineInGroup = useOnlineCount(conv?.type === 'group' ? conv.members.map((m) => m.id) : [])
   const [sharing, setSharing] = React.useState(false)
 
+  const isOnline = !isAi && other && conv?.blockState === 'none' && otherPresence?.online
+
   const subtitle =
     typingLabel ??
     (isAi
@@ -81,7 +83,18 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
           )}
           {conv?.mutedUntil && <BellOff className="h-3 w-3 text-muted-foreground shrink-0" />}
         </div>
-        <p className={`text-[11px] truncate ${typingLabel ? 'text-primary' : 'text-muted-foreground'}`}>{subtitle}</p>
+        <div className="text-[11px] truncate">
+          {typingLabel ? (
+            <span className="text-primary font-medium animate-pulse">{typingLabel}</span>
+          ) : isOnline ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Đang hoạt động
+            </span>
+          ) : (
+            <span className="text-muted-foreground">{subtitle}</span>
+          )}
+        </div>
       </div>
       {isAi && <OpenInN7AiButton />}
       {isAi && conv.lastMessage && (

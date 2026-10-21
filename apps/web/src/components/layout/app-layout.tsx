@@ -83,7 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <RestrictionBanner />
           <GlobalDialogs />
           {/* N7AI: dùng hết chiều ngang (thanh bên sát trái, panel sát phải) */}
-          <div className={cn('mx-auto flex min-h-screen', n7ai ? 'w-full' : cn('gap-6 px-4 sm:px-6', SHELL_WIDTH))}>
+          <div className={cn('mx-auto flex min-h-screen', n7ai ? 'w-full' : cn('w-full gap-6 px-4 sm:px-6', SHELL_WIDTH))}>
             {!immersive && (
               <div
                 className={cn(
@@ -111,8 +111,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             >
               {children}
             </main>
-            {!immersive && !fullWidth && (
-              <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar py-4 transition-opacity duration-300">
+            {!immersive && (
+              <aside
+                className={cn(
+                  'hidden lg:block shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar transition-[width,opacity,margin] duration-300 ease-in-out',
+                  fullWidth
+                    ? 'w-0 -ml-6 opacity-0 pointer-events-none py-0'
+                    : 'w-64 xl:w-72 ml-0 opacity-100 py-4'
+                )}
+              >
                 {/* Cột phải riêng của trang được portal vào đây */}
                 <div ref={setAsideNode} className="space-y-4" />
                 {!hasCustomAside && <RightSidebar />}

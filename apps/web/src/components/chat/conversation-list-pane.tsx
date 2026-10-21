@@ -99,17 +99,17 @@ export function ConversationListPane({ activeId, onCompose }: ConversationListPa
           )}
         </div>
 
-        {/* Bộ lọc loại tin */}
-        <div className="flex gap-1.5 pt-0.5">
+        {/* Bộ lọc loại tin (chuẩn giao diện mockup) */}
+        <div className="flex items-center gap-4 pt-1 px-1">
           {FILTERS.map((f) => (
             <button
               key={f.id}
               onClick={() => setFilter(f.id)}
               className={cn(
-                'h-6 px-2.5 rounded-full text-[11px] font-semibold cursor-pointer transition-colors select-none',
+                'text-xs cursor-pointer transition-colors select-none',
                 filter === f.id
-                  ? 'bg-primary text-primary-foreground shadow-xs'
-                  : 'bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted'
+                  ? 'text-primary font-bold'
+                  : 'text-muted-foreground hover:text-foreground font-medium'
               )}
             >
               {f.label}

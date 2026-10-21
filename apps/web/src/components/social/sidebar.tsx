@@ -111,8 +111,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
               : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
 
             const buttonClass = cn(
-              'group flex items-center h-11 rounded-full transition-colors cursor-pointer select-none overflow-hidden',
-              compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-start',
+              'group flex items-center h-11 rounded-full transition-colors cursor-pointer select-none overflow-hidden w-full',
               isActive
                 ? 'bg-primary/10 text-primary font-semibold'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
@@ -140,17 +139,20 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
                   )}
                 </div>
 
-                {/* Nhãn chữ: tự động ẩn khi compact hoặc dưới xl */}
-                {!compact && (
-                  <div className="hidden xl:flex items-center justify-between min-w-0 flex-1 pr-3.5">
-                    <span className="truncate text-[13px] font-medium">{item.label}</span>
-                    {item.badge && (
-                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange">
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-                )}
+                {/* Nhãn chữ: mờ dần cực êm khi thu gọn, không ngắt quãng DOM */}
+                <div
+                  className={cn(
+                    'flex items-center justify-between min-w-0 flex-1 pr-3.5 transition-opacity duration-200 whitespace-nowrap overflow-hidden',
+                    compact ? 'opacity-0 pointer-events-none' : 'opacity-0 xl:opacity-100'
+                  )}
+                >
+                  <span className="truncate text-[13px] font-medium">{item.label}</span>
+                  {item.badge && (
+                    <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
               </>
             )
 
@@ -170,27 +172,34 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
             <Button
               type="button"
               onClick={() => setCreatePostOpen(true)}
-              className={cn(
-                'h-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs flex items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden p-0',
-                compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-start'
-              )}
+              className="h-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs flex items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden p-0 w-full"
               title="Đăng bài mới"
             >
               <div className="w-12 h-11 flex items-center justify-center shrink-0">
                 <PenSquare className="h-5 w-5" />
               </div>
-              {!compact && (
-                <span className="hidden xl:inline text-xs font-bold tracking-tight pr-4">
-                  Đăng bài
-                </span>
-              )}
+              <span
+                className={cn(
+                  'text-xs font-bold tracking-tight pr-4 whitespace-nowrap transition-opacity duration-200 overflow-hidden',
+                  compact ? 'opacity-0 pointer-events-none' : 'opacity-0 xl:inline'
+                )}
+              >
+                Đăng bài
+              </span>
             </Button>
           </div>
         </div>
 
-        {/* 2. Môn học sôi nổi (Desktop xl: only, ẩn hoàn toàn khi compact) */}
-        {FEATURES.hotCourses && !compact && (
-          <div className="hidden xl:block space-y-1 px-3 pt-2">
+        {/* 2. Môn học sôi nổi (Desktop xl: only, tự động co giãn êm ái khi compact) */}
+        {FEATURES.hotCourses && (
+          <div
+            className={cn(
+              'space-y-1 px-3 transition-all duration-300 overflow-hidden',
+              compact
+                ? 'max-h-0 opacity-0 pointer-events-none py-0'
+                : 'hidden xl:block max-h-96 opacity-100 pt-2'
+            )}
+          >
             <p className="px-2 pb-1 text-[11px] font-medium text-muted-foreground/80 uppercase tracking-wider">Môn học sôi nổi</p>
             <div className="space-y-0.5">
               {hotCourses.map((course) => (
@@ -218,29 +227,34 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
-                className={cn(
-                  'flex items-center h-11 transition-colors cursor-pointer group rounded-full overflow-hidden p-0 hover:bg-muted/70',
-                  compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-between'
-                )}
+                className="flex items-center h-11 transition-colors cursor-pointer group rounded-full overflow-hidden p-0 hover:bg-muted/70 w-full"
                 title={compact ? `${user.displayName || user.username} (@${user.username})` : undefined}
               >
-                <div className="flex items-center min-w-0">
+                <div className="flex items-center min-w-0 flex-1">
                   <div className="w-12 h-11 flex items-center justify-center shrink-0">
                     <Avatar className="h-8 w-8 shrink-0 transition-transform group-hover:scale-105">
                       <AvatarImage src={user.avatarUrl || ''} />
                       <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
                     </Avatar>
                   </div>
-                  {!compact && (
-                    <div className="hidden xl:flex flex-col text-left min-w-0 pr-2">
-                      <span className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
-                        {user.displayName || user.username}
-                      </span>
-                      <span className="text-[11px] text-muted-foreground truncate">@{user.username}</span>
-                    </div>
-                  )}
+                  <div
+                    className={cn(
+                      'flex flex-col text-left min-w-0 pr-2 transition-opacity duration-200 whitespace-nowrap overflow-hidden',
+                      compact ? 'opacity-0 pointer-events-none' : 'opacity-0 xl:flex'
+                    )}
+                  >
+                    <span className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                      {user.displayName || user.username}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground truncate">@{user.username}</span>
+                  </div>
                 </div>
-                {!compact && <MoreHorizontal className="hidden xl:block h-4 w-4 text-muted-foreground shrink-0 mr-3" />}
+                <MoreHorizontal
+                  className={cn(
+                    'h-4 w-4 text-muted-foreground shrink-0 mr-3 transition-opacity duration-200',
+                    compact ? 'opacity-0 pointer-events-none' : 'opacity-0 xl:block'
+                  )}
+                />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align={compact ? 'center' : 'end'} className="w-56 p-1.5 rounded-2xl shadow-xl border border-border bg-popover">
@@ -270,17 +284,24 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className={cn(compact ? 'w-12 flex justify-center' : 'w-12 xl:w-full')}>
+          <div className="w-full">
             <Button
               size="sm"
               variant="outline"
               onClick={() => router.push('/')}
-              className={cn('rounded-full text-xs font-semibold h-11 p-0 flex items-center', compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-start')}
+              className="rounded-full text-xs font-semibold h-11 p-0 flex items-center w-full overflow-hidden"
             >
               <div className="w-12 h-11 flex items-center justify-center shrink-0">
                 <User className="h-4 w-4" />
               </div>
-              {!compact && <span className="hidden xl:inline pr-3">Đăng nhập</span>}
+              <span
+                className={cn(
+                  'pr-3 whitespace-nowrap transition-opacity duration-200 overflow-hidden',
+                  compact ? 'opacity-0 pointer-events-none' : 'opacity-0 xl:inline'
+                )}
+              >
+                Đăng nhập
+              </span>
             </Button>
           </div>
         )}
