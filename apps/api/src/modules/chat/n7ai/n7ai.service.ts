@@ -19,6 +19,7 @@ import { ChatRefsService } from '../refs/chat-refs.service'
 import { AiProgress } from './agent/ai-progress'
 import { toActions } from './agent/ai-actions'
 import { HistoryToolsService } from './agent/history-tools.service'
+import { PresentationToolsService } from './agent/presentation-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
 import { ConversationContextService } from './context/conversation-context.service'
 import { ConversationToolsService } from './context/conversation-tools.service'
@@ -89,6 +90,7 @@ export class N7AiService {
     private readonly studyCreateTools: StudyCreateToolsService,
     private readonly historyTools: HistoryToolsService,
     private readonly pucTools: PucToolsService,
+    private readonly presentationTools: PresentationToolsService,
     private readonly conversationContext: ConversationContextService,
     private readonly conversationTools: ConversationToolsService,
     private readonly sources: AiSourcesService
@@ -188,6 +190,7 @@ export class N7AiService {
       const connectors: AiConnectorId[] = inGroup ? [] : (trigger.connectors ?? settings?.defaultConnectors ?? ['library'])
       // Thread riêng: luôn có tool tạo bộ Flashcard / Quiz (registry); tool đọc tiến độ theo connector my_study
       const creator = inGroup ? null : this.studyCreateTools.open(requesterId, placeholder.id)
+      const slideCreator = this.presentationTools.open(requesterId, placeholder.id)
       // Thread riêng: tool về chính PU Connector luôn có; hội thoại cũ / tiến độ học theo connector
       const catalog = new AgentSources(retrieved.sources)
       const local = [
@@ -196,6 +199,7 @@ export class N7AiService {
         // Nhóm / chat cá nhân: đọc ngược tin cũ của chính hội thoại này khi người gọi hỏi tới
         ...(inGroup ? [this.conversationTools.open(conversationId, requesterId, trigger.id)] : []),
         ...(creator ? [creator] : []),
+        slideCreator,
         ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []),
         ...(connectors.includes('my_chats') ? [this.historyTools.open(requesterId, conversationId)] : [])
       ]
@@ -230,15 +234,25 @@ export class N7AiService {
       // Nút dẫn đường / tham gia nhóm: kiểm nhóm còn nhận người & mình chưa ở trong (thread riêng)
       const joinIds = drafts.flatMap((d) => (d.kind === 'join_group' ? [d.id] : []))
       const actions = inGroup ? [] : toActions(drafts, await this.pucTools.joinableGroups(requesterId, joinIds).catch(() => new Map()))
-      await this.finish(placeholder.id, conversationId, text, citations.length ? citations : null, 'done', {
-        ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
-        ...(remembered.length ? { memoryUpdated: remembered } : {}),
-        ...(studySet ? { studySet } : {}),
-        ...(progress.steps.length ? { steps: progress.steps } : {}),
-        durationMs: Date.now() - started,
-        ...(timings ? { timings: { ...timings, preparationMs } } : {}),
-        ...(actions.length && finishReason !== 'content_filter' ? { actions } : {})
-      })
+      const slideAttachment = slideCreator.created()
+      const attachments = slideAttachment ? [slideAttachment] : null
+      await this.finish(
+        placeholder.id,
+        conversationId,
+        text,
+        citations.length ? citations : null,
+        'done',
+        {
+          ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
+          ...(remembered.length ? { memoryUpdated: remembered } : {}),
+          ...(studySet ? { studySet } : {}),
+          ...(progress.steps.length ? { steps: progress.steps } : {}),
+          durationMs: Date.now() - started,
+          ...(timings ? { timings: { ...timings, preparationMs } } : {}),
+          ...(actions.length && finishReason !== 'content_filter' ? { actions } : {})
+        },
+        attachments
+      )
       await this.llm.finishRun(runId, { usage, startedAt: started })
       if (!inGroup) this.summaries.maybeSummarize(conversationId, botId)
       return 'done'
@@ -446,14 +460,23 @@ ${convBlock.trim()}` : '') : '') +
     text: string,
     blocks: ChatCitation[] | null,
     status: 'done' | 'error',
-    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs' | 'timings'> = {}
+    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs' | 'timings'> = {},
+    attachments?: ChatAttachment[] | null
   ) {
     // Gợi ý tiếp theo / bộ nhớ vừa cập nhật gộp vào meta (giữ aiMode sẵn có)
     await this.db.query(
       `UPDATE messages SET content = $2, blocks = $3, status = $4,
-         meta = CASE WHEN $5::jsonb IS NULL THEN meta ELSE COALESCE(meta, '{}'::jsonb) || $5::jsonb END
+         meta = CASE WHEN $5::jsonb IS NULL THEN meta ELSE COALESCE(meta, '{}'::jsonb) || $5::jsonb END,
+         attachments = CASE WHEN $6::jsonb IS NOT NULL THEN $6::jsonb ELSE attachments END
        WHERE id = $1`,
-      [messageId, text, blocks ? JSON.stringify(blocks) : null, status, Object.keys(extraMeta).length ? JSON.stringify(extraMeta) : null]
+      [
+        messageId,
+        text,
+        blocks ? JSON.stringify(blocks) : null,
+        status,
+        Object.keys(extraMeta).length ? JSON.stringify(extraMeta) : null,
+        attachments?.length ? JSON.stringify(attachments) : null
+      ]
     )
     const message = await this.core.fetchMessage(this.db, messageId)
     await this.core.broadcast(conversationId, 'message.updated', message)
