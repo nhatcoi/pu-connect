@@ -33,21 +33,32 @@ export function ProvidersPanel({
         )}
       </div>
 
-      {data.source === 'env' && (
+      {data.source === 'env' && data.env.length > 0 && (
         <Card className="mb-2 flex flex-wrap items-center gap-3 border-warning/40 px-4 py-3 text-xs text-muted-foreground">
           <p className="min-w-0 flex-1">
             Đang dùng <b className="text-foreground">.env</b> của máy chủ:{' '}
-            {data.env.length
-              ? data.env.map((e) => (
-                  <span key={e.name} className="font-mono">
-                    {e.host}{' '}
-                  </span>
-                ))
-              : 'chưa có AI_API_KEY, N7AI đang tắt'}
+            {data.env.map((e) => (
+              <span key={e.name} className="font-mono">
+                {e.host}{' '}
+              </span>
+            ))}
           </p>
-          {canManage && data.env.length > 0 && (
+          {canManage && (
             <Button size="sm" loading={actions.importEnv.isPending} onClick={() => actions.importEnv.mutate()}>
               <Download /> Nhập vào đây
+            </Button>
+          )}
+        </Card>
+      )}
+
+      {data.items.length === 0 && data.env.length === 0 && (
+        <Card className="mb-2 flex flex-wrap items-center gap-3 border-dashed border-border px-4 py-4 text-xs text-muted-foreground">
+          <p className="min-w-0 flex-1">
+            Chưa có provider nào được cấu hình. N7AI chỉ hoạt động khi admin thêm ít nhất một gateway OpenAI-compatible.
+          </p>
+          {canManage && (
+            <Button size="sm" onClick={() => setEdit({})}>
+              <Plus /> Thêm provider đầu tiên
             </Button>
           )}
         </Card>

@@ -7,6 +7,14 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Quản lý toàn diện Provider AI & Model Mapping trên Admin Console (2026-10-21)**:
+  - **Bỏ config mặc định ở `.env`**: Loại bỏ `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_FALLBACK_*` khỏi `.env` và `.env.example`; chuyển 100% trách nhiệm quản lý Gateway Provider và Model cho Admin Console (`/admin/#/ai?tab=llm`), lưu trữ an toàn trong PostgreSQL (`ai_providers`, `ai_models`).
+  - **Model Mapping thông minh**: Trong hộp thoại Thêm/Sửa Model ([`models-panel.tsx`](apps/admin/src/features/llm/models-panel.tsx)), khi chọn Provider ở trường trên, hệ thống tự động dò danh sách model của gateway (`useDiscovery`) và cho phép admin **chọn trực tiếp model map của provider đó** từ menu thả xuống, có tự động đề xuất tên hiển thị nếu chưa nhập và cho phép chuyển đổi sang nhập tay (`✎ Nhập tên khác (thủ công)...`) linh hoạt.
+  - **Cảnh báo trực quan**: Danh sách model hiển thị rõ tên Provider đã gắn hoặc cảnh báo nổi bật `"Chưa gắn provider"` nếu model chưa được gán gateway.
+  - **Migration Idempotent**: Bổ sung cập nhật tự động gán bất kỳ model nào chưa có `provider_id` sang provider đầu tiên đang kích hoạt ([`ai-llm-upgrade.sql`](apps/api/src/database/ai-llm-upgrade.sql)).
+  - **Loại bỏ phụ thuộc env ngầm**: Tái cấu trúc [`BotImportService`](apps/api/src/modules/admin/bot-import/bot-import.service.ts) sử dụng `LlmService` chuẩn hóa thay vì gọi trực tiếp `process.env.AI_BASE_URL` / `AI_API_KEY`.
+
+
 - [x] **Chuẩn hóa 100% UI Skeleton toàn hệ thống & N7AI (Zero Layout Shift / Zero Spinners on First Load) (2026-10-21)**:
   - Loại bỏ hoàn toàn các spinner tải lần đầu (`Loader2 animate-spin`) còn sót lại tại các panel Cài đặt N7AI ([`memory-panel.tsx`](apps/web/src/components/settings/n7ai/memory-panel.tsx), [`tasks-panel.tsx`](apps/web/src/components/settings/n7ai/tasks-panel.tsx), [`web-panel.tsx`](apps/web/src/components/settings/n7ai/web-panel.tsx), [`community-panel.tsx`](apps/web/src/components/settings/n7ai/community-panel.tsx)) và phân hệ Công cụ học tập ([`tools/page.tsx`](apps/web/src/app/(app)/tools/page.tsx), [`tools/[kind]/page.tsx`](apps/web/src/app/(app)/tools/[kind]/page.tsx), [`tools/[kind]/[id]/page.tsx`](apps/web/src/app/(app)/tools/[kind]/[id]/page.tsx)).
   - Đảm bảo 100% màn hình khi tải lần đầu hiển thị đúng Skeleton shape (khung bài viết, danh sách cài đặt, thẻ học tập, bong bóng chat) tương ứng chuẩn kích thước thật, chỉ sử dụng Spinner cho các tác vụ tương tác chủ động (submit form, bấm nút, hoặc tải thêm cuối trang).

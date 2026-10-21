@@ -9,13 +9,14 @@ import { Table } from '@tiptap/extension-table'
 import { TableRow } from '@tiptap/extension-table-row'
 import { TableCell } from '@tiptap/extension-table-cell'
 import { TableHeader } from '@tiptap/extension-table-header'
+import { Markdown } from '@tiptap/markdown'
 import { Bold, Italic, List, ListOrdered, Quote, Code, Heading1, Heading2, Table as TableIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface TiptapEditorProps {
   content?: string
-  onChange?: (html: string) => void
+  onChange?: (markdown: string) => void
   placeholder?: string
   className?: string
 }
@@ -39,7 +40,8 @@ export function TiptapEditor({ content = '', onChange, placeholder = 'Nháº­p ná»
       }),
       TableRow,
       TableHeader,
-      TableCell
+      TableCell,
+      Markdown
     ],
     content,
     editorProps: {
@@ -48,7 +50,8 @@ export function TiptapEditor({ content = '', onChange, placeholder = 'Nháº­p ná»
       }
     },
     onUpdate({ editor }) {
-      onChange?.(editor.getHTML())
+      const val = typeof editor.getMarkdown === 'function' ? editor.getMarkdown() : editor.getText()
+      onChange?.(val)
     }
   })
 

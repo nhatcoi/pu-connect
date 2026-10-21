@@ -39,7 +39,7 @@ export class AdminAiProvidersService {
     const res = await this.db.query(`SELECT id, name, base_url, key_hint, model_override, enabled, priority FROM ai_providers ORDER BY priority, created_at`)
     const items = res.rows.map(toDto)
     const env = readEnvProviders(this.config).map((c) => ({ name: c.name, host: this.host(c.baseUrl), modelOverride: c.modelOverride }))
-    return { source: items.some((i) => i.enabled) ? 'database' : 'env', items, env }
+    return { source: items.some((i) => i.enabled) ? 'database' : (env.length ? 'env' : 'database'), items, env }
   }
 
   async create(adminId: string, input: AdminAiProviderInput): Promise<{ id: string }> {

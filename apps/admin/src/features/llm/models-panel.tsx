@@ -3,7 +3,7 @@ import { Eye, EyeOff, MoreHorizontal, Pencil, Plus, Power, Star, Trash2 } from '
 import type { AdminAiModel, AdminAiProvider, AiReasoningEffort } from '@pu/schemas'
 import { cn, formatNumber } from '@/lib/api'
 import { Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, Field, Input, Menu, MenuItem, MenuSeparator, Select } from '@/components/ui'
-import type { LlmActions } from './use-llm'
+import { useDiscovery, type LlmActions } from './use-llm'
 
 const EFFORT: Record<AiReasoningEffort, string> = { low: 'Thấp', medium: 'Vừa', high: 'Cao' }
 const tokens = (n: number) => (n >= 1000 ? `${Math.round(n / 1000)}k` : String(n))
@@ -50,7 +50,13 @@ export function ModelsPanel({
                   {m.reasoningEffort && <Badge>Effort {EFFORT[m.reasoningEffort]}</Badge>}
                 </p>
                 <p className="truncate font-mono text-xs text-muted-foreground">
-                  {m.providerName ?? 'Provider mặc định'} · {m.upstreamModel ?? m.id}
+                  {m.providerName ? (
+                    <span className="text-foreground">{m.providerName}</span>
+                  ) : (
+                    <span className="text-warning font-medium">Chưa gắn provider</span>
+                  )}
+                  {' · '}
+                  <span>{m.upstreamModel ?? m.id}</span>
                   {m.maxInputTokens ? ` · in ${tokens(m.maxInputTokens)}` : ''}
                   {m.maxOutputTokens ? ` · out ${tokens(m.maxOutputTokens)}` : ''}
                 </p>
@@ -127,13 +133,16 @@ function ModelDialog({
   actions: LlmActions
 }) {
   const editing = state?.model
-  const blank = { label: '', hint: '', cost: 1, visible: true, providerId: '', upstream: '', effort: '', maxIn: '', maxOut: '' }
+  const defaultProviderId = providers.find((p) => p.enabled)?.id ?? providers[0]?.id ?? ''
+  const blank = { label: '', hint: '', cost: 1, visible: true, providerId: defaultProviderId, upstream: '', effort: '', maxIn: '', maxOut: '' }
   const [form, setForm] = useState(blank)
+  const [manualInput, setManualInput] = useState(false)
   // Nạp lại form mỗi khi mở
   const key = state ? (editing?.id ?? 'new') : ''
   const [loaded, setLoaded] = useState('')
   if (state && loaded !== key) {
     setLoaded(key)
+    setManualInput(false)
     setForm(
       editing
         ? {
@@ -141,18 +150,23 @@ function ModelDialog({
             hint: editing.hint,
             cost: editing.cost,
             visible: editing.visible,
-            providerId: editing.providerId ?? '',
+            providerId: editing.providerId ?? defaultProviderId,
             upstream: editing.upstreamModel ?? editing.id,
             effort: editing.reasoningEffort ?? '',
             maxIn: editing.maxInputTokens?.toString() ?? '',
             maxOut: editing.maxOutputTokens?.toString() ?? ''
           }
-        : blank
+        : {
+            ...blank,
+            providerId: defaultProviderId
+          }
     )
   }
   if (!state && loaded) setLoaded('')
   const busy = actions.createModel.isPending || actions.updateModel.isPending
-  const set = (patch: Partial<typeof form>) => setForm({ ...form, ...patch })
+  const set = (patch: Partial<typeof form>) => setForm((prev) => ({ ...prev, ...patch }))
+
+  const discovery = useDiscovery(form.providerId || null)
 
   return (
     <Dialog
@@ -173,7 +187,7 @@ function ModelDialog({
         onSubmit={(e) => {
           e.preventDefault()
           const body = {
-            label: form.label,
+            label: form.label.trim(),
             hint: form.hint,
             cost: form.cost,
             visible: form.visible,
@@ -189,21 +203,98 @@ function ModelDialog({
         className="space-y-4"
       >
         <Field label="Tên hiển thị">
-          <Input required autoFocus value={form.label} maxLength={40} onChange={(e) => set({ label: e.target.value })} />
+          <Input required autoFocus value={form.label} maxLength={40} placeholder="vd. Nhanh, Gemini Flash..." onChange={(e) => set({ label: e.target.value })} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Provider">
-            <Select value={form.providerId} onChange={(e) => set({ providerId: e.target.value })}>
-              <option value="">Mặc định (theo thứ tự)</option>
-              {providers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+            <Select
+              required
+              value={form.providerId}
+              onChange={(e) => {
+                const pid = e.target.value
+                set({ providerId: pid })
+                setManualInput(false)
+              }}
+            >
+              {providers.length === 0 ? (
+                <option value="">Chưa có provider</option>
+              ) : (
+                <>
+                  <option value="">-- Chọn Provider --</option>
+                  {providers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} {!p.enabled ? '(Đang tắt)' : ''}
+                    </option>
+                  ))}
+                </>
+              )}
             </Select>
           </Field>
-          <Field label="Tên model trên provider">
-            <Input required value={form.upstream} maxLength={120} className="font-mono" onChange={(e) => set({ upstream: e.target.value })} />
+          <Field
+            label="Model trên provider"
+            hint={
+              discovery.isFetching
+                ? 'Đang dò model...'
+                : discovery.data?.ok
+                  ? `${discovery.data.models.length} model`
+                  : undefined
+            }
+          >
+            {!form.providerId ? (
+              <Input disabled placeholder="Chọn provider ở ô bên trái trước" value="" />
+            ) : manualInput || !discovery.data?.ok || (discovery.data?.models.length === 0 && !discovery.isFetching) ? (
+              <div className="relative">
+                <Input
+                  required
+                  autoFocus={manualInput}
+                  value={form.upstream}
+                  maxLength={120}
+                  className="font-mono pr-20"
+                  placeholder="vd. n7ai-fast, gpt-4o..."
+                  onChange={(e) => set({ upstream: e.target.value })}
+                />
+                {discovery.data?.ok && discovery.data.models.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setManualInput(false)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-primary hover:underline cursor-pointer"
+                  >
+                    Chọn lại
+                  </button>
+                )}
+              </div>
+            ) : discovery.isFetching ? (
+              <Select disabled>
+                <option>Đang tải model từ provider...</option>
+              </Select>
+            ) : (
+              <Select
+                required
+                value={form.upstream}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val === '__custom__') {
+                    setManualInput(true)
+                  } else {
+                    set({
+                      upstream: val,
+                      ...(form.label.trim() ? {} : { label: val.slice(0, 40) })
+                    })
+                  }
+                }}
+              >
+                <option value="">-- Chọn model của provider --</option>
+                {form.upstream && !discovery.data.models.some((m) => m.name === form.upstream) && (
+                  <option value={form.upstream}>{form.upstream} (đang chọn)</option>
+                )}
+                {discovery.data.models.map((m) => (
+                  <option key={m.name} value={m.name}>
+                    {m.name}
+                  </option>
+                ))}
+                <option value="__custom__">✎ Nhập tên khác (thủ công)...</option>
+              </Select>
+            )}
           </Field>
         </div>
         <div className="grid grid-cols-3 gap-3">

@@ -26,8 +26,8 @@ export const useDiscovery = (providerId: string | null) =>
     queryKey: [...ROOT, 'discover', providerId],
     queryFn: () => adminApi.get<AdminAiDiscovery>(`${PROVIDERS}/${providerId}/models`),
     enabled: !!providerId,
-    staleTime: 0,
-    gcTime: 0
+    staleTime: 30_000,
+    gcTime: 60_000
   })
 
 export function useLlmActions() {

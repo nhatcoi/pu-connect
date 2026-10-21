@@ -16,3 +16,9 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE INDEX IF NOT EXISTS idx_ai_models_provider ON ai_models (provider_id) WHERE provider_id IS NOT NULL;
+
+-- Tự động map model chưa có provider_id sang provider đầu tiên đang bật (nếu có)
+UPDATE ai_models
+SET provider_id = (SELECT id FROM ai_providers WHERE enabled ORDER BY priority, created_at LIMIT 1)
+WHERE provider_id IS NULL AND EXISTS (SELECT 1 FROM ai_providers WHERE enabled);
+

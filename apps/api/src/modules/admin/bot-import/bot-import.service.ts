@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { BotImportInput, BotImportMapRequest, BotImportMapping, BotImportResult, BotImportRowResult, BotImportRowStatus } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
 import { StorageService } from '../../storage/storage.service'
+import { LlmService } from '../../ai/llm.service'
 import { writeAudit } from '../admin-audit'
 import { filterImportContent } from './import-content-filter'
 import { fetchImage } from './import-image-fetcher'
@@ -33,7 +34,8 @@ export class BotImportService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly llm: LlmService
   ) {}
 
   async import(adminId: string, input: BotImportInput): Promise<BotImportResult> {
@@ -155,20 +157,15 @@ export class BotImportService {
 
   // AI đoán cột của file ứng với trường chuẩn khi header lạ; chỉ nhận header có thật trong file
   async mapColumns(input: BotImportMapRequest): Promise<BotImportMapping> {
-    const ctl = await this.db.query(`SELECT ai_model, ai_base_url FROM bot_control WHERE id = 1`)
-    const baseUrl = (ctl.rows[0]?.ai_base_url || process.env.AI_BASE_URL || 'https://api-ai.vnhat.dev/v1').replace(/\/+$/, '')
     const system = `Bạn ghép cột của file bài đăng với các trường chuẩn. Trường: content (nội dung bài, bắt buộc), key (id/mã bài), title (tiêu đề), images (ảnh/URL ảnh), topic (chủ đề), bot (tài khoản bot đăng), scheduledAt (giờ đăng), enhance (có dùng AI viết lại hay không). Chỉ trả về JSON dạng {"trường":"tên cột trong file"}, bỏ trường không có cột phù hợp. Không giải thích.`
     const prompt = JSON.stringify({ headers: input.headers, sample: input.sample.slice(0, 3) })
     let text = ''
     try {
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.AI_API_KEY || 'dummy'}` },
-        body: JSON.stringify({ model: ctl.rows[0]?.ai_model || 'v10', temperature: 0, stream: false, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] }),
-        signal: AbortSignal.timeout(20_000)
-      })
-      if (!res.ok) throw new Error(`AI ${res.status}`)
-      text = (await res.json())?.choices?.[0]?.message?.content ?? ''
+      const res = await this.llm.complete([
+        { role: 'system', content: system },
+        { role: 'user', content: prompt }
+      ], 1024)
+      text = res.text
     } catch (err: any) {
       this.logger.warn(`AI map cột lỗi: ${err?.message}`)
       throw new BadRequestException('AI chưa ghép được cột, hãy chọn tay')
