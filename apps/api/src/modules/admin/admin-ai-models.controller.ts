@@ -41,7 +41,7 @@ export class AdminAiModelsController {
     return this.models.update(requireUserId(req), targetId, body)
   }
 
-  @Patch(':id(*)')
+  @Patch(':id')
   @RequireAdminPermission('ai:manage')
   update(@Param('id') id: string, @Body(new ZodValidationPipe(AiModelPatchBodySchema)) body: AdminAiModelPatch & { currentId?: string }, @Req() req: Request) {
     const targetId = body.currentId || id
@@ -56,7 +56,7 @@ export class AdminAiModelsController {
     return this.models.remove(requireUserId(req), queryId)
   }
 
-  @Delete(':id(*)')
+  @Delete(':id')
   @RequireAdminPermission('ai:manage')
   remove(@Param('id') id: string, @Req() req: Request) {
     return this.models.remove(requireUserId(req), id)
