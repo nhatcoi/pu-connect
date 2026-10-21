@@ -90,7 +90,7 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
 }
 
 // Nút bật / tắt panel ở đầu hội thoại (desktop): luôn thấy, không phụ thuộc đang mở hay đóng
-export function N7AiPanelButton() {
+export function N7AiPanelButton({ showLabel = true }: { showLabel?: boolean }) {
   const open = useN7AiLayout((s) => s.panelOpen)
   const setOpen = useN7AiLayout((s) => s.setPanelOpen)
   return (
@@ -101,11 +101,12 @@ export function N7AiPanelButton() {
       title={open ? 'Thu gọn panel tài liệu' : 'Mở panel tài liệu và công cụ'}
       aria-label="Panel tài liệu và công cụ"
       className={cn(
-        'hidden h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted lg:flex',
-        open ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'
+        'hidden h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-2.5 text-xs font-medium transition-colors hover:bg-muted lg:flex',
+        open ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
       )}
     >
-      <PanelRight className="h-4 w-4" />
+      <PanelRight className="h-3.5 w-3.5" />
+      {showLabel && <span>Tài liệu</span>}
     </button>
   )
 }

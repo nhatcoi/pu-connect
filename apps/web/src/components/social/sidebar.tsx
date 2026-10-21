@@ -17,10 +17,9 @@ import {
   Compass,
   Bell,
   MessageCircle,
-  Sparkles,
-  Wrench,
-  PenSquare
+  Wrench
 } from 'lucide-react'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -58,7 +57,6 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
   const pathname = usePathname()
   const router = useRouter()
   const user = useAppStore((state) => state.user)
-  const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   const { logout, isLoggingOut } = useLogout()
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
   const unreadMessages = useUnreadMessages()
@@ -76,7 +74,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
       icon: MessageCircle,
       badge: unreadMessages > 0 ? (unreadMessages > 99 ? '99+' : String(unreadMessages)) : undefined
     },
-    { id: 'n7ai' as const, path: N7AI_HOME, label: 'N7AI', icon: Sparkles },
+    { id: 'n7ai' as const, path: N7AI_HOME, label: 'N7AI', icon: N7AiMark },
     {
       id: 'notifications' as const,
       path: '/notifications',
@@ -121,12 +119,21 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
               <>
                 {/* Khung icon cố định 48x44px — tâm đúng 32px tính từ lề thanh bên */}
                 <div className="w-12 h-11 flex items-center justify-center shrink-0 relative">
-                  <Icon
-                    className={cn(
-                      'h-5 w-5 shrink-0 transition-transform group-hover:scale-110',
-                      isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
-                    )}
-                  />
+                  {item.id === 'n7ai' ? (
+                    <N7AiMark
+                      className={cn(
+                        'h-5 w-5 shrink-0 transition-all duration-200 group-hover:scale-110',
+                        isActive ? 'opacity-100' : 'opacity-80 group-hover:opacity-100'
+                      )}
+                    />
+                  ) : (
+                    <Icon
+                      className={cn(
+                        'h-5 w-5 shrink-0 transition-transform group-hover:scale-110',
+                        isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    />
+                  )}
                   {item.badge && (
                     <span
                       className={cn(
@@ -166,28 +173,6 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
               </Link>
             )
           })}
-
-          {/* Nút Đăng bài chuẩn X: icon PenSquare nằm chính xác ở tâm 32px */}
-          <div className="pt-2 w-full">
-            <Button
-              type="button"
-              onClick={() => setCreatePostOpen(true)}
-              className="h-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs flex items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden p-0 w-full"
-              title="Đăng bài mới"
-            >
-              <div className="w-12 h-11 flex items-center justify-center shrink-0">
-                <PenSquare className="h-5 w-5" />
-              </div>
-              <span
-                className={cn(
-                  'text-xs font-bold tracking-tight pr-4 whitespace-nowrap transition-opacity duration-200 overflow-hidden',
-                  compact ? 'opacity-0 pointer-events-none' : 'opacity-0 xl:inline'
-                )}
-              >
-                Đăng bài
-              </span>
-            </Button>
-          </div>
         </div>
 
         {/* 2. Môn học sôi nổi (Desktop xl: only, tự động co giãn êm ái khi compact) */}

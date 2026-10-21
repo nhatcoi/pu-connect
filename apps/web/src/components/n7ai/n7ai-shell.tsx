@@ -28,8 +28,13 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
 
   return (
     <N7AiNavProvider>
-      {/* Đang kéo: khóa chọn chữ, iframe không nuốt sự kiện chuột */}
-      <div className={cn('flex [--app-header-height:0rem]', resizing && 'cursor-col-resize select-none [&_iframe]:pointer-events-none')}>
+      {/* Đang kéo: khóa chọn chữ, iframe không nuốt sự kiện chuột. Vào N7AI: workspace trượt từ phải vào và mờ dần giống index.html */}
+      <div
+        className={cn(
+          'flex min-h-screen [--app-header-height:0rem] bg-surface animate-in fade-in-0 slide-in-from-right-8 duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+          resizing && 'cursor-col-resize select-none [&_iframe]:pointer-events-none'
+        )}
+      >
         <aside
           style={{ width: sidebar }}
           className={cn('sticky top-0 hidden h-dvh shrink-0 overflow-hidden border-r border-border/60 md:block', !resizing && 'transition-[width] duration-200')}

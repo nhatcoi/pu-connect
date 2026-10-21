@@ -1,4 +1,6 @@
-import { Ban, Bell, Lock, MonitorSmartphone, Palette, Puzzle, Sparkles, UserRound, type LucideIcon } from 'lucide-react'
+import type React from 'react'
+import { Ban, Bell, Lock, MonitorSmartphone, Palette, Puzzle, UserRound } from 'lucide-react'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import type { FeaturePreferenceKey } from '@pu/schemas'
 
 // Các mục của trang Cài đặt (/settings/[section]); href ⇒ mục nằm ở không gian khác (N7AI ⇒ /n7ai/settings)
@@ -7,11 +9,11 @@ export const SETTINGS_SECTIONS = [
   { id: 'security', label: 'Đăng nhập & Bảo mật', description: 'Thiết bị đang đăng nhập, hoạt động đăng nhập gần đây', icon: MonitorSmartphone },
   { id: 'privacy', label: 'Quyền riêng tư', description: 'Thông tin hiển thị, hồ sơ riêng tư, dữ liệu gợi ý', icon: Lock },
   { id: 'features', label: 'Tính năng', description: 'Bật/tắt tiện ích bảng tin và N7AI', icon: Puzzle },
-  { id: 'n7ai', label: 'N7AI', description: 'Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu', icon: Sparkles, href: '/n7ai/settings' },
+  { id: 'n7ai', label: 'N7AI', description: 'Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu', icon: N7AiMark, href: '/n7ai/settings' },
   { id: 'notifications', label: 'Thông báo', description: 'Loại thông báo, trình duyệt, giờ yên tĩnh', icon: Bell },
   { id: 'appearance', label: 'Giao diện', description: 'Chủ đề và chế độ bảng tin mặc định', icon: Palette },
   { id: 'blocked', label: 'Chặn & An toàn', description: 'Tài khoản bạn đã chặn', icon: Ban }
-] as const satisfies readonly { id: string; label: string; description: string; icon: LucideIcon; href?: string }[]
+] as const satisfies readonly { id: string; label: string; description: string; icon: React.ComponentType<{ className?: string }>; href?: string }[]
 
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id']
 // Mục có trang con ở /settings/[section]

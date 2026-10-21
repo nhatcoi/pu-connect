@@ -7,6 +7,21 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Áp dụng bố cục và hoạt họa N7AI chuẩn theo mẫu `index.html` (2026-10-21)**: Chuyển đổi nhịp nhàng toàn diện từ Bảng tin hoặc bất kỳ trang nào sang không gian N7AI (`/n7ai`):
+  1. **Đường cong chuyển động & thời gian chuẩn (`index.html`)**: Đồng bộ toàn bộ shell container, header, sidebar và main workspace theo đường cong cubic-bezier `ease-[cubic-bezier(0.2,0.8,0.2,1)]` thời lượng `400ms`.
+  2. **Thanh bên điều hướng dạt sát mép trái ngoài cùng**: Khung chứa mở rộng toàn màn hình (`w-full max-w-full px-0 gap-0`), thanh bên PU Connector (`sidebar.tsx`) dạt sang sát mép trái (`left: 0`) dạng icon compact 64px (`w-16`) với tâm icon khóa cố định ở trục 32px, chiều cao full viewport `top-0 h-screen md:h-dvh py-2 border-r border-border/50 bg-surface`.
+  3. **Header co gọn mượt mà (Zero Vertical Shift)**: Thay vì gỡ bỏ đột ngột gây giật 56px, Header (`header.tsx`) được bọc trong container chuyển đổi chiều cao `max-h-14 opacity-100` sang `max-h-0 opacity-0` mượt mà khi vào N7AI.
+  4. **Workspace N7AI trượt vào từ mép phải (`.aiview`)**: Khung làm việc N7AI (`n7ai-shell.tsx`) trượt từ 32px mép phải vào (`slide-in-from-right-8`) và mờ dần (`fade-in-0`) mô phỏng hoàn toàn chuyển cảnh `.aiview` trong mẫu thiết kế HTML.
+  5. **Nút Panel Tài liệu nổi bật**: `N7AiPanelButton` hiển thị rõ ràng icon cùng nhãn chữ `Tài liệu` (`▣ Tài liệu`) cạnh nút `Chat mới`.
+  6. **Gợi ý câu hỏi tiếp theo dạng pills**: `AiFollowUps` chuyển sang dạng flex-wrap pills bo tròn nằm ngang (`rounded-full border border-border/80 bg-card px-3 py-1.5`) khớp với `.ai-suggestions` trong mẫu.
+  7. **Thanh chế độ học tập chuẩn hóa**: `AiModeBar` hiển thị dạng các pills học tập chuẩn nhận diện dark/light.
+
+- [x] **Đồng bộ nhận diện thương hiệu N7AI trên Sidebar và toàn hệ thống (`N7AiMark`) (2026-10-21)**: Thay thế icon ngôi sao chung chung (`Sparkles` của `lucide-react`) bằng logo chính thức của N7AI ([`N7AiMark`](apps/web/src/components/brand/pu-logo.tsx) - SVG `/brand/n7ai-mark.svg` biểu tượng kim cương xanh phối cam) trên:
+  1. **Thanh bên điều hướng chính** ([`sidebar.tsx`](apps/web/src/components/social/sidebar.tsx)): Icon N7AI hiển thị chuẩn tỉ lệ trong slot 48x44px (tâm 32px), `opacity-80` khi inactive và `opacity-100` khi active/hover, transition scale mượt mà.
+  2. **Thanh bên không gian N7AI Studio** ([`n7ai-sidebar.tsx`](apps/web/src/components/n7ai/n7ai-sidebar.tsx)): Tiêu đề N7AI Studio sử dụng logo chính thức.
+  3. **Màn hình chào mừng N7AI** ([`ai-welcome.tsx`](apps/web/src/components/chat/ai/ai-welcome.tsx)): Banner trung tâm N7AI đồng bộ nhận diện.
+  4. **Cài đặt hệ thống** ([`settings-registry.ts`](apps/web/src/lib/settings-registry.ts)): Danh mục cài đặt N7AI hiển thị logo thương hiệu.
+
 - [x] **Hệ thống Collapsible / Accordion chuẩn hóa PU Connector (`AppCollapsible` & `Collapsible`) (2026-10-21)**: Giải quyết triệt để tình trạng các khối collapse/accordion tự chế rời rạc (`useState` + xoay mũi tên giật hình, layout shift đột ngột).
   - Component chuẩn tại [`apps/web/src/components/ui/collapsible.tsx`](apps/web/src/components/ui/collapsible.tsx) gồm:
     - **Low-level Headless Primitives**: `Collapsible`, `CollapsibleTrigger` (hỗ trợ `asChild` qua Radix Slot, đồng bộ accessibility `aria-expanded` & `aria-controls`), `CollapsibleContent` (tích hợp `AnimatePresence` + Spring Physics từ `motion/react` v12: `stiffness: 360, damping: 32`, zero layout thrashing, chống giật màn hình CLS).

@@ -3,7 +3,8 @@
 import React from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
-import { ArrowLeft, Ghost, Library, PanelLeftClose, Settings, Sparkles, SquarePen, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, Ghost, Library, PanelLeftClose, Settings, SquarePen, type LucideIcon } from 'lucide-react'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import { AiThreadList } from '@/components/chat/ai/ai-thread-list'
 import { N7AI_HOME, N7AI_LIBRARY, N7AI_TEMPORARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
@@ -28,7 +29,7 @@ export function N7AiSidebar() {
     <div className="flex h-full min-h-0 flex-col gap-1 p-3">
       <div className="mb-1 flex items-center justify-between px-1">
         <span className="hidden md:flex items-center gap-1.5 text-xs font-semibold text-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <N7AiMark className="h-4 w-4" />
           <span>N7AI Studio</span>
         </span>
         <Link href="/" className="flex md:hidden items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">

@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Sparkles } from 'lucide-react'
+import { N7AiMark } from '@/components/brand/pu-logo'
 import type { AiMode, AiSuggestion } from '@pu/schemas'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAiSuggestions } from '@/hooks/chat'
@@ -15,8 +15,8 @@ export function AiWelcome({ mode, onPick }: { mode: AiMode; onPick: (s: AiSugges
   return (
     <div className="py-10 px-2 text-center space-y-5">
       <div className="space-y-2">
-        <div className="h-12 w-12 mx-auto rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
-          <Sparkles className="h-6 w-6" />
+        <div className="h-12 w-12 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+          <N7AiMark className="h-7 w-7" />
         </div>
         <p className="text-[15px] font-semibold">N7AI — trợ lý học tập</p>
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">

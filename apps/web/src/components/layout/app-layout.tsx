@@ -82,13 +82,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <AuthGuard fallback={<AppShellSkeleton immersive={hideHeader} />}>
       <AsideSlotProvider node={asideNode} onCustomChange={onCustomChange}>
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
-          {!hideHeader && <Header />}
+          <div
+            className={cn(
+              'transition-all duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden',
+              hideHeader ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-14 opacity-100'
+            )}
+          >
+            <Header />
+          </div>
           <RestrictionBanner />
           <GlobalDialogs />
           {/* N7AI: thanh bên dạt sát mép trái ngoài cùng (w-full, max-w-full, px-0, gap-0), trang thường: căn giữa 1368px */}
           <div
             className={cn(
-              'flex min-h-screen transition-[max-width,padding,gap] duration-300 ease-in-out',
+              'flex min-h-screen transition-[max-width,padding,gap] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
               n7ai
                 ? 'w-full max-w-full px-0 gap-0'
                 : cn('w-full mx-auto gap-6 px-4 sm:px-6', SHELL_WIDTH)
@@ -97,7 +104,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {showSidebar && (
               <div
                 className={cn(
-                  'hidden md:flex shrink-0 sticky flex-col justify-between z-30 transition-all duration-300 ease-in-out overflow-hidden',
+                  'hidden md:flex shrink-0 sticky flex-col justify-between z-30 transition-all duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden',
                   n7ai
                     ? 'top-0 h-screen md:h-dvh py-2 border-r border-border/50 bg-surface'
                     : 'top-14 h-[calc(100vh-3.5rem)] py-3',
@@ -109,7 +116,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
             <main
               className={cn(
-                'flex-1 w-full min-w-0 min-h-screen transition-[max-width] duration-300 ease-in-out',
+                'flex-1 w-full min-w-0 min-h-screen transition-[max-width] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
                 hideHeader
                   ? 'pb-14 md:pb-0'
                   : cn(
@@ -127,7 +134,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {!hideHeader && (
               <aside
                 className={cn(
-                  'hidden lg:block shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar transition-[width,opacity,margin] duration-300 ease-in-out',
+                  'hidden lg:block shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar transition-[width,opacity,margin] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
                   fullWidth
                     ? 'w-0 -ml-6 opacity-0 pointer-events-none py-0'
                     : 'w-64 xl:w-72 ml-0 opacity-100 py-4'

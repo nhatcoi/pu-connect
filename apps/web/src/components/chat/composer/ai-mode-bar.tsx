@@ -20,8 +20,8 @@ export function AiModeBar({ value, onChange }: { value: AiMode; onChange: (mode:
             title={meta.hint}
             onClick={() => onChange(mode)}
             className={cn(
-              'shrink-0 flex items-center gap-1 rounded-full px-2.5 h-7 text-xs font-medium transition-colors cursor-pointer',
-              active ? 'bg-primary text-primary-foreground' : 'bg-card text-muted-foreground hover:text-foreground hover:bg-muted'
+              'shrink-0 flex items-center gap-1.5 rounded-full px-3 h-7 text-xs font-medium transition-colors cursor-pointer',
+              active ? 'bg-primary text-primary-foreground font-semibold shadow-xs' : 'bg-card text-muted-foreground hover:text-foreground hover:bg-muted border border-border/60'
             )}
           >
             <Icon className="h-3.5 w-3.5" /> {meta.label}
