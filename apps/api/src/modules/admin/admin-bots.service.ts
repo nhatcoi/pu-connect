@@ -16,8 +16,7 @@ import type {
   BotCommandType,
   BotGenerateContentInput,
   BotGenerateContentResult,
-  BotRecentPost,
-  BotSessionStats
+  BotRecentPost
 } from '@pu/schemas'
 import type { PoolClient } from 'pg'
 import { DatabaseService } from '../../database/database.service'
@@ -420,7 +419,7 @@ Chỉ trả về trực tiếp nội dung bình luận, không bọc dấu ngo�
   }
 
   // Thực thi trực tiếp lệnh bot trên database (đăng bài, bình luận, thả tim)
-  async executeCommand(cmdId: number, type: BotCommandType, payload: any, adminId?: string) {
+  async executeCommand(cmdId: number, type: BotCommandType, payload: any, _adminId?: string) {
     let botRow: any = null
     if (payload.bot) {
       const res = await this.db.query(

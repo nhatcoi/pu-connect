@@ -5,73 +5,101 @@ description: Step-by-step development workflow for building, testing, verifying,
 
 # Feature Development Workflow (PU Connector)
 
-Quy trình chuẩn khi phát triển bất kỳ tính năng mới nào trong hệ thống PU Connector, đảm bảo tính nhất quán từ Database, Schema, Backend, Frontend đến Tài liệu.
+Quy trình chuẩn mực 7 bước khi phát triển bất kỳ tính năng mới nào trong hệ thống PU Connector, đảm bảo tính nhất quán tuyệt đối từ Database, Schema, Backend, Frontend đến Tài liệu và Kiểm thử.
 
 ---
 
-## 📋 Quy Trình 6 Bước Phát Triển Tính Năng
+## 📋 Quy Trình 7 Bước Chuẩn
 
 ```mermaid
 graph TD
-    A["1. Phân Tích & Xác Định Yêu Cầu"] --> B["2. Định Nghĩa Schema (@pu/schemas)"]
-    B --> C["3. Xây Dựng Backend & Database (apps/api)"]
-    C --> D["4. Xây Dựng Frontend & Zustand Slice (apps/web)"]
-    D --> E["5. Kiểm Thử & Xác Minh (Test & Build)"]
-    E --> F["6. Cập Nhật docs/FEAT.md & Changelog"]
+    A["1. Phân Tích & Đối Soát Roadmap (docs/FEAT.md)"] --> B["2. Khai Báo Schemas (@pu/schemas)"]
+    B --> C["3. Triển Khai Backend & Migration (apps/api)"]
+    C --> D["4. Triển Khai Frontend & Hooks (apps/web)"]
+    D --> E["5. Kiểm Thử Toàn Diện (Typecheck & Build)"]
+    E --> F["6. Cập Nhật Tài Liệu Bắt Buộc (docs/FEAT.md, ERD)"]
+    F --> G["7. Commit Atomic Chuẩn Conventional"]
 ```
 
 ---
 
 ### Bước 1: Phân Tích Yêu Cầu & Kế Hoạch
-* Kiểm tra danh mục roadmap trong [`docs/FEAT.md`](file:///home/nhatcoi/Documents/personal/pu-connector/docs/FEAT.md).
+* Kiểm tra danh mục roadmap và kiến trúc domain trong [`docs/FEAT.md`](../../docs/FEAT.md).
 * Xác định rõ:
   * Mô hình thực thể cần thiết trong Database.
-  * API endpoints (REST / WebSocket).
-  * Giao diện người dùng & các state tương tác.
+  * API endpoints (REST / WebSocket / GraphQL).
+  * Caching strategy (Khóa TanStack Query tương ứng trong `queryKeys`).
+  * Giao diện người dùng & các state tương tác trên cả Desktop lẫn Mobile.
 
 ---
 
 ### Bước 2: Khai Báo Zod Schemas & Types (`packages/schemas`)
 * Thêm schema validation và TypeScript type vào `packages/schemas/src/<feature>.schema.ts`.
-* Export từ `packages/schemas/src/index.ts`.
-* Chạy `pnpm --filter @pu/schemas build` (nếu có build step) hoặc xác minh import không lỗi.
+* Xuất (export) từ `packages/schemas/src/index.ts`.
+* Đảm bảo schema là Single Source of Truth giữa Client và Server.
 
 ---
 
 ### Bước 3: Triển Khai Backend (`apps/api`)
-1. **Database Migration:** Bổ sung bảng/cột vào `apps/api/src/database/schema.sql` nếu cần.
+1. **Database Migration (Idempotent):**
+   * Nếu có bảng hoặc cột mới, tạo file migration idempotent tại `apps/api/src/database/<feature>-upgrade.sql`.
+   * Khai báo lệnh chạy migration trong `scripts/deploy.sh`.
 2. **Module NestJS:**
    * Tạo Controller, Service, Module trong `apps/api/src/modules/<feature>/`.
-   * Sử dụng Zod validation pipe từ `@pu/schemas`.
+   * Sử dụng `DatabaseService` (Native Postgres). Nếu có từ 2 bước ghi dữ liệu, bọc trong `this.db.transaction(async (client) => { ... })`.
+   * Kiểm tra quyền bằng `AuthenticatedGuard` và bóc tách user bằng `requireUserId(req)`. Tuyệt đối không mock fallback.
    * Đăng ký Module vào `apps/api/src/app.module.ts`.
-3. **Kiểm tra API:** Xác minh endpoint hoạt động trả về đúng JSON format.
 
 ---
 
 ### Bước 4: Triển Khai Frontend (`apps/web`)
-1. **Zustand Slice:** Tạo `apps/web/src/store/slices/<feature>-slice.ts` và gộp vào root `useAppStore`.
-2. **UI Components:**
-   * Tạo các thẻ card, dialog, hoặc view trong `apps/web/src/components/<feature>/`.
-   * Đảm bảo KHÔNG dùng emoji trong text; dùng icon Lucide SVG chuẩn.
-   * Sử dụng token màu CSS semantic từ theme (`bg-card`, `text-foreground`, `border-border`...).
-3. **Kết nối API:** Sử dụng `apiClient` từ `@/lib/api-client`.
+1. **Query Hooks:**
+   * Thêm khóa query vào `apps/web/src/lib/query-keys.ts`.
+   * Tạo hook dữ liệu bằng `useQuery` hoặc `useInfiniteQuery`.
+2. **UI & Responsive Components:**
+   * Tạo components trong `apps/web/src/components/<feature>/`.
+   * Sử dụng 100% semantic CSS tokens (`bg-card`, `text-foreground`, `border-border`...).
+   * Thiết kế thích ứng mượt mà trên Mobile (< 768px), không để tràn ngang màn hình.
+   * Tạo Skeleton loader chuẩn kích thước trong `apps/web/src/components/skeletons/` cho trạng thái tải ban đầu.
 
 ---
 
-### Bước 5: Kiểm Thử & Xác Minh (Build & Test)
+### Bước 5: Kiểm Thử & Xác Minh (Test & Build)
 * Chạy kiểm tra TypeScript và Build toàn bộ monorepo:
   ```bash
-  export PATH="/home/nhatcoi/.nvm/versions/node/v24.14.0/bin:$PATH"
+  pnpm typecheck
   pnpm build
   ```
-* Kiểm tra runtime:
-  * Xác minh `procman status` tất cả các tiến trình (`db`, `api`, `web`) đều ở trạng thái `up`.
-  * Xác minh không có lỗi console hoặc cảnh báo hydration trong browser.
+* Nếu có test suite liên quan:
+  ```bash
+  pnpm --filter @pu/api test
+  ```
+* Xác minh không có lỗi console, cảnh báo hydration hoặc cảnh báo ESLint.
 
 ---
 
-### Bước 6: Cập Nhật Tài Liệu & Ghi Nhận Tính Năng
-* **Cập nhật [`docs/FEAT.md`](file:///home/nhatcoi/Documents/personal/pu-connector/docs/FEAT.md):**
-  * Chuyển tính năng từ mục **"Kế hoạch (Roadmap)"** sang mục **"Đã triển khai (Implemented & Live)"**.
-  * Ghi chú ngắn gọn, súc tích về các endpoints và component vừa bổ sung.
-* **Cập nhật `CHANGELOG.md`** nếu có phiên bản phát hành mới.
+### Bước 6: Cập Nhật Tài Liệu Bắt Buộc (Mandatory Docs Update)
+1. **Cập nhật [`docs/FEAT.md`](../../docs/FEAT.md):**
+   * Chuyển tính năng từ mục **"Kế hoạch (Roadmap)"** sang mục **"Đã hoàn thành (Completed)"** kèm checklist `[x]`, mô tả chi tiết endpoints, component và cơ chế hoạt động.
+2. **Cập nhật [`README.md`](../../README.md)** nếu có thêm biến môi trường hoặc script mới.
+3. **Cập nhật sơ đồ hệ thống:**
+   * Nếu có migration SQL mới: chạy migration lên DB local và chạy `pnpm docs:erd` để sinh lại ERD.
+   * Nếu thêm module/trang mới: cập nhật sơ đồ tương ứng trong [`docs/diagrams/`](../../docs/diagrams/).
+
+---
+
+### Bước 7: Commit Chuẩn Conventional Commits
+* Chia nhỏ thay đổi thành các commit nguyên tử (Atomic commits) theo chuẩn:
+  ```bash
+  git add packages/schemas/
+  git commit -m "feat(<feature>): add schemas and types"
+
+  git add apps/api/
+  git commit -m "feat(<feature>): implement backend service and endpoints"
+
+  git add apps/web/
+  git commit -m "feat(<feature>): implement responsive UI and query hooks"
+
+  git add docs/
+  git commit -m "docs(<feature>): update FEAT.md and architecture diagrams"
+  ```

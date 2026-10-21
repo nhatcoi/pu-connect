@@ -7,6 +7,21 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Tái cấu trúc & Tinh gọn toàn diện Hệ thống Bot & Bộ điều hành Bot (Bot Commander) (2026-10-22)**:
+  - **Khởi tạo Bot 1-click & Mặc định sẵn sàng**:
+    - Khi tạo bot mới, hệ thống tự động kích hoạt bot (`enabled: true, can_post: true, can_comment: true, can_like: true, interact_humans: true`), không bắt admin phải qua các modal cấu hình thứ cấp để cấp quyền.
+    - Bổ sung 4 mẫu **Persona Preset gợi ý (1-click điền mẫu)**: *Sinh viên IT chăm chỉ*, *Giảng viên Cố vấn học thuật*, *Trợ giảng TA hỗ trợ bài tập*, *Sinh viên Năng động ngoại khóa*.
+  - **Bộ điều hành Bot (Bot Commander Dialog - [`bot-action-dialog.tsx`](apps/admin/src/features/bots/bot-action-dialog.tsx))**:
+    - Trực quan hóa 3 thao tác chính: 📝 **Đăng bài**, 💬 **Bình luận**, ❤️ **Thả tim**.
+    - Tích hợp **bộ chọn bài viết gần đây** (`/admin/bots/recent-posts`) giúp admin bấm chọn bài viết ngay lập tức, không cần copy paste UUID thủ công.
+    - Tích hợp **AI sinh nội dung trực tiếp theo Persona** (`POST /admin/bots/generate-content`): Bot đóng vai chính mình (vai trò, khoa, chuyên ngành, linh hồn/soul, giọng điệu/tone) để viết bài hoặc đọc bài viết và viết bình luận chuẩn chỉnh, cho phép xem trước và biên tập lại trước khi đăng.
+  - **Thực thi trực tiếp trong API NestJS, độc lập hoàn toàn khỏi daemon/tool bên ngoài**:
+    - Khi ra lệnh "Chạy ngay": API NestJS ([`admin-bots.service.ts`](apps/api/src/modules/admin/admin-bots.service.ts)) trực tiếp tạo bài viết trong bảng `posts`, tạo bình luận trong `comments`, hoặc thả tim trong `post_reactions`, tự động cập nhật bộ đếm và ghi nhận nhật ký vào `bot_activity`, đánh dấu lệnh `done` lập tức!
+    - Khi ra lệnh "Hẹn giờ": Runner chu kỳ nhẹ (`setInterval` 15s) trong chính NestJS tự động quét các lệnh đến hạn và thực thi. Loại bỏ hoàn toàn sự phụ thuộc vào daemon `pu-bot` bên ngoài.
+  - **Tinh gọn giao diện Admin Console ([`bots-page.tsx`](apps/admin/src/features/bots/bots-page.tsx))**:
+    - Loại bỏ cảnh báo offline của daemon bên ngoài; hiển thị Dashboard trạng thái sẵn sàng trực tiếp trên API cùng các chỉ số: Tổng số bot, Bot đang hoạt động, Tổng bài đăng của bot, Tổng bình luận, Tổng tim.
+    - Hỗ trợ bật/tắt bot nhanh (1-click toggle switch) ngay trên danh sách Bot ([`bot-accounts-tab.tsx`](apps/admin/src/features/bots/bot-accounts-tab.tsx)).
+
 - [x] **Tối giản giao diện Admin Console, lược bỏ các hint văn bản dài gây rối mắt (2026-10-22)**:
   - Lược bỏ toàn bộ các chuỗi `hint="..."` dài dòng tại các hộp thoại Admin Console: Model Mapping (`models-panel.tsx`), AI Providers (`providers-panel.tsx`), Bot Account & Actions (`bot-account-dialog.tsx`, `bot-action-dialog.tsx`, `bot-profile-dialog.tsx`), Đơn vị học thuật (`units-panel.tsx`, `academic-tab.tsx`), và Thông báo hệ thống (`system-ops-tab.tsx`).
   - Thay thế bằng placeholder trực quan, tinh gọn giúp layout dialog cân đối, thoáng đãng và chuyên nghiệp.

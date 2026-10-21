@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FileSpreadsheet, Plus, X } from 'lucide-react'
+import { FileSpreadsheet, X, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminBotCommand, AdminBotOverview, BotCommandType } from '@pu/schemas'
 import { adminApi, formatRelativeTime } from '@/lib/api'
@@ -13,12 +13,11 @@ const STATUS_TONE = { pending: 'neutral', running: 'primary', done: 'success', f
 const STATUS_LABEL = { pending: 'Chờ', running: 'Đang chạy', done: 'Xong', failed: 'Lỗi', cancelled: 'Đã hủy' } as const
 
 function describe(c: AdminBotCommand): string {
-  if (c.result && (c.status === 'failed' || c.status === 'cancelled')) return c.result
+  if (c.result) return c.result
   const p = c.payload as { bot?: string; content?: string; postId?: string; enhance?: string; source?: string }
   return [p.bot ? `@${p.bot}` : 'Bot ngẫu nhiên', p.source === 'import' && 'Excel', p.content?.slice(0, 60), p.postId && `bài ${p.postId.slice(0, 8)}…`, p.enhance === 'ai' && 'AI viết lại'].filter(Boolean).join(' · ')
 }
 
-// Lịch đăng & việc giao cho bot: import Excel (hẹn giờ theo file) hoặc giao tay, chạy ngay/hẹn giờ
 export function BotScheduleCard({ data, onAct }: { data: AdminBotOverview; onAct: (preset: BotActionPreset) => void }) {
   const [importing, setImporting] = useState(false)
   const cancel = useBotMutation(
@@ -30,21 +29,24 @@ export function BotScheduleCard({ data, onAct }: { data: AdminBotOverview; onAct
     <>
       <Card>
         <CardHeader
-          title="Lịch đăng & việc giao"
-          description="Bài import từ Excel và việc admin giao tay: chạy ngay hoặc theo giờ hẹn. Lệnh đang chờ hủy được."
+          title="Lệnh điều hành & Lịch hẹn"
+          description="Các lệnh đăng bài, bình luận, thả tim do Admin điều hành (chạy ngay hoặc hẹn giờ)."
           action={
             <div className="flex gap-2">
-              <Button onClick={() => setImporting(true)}>
-                <FileSpreadsheet /> Import Excel
+              <Button variant="outline" size="sm" onClick={() => setImporting(true)}>
+                <FileSpreadsheet className="size-3.5" /> Import Excel
               </Button>
-              <Button variant="primary" onClick={() => onAct({})}>
-                <Plus /> Giao việc
+              <Button variant="primary" size="sm" onClick={() => onAct({})}>
+                <Zap className="size-3.5" /> Điều hành Bot
               </Button>
             </div>
           }
         />
         {data.commands.length === 0 ? (
-          <EmptyState title="Chưa có lệnh" description="Bấm Giao việc để bắt bot đăng bài, bình luận hoặc thả tim." />
+          <EmptyState
+            title="Chưa có lệnh nào được tạo"
+            description="Bấm 'Điều hành Bot' để yêu cầu bot đăng bài, bình luận hoặc thả tim."
+          />
         ) : (
           <List className="rounded-none border-x-0 border-b-0">
             {data.commands.map((c) => (
@@ -55,10 +57,18 @@ export function BotScheduleCard({ data, onAct }: { data: AdminBotOverview; onAct
                   <p className="truncate text-xs text-muted-foreground">{describe(c)}</p>
                 </div>
                 <span className="shrink-0 text-right text-xs text-muted-foreground">
-                  {c.status === 'pending' && new Date(c.scheduledAt).getTime() > Date.now() ? `Hẹn ${new Date(c.scheduledAt).toLocaleString('vi-VN')}` : `@${c.createdBy ?? '?'} · ${formatRelativeTime(c.createdAt)}`}
+                  {c.status === 'pending' && new Date(c.scheduledAt).getTime() > Date.now()
+                    ? `Hẹn ${new Date(c.scheduledAt).toLocaleString('vi-VN')}`
+                    : `@${c.createdBy ?? 'admin'} · ${formatRelativeTime(c.createdAt)}`}
                 </span>
                 {c.status === 'pending' && (
-                  <Button size="icon-sm" variant="danger-soft" loading={cancel.isPending && cancel.variables === c.id} onClick={() => cancel.mutate(c.id)} title="Hủy lệnh">
+                  <Button
+                    size="icon-sm"
+                    variant="danger-soft"
+                    loading={cancel.isPending && cancel.variables === c.id}
+                    onClick={() => cancel.mutate(c.id)}
+                    title="Hủy lệnh"
+                  >
                     <X />
                   </Button>
                 )}

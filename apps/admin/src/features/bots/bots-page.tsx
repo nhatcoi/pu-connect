@@ -1,16 +1,14 @@
 import React, { useState } from 'react'
-import { FileText, Heart, MessageCircle, Pause, Play } from 'lucide-react'
-import { BOT_SPEEDS, type AdminBotOverview } from '@pu/schemas'
-import { adminApi, formatNumber, formatRelativeTime } from '@/lib/api'
-import { Badge, Button, Card, CardHeader, Field, LoadingRows, PageHeader, Segmented, Stat } from '@/components/ui'
+import { Bot, FileText, Heart, MessageCircle, Sparkles, Users, Zap } from 'lucide-react'
+import type { AdminBotOverview } from '@pu/schemas'
+import { formatNumber } from '@/lib/api'
+import { Badge, Button, Card, CardHeader, LoadingRows, PageHeader, Stat } from '@/components/ui'
 import { BotAccountsTab } from './bot-accounts-tab'
 import { BotActionDialog, type BotActionPreset } from './bot-action-dialog'
 import { BotActivityLog } from './bot-activity-log'
 import { BotScheduleCard } from './bot-schedule-card'
 import { AiConfigCard, TopicsCard } from './bot-settings-cards'
-import { useBotMutation, useBotOverview } from './use-bots'
-
-const SPEED_LABEL = { slow: 'Chậm (20–60 phút)', normal: 'Vừa (5–15 phút)', fast: 'Nhanh (1–3 phút)' } as const
+import { useBotOverview } from './use-bots'
 
 export function BotsPage() {
   const overview = useBotOverview()
@@ -20,69 +18,103 @@ export function BotsPage() {
   return (
     <>
       <PageHeader
-        title="Bot"
-        description="Tạo bot, viết soul, cấp quyền. Bot tự đăng theo soul hoặc theo lịch import từ Excel, và tương tác (bình luận, thả tim) với bot khác và người thật. Chỉ làm đúng chủ đề, trong hạn mức ngày. Tool crawl dữ liệu là phần riêng, ra file Excel."
+        title="Quản lý & Điều hành Bot"
+        description="Khởi tạo tài khoản Bot, thiết lập tính cách (Soul) và ra lệnh điều hành đăng bài, bình luận, thả tim trực tiếp với sự hỗ trợ của AI."
+        actions={
+          <Button variant="primary" onClick={() => setAction({})}>
+            <Zap className="size-4" /> Điều hành nhanh
+          </Button>
+        }
       />
 
       {overview.isPending || !data ? (
         <LoadingRows rows={4} />
       ) : (
         <div className="space-y-5">
-          <ControlCards data={data} />
+          {/* Dashboard thống kê toàn diện về Bot */}
+          <BotStatsOverview data={data} onQuickCommand={() => setAction({})} />
+
+          {/* Danh sách Bot & thao tác */}
           <BotAccountsTab data={data} onAct={setAction} />
+
+          {/* Lịch đăng & việc đã giao cho bot */}
+          <BotScheduleCard data={data} onAct={setAction} />
+
+          {/* Nhật ký hoạt động của bot */}
+          <BotActivityLog bots={data.bots.map((b) => b.username)} />
+
+          {/* Cấu hình AI & Chủ đề */}
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             <AiConfigCard key={`${data.ai.model}|${data.ai.baseUrl}`} data={data} />
             <TopicsCard topics={data.topics} />
           </div>
-          <BotScheduleCard data={data} onAct={setAction} />
-          <BotActivityLog bots={data.bots.map((b) => b.username)} />
         </div>
       )}
 
+      {/* Modal điều hành Bot */}
       <BotActionDialog preset={action} bots={data?.bots ?? []} onClose={() => setAction(null)} />
     </>
   )
 }
 
-// Công tắc daemon (tự đăng + tương tác), tốc độ, thống kê
-function ControlCards({ data }: { data: AdminBotOverview }) {
-  const control = useBotMutation((body: Parameters<typeof adminApi.patch>[1]) => adminApi.patch<AdminBotOverview>('/admin/bots/control', body))
+function BotStatsOverview({
+  data,
+  onQuickCommand
+}: {
+  data: AdminBotOverview
+  onQuickCommand: () => void
+}) {
+  const activeBots = data.bots.filter((b) => b.profile.enabled).length
+
   return (
-    <div className="space-y-5">
-      <Card>
-        <CardHeader
-          title={
-            <span className="flex items-center gap-2">
-              Mô phỏng tương tác
-              <Badge tone={data.online ? 'success' : 'danger'} dot>
-                {data.online ? 'Daemon online' : 'Daemon offline'}
-              </Badge>
-              {data.online && <Badge tone={data.enabled ? 'primary' : 'neutral'}>{data.enabled ? 'Đang chạy' : 'Tạm dừng'}</Badge>}
-            </span>
-          }
-          description={
-            data.online
-              ? `Chạy từ ${formatRelativeTime(data.startedAt)} · heartbeat ${formatRelativeTime(data.heartbeatAt)}`
-              : 'Daemon chưa chạy. Trên VPS: systemctl start pu-bot. Lệnh vẫn được xếp hàng và chạy khi daemon sống lại.'
-          }
-          action={
-            <Button variant={data.enabled ? 'outline' : 'primary'} loading={control.isPending} onClick={() => control.mutate({ enabled: !data.enabled })}>
-              {data.enabled ? <Pause /> : <Play />}
-              {data.enabled ? 'Tạm dừng' : 'Bật mô phỏng'}
-            </Button>
-          }
-        />
-        <div className="space-y-4 p-4 pt-0">
-          <Field label="Tốc độ" hint={SPEED_LABEL[data.speed]}>
-            <Segmented value={data.speed} onChange={(speed) => control.mutate({ speed })} items={BOT_SPEEDS.map((s) => ({ id: s, label: { slow: 'Chậm', normal: 'Vừa', fast: 'Nhanh' }[s] }))} />
-          </Field>
-          <div className="grid grid-cols-3 gap-3">
-            <Stat label="Bài đăng" value={formatNumber(data.stats?.postsCount ?? 0)} icon={FileText} sub="từ lúc daemon khởi động" />
-            <Stat label="Bình luận" value={formatNumber(data.stats?.commentsCount ?? 0)} icon={MessageCircle} />
-            <Stat label="Lượt thích" value={formatNumber(data.stats?.likesCount ?? 0)} icon={Heart} />
-          </div>
+    <Card>
+      <CardHeader
+        title={
+          <span className="flex items-center gap-2">
+            <span>Hệ thống Bot PU Connector</span>
+            <Badge tone="success" dot>
+              Bộ chỉ huy sẵn sàng
+            </Badge>
+          </span>
+        }
+        description="Bot hoạt động trực tiếp trên nền tảng, tự động hóa tương tác và kết nối cộng đồng sinh viên Phenikaa."
+        action={
+          <Button size="sm" variant="outline" onClick={onQuickCommand}>
+            <Sparkles className="size-3.5 text-primary" /> Ra lệnh cho Bot
+          </Button>
+        }
+      />
+      <div className="p-4 pt-0">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+          <Stat
+            label="Tổng số Bot"
+            value={formatNumber(data.bots.length)}
+            icon={Users}
+            sub={`${activeBots} đang hoạt động`}
+          />
+          <Stat
+            label="Đang hoạt động"
+            value={formatNumber(activeBots)}
+            icon={Bot}
+            sub={`${data.bots.length - activeBots} tạm dừng`}
+          />
+          <Stat
+            label="Bài đăng của Bot"
+            value={formatNumber(data.stats?.postsCount ?? 0)}
+            icon={FileText}
+          />
+          <Stat
+            label="Bình luận của Bot"
+            value={formatNumber(data.stats?.commentsCount ?? 0)}
+            icon={MessageCircle}
+          />
+          <Stat
+            label="Lượt thích"
+            value={formatNumber(data.stats?.likesCount ?? 0)}
+            icon={Heart}
+          />
         </div>
-      </Card>
-    </div>
+      </div>
+    </Card>
   )
 }
