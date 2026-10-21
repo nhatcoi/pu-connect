@@ -71,8 +71,11 @@ export class AiTemporaryService {
       const { rest, text: answer, followUps, cited } = splitter.finish()
       emit(rest)
       let text = answer.trim()
-      if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
-      if (finishReason === 'length') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
+      if (!text || finishReason === 'content_filter') {
+        text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
+      } else if (finishReason === 'length') {
+        text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
+      }
       const citations: ChatCitation[] = citationsOf(catalog.sources, cited)
       send({
         type: 'done',

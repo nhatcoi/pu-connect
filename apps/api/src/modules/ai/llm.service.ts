@@ -9,7 +9,7 @@ import { AiProviderRegistry } from './ai-provider.registry'
 import { AiModelCatalogService } from './ai-model-catalog.service'
 
 const DEFAULT_MODEL = 'n7ai-fast' // Model suy nghĩ qua gateway OpenAI-compatible; đổi bằng AI_MODEL
-export const MAX_OUTPUT_TOKENS = 8192 // Gồm cả token suy nghĩ (thinking counts toward cap)
+export const MAX_OUTPUT_TOKENS = 16384 // Gồm cả token suy nghĩ (thinking counts toward cap)
 
 export const RESEARCH_TASK = 'research'
 export const RESEARCH_COST = 2 // truy xuất sâu + câu trả lời dài ⇒ tốn gấp đôi

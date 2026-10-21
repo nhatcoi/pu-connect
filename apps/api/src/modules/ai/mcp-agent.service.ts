@@ -88,7 +88,8 @@ export class McpAgentService {
     let retried = false
     try {
       for (let round = 0; round < maxRounds; round++) {
-        const remaining = MAX_OUTPUT_TOKENS - budgetUsed
+        // Vòng sau khi chạy tool: đảm bảo luôn có ít nhất 2048 token để model chào và kết luận
+        const remaining = Math.max(MAX_OUTPUT_TOKENS - budgetUsed, round > 0 ? 2048 : 0)
         if (remaining <= 0) return { timings, usage, finishReason: 'length', calls, steps }
         const toolsAllowed = round < maxRounds - 1 && calls.length < maxCalls && runner.resultChars < 48_000 && session.tools.length > 0
         const modelStarted = Date.now()
@@ -156,7 +157,7 @@ export class McpAgentService {
         else timings.modelStreamMs += Date.now() - firstChunkAt
         usage.prompt_tokens += roundUsage?.prompt_tokens ?? 0
         usage.completion_tokens += roundUsage?.completion_tokens ?? 0
-        budgetUsed += roundUsage?.completion_tokens ?? Buffer.byteLength(content + [...pending.values()].map((call) => call.arguments).join(''), 'utf8')
+        budgetUsed += roundUsage?.completion_tokens ?? Math.ceil((content.length + [...pending.values()].map((call) => call.arguments).join('').length) / 3)
         if (!pending.size || finishReason === 'length' || finishReason === 'content_filter') return { timings, usage, finishReason, calls, steps }
         // Empty streamed arguments represent an empty object / chuẩn hoá trước khi gửi lại gateway.
         const pendingCalls = [...pending.values()].map((call) => ({ ...call, arguments: call.arguments.trim() || '{}' }))

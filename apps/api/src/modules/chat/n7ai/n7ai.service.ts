@@ -219,23 +219,39 @@ export class N7AiService {
 
       const { rest, text: answer, followUps, memories, cited, actions: drafts } = splitter.finish()
       if (rest) emit(rest)
+
+      const slideAttachment = slideCreator.created()
+      const attachments = slideAttachment ? [slideAttachment] : null
+      const created = creator?.created() ?? null
+
       let text = answer.trim()
-      if (finishReason === 'content_filter' || !text) text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
-      if (finishReason === 'length') text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
+      if (!text) {
+        if (slideAttachment) {
+          text = 'Đã tạo thành công bộ slide thuyết trình theo yêu cầu của bạn. Bạn có thể xem trước hoặc tải về tệp đính kèm ở trên.'
+        } else if (created) {
+          text = 'Đã tạo thành công bộ học liệu cho bạn.'
+        } else {
+          text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
+        }
+      } else if (finishReason === 'content_filter') {
+        text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
+      }
+
+      // Chỉ gắn cảnh báo bị cắt nếu chưa có tài liệu/slide được tạo thành công
+      if (finishReason === 'length' && !slideAttachment && !created) {
+        text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
+      }
 
       // Bộ nhớ dài hạn: lưu dữ kiện N7AI vừa rút ra (chỉ khi người dùng bật)
       const remembered =
         settings?.memoryEnabled && memories.length ? await this.memories.saveFromReply(trigger.senderId, placeholder.id, memories).catch(() => []) : []
       const citations = citationsOf(retrieved.sources, cited)
       // Bộ N7AI tạo qua tool ⇒ chèn khối chuẩn vào tin (web dựng bộ thẻ, Thư viện › Học liệu); không gọi tool ⇒ lưu khối model tự viết (dự phòng)
-      const created = creator?.created() ?? null
       if (created && !hasStudyFence(text)) text = `${text}\n\n${created.fence}`
       const studySet = created?.ref ?? (inGroup ? null : await this.studyTools.saveFromReply(trigger.senderId, placeholder.id, text))
       // Nút dẫn đường / tham gia nhóm: kiểm nhóm còn nhận người & mình chưa ở trong (thread riêng)
       const joinIds = drafts.flatMap((d) => (d.kind === 'join_group' ? [d.id] : []))
       const actions = inGroup ? [] : toActions(drafts, await this.pucTools.joinableGroups(requesterId, joinIds).catch(() => new Map()))
-      const slideAttachment = slideCreator.created()
-      const attachments = slideAttachment ? [slideAttachment] : null
       await this.finish(
         placeholder.id,
         conversationId,

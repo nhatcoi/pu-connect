@@ -7,6 +7,12 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Khắc phục triệt để lỗi cạn ngân sách Token & Cải thiện phản hồi sau khi sinh Slide/Học liệu N7AI (2026-10-22)**:
+  - **Tăng trần Output Tokens (`MAX_OUTPUT_TOKENS = 16384`)**: Nâng giới hạn output tokens từ 8.192 lên 16.384 tokens trong [`llm.service.ts`](apps/api/src/modules/ai/llm.service.ts) để các model suy luận (reasoning/thinking) và các tool trả về JSON lớn (như tạo bộ 9 slide thuyết trình) không bị nghẽn trần.
+  - **Đảm bảo ngân sách token cho vòng kết luận sau Tool (`round > 0 ? 2048 : 0`)**: Trong [`mcp-agent.service.ts`](apps/api/src/modules/ai/mcp-agent.service.ts), luôn dự trữ tối thiểu 2.048 token cho vòng sau khi chạy tool để LLM luôn có đủ token suy nghĩ và tạo câu kết luận chào mừng người dùng thay vì bị ngắt đột ngột. Đồng thời chuyển đổi cách tính `budgetUsed` từ byte length sang token xấp xỉ (chia 3) tránh làm hao hụt ảo ngân sách.
+  - **Fallback thông minh khi có Artifacts đính kèm ([`n7ai.service.ts`](apps/api/src/modules/chat/n7ai/n7ai.service.ts))**: Nếu slide (`slideAttachment`) hoặc bộ học liệu (`created`) đã được tạo thành công nhưng phần text trả về rỗng (`!text`), hệ thống tự động gán câu thông báo thành công hướng dẫn người dùng xem trước/tải về thay vì xuất câu xin lỗi từ chối trả lời. Triệt tiêu hoàn toàn cảnh báo `(Câu trả lời bị cắt do quá dài)` khi tệp đã đính kèm thành công.
+
+
 - [x] **Quản lý toàn diện Provider AI & Model Mapping trên Admin Console (2026-10-21)**:
   - **Bỏ config mặc định ở `.env`**: Loại bỏ `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_FALLBACK_*` khỏi `.env` và `.env.example`; chuyển 100% trách nhiệm quản lý Gateway Provider và Model cho Admin Console (`/admin/#/ai?tab=llm`), lưu trữ an toàn trong PostgreSQL (`ai_providers`, `ai_models`).
   - **Model Mapping thông minh & Tách biệt Model Map**: Trong hộp thoại Thêm/Sửa Model ([`models-panel.tsx`](apps/admin/src/features/llm/models-panel.tsx)):
