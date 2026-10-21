@@ -54,13 +54,25 @@ Bôi đen chữ trong trình xem tài liệu (PDF, Word, PowerPoint, Excel, văn
 - **Hiện nút khi nào**: chỉ khi có ô soạn thread N7AI đang mở (thư viện hay chat thường không hiện). Màn cảm ứng đặt nút bên dưới vùng chọn để không đè menu của hệ điều hành. Đổi / rời thread ⇒ bỏ các đoạn đang chờ.
 - **Chưa làm**: bấm thẻ trích dẫn mở tài liệu nhưng chưa nhảy đúng chỗ (tua video tới mốc, cuộn tới trang).
 
-## Video YouTube: xem cùng phụ đề, học tiếp
+## Video YouTube: xem cùng phụ đề, học tiếp tập trung (Focus Mode)
 
 Bấm tài liệu YouTube ở panel ⇒ trình phát nhúng (`youtube-nocookie`) + phụ đề bên dưới (`source-view.tsx`):
 
+- **Tối ưu tập trung học tập & loại bỏ xao nhãng**:
+  - `iv_load_policy=3`: vô hiệu hóa hoàn toàn pop-up thẻ annotations, nút đăng ký, thẻ đề xuất do tác giả chèn đè lên bài giảng.
+  - `cc_load_policy=0`: tắt phụ đề mặc định đè lên hình ảnh/slide trong video (tránh trùng lặp với panel transcript tương tác bên dưới).
+  - `rel=0` & `modestbranding=1`: giới hạn gợi ý chỉ trong kênh của bài giảng và tinh gọn logo.
+  - **Chặn đứng lưới video đề xuất khi hết bài (End-screen Mask)**: Bắt sự kiện kết thúc video (`playerState === 0` qua IFrame postMessage) để phủ **Màn hình hoàn thành bài học** (Learning Completion Overlay) thay thế hoàn toàn lưới 12 video đề xuất của YouTube:
+    - Chúc mừng đã hoàn thành bài giảng.
+    - Nút "Xem lại từ đầu" (`seekTo(0)` và phát lại).
+    - Các nút ôn tập nhanh với AI: "Tóm tắt bài học", "Luyện Quiz", "Tạo Flashcard".
+- **Thanh điều khiển học tập (Study Controls)**:
+  - Tua lùi / tiến 5 giây (`-5s`, `+5s`): giúp học sinh nghe lại nhanh câu giảng khó hiểu của giảng viên.
+  - Tốc độ phát bài giảng nhanh: hỗ trợ `0.75x`, `1x`, `1.25x`, `1.5x`, `2x` qua `setPlaybackRate` postMessage API.
 - Bấm một dòng phụ đề (mốc `[mm:ss]`) ⇒ video tua tới đó và phát. Trình phát gửi thời điểm hiện tại qua `postMessage` nên dòng đang phát được tô sáng và tự cuộn theo (tắt được bằng "Cuộn theo video").
 - Thanh "Học từ video": Tóm tắt, Quiz, Flashcard gửi yêu cầu vào cuộc trò chuyện (dùng chung `study-tools.ts` với tab Công cụ). Chat bình thường cũng hỏi được về video vì N7AI đọc phụ đề ở mọi lượt.
 - N7AI được báo nguồn là phụ đề có mốc thời gian và được dặn dẫn mốc `[mm:ss]` khi trả lời dựa vào video.
+- Thẻ xem trước link YouTube trong tin nhắn chat (`MessageEmbedCard`): nhận diện video YouTube, gắn biểu tượng YouTube chuyên biệt và nút Play nổi bật.
 - Giới hạn: phụ đề lưu tối đa 100.000 ký tự, N7AI đọc tối đa 30.000 ký tự / tài liệu (video rất dài chỉ đọc phần đầu). Video không có phụ đề: dán transcript vào bằng "Dán văn bản". Tệp video tự tải lên (phiên âm giọng nói) chưa hỗ trợ.
 
 ## Giao diện
