@@ -66,28 +66,41 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { mode } = useFeedViewMode()
   const n7ai = isN7AiPath(pathname)
-  const immersive = n7ai || (pathname === '/' && mode === 'focus')
-  // Công cụ (/tools): không cần cột phải
+  const isFocusFeed = pathname === '/' && mode === 'focus'
+  const hideHeader = n7ai || isFocusFeed
+  // Công cụ (/tools), Tin nhắn (/messages) và N7AI (/n7ai): không cần cột phải
   const fullWidth = isFullWidthPath(pathname)
-  // Trang cần không gian rộng (/messages): thanh bên thu gọn thành icon-only giống X (Twitter)
+  // Trang cần không gian rộng (/messages, /n7ai): thanh bên thu gọn thành icon-only giống X (Twitter)
   const compactSidebar = isCompactSidebarPath(pathname)
+  // Thanh bên hiện diện ở mọi trang bao gồm N7AI (chỉ ẩn ở Bảng tin chế độ Focus)
+  const showSidebar = !isFocusFeed
   const [asideNode, setAsideNode] = useState<HTMLElement | null>(null)
   const [hasCustomAside, setHasCustomAside] = useState(false)
   const onCustomChange = React.useCallback((count: number) => setHasCustomAside(count > 0), [])
 
   return (
-    <AuthGuard fallback={<AppShellSkeleton immersive={immersive} />}>
+    <AuthGuard fallback={<AppShellSkeleton immersive={hideHeader} />}>
       <AsideSlotProvider node={asideNode} onCustomChange={onCustomChange}>
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
-          {!immersive && <Header />}
+          {!hideHeader && <Header />}
           <RestrictionBanner />
           <GlobalDialogs />
-          {/* N7AI: dùng hết chiều ngang (thanh bên sát trái, panel sát phải) */}
-          <div className={cn('mx-auto flex min-h-screen', n7ai ? 'w-full' : cn('w-full gap-6 px-4 sm:px-6', SHELL_WIDTH))}>
-            {!immersive && (
+          {/* N7AI: thanh bên dạt sát mép trái ngoài cùng (w-full, max-w-full, px-0, gap-0), trang thường: căn giữa 1368px */}
+          <div
+            className={cn(
+              'flex min-h-screen transition-[max-width,padding,gap] duration-300 ease-in-out',
+              n7ai
+                ? 'w-full max-w-full px-0 gap-0'
+                : cn('w-full mx-auto gap-6 px-4 sm:px-6', SHELL_WIDTH)
+            )}
+          >
+            {showSidebar && (
               <div
                 className={cn(
-                  'hidden md:flex shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30 transition-[width] duration-300 ease-in-out overflow-hidden',
+                  'hidden md:flex shrink-0 sticky flex-col justify-between z-30 transition-all duration-300 ease-in-out overflow-hidden',
+                  n7ai
+                    ? 'top-0 h-screen md:h-dvh py-2 border-r border-border/50 bg-surface'
+                    : 'top-14 h-[calc(100vh-3.5rem)] py-3',
                   compactSidebar ? 'w-16' : 'w-16 xl:w-56'
                 )}
               >
@@ -97,7 +110,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <main
               className={cn(
                 'flex-1 w-full min-w-0 min-h-screen transition-[max-width] duration-300 ease-in-out',
-                immersive
+                hideHeader
                   ? 'pb-14 md:pb-0'
                   : cn(
                       compactSidebar ? 'pb-16 md:pb-6' : 'pb-20 md:pb-12',
@@ -111,7 +124,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             >
               {children}
             </main>
-            {!immersive && (
+            {!hideHeader && (
               <aside
                 className={cn(
                   'hidden lg:block shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar transition-[width,opacity,margin] duration-300 ease-in-out',

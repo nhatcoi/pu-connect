@@ -99,7 +99,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
   const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   return (
-    <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full overflow-hidden select-none">
+    <aside className="flex flex-col justify-between h-full min-h-0 py-2 w-full overflow-hidden select-none">
       <div className="space-y-4">
         {/* 1. Điều hướng chính: các icon luôn cố định tâm ở 32px (left: 8px + slot 48px / 2 = 32px) */}
         <div className="space-y-1 flex flex-col w-full px-2">
