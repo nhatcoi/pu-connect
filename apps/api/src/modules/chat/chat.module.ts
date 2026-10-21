@@ -23,6 +23,8 @@ import { ConversationToolsService } from './n7ai/context/conversation-tools.serv
 import { AiDataService } from './n7ai/ai-data.service'
 import { AiFeedbackService } from './n7ai/ai-feedback.service'
 import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './n7ai/ai-maintenance.processor'
+import { AiFoldersController } from './n7ai/ai-folders.controller'
+import { AiFoldersService } from './n7ai/ai-folders.service'
 import { AiLibraryController } from './n7ai/ai-library.controller'
 import { AiLibraryService } from './n7ai/ai-library.service'
 import { AiMemoriesService } from './n7ai/ai-memories.service'
@@ -58,6 +60,7 @@ import { ChatShareService } from './share/chat-share.service'
     MessagesController,
     N7AiController,
     AiThreadsController,
+    AiFoldersController,
     AiSharedController,
     AiLibraryController,
     AiSkillsController,
@@ -84,6 +87,7 @@ import { ChatShareService } from './share/chat-share.service'
     AiTasksService,
     AiMaintenanceProcessor,
     AiThreadsService,
+    AiFoldersService,
     AiThreadShareService,
     AiLibraryService,
     HistoryToolsService,

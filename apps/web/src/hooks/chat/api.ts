@@ -2,6 +2,7 @@ import type {
   AiLibraryKind,
   AiLibraryPage,
   AiFeedbackInput,
+  AiFolder,
   AiLearnerProfile,
   AiMemory,
   AiModelOption,
@@ -20,6 +21,7 @@ import type {
   AiSkillDraft,
   AiSkillInput,
   AiThread,
+  AiThreadFolderFilter,
   AiThreadShare,
   AiThreadsPage,
   ChatRefSuggestion,
@@ -118,17 +120,23 @@ export const chatApi = {
   disconnectConnector: (id: AiConnectorId) => apiClient(`/ai/connectors/${connectorSlug(id)}`, json('DELETE')),
 
   // N7AI nhiều hội thoại
-  aiThreads: (q: string, cursor: string | null, signal?: AbortSignal) =>
-    unwrap(apiClient<Envelope<AiThreadsPage>>(`/ai/threads?${qs({ q, cursor, limit: 20 })}`, { signal })),
+  aiThreads: (q: string, folder: AiThreadFolderFilter, cursor: string | null, signal?: AbortSignal) =>
+    unwrap(apiClient<Envelope<AiThreadsPage>>(`/ai/threads?${qs({ q, folder, cursor, limit: 20 })}`, { signal })),
   createAiThread: () => unwrap(apiClient<Envelope<ConversationSummary>>('/ai/threads', json('POST'))),
   renameAiThread: (id: string, title: string) => unwrap(apiClient<Envelope<AiThread>>(`/ai/threads/${id}`, json('PATCH', { title }))),
   deleteAiThread: (id: string) => apiClient(`/ai/threads/${id}`, json('DELETE')),
+  moveAiThread: (id: string, folderId: string | null) => unwrap(apiClient<Envelope<AiThread>>(`/ai/threads/${id}/folder`, json('PATCH', { folderId }))),
+  // Thư mục lịch sử
+  aiFolders: () => unwrap(apiClient<Envelope<AiFolder[]>>('/ai/folders')),
+  createAiFolder: (name: string) => unwrap(apiClient<Envelope<AiFolder>>('/ai/folders', json('POST', { name }))),
+  renameAiFolder: (id: string, name: string) => unwrap(apiClient<Envelope<AiFolder>>(`/ai/folders/${id}`, json('PATCH', { name }))),
+  deleteAiFolder: (id: string) => apiClient(`/ai/folders/${id}`, json('DELETE')),
   // Chia sẻ công khai qua link (ảnh chụp tới tin cuối)
   aiThreadShare: (id: string) => unwrap(apiClient<Envelope<AiThreadShare | null>>(`/ai/threads/${id}/share`)),
   shareAiThread: (id: string) => unwrap(apiClient<Envelope<AiThreadShare>>(`/ai/threads/${id}/share`, json('POST'))),
   unshareAiThread: (id: string) => apiClient(`/ai/threads/${id}/share`, json('DELETE')),
-  aiLibrary: (kind: AiLibraryKind, cursor: string | null, signal?: AbortSignal) =>
-    unwrap(apiClient<Envelope<AiLibraryPage>>(`/ai/library?${qs({ kind, cursor })}`, { signal })),
+  aiLibrary: (kind: AiLibraryKind, threadId: string | undefined, cursor: string | null, signal?: AbortSignal) =>
+    unwrap(apiClient<Envelope<AiLibraryPage>>(`/ai/library?${qs({ kind, threadId, cursor })}`, { signal })),
 
   // Skill tự tạo (slash command)
   skills: () => unwrap(apiClient<Envelope<AiSkill[]>>('/ai/skills')),

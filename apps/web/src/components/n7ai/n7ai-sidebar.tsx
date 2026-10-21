@@ -15,7 +15,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: n7aiSettingsHref(), label: 'Cài đặt', icon: Settings }
 ]
 
-// Thanh bên không gian N7AI: chat mới · thư viện · cài đặt · lịch sử · hồ sơ N7AI (desktop cố định, mobile trong ngăn kéo)
+// Thanh bên không gian N7AI: chat mới · thư viện · cài đặt · thư mục + lịch sử · hồ sơ N7AI (desktop cố định, mobile trong ngăn kéo)
 export function N7AiSidebar() {
   const pathname = usePathname()
   const { id } = useParams<{ id?: string }>()
@@ -35,8 +35,9 @@ export function N7AiSidebar() {
           <Icon className="h-4 w-4" /> {label}
         </Link>
       ))}
-      <p className="px-2.5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Lịch sử</p>
-      <AiThreadList activeId={id} />
+      <div className="flex min-h-0 flex-1 flex-col pt-3">
+        <AiThreadList activeId={id} />
+      </div>
       <div className="mt-1 border-t border-border/60 pt-2">
         <N7AiProfileMenu />
       </div>

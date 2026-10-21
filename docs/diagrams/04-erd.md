@@ -52,6 +52,8 @@ erDiagram
   users ||--o{ admin_user_notes : "user_id"
   messages ||--o{ ai_feedback : "message_id"
   users ||--o{ ai_feedback : "user_id"
+  users ||--o{ ai_folders : "user_id"
+  ai_folders |o--o{ conversations : "ai_folder_id"
   messages |o--o{ ai_memories : "source_message_id"
   study_sets |o--o{ ai_memories : "study_set_id"
   users ||--o{ ai_memories : "user_id"
@@ -675,6 +677,13 @@ erDiagram
     integer fail_count
     timestamptz created_at
   }
+  ai_folders {
+    uuid id PK
+    uuid user_id FK
+    varchar name
+    timestamptz created_at
+    timestamptz updated_at
+  }
   ai_thread_shares {
     uuid conversation_id PK,FK
     uuid owner_id FK
@@ -875,6 +884,7 @@ erDiagram
     varchar title
     varchar avatar_url
     uuid created_by FK
+    uuid ai_folder_id FK
     varchar direct_key UK
     bigint last_message_id
     timestamptz last_message_at

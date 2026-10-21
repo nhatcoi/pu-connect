@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type {
+  AiFolderInput,
   AiSkillInput,
+  AiThreadMoveInput,
   AiThreadUpdateInput,
   CreateGroupChatInput,
   EditMessageInput,
@@ -75,18 +77,22 @@ export type RefSuggestQuery = z.infer<typeof RefSuggestQuerySchema>
 export const ListAiThreadsQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   cursor: z.string().max(200).optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20)
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+  folder: z.union([z.enum(['all', 'root']), z.string().uuid()]).default('all')
 })
 export type ListAiThreadsQuery = z.infer<typeof ListAiThreadsQuerySchema>
 
 export const AiLibraryQuerySchema = z.object({
   kind: z.enum(['image', 'file', 'study']),
+  threadId: z.string().uuid().optional(), // chỉ 1 thread (panel bên phải N7AI)
   cursor: z.string().regex(/^\d+$/).optional(), // id tin cuối trang trước
   limit: z.coerce.number().int().min(1).max(60).default(30)
 })
 export type AiLibraryQuery = z.infer<typeof AiLibraryQuerySchema>
 
 export const AiThreadUpdateBodySchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
+export const AiThreadMoveBodySchema = z.object({ folderId: z.string().uuid().nullable() })
+export const AiFolderBodySchema = z.object({ name: z.string().trim().min(1, { message: 'Nhập tên thư mục' }).max(60) })
 
 export const AiSkillBodySchema = z.object({
   slug: z
@@ -169,6 +175,8 @@ const _group: CreateGroupChatInput = {} as z.infer<typeof CreateGroupChatBodySch
 const _update: UpdateGroupInput = {} as z.infer<typeof UpdateGroupBodySchema>
 const _settings: MemberSettingsInput = {} as z.infer<typeof MemberSettingsBodySchema>
 const _thread: AiThreadUpdateInput = {} as z.infer<typeof AiThreadUpdateBodySchema>
+const _move: AiThreadMoveInput = {} as z.infer<typeof AiThreadMoveBodySchema>
+const _folder: AiFolderInput = {} as z.infer<typeof AiFolderBodySchema>
 const _skill: AiSkillInput = {} as z.infer<typeof AiSkillBodySchema>
 const _share: z.infer<typeof SharePostBodySchema> = {} as SharePostInput // API không strict ⇒ kiểm chiều ngược
-void [_send, _edit, _group, _update, _settings, _thread, _skill, _share]
+void [_send, _edit, _group, _update, _settings, _thread, _move, _folder, _skill, _share]

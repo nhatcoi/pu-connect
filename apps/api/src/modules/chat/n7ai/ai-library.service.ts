@@ -11,7 +11,7 @@ const KIND_FILTER: Record<AiLibraryQuery['kind'], string> = {
 }
 const STUDY_BLOCK_RE = '```(quiz|flashcards)'
 
-// Thư viện N7AI: tệp & học liệu gom từ mọi thread của mình, keyset theo id tin (mới trước)
+// Thư viện N7AI: tệp & học liệu gom từ mọi thread của mình (hoặc 1 thread), keyset theo id tin (mới trước)
 @Injectable()
 export class AiLibraryService {
   constructor(private readonly core: ChatCoreService) {}
@@ -19,12 +19,13 @@ export class AiLibraryService {
   async list(userId: string, query: AiLibraryQuery): Promise<AiLibraryPage> {
     const { kind, limit } = query
     const params: unknown[] = [userId, kind === 'study' ? STUDY_BLOCK_RE : JSON.stringify([{ kind }]), limit + 1]
+    const thread = query.threadId ? `AND c.id = $${params.push(query.threadId)}::uuid` : ''
     const keyset = query.cursor ? `AND m.id < $${params.push(query.cursor)}::bigint` : ''
     // Thread của mình (idx_conversations_ai_threads) ⇒ tin theo idx_messages_conv
     const res = await this.core.db.query(
       `SELECT m.id, m.conversation_id, c.title, m.created_at, m.attachments, m.content
        FROM conversations c JOIN messages m ON m.conversation_id = c.id
-       WHERE c.type = 'ai' AND c.created_by = $1 AND m.deleted_at IS NULL AND ${KIND_FILTER[kind]} ${keyset}
+       WHERE c.type = 'ai' AND c.created_by = $1 AND m.deleted_at IS NULL AND ${KIND_FILTER[kind]} ${thread} ${keyset}
        ORDER BY m.id DESC LIMIT $3`,
       params
     )

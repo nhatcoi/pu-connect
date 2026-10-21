@@ -26,6 +26,8 @@
 | [**`13-admin-console.md`**](./13-admin-console.md) | Cổng quản trị (chỉ admin): xem gì ở đâu, xử phạt theo bậc, điểm rủi ro, nhật ký bảo mật, lượt xem hồ sơ, quyền riêng tư & vận hành. | ✅ Đã triển khai |
 | [**`20-pu-connector-mcp.md`**](./20-pu-connector-mcp.md) | PU Connector: extension và PKA MCP, 8 tool chỉ đọc Canvas/QLĐT qua Streamable HTTP, PKCE. | ✅ Đã triển khai |
 | [**`21-semantic-scholar-connector.md`**](./21-semantic-scholar-connector.md) | Semantic Scholar & arXiv: tìm kiếm bài báo khoa học toàn cầu, abstract, citations, PDF link, dự phòng tự động. | ✅ Đã triển khai |
+| [**`22-n7ai-context.md`**](./22-n7ai-context.md) | N7AI hiểu ngữ cảnh theo nơi gọi (bình luận, nhóm, chat cá nhân). | ✅ Đã triển khai |
+| [**`23-n7ai-folders.md`**](./23-n7ai-folders.md) | Thư mục lịch sử N7AI (kéo thả) và panel phải: Tài liệu (xem trước) · Công cụ (tạo học liệu). | ✅ Đã triển khai |
 
 ---
 

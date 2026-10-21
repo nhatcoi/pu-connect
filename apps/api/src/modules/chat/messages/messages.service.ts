@@ -18,7 +18,7 @@ import { MESSAGE_COLUMNS, MESSAGE_FROM, mapMessageRow } from '../chat.mapper'
 import { ChatMentionsService, mentionMeta } from '../mentions/chat-mentions.service'
 import { ChatPushService } from '../notify/chat-push.service'
 import { AiSkillsService } from '../n7ai/ai-skills.service'
-import { deriveThreadTitle, mapThread } from '../n7ai/ai-threads.service'
+import { deriveThreadTitle, mapThread, THREAD_COLUMNS } from '../n7ai/ai-threads.service'
 import { N7AiService, type ReplyOutcome } from '../n7ai/n7ai.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
 import { MessageEmbedService } from '../embeds/message-embed.service'
@@ -215,7 +215,7 @@ export class MessagesService {
   private async autoTitle(client: PoolClient, conversationId: string, content: string): Promise<AiThread | null> {
     const title = deriveThreadTitle(content)
     if (!title) return null
-    const res = await client.query(`UPDATE conversations SET title = $2 WHERE id = $1 AND title IS NULL RETURNING id, title, last_message_at, created_at`, [
+    const res = await client.query(`UPDATE conversations SET title = $2 WHERE id = $1 AND title IS NULL RETURNING ${THREAD_COLUMNS}`, [
       conversationId,
       title
     ])

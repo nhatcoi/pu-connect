@@ -74,6 +74,10 @@ describe('N7AI space (e2e)', () => {
     expect(study).toHaveLength(1)
     expect(study[0].content).toContain('```quiz')
 
+    // Panel phải: lọc theo 1 thread; thread người khác ⇒ rỗng
+    expect((await agent.get(`/api/ai/library?kind=file&threadId=${a.id}`).expect(200)).body.data.data).toHaveLength(1)
+    expect((await agent.get(`/api/ai/library?kind=study&threadId=${b.id}`).expect(200)).body.data.data).toEqual([])
+
     await agent.get('/api/ai/library?kind=video').expect(400)
     await agent.get('/api/ai/library?kind=image&cursor=abc').expect(400)
   })

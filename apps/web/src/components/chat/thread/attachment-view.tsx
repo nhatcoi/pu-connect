@@ -4,10 +4,11 @@ import React, { useState } from 'react'
 import { ChevronLeft, ChevronRight, Download, X } from 'lucide-react'
 import type { ChatAttachment } from '@pu/schemas'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { cn } from '@/lib/utils'
 import { fileExt, fileSize } from '../utils'
 
-// Tệp trong tin nhắn: lưới ảnh (bấm để xem lớn) + thẻ tệp tải về
+// Tệp trong tin nhắn: lưới ảnh (bấm để xem lớn) + thẻ tệp (bấm để xem trước)
 export function AttachmentView({ attachments, mine }: { attachments: ChatAttachment[]; mine: boolean }) {
   const images = attachments.filter((a) => a.kind === 'image')
   const files = attachments.filter((a) => a.kind !== 'image')
@@ -43,24 +44,31 @@ export function AttachmentView({ attachments, mine }: { attachments: ChatAttachm
   )
 }
 
+// Thẻ tệp: bấm ⇒ xem trước ở panel bên phải; nút tải về riêng
 export function FileCard({ file, className }: { file: ChatAttachment; className?: string }) {
+  const openPreview = useFilePreview((s) => s.open)
   return (
-    <a
-      href={file.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      download={file.name}
-      className={cn('flex items-center gap-2.5 rounded-xl bg-card border px-3 py-2 w-64 max-w-full hover:bg-muted/60 transition-colors', className)}
-    >
-      <span className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
-        {fileExt(file.name)}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-medium truncate">{file.name}</span>
-        <span className="block text-[11px] text-muted-foreground">{fileSize(file.size)}</span>
-      </span>
-      <Download className="h-4 w-4 text-muted-foreground shrink-0" />
-    </a>
+    <div className={cn('flex items-center gap-1 rounded-xl bg-card border pl-3 pr-1.5 py-2 w-64 max-w-full hover:bg-muted/60 transition-colors', className)}>
+      <button type="button" onClick={() => openPreview(file)} className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left" aria-label={`Xem ${file.name}`}>
+        <span className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
+          {fileExt(file.name)}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-medium truncate">{file.name}</span>
+          <span className="block text-[11px] text-muted-foreground">{fileSize(file.size)}</span>
+        </span>
+      </button>
+      <a
+        href={file.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        download={file.name}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        aria-label={`Tải ${file.name}`}
+      >
+        <Download className="h-4 w-4" />
+      </a>
+    </div>
   )
 }
 

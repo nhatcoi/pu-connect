@@ -1,3 +1,5 @@
+import type { AiThreadFolderFilter } from '@pu/schemas'
+
 // Khóa cache tập trung: mọi useQuery / invalidate / prefetch dùng chung một nguồn
 export type FeedType = 'for_you' | 'following' | 'qa' | 'courses' | 'explore' | 'bookmarks'
 export type CommunitySort = 'hot' | 'new' | 'top'
@@ -45,11 +47,12 @@ export const queryKeys = {
   aiQuota: ['ai-quota'] as const,
   aiModels: ['ai-models'] as const,
   aiThreadsAll: ['ai-threads'] as const,
-  aiThreads: (q: string) => ['ai-threads', q.trim().toLowerCase()] as const,
+  aiThreads: (q: string, folder: AiThreadFolderFilter) => ['ai-threads', q.trim().toLowerCase(), folder] as const,
+  aiFolders: ['ai-folders'] as const,
   aiDraftThread: ['ai-draft-thread'] as const,
   aiThreadShare: (id: string) => ['ai-thread-share', id] as const,
   aiLibraryAll: ['ai-library'] as const,
-  aiLibrary: (kind: string) => ['ai-library', kind] as const,
+  aiLibrary: (kind: string, threadId?: string) => ['ai-library', kind, threadId ?? null] as const,
   aiSkills: ['ai-skills'] as const,
   aiSkill: (id: string) => ['ai-skills', id] as const,
   aiSkillLibrary: (q: string) => ['ai-skill-library', q.trim().toLowerCase()] as const,

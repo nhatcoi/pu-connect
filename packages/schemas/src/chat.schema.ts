@@ -291,9 +291,21 @@ export interface MessagesPage {
 export interface AiThread {
   id: string
   title: string | null
+  folderId: string | null
   lastMessageAt: string | null
   createdAt: string
 }
+
+// Thư mục gom thread N7AI (docs/core/23-n7ai-folders.md)
+export interface AiFolder {
+  id: string
+  name: string
+  threadCount: number
+}
+export const AiFolderSchema = z.object({ name: z.string().trim().min(1, { message: 'Nhập tên thư mục' }).max(60) })
+export type AiFolderInput = z.infer<typeof AiFolderSchema>
+// Lọc danh sách thread: 'all' (tìm kiếm) · 'root' (chưa vào thư mục) · id thư mục
+export type AiThreadFolderFilter = 'all' | 'root' | (string & {})
 export interface AiThreadsPage {
   data: AiThread[]
   nextCursor: string | null
@@ -316,6 +328,8 @@ export interface AiLibraryPage {
 
 export const AiThreadUpdateSchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
 export type AiThreadUpdateInput = z.infer<typeof AiThreadUpdateSchema>
+export const AiThreadMoveSchema = z.object({ folderId: z.string().uuid().nullable() })
+export type AiThreadMoveInput = z.infer<typeof AiThreadMoveSchema>
 
 export const AI_SKILL_LIMIT = 30
 export const AiSkillStateSchema = z.object({ enabled: z.boolean().optional(), pinned: z.boolean().optional() })

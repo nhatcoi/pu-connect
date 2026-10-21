@@ -14,6 +14,7 @@ import { CreatePostDialog } from '@/components/social/create-post-dialog'
 import { CreateDocumentDialog } from '@/components/social/create-document-dialog'
 import { CreateGroupDialog } from '@/components/social/create-group-dialog'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
+import { FilePreviewPanel } from '@/components/viewer/file-preview-panel'
 import { AsideSlotProvider } from '@/components/layout/page-aside'
 import { useAppStore } from '@/store'
 import { useNotificationsSync } from '@/hooks/use-notifications'
@@ -51,6 +52,7 @@ function GlobalDialogs() {
           if (!open) setPreviewDocument(null)
         }}
       />
+      <FilePreviewPanel />
     </>
   )
 }

@@ -23,14 +23,18 @@ function decodeCursor(raw: string | undefined): Cursor | null {
   throw new BadRequestException('cursor không hợp lệ')
 }
 
+// Cột cho mapThread (RETURNING / SELECT)
+export const THREAD_COLUMNS = 'id, title, ai_folder_id, last_message_at, created_at'
+
 export const mapThread = (r: any): AiThread => ({
   id: r.id,
   title: r.title,
+  folderId: r.ai_folder_id ?? null,
   lastMessageAt: r.last_message_at ? new Date(r.last_message_at).toISOString() : null,
   createdAt: new Date(r.created_at).toISOString()
 })
 
-// Lịch sử hội thoại N7AI: danh sách nhẹ (keyset), tìm theo tiêu đề, đổi tên, xóa
+// Lịch sử hội thoại N7AI: danh sách nhẹ (keyset), lọc theo thư mục, tìm, đổi tên, chuyển thư mục, xóa
 // Tạo thread mới nằm ở ConversationsService (nơi sở hữu việc tạo mọi loại hội thoại)
 @Injectable()
 export class AiThreadsService {
@@ -42,6 +46,11 @@ export class AiThreadsService {
   async list(userId: string, query: ListAiThreadsQuery): Promise<AiThreadsPage> {
     const params: unknown[] = [userId, query.limit + 1]
     const where = [`c.type = 'ai'`, `c.created_by = $1`, `c.last_message_id IS NOT NULL`]
+    if (query.folder === 'root') where.push(`c.ai_folder_id IS NULL`)
+    else if (query.folder !== 'all') {
+      params.push(query.folder)
+      where.push(`c.ai_folder_id = $${params.length}`)
+    }
     const term = query.q?.trim().toLowerCase()
     if (term) {
       params.push(term.replace(/[%_\\]/g, (ch) => `\\${ch}`))
@@ -57,7 +66,7 @@ export class AiThreadsService {
       where.push(`(${SORT_AT}, c.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`)
     }
     const res = await this.core.db.query(
-      `SELECT c.id, c.title, c.last_message_at, c.created_at, ${SORT_AT_TEXT} AS sort_at
+      `SELECT c.id, c.title, c.ai_folder_id, c.last_message_at, c.created_at, ${SORT_AT_TEXT} AS sort_at
        FROM conversations c WHERE ${where.join(' AND ')}
        ORDER BY ${SORT_AT} DESC, c.id DESC LIMIT $2`,
       params
@@ -70,15 +79,32 @@ export class AiThreadsService {
     }
   }
 
-  // Đổi tên ⇒ đồng bộ các tab khác của mình
+  // Đổi tên
   async rename(userId: string, id: string, title: string): Promise<AiThread> {
     const res = await this.core.db.query(
       `UPDATE conversations SET title = $3 WHERE id = $1 AND type = 'ai' AND created_by = $2
-       RETURNING id, title, last_message_at, created_at`,
+       RETURNING ${THREAD_COLUMNS}`,
       [id, userId, title]
     )
-    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy hội thoại')
-    const thread = mapThread(res.rows[0])
+    return this.updated(userId, res.rows[0])
+  }
+
+  // Chuyển vào thư mục (null ⇒ về Lịch sử); thư mục phải là của mình
+  async move(userId: string, id: string, folderId: string | null): Promise<AiThread> {
+    const res = await this.core.db.query(
+      `UPDATE conversations c SET ai_folder_id = $3
+       WHERE c.id = $1 AND c.type = 'ai' AND c.created_by = $2
+         AND ($3::uuid IS NULL OR EXISTS (SELECT 1 FROM ai_folders f WHERE f.id = $3 AND f.user_id = $2))
+       RETURNING ${THREAD_COLUMNS}`,
+      [id, userId, folderId]
+    )
+    return this.updated(userId, res.rows[0])
+  }
+
+  // Thread vừa sửa ⇒ đồng bộ các tab khác của mình
+  private updated(userId: string, row: unknown): AiThread {
+    if (!row) throw new NotFoundException('Không tìm thấy hội thoại hoặc thư mục')
+    const thread = mapThread(row)
     this.core.emitTo([userId], 'ai.thread.updated', thread)
     return thread
   }

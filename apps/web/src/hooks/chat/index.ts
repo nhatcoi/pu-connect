@@ -16,7 +16,7 @@ export { useMarkRead, useMessages, type Draft } from './use-messages'
 export { useTypingEmitter, useTypingLabel, useTypingStore } from './use-typing'
 export { trackSuggestionClick, useAiQuota, useAiSuggestions } from './use-ai'
 export { presenceLabel, useOnlineCount, usePresence } from './use-presence'
-export { bumpAiThread, removeAiThread, upsertAiThread, useAiDraftThread, useAiThreadActions, useAiThreadShare, useAiThreads } from './use-ai-threads'
+export { bumpAiThread, removeAiThread, upsertAiThread, useAiDraftThread, useAiFolders, useAiThreadActions, useAiThreadShare, useAiThreads } from './use-ai-threads'
 export { useAiLibrary } from './use-ai-library'
 export { useSharePost } from './use-share'
 export {

@@ -1,11 +1,11 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AiThreadUpdateInput } from '@pu/schemas'
+import type { AiThreadMoveInput, AiThreadUpdateInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
 import { ConversationsService } from '../conversations/conversations.service'
-import { AiThreadUpdateBodySchema, ListAiThreadsQuerySchema, type ListAiThreadsQuery } from '../dto/chat.dto'
+import { AiThreadMoveBodySchema, AiThreadUpdateBodySchema, ListAiThreadsQuerySchema, type ListAiThreadsQuery } from '../dto/chat.dto'
 import { AiThreadShareService } from './ai-thread-share.service'
 import { AiThreadsService } from './ai-threads.service'
 
@@ -19,7 +19,7 @@ export class AiThreadsController {
     private readonly shares: AiThreadShareService
   ) {}
 
-  // ?q=&cursor=&limit= (keyset, hoạt động gần nhất trước)
+  // ?q=&cursor=&limit=&folder=all|root|<id> (keyset, hoạt động gần nhất trước)
   @Get()
   list(@Query(new ZodValidationPipe(ListAiThreadsQuerySchema)) query: ListAiThreadsQuery, @Req() req: Request) {
     return this.threads.list(requireUserId(req), query)
@@ -35,6 +35,12 @@ export class AiThreadsController {
   @Patch(':id')
   rename(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiThreadUpdateBodySchema)) body: AiThreadUpdateInput, @Req() req: Request) {
     return this.threads.rename(requireUserId(req), id, body.title)
+  }
+
+  // Chuyển vào thư mục ({ folderId: null } ⇒ về Lịch sử)
+  @Patch(':id/folder')
+  move(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiThreadMoveBodySchema)) body: AiThreadMoveInput, @Req() req: Request) {
+    return this.threads.move(requireUserId(req), id, body.folderId)
   }
 
   @Delete(':id')

@@ -25,7 +25,7 @@
 | `/n7ai` | Chat mới (màn chào + gợi ý), `useAiDraftThread` |
 | `/n7ai/[id]` | 1 thread; `?m=<messageId>` cuộn tới tin |
 | `/n7ai/temporary` | Chat tạm — không lưu lịch sử / bộ nhớ ([`19`](./19-n7ai-temporary-chat.md)) |
-| `/n7ai/library` | Tab Ảnh · Tài liệu · Học liệu (cuộn vô hạn, quiz/flashcard mở ra ôn ngay) |
+| `/n7ai/library` | Tab Tài liệu · Ảnh · Học liệu (cuộn vô hạn; bấm tệp ⇒ xem ở panel bên phải, [`23`](./23-n7ai-folders.md); quiz/flashcard mở ra ôn ngay) |
 | `/n7ai/settings` · `/n7ai/settings/[item]` | Các panel ở [`10`](./10-n7ai-settings.md) |
 
 Component: `components/n7ai/{n7ai-shell,n7ai-sidebar,n7ai-nav,n7ai-profile-menu,n7ai-page-header}.tsx`, `components/n7ai/library/library-items.tsx`; màn hội thoại dùng chung `components/chat/conversation-view.tsx` (DM / nhóm / AI). Đường dẫn tập trung ở `lib/n7ai-routes.ts`.
