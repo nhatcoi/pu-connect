@@ -100,7 +100,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
   const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   return (
-    <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full transition-all duration-300">
+    <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full">
       <div className="space-y-6">
         {/* 1. Điều hướng chính (icon-only on md, full on xl khi không compact) */}
         <div className={cn('space-y-0.5 flex flex-col', compact ? 'items-center' : 'items-center xl:items-stretch')}>
@@ -118,53 +118,56 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
                 ? currentTab === item.id
                 : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
 
-              return (
-                <HighlightItem key={item.id} value={item.id} disabled={isActive} className={cn(!compact && 'xl:w-full')}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onTabChange) {
-                        onTabChange(item.id)
-                      } else {
-                        router.push(item.path)
-                      }
-                    }}
-                    className={cn(
-                      'group flex items-center rounded-full transition-colors cursor-pointer select-none',
-                      compact
-                        ? 'w-10 h-10 justify-center p-0 text-[13px] font-medium'
-                        : 'w-10 h-10 xl:w-full xl:h-9 justify-center xl:justify-between px-0 xl:px-3 xl:rounded-xl text-[13px] font-medium',
-                      isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
-                    )}
-                    title={item.label}
-                  >
-                    <div className={cn('flex items-center', compact ? 'justify-center relative' : 'gap-3')}>
-                      <div className="relative flex items-center justify-center">
-                        <Icon
-                          className={cn(
-                            'h-[18px] w-[18px] shrink-0 transition-transform group-hover:scale-110',
-                            isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
-                          )}
-                        />
-                        {item.badge && compact && (
-                          <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange px-1 text-[9px] font-bold text-white shadow-xs">
-                            {item.badge}
-                          </span>
-                        )}
-                      </div>
-                      {!compact && <span className="hidden xl:inline truncate">{item.label}</span>}
-                    </div>
-
-                    {item.badge && !compact && (
-                      <span
-                        className={cn(
-                          'hidden xl:inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange'
-                        )}
-                      >
+              const itemContent = (
+                <div className={cn('flex items-center', compact ? 'justify-center relative' : 'gap-3')}>
+                  <div className="relative flex items-center justify-center">
+                    <Icon
+                      className={cn(
+                        'h-[18px] w-[18px] shrink-0 transition-transform group-hover:scale-110',
+                        isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
+                      )}
+                    />
+                    {item.badge && compact && (
+                      <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange px-1 text-[9px] font-bold text-white shadow-xs">
                         {item.badge}
                       </span>
                     )}
-                  </button>
+                  </div>
+                  {!compact && <span className="hidden xl:inline truncate">{item.label}</span>}
+                </div>
+              )
+
+              const badgeContent = item.badge && !compact && (
+                <span
+                  className={cn(
+                    'hidden xl:inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange'
+                  )}
+                >
+                  {item.badge}
+                </span>
+              )
+
+              const buttonClass = cn(
+                'group flex items-center rounded-full transition-colors cursor-pointer select-none',
+                compact
+                  ? 'w-10 h-10 justify-center p-0 text-[13px] font-medium'
+                  : 'w-10 h-10 xl:w-full xl:h-9 justify-center xl:justify-between px-0 xl:px-3 xl:rounded-xl text-[13px] font-medium',
+                isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
+              )
+
+              return (
+                <HighlightItem key={item.id} value={item.id} disabled={isActive} className={cn(!compact && 'xl:w-full')}>
+                  {onTabChange ? (
+                    <button type="button" onClick={() => onTabChange(item.id)} className={buttonClass} title={item.label}>
+                      {itemContent}
+                      {badgeContent}
+                    </button>
+                  ) : (
+                    <Link href={item.path} prefetch className={buttonClass} title={item.label}>
+                      {itemContent}
+                      {badgeContent}
+                    </Link>
+                  )}
                 </HighlightItem>
               )
             })}

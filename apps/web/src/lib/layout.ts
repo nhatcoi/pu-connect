@@ -1,6 +1,6 @@
-// Độ rộng khung app dùng chung cho Header, AppLayout, skeleton (luôn thẳng hàng)
+// Độ rộng khung app dùng chung cho Header, AppLayout, skeleton (1320px nội dung + 48px padding 2 bên)
 // Chuỗi class đầy đủ để Tailwind quét được
-export const SHELL_WIDTH = 'max-w-[1440px]'
+export const SHELL_WIDTH = 'max-w-[1368px]'
 
 // Cột nội dung giữa: trang chuẩn (Bảng tin, Khám phá, Thông báo, Profile)
 // Cân bằng toán học tuyệt đối: Sidebar (224px) + gap-6 (24px) + Main (760px) + gap-6 (24px) + Aside (288px) = 1320px

@@ -83,7 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <RestrictionBanner />
           <GlobalDialogs />
           {/* N7AI: dùng hết chiều ngang (thanh bên sát trái, panel sát phải) */}
-          <div className={cn('mx-auto flex justify-center min-h-screen transition-all duration-300', n7ai ? 'w-full' : cn('gap-6 px-0 sm:px-4 lg:px-6', SHELL_WIDTH))}>
+          <div className={cn('mx-auto flex min-h-screen', n7ai ? 'w-full' : cn('gap-6 px-4 sm:px-6', SHELL_WIDTH))}>
             {!immersive && (
               <div
                 className={cn(
