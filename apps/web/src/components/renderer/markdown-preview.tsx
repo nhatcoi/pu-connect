@@ -9,6 +9,8 @@ import remarkBreaks from 'remark-breaks'
 import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from 'rehype-highlight'
 import rehypeSlug from 'rehype-slug'
+import rehypeRaw from 'rehype-raw'
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { Check, Copy } from 'lucide-react'
 import { MermaidBlock } from './mermaid-block'
 import { Button } from '@/components/ui/button'
@@ -20,6 +22,17 @@ interface MarkdownPreviewProps {
   isDark?: boolean
   /** Chế độ rút gọn (thông báo, trích dẫn bình luận): hiển thị inline bold/code/KaTeX, không sinh thẻ <a>/<button> lồng nhau */
   inline?: boolean
+}
+
+// Sanitize raw HTML (XSS): giữ class của code/math để KaTeX + highlight hoạt động; Katex/highlight/slug chạy SAU sanitize
+const SANITIZE_SCHEMA = {
+  ...defaultSchema,
+  attributes: {
+    ...defaultSchema.attributes,
+    code: [...(defaultSchema.attributes?.code ?? []), ['className', /^language-./, 'math-inline', 'math-display']],
+    span: [...(defaultSchema.attributes?.span ?? []), ['className', 'math', 'math-inline', 'math-display']],
+    div: [...(defaultSchema.attributes?.div ?? []), ['className', 'math', 'math-display']]
+  }
 }
 
 const INLINE_FENCE_LABELS: Record<string, string> = { quiz: '📝 Quiz', flashcards: '🗂️ Flashcard' }
@@ -182,7 +195,11 @@ export function MarkdownPreview({ content, className, inline = false }: Markdown
     <div className={cn('markdown-body', inline ? 'leading-snug' : 'space-y-3 leading-relaxed text-sm', className)}>
       <Markdown
         remarkPlugins={inline ? [remarkGfm, remarkMath] : [remarkGfm, remarkMath, remarkBreaks]}
-        rehypePlugins={inline ? [rehypeKatex] : [rehypeKatex, rehypeHighlight, rehypeSlug]}
+        rehypePlugins={
+          inline
+            ? [rehypeRaw, [rehypeSanitize, SANITIZE_SCHEMA], rehypeKatex]
+            : [rehypeRaw, [rehypeSanitize, SANITIZE_SCHEMA], rehypeKatex, rehypeHighlight, rehypeSlug]
+        }
         components={components}
       >
         {processedContent}
