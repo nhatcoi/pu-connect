@@ -18,7 +18,8 @@ import {
   Bell,
   MessageCircle,
   Sparkles,
-  Wrench
+  Wrench,
+  PenSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
@@ -58,6 +59,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
   const pathname = usePathname()
   const router = useRouter()
   const user = useAppStore((state) => state.user)
+  const setCreatePostOpen = useAppStore((state) => state.setCreatePostOpen)
   const { logout, isLoggingOut } = useLogout()
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
   const unreadMessages = useUnreadMessages()
@@ -167,6 +169,24 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
               )
             })}
           </Highlight>
+
+          {/* Nút Đăng bài chuẩn X: tròn gọn khi compact/tablet, thanh rộng khi mở rộng desktop */}
+          <div className={cn('pt-2 flex justify-center w-full', !compact && 'xl:block xl:px-1')}>
+            <Button
+              type="button"
+              onClick={() => setCreatePostOpen(true)}
+              className={cn(
+                'rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95',
+                compact
+                  ? 'w-10 h-10 p-0'
+                  : 'w-10 h-10 p-0 xl:w-full xl:h-10 xl:rounded-full xl:px-4 xl:gap-2'
+              )}
+              title="Đăng bài mới"
+            >
+              <PenSquare className="h-4 w-4 shrink-0" />
+              {!compact && <span className="hidden xl:inline text-xs font-bold tracking-tight">Đăng bài</span>}
+            </Button>
+          </div>
         </div>
 
         {/* 2. Môn học sôi nổi (Desktop xl: only, ẩn hoàn toàn khi compact) */}

@@ -113,6 +113,13 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 📱 **Kiến Trúc Responsive Chuẩn X & Điều Hướng Di Động Hoàn Hảo**:
   - Tablet: Sidebar tự động thu gọn về dạng cột icon (`w-16`), loại bỏ 100% horizontal scroll.
   - Mobile (< 768px): Header chuẩn X tinh gọn, Tab bar dính chuẩn, Mobile Bottom Navigation Bar (5 phân hệ chính).
+- [x] 💬 **Giao Diện Tin Nhắn 2 Cột Chuẩn X (Split-Pane Messaging & Empty State)**:
+  - Sidebar tự động thu gọn thành icon-only (`w-16` / 64px) mượt mà bằng `transition-[width] duration-300 ease-in-out`.
+  - Nút Đăng bài chuẩn X trên Sidebar: nút tròn `w-10 h-10` icon `PenSquare` khi compact, thanh dài `w-full` khi mở rộng.
+  - Cột giữa: Danh sách hội thoại (Chat List) cố định 360px–390px với tìm kiếm tức thì, bộ lọc (Tất cả, Chưa đọc, Nhóm), highlight cuộc trò chuyện đang mở.
+  - Cột phải: Khung chat chi tiết (`ConversationView`) hoặc Empty State chuẩn X ("Bắt đầu cuộc trò chuyện", icon chat tròn, nút "Tin nhắn mới").
+  - Ẩn hoàn toàn RightSidebar tin tức xu hướng ở `/messages`, dành trọn không gian cho nhắn tin.
+  - Cân bằng toán học 1320px tuyệt đối giữa Home, Tools (`/tools`) và Messages (`/messages`): Sidebar (224/64px) + gap-6 (24px) + Main/Workspace (760/1072/1232px) + Aside (288/0px) = 1320px, loại bỏ 100% xê dịch layout khi chuyển trang (Zero CLS).
 - [x] 🛡️ **Client Route Guard (`AuthGuard`)**: Bảo vệ toàn bộ các route nội bộ (`/home`, `/courses`, `/communities`...).
 - [x] 🏛️ **Bảng tin 3 cột chuẩn X (`/home`)**: Sidebar điều hướng $\rightarrow$ Feed học thuật với Tab dính (*Dành cho bạn / Môn học / Kho tài liệu*) $\rightarrow$ Xu hướng & Gợi ý kết nối.
 - [x] 🎨 **Tối Giản Hóa UI/UX Chuẩn X & Threads (Seamless Minimalist Stream & Widgets)**: Loại bỏ triệt để viền hộp 4 cạnh quanh từng bài viết, chuyển sang luồng liên tục phân cách bằng divider kẻ ngang mảnh (`border-b border-border/40`); hộp tạo bài viết phẳng trên đầu feed stream; thiết kế lại sidebar phải với 2 widget bo cong nhẹ (*Xu hướng cho bạn* và *Gợi ý theo dõi*) loại bỏ các đoạn mô tả dài dòng và ô vuông số liệu thô; search bar dạng viên thuốc (`rounded-full`); hashtags inline xanh tự nhiên; rút gọn nhãn khoa/viện và loại bỏ viền xám dày trên badges.

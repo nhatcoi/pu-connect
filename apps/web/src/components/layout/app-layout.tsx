@@ -22,7 +22,7 @@ import { useNotificationsSync } from '@/hooks/use-notifications'
 import { useChatRealtime } from '@/hooks/chat'
 import { useBlocksRealtime } from '@/hooks/use-blocks'
 import { cn } from '@/lib/utils'
-import { SHELL_WIDTH, MAIN_WIDTH, COMPACT_MAIN_WIDTH, WIDE_MAIN_WIDTH, isFullWidthPath, isCompactSidebarPath } from '@/lib/layout'
+import { SHELL_WIDTH, MAIN_WIDTH, MESSAGES_WORKSPACE_WIDTH, WIDE_MAIN_WIDTH, isFullWidthPath, isCompactSidebarPath } from '@/lib/layout'
 import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
 import { isN7AiPath } from '@/lib/n7ai-routes'
 
@@ -100,11 +100,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 immersive
                   ? 'pb-14 md:pb-0'
                   : cn(
-                      'pb-20 md:pb-12',
-                      fullWidth
-                        ? WIDE_MAIN_WIDTH
-                        : compactSidebar
-                          ? COMPACT_MAIN_WIDTH
+                      compactSidebar ? 'pb-16 md:pb-6' : 'pb-20 md:pb-12',
+                      compactSidebar
+                        ? MESSAGES_WORKSPACE_WIDTH
+                        : fullWidth
+                          ? WIDE_MAIN_WIDTH
                           : MAIN_WIDTH
                     )
               )}

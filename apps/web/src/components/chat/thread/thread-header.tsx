@@ -13,6 +13,7 @@ import { OpenInN7AiButton } from '../ai/open-in-n7ai'
 import { N7AiPanelButton } from '@/components/n7ai/side-panel/n7ai-side-panel'
 import { ShareThreadDialog } from '../ai/share-thread-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 interface ThreadHeaderProps {
   conversation: ConversationSummary | undefined
@@ -55,7 +56,13 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
           <Menu className="h-4 w-4" />
         </Button>
       ) : (
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={() => router.push(backHref)} aria-label="Quay lại">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('h-8 w-8 rounded-full shrink-0', backHref === '/messages' && 'md:hidden')}
+          onClick={() => router.push(backHref)}
+          aria-label="Quay lại"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
       )}
@@ -113,7 +120,7 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
           </>
         ))}
       {conv && (!isAi || spaceHref) && (
-        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label="Thông tin hội thoại">
+        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={onInfo} aria-label="Thông tin hội thoại">
           <Info className="h-4 w-4" />
         </Button>
       )}

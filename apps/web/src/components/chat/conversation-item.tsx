@@ -10,7 +10,15 @@ import { ConversationAvatar } from './conversation-avatar'
 import { messagePreview } from './utils'
 
 // 1 dòng trong danh sách hội thoại: tên, xem trước tin cuối, giờ, ghim / tắt tiếng / chưa đọc
-export function ConversationItem({ conversation: c, myId }: { conversation: ConversationSummary; myId?: string }) {
+export function ConversationItem({
+  conversation: c,
+  myId,
+  isActive = false
+}: {
+  conversation: ConversationSummary
+  myId?: string
+  isActive?: boolean
+}) {
   const last = c.lastMessage
   const unread = c.unreadCount > 0
   const muted = !!c.mutedUntil
@@ -25,7 +33,16 @@ export function ConversationItem({ conversation: c, myId }: { conversation: Conv
   const preview = !last ? (c.type === 'ai' ? 'Giải thích, quiz, flashcard, lộ trình ôn…' : 'Bắt đầu cuộc trò chuyện') : `${prefix}${messagePreview(last)}`
 
   return (
-    <Link href={`/messages/${c.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+    <Link
+      href={`/messages/${c.id}`}
+      scroll={false}
+      className={cn(
+        'flex items-center gap-3 px-4 py-3 transition-colors cursor-pointer select-none',
+        isActive
+          ? 'bg-primary/10 border-l-2 border-primary font-medium text-foreground'
+          : 'hover:bg-muted/40 text-foreground'
+      )}
+    >
       <ConversationAvatar conversation={c} className="h-11 w-11" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
