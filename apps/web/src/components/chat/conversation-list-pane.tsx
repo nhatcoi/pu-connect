@@ -62,9 +62,8 @@ export function ConversationListPane({ activeId, onCompose }: ConversationListPa
       {/* 1. Header danh sách tin nhắn */}
       <div className="shrink-0 bg-surface/90 backdrop-blur-md px-3.5 pt-3 pb-2.5 space-y-2 border-b border-border/40">
         <div className="flex items-center justify-between">
-          <h1 className="text-[15px] font-bold tracking-tight flex items-center gap-2 text-foreground">
-            <MessageCircle className="h-4 w-4 text-primary" />
-            <span>Tin nhắn</span>
+          <h1 className="text-lg font-bold tracking-tight text-foreground">
+            Tin nhắn
           </h1>
           {onCompose && (
             <Button
@@ -81,12 +80,12 @@ export function ConversationListPane({ activeId, onCompose }: ConversationListPa
 
         {/* Ô tìm kiếm nhanh */}
         <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm kiếm cuộc trò chuyện..."
-            className="h-8 pl-8 pr-7 text-xs rounded-full bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-border transition-colors"
+            className="h-9 pl-9 pr-7 text-xs rounded-xl bg-muted/50 border-transparent focus-visible:bg-background focus-visible:border-border transition-colors"
           />
           {searchQuery && (
             <button
@@ -120,9 +119,9 @@ export function ConversationListPane({ activeId, onCompose }: ConversationListPa
       </div>
 
       {/* 2. Danh sách cuộn độc lập */}
-      <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-border/30">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-2 space-y-1">
         {showAiRow && (
-          <div className={cn('bg-card overflow-hidden', filtered.length > 0 && 'border-b border-border/40')}>
+          <div className={cn('bg-card rounded-xl overflow-hidden mb-1', filtered.length > 0 && 'border-b border-border/40')}>
             <AiQuickRow />
           </div>
         )}

@@ -37,25 +37,25 @@ export function ConversationItem({
       href={`/messages/${c.id}`}
       scroll={false}
       className={cn(
-        'flex items-center gap-3 px-4 py-3 transition-colors cursor-pointer select-none',
+        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors cursor-pointer select-none',
         isActive
-          ? 'bg-primary/10 border-l-2 border-primary font-medium text-foreground'
-          : 'hover:bg-muted/40 text-foreground'
+          ? 'bg-primary/10 text-foreground font-medium shadow-2xs'
+          : 'hover:bg-muted/50 text-foreground'
       )}
     >
-      <ConversationAvatar conversation={c} className="h-11 w-11" />
+      <ConversationAvatar conversation={c} className="h-10 w-10 shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className={cn('text-sm truncate flex-1', unread ? 'font-bold' : 'font-medium')}>{conversationTitle(c)}</p>
+          <p className={cn('text-sm truncate flex-1 leading-snug', unread ? 'font-bold' : 'font-semibold')}>{conversationTitle(c)}</p>
           {c.pinnedAt && <Pin className="h-3 w-3 text-muted-foreground shrink-0" />}
           {muted && <BellOff className="h-3 w-3 text-muted-foreground shrink-0" />}
           {c.lastMessageAt && <span className="text-[11px] text-muted-foreground shrink-0">{formatRelativeTime(c.lastMessageAt)}</span>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 mt-0.5">
           <p className={cn('text-xs truncate flex-1', unread ? 'text-foreground font-medium' : 'text-muted-foreground')}>{preview}</p>
           {c.unreadMentions > 0 && (
             <span
-              className="h-5 w-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center shrink-0"
+              className="h-5 w-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center shrink-0 text-xs font-bold"
               title={`${c.unreadMentions} tin nhắc đến bạn`}
             >
               <AtSign className="h-3 w-3" />
