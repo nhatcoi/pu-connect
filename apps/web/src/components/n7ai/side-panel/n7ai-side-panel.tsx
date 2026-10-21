@@ -2,22 +2,12 @@
 
 import React, { useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { create } from 'zustand'
 import { ChevronLeft, FileText, PanelRightClose, Sparkles } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { cn } from '@/lib/utils'
+import { useN7AiLayout, type N7AiPanelTab } from '../layout/n7ai-layout-store'
 import { PanelDocs } from './panel-docs'
 import { PanelTools } from './panel-tools'
-
-export type N7AiPanelTab = 'docs' | 'tools'
-
-// Panel phải của không gian N7AI: mở / thu gọn + tab đang chọn
-export const useN7AiPanel = create<{ open: boolean; tab: N7AiPanelTab; setOpen: (open: boolean) => void; setTab: (tab: N7AiPanelTab) => void }>((set) => ({
-  open: false,
-  tab: 'docs',
-  setOpen: (open) => set({ open }),
-  setTab: (tab) => set({ tab })
-}))
 
 const TABS: { id: N7AiPanelTab; label: string; icon: typeof FileText }[] = [
   { id: 'docs', label: 'Tài liệu', icon: FileText },
@@ -28,13 +18,14 @@ const TABS: { id: N7AiPanelTab; label: string; icon: typeof FileText }[] = [
 export function useOpenPanelOnPreview() {
   const file = useFilePreview((s) => s.file)
   useEffect(() => {
-    if (file) useN7AiPanel.setState({ open: true, tab: 'docs' })
+    if (file) useN7AiLayout.setState({ panelOpen: true, panelTab: 'docs' })
   }, [file])
 }
 
 // Nút mũi tên giữa mép phải khi panel đang thu gọn (desktop)
 export function N7AiPanelToggle() {
-  const { open, setOpen } = useN7AiPanel()
+  const open = useN7AiLayout((s) => s.panelOpen)
+  const setOpen = useN7AiLayout((s) => s.setPanelOpen)
   if (open) return null
   return (
     <button
@@ -48,14 +39,17 @@ export function N7AiPanelToggle() {
   )
 }
 
-// Cột thứ 3 (desktop): tab Tài liệu (danh sách + xem trước) · tab Công cụ (tạo học liệu từ hội thoại / tài liệu)
-export function N7AiSidePanel({ className }: { className?: string }) {
-  const { tab, setTab, setOpen } = useN7AiPanel()
+// Panel phải (desktop, độ rộng do khung N7AI đặt): tab Tài liệu (danh sách + xem trước) · tab Công cụ (tạo học liệu từ hội thoại / tài liệu)
+export function N7AiSidePanel({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  const tab = useN7AiLayout((s) => s.panelTab)
+  const setTab = useN7AiLayout((s) => s.setPanelTab)
+  const setOpen = useN7AiLayout((s) => s.setPanelOpen)
   const { id: threadId } = useParams<{ id?: string }>()
   return (
     <aside
       data-state="open"
       aria-label="Tài liệu và công cụ"
+      style={style}
       className={cn(
         'sticky top-0 h-dvh min-w-0 flex-col border-l border-border/60 bg-surface duration-300 data-[state=open]:animate-in data-[state=open]:slide-in-from-right',
         className

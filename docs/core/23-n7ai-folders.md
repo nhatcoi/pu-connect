@@ -29,9 +29,19 @@ UI (`components/chat/ai/ai-thread-list.tsx`): mục **Thư mục** nằm trên *
 
 Test: `apps/api/test/n7ai-folders.e2e-spec.ts`.
 
-## Panel phải: Tài liệu · Công cụ
+## Bố cục: thanh bên · nội dung · panel phải
 
-Không gian N7AI có panel phải thu gọn được (`components/n7ai/side-panel/`). Desktop (≥ 1024px): nút mũi tên giữa mép phải để mở; mở ra thì thanh bên giữ cố định (16–18rem), chat và panel chia đều phần còn lại; nút thu gọn ở đầu panel. Không gian N7AI dùng hết chiều ngang màn hình (thanh bên sát trái, panel sát phải); header hội thoại là `@container` nên cột hẹp chỉ hiện icon. Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ panel mở ở tab Tài liệu.
+Không gian N7AI dùng hết chiều ngang, gồm 3 vùng (`components/n7ai/n7ai-shell.tsx`, `components/n7ai/layout/`):
+
+| Vùng | Thu gọn | Kéo giãn | Mặc định |
+|---|---|---|---|
+| Thanh bên trái | Nút ở đầu thanh bên hoặc Ctrl/⌘ B ⇒ dải icon 56px | 220–380px (md+) | 272px |
+| Nội dung | — | Co giãn, nội dung tối đa 820px căn giữa, không hẹp hơn 420px khi kéo panel | — |
+| Panel phải | Nút thu gọn ở đầu panel; đóng ⇒ nút mũi tên giữa mép phải để mở | ≥ 340px (lg+) | Chia đôi phần bên phải thanh bên |
+
+Tay kéo nằm trên đường viền: kéo chuột / cảm ứng, phím ← → (16px), nhấp đúp ⇒ mặc định. Khi kéo, iframe tài liệu tạm không nhận chuột để kéo không bị giật. Trạng thái và độ rộng lưu theo thiết bị (`localStorage` `pu:n7ai-layout`, nạp sau khi mount; bị chặn ⇒ dùng mặc định). Header hội thoại là `@container` nên cột hẹp chỉ hiện icon. Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ panel mở ở tab Tài liệu.
+
+### Panel phải: Tài liệu · Công cụ
 
 - **Tài liệu**: tệp đã gửi trong cuộc trò chuyện đang mở (ở trang khác: mọi tệp đã gửi cho N7AI), bấm để xem trước; X ⇒ về danh sách. Dữ liệu: `GET /ai/library?kind=file&threadId=`.
 - **Công cụ**: chọn nguồn (cả cuộc trò chuyện hoặc 1 tài liệu) rồi bấm công cụ. Mỗi công cụ gửi một yêu cầu ngắn vào cuộc trò chuyện theo chế độ học tương ứng; chọn tài liệu thì tệp được gửi kèm để N7AI đọc lại.
