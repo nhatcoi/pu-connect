@@ -125,7 +125,11 @@ function HomeContent() {
   if (mode === 'focus')
     return (
       <div className="fixed inset-x-0 top-0 bottom-14 z-30 flex min-h-0 flex-col bg-surface text-foreground md:bottom-0">
-        <div className="z-10 shrink-0 bg-surface">{toolbar}</div>
+        <div className="z-10 shrink-0 border-b border-border/40 bg-surface/90 backdrop-blur-md">
+          <div className="mx-auto w-full max-w-3xl">
+            {toolbar}
+          </div>
+        </div>
         {isPostsLoading ? (
           <div className="mx-auto w-full max-w-3xl overflow-hidden">
             <FeedSkeleton />

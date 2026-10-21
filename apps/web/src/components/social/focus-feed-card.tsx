@@ -37,7 +37,7 @@ export function FocusFeedCard({ post, active }: { post: PostItem; active: boolea
       <article
         ref={ref}
         data-track-post={post.id}
-        className="relative mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden bg-card text-card-foreground md:rounded-2xl"
+        className="relative mx-auto flex h-full w-full max-w-3xl flex-col overflow-hidden bg-card text-card-foreground md:rounded-2xl md:border md:border-border/60 md:shadow-md"
       >
         <div className="relative min-h-0 flex-1">
           {hasMedia ? (

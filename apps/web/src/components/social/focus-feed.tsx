@@ -100,7 +100,7 @@ export function FocusFeed({ posts, hasMore, loadingMore, loadMoreError, fetchMor
           {virtualizer.getVirtualItems().map((item) => (
             <div
               key={item.key}
-              className="absolute left-0 top-0 w-full snap-start snap-always md:pb-3"
+              className="absolute left-0 top-0 w-full snap-start snap-always md:py-2"
               style={{ height, transform: `translateY(${item.start}px)` }}
             >
               <FocusFeedCard post={posts[item.index]} active={posts[item.index].id === activeId} />
@@ -108,25 +108,55 @@ export function FocusFeed({ posts, hasMore, loadingMore, loadMoreError, fetchMor
           ))}
         </div>
       </div>
-      <div className="absolute right-2 top-3 hidden gap-2 md:flex">
-        <button
-          disabled={activeIndex === 0}
-          onClick={() => move(-1)}
-          className="rounded-full bg-background/90 p-2 text-foreground disabled:opacity-30"
-          aria-label="Bài trước"
-        >
-          <ChevronUp className="h-5 w-5" />
-        </button>
-        <button
-          disabled={activeIndex === posts.length - 1}
-          onClick={() => move(1)}
-          className="rounded-full bg-background/90 p-2 text-foreground disabled:opacity-30"
-          aria-label="Bài tiếp theo"
-        >
-          <ChevronDown className="h-5 w-5" />
-        </button>
+
+      {/* Nút điều hướng desktop: tập trung bám sát thẻ bài viết ở center */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 mx-auto hidden h-full w-full max-w-3xl md:block">
+        {/* Màn hình lớn (xl+): 2 nút nằm nổi ngay ngoài rìa bên phải card bài viết */}
+        <div className="pointer-events-auto absolute -right-16 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-3 z-20">
+          <button
+            disabled={activeIndex === 0}
+            onClick={() => move(-1)}
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-card/90 backdrop-blur-md border border-border/80 text-foreground shadow-md transition-all hover:bg-muted hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+            title="Bài trước (Phím ↑)"
+            aria-label="Bài trước"
+          >
+            <ChevronUp className="h-5 w-5" />
+          </button>
+          <button
+            disabled={activeIndex === posts.length - 1}
+            onClick={() => move(1)}
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full bg-card/90 backdrop-blur-md border border-border/80 text-foreground shadow-md transition-all hover:bg-muted hover:scale-105 active:scale-95 disabled:pointer-events-none disabled:opacity-30"
+            title="Bài tiếp theo (Phím ↓)"
+            aria-label="Bài tiếp theo"
+          >
+            <ChevronDown className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Màn hình trung bình (md đến lg): 2 nút nằm gọn ở góc trên phải bên trong card */}
+        <div className="pointer-events-auto absolute right-3 top-3 flex xl:hidden gap-1.5 z-20">
+          <button
+            disabled={activeIndex === 0}
+            onClick={() => move(-1)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-background/90 backdrop-blur-md border border-border/70 text-foreground shadow-xs transition-colors hover:bg-muted disabled:opacity-30"
+            title="Bài trước (Phím ↑)"
+            aria-label="Bài trước"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
+          <button
+            disabled={activeIndex === posts.length - 1}
+            onClick={() => move(1)}
+            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-background/90 backdrop-blur-md border border-border/70 text-foreground shadow-xs transition-colors hover:bg-muted disabled:opacity-30"
+            title="Bài tiếp theo (Phím ↓)"
+            aria-label="Bài tiếp theo"
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-      <span className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-background/90 px-2 py-1 text-xs text-muted-foreground">
+
+      <span className="pointer-events-none absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-background/90 backdrop-blur-md border border-border/50 px-2.5 py-1 text-xs text-muted-foreground shadow-xs z-10">
         {activeIndex + 1} / {posts.length}
         {!hasMore && ' · Đã hết bài'}
       </span>
