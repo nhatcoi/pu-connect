@@ -8,7 +8,7 @@ import { n7aiChatUrl } from '@/lib/n7ai'
 
 const linkProps = { href: n7aiChatUrl(), target: '_blank', rel: 'noopener noreferrer' } as const
 
-// Nút gọn ở đầu hội thoại N7AI
+// Nút gọn ở đầu hội thoại N7AI (header là @container: cột hẹp ⇒ chỉ icon)
 export function OpenInN7AiButton({ className }: { className?: string }) {
   return (
     <a
@@ -20,7 +20,7 @@ export function OpenInN7AiButton({ className }: { className?: string }) {
       )}
     >
       <N7AiMark className="h-4 w-4" />
-      <span className="hidden sm:inline">Mở trong N7AI</span>
+      <span className="hidden @xl:inline">Mở trong N7AI</span>
       <ArrowUpRight className="h-3 w-3" />
     </a>
   )

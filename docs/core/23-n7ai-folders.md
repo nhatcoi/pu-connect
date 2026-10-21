@@ -31,7 +31,7 @@ Test: `apps/api/test/n7ai-folders.e2e-spec.ts`.
 
 ## Panel phải: Tài liệu · Công cụ
 
-Không gian N7AI có panel phải thu gọn được (`components/n7ai/side-panel/`). Desktop (≥ 1024px): nút mũi tên giữa mép phải để mở; mở ra thì màn chia đều 3 cột (thanh bên · nội dung · panel), nút thu gọn ở đầu panel. Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ panel mở ở tab Tài liệu.
+Không gian N7AI có panel phải thu gọn được (`components/n7ai/side-panel/`). Desktop (≥ 1024px): nút mũi tên giữa mép phải để mở; mở ra thì thanh bên giữ cố định (16–18rem), chat và panel chia đều phần còn lại; nút thu gọn ở đầu panel. Không gian N7AI dùng hết chiều ngang màn hình (thanh bên sát trái, panel sát phải); header hội thoại là `@container` nên cột hẹp chỉ hiện icon. Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ panel mở ở tab Tài liệu.
 
 - **Tài liệu**: tệp đã gửi trong cuộc trò chuyện đang mở (ở trang khác: mọi tệp đã gửi cho N7AI), bấm để xem trước; X ⇒ về danh sách. Dữ liệu: `GET /ai/library?kind=file&threadId=`.
 - **Công cụ**: chọn nguồn (cả cuộc trò chuyện hoặc 1 tài liệu) rồi bấm công cụ. Mỗi công cụ gửi một yêu cầu ngắn vào cuộc trò chuyện theo chế độ học tương ứng; chọn tài liệu thì tệp được gửi kèm để N7AI đọc lại.

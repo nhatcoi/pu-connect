@@ -57,11 +57,11 @@ export function N7AiSidePanel({ className }: { className?: string }) {
       data-state="open"
       aria-label="Tài liệu và công cụ"
       className={cn(
-        'sticky top-0 h-dvh min-w-0 flex-col border-l bg-surface duration-300 data-[state=open]:animate-in data-[state=open]:slide-in-from-right',
+        'sticky top-0 h-dvh min-w-0 flex-col border-l border-border/60 bg-surface duration-300 data-[state=open]:animate-in data-[state=open]:slide-in-from-right',
         className
       )}
     >
-      <div className="flex items-center gap-1 border-b px-2 py-2" role="tablist">
+      <div className="flex h-14 shrink-0 items-center gap-1 border-b border-border/60 px-3" role="tablist">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}

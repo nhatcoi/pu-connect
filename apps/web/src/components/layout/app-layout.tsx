@@ -63,7 +63,8 @@ function GlobalDialogs() {
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { mode } = useFeedViewMode()
-  const immersive = isN7AiPath(pathname) || (pathname === '/' && mode === 'focus')
+  const n7ai = isN7AiPath(pathname)
+  const immersive = n7ai || (pathname === '/' && mode === 'focus')
   // Công cụ (/tools): không cần cột phải
   const fullWidth = isFullWidthPath(pathname)
   const [asideNode, setAsideNode] = useState<HTMLElement | null>(null)
@@ -77,7 +78,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {!immersive && <Header />}
           <RestrictionBanner />
           <GlobalDialogs />
-          <div className={cn('mx-auto flex justify-center gap-6 px-0 sm:px-4 lg:px-6 min-h-screen', SHELL_WIDTH)}>
+          {/* N7AI: dùng hết chiều ngang (thanh bên sát trái, panel sát phải) */}
+          <div className={cn('mx-auto flex justify-center min-h-screen', n7ai ? 'w-full' : cn('gap-6 px-0 sm:px-4 lg:px-6', SHELL_WIDTH))}>
             {!immersive && (
               <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
                 <Sidebar />

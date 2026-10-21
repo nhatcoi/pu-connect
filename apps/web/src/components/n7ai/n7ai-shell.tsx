@@ -9,18 +9,25 @@ import { N7AiSidebar } from './n7ai-sidebar'
 import { N7AiPanelToggle, N7AiSidePanel, useN7AiPanel, useOpenPanelOnPreview } from './side-panel/n7ai-side-panel'
 
 // Khung không gian N7AI: thanh bên (desktop) / ngăn kéo (mobile) + nội dung giữa
-// Mở panel phải (tài liệu · công cụ) trên desktop ⇒ chia đều 3 cột
+// Mở panel phải (tài liệu · công cụ) trên desktop ⇒ thanh bên cố định, chat và panel chia đều phần còn lại
 export function N7AiShell({ children }: { children: React.ReactNode }) {
   useFilePreviewHost()
   useOpenPanelOnPreview()
   const panelOpen = useN7AiPanel((s) => s.open)
   return (
     <N7AiNavProvider>
-      <div className={cn('flex gap-4 lg:gap-6 [--app-header-height:0rem]', panelOpen && 'lg:grid lg:grid-cols-3')}>
-        <aside className={cn('hidden md:block shrink-0 sticky top-0 h-dvh', panelOpen ? 'w-64 lg:w-auto' : 'w-64 xl:w-72')}>
+      <div
+        className={cn(
+          'flex [--app-header-height:0rem]',
+          panelOpen && 'lg:grid lg:grid-cols-[16rem_minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[18rem_minmax(0,1fr)_minmax(0,1fr)]'
+        )}
+      >
+        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-border/60 md:block xl:w-72">
           <N7AiSidebar />
         </aside>
-        <div className={cn('mx-auto w-full min-w-0 flex-1', !panelOpen && 'max-w-[820px]')}>{children}</div>
+        <div className="w-full min-w-0 flex-1 sm:px-4">
+          <div className="mx-auto w-full max-w-[820px]">{children}</div>
+        </div>
         {panelOpen && <N7AiSidePanel className="hidden lg:flex" />}
       </div>
       <N7AiPanelToggle />
