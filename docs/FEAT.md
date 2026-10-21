@@ -7,6 +7,10 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Giữ cố định Sidebar N7AI không animate khi chuyển route nội bộ (`Zero Route Jitter`) (2026-10-21)**:
+  1. **Bảo toàn cấu trúc layout lồng nhau (`app-layout.tsx`)**: Gỡ bỏ thuộc tính `key={pathname}` và class hiệu ứng mờ toàn khung `<main>` trong [`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx) để Next.js App Router giữ nguyên DOM instance của các layout lồng nhau (`N7AiShell` và `N7AiSidebar`), không bị unmount/remount khi chuyển đổi giữa các trang `/n7ai`, `/n7ai/[id]`, `/n7ai/library`, `/n7ai/settings`, `/n7ai/temporary`.
+  2. **Triệt tiêu animation trượt của N7AiShell (`n7ai-shell.tsx`)**: Gỡ bỏ animation `slide-in-from-right-8` tại khung chứa N7AI trong [`n7ai-shell.tsx`](apps/web/src/components/n7ai/n7ai-shell.tsx), giúp toàn bộ thanh bên N7AI Studio và thanh rail PU Connector 64px giữ nguyên vị trí tuyệt đối, 100% không rung lắc hay trượt giật khi người dùng chuyển tab hoặc mở các cuộc trò chuyện.
+
 - [x] **Chuẩn hóa icon mũi tên cho các nút Collapse / Panel Sidebar (`ChevronLeft` & `ChevronRight`) (2026-10-21)**: Thay thế hoàn toàn các icon ô chữ nhật/cửa sổ chia đôi nặng nề (`PanelLeftClose`, `PanelLeftOpen`, `PanelRightClose`, `PanelRight`) bằng các icon mũi tên (`ChevronLeft` và `ChevronRight`) thanh thoát, hiện đại và chuẩn xác theo hướng mở/đóng:
   - **Sidebar trái N7AI**: Khi mở hiển thị `ChevronLeft` để thu gọn sang trái ([`n7ai-sidebar.tsx`](apps/web/src/components/n7ai/n7ai-sidebar.tsx)), khi đóng (rail) hiển thị `ChevronRight` để bung mở sang phải ([`n7ai-rail.tsx`](apps/web/src/components/n7ai/layout/n7ai-rail.tsx)).
   - **Side panel phải N7AI**: Nút thu gọn ở tab header dùng `ChevronRight` để thu gọn về cạnh phải ([`n7ai-side-panel.tsx`](apps/web/src/components/n7ai/side-panel/n7ai-side-panel.tsx)), nút toggle `N7AiPanelButton` tự động chuyển đổi giữa `ChevronRight` (khi mở) và `ChevronLeft` (khi đóng).

@@ -28,10 +28,10 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
 
   return (
     <N7AiNavProvider>
-      {/* Đang kéo: khóa chọn chữ, iframe không nuốt sự kiện chuột. Vào N7AI: workspace trượt từ phải vào và mờ dần giống index.html */}
+      {/* Đang kéo: khóa chọn chữ, iframe không nuốt sự kiện chuột. Thanh bên N7AI giữ cố định không animate khi chuyển route */}
       <div
         className={cn(
-          'flex h-screen md:h-dvh overflow-hidden [--app-header-height:0rem] bg-surface animate-in fade-in-0 slide-in-from-right-8 duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+          'flex h-screen md:h-dvh overflow-hidden [--app-header-height:0rem] bg-surface',
           resizing && 'cursor-col-resize select-none [&_iframe]:pointer-events-none'
         )}
       >
