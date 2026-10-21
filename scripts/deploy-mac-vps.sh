@@ -251,8 +251,8 @@ systemctl enable pu-api pu-web pu-bot
 systemctl restart pu-api
 systemctl restart pu-web
 
-# Đợi 3s
-sleep 3
+# Đợi 5s cho API và Web khởi động hoàn toàn
+sleep 5
 
 # Verify services
 systemctl is-active --quiet pu-api && echo "pu-api (NestJS): ACTIVE" || { echo "pu-api: FAILED"; exit 1; }

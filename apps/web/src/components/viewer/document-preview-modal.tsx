@@ -1,11 +1,17 @@
 'use client'
 
 import React from 'react'
+import dynamic from 'next/dynamic'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { PdfViewer } from './pdf-viewer'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import type { DocumentItem } from '@pu/schemas'
 import { Eye } from 'lucide-react'
+
+const PptxView = dynamic(() => import('./views/pptx-view'), {
+  ssr: false,
+  loading: () => <div className="p-8 text-center text-xs text-muted-foreground">Đang tải trình xem slide…</div>
+})
 
 interface DocumentPreviewModalProps {
   document: DocumentItem | null
@@ -18,6 +24,7 @@ export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentP
 
   const isPdf = document.type === 'pdf'
   const isMarkdown = document.type === 'markdown'
+  const isPptx = document.type === 'slides' || (Boolean(document.fileUrl) && /\.pptx($|\?)/i.test(document.fileUrl))
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,6 +40,10 @@ export function DocumentPreviewModal({ document, open, onOpenChange }: DocumentP
         <div className="py-2">
           {isPdf ? (
             <PdfViewer url={document.fileUrl} title={document.title} />
+          ) : isPptx ? (
+            <div className="h-[75vh] w-full overflow-hidden rounded-lg border border-border bg-card">
+              <PptxView url={document.fileUrl} name={document.title} />
+            </div>
           ) : isMarkdown ? (
             <div className="max-h-[65vh] overflow-y-auto rounded-lg border border-border bg-card p-4">
               <MarkdownPreview content={`# ${document.title}\n\n${document.description || ''}\n\n\`\`\`json\n${JSON.stringify(document, null, 2)}\n\`\`\``} />

@@ -47,7 +47,27 @@ export default function PptxView({ url, name }: { url: string; name: string }) {
   const [currentSlide, setCurrentSlide] = useState(0)
   const currentSlideRef = useRef(currentSlide)
   currentSlideRef.current = currentSlide
-  const [viewMode, setViewMode] = useState<'slide' | 'list'>('slide')
+  const [viewMode, setViewModeState] = useState<'slide' | 'list'>('list')
+
+  // Đọc & lưu chế độ xem ưa thích vào localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('pu_slide_view_mode')
+      if (saved === 'slide' || saved === 'list') {
+        setViewModeState(saved)
+      }
+    } catch {}
+  }, [])
+
+  const setViewMode = useCallback((modeOrUpdater: 'slide' | 'list' | ((prev: 'slide' | 'list') => 'slide' | 'list')) => {
+    setViewModeState((prev) => {
+      const next = typeof modeOrUpdater === 'function' ? modeOrUpdater(prev) : modeOrUpdater
+      try {
+        localStorage.setItem('pu_slide_view_mode', next)
+      } catch {}
+      return next
+    })
+  }, [])
   const [zoom, setZoom] = useState(1)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -332,6 +352,7 @@ export default function PptxView({ url, name }: { url: string; name: string }) {
         className={cn(
           'mx-auto w-max py-4 pb-24 transition-[zoom] duration-150',
           '[&_.pptx-preview-wrapper]:bg-transparent!',
+          '[&_.pptx-preview-wrapper-pre]:!hidden',
           '[&_.pptx-preview-wrapper-next]:!hidden',
           '[&_.pptx-preview-wrapper-pagination]:!hidden',
           '[&_[class*="pptx-preview-slide-wrapper-"]]:rounded-xl!',
