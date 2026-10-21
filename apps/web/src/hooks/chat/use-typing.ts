@@ -22,10 +22,13 @@ export const useTypingStore = create<TypingState>()((set) => ({
 export function useTypingLabel(conversationId: string, members: ChatUser[], myId?: string): string | null {
   const entries = useTypingStore((s) => s.typing[conversationId])
   const [, tick] = useState(0)
+  // Chỉ chạy khi có ai đó đang nhập (để mục hết hạn tự biến mất); không ai nhập thì không render lại mỗi 2 giây
+  const active = !!entries && Object.keys(entries).length > 0
   useEffect(() => {
+    if (!active) return
     const t = setInterval(() => tick((n) => n + 1), 2000)
     return () => clearInterval(t)
-  }, [])
+  }, [active])
   const now = Date.now()
   const ids = Object.entries(entries || {})
     .filter(([uid, exp]) => uid !== myId && exp > now)
