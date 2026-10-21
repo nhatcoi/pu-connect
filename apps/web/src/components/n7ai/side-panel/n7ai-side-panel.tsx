@@ -48,11 +48,10 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
   const { id: threadId } = useParams<{ id?: string }>()
   return (
     <aside
-      data-state="open"
       aria-label="Tài liệu và công cụ"
       style={style}
       className={cn(
-        'sticky top-0 h-dvh min-w-0 flex-col border-l border-border/60 bg-surface duration-300 data-[state=open]:animate-in data-[state=open]:slide-in-from-right',
+        'sticky top-0 h-dvh shrink-0 flex-col border-l border-border/60 bg-surface',
         className
       )}
     >

@@ -22,6 +22,9 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
   const { sidebarCollapsed, sidebarWidth, panelOpen, panelWidth, resizing, setSidebarWidth, setPanelWidth } = useN7AiLayout()
   const sidebar = sidebarCollapsed ? SIDEBAR.rail : sidebarWidth
   const panel = panelWidthFor(panelWidth, viewport, sidebar)
+  // Chỉ dựng nội dung panel từ lần mở đầu (tránh tải dữ liệu khi chưa dùng), sau đó giữ để đóng / mở có chuyển động
+  const [panelMounted, setPanelMounted] = React.useState(false)
+  if (panelOpen && !panelMounted) setPanelMounted(true)
 
   return (
     <N7AiNavProvider>
@@ -48,17 +51,23 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
         </div>
 
         {panelOpen && (
-          <>
-            <ResizeHandle
-              label="Độ rộng panel tài liệu"
-              className="hidden lg:block"
-              onResize={(x) => setPanelWidth(viewport - x)}
-              onNudge={(d) => setPanelWidth(panel - d)}
-              onReset={() => setPanelWidth(null)}
-            />
-            <N7AiSidePanel className="hidden shrink-0 lg:flex" style={{ width: panel }} />
-          </>
+          <ResizeHandle
+            label="Độ rộng panel tài liệu"
+            className="hidden lg:block"
+            onResize={(x) => setPanelWidth(viewport - x)}
+            onNudge={(d) => setPanelWidth(panel - d)}
+            onReset={() => setPanelWidth(null)}
+          />
         )}
+        {/* Khung panel đổi độ rộng mượt ⇒ cột chat dịch trái / phải theo; clip (không hidden) để sticky vẫn chạy */}
+        <div
+          style={{ width: panelOpen ? panel : 0 }}
+          aria-hidden={!panelOpen}
+          inert={!panelOpen}
+          className={cn('hidden shrink-0 overflow-x-clip lg:block', !resizing && 'transition-[width] duration-300 ease-out')}
+        >
+          {panelMounted && <N7AiSidePanel className="flex" style={{ width: panel }} />}
+        </div>
       </div>
       <N7AiPanelToggle />
       <N7AiDrawer />
