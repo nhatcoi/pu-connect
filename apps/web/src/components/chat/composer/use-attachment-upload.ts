@@ -7,9 +7,14 @@ import { API_BASE_URL } from '@/lib/api-client'
 
 const MAX_BYTES = 25 * 1024 * 1024
 
+// Loại tệp nhận khi chọn từ máy (khớp danh sách API cho phép; mã nguồn nhận theo đuôi)
+export const ATTACHMENT_ACCEPT =
+  'image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.csv,.tsv,.zip,.rar,.py,.java,.c,.cc,.cpp,.h,.cs,.go,.rs,.rb,.php,.sql,.sh,.js,.jsx,.ts,.tsx,.json,.xml,.yml,.yaml,.tex'
+
 export type PendingFile = {
   id: string
-  file: File
+  name: string
+  size: number
   previewUrl: string | null // ảnh: object URL để xem trước
   progress: number // 0–100
   status: 'uploading' | 'done' | 'error'
@@ -78,7 +83,8 @@ export function useAttachmentUpload() {
       const id = crypto.randomUUID()
       const item: PendingFile = {
         id,
-        file,
+        name: file.name,
+        size: file.size,
         previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null,
         progress: 0,
         status: 'uploading'
@@ -94,6 +100,25 @@ export function useAttachmentUpload() {
         })
         .finally(() => aborts.current.delete(id))
     }
+  }, [])
+
+  // Gắn lại tệp đã tải lên trước đó (kéo từ panel tài liệu / thẻ tệp): không tải lại
+  const attach = useCallback((attachment: ChatAttachment) => {
+    const current = filesRef.current
+    if (current.some((f) => f.result?.key === attachment.key)) return
+    if (current.length >= CHAT_MAX_ATTACHMENTS) return void toast.error(`Tối đa ${CHAT_MAX_ATTACHMENTS} tệp mỗi tin`)
+    setFiles((list) => [
+      ...list,
+      {
+        id: crypto.randomUUID(),
+        name: attachment.name,
+        size: attachment.size,
+        previewUrl: attachment.kind === 'image' ? attachment.url : null,
+        progress: 100,
+        status: 'done',
+        result: attachment
+      }
+    ])
   }, [])
 
   const remove = useCallback((id: string) => {
@@ -114,6 +139,7 @@ export function useAttachmentUpload() {
   return {
     files,
     add,
+    attach,
     remove,
     clear,
     uploading: files.some((f) => f.status === 'uploading'),

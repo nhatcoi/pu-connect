@@ -22,15 +22,15 @@ export function AttachmentTray({ files, onRemove }: { files: PendingFile[]; onRe
         >
           {f.previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={f.previewUrl} alt={f.file.name} className="h-full w-full object-cover" />
+            <img src={f.previewUrl} alt={f.name} className="h-full w-full object-cover" />
           ) : (
             <div className="h-full flex items-center gap-2 px-2">
               <span className="h-9 w-9 shrink-0 rounded-md bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
-                {fileExt(f.file.name)}
+                {fileExt(f.name)}
               </span>
               <span className="min-w-0">
-                <span className="block text-xs font-medium truncate">{f.file.name}</span>
-                <span className="block text-[10px] text-muted-foreground">{fileSize(f.file.size)}</span>
+                <span className="block text-xs font-medium truncate">{f.name}</span>
+                <span className="block text-[10px] text-muted-foreground">{fileSize(f.size)}</span>
               </span>
             </div>
           )}

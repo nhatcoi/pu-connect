@@ -7,7 +7,6 @@ import { CHAT_MAX_REFS, type AiMode, type AiSkill, type AiSuggestion, type ChatR
 import { Button } from '@/components/ui/button'
 import { trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
-import { cn } from '@/lib/utils'
 import { AiModelPicker } from '../ai/ai-model-picker'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
@@ -15,10 +14,12 @@ import { messagePreview } from '../utils'
 import { AiModeBar } from './ai-mode-bar'
 import { AttachmentTray } from './attachment-tray'
 import { ContextChips } from './context-chips'
+import { DropOverlay } from './drop-overlay'
 import { PickerPopover, pickerOptionId } from './picker-popover'
 import { PlusMenu } from './plus-menu'
 import { SkillsDialog } from './skills-dialog'
-import { useAttachmentUpload } from './use-attachment-upload'
+import { ATTACHMENT_ACCEPT, useAttachmentUpload } from './use-attachment-upload'
+import { useChatFileDrop } from './use-file-drop'
 import { useComposerPicker, type PickerItem } from './use-composer-picker'
 
 export type ComposerHandle = { prefill: (text: string) => void }
@@ -66,7 +67,6 @@ export function Composer({
   const myId = useAppStore((s) => s.user?.id)
   const [text, setText] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
-  const [dragging, setDragging] = useState(false)
   const [refs, setRefs] = useState<ChatRef[]>([])
   const [skill, setSkill] = useState<AiSkill | null>(null)
   const [groupMode, setGroupMode] = useState<AiMode | null>(null) // nhóm: chế độ qua "/" (1 lần)
@@ -78,6 +78,7 @@ export function Composer({
   const listId = useId()
   const typing = useTypingEmitter(conversationId)
   const uploads = useAttachmentUpload()
+  const dragging = useChatFileDrop(!editing && !disabled, uploads.add, uploads.attach)
 
   const addRef = useCallback(
     (r: ChatRef) => {
@@ -232,22 +233,11 @@ export function Composer({
   return (
     <div
       className="sticky bottom-14 md:bottom-0 z-20 bg-surface/95 backdrop-blur-md px-3 sm:px-1 pt-2 pb-2.5"
-      onDragOver={(e) => {
-        if (editing || !e.dataTransfer.types.includes('Files')) return
-        e.preventDefault()
-        setDragging(true)
-      }}
-      onDragLeave={() => setDragging(false)}
-      onDrop={(e) => {
-        if (editing) return
-        e.preventDefault()
-        setDragging(false)
-        uploads.add(e.dataTransfer.files)
-      }}
     >
+      {dragging && <DropOverlay />}
       {isAi && !editing && panelOpen && <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />}
       {isAi && !editing && <AiModeBar value={aiMode} onChange={changeMode} />}
-      <div className={cn('relative rounded-2xl bg-card px-2.5 py-1.5 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
+      <div className="relative rounded-2xl bg-card px-2.5 py-1.5">
         {picker.open && (
           <PickerPopover
             id={listId}
@@ -280,7 +270,7 @@ export function Composer({
                 type="file"
                 multiple
                 hidden
-                accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.md,.csv,.zip,.rar"
+                accept={ATTACHMENT_ACCEPT}
                 onChange={(e) => {
                   if (e.target.files) uploads.add(e.target.files)
                   e.target.value = ''

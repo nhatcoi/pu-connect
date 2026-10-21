@@ -4,6 +4,7 @@ import React, { useMemo } from 'react'
 import { FolderOpen } from 'lucide-react'
 import type { ChatAttachment } from '@pu/schemas'
 import { fileExt, fileSize } from '@/components/chat/utils'
+import { startAttachmentDrag } from '@/components/chat/composer/use-file-drop'
 import { Skeleton } from '@/components/ui/skeleton'
 import { FilePreviewView, useFilePreview } from '@/components/viewer/file-preview-panel'
 import { useAiLibrary } from '@/hooks/chat'
@@ -43,7 +44,10 @@ export function FileRow({ file, onOpen, selected }: { file: ChatAttachment; onOp
   return (
     <button
       type="button"
+      draggable
+      onDragStart={(e) => startAttachmentDrag(e, file)}
       onClick={onOpen}
+      title="Bấm để xem · kéo vào ô chat để đính kèm lại"
       className={cn(
         'flex w-full cursor-pointer items-center gap-2.5 rounded-xl border bg-card px-3 py-2 text-left transition-colors hover:bg-muted/60',
         selected && 'border-primary ring-1 ring-primary/40'

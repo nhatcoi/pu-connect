@@ -6,6 +6,7 @@ import type { ChatAttachment } from '@pu/schemas'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { cn } from '@/lib/utils'
+import { startAttachmentDrag } from '../composer/use-file-drop'
 import { fileExt, fileSize } from '../utils'
 
 // Tệp trong tin nhắn: lưới ảnh (bấm để xem lớn) + thẻ tệp (bấm để xem trước)
@@ -48,7 +49,11 @@ export function AttachmentView({ attachments, mine }: { attachments: ChatAttachm
 export function FileCard({ file, className }: { file: ChatAttachment; className?: string }) {
   const openPreview = useFilePreview((s) => s.open)
   return (
-    <div className={cn('flex items-center gap-1 rounded-xl bg-card border pl-3 pr-1.5 py-2 w-64 max-w-full hover:bg-muted/60 transition-colors', className)}>
+    <div
+      draggable
+      onDragStart={(e) => startAttachmentDrag(e, file)}
+      className={cn('flex items-center gap-1 rounded-xl bg-card border pl-3 pr-1.5 py-2 w-64 max-w-full hover:bg-muted/60 transition-colors', className)}
+    >
       <button type="button" onClick={() => openPreview(file)} className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left" aria-label={`Xem ${file.name}`}>
         <span className="h-9 w-9 shrink-0 rounded-lg bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center">
           {fileExt(file.name)}
@@ -63,6 +68,7 @@ export function FileCard({ file, className }: { file: ChatAttachment; className?
         target="_blank"
         rel="noopener noreferrer"
         download={file.name}
+        draggable={false}
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
         aria-label={`Tải ${file.name}`}
       >

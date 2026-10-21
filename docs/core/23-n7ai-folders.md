@@ -61,12 +61,31 @@ Khác NotebookLM: học liệu nằm ngay trong cuộc trò chuyện (hỏi ti�
 
 Màn nhỏ và trang ngoài N7AI (Tin nhắn): bấm thẻ tệp ⇒ panel nổi trượt từ phải (`components/viewer/file-preview-panel.tsx`), mobile toàn màn hình.
 
+### Trình xem tài liệu
+
+`components/viewer/`: `file-kind.ts` chọn loại theo đuôi tệp, `preview-body.tsx` nạp trình xem tương ứng (mỗi loại một chunk, chỉ tải khi mở), `views/` chứa từng trình xem. Giao diện chung: nền "bàn học", trang giấy, thanh công cụ nổi ở đáy.
+
 | Loại | Cách hiển thị |
 |---|---|
-| PDF | Trình xem PDF của trình duyệt (iframe) |
-| Word, Excel, PowerPoint, ODF, RTF | Office Online (`view.officeapps.live.com`). URL tệp (R2 công khai) được gửi cho Microsoft; giới hạn của Microsoft: Word/PowerPoint ≤ 10 MB, Excel ≤ 5 MB |
-| Ảnh, video, âm thanh | Thẻ gốc của trình duyệt |
-| Văn bản, Markdown, CSV, mã nguồn | iframe `sandbox` (không chạy script) |
+| PDF | pdf.js: cuộn liên tục, vừa chiều rộng, phóng to 50–300%, chọn / sao chép chữ, chuyển trang. Chỉ vẽ trang gần màn hình, trang đã cuộn xa được giải phóng |
+| Word `.docx` | docx-preview, trang giấy tự co vừa khung, phóng to |
+| PowerPoint `.pptx` | pptx-preview (slide xếp dọc); lỗi ⇒ Office Online |
+| Excel `.xlsx` | read-excel-file: bảng kiểu bảng tính (cột A, B…, số dòng), mỗi sheet một tab, tối đa 500 dòng × 40 cột |
+| CSV / TSV | Bảng như trên; tự nhận dấu `,` hoặc `;` |
+| Markdown | Render đầy đủ (bảng, công thức, mã) |
+| Văn bản, mã nguồn | Tô màu cú pháp (highlight.js), nền tối; tệp > 200 KB hiển thị thô; chỉ đọc 1 MB đầu |
+| Ảnh | Phóng to, xoay 90° |
+| Video, âm thanh | Thẻ gốc của trình duyệt |
+| Word / PowerPoint / Excel cũ (`.doc .ppt .xls .odt .rtf`…) | Office Online (`view.officeapps.live.com`): URL tệp (R2 công khai) được gửi cho Microsoft; Word/PPT ≤ 10 MB, Excel ≤ 5 MB |
 | Khác | Gợi ý tải về |
+
+R2 công khai không bật CORS nên trình duyệt không tự tải byte tệp được. Tệp của app đọc qua `GET /upload/read?key=` (đăng nhập; chỉ thư mục `chat/` và `documents/`; luôn trả `application/octet-stream` + `nosniff`). Byte được cache theo URL trong phiên (`useFileBytes`). Ảnh, video, âm thanh vẫn tải trực tiếp từ R2.
+
+Tệp mã nguồn / dữ liệu (`.py .java .c .cpp .js .ts .json .yml .tex` …) tải lên được nhờ nhận theo đuôi; lưu trên R2 với MIME `text/plain` (không bao giờ được host như HTML/JS).
+
+### Kéo thả tệp vào chat
+
+- Thả tệp từ máy vào **bất kỳ đâu trên trang** có ô soạn tin ⇒ đính kèm (hiện lớp phủ "Thả tệp để đính kèm"). Dán ảnh / tệp từ clipboard vẫn dùng được. Hook `use-file-drop.ts`.
+- Kéo một tệp đã gửi (thẻ tệp trong chat, hàng ở tab Tài liệu) thả vào ô chat ⇒ đính kèm lại, không tải lên lần nữa. Dữ liệu kéo là `application/x-n7ai-attachment` (JSON `ChatAttachment`, kiểm bằng schema); API vẫn kiểm quyền sở hữu key khi gửi.
 
 Thư viện N7AI mở tab **Tài liệu** đầu tiên.
