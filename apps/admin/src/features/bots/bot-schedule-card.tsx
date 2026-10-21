@@ -30,7 +30,6 @@ export function BotScheduleCard({ data, onAct }: { data: AdminBotOverview; onAct
       <Card>
         <CardHeader
           title="Lệnh điều hành & Lịch hẹn"
-          description="Các lệnh đăng bài, bình luận, thả tim do Admin điều hành (chạy ngay hoặc hẹn giờ)."
           action={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setImporting(true)}>
@@ -43,10 +42,7 @@ export function BotScheduleCard({ data, onAct }: { data: AdminBotOverview; onAct
           }
         />
         {data.commands.length === 0 ? (
-          <EmptyState
-            title="Chưa có lệnh nào được tạo"
-            description="Bấm 'Điều hành Bot' để yêu cầu bot đăng bài, bình luận hoặc thả tim."
-          />
+          <EmptyState title="Chưa có lệnh nào" />
         ) : (
           <List className="rounded-none border-x-0 border-b-0">
             {data.commands.map((c) => (

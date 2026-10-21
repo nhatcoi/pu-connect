@@ -129,11 +129,6 @@ export function BotAccountDialog({
       onClose={onClose}
       size="lg"
       title={bot ? `Sửa hồ sơ @${bot.username}` : 'Khởi tạo Bot mới'}
-      description={
-        bot
-          ? 'Cập nhật thông tin nhận diện và linh hồn (Soul) của Bot.'
-          : 'Bot mới sẽ được kích hoạt sẵn sàng nhận lệnh điều hành (đăng bài, bình luận, thả tim).'
-      }
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -148,10 +143,10 @@ export function BotAccountDialog({
       <div className="space-y-4">
         {/* Mẫu persona gợi ý nhanh khi tạo mới */}
         {!bot && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
             <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
               <Sparkles className="size-3.5" />
-              Gợi ý mẫu Persona nhanh (1-click điền mẫu)
+              Mẫu Persona gợi ý
             </div>
             <div className="flex flex-wrap gap-2">
               {PRESETS.map((p) => (
@@ -171,7 +166,7 @@ export function BotAccountDialog({
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {!bot && (
-            <Field label="Username" hint="Chữ thường, số, dấu chấm/gạch dưới (3–30 ký tự)">
+            <Field label="Username">
               <Input
                 value={draft.username}
                 onChange={(e) => set('username', e.target.value.toLowerCase())}
@@ -204,27 +199,24 @@ export function BotAccountDialog({
             <Input value={draft.major ?? ''} onChange={(e) => set('major', e.target.value)} maxLength={80} placeholder="Công nghệ thông tin" />
           </Field>
 
-          <Field label="Giọng văn (Tone)" hint="Mô tả ngắn">
+          <Field label="Giọng văn (Tone)">
             <Input value={draft.tone ?? ''} onChange={(e) => set('tone', e.target.value)} maxLength={300} placeholder="thân thiện, năng động, chuẩn mực" />
           </Field>
 
           <div className="sm:col-span-2">
             <Field label="Giới thiệu (Bio)">
-              <Textarea rows={2} value={draft.bio ?? ''} onChange={(e) => set('bio', e.target.value)} maxLength={300} placeholder="Giới thiệu ngắn hiển thị trên trang cá nhân của bot" />
+              <Textarea rows={2} value={draft.bio ?? ''} onChange={(e) => set('bio', e.target.value)} maxLength={300} placeholder="Giới thiệu ngắn..." />
             </Field>
           </div>
 
           <div className="sm:col-span-2">
-            <Field
-              label="Linh hồn & Phong cách (Soul)"
-              hint="AI sẽ bám sát vào đây khi tự động soạn bài viết hoặc bình luận thảo luận"
-            >
+            <Field label="Linh hồn & Phong cách (Soul)">
               <Textarea
                 rows={4}
                 value={draft.soul ?? ''}
                 onChange={(e) => set('soul', e.target.value)}
                 maxLength={2000}
-                placeholder="Mô tả tính cách, năm học, sở thích, cách viết, chủ đề hay quan tâm... Ví dụ: Sinh viên năm 3 CNTT, thích tối ưu thuật toán, hay chia sẻ mẹo ôn thi thực tế, không dùng emoji lố."
+                placeholder="Tính cách, kiến thức, cách hành văn, xưng hô, chủ đề yêu thích..."
               />
             </Field>
           </div>

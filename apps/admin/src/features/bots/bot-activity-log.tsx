@@ -29,7 +29,6 @@ export function BotActivityLog({ bots }: { bots: string[] }) {
     <Card>
       <CardHeader
         title="Nhật ký hoạt động"
-        description="Giữ 7 ngày."
         action={
           <div className="flex gap-2">
             <Select value={bot} onChange={(e) => reset(() => setBot(e.target.value))()} className="w-40">
@@ -51,7 +50,7 @@ export function BotActivityLog({ bots }: { bots: string[] }) {
       {log.isPending ? (
         <LoadingRows rows={6} />
       ) : rows.length === 0 ? (
-        <EmptyState icon={Bot} title="Chưa có hoạt động" description="Bật mô phỏng hoặc giao việc cho bot để thấy nhật ký." />
+        <EmptyState icon={Bot} title="Chưa có hoạt động" />
       ) : (
         <>
           <List className={cn('rounded-none border-x-0 border-b-0', log.isPlaceholderData && 'opacity-60')}>

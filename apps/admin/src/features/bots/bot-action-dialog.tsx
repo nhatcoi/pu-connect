@@ -151,7 +151,6 @@ export function BotActionDialog({
       onClose={onClose}
       size="lg"
       title="Điều hành Bot"
-      description="Ra lệnh cho Bot đăng bài, bình luận hoặc tương tác trên mạng xã hội."
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -241,8 +240,8 @@ export function BotActionDialog({
 
         {/* Tiêu đề bài viết */}
         {type === 'post' && (
-          <Field label="Tiêu đề bài viết" hint="Tùy chọn">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="Nhập tiêu đề hoặc để AI tự đặt..." />
+          <Field label="Tiêu đề bài viết">
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder="Nhập tiêu đề (hoặc để AI tạo)" />
           </Field>
         )}
 
@@ -252,7 +251,7 @@ export function BotActionDialog({
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                 <Sparkles className="size-3.5 text-primary" />
-                {type === 'post' ? 'Gợi ý chủ đề cho AI' : 'Gợi ý góc nhìn cho AI'}
+                {type === 'post' ? 'Chủ đề' : 'Gợi ý cho AI'}
               </span>
               <Button
                 type="button"
@@ -264,14 +263,14 @@ export function BotActionDialog({
                 className="border-primary/30 text-primary hover:bg-primary/10"
               >
                 {generating ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                {type === 'post' ? 'AI viết bài theo Soul' : 'AI viết bình luận theo Soul'}
+                {type === 'post' ? 'AI viết bài' : 'AI viết bình luận'}
               </Button>
             </div>
             <Input
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               maxLength={200}
-              placeholder={type === 'post' ? 'Ví dụ: Mẹo ôn thi cuối kỳ, chia sẻ tài liệu môn Giải tích...' : 'Ví dụ: Đưa ra lời khuyên hữu ích, hỏi thăm kinh nghiệm học nhóm...'}
+              placeholder={type === 'post' ? 'Chủ đề cần đăng...' : 'Góc nhìn / ý chính muốn phản hồi...'}
               className="mt-2 text-sm"
             />
           </div>
@@ -279,16 +278,13 @@ export function BotActionDialog({
 
         {/* Nội dung bài / bình luận */}
         {type !== 'like' && (
-          <Field
-            label={type === 'post' ? 'Nội dung bài viết' : 'Nội dung bình luận'}
-            hint="Có thể chỉnh sửa nội dung do AI sinh trước khi đăng"
-          >
+          <Field label={type === 'post' ? 'Nội dung bài viết' : 'Nội dung bình luận'}>
             <Textarea
               rows={type === 'post' ? 6 : 3}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={5000}
-              placeholder={type === 'post' ? 'Nhập nội dung bài viết hoặc bấm nút AI viết bài ở trên...' : 'Nhập nội dung bình luận hoặc bấm nút AI viết bình luận ở trên...'}
+              placeholder={type === 'post' ? 'Nội dung bài viết...' : 'Nội dung bình luận...'}
             />
           </Field>
         )}

@@ -41,8 +41,8 @@ export function BotProfileDialog({
       open
       onClose={onClose}
       size="lg"
-      title={`@${bot.username}`}
-      description={`${bot.displayName} · mọi quyền mặc định tắt, bật từng việc cho từng bot`}
+      title={`Cấu hình @${bot.username}`}
+      description={bot.displayName}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -57,24 +57,21 @@ export function BotProfileDialog({
       <div className="space-y-5">
         <label className="flex items-center gap-2 text-sm font-medium">
           <Checkbox checked={draft.enabled} onChange={(v) => set('enabled', v)} label="Bot đang hoạt động" /> Bot đang hoạt động
-          <span className="font-normal text-muted-foreground">(tắt ⇒ không làm gì kể cả lệnh thủ công)</span>
         </label>
 
-        <Field label="Việc được phép">
+        <Field label="Quyền hạn">
           <div className="space-y-2">
             {FLAGS.map((f) => (
               <label key={f.key} className="flex items-start gap-2 text-sm">
                 <Checkbox checked={draft[f.key]} onChange={(v) => set(f.key, v)} label={f.label} className="mt-0.5" />
                 <span>
-                  <span className="font-medium">{f.label}</span> <span className="text-muted-foreground">— {f.hint}</span>
+                  <span className="font-medium">{f.label}</span>
                 </span>
               </label>
             ))}
             <label className="flex items-start gap-2 text-sm">
               <Checkbox checked={draft.interactHumans} onChange={(v) => set('interactHumans', v)} label="Tương tác bài người thật" className="mt-0.5" />
-              <span>
-                <span className="font-medium">Tương tác bài của người thật</span> <span className="text-muted-foreground">— tắt: chỉ tương tác với bot. Bật: bình luận/thả tim bài người thật liên quan chủ đề và trả lời người thật bình luận dưới bài của chính bot.</span>
-              </span>
+              <span className="font-medium">Tương tác bài của người thật</span>
             </label>
           </div>
         </Field>

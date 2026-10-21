@@ -23,11 +23,10 @@ export function ProvidersPanel({
 
   return (
     <section>
-      <div className="mb-2 flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Provider</h2>
-        <span className="text-xs text-muted-foreground">Lỗi gateway ⇒ tự chuyển provider kế tiếp</span>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Provider</h3>
         {canManage && (
-          <Button size="sm" className="ml-auto" onClick={() => setEdit({})}>
+          <Button size="sm" onClick={() => setEdit({})}>
             <Plus /> Thêm
           </Button>
         )}
@@ -53,12 +52,10 @@ export function ProvidersPanel({
 
       {data.items.length === 0 && data.env.length === 0 && (
         <Card className="mb-2 flex flex-wrap items-center gap-3 border-dashed border-border px-4 py-4 text-xs text-muted-foreground">
-          <p className="min-w-0 flex-1">
-            Chưa có provider nào được cấu hình. N7AI chỉ hoạt động khi admin thêm ít nhất một gateway OpenAI-compatible.
-          </p>
+          <p className="min-w-0 flex-1">Chưa có provider nào.</p>
           {canManage && (
             <Button size="sm" onClick={() => setEdit({})}>
-              <Plus /> Thêm provider đầu tiên
+              <Plus /> Thêm
             </Button>
           )}
         </Card>

@@ -7,6 +7,17 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Tinh gọn giao diện AI Admin Console: 3 mục chuẩn mực LLM, RAG, OCR & Clean text (2026-10-22)**:
+  - **Tối giản hóa cấu trúc theo 3 mục AI cốt lõi**:
+    - **LLM**: Gom nhóm gọn gàng Provider (Gateways) và Model Mapping, loại bỏ hoàn toàn các dòng hint văn bản thừa (`Lỗi gateway => tự chuyển...`, `Tắt model => người đang chọn...`).
+    - **RAG**: Đặt tên chuẩn mực và súc tích (thay cho `Embedding (RAG Vector)`), quản lý endpoint vector embedding với thông tin Base URL, Model, Key hint và thời gian cập nhật.
+    - **OCR**: Đặt tên chuẩn mực và súc tích (thay cho `OCR (Tài liệu & PDF Scan)`), quản lý endpoint nhận diện văn bản với Base URL, Model, Key hint và giới hạn trang.
+  - **Bổ sung bộ chuyển mục Segmented (`Tất cả | LLM | RAG | OCR`)**: Cho phép quản trị viên xem đồng thời cả 3 mục hoặc lọc nhanh vào từng mục cụ thể; hỗ trợ mở trực tiếp qua URL.
+  - **Clean text toàn diện**:
+    - Đổi tên tab quản trị từ `Mô hình & Dịch vụ` sang `LLM, RAG, OCR` ([`ai-ops-tab.tsx`](apps/admin/src/tabs/ai-ops-tab.tsx)).
+    - Xóa bỏ toàn bộ các khối header/subtext rườm rà (`Dịch vụ AI bổ trợ`, `Cấu hình endpoint OpenAI-compatible...`).
+    - Rút gọn nhãn trạng thái (`Bật`/`Tắt`), API key (`…tcoi` hoặc `Không`), và nút hành động trong các thẻ và dialog.
+
 - [x] **Chuyển giao toàn diện Quản lý Embedding & OCR lên Admin Console & Loại bỏ biến môi trường AI khỏi VPS (2026-10-22)**:
   - **Loại bỏ biến môi trường thừa**: Xóa bỏ hoàn toàn `EMBED_BASE_URL`, `EMBED_MODEL`, `AI_FALLBACK_*`, `OCR_BASE_URL`, `OCR_API_KEY`, `OCR_MODEL` khỏi file `.env` trên máy chủ VPS; chuyển 100% trách nhiệm cấu hình các dịch vụ AI bổ trợ sang Admin Console (`/admin/#/ai?tab=llm`).
   - **Quản lý Dịch vụ AI bổ trợ trên Admin Console ([`ai-services-panel.tsx`](apps/admin/src/features/llm/ai-services-panel.tsx))**:

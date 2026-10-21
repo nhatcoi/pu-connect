@@ -25,11 +25,10 @@ export function ModelsPanel({
 
   return (
     <section>
-      <div className="mb-2 flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">Model</h2>
-        <span className="text-xs text-muted-foreground">Tắt model ⇒ người đang chọn về model mặc định</span>
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Model</h3>
         {canManage && (
-          <Button size="sm" className="ml-auto" onClick={() => setEdit({})}>
+          <Button size="sm" onClick={() => setEdit({})}>
             <Plus /> Thêm
           </Button>
         )}

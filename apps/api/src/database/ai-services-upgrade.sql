@@ -14,9 +14,9 @@ CREATE TABLE IF NOT EXISTS ai_services (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Seed mặc định nếu chưa có
+-- Seed mặc định hoặc cập nhật tên chuẩn gọn
 INSERT INTO ai_services (service, name, enabled, base_url, model, key_hint, max_pages)
 VALUES 
-  ('embedding', 'Embedding (RAG Vector)', TRUE, 'http://127.0.0.1:11435/v1', 'qwen3-embedding:0.6b', '', 30),
-  ('ocr', 'OCR (Tài liệu & PDF Scan)', TRUE, 'https://api-ai.vnhat.dev/v1', 'gemini-3.7-flash-medium', '', 30)
-ON CONFLICT (service) DO NOTHING;
+  ('embedding', 'RAG', TRUE, 'http://127.0.0.1:11435/v1', 'qwen3-embedding:0.6b', '', 30),
+  ('ocr', 'OCR', TRUE, 'https://api-ai.vnhat.dev/v1', 'gemini-3.7-flash-medium', '', 30)
+ON CONFLICT (service) DO UPDATE SET name = EXCLUDED.name;

@@ -81,7 +81,6 @@ export function BotImportDialog({ open, onClose }: { open: boolean; onClose: () 
       onClose={close}
       size="lg"
       title="Import Excel / CSV"
-      description="Mỗi dòng là một bài hẹn giờ. Có giờ ⇒ đăng đúng giờ, không giờ ⇒ giãn cách. Không ghi bot ⇒ hệ thống chia đều cho bot được phép đăng bài."
       footer={
         <>
           <Button variant="ghost" onClick={close}>

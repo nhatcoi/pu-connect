@@ -161,7 +161,7 @@ export class AiServicesConfigService implements OnModuleInit {
     return {
       embedding: {
         service: 'embedding',
-        name: 'Embedding (RAG Vector)',
+        name: 'RAG',
         enabled: emb.enabled,
         baseUrl: emb.baseUrl,
         keyHint: emb.keyHint,
@@ -170,7 +170,7 @@ export class AiServicesConfigService implements OnModuleInit {
       },
       ocr: {
         service: 'ocr',
-        name: 'OCR (Tài liệu & PDF Scan)',
+        name: 'OCR',
         enabled: ocr.enabled,
         baseUrl: ocr.baseUrl,
         keyHint: ocr.keyHint,

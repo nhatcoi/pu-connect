@@ -18,10 +18,10 @@ export function AiConfigCard({ data }: { data: AdminBotOverview }) {
 
   return (
     <Card>
-      <CardHeader title="AI viết nội dung" description="Model dùng khi bot tự đăng theo soul, bình luận/trả lời, và khi “AI viết lại” nội dung import." />
+      <CardHeader title="AI viết nội dung" />
       <div className="space-y-4 p-4 pt-0">
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Model" hint="api-ai.vnhat.dev">
+          <Field label="Model">
             <Select
               value={custom ? '__custom' : model}
               onChange={(e) => {
@@ -63,7 +63,7 @@ export function TopicsCard({ topics }: { topics: AdminBotTopic[] }) {
 
   return (
     <Card>
-      <CardHeader title={`Chủ đề được phép (${topics.length})`} description="Bot chỉ đăng/tương tác trong chủ đề được cấp và đang bật. Từ khóa cách nhau bằng dấu phẩy." />
+      <CardHeader title={`Chủ đề (${topics.length})`} />
       <div className="divide-y divide-border border-t border-border">
         {topics.map((t) => (
           <div key={t.slug} className="flex items-start gap-3 px-4 py-2.5 text-sm">

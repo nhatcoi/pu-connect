@@ -74,10 +74,9 @@ export function BotAccountsTab({
       <Card>
         <CardHeader
           title={`Danh sách Bot (${data.bots.length})`}
-          description="Quản lý danh tính, phong cách (Soul) và ra lệnh điều hành từng Bot."
           action={
             <Button variant="primary" onClick={() => setAccount({ bot: null })}>
-              <Plus /> Khởi tạo Bot mới
+              <Plus /> Khởi tạo Bot
             </Button>
           }
         />
@@ -85,8 +84,7 @@ export function BotAccountsTab({
         {data.bots.length === 0 ? (
           <EmptyState
             icon={Bot}
-            title="Chưa có tài khoản bot nào"
-            description="Bấm 'Khởi tạo Bot mới' để tạo nhân vật bot đầu tiên."
+            title="Chưa có bot nào"
           />
         ) : (
           <Table className="rounded-none border-x-0 border-b-0">
@@ -208,7 +206,7 @@ export function BotAccountsTab({
         open={!!removing}
         onClose={() => setRemoving(null)}
         title={`Xóa bot @${removing?.username ?? ''}?`}
-        description="Xóa tài khoản kèm toàn bộ bài viết, bình luận và tương tác của bot này. Thao tác không thể khôi phục."
+        description="Hành động này không thể hoàn tác."
         confirmLabel="Xóa bot"
         loading={remove.isPending}
         onConfirm={() => removing && remove.mutate(removing)}

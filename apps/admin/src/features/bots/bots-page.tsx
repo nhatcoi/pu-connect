@@ -19,7 +19,6 @@ export function BotsPage() {
     <>
       <PageHeader
         title="Quản lý & Điều hành Bot"
-        description="Khởi tạo tài khoản Bot, thiết lập tính cách (Soul) và ra lệnh điều hành đăng bài, bình luận, thả tim trực tiếp với sự hỗ trợ của AI."
         actions={
           <Button variant="primary" onClick={() => setAction({})}>
             <Zap className="size-4" /> Điều hành nhanh
@@ -58,8 +57,7 @@ export function BotsPage() {
 }
 
 function BotStatsOverview({
-  data,
-  onQuickCommand
+  data
 }: {
   data: AdminBotOverview
   onQuickCommand: () => void
@@ -68,22 +66,7 @@ function BotStatsOverview({
 
   return (
     <Card>
-      <CardHeader
-        title={
-          <span className="flex items-center gap-2">
-            <span>Hệ thống Bot PU Connector</span>
-            <Badge tone="success" dot>
-              Bộ chỉ huy sẵn sàng
-            </Badge>
-          </span>
-        }
-        description="Bot hoạt động trực tiếp trên nền tảng, tự động hóa tương tác và kết nối cộng đồng sinh viên Phenikaa."
-        action={
-          <Button size="sm" variant="outline" onClick={onQuickCommand}>
-            <Sparkles className="size-3.5 text-primary" /> Ra lệnh cho Bot
-          </Button>
-        }
-      />
+      <CardHeader title="Tổng quan" />
       <div className="p-4 pt-0">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
           <Stat

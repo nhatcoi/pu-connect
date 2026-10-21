@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { CheckCircle2, Edit2, Play, Sparkles, XCircle } from 'lucide-react'
-import type { AdminAiServiceItem, AdminAiServicesOverview, AiServiceType } from '@pu/schemas'
+import { Edit2, Play } from 'lucide-react'
+import type { AdminAiServiceItem, AdminAiServicesOverview } from '@pu/schemas'
 import { Badge, Button, Card, CardHeader, Dialog, Field, Input } from '@/components/ui'
 import { formatRelativeTime } from '@/lib/api'
 import type { LlmActions } from './use-llm'
@@ -14,53 +14,49 @@ export function AiServicesPanel({
   canManage: boolean
   actions: LlmActions
 }) {
-  const [editing, setEditing] = useState<AdminAiServiceItem | null>(null)
+  const [editing, setEditing] = useState<{ item: AdminAiServiceItem; title: string } | null>(null)
 
   if (!data) return null
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary" /> Dịch vụ AI bổ trợ (RAG & OCR)
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Cấu hình endpoint OpenAI-compatible cho vector embedding và nhận diện văn bản PDF scan.
-        </p>
-      </div>
-
+    <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ServiceCard
+          title="RAG"
           item={data.embedding}
           canManage={canManage}
           actions={actions}
-          onEdit={() => setEditing(data.embedding)}
+          onEdit={() => setEditing({ item: data.embedding, title: 'RAG' })}
         />
         <ServiceCard
+          title="OCR"
           item={data.ocr}
           canManage={canManage}
           actions={actions}
-          onEdit={() => setEditing(data.ocr)}
+          onEdit={() => setEditing({ item: data.ocr, title: 'OCR' })}
         />
       </div>
 
       {editing && (
         <ServiceDialog
-          item={editing}
+          item={editing.item}
+          title={editing.title}
           onClose={() => setEditing(null)}
           actions={actions}
         />
       )}
-    </div>
+    </>
   )
 }
 
-function ServiceCard({
+export function ServiceCard({
+  title,
   item,
   canManage,
   actions,
   onEdit
 }: {
+  title: string
   item: AdminAiServiceItem
   canManage: boolean
   actions: LlmActions
@@ -72,18 +68,10 @@ function ServiceCard({
     <Card className="flex flex-col justify-between">
       <div>
         <CardHeader
-          title={item.name}
+          title={title}
           action={
             <Badge tone={item.enabled ? 'success' : 'neutral'}>
-              {item.enabled ? (
-                <span className="flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" /> Đang bật
-                </span>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <XCircle className="h-3 w-3" /> Tắt
-                </span>
-              )}
+              {item.enabled ? 'Bật' : 'Tắt'}
             </Badge>
           }
         />
@@ -91,7 +79,7 @@ function ServiceCard({
           <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
             <span className="text-muted-foreground">Base URL</span>
             <span className="font-mono text-foreground truncate max-w-[240px] text-right" title={item.baseUrl || 'Chưa đặt'}>
-              {item.baseUrl || <span className="text-muted-foreground italic">Chưa đặt</span>}
+              {item.baseUrl || <span className="text-muted-foreground">—</span>}
             </span>
           </div>
 
@@ -102,15 +90,15 @@ function ServiceCard({
 
           <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
             <span className="text-muted-foreground">API key</span>
-            <span className="text-foreground">
-              {item.keyHint ? `Đã lưu (…${item.keyHint})` : <span className="text-muted-foreground italic">Không dùng key</span>}
+            <span className="text-foreground font-mono">
+              {item.keyHint ? `…${item.keyHint}` : <span className="text-muted-foreground">Không</span>}
             </span>
           </div>
 
           {item.service === 'ocr' && (
             <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
               <span className="text-muted-foreground">Giới hạn trang</span>
-              <span className="text-foreground font-medium">{item.maxPages || 30} trang / tệp</span>
+              <span className="text-foreground font-medium">{item.maxPages || 30} trang</span>
             </div>
           )}
 
@@ -140,12 +128,14 @@ function ServiceCard({
   )
 }
 
-function ServiceDialog({
+export function ServiceDialog({
   item,
+  title,
   onClose,
   actions
 }: {
   item: AdminAiServiceItem
+  title?: string
   onClose: () => void
   actions: LlmActions
 }) {
@@ -176,14 +166,14 @@ function ServiceDialog({
     <Dialog
       open
       onClose={onClose}
-      title={`Cấu hình ${item.name}`}
+      title={`Cấu hình ${title || item.name}`}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
             Hủy
           </Button>
           <Button variant="primary" loading={actions.updateService.isPending} onClick={submit}>
-            Lưu thay đổi
+            Lưu
           </Button>
         </>
       }
@@ -202,7 +192,7 @@ function ServiceDialog({
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Tên Model">
+          <Field label="Model">
             <Input
               required
               value={form.model}
@@ -213,7 +203,7 @@ function ServiceDialog({
           </Field>
 
           {item.service === 'ocr' ? (
-            <Field label="Số trang tối đa">
+            <Field label="Giới hạn trang">
               <Input
                 type="number"
                 min={1}
@@ -228,7 +218,7 @@ function ServiceDialog({
                 type="password"
                 autoComplete="off"
                 value={form.apiKey}
-                placeholder={item.keyHint ? `Đang lưu …${item.keyHint}` : 'Tùy chọn'}
+                placeholder={item.keyHint ? `…${item.keyHint}` : 'Tùy chọn'}
                 className="font-mono text-xs"
                 onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
               />
@@ -242,7 +232,7 @@ function ServiceDialog({
               type="password"
               autoComplete="off"
               value={form.apiKey}
-              placeholder={item.keyHint ? `Đang lưu …${item.keyHint}` : 'Tùy chọn'}
+              placeholder={item.keyHint ? `…${item.keyHint}` : 'Tùy chọn'}
               className="font-mono text-xs"
               onChange={(e) => setForm({ ...form, apiKey: e.target.value })}
             />
@@ -255,7 +245,7 @@ function ServiceDialog({
             checked={form.enabled}
             onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
           />
-          Kích hoạt dịch vụ
+          Bật
         </label>
       </form>
     </Dialog>
