@@ -16,6 +16,7 @@ import { SemanticScholarService } from './connectors/semantic-scholar.service'
 import { WebReaderService } from './connectors/web-reader.service'
 import { AiModelCatalogService } from './ai-model-catalog.service'
 import { AiProviderRegistry } from './ai-provider.registry'
+import { AiServicesConfigService } from './ai-services-config.service'
 import { LlmService } from './llm.service'
 import { EmbeddingService } from './rag/embedding.service'
 import { OcrService } from './rag/ocr.service'
@@ -30,6 +31,7 @@ import { RagSearchService } from './rag/rag-search.service'
   imports: [StorageModule, BullModule.registerQueue({ name: RAG_INDEX_QUEUE })],
   controllers: [PuConnectorController, AiConnectorsController],
   providers: [
+    AiServicesConfigService,
     LlmService,
     AiProviderRegistry,
     AiModelCatalogService,
@@ -51,6 +53,7 @@ import { RagSearchService } from './rag/rag-search.service'
     RagIndexQueue
   ],
   exports: [
+    AiServicesConfigService,
     PuConnectorService,
     LlmService,
     AiProviderRegistry,

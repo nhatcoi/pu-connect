@@ -7,6 +7,17 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Chuyển giao toàn diện Quản lý Embedding & OCR lên Admin Console & Loại bỏ biến môi trường AI khỏi VPS (2026-10-22)**:
+  - **Loại bỏ biến môi trường thừa**: Xóa bỏ hoàn toàn `EMBED_BASE_URL`, `EMBED_MODEL`, `AI_FALLBACK_*`, `OCR_BASE_URL`, `OCR_API_KEY`, `OCR_MODEL` khỏi file `.env` trên máy chủ VPS; chuyển 100% trách nhiệm cấu hình các dịch vụ AI bổ trợ sang Admin Console (`/admin/#/ai?tab=llm`).
+  - **Quản lý Dịch vụ AI bổ trợ trên Admin Console ([`ai-services-panel.tsx`](apps/admin/src/features/llm/ai-services-panel.tsx))**:
+    - Hiển thị trực quan 2 thẻ dịch vụ: **Embedding (RAG Vector)** và **OCR (Tài liệu PDF/Scan)** với thông tin Base URL, Model, Key hint, giới hạn trang và trạng thái Bật/Tắt.
+    - Hộp thoại chỉnh sửa tinh gọn theo chuẩn "Clean text ít hint", dễ dàng đổi URL, model, key và bật/tắt tức thì.
+    - Tích hợp tính năng **Thử kết nối (Test connection)** trực tiếp từ Admin Console, kiểm tra độ trễ (latency ms) và phản hồi của endpoint.
+  - **Backend & Cơ sở dữ liệu**:
+    - Tạo bảng [`ai_services`](apps/api/src/database/ai-services-upgrade.sql) lưu trữ cấu hình dịch vụ AI, mã hóa API key bằng `TokenCipher` (AES-256-GCM).
+    - Tạo [`AiServicesConfigService`](apps/api/src/modules/ai/ai-services-config.service.ts) với bộ nhớ đệm cache in-memory, kết nối trực tiếp vào [`EmbeddingService`](apps/api/src/modules/ai/rag/embedding.service.ts) và [`OcrService`](apps/api/src/modules/ai/rag/ocr.service.ts) giúp áp dụng thay đổi ngay mà không cần khởi động lại server.
+
+
 - [x] **Khắc phục lỗi 404 Cannot PATCH khi lưu Model AI có ký tự đặc biệt '/' trong ID (2026-10-22)**:
   - **Nguyên nhân**: Các model upstream có chứa dấu gạch chéo `/` (vd: `a/gemini-3.8-flash-low`, `meta-llama/Llama-3-70b`) khi gửi qua URL parameter `/api/admin/ai/models/:id` bị Nginx unescape hoặc Express router tách thành nhiều path segments, dẫn đến không khớp route (`Cannot PATCH /api/admin/ai/models/a/gemini-3.8-flash-low` - 404).
   - **Khắc phục**:

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { AiServicesConfigService } from '../ai-services-config.service'
 
 // Số chiều cố định của cột vector (document_chunks, post_embeddings); model khác số chiều ⇒ phải đổi migration
 export const EMBED_DIM = 1024
@@ -33,36 +34,46 @@ export const toVectorLiteral = (v: number[]) => `[${v.join(',')}]`
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name)
-  readonly model: string
-  private readonly url: string | null
-  private readonly apiKey: string | undefined
   private downUntil = 0
+  private cachedModel: string = DEFAULT_MODEL
   private readonly cache = new Map<string, number[]>()
 
-  constructor(config: ConfigService) {
-    const base = config.get<string>('EMBED_BASE_URL')?.replace(/\/+$/, '')
-    this.url = base ? `${base}/embeddings` : null
-    this.apiKey = config.get<string>('EMBED_API_KEY') || undefined
-    this.model = config.get<string>('EMBED_MODEL') || DEFAULT_MODEL
+  get enabled(): boolean {
+    return true
   }
 
-  get enabled(): boolean {
-    return !!this.url
+  get model(): string {
+    return this.cachedModel || DEFAULT_MODEL
   }
+
+  constructor(
+    private readonly config: ConfigService,
+    private readonly aiServices?: AiServicesConfigService
+  ) {}
 
   // Đang dùng được (đã cấu hình, không trong thời gian nghỉ sau lỗi)
   get available(): boolean {
-    return !!this.url && Date.now() >= this.downUntil
+    return Date.now() >= this.downUntil
   }
 
   // Câu hỏi ⇒ vector; null khi không dùng được (nơi gọi lùi về full-text)
   async embedQuery(text: string): Promise<number[] | null> {
     if (!this.available) return null
-    const input = queryPrefix(this.model) + text.trim().slice(0, 2000)
+    const conf = this.aiServices
+      ? await this.aiServices.getEmbedding()
+      : {
+          enabled: !!this.config.get('EMBED_BASE_URL'),
+          baseUrl: (this.config.get<string>('EMBED_BASE_URL') || '').replace(/\/+$/, ''),
+          apiKey: this.config.get<string>('EMBED_API_KEY'),
+          model: this.config.get<string>('EMBED_MODEL') || DEFAULT_MODEL
+        }
+
+    if (!conf.enabled || !conf.baseUrl) return null
+    const input = queryPrefix(conf.model) + text.trim().slice(0, 2000)
     const hit = this.cache.get(input)
     if (hit) return hit
     try {
-      const [vec] = await this.request([input], QUERY_TIMEOUT_MS)
+      const [vec] = await this.request(conf.baseUrl, conf.apiKey, conf.model, [input], QUERY_TIMEOUT_MS)
       this.cache.set(input, vec)
       if (this.cache.size > QUERY_CACHE) this.cache.delete(this.cache.keys().next().value as string)
       return vec
@@ -77,11 +88,22 @@ export class EmbeddingService {
   // mục nào cũng lỗi ⇒ lỗi ở server, không phải dữ liệu
   async embedEach(texts: string[]): Promise<(number[] | null)[]> {
     if (!this.available) throw new Error('Embedding server unavailable')
+    const conf = this.aiServices
+      ? await this.aiServices.getEmbedding()
+      : {
+          enabled: !!this.config.get('EMBED_BASE_URL'),
+          baseUrl: (this.config.get<string>('EMBED_BASE_URL') || '').replace(/\/+$/, ''),
+          apiKey: this.config.get<string>('EMBED_API_KEY'),
+          model: this.config.get<string>('EMBED_MODEL') || DEFAULT_MODEL
+        }
+
+    if (!conf.enabled || !conf.baseUrl) throw new Error('Embedding server disabled')
+
     const out: (number[] | null)[] = []
     for (let i = 0; i < texts.length; i += BATCH) {
       const batch = texts.slice(i, i + BATCH)
       try {
-        out.push(...(await this.request(batch, DOCS_TIMEOUT_MS)))
+        out.push(...(await this.request(conf.baseUrl, conf.apiKey, conf.model, batch, DOCS_TIMEOUT_MS)))
       } catch (err) {
         if (isTransient(err)) {
           this.markDown(err)
@@ -89,7 +111,7 @@ export class EmbeddingService {
         }
         const single = await Promise.all(
           batch.map((t) =>
-            this.request([t], DOCS_TIMEOUT_MS).then(
+            this.request(conf.baseUrl, conf.apiKey, conf.model, [t], DOCS_TIMEOUT_MS).then(
               ([v]) => v,
               (e) => (isTransient(e) ? Promise.reject(e) : null)
             )
@@ -105,13 +127,14 @@ export class EmbeddingService {
     return out
   }
 
-  private async request(input: string[], timeout: number): Promise<number[][]> {
+  private async request(baseUrl: string, apiKey: string | undefined, model: string, input: string[], timeout: number): Promise<number[][]> {
     let res: Response
+    const url = `${baseUrl.replace(/(\/v1)?$/, '/v1')}/embeddings`
     try {
-      res = await fetch(this.url!, {
+      res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) },
-        body: JSON.stringify({ model: this.model, input }),
+        headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
+        body: JSON.stringify({ model, input }),
         signal: AbortSignal.timeout(timeout)
       })
     } catch (err: any) {

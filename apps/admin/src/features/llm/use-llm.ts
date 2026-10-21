@@ -9,16 +9,22 @@ import type {
   AdminAiProviderInput,
   AdminAiProviderList,
   AdminAiProviderPatch,
-  AdminAiProviderTest
+  AdminAiProviderTest,
+  AdminAiServicePatch,
+  AdminAiServicesOverview,
+  AdminAiServiceTestResult,
+  AiServiceType
 } from '@pu/schemas'
 import { adminApi } from '@/lib/api'
 
 const PROVIDERS = '/admin/ai/providers'
 const MODELS = '/admin/ai/models'
+const SERVICES = '/admin/ai/services'
 const ROOT = ['admin', 'ai']
 
 export const useProviders = () => useQuery({ queryKey: [...ROOT, 'providers'], queryFn: () => adminApi.get<AdminAiProviderList>(PROVIDERS), staleTime: 30_000 })
 export const useModels = () => useQuery({ queryKey: [...ROOT, 'models'], queryFn: () => adminApi.get<AdminAiModel[]>(MODELS), staleTime: 30_000 })
+export const useAiServices = () => useQuery({ queryKey: [...ROOT, 'services'], queryFn: () => adminApi.get<AdminAiServicesOverview>(SERVICES), staleTime: 30_000 })
 
 // Dò model của provider (gọi ra ngoài) — chỉ chạy khi mở hộp thoại, không cache lâu
 export const useDiscovery = (providerId: string | null) =>
@@ -83,6 +89,19 @@ export function useLlmActions() {
     removeModel: useMutation({
       mutationFn: (id: string) => adminApi.delete(`${MODELS}?id=${enc(id)}`),
       onSuccess: done('Đã xóa model'),
+      onError
+    }),
+    updateService: useMutation({
+      mutationFn: ({ service, ...b }: AdminAiServicePatch & { service: AiServiceType }) => adminApi.patch(`${SERVICES}/${service}`, b),
+      onSuccess: done('Đã lưu cấu hình dịch vụ'),
+      onError
+    }),
+    testService: useMutation({
+      mutationFn: (service: AiServiceType) => adminApi.post<AdminAiServiceTestResult>(`${SERVICES}/${service}/test`, {}),
+      onSuccess: (r, s) =>
+        r.ok
+          ? toast.success(`${s.toUpperCase()}: Kết nối tốt · ${r.latencyMs}ms`)
+          : toast.error(`${s.toUpperCase()}: ${r.error ?? 'Lỗi kết nối'}`),
       onError
     })
   }

@@ -74,7 +74,7 @@ export function AiOpsTab({ permissions, openTickets }: { permissions: AdminPermi
               { id: 'usage', label: 'Sử dụng' },
               { id: 'feedback', label: 'Phản hồi & hỗ trợ', count: openTickets },
               { id: 'skills', label: 'Skills' },
-              { id: 'llm', label: 'LLM' }
+              { id: 'llm', label: 'Mô hình & Dịch vụ' }
             ]}
           />
         }

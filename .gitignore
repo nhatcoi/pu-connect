@@ -37,6 +37,12 @@ Thumbs.db
 .turbo
 .next
 dist
+apps/web/cache
+
+# Temporary & artifacts
+index.html
+*.skill
+
 # IDE & tool configs
 .claude/*
 !.claude/skills/

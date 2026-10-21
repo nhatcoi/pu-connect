@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PDFParse } from 'pdf-parse'
+import { AiServicesConfigService } from '../ai-services-config.service'
 
 const DEFAULT_MODEL = 'gemini-3.7-flash-medium'
 const PAGE_WIDTH = 1400 // px: đủ nét cho dấu tiếng Việt, ảnh ~300KB
@@ -18,37 +19,49 @@ export class OcrRateLimitedError extends Error {}
 // Đổi sang Ollama local: OCR_BASE_URL=http://127.0.0.1:11435/v1, OCR_MODEL=qwen2.5vl:7b
 @Injectable()
 export class OcrService {
-  readonly model: string
-  readonly maxPages: number
-  private readonly url: string | null
-  private readonly apiKey: string | undefined
-
-  constructor(config: ConfigService) {
-    // Mặc định dùng AI gateway (cần AI_API_KEY); OCR_BASE_URL riêng (vd. Ollama) thì không bắt buộc key
-    const own = config.get<string>('OCR_BASE_URL')
-    const base = own || (config.get<string>('AI_API_KEY') ? config.get<string>('AI_BASE_URL') : undefined)
-    this.apiKey = own ? config.get<string>('OCR_API_KEY') || undefined : config.get<string>('AI_API_KEY')
-    this.url = base && config.get<string>('OCR_ENABLED') !== 'false' ? `${base.replace(/\/+$/, '').replace(/(\/v1)?$/, '/v1')}/chat/completions` : null
-    this.model = config.get<string>('OCR_MODEL') || DEFAULT_MODEL
-    this.maxPages = Number(config.get('OCR_MAX_PAGES') || 30)
-  }
-
   get enabled(): boolean {
-    return !!this.url
+    return true
   }
+
+  get maxPages(): number {
+    return 30
+  }
+
+  get model(): string {
+    return DEFAULT_MODEL
+  }
+
+  constructor(
+    private readonly config: ConfigService,
+    private readonly aiServices?: AiServicesConfigService
+  ) {}
 
   // Trang (đánh số từ 1) ⇒ chữ; trang lỗi riêng lẻ bị bỏ qua, 429 dừng cả tài liệu để thử lại sau
   async pdfPages(buf: Buffer, pages: number[]): Promise<Map<number, string>> {
     const out = new Map<number, string>()
-    if (!this.url || !pages.length) return out
+    if (!pages.length) return out
+
+    const conf = this.aiServices
+      ? await this.aiServices.getOcr()
+      : {
+          enabled: this.config.get<string>('OCR_ENABLED') !== 'false' && !!(this.config.get<string>('OCR_BASE_URL') || this.config.get<string>('AI_BASE_URL')),
+          baseUrl: (this.config.get<string>('OCR_BASE_URL') || this.config.get<string>('AI_BASE_URL') || '').replace(/\/+$/, ''),
+          apiKey: this.config.get<string>('OCR_API_KEY') || this.config.get<string>('AI_API_KEY'),
+          model: this.config.get<string>('OCR_MODEL') || DEFAULT_MODEL,
+          maxPages: Number(this.config.get('OCR_MAX_PAGES') || 30)
+        }
+
+    if (!conf.enabled || !conf.baseUrl) return out
+
+    const targetPages = pages.slice(0, conf.maxPages)
     const parser = new PDFParse({ data: new Uint8Array(buf) })
     try {
-      for (const page of pages) {
+      for (const page of targetPages) {
         const shot = await parser.getScreenshot({ partial: [page], desiredWidth: PAGE_WIDTH, imageDataUrl: false })
         const image = shot.pages[0]?.data
         if (!image) continue
         try {
-          out.set(page, await this.image(Buffer.from(image).toString('base64'), 'image/png'))
+          out.set(page, await this.image(conf.baseUrl, conf.apiKey, conf.model, Buffer.from(image).toString('base64'), 'image/png'))
         } catch (err) {
           if (err instanceof OcrRateLimitedError) throw err
         }
@@ -59,12 +72,13 @@ export class OcrService {
     return out
   }
 
-  private async image(base64: string, mime: string): Promise<string> {
-    const res = await fetch(this.url!, {
+  private async image(baseUrl: string, apiKey: string | undefined, model: string, base64: string, mime: string): Promise<string> {
+    const url = `${baseUrl.replace(/(\/v1)?$/, '/v1')}/chat/completions`
+    const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}) },
+      headers: { 'Content-Type': 'application/json', ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}) },
       body: JSON.stringify({
-        model: this.model,
+        model,
         max_tokens: MAX_OUTPUT_TOKENS,
         temperature: 0,
         messages: [
