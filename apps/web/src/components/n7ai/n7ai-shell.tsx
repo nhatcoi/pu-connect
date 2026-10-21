@@ -31,7 +31,7 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
       {/* Đang kéo: khóa chọn chữ, iframe không nuốt sự kiện chuột. Vào N7AI: workspace trượt từ phải vào và mờ dần giống index.html */}
       <div
         className={cn(
-          'flex min-h-screen [--app-header-height:0rem] bg-surface animate-in fade-in-0 slide-in-from-right-8 duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+          'flex h-screen md:h-dvh overflow-hidden [--app-header-height:0rem] bg-surface animate-in fade-in-0 slide-in-from-right-8 duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
           resizing && 'cursor-col-resize select-none [&_iframe]:pointer-events-none'
         )}
       >
@@ -51,8 +51,8 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
           />
         )}
 
-        <div className="w-full min-w-0 flex-1 sm:px-4">
-          <div className="mx-auto w-full max-w-[820px]">{children}</div>
+        <div className="w-full min-w-0 flex-1 sm:px-4 h-full flex flex-col overflow-hidden">
+          <div className="mx-auto w-full max-w-[820px] h-full min-h-0 flex flex-col">{children}</div>
         </div>
 
         {panelOpen && (

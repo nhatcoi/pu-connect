@@ -2,13 +2,18 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, type RefObject } from 'react'
 
-const NEAR_BOTTOM = 240
+const NEAR_BOTTOM = 160
 const GESTURES = ['wheel', 'touchstart', 'keydown', 'mousedown'] as const
 
-const toBottom = () => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' })
-const isNearBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - NEAR_BOTTOM
+const toBottom = (el: HTMLElement) => {
+  el.scrollTop = el.scrollHeight
+}
 
-// Stick-to-bottom for window-scrolled chat threads
+const isNearBottom = (el: HTMLElement) => {
+  return el.scrollHeight - el.scrollTop - el.clientHeight <= NEAR_BOTTOM
+}
+
+// Stick-to-bottom cho danh sách tin nhắn cuộn nội bộ
 // Mở hội thoại ⇒ đứng ngay tin mới nhất từ frame đầu (không lộ cảnh cuộn từ trên xuống);
 // nội dung cao dần (ảnh, markdown, AI đang trả lời, gợi ý) vẫn giữ ở đáy; người dùng tự cuộn lên ⇒ thả neo
 export function useStickToBottom(contentRef: RefObject<HTMLElement | null>, resetKey: string | undefined) {
@@ -20,8 +25,9 @@ export function useStickToBottom(contentRef: RefObject<HTMLElement | null>, rese
   useLayoutEffect(() => {
     pinned.current = true
     touched.current = false
-    toBottom()
-  }, [resetKey])
+    const el = contentRef.current
+    if (el) toBottom(el)
+  }, [resetKey, contentRef])
 
   useEffect(() => {
     const el = contentRef.current
@@ -30,29 +36,29 @@ export function useStickToBottom(contentRef: RefObject<HTMLElement | null>, rese
       touched.current = true
     }
     const onScroll = () => {
-      if (touched.current) pinned.current = isNearBottom()
-      else if (!isNearBottom()) toBottom()
+      if (touched.current) pinned.current = isNearBottom(el)
+      else if (!isNearBottom(el)) toBottom(el)
     }
-    // Cha gồm cả đầu trang / tin ghim / ô soạn ⇒ chúng đổi cao cũng giữ đáy
+    // Chiều cao danh sách tin nhắn thay đổi (ảnh load, AI stream text...) ⇒ nếu đang ở đáy thì giữ đáy
     const observer = new ResizeObserver(() => {
-      if (pinned.current) toBottom()
+      if (pinned.current) toBottom(el)
     })
     observer.observe(el)
-    if (el.parentElement) observer.observe(el.parentElement)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    for (const g of GESTURES) window.addEventListener(g, onGesture, { passive: true })
+    el.addEventListener('scroll', onScroll, { passive: true })
+    for (const g of GESTURES) el.addEventListener(g, onGesture, { passive: true })
     return () => {
       observer.disconnect()
-      window.removeEventListener('scroll', onScroll)
-      for (const g of GESTURES) window.removeEventListener(g, onGesture)
+      el.removeEventListener('scroll', onScroll)
+      for (const g of GESTURES) el.removeEventListener(g, onGesture)
     }
   }, [contentRef, resetKey])
 
   // Neo lại đáy (vd. mình vừa gửi tin)
   const stick = useCallback(() => {
     pinned.current = true
-    toBottom()
-  }, [])
+    const el = contentRef.current
+    if (el) toBottom(el)
+  }, [contentRef])
   // Chủ động rời đáy (nhảy tới tin cũ)
   const release = useCallback(() => {
     pinned.current = false

@@ -69,7 +69,7 @@ export function MessageList({
         anchor.current = first ? { id: firstId, top: first.getBoundingClientRect().top } : null
         loadOlder()
       },
-      { rootMargin: '600px 0px 0px 0px' }
+      { root: listRef.current, rootMargin: '600px 0px 0px 0px' }
     )
     observer.observe(el)
     return () => observer.disconnect()
@@ -78,7 +78,7 @@ export function MessageList({
     const a = anchor.current
     if (!a || a.id === firstId) return
     const el = document.getElementById(`msg-${a.id}`)
-    if (el) window.scrollBy(0, el.getBoundingClientRect().top - a.top)
+    if (el && listRef.current) listRef.current.scrollTop += (el.getBoundingClientRect().top - a.top)
     anchor.current = null
   }, [firstId])
 
@@ -109,7 +109,7 @@ export function MessageList({
   }
 
   return (
-    <div ref={listRef} className="flex-1 px-3 sm:px-1 pt-2 pb-4">
+    <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-1 pt-2 pb-4 overscroll-contain">
       <div ref={topRef} aria-hidden />
       {isLoadingOlder && (
         <div className="flex justify-center pb-2">

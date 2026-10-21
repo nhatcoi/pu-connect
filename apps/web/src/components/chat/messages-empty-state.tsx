@@ -11,7 +11,7 @@ interface MessagesEmptyStateProps {
 // Khung trống khi chưa chọn cuộc trò chuyện nào trên màn hình máy tính (chuẩn phong cách X/Twitter)
 export function MessagesEmptyState({ onNewChat }: MessagesEmptyStateProps) {
   return (
-    <div className="flex-1 h-full min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in-50 duration-300">
+    <div className="flex-1 h-full min-h-0 flex flex-col items-center justify-center p-6 text-center select-none animate-in fade-in-50 duration-300">
       <div className="space-y-4 max-w-sm flex flex-col items-center">
         <div className="h-16 w-16 rounded-full bg-muted/60 flex items-center justify-center text-primary shadow-xs">
           <MessageSquarePlus className="h-8 w-8 stroke-[1.75]" />

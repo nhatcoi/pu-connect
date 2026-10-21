@@ -7,6 +7,15 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Khắc phục triệt để lỗi cuộn giao diện, thanh trên trượt mất & chuẩn hóa cuộn nội bộ Tin nhắn (2026-10-21)**:
+  1. **Khóa cố định Top Bar (`Header`) chống trôi (`sticky top-0 z-40`)**: Khắc phục lỗi thanh Header trong [`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx) bị bọc trong thẻ div `overflow-hidden` thông thường khiến khi cuộn trang thì Top Bar bị trượt hẳn lên trên biến mất. Giờ đây Header luôn cố định chắc chắn ở đỉnh màn hình (`sticky top-0 z-40 w-full`), không bị trượt khi cuộn.
+  2. **Triệt tiêu thanh cuộn thừa trên các trang nội dung ngắn (Zero False Overflow)**: Sửa cấu trúc flex shell và `<main>` từ `min-h-screen` (100vh) + `pb-12` (khiến tổng chiều cao luôn vượt 100vh + 104px ngay cả khi trang rỗng) thành `min-h-[calc(100vh-3.5rem)] pb-8`. Các trang có nội dung ngắn vừa vặn màn hình (như [`/tools`](apps/web/src/app/(app)/tools/page.tsx), danh mục công cụ, trang cài đặt...) đạt tổng chiều cao đúng 100vh, hoàn toàn không xuất hiện thanh cuộn và không bị kéo trượt giao diện.
+  3. **Cuộn độc lập nội bộ phân hệ Tin nhắn (`/messages`)**:
+     - Cố định toàn bộ khung màn hình chat trong `h-[calc(100vh-3.5rem)]` và khóa cuộn cấp window (`overflow-hidden`).
+     - Cột danh sách hội thoại ([`conversation-list-pane.tsx`](apps/web/src/components/chat/conversation-list-pane.tsx)) cuộn độc lập (`overflow-y-auto`).
+     - Cột tin nhắn ([`conversation-view.tsx`](apps/web/src/components/chat/conversation-view.tsx), [`message-list.tsx`](apps/web/src/components/chat/thread/message-list.tsx)): Header và ô soạn tin (Composer) cố định ở đỉnh/đáy, chỉ luồng tin nhắn ở giữa cuộn mượt mà (`flex-1 min-h-0 overflow-y-auto`).
+     - Nâng cấp hook [`useStickToBottom`](apps/web/src/hooks/use-stick-to-bottom.ts) từ thao tác cuộn toàn window (`window.scrollTo`) sang cuộn trực tiếp trên phần tử container (`el.scrollTop`), loại bỏ hoàn toàn hiện tượng giật nảy cả layout trang.
+
 - [x] **Áp dụng bố cục và hoạt họa N7AI chuẩn theo mẫu `index.html` (2026-10-21)**: Chuyển đổi nhịp nhàng toàn diện từ Bảng tin hoặc bất kỳ trang nào sang không gian N7AI (`/n7ai`):
   1. **Đường cong chuyển động & thời gian chuẩn (`index.html`)**: Đồng bộ toàn bộ shell container, header, sidebar và main workspace theo đường cong cubic-bezier `ease-[cubic-bezier(0.2,0.8,0.2,1)]` thời lượng `400ms`.
   2. **Thanh bên điều hướng dạt sát mép trái ngoài cùng**: Khung chứa mở rộng toàn màn hình (`w-full max-w-full px-0 gap-0`), thanh bên PU Connector (`sidebar.tsx`) dạt sang sát mép trái (`left: 0`) dạng icon compact 64px (`w-16`) với tâm icon khóa cố định ở trục 32px, chiều cao full viewport `top-0 h-screen md:h-dvh py-2 border-r border-border/50 bg-surface`.

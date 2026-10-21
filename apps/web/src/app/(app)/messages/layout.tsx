@@ -24,11 +24,11 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
   return (
     <MessagesContext.Provider value={{ openNewChat: () => setNewChatOpen(true) }}>
-      <div className="w-full flex min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-4.5rem)] rounded-2xl bg-card/40 border border-border/60 overflow-hidden shadow-xs">
+      <div className="w-full flex h-full max-h-[calc(100vh-3.5rem)] rounded-2xl bg-card/40 border border-border/60 overflow-hidden shadow-xs">
         {/* 1. Cột trái: Danh sách hội thoại (full màn hình trên mobile khi chưa chọn chat, cố định 360px-390px trên desktop) */}
         <div
           className={cn(
-            'w-full md:w-[360px] lg:w-[390px] shrink-0 border-r border-border/50 flex flex-col md:sticky md:top-14 md:h-[calc(100vh-3.5rem)] bg-surface/50 transition-all',
+            'w-full md:w-[360px] lg:w-[390px] shrink-0 border-r border-border/50 flex flex-col h-full min-h-0 bg-surface/50 transition-all overflow-hidden',
             isConversationOpen && 'hidden md:flex'
           )}
         >
@@ -41,7 +41,7 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
         {/* 2. Cột phải: Chi tiết hội thoại hoặc Empty State chuẩn X */}
         <div
           className={cn(
-            'flex-1 min-w-0 flex flex-col min-h-[calc(100vh-3.5rem)] bg-surface/20 transition-all',
+            'flex-1 min-w-0 flex flex-col h-full min-h-0 bg-surface/20 transition-all overflow-hidden',
             !isConversationOpen && 'hidden md:flex'
           )}
         >

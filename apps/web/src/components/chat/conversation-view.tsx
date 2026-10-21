@@ -112,7 +112,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
   }
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-var(--app-header-height,3.5rem))]">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
       <ThreadHeader
         conversation={conv}
         typingLabel={typingLabel}
@@ -127,7 +127,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
       {chat.isLoading ? (
         <MessageThreadSkeleton />
       ) : !started ? (
-        <div className="flex-1">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {isAi ? (
             <AiWelcome mode={aiMode} onPick={pickStarter} />
           ) : (

@@ -84,7 +84,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
           <div
             className={cn(
-              'transition-all duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden',
+              'sticky top-0 z-40 w-full transition-all duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden',
               hideHeader ? 'max-h-0 opacity-0 pointer-events-none' : 'max-h-14 opacity-100'
             )}
           >
@@ -95,10 +95,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {/* N7AI: thanh bên dạt sát mép trái ngoài cùng (w-full, max-w-full, px-0, gap-0), trang thường: căn giữa 1368px */}
           <div
             className={cn(
-              'flex min-h-screen transition-[max-width,padding,gap] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+              'flex transition-[max-width,padding,gap] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
               n7ai
-                ? 'w-full max-w-full px-0 gap-0'
-                : cn('w-full mx-auto gap-6 px-4 sm:px-6', SHELL_WIDTH)
+                ? 'w-full max-w-full px-0 gap-0 min-h-screen'
+                : cn('w-full mx-auto gap-6 px-4 sm:px-6 min-h-[calc(100vh-3.5rem)]', SHELL_WIDTH)
             )}
           >
             {showSidebar && (
@@ -116,17 +116,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             )}
             <main
               className={cn(
-                'flex-1 w-full min-w-0 min-h-screen transition-[max-width] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+                'flex-1 w-full min-w-0 transition-[max-width] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
                 hideHeader
-                  ? 'pb-14 md:pb-0'
-                  : cn(
-                      compactSidebar ? 'pb-16 md:pb-6' : 'pb-20 md:pb-12',
-                      compactSidebar
-                        ? MESSAGES_WORKSPACE_WIDTH
-                        : fullWidth
-                          ? WIDE_MAIN_WIDTH
-                          : MAIN_WIDTH
-                    )
+                  ? 'min-h-screen pb-14 md:pb-0'
+                  : compactSidebar
+                    ? cn(MESSAGES_WORKSPACE_WIDTH, 'h-[calc(100vh-3.5rem)] min-h-0 overflow-hidden pb-0')
+                    : cn(fullWidth ? WIDE_MAIN_WIDTH : MAIN_WIDTH, 'min-h-[calc(100vh-3.5rem)] pb-8')
               )}
             >
               {children}
