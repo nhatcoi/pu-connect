@@ -72,7 +72,11 @@ export function useLlmActions() {
       onError
     }),
     updateModel: useMutation({
-      mutationFn: ({ id, ...b }: AdminAiModelPatch & { id: string }) => adminApi.patch(`${MODELS}/${enc(id)}`, b),
+      mutationFn: ({ currentId, id, ...b }: AdminAiModelPatch & { currentId?: string; id?: string }) => {
+        const targetId = currentId ?? id ?? ''
+        const patchBody = { ...(currentId && id ? { id } : {}), ...b }
+        return adminApi.patch(`${MODELS}/${enc(targetId)}`, patchBody)
+      },
       onSuccess: done('Đã lưu'),
       onError
     }),

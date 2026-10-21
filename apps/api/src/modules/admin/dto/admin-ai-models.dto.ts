@@ -38,6 +38,7 @@ export const AiModelBulkBodySchema = z.object({ items: z.array(AiModelCreateBody
 
 export const AiModelPatchBodySchema = z
   .object({
+    id: id.optional(),
     label: label.optional(),
     hint: hint.optional(),
     cost: cost.optional(),

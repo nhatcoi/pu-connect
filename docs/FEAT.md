@@ -9,7 +9,10 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 - [x] **Quản lý toàn diện Provider AI & Model Mapping trên Admin Console (2026-10-21)**:
   - **Bỏ config mặc định ở `.env`**: Loại bỏ `AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL`, `AI_FALLBACK_*` khỏi `.env` và `.env.example`; chuyển 100% trách nhiệm quản lý Gateway Provider và Model cho Admin Console (`/admin/#/ai?tab=llm`), lưu trữ an toàn trong PostgreSQL (`ai_providers`, `ai_models`).
-  - **Model Mapping thông minh**: Trong hộp thoại Thêm/Sửa Model ([`models-panel.tsx`](apps/admin/src/features/llm/models-panel.tsx)), khi chọn Provider ở trường trên, hệ thống tự động dò danh sách model của gateway (`useDiscovery`) và cho phép admin **chọn trực tiếp model map của provider đó** từ menu thả xuống, có tự động đề xuất tên hiển thị nếu chưa nhập và cho phép chuyển đổi sang nhập tay (`✎ Nhập tên khác (thủ công)...`) linh hoạt.
+  - **Model Mapping thông minh & Tách biệt Model Map**: Trong hộp thoại Thêm/Sửa Model ([`models-panel.tsx`](apps/admin/src/features/llm/models-panel.tsx)):
+    - Bổ sung rõ trường **"Tên model map"** (Mã định danh nội bộ N7AI, vd: `n7ai-fast`) song hành cùng **"Tên hiển thị"** (vd: `Nhanh`) và **"Model trên provider"** (vd: `gpt-o120B` / `a/gpt-oss-120b-medium`).
+    - Khi chọn Provider, hệ thống tự động dò danh sách model của gateway (`useDiscovery`) và cho phép admin **chọn trực tiếp model map của provider đó** từ menu thả xuống, có tự động đề xuất tên hiển thị và tên model map nếu chưa nhập, đồng thời hỗ trợ chuyển đổi sang nhập tay (`✎ Nhập tên khác (thủ công)...`) linh hoạt.
+    - Hỗ trợ cập nhật đổi mã model map đồng bộ sang bảng cài đặt người dùng `ai_settings` và lịch sử chạy `ai_runs`.
   - **Cảnh báo trực quan**: Danh sách model hiển thị rõ tên Provider đã gắn hoặc cảnh báo nổi bật `"Chưa gắn provider"` nếu model chưa được gán gateway.
   - **Migration Idempotent**: Bổ sung cập nhật tự động gán bất kỳ model nào chưa có `provider_id` sang provider đầu tiên đang kích hoạt ([`ai-llm-upgrade.sql`](apps/api/src/database/ai-llm-upgrade.sql)).
   - **Loại bỏ phụ thuộc env ngầm**: Tái cấu trúc [`BotImportService`](apps/api/src/modules/admin/bot-import/bot-import.service.ts) sử dụng `LlmService` chuẩn hóa thay vì gọi trực tiếp `process.env.AI_BASE_URL` / `AI_API_KEY`.

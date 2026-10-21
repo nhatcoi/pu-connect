@@ -44,6 +44,7 @@ export function ModelsPanel({
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-1.5 text-sm font-medium text-foreground">
                   {m.label}
+                  <span className="font-mono text-xs text-muted-foreground">({m.id})</span>
                   {m.isDefault && <Badge tone="primary">Mặc định</Badge>}
                   {!m.enabled && <Badge tone="danger">Tắt</Badge>}
                   {m.enabled && !m.visible && <Badge>Ẩn</Badge>}
@@ -134,7 +135,7 @@ function ModelDialog({
 }) {
   const editing = state?.model
   const defaultProviderId = providers.find((p) => p.enabled)?.id ?? providers[0]?.id ?? ''
-  const blank = { label: '', hint: '', cost: 1, visible: true, providerId: defaultProviderId, upstream: '', effort: '', maxIn: '', maxOut: '' }
+  const blank = { id: '', label: '', hint: '', cost: 1, visible: true, providerId: defaultProviderId, upstream: '', effort: '', maxIn: '', maxOut: '' }
   const [form, setForm] = useState(blank)
   const [manualInput, setManualInput] = useState(false)
   // Nạp lại form mỗi khi mở
@@ -146,6 +147,7 @@ function ModelDialog({
     setForm(
       editing
         ? {
+            id: editing.id,
             label: editing.label,
             hint: editing.hint,
             cost: editing.cost,
@@ -187,6 +189,7 @@ function ModelDialog({
         onSubmit={(e) => {
           e.preventDefault()
           const body = {
+            id: form.id.trim() || undefined,
             label: form.label.trim(),
             hint: form.hint,
             cost: form.cost,
@@ -197,14 +200,33 @@ function ModelDialog({
             maxInputTokens: num(form.maxIn),
             maxOutputTokens: num(form.maxOut)
           }
-          if (editing) actions.updateModel.mutate({ id: editing.id, ...body }, { onSuccess: onClose })
+          if (editing) actions.updateModel.mutate({ currentId: editing.id, ...body }, { onSuccess: onClose })
           else actions.createModel.mutate(body, { onSuccess: onClose })
         }}
         className="space-y-4"
       >
-        <Field label="Tên hiển thị">
-          <Input required autoFocus value={form.label} maxLength={40} placeholder="vd. Nhanh, Gemini Flash..." onChange={(e) => set({ label: e.target.value })} />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Tên hiển thị" hint="hiện cho người dùng">
+            <Input
+              required
+              autoFocus
+              value={form.label}
+              maxLength={40}
+              placeholder="vd. Nhanh, Cân bằng, Sâu..."
+              onChange={(e) => set({ label: e.target.value })}
+            />
+          </Field>
+          <Field label="Tên model map" hint="mã định danh N7AI, vd. n7ai-fast">
+            <Input
+              required
+              value={form.id}
+              maxLength={40}
+              className="font-mono"
+              placeholder="vd. n7ai-fast"
+              onChange={(e) => set({ id: e.target.value.toLowerCase().replace(/[^a-z0-9._:/-]+/g, '-') })}
+            />
+          </Field>
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Provider">
             <Select
@@ -276,9 +298,15 @@ function ModelDialog({
                   if (val === '__custom__') {
                     setManualInput(true)
                   } else {
+                    const cleanSlug = val
+                      .toLowerCase()
+                      .replace(/[^a-z0-9._:/-]+/g, '-')
+                      .replace(/^[^a-z0-9]+/, '')
+                      .slice(0, 36)
                     set({
                       upstream: val,
-                      ...(form.label.trim() ? {} : { label: val.slice(0, 40) })
+                      ...(form.label.trim() ? {} : { label: val.slice(0, 40) }),
+                      ...(form.id.trim() ? {} : { id: cleanSlug })
                     })
                   }
                 }}

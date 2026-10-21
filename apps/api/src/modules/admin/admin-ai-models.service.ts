@@ -95,6 +95,16 @@ export class AdminAiModelsService {
       const cur = await this.lock(client, id)
       if (patch.enabled === false && cur.is_default) throw new ConflictException('Không thể tắt model mặc định — hãy đặt model khác làm mặc định trước')
       if (patch.isDefault && !(patch.enabled ?? cur.enabled)) throw new ConflictException('Model đang tắt không thể làm mặc định')
+      let targetId = id
+      if (patch.id && patch.id.trim() !== id) {
+        const nextId = patch.id.trim()
+        const check = await client.query(`SELECT 1 FROM ai_models WHERE id = $1`, [nextId])
+        if (check.rowCount) throw new ConflictException(`Mã model "${nextId}" đã có trong danh mục`)
+        await client.query(`UPDATE ai_models SET id = $1 WHERE id = $2`, [nextId, id])
+        await client.query(`UPDATE ai_settings SET ai_model = $1 WHERE ai_model = $2`, [nextId, id])
+        await client.query(`UPDATE ai_runs SET model = $1 WHERE model = $2`, [nextId, id])
+        targetId = nextId
+      }
       const sets: string[] = []
       const vals: unknown[] = []
       const add = (col: string, v: unknown) => {
@@ -116,12 +126,14 @@ export class AdminAiModelsService {
       if (patch.maxOutputTokens !== undefined) add('max_output_tokens', patch.maxOutputTokens)
       if (patch.isDefault) {
         // Đúng 1 mặc định: bỏ cờ cũ trước khi đặt (unique index một phần)
-        await client.query(`UPDATE ai_models SET is_default = FALSE WHERE is_default AND id <> $1`, [id])
+        await client.query(`UPDATE ai_models SET is_default = FALSE WHERE is_default AND id <> $1`, [targetId])
         add('is_default', true)
       }
-      vals.push(id)
-      await client.query(`UPDATE ai_models SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${vals.length}`, vals)
-      await writeAudit(client, adminId, { action: 'ai_model.update', targetType: 'ai_model', targetId: id, details: { patch } })
+      if (sets.length > 0) {
+        vals.push(targetId)
+        await client.query(`UPDATE ai_models SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${vals.length}`, vals)
+      }
+      await writeAudit(client, adminId, { action: 'ai_model.update', targetType: 'ai_model', targetId: targetId, details: { patch } })
     })
     this.catalog.invalidate()
   }
