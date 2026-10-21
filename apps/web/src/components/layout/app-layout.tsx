@@ -22,7 +22,7 @@ import { useNotificationsSync } from '@/hooks/use-notifications'
 import { useChatRealtime } from '@/hooks/chat'
 import { useBlocksRealtime } from '@/hooks/use-blocks'
 import { cn } from '@/lib/utils'
-import { SHELL_WIDTH, MAIN_WIDTH, WIDE_MAIN_WIDTH, isFullWidthPath } from '@/lib/layout'
+import { SHELL_WIDTH, MAIN_WIDTH, COMPACT_MAIN_WIDTH, WIDE_MAIN_WIDTH, isFullWidthPath, isCompactSidebarPath } from '@/lib/layout'
 import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
 import { isN7AiPath } from '@/lib/n7ai-routes'
 
@@ -69,6 +69,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const immersive = n7ai || (pathname === '/' && mode === 'focus')
   // Công cụ (/tools): không cần cột phải
   const fullWidth = isFullWidthPath(pathname)
+  // Trang cần không gian rộng (/messages): thanh bên thu gọn thành icon-only giống X (Twitter)
+  const compactSidebar = isCompactSidebarPath(pathname)
   const [asideNode, setAsideNode] = useState<HTMLElement | null>(null)
   const [hasCustomAside, setHasCustomAside] = useState(false)
   const onCustomChange = React.useCallback((count: number) => setHasCustomAside(count > 0), [])
@@ -81,15 +83,36 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <RestrictionBanner />
           <GlobalDialogs />
           {/* N7AI: dùng hết chiều ngang (thanh bên sát trái, panel sát phải) */}
-          <div className={cn('mx-auto flex justify-center min-h-screen', n7ai ? 'w-full' : cn('gap-6 px-0 sm:px-4 lg:px-6', SHELL_WIDTH))}>
+          <div className={cn('mx-auto flex justify-center min-h-screen transition-all duration-300', n7ai ? 'w-full' : cn('gap-6 px-0 sm:px-4 lg:px-6', SHELL_WIDTH))}>
             {!immersive && (
-              <div className="hidden md:flex shrink-0 w-14 xl:w-56 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30">
-                <Sidebar />
+              <div
+                className={cn(
+                  'hidden md:flex shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30 transition-[width] duration-300 ease-in-out',
+                  compactSidebar ? 'w-14 xl:w-16' : 'w-14 xl:w-56'
+                )}
+              >
+                <Sidebar compact={compactSidebar} />
               </div>
             )}
-            <main className={cn('flex-1 w-full min-w-0 min-h-screen', immersive ? 'pb-14 md:pb-0' : cn('pb-20 md:pb-12', fullWidth ? WIDE_MAIN_WIDTH : MAIN_WIDTH))}>{children}</main>
+            <main
+              className={cn(
+                'flex-1 w-full min-w-0 min-h-screen transition-[max-width] duration-300 ease-in-out',
+                immersive
+                  ? 'pb-14 md:pb-0'
+                  : cn(
+                      'pb-20 md:pb-12',
+                      fullWidth
+                        ? WIDE_MAIN_WIDTH
+                        : compactSidebar
+                          ? COMPACT_MAIN_WIDTH
+                          : MAIN_WIDTH
+                    )
+              )}
+            >
+              {children}
+            </main>
             {!immersive && !fullWidth && (
-              <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar py-4">
+              <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto no-scrollbar py-4 transition-opacity duration-300">
                 {/* Cột phải riêng của trang được portal vào đây */}
                 <div ref={setAsideNode} className="space-y-4" />
                 {!hasCustomAside && <RightSidebar />}
