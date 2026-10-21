@@ -18,6 +18,7 @@ export { trackSuggestionClick, useAiQuota, useAiSuggestions } from './use-ai'
 export { presenceLabel, useOnlineCount, usePresence } from './use-presence'
 export { bumpAiThread, removeAiThread, upsertAiThread, useAiDraftThread, useAiFolders, useAiThreadActions, useAiThreadShare, useAiThreads } from './use-ai-threads'
 export { useAiLibrary } from './use-ai-library'
+export { useAiSourceContent, useAiSources } from './use-ai-sources'
 export { useSharePost } from './use-share'
 export {
   useAiConnectors,

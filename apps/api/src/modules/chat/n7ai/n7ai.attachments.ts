@@ -1,6 +1,6 @@
 import type { ChatAttachment } from '@pu/schemas'
 import type OpenAI from 'openai'
-import { DOCX_MIME, PDF_MIME, bufferToText, isExtractableMime } from '../../ai/doc-text'
+import { bufferToText, isBinaryDocMime, isExtractableMime } from '../../ai/doc-text'
 
 type Part = OpenAI.Chat.Completions.ChatCompletionContentPart
 
@@ -64,7 +64,7 @@ async function extractText(a: ChatAttachment): Promise<string> {
   const cached = textCache.get(a.key)
   if (cached !== undefined) return cached
 
-  const limit = a.mime === PDF_MIME || a.mime === DOCX_MIME ? MAX_DOC_BYTES : MAX_TEXT_BYTES
+  const limit = isBinaryDocMime(a.mime) ? MAX_DOC_BYTES : MAX_TEXT_BYTES
   const text = await bufferToText(await download(a.url, limit), a.mime)
 
   textCache.set(a.key, text)

@@ -304,6 +304,38 @@ export interface AiFolder {
 }
 export const AiFolderSchema = z.object({ name: z.string().trim().min(1, { message: 'Nhập tên thư mục' }).max(60) })
 export type AiFolderInput = z.infer<typeof AiFolderSchema>
+// Tài liệu của cuộc trò chuyện / thư viện N7AI: tệp, văn bản dán, liên kết web, YouTube (docs/core/24-n7ai-sources.md)
+export const AI_SOURCE_LIMIT = 30 // / cuộc trò chuyện
+export const AI_LIBRARY_SOURCE_LIMIT = 100 // / thư viện
+export const AI_SOURCE_TEXT_MAX = 100_000
+export type AiSourceKind = 'file' | 'text' | 'url' | 'youtube'
+export interface AiSource {
+  id: string
+  threadId: string | null // null ⇒ thư viện
+  kind: AiSourceKind
+  title: string
+  url: string | null // liên kết gốc (url, youtube)
+  attachment: ChatAttachment | null // kind = file
+  chars: number | null // độ dài văn bản đã đọc (text, url, youtube)
+  createdAt: string
+}
+const sourceThread = z.string().uuid().optional() // bỏ trống ⇒ thư viện
+export const AiSourceInputSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('file'),
+    threadId: sourceThread,
+    file: z.object({ key: z.string().min(1).max(300), name: z.string().trim().min(1).max(200), size: z.number().int().positive(), mime: z.string().max(120) })
+  }),
+  z.object({
+    type: z.literal('text'),
+    threadId: sourceThread,
+    title: z.string().trim().max(120).optional(),
+    content: z.string().trim().min(1, { message: 'Dán nội dung cần học' }).max(AI_SOURCE_TEXT_MAX, { message: 'Văn bản quá dài (tối đa 100.000 ký tự)' })
+  }),
+  z.object({ type: z.literal('link'), threadId: sourceThread, url: z.string().trim().url({ message: 'Nhập liên kết hợp lệ' }).max(2000) }),
+  z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() }) // thêm tài liệu thư viện vào cuộc trò chuyện
+])
+export type AiSourceInput = z.infer<typeof AiSourceInputSchema>
 // Lọc danh sách thread: 'all' (tìm kiếm) · 'root' (chưa vào thư mục) · id thư mục
 export type AiThreadFolderFilter = 'all' | 'root' | (string & {})
 export interface AiThreadsPage {

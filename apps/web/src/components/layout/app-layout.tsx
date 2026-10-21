@@ -14,6 +14,7 @@ import { CreatePostDialog } from '@/components/social/create-post-dialog'
 import { CreateDocumentDialog } from '@/components/social/create-document-dialog'
 import { CreateGroupDialog } from '@/components/social/create-group-dialog'
 import { DocumentPreviewModal } from '@/components/viewer/document-preview-modal'
+import { SourceViewPanel } from '@/components/n7ai/sources/source-view'
 import { FilePreviewPanel } from '@/components/viewer/file-preview-panel'
 import { AsideSlotProvider } from '@/components/layout/page-aside'
 import { useAppStore } from '@/store'
@@ -53,6 +54,7 @@ function GlobalDialogs() {
         }}
       />
       <FilePreviewPanel />
+      <SourceViewPanel />
     </>
   )
 }

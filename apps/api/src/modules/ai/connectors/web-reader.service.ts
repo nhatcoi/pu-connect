@@ -113,6 +113,12 @@ export class WebReaderService {
 
   // Tải 1 trang an toàn: kiểm tra từng chặng redirect, giới hạn kích thước & thời gian, chỉ HTML / text
   private async read(raw: string, maxChars: number): Promise<ConnectorSource | null> {
+    const page = await this.readPage(raw, maxChars).catch(() => null)
+    return page ? { id: page.url, title: page.title, body: `${page.url}\n${page.text}` } : null
+  }
+
+  // Đọc 1 trang công khai ⇒ { url cuối, tiêu đề, chữ }; lỗi: 'unsupported' (không phải HTML / text) hoặc lỗi mạng / chặn SSRF
+  async readPage(raw: string, maxChars: number): Promise<{ url: string; title: string; text: string }> {
     let url = new URL(raw)
     for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
       await assertPublicUrl(url)
@@ -126,14 +132,14 @@ export class WebReaderService {
         url = new URL(location, url)
         continue
       }
-      if (!res.ok) return null
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const type = res.headers.get('content-type') ?? ''
-      if (!/text\/(html|plain)|application\/xhtml/.test(type)) return null
+      if (!/text\/(html|plain)|application\/xhtml/.test(type)) throw new Error('unsupported')
       const body = await readCapped(res, MAX_BYTES)
       const { title, text } = type.includes('text/plain') ? { title: '', text: body } : htmlToText(body)
-      return { id: url.toString(), title: title || url.hostname, body: `${url}\n${text.slice(0, maxChars)}` }
+      return { url: url.toString(), title: title || url.hostname, text: text.slice(0, maxChars) }
     }
-    return null
+    throw new Error('too many redirects')
   }
 }
 

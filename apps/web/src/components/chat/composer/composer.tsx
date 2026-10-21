@@ -7,6 +7,7 @@ import { CHAT_MAX_REFS, type AiMode, type AiSkill, type AiSuggestion, type ChatR
 import { Button } from '@/components/ui/button'
 import { trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
+import { cn } from '@/lib/utils'
 import { AiModelPicker } from '../ai/ai-model-picker'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
@@ -14,11 +15,12 @@ import { messagePreview } from '../utils'
 import { AiModeBar } from './ai-mode-bar'
 import { AttachmentTray } from './attachment-tray'
 import { ContextChips } from './context-chips'
-import { DropOverlay } from './drop-overlay'
+import { DropHint } from './drop-hint'
 import { PickerPopover, pickerOptionId } from './picker-popover'
 import { PlusMenu } from './plus-menu'
 import { SkillsDialog } from './skills-dialog'
-import { ATTACHMENT_ACCEPT, useAttachmentUpload } from './use-attachment-upload'
+import { ATTACHMENT_ACCEPT } from './attachment-files'
+import { useAttachmentUpload } from './use-attachment-upload'
 import { useChatFileDrop } from './use-file-drop'
 import { useComposerPicker, type PickerItem } from './use-composer-picker'
 
@@ -234,10 +236,10 @@ export function Composer({
     <div
       className="sticky bottom-14 md:bottom-0 z-20 bg-surface/95 backdrop-blur-md px-3 sm:px-1 pt-2 pb-2.5"
     >
-      {dragging && <DropOverlay />}
+      {dragging && <DropHint />}
       {isAi && !editing && panelOpen && <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />}
       {isAi && !editing && <AiModeBar value={aiMode} onChange={changeMode} />}
-      <div className="relative rounded-2xl bg-card px-2.5 py-1.5">
+      <div className={cn('relative rounded-2xl bg-card px-2.5 py-1.5 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
         {picker.open && (
           <PickerPopover
             id={listId}

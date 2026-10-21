@@ -4,6 +4,7 @@ import React, { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { ChevronLeft, FileText, PanelRight, PanelRightClose, Sparkles } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
+import { useSourceView } from '../sources/source-view-store'
 import { cn } from '@/lib/utils'
 import { useN7AiLayout, type N7AiPanelTab } from '../layout/n7ai-layout-store'
 import { PanelDocs } from './panel-docs'
@@ -16,11 +17,14 @@ const TABS: { id: N7AiPanelTab; label: string; icon: typeof FileText }[] = [
 
 // Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ mở panel ở tab Tài liệu
 export function useOpenPanelOnPreview() {
-  // seq tăng mỗi lần bấm thẻ tệp (kể cả cùng tệp) ⇒ đóng panel rồi bấm lại vẫn mở
-  const seq = useFilePreview((s) => s.seq)
+  // seq tăng mỗi lần bấm thẻ tệp / tài liệu (kể cả cùng tài liệu) ⇒ đóng panel rồi bấm lại vẫn mở
+  const fileSeq = useFilePreview((s) => s.seq)
+  const sourceSeq = useSourceView((s) => s.seq)
   useEffect(() => {
-    if (seq > 0) useN7AiLayout.setState({ panelOpen: true, panelTab: 'docs' })
-  }, [seq])
+    if (fileSeq + sourceSeq > 0) useN7AiLayout.setState({ panelOpen: true, panelTab: 'docs' })
+  }, [fileSeq, sourceSeq])
+  // Rời không gian N7AI ⇒ đóng tài liệu chữ đang xem (tệp do useFilePreviewHost đóng)
+  useEffect(() => () => useSourceView.getState().close(), [])
 }
 
 // Nút mũi tên giữa mép phải khi panel đang thu gọn (desktop)

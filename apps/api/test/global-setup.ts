@@ -38,6 +38,7 @@ export const MIGRATIONS = [
   'admin-security-upgrade.sql',
   'ai-thread-share-upgrade.sql',
   'ai-folders-upgrade.sql',
+  'ai-sources-upgrade.sql',
   'comment-reactions-upgrade.sql',
   'study-tools-upgrade.sql',
   'ai-study-connector-upgrade.sql',

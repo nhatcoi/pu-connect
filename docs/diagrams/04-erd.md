@@ -54,6 +54,8 @@ erDiagram
   users ||--o{ ai_feedback : "user_id"
   users ||--o{ ai_folders : "user_id"
   ai_folders |o--o{ conversations : "ai_folder_id"
+  users ||--o{ ai_sources : "user_id"
+  conversations |o--o{ ai_sources : "thread_id"
   messages |o--o{ ai_memories : "source_message_id"
   study_sets |o--o{ ai_memories : "study_set_id"
   users ||--o{ ai_memories : "user_id"
@@ -683,6 +685,19 @@ erDiagram
     varchar name
     timestamptz created_at
     timestamptz updated_at
+  }
+  ai_sources {
+    uuid id PK
+    uuid user_id FK
+    uuid thread_id FK "NULL = thư viện"
+    varchar kind "file | text | url | youtube"
+    varchar title
+    text url
+    text file_key
+    varchar mime
+    integer size
+    text content
+    timestamptz created_at
   }
   ai_thread_shares {
     uuid conversation_id PK,FK

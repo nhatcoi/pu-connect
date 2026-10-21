@@ -3,6 +3,8 @@ import type {
   AiLibraryPage,
   AiFeedbackInput,
   AiFolder,
+  AiSource,
+  AiSourceInput,
   AiLearnerProfile,
   AiMemory,
   AiModelOption,
@@ -131,6 +133,11 @@ export const chatApi = {
   createAiFolder: (name: string) => unwrap(apiClient<Envelope<AiFolder>>('/ai/folders', json('POST', { name }))),
   renameAiFolder: (id: string, name: string) => unwrap(apiClient<Envelope<AiFolder>>(`/ai/folders/${id}`, json('PATCH', { name }))),
   deleteAiFolder: (id: string) => apiClient(`/ai/folders/${id}`, json('DELETE')),
+  // Tài liệu của cuộc trò chuyện (threadId) hoặc của thư viện (không có threadId)
+  aiSources: (threadId?: string) => unwrap(apiClient<Envelope<AiSource[]>>(`/ai/sources${threadId ? `?threadId=${threadId}` : ''}`)),
+  aiSourceContent: (id: string) => unwrap(apiClient<Envelope<{ content: string | null }>>(`/ai/sources/${id}/content`)),
+  addAiSource: (input: AiSourceInput) => unwrap(apiClient<Envelope<AiSource>>('/ai/sources', json('POST', input))),
+  deleteAiSource: (id: string) => apiClient(`/ai/sources/${id}`, json('DELETE')),
   // Chia sẻ công khai qua link (ảnh chụp tới tin cuối)
   aiThreadShare: (id: string) => unwrap(apiClient<Envelope<AiThreadShare | null>>(`/ai/threads/${id}/share`)),
   shareAiThread: (id: string) => unwrap(apiClient<Envelope<AiThreadShare>>(`/ai/threads/${id}/share`, json('POST'))),

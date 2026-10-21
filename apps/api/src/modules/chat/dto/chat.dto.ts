@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
   AiFolderInput,
+  AiSourceInput,
   AiSkillInput,
   AiThreadMoveInput,
   AiThreadUpdateInput,
@@ -90,6 +91,26 @@ export const AiLibraryQuerySchema = z.object({
 })
 export type AiLibraryQuery = z.infer<typeof AiLibraryQuerySchema>
 
+// Tài liệu của thread / thư viện (đồng bộ AiSourceInputSchema ở @pu/schemas; API không import runtime)
+export const AI_SOURCE_TEXT_MAX = 100_000
+const sourceThread = z.string().uuid().optional()
+export const AiSourceBodySchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('file'),
+    threadId: sourceThread,
+    file: z.object({ key: z.string().min(1).max(300), name: z.string().trim().min(1).max(200), size: z.number().int().positive(), mime: z.string().max(120) })
+  }),
+  z.object({
+    type: z.literal('text'),
+    threadId: sourceThread,
+    title: z.string().trim().max(120).optional(),
+    content: z.string().trim().min(1, { message: 'Dán nội dung cần học' }).max(AI_SOURCE_TEXT_MAX, { message: 'Văn bản quá dài (tối đa 100.000 ký tự)' })
+  }),
+  z.object({ type: z.literal('link'), threadId: sourceThread, url: z.string().trim().url({ message: 'Nhập liên kết hợp lệ' }).max(2000) }),
+  z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() })
+])
+export const AiSourcesQuerySchema = z.object({ threadId: z.string().uuid().optional() })
+
 export const AiThreadUpdateBodySchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
 export const AiThreadMoveBodySchema = z.object({ folderId: z.string().uuid().nullable() })
 export const AiFolderBodySchema = z.object({ name: z.string().trim().min(1, { message: 'Nhập tên thư mục' }).max(60) })
@@ -177,6 +198,7 @@ const _settings: MemberSettingsInput = {} as z.infer<typeof MemberSettingsBodySc
 const _thread: AiThreadUpdateInput = {} as z.infer<typeof AiThreadUpdateBodySchema>
 const _move: AiThreadMoveInput = {} as z.infer<typeof AiThreadMoveBodySchema>
 const _folder: AiFolderInput = {} as z.infer<typeof AiFolderBodySchema>
+const _source: AiSourceInput = {} as z.infer<typeof AiSourceBodySchema>
 const _skill: AiSkillInput = {} as z.infer<typeof AiSkillBodySchema>
 const _share: z.infer<typeof SharePostBodySchema> = {} as SharePostInput // API không strict ⇒ kiểm chiều ngược
-void [_send, _edit, _group, _update, _settings, _thread, _move, _folder, _skill, _share]
+void [_send, _edit, _group, _update, _settings, _thread, _move, _folder, _source, _skill, _share]

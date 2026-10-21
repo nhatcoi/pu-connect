@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react'
 import { CalendarCheck, FileText, GraduationCap, Layers, ListChecks, Loader2, MessagesSquare, Network, type LucideIcon } from 'lucide-react'
-import type { AiMode, ChatAttachment } from '@pu/schemas'
+import type { AiMode } from '@pu/schemas'
 import { LibraryStudy } from '@/components/n7ai/library/library-items'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { useAiLibrary, useMessages } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
-import { useThreadFiles } from './panel-docs'
+import type { DocEntry } from '../sources/doc-entries'
+import { useDocEntries } from './panel-docs'
 
 type Tool = { id: string; mode: AiMode; icon: LucideIcon; label: string; hint: string; ask: string }
 
@@ -35,7 +36,7 @@ const TOOLS: Tool[] = [
   }
 ]
 
-const requestText = (tool: Tool, file: ChatAttachment | null) => `${tool.ask} ${file ? `từ tài liệu "${file.name}"` : 'từ nội dung cuộc trò chuyện này'}.`
+const requestText = (tool: Tool, doc: DocEntry | null) => `${tool.ask} ${doc ? `từ tài liệu "${doc.title}"` : 'từ nội dung cuộc trò chuyện này'}.`
 
 // Tab Công cụ: tạo học liệu từ cả cuộc trò chuyện hoặc 1 tài liệu; học liệu đã tạo ôn ngay tại chỗ
 export function PanelTools({ threadId }: { threadId?: string }) {
@@ -52,16 +53,19 @@ export function PanelTools({ threadId }: { threadId?: string }) {
 
 function ThreadTools({ threadId }: { threadId: string }) {
   const { send } = useMessages(threadId)
-  const { files } = useThreadFiles(threadId)
+  const { entries } = useDocEntries(threadId)
   const previewing = useFilePreview((s) => s.file)
-  const [sourceUrl, setSourceUrl] = useState<string | null>(previewing?.url ?? null)
+  // undefined = chưa chọn ⇒ theo tệp đang xem trong tab Tài liệu; null = cả cuộc trò chuyện
+  const [chosen, setChosen] = useState<string | null | undefined>(undefined)
   const [busy, setBusy] = useState<string | null>(null)
-  const source = files.find((f) => f.url === sourceUrl) ?? null
+  const doc = (chosen === undefined ? entries.find((e) => previewing && e.attachment?.url === previewing.url) : entries.find((e) => e.id === chosen)) ?? null
 
   const run = async (tool: Tool) => {
     setBusy(tool.id)
     try {
-      await send({ content: requestText(tool, source), aiMode: tool.mode, attachments: source ? [source] : undefined })
+      // Tài liệu đã thêm vào cuộc trò chuyện thì N7AI tự đọc ở mọi lượt; tệp chỉ có trong tin nhắn cũ thì gửi kèm lại
+      const attachments = doc?.attachment && !doc.source ? [doc.attachment] : undefined
+      await send({ content: requestText(tool, doc), aiMode: tool.mode, attachments })
     } finally {
       setBusy(null)
     }
@@ -72,9 +76,9 @@ function ThreadTools({ threadId }: { threadId: string }) {
       <section className="space-y-1.5">
         <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Nguồn</p>
         <div className="flex flex-wrap gap-1.5">
-          <SourceChip active={!source} onClick={() => setSourceUrl(null)} label="Cả cuộc trò chuyện" />
-          {files.map((f) => (
-            <SourceChip key={f.key} active={f.url === sourceUrl} onClick={() => setSourceUrl(f.url)} label={f.name} />
+          <SourceChip active={!doc} onClick={() => setChosen(null)} label="Cả cuộc trò chuyện" />
+          {entries.map((e) => (
+            <SourceChip key={e.id} active={e.id === doc?.id} onClick={() => setChosen(e.id)} label={e.title} />
           ))}
         </div>
       </section>

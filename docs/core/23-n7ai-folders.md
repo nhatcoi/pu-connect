@@ -83,9 +83,8 @@ R2 công khai không bật CORS nên trình duyệt không tự tải byte tệp
 
 Tệp mã nguồn / dữ liệu (`.py .java .c .cpp .js .ts .json .yml .tex` …) tải lên được nhờ nhận theo đuôi; lưu trên R2 với MIME `text/plain` (không bao giờ được host như HTML/JS).
 
-### Kéo thả tệp vào chat
+### Kéo thả tệp
 
-- Thả tệp từ máy vào **bất kỳ đâu trên trang** có ô soạn tin ⇒ đính kèm (hiện lớp phủ "Thả tệp để đính kèm"). Dán ảnh / tệp từ clipboard vẫn dùng được. Hook `use-file-drop.ts`.
-- Kéo một tệp đã gửi (thẻ tệp trong chat, hàng ở tab Tài liệu) thả vào ô chat ⇒ đính kèm lại, không tải lên lần nữa. Dữ liệu kéo là `application/x-n7ai-attachment` (JSON `ChatAttachment`, kiểm bằng schema); API vẫn kiểm quyền sở hữu key khi gửi.
+Xem [`24-n7ai-sources.md`](./24-n7ai-sources.md): kéo thả theo vùng (ô chat · panel Tài liệu · thư viện) và tài liệu của cuộc trò chuyện.
 
 Thư viện N7AI mở tab **Tài liệu** đầu tiên.

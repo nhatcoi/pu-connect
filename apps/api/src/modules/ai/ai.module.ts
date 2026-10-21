@@ -61,6 +61,7 @@ import { RagSearchService } from './rag/rag-search.service'
     McpAgentService,
     RetrievalToolsService,
     SemanticScholarService,
+    WebReaderService,
     RagSearchService,
     RagIndexQueue
   ]

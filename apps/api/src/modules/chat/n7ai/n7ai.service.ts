@@ -27,6 +27,8 @@ import { AiMemoriesService } from './ai-memories.service'
 import { AiSettingsService } from './ai-settings.service'
 import { AiSkillsService } from './ai-skills.service'
 import { attachmentParts, isReadableDoc } from './n7ai.attachments'
+import { AiSourcesService } from './sources/ai-sources.service'
+import { sourceTextParts } from './sources/source-context'
 import { ACTIONS_PROMPT, FOLLOWUP_PROMPT, FollowUpSplitter, MEMORY_PROMPT, SOURCES_PROMPT } from './n7ai.followups'
 import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, learnerPrompt, profilePrompt, skillPrompt, summaryPrompt, type LearnerContext } from './n7ai.prompts'
 
@@ -86,7 +88,8 @@ export class N7AiService {
     private readonly historyTools: HistoryToolsService,
     private readonly pucTools: PucToolsService,
     private readonly conversationContext: ConversationContextService,
-    private readonly conversationTools: ConversationToolsService
+    private readonly conversationTools: ConversationToolsService,
+    private readonly sources: AiSourcesService
   ) {}
 
   private get db() {
@@ -328,14 +331,28 @@ ${convBlock.trim()}` : '') : '') +
     if (files.length) progress.done('files', notes.length ? `chưa đọc được ${notes.length} tệp` : `${files.length} tệp`)
     // Không gửi kèm tệp ⇒ dùng lại tài liệu gần nhất trong chủ đề (hỏi tiếp về cùng PDF/DOCX)
     let docNote = ''
+    let recentDocs: ChatAttachment[] = []
     if (!trigger.attachments?.length) {
       const recent = await this.recentDocuments(conversationId, trigger.id)
+      recentDocs = recent
       if (recent.length) {
         progress.start('files', 'files', 'Đọc lại tài liệu đang thảo luận', recent.map((a) => a.name).join(', '))
         const prev = await attachmentParts(recent, { images: false })
         progress.done('files')
         parts.push(...prev.parts)
         if (prev.parts.length) docNote = `\n\n(Tài liệu đang thảo luận, gửi ở tin trước: ${recent.map((a) => a.name).join(', ')})`
+      }
+    }
+    // Tài liệu đã thêm vào cuộc trò chuyện (tệp, văn bản dán, trang web, YouTube): đọc ở mọi lượt, trừ tệp đã gửi kèm ở trên
+    if (!inGroup) {
+      const shown = new Set([...(trigger.attachments ?? []), ...recentDocs].map((a) => a.key))
+      const library = await this.sources.context(trigger.senderId, conversationId, shown)
+      if (library.files.length || library.texts.length) {
+        progress.start('sources', 'files', 'Đọc tài liệu của cuộc trò chuyện', [...library.files.map((a) => a.name), ...library.texts.map((t) => t.title)].join(', '))
+        const extra = await attachmentParts(library.files)
+        progress.done('sources')
+        parts.push(...extra.parts, ...sourceTextParts(library.texts))
+        notes.push(...extra.notes)
       }
     }
     const label = inGroup ? `${trigger.senderName}: ` : ''
