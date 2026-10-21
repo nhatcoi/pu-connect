@@ -41,7 +41,8 @@ export interface AdminAiModelInput {
 }
 
 export interface AdminAiModelPatch {
-  id?: string // Tên model map (mã nội bộ N7AI)
+  currentId?: string // Mã model hiện tại trước khi sửa (hỗ trợ cả mã có ký tự đặc biệt '/')
+  id?: string // Tên model map mới (mã nội bộ N7AI)
   label?: string
   hint?: string
   cost?: number

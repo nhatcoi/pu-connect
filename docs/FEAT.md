@@ -7,6 +7,12 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Khắc phục lỗi 404 Cannot PATCH khi lưu Model AI có ký tự đặc biệt '/' trong ID (2026-10-22)**:
+  - **Nguyên nhân**: Các model upstream có chứa dấu gạch chéo `/` (vd: `a/gemini-3.8-flash-low`, `meta-llama/Llama-3-70b`) khi gửi qua URL parameter `/api/admin/ai/models/:id` bị Nginx unescape hoặc Express router tách thành nhiều path segments, dẫn đến không khớp route (`Cannot PATCH /api/admin/ai/models/a/gemini-3.8-flash-low` - 404).
+  - **Khắc phục**:
+    - **Backend ([`admin-ai-models.controller.ts`](apps/api/src/modules/admin/admin-ai-models.controller.ts))**: Hỗ trợ endpoint root `@Patch()` nhận `currentId` trực tiếp trong request body, cùng route wildcard `@Patch(':id(*)')` và `@Delete(':id(*)')`.
+    - **Admin Console ([`use-llm.ts`](apps/admin/src/features/llm/use-llm.ts))**: Gửi cập nhật model qua `PATCH /admin/ai/models` với `currentId` trong request body JSON, an toàn tuyệt đối với mọi ký tự đặc biệt; đồng thời hỗ trợ xóa model qua query parameter `?id=...`.
+
 - [x] **Tái cấu trúc & Tinh gọn toàn diện Hệ thống Bot & Bộ điều hành Bot (Bot Commander) (2026-10-22)**:
   - **Khởi tạo Bot 1-click & Mặc định sẵn sàng**:
     - Khi tạo bot mới, hệ thống tự động kích hoạt bot (`enabled: true, can_post: true, can_comment: true, can_like: true, interact_humans: true`), không bắt admin phải qua các modal cấu hình thứ cấp để cấp quyền.

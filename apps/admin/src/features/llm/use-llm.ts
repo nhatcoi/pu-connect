@@ -74,13 +74,17 @@ export function useLlmActions() {
     updateModel: useMutation({
       mutationFn: ({ currentId, id, ...b }: AdminAiModelPatch & { currentId?: string; id?: string }) => {
         const targetId = currentId ?? id ?? ''
-        const patchBody = { ...(currentId && id ? { id } : {}), ...b }
-        return adminApi.patch(`${MODELS}/${enc(targetId)}`, patchBody)
+        const patchBody = { ...(currentId && id ? { id } : {}), ...b, currentId: targetId }
+        return adminApi.patch(MODELS, patchBody)
       },
       onSuccess: done('Đã lưu'),
       onError
     }),
-    removeModel: useMutation({ mutationFn: (id: string) => adminApi.delete(`${MODELS}/${enc(id)}`), onSuccess: done('Đã xóa model'), onError })
+    removeModel: useMutation({
+      mutationFn: (id: string) => adminApi.delete(`${MODELS}?id=${enc(id)}`),
+      onSuccess: done('Đã xóa model'),
+      onError
+    })
   }
 }
 
