@@ -10,6 +10,7 @@ import { conversationTitle, presenceLabel, useAiQuota, useOnlineCount, usePresen
 import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { ConversationAvatar } from '../conversation-avatar'
 import { OpenInN7AiButton } from '../ai/open-in-n7ai'
+import { N7AiPanelButton } from '@/components/n7ai/side-panel/n7ai-side-panel'
 import { ShareThreadDialog } from '../ai/share-thread-dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -102,11 +103,14 @@ export function ThreadHeader({ conversation: conv, typingLabel, backHref, onInfo
             </Link>
           </Button>
         ) : (
-          <Button asChild variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" title="Cuộc trò chuyện mới">
-            <Link href={N7AI_HOME}>
-              <SquarePen className="h-3.5 w-3.5" /> <span className="hidden @lg:inline">Chat mới</span>
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="ghost" size="sm" className="h-8 rounded-full gap-1.5 text-xs" title="Cuộc trò chuyện mới">
+              <Link href={N7AI_HOME}>
+                <SquarePen className="h-3.5 w-3.5" /> <span className="hidden @lg:inline">Chat mới</span>
+              </Link>
+            </Button>
+            <N7AiPanelButton />
+          </>
         ))}
       {conv && (!isAi || spaceHref) && (
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0 lg:hidden" onClick={onInfo} aria-label="Thông tin hội thoại">

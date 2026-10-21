@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { ChevronLeft, FileText, PanelRightClose, Sparkles } from 'lucide-react'
+import { ChevronLeft, FileText, PanelRight, PanelRightClose, Sparkles } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { cn } from '@/lib/utils'
 import { useN7AiLayout, type N7AiPanelTab } from '../layout/n7ai-layout-store'
@@ -16,10 +16,11 @@ const TABS: { id: N7AiPanelTab; label: string; icon: typeof FileText }[] = [
 
 // Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ mở panel ở tab Tài liệu
 export function useOpenPanelOnPreview() {
-  const file = useFilePreview((s) => s.file)
+  // seq tăng mỗi lần bấm thẻ tệp (kể cả cùng tệp) ⇒ đóng panel rồi bấm lại vẫn mở
+  const seq = useFilePreview((s) => s.seq)
   useEffect(() => {
-    if (file) useN7AiLayout.setState({ panelOpen: true, panelTab: 'docs' })
-  }, [file])
+    if (seq > 0) useN7AiLayout.setState({ panelOpen: true, panelTab: 'docs' })
+  }, [seq])
 }
 
 // Nút mũi tên giữa mép phải khi panel đang thu gọn (desktop)
@@ -82,5 +83,26 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
       </div>
       <div className="flex min-h-0 flex-1 flex-col">{tab === 'docs' ? <PanelDocs threadId={threadId} /> : <PanelTools threadId={threadId} />}</div>
     </aside>
+  )
+}
+
+// Nút bật / tắt panel ở đầu hội thoại (desktop): luôn thấy, không phụ thuộc đang mở hay đóng
+export function N7AiPanelButton() {
+  const open = useN7AiLayout((s) => s.panelOpen)
+  const setOpen = useN7AiLayout((s) => s.setPanelOpen)
+  return (
+    <button
+      type="button"
+      onClick={() => setOpen(!open)}
+      aria-pressed={open}
+      title={open ? 'Thu gọn panel tài liệu' : 'Mở panel tài liệu và công cụ'}
+      aria-label="Panel tài liệu và công cụ"
+      className={cn(
+        'hidden h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted lg:flex',
+        open ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      <PanelRight className="h-4 w-4" />
+    </button>
   )
 }

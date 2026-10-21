@@ -13,10 +13,11 @@ type PreviewKind = 'pdf' | 'image' | 'video' | 'audio' | 'office' | 'text' | 'no
 
 // Tệp đang xem (mở từ thẻ tệp ở chat / thư viện / thông tin hội thoại)
 // hosted: bố cục có panel xem tệp riêng (N7AI desktop) ⇒ panel nổi chỉ dùng cho màn nhỏ
-export const useFilePreview = create<{ file: PreviewFile | null; hosted: number; open: (file: PreviewFile) => void; close: () => void }>((set) => ({
+export const useFilePreview = create<{ file: PreviewFile | null; seq: number; hosted: number; open: (file: PreviewFile) => void; close: () => void }>((set) => ({
   file: null,
+  seq: 0,
   hosted: 0,
-  open: (file) => set({ file }),
+  open: (file) => set((s) => ({ file, seq: s.seq + 1 })),
   close: () => set({ file: null })
 }))
 
