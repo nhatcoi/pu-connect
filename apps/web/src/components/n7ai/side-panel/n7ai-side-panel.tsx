@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { ChevronLeft, FileText, PanelRight, PanelRightClose, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, Sparkles } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { useSourceView } from '../sources/source-view-store'
 import { cn } from '@/lib/utils'
@@ -78,10 +78,11 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
         <button
           type="button"
           onClick={() => setOpen(false)}
+          title="Thu gọn panel"
           aria-label="Thu gọn panel"
-          className="ml-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="ml-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
-          <PanelRightClose className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
       <div className="flex min-h-0 flex-1 flex-col">{tab === 'docs' ? <PanelDocs threadId={threadId} /> : <PanelTools threadId={threadId} />}</div>
@@ -105,7 +106,7 @@ export function N7AiPanelButton({ showLabel = true }: { showLabel?: boolean }) {
         open ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
       )}
     >
-      <PanelRight className="h-3.5 w-3.5" />
+      {open ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
       {showLabel && <span>Tài liệu</span>}
     </button>
   )

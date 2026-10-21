@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Ghost, Library, PanelLeftOpen, Settings, SquarePen, type LucideIcon } from 'lucide-react'
+import { ChevronRight, Ghost, Library, Settings, SquarePen, type LucideIcon } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { N7AI_HOME, N7AI_LIBRARY, N7AI_TEMPORARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
@@ -31,7 +31,7 @@ export function N7AiRail() {
         aria-label="Mở thanh bên"
         className={cn(railButton, 'mb-2 cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground')}
       >
-        <PanelLeftOpen className="h-4 w-4" />
+        <ChevronRight className="h-4 w-4" />
       </button>
       {ITEMS.map(({ href, label, icon: Icon, exact }) => {
         const active = exact ? pathname === href : pathname.startsWith(href)

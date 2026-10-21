@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
-import { ArrowLeft, Ghost, Library, PanelLeftClose, Settings, SquarePen, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Ghost, Library, Settings, SquarePen, type LucideIcon } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { AiThreadList } from '@/components/chat/ai/ai-thread-list'
 import { N7AI_HOME, N7AI_LIBRARY, N7AI_TEMPORARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
@@ -40,9 +40,9 @@ export function N7AiSidebar() {
           onClick={toggleSidebar}
           title="Thu gọn thanh bên (Ctrl/⌘ B)"
           aria-label="Thu gọn thanh bên"
-          className="hidden h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground md:flex"
+          className="hidden h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground md:flex transition-colors"
         >
-          <PanelLeftClose className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
       </div>
       <Link href={N7AI_HOME} className={itemClass(pathname === N7AI_HOME)}>

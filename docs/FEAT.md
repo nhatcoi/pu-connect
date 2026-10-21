@@ -7,6 +7,10 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Chuẩn hóa icon mũi tên cho các nút Collapse / Panel Sidebar (`ChevronLeft` & `ChevronRight`) (2026-10-21)**: Thay thế hoàn toàn các icon ô chữ nhật/cửa sổ chia đôi nặng nề (`PanelLeftClose`, `PanelLeftOpen`, `PanelRightClose`, `PanelRight`) bằng các icon mũi tên (`ChevronLeft` và `ChevronRight`) thanh thoát, hiện đại và chuẩn xác theo hướng mở/đóng:
+  - **Sidebar trái N7AI**: Khi mở hiển thị `ChevronLeft` để thu gọn sang trái ([`n7ai-sidebar.tsx`](apps/web/src/components/n7ai/n7ai-sidebar.tsx)), khi đóng (rail) hiển thị `ChevronRight` để bung mở sang phải ([`n7ai-rail.tsx`](apps/web/src/components/n7ai/layout/n7ai-rail.tsx)).
+  - **Side panel phải N7AI**: Nút thu gọn ở tab header dùng `ChevronRight` để thu gọn về cạnh phải ([`n7ai-side-panel.tsx`](apps/web/src/components/n7ai/side-panel/n7ai-side-panel.tsx)), nút toggle `N7AiPanelButton` tự động chuyển đổi giữa `ChevronRight` (khi mở) và `ChevronLeft` (khi đóng).
+
 - [x] **Tối ưu Micro-transition chuyển trang & Chuẩn hóa Cột phải theo ngữ cảnh (`Contextual PageAside`) (2026-10-21)**:
   1. **Micro Cross-fade chuyển trang (`animate-in fade-in-50 duration-200`)**: Thay vì giật nảy hay dùng hiệu ứng trượt toàn trang gây mỏi mắt, khung App ([`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx)) bọc nội dung giữa `<main>` trong container có hiệu ứng chuyển cảnh mờ dần siêu tốc (200ms) theo từng `pathname`, giữ nguyên cố định 100% Header và Sidebar (Zero CLS).
   2. **Chuẩn hóa cột phải theo ngữ cảnh từng phân hệ (Contextual PageAside)**: Loại bỏ triệt để tình trạng hiển thị tràn lan cột "Gợi ý theo dõi" ở mọi nơi:
