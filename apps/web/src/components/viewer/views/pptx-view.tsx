@@ -27,6 +27,8 @@ export default function PptxView({ url, name }: { url: string; name: string }) {
         destroy = () => previewer.destroy()
         // pptx-preview đọc buffer trực tiếp ⇒ đưa bản sao để cache không bị ảnh hưởng
         await previewer.preview(data.slice(0))
+        // Không đọc ra slide nào (tệp lạ) ⇒ coi như lỗi để chuyển sang Office Online thay vì để khung trống
+        if (!previewer.slideCount) throw new Error('pptx: không có slide')
         if (!stale) setState('ready')
       })
       .catch(() => !stale && setState('error'))
