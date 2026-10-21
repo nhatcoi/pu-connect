@@ -34,6 +34,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 - [x] 🚫 **Loại bỏ triệt để Gamification & PBL Clutter**: Xóa bỏ vĩnh viễn việc cộng `reputation_points`, xóa nhãn "Điểm danh vọng" trên Header, PostCard, ProfileHeader, Onboarding và Comments; loại bỏ tab Nhóm PBL và tab Huy hiệu trên trang cá nhân `/[username]`.
 
 ### 🏗️ Kiến Trúc & Nền Tảng (Core & Infrastructure)
+- [x] ⚡ **Mô hình triển khai siêu tốc Mac Mini -> VPS (`deploy-mac-vps.sh` & `pnpm deploy:mac`) (2026-10-21)**: Chuyển toàn bộ tác vụ biên dịch Next.js 15 Web, NestJS API và Admin Vite sang máy local Mac Mini (Apple Silicon M-series). Thời gian build rút ngắn từ ~8 phút xuống còn **~20s trên Mac**, tự động đẩy artifacts qua `rsync` và đổi slot Blue/Green (`.next-a` / `.next-b`) không gián đoạn dịch vụ. Giảm tải 100% CPU biên dịch cho VPS 2GB RAM, loại bỏ triệt để rủi ro Kernel OOM Killer. Nâng cấp VPS thêm 3GB Swap (tổng 5GB) và SSH Keepalive làm cơ chế dự phòng ổn định cho `scripts/deploy.sh`.
 - [x] 📦 **Monorepo Turborepo + pnpm (`apps/web`, `apps/api`, `packages/schemas`)**: Tách biệt rõ ràng giữa Client, Server và Shared Library.
 - [x] ⚡ **Quản lý tiến trình tập trung (`procman.yaml`)**: Chạy toàn bộ hệ thống (`db`, `api`, `web`) chỉ với 1 lệnh `procman up`.
 - [x] 🗄️ **Cơ sở dữ liệu chuẩn hóa (`PostgreSQL 16 + pgvector`)**: Thiết kế DDL 12 bảng phân hệ học thuật, môn học, tài liệu, diễn đàn cộng đồng và tương tác.

@@ -53,7 +53,7 @@ rsync -avz --delete \
 
 # 3. Setup Remote Environment & Docker PostgreSQL
 echo -e "\n${YELLOW}[3/6] Cấu hình môi trường và khởi động PostgreSQL Docker...${NC}"
-ssh "$VPS_HOST" "bash -s" << 'REMOTE_SETUP'
+ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=6 "$VPS_HOST" "bash -s" << 'REMOTE_SETUP'
 set -e
 cd /var/www/pu-connector
 
@@ -175,7 +175,7 @@ REMOTE_SETUP
 
 # 4. Install Dependencies & Build on VPS
 echo -e "\n${YELLOW}[4/6] Cài đặt dependencies và Build Monorepo trên VPS...${NC}"
-ssh "$VPS_HOST" "bash -s" << 'REMOTE_BUILD'
+ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=6 "$VPS_HOST" "bash -s" << 'REMOTE_BUILD'
 set -e
 cd /var/www/pu-connector
 echo "Đang chạy pnpm install..."
@@ -202,8 +202,8 @@ if [ ! -d apps/web/.next-cache ] && [ -d "apps/web/$LIVE/cache" ] && [ ! -L "app
 fi
 rm -rf "apps/web/$SLOT" && mkdir -p "apps/web/$SLOT" apps/web/.next-cache
 ln -s ../.next-cache "apps/web/$SLOT/cache"  # 2 slot dùng chung cache webpack ⇒ build ấm, ít RAM
-# Ưu tiên thấp (nice/ionice): site đang chạy vẫn được CPU/IO trong lúc build
-NEXT_DIST_DIR=$SLOT NEXT_SKIP_CHECKS=1 nice -n 15 ionice -c3 pnpm --filter @pu/web build
+# Tối ưu RAM & Swap: cấp 2GB heap và nice -n 10 để build nhanh hơn mà không nghẽn CPU hệ thống
+NEXT_DIST_DIR=$SLOT NEXT_SKIP_CHECKS=1 NODE_OPTIONS="--max-old-space-size=2048" nice -n 10 ionice -c3 pnpm --filter @pu/web build
 
 # Giữ chunk JS của bản trước 7 ngày: tab đang mở HTML cũ chuyển trang vẫn tải được (tránh ChunkLoadError)
 if [ -d "apps/web/$LIVE/static" ]; then
@@ -215,7 +215,7 @@ REMOTE_BUILD
 
 # 5. Restart Systemd Services & Reload Nginx
 echo -e "\n${YELLOW}[5/6] Khởi động lại dịch vụ Systemd và Nginx...${NC}"
-ssh "$VPS_HOST" "bash -s" << 'REMOTE_SERVICES'
+ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=6 "$VPS_HOST" "bash -s" << 'REMOTE_SERVICES'
 set -e
 # pu-web đọc slot web từ .web-slot.env (drop-in, ghi đè .env)
 mkdir -p /etc/systemd/system/pu-web.service.d

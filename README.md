@@ -93,11 +93,25 @@ pnpm start
 * **API Backend:** [http://localhost:4000/api](http://localhost:4000/api)
 
 ### 5. Triển khai tự động lên Production VPS (`puc.vnhat.dev`)
-Triển khai toàn bộ hệ thống (Web, API, Docker PostgreSQL `pgvector`, Nginx Reverse Proxy và SSL Let's Encrypt) lên VPS chỉ với 1 lệnh:
-```bash
-pnpm run deploy:vps
-```
+
+Dự án hỗ trợ 2 phương thức deploy linh hoạt:
+
+* **Cách 1: Fast Deploy (Khuyên dùng) — Build trên Mac Mini rồi đẩy lên VPS (~35-45 giây):**
+  Tận dụng CPU đa nhân và RAM của máy Mac Mini để biên dịch toàn bộ Web & API trong ~25s, sau đó rsync artifacts sang VPS. VPS 2GB RAM không tốn CPU biên dịch, không bị quá tải.
+  ```bash
+  pnpm run deploy:mac
+  # hoặc: ./deploy-mac-vps.sh
+  ```
+
+* **Cách 2: Standard Deploy — Build trực tiếp trên VPS:**
+  Đẩy mã nguồn và biên dịch tuần tự trên VPS qua Blue/Green slot với 5GB Swap và 2GB Node Heap.
+  ```bash
+  pnpm run deploy:vps
+  # hoặc: bash scripts/deploy.sh
+  ```
+
 * **Production URL:** [https://puc.vnhat.dev](https://puc.vnhat.dev)
+* **Admin Console:** [https://admin-puc.vnhat.dev](https://admin-puc.vnhat.dev)
 * **REST API:** [https://puc.vnhat.dev/api](https://puc.vnhat.dev/api)
 * **GraphQL Endpoint:** [https://puc.vnhat.dev/graphql](https://puc.vnhat.dev/graphql)
 

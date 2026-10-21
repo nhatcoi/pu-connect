@@ -12,6 +12,7 @@
     "start:fe": "turbo run start --filter=@pu/web",
     "start:api": "turbo run start --filter=@pu/api",
     "deploy:vps": "bash scripts/deploy.sh",
+    "deploy:mac": "bash scripts/deploy-mac-vps.sh",
     "docs:erd": "node scripts/gen-erd.mjs",
     "user:insight": "bash scripts/ops/user-insight.sh",
     "bot:sim": "node tools/bot-simulator/daemon.mjs",
