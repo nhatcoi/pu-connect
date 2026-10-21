@@ -1,51 +1,134 @@
 # Quy Tắc Phát Triển & Chuẩn Mực Dự Án PU Connector
 
-Tài liệu này định nghĩa các quy tắc bắt buộc mà toàn bộ AI Agents và lập trình viên phải tuân thủ khi phát triển và bảo trì codebase **PU Connector**.
+Tài liệu này định nghĩa các quy tắc cốt lõi bắt buộc mà toàn bộ AI Agents (Antigravity, Claude, v.v.) và lập trình viên phải tuân thủ nghiêm ngặt khi phát triển và bảo trì codebase **PU Connector**.
 
 ---
 
 ## 🚨 1. NGUYÊN TẮC BẮT BUỘC: LUÔN CẬP NHẬT TÀI LIỆU (MANDATORY DOCS UPDATE)
 
 > [!IMPORTANT]
-> **BẤT KỂ CÓ FEAT MỚI, BUG FIX HOẶC THAY ĐỔI KIẾN TRÚC/HIỆU NĂNG NÀO, BẮT BUỘC PHẢI CẬP NHẬT TÀI LIỆU NGAY LẬP TỨC TRƯỚC KHI KẾT THÚC TASK.**
+> **BẤT KỂ CÓ TÍNH NĂNG MỚI (`feat`), SỬA LỖI (`fix`) HOẶC TỐI ƯU KIẾN TRÚC/HIỆU NĂNG (`perf`), BẮT BUỘC PHẢI CẬP NHẬT TÀI LIỆU TRƯỚC KHI KẾT THÚC TASK.**
 
-1. **Khi hoàn thành một tính năng mới (`feat`):**
-   - Cập nhật [`docs/FEAT.md`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/docs/FEAT.md): Chuyển tính năng từ mục **"Dự định làm (Backlog)"** sang mục **"Đã hoàn thành (Completed)"** với checklist `[x]`, ghi rõ component, endpoint và cơ chế hoạt động.
-   - Cập nhật `README.md` nếu có lệnh chạy mới hoặc biến môi trường mới (`.env.example`).
-2. **Khi sửa lỗi (`fix`) hoặc tối ưu hiệu năng (`perf`):**
-   - Cập nhật tài liệu kỹ thuật liên quan trong `docs/` hoặc walkthrough để ghi lại giải pháp và lý do thay đổi.
-3. **Khi thay đổi kiến trúc / module / endpoint / migration / luồng nghiệp vụ — cập nhật sơ đồ [`docs/diagrams/`](docs/diagrams/README.md):**
-   - Có migration SQL mới ⇒ chạy migration lên DB local rồi `pnpm docs:erd` (sinh lại `04-erd.md`, không sửa tay).
-   - Thêm/xóa module, endpoint, dịch vụ ngoài, trang, luồng ⇒ sửa sơ đồ Mermaid tương ứng theo bảng "Cập nhật khi" trong `docs/diagrams/README.md` và thêm dòng Changelog.
-
----
-
-## 🛠️ 2. Quy Trình Git & Commit Chuẩn (Git Workflow)
-
-- **Tham khảo Skill:** [`.agents/skills/git-workflow/SKILL.md`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/.agents/skills/git-workflow/SKILL.md)
-- **Quy tắc:**
-  - **Atomic Commits:** Chia nhỏ commit theo từng phạm vi (`feat`, `fix`, `perf`, `chore`, `docs`, `refactor`), tuyệt đối không gộp chung toàn bộ thay đổi vào 1 commit khổng lồ.
-  - **Format chuẩn:** `<type>(<scope>): <mô tả ngắn gọn>` (ví dụ: `feat(comments): add Q&A accepted solution logic`).
-  - **Kiểm tra trước khi push:** Luôn chạy `pnpm typecheck` và `pnpm build` đạt 100% trước khi `git push`.
+1. **Khi hoàn thành tính năng mới (`feat`):**
+   - Cập nhật [`docs/FEAT.md`](docs/FEAT.md): Chuyển tính năng từ **"Kế Hoạch (Roadmap)"** sang **"Đã Hoàn Thành (Completed)"** với checklist `[x]`, ghi rõ component, endpoint, migration và cơ chế vận hành.
+   - Cập nhật [`README.md`](README.md) nếu có biến môi trường mới (`.env.example`), scripts hoặc lệnh chạy mới.
+2. **Khi sửa lỗi (`fix`) hoặc tối ưu (`perf`):**
+   - Cập nhật tài liệu kỹ thuật liên quan trong `docs/core/` hoặc docs module để ghi lại nguyên nhân, giải pháp và kết quả đo đạc.
+3. **Khi thay đổi kiến trúc / DB / Endpoint / Luồng nghiệp vụ:**
+   - Khi có migration SQL mới ⇒ chạy migration lên DB local rồi chạy `pnpm docs:erd` (sinh lại [`docs/diagrams/04-erd.md`](docs/diagrams/04-erd.md), không sửa tay).
+   - Thêm/xóa module, endpoint, dịch vụ, trang ⇒ sửa sơ đồ Mermaid tương ứng trong [`docs/diagrams/`](docs/diagrams/README.md) và ghi nhận Changelog.
 
 ---
 
-## 💻 3. Chuẩn Viết Comment Trong Mã Nguồn (In-Code Comments)
+## ⚡ 2. Quản Lý State & Dữ Liệu Web (Web State & TanStack Query)
 
-- **Ngắn gọn, ít chữ, dễ hiểu:** Không viết đoạn văn dài lê thê trong code.
-- **Song ngữ tinh gọn (Anh + Việt):**
-  - `// ACID Transaction: Create post & reward rep points`
-  - `// Phân trang & Xếp hạng bài viết (Recommendation Engine)`
-  - `// Đổi trạng thái lời giải Q&A (Accept Solution)`
-  - `// Format thời gian tương đối chuẩn tiếng Việt`
+- **Tham khảo Skill:** [`.agents/skills/web-state-tanstack/SKILL.md`](.agents/skills/web-state-tanstack/SKILL.md) & [ADR `docs/core/08-web-state.md`](docs/core/08-web-state.md).
+- **Phân định rõ ràng các loại state:**
+  1. **Dữ liệu Server (Feed, Post, Profile, Comments, Search, Notifications, Chats):**
+     - **BẮT BUỘC dùng `@tanstack/react-query`** (`useQuery`, `useInfiniteQuery`) với key tập trung từ [`apps/web/src/lib/query-keys.ts`](apps/web/src/lib/query-keys.ts).
+     - **TUYỆT ĐỐI CẤM** tự fetch API bằng `useEffect` + `useState` cục bộ trong component/hook.
+     - **Cập nhật đồng bộ đa vị trí (Optimistic Everywhere):** Khi like/save/pin/edit bài viết, luôn dùng `patchPostEverywhere(qc, id, updater)` từ [`apps/web/src/lib/post-cache.ts`](apps/web/src/lib/post-cache.ts) để giữ nguyên tham chiếu và đồng bộ ngay trên Feed, Profile, Community và Search.
+  2. **UI State dùng chung (Modal, Drawer, Global Toggles):**
+     - Dùng **Zustand** theo Slice Pattern ([`apps/web/src/store/`](apps/web/src/store/)).
+     - Luôn dùng **Atomic Selector** (`useAppStore((s) => s.isCreatePostOpen)`), **CẤM** gọi `const state = useAppStore()`.
+  3. **Phiên Đăng Nhập (`useSession`):**
+     - Đồng bộ kép giữa cache TanStack `['me']` và Zustand store qua `useWriteSessionUser()` ([`apps/web/src/hooks/use-settings.ts`](apps/web/src/hooks/use-settings.ts)).
+  4. **Khung App Đơn Nhất (`AppLayout`):**
+     - Tuyệt đối không tự mount lại Header, Sidebar, BottomNav ở các trang con thuộc route group `app/(app)`.
+     - Cột phải chuyên biệt của từng trang dùng `<PageAside>` để portal vào slot layout.
 
 ---
 
-## ⚡ 4. Hiệu Năng & Cơ Sở Dữ Liệu (Database & Performance)
+## 🎨 3. UI/UX, Design Tokens & Mobile Responsive Standards
 
-- **Tham khảo Skill:** [`.agents/skills/clean-code-performance/SKILL.md`](file:///Volumes/NVME_NHAT/Documents/Dev/Projects/PROJECT/pu-connector/.agents/skills/clean-code-performance/SKILL.md)
-- **Kiến trúc Database:**
-  - Sử dụng **Native PostgreSQL Client (`pg` / `node-postgres`)** với Connection Pool (`pg.Pool`).
-  - **ACID Transactions:** Mọi luồng thay đổi dữ liệu liên hoàn (Post + User Rep + Stats, Comment + Like) phải bọc trong `this.db.transaction(async (client) => { ... })`.
-  - **Zero Layout Shift (CLS):** Toàn bộ phân trang bảng tin và bình luận phải có kích thước dự đoán trước, mượt mà khi cuộn vô hạn.
-  - **Đánh chỉ mục:** Sử dụng **GIN Index** cho các trường mảng (`tags`, `interests`, `skills`) và B-Tree Index cho `created_at DESC`.
+- **Tham khảo Skill:** [`.agents/skills/ui-ux-mobile-responsive/SKILL.md`](.agents/skills/ui-ux-mobile-responsive/SKILL.md).
+- **Semantic CSS Tokens (100% Theme Adaptive):**
+  - **CẤM** hardcode mã màu hex (`#fff`, `#000`) hay class màu tĩnh như `text-black`, `bg-gray-100`, `bg-blue-600`.
+  - Luôn dùng semantic tokens: `bg-background`, `bg-surface`, `bg-card`, `bg-muted`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `bg-brand-orange`.
+- **Animate UI & Motion Design:**
+  - Tích hợp chuẩn hóa `motion/react` + Radix UI Primitives, áp dụng Spring Physics vật lý mượt mà.
+  - **Chuyển trang & chuyển cảnh mượt mà:** Mọi thao tác UI/UX chuyển trang, chuyển cảnh, co giãn layout (Sidebar, Drawer, Panel, Tabs), mở/đóng modal hay thay đổi trạng thái UI đều phải có animate / animation UI mượt mà (`transition-all`, Spring Physics hoặc motion), tuyệt đối không đổi đột ngột gây khựng hoặc giật hình.
+- **Zero Layout Shift (CLS):**
+  - Mọi ảnh, video, avatar, container động phải có kích thước dự đoán trước (`aspect-ratio`, `w-* h-*`, `min-h-*`).
+  - Dùng **Skeleton Loaders** ([`components/ui/skeleton.tsx`](apps/web/src/components/ui/skeleton.tsx)) cho lần tải đầu tiên; chỉ dùng Spinner cho hành động click/submit.
+  - Dropdown menu trên feed/card phải đặt `modal={false}` để tránh Radix khóa cuộn body gây giật màn hình (`scrollbar-gutter: stable`).
+- **Chuẩn Responsive Mobile (< 768px):**
+  - Không để tràn ngang màn hình (`w-full min-w-0 overflow-x-hidden`).
+  - Tap target tối thiểu 36px – 44px cho ngón tay.
+  - Sử dụng Mobile Bottom Nav ([`MobileBottomNav`](apps/web/src/components/navigation/mobile-bottom-nav.tsx)) và thanh Header Mobile chuẩn 3 slot: Anchor trái, Slot giữa (Search/Logo), Action phải.
+- **Quy ước Toast vs Notification:**
+  - **Toast:** Chỉ dùng để xác nhận thao tác chủ động của chính người dùng khi kết quả không tự hiển thị ngay trên UI (sao chép link, lưu, xóa, lỗi mạng). Thao tác đã đổi trạng thái tại chỗ (nút Follow, Like) **không toast thành công**.
+  - **Notification:** Dành cho tương tác của người khác với mình (like, reply, mention, follow).
+
+---
+
+## 🗄️ 4. Backend, Database & Native PostgreSQL
+
+- **Tham khảo Skill:** [`.agents/skills/backend-db-architecture/SKILL.md`](.agents/skills/backend-db-architecture/SKILL.md).
+- **Native PostgreSQL Client (`pg.Pool`):**
+  - **TUYỆT ĐỐI CẤM** đưa Prisma, TypeORM hoặc các ORM nặng nề vào dự án. Toàn bộ truy vấn viết bằng SQL thuần tối ưu hiệu năng qua `DatabaseService.query()`.
+- **ACID Transactions với Row Locking:**
+  - Mọi luồng ghi dữ liệu từ 2 bước trở lên (Tạo bài + Mentions, Nhóm học + Chat, Khảo sát + Vote, v.v.) phải bọc trong `await this.db.transaction(async (client) => { ... })`.
+  - Sử dụng `SELECT ... FOR UPDATE` khi cập nhật các tài nguyên có tranh chấp (sĩ số nhóm học, quota PU AI, số dư/điểm).
+- **Migrations Idempotent:**
+  - Mọi file SQL trong `apps/api/src/database/*.sql` phải có tính chất idempotent: `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, `ON CONFLICT DO NOTHING/UPDATE`.
+- **Chỉ mục hiệu năng cao:**
+  - GIN Index cho các cột mảng (`tags`, `skills`, `interests`) và generated tsvector (`search_tsv`).
+  - GIN Trigram index (`pg_trgm`) cho tìm kiếm mờ không dấu.
+  - Composite B-Tree cho các điều kiện lọc kết hợp `created_at DESC`.
+- **Bảo mật & Không Mock Fallback:**
+  - CẤM fallback sang mock user ID (`req.user?.id || 'mock-id'`). Sử dụng `requireUserId(req)` từ `apps/api/src/common/http/current-user.ts` và bảo vệ bằng `AuthenticatedGuard`.
+  - Phân quyền theo vai trò rõ ràng (`RolesGuard`).
+  - Session lưu trữ tập trung tại PostgreSQL (`user_sessions`).
+
+---
+
+## 🧹 5. Clean Code & Chuẩn Mực Kỹ Thuật (Technical Hygiene)
+
+- **Tham khảo Skill:** [`.agents/skills/clean-code-performance/SKILL.md`](.agents/skills/clean-code-performance/SKILL.md).
+- **No Dumping Grounds:**
+  - **CẤM** tạo file rác không rõ domain như `utils.ts`, `helpers.ts`, `common.ts`, `misc.ts`.
+  - Luôn đặt tên theo domain nghiệp vụ cụ thể: `mention-suggest.service.ts`, `post-cache.ts`, `academic-unit-selector.tsx`.
+- **Shared Schemas (`packages/schemas`):**
+  - Mọi DTO, validation Zod schema và Type dùng chung giữa Web và API phải định nghĩa tại `packages/schemas/src/`.
+- **In-Code Comments Song Ngữ Tinh Gọn (EN + VI):**
+  - Viết ngắn gọn, súc tích, mô tả mục đích kiến trúc thay vì dịch code:
+  - `// ACID Transaction: Create post & record mentions`
+  - `// Optimistic toggle with rollback`
+  - `// Format thời gian tương đối tiếng Việt`
+- **Zero Lint & Zero Typecheck Errors:**
+  - Luôn đảm bảo `pnpm typecheck` và `pnpm lint` đạt **100% không lỗi, không cảnh báo** trước khi kết thúc task.
+
+---
+
+## 🛠️ 6. Quy Trình Git & Commit Chuẩn (Conventional Commits)
+
+- **Tham khảo Skill:** [`.agents/skills/git-workflow/SKILL.md`](.agents/skills/git-workflow/SKILL.md).
+- **Atomic Commits:** Chia nhỏ commit theo đúng phạm vi:
+  - `feat(<scope>): <mô tả>`: Tính năng mới.
+  - `fix(<scope>): <mô tả>`: Sửa lỗi.
+  - `perf(<scope>): <mô tả>`: Tối ưu hiệu năng.
+  - `refactor(<scope>): <mô tả>`: Tái cấu trúc không đổi logic.
+  - `chore(<scope>): <mô tả>`: Cấu hình, dependencies, DB migration.
+  - `docs(<scope>): <mô tả>`: Cập nhật tài liệu, diagram, skills.
+- **Quy trình kiểm tra trước khi push:**
+  ```bash
+  pnpm typecheck
+  pnpm build
+  git status
+  ```
+
+---
+
+## 🚦 7. Cổng Deploy (Deploy Gate)
+
+> [!IMPORTANT]
+> **CÁC SESSION KHÁC TUYỆT ĐỐI KHÔNG TỰ CHẠY `pnpm deploy:vps` / `scripts/deploy.sh`. MỌI DEPLOY PHẢI ĐI QUA SESSION CỔNG GÁC `DevOpsVPS-CICD`.**
+
+1. **Khi code xong và muốn deploy:** gửi `SendMessage` tới `DevOpsVPS-CICD`, kèm:
+   - Danh sách file đã sửa + commit hash đã push (chỉ stage hunk của chính mình, không kéo WIP của session khác).
+   - Tóm tắt thay đổi, có migration SQL / biến môi trường mới hay không.
+2. **Cổng gác kiểm tra trước khi deploy:** `pnpm typecheck`, `pnpm lint`, `pnpm build`, docs đã cập nhật (mục 1), migration idempotent, commit đúng Conventional Commits.
+3. **Chỉ cổng gác chạy deploy** và verify health Web / Admin / API, rồi báo lại session gốc. Fail ⇒ chặn và báo lý do, không tự sửa code của session khác.
+4. **Tên đăng ký của cổng gác là `DevOpsVPS-CICD`** (xem bằng `ListAgents`). Gửi tới tên khác sẽ không tới nơi.
+5. **`scripts/deploy.sh` rsync `--delete` cả working tree** (kể cả WIP chưa commit và file untracked của session khác), KHÔNG deploy theo commit. Cổng gác phải: (a) đọc `git status` và báo cho người yêu cầu những WIP nào sẽ bị kéo theo; (b) nếu chỉ muốn deploy commit thì tạo bản copy sạch từ `HEAD` (`git worktree` / `git archive`) rồi rsync từ đó. Không stash/revert đồ của người khác.
