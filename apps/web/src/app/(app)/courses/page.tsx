@@ -6,6 +6,8 @@ import { FileText, GraduationCap, MessageSquare, Search } from 'lucide-react'
 import { useCourses } from '@/hooks/use-course'
 import { Input } from '@/components/ui/input'
 import { CourseListSkeleton } from '@/components/skeletons/catalog-skeleton'
+import { PageAside } from '@/components/layout/page-aside'
+import { CoursesAside } from '@/components/courses/courses-aside'
 
 // Bỏ dấu tiếng Việt để tìm "giai tich" khớp "Giải tích"
 const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
@@ -23,6 +25,10 @@ export default function CoursesPage() {
 
   return (
     <>
+      <PageAside>
+        <CoursesAside />
+      </PageAside>
+
       <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 space-y-2.5">
         <h1 className="text-[15px] font-semibold tracking-tight flex items-center gap-2">
           <GraduationCap className="h-4 w-4 text-primary" /> Học phần

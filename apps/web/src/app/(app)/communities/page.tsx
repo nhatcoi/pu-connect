@@ -16,6 +16,8 @@ import { Compass, Search, Users, MessageSquare, ArrowRight, Loader2, Check, User
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CommunityCardsSkeleton } from '@/components/skeletons/catalog-skeleton'
+import { PageAside } from '@/components/layout/page-aside'
+import { CommunitiesAside } from '@/components/communities/communities-aside'
 
 const CATEGORIES = [
   { id: 'all', label: 'Tất cả' },
@@ -73,6 +75,10 @@ export default function CommunitiesDirectoryPage() {
 
   return (
     <>
+      <PageAside>
+        <CommunitiesAside />
+      </PageAside>
+
       {/* Header */}
       <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">

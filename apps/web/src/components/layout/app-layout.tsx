@@ -124,7 +124,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     : cn(fullWidth ? WIDE_MAIN_WIDTH : MAIN_WIDTH, 'min-h-[calc(100vh-3.5rem)] pb-8')
               )}
             >
-              {children}
+              <div key={pathname} className="w-full h-full animate-in fade-in-50 duration-200 ease-out">
+                {children}
+              </div>
             </main>
             {!hideHeader && (
               <aside

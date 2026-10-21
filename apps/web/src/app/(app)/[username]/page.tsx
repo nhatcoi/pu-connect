@@ -16,6 +16,8 @@ import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ProfileSkeleton } from '@/components/skeletons/profile-skeleton'
+import { PageAside } from '@/components/layout/page-aside'
+import { ProfileAside } from '@/components/profile/profile-aside'
 
 type TabType = 'posts' | 'documents' | 'questions' | ProfileActivityType
 
@@ -47,6 +49,12 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
 
   return (
     <>
+      {profile && (
+        <PageAside>
+          <ProfileAside profile={profile} isOwner={isOwner} />
+        </PageAside>
+      )}
+
       {/* Sticky Topbar with Back Button (Natural Scroll on Mobile, Sticky on Desktop) */}
       <div className="sticky top-0 md:top-14 z-30 bg-surface/90 backdrop-blur-md px-4 py-3 flex items-center gap-3">
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted cursor-pointer" onClick={() => router.push('/')}>

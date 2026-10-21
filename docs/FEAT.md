@@ -7,6 +7,15 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Tối ưu Micro-transition chuyển trang & Chuẩn hóa Cột phải theo ngữ cảnh (`Contextual PageAside`) (2026-10-21)**:
+  1. **Micro Cross-fade chuyển trang (`animate-in fade-in-50 duration-200`)**: Thay vì giật nảy hay dùng hiệu ứng trượt toàn trang gây mỏi mắt, khung App ([`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx)) bọc nội dung giữa `<main>` trong container có hiệu ứng chuyển cảnh mờ dần siêu tốc (200ms) theo từng `pathname`, giữ nguyên cố định 100% Header và Sidebar (Zero CLS).
+  2. **Chuẩn hóa cột phải theo ngữ cảnh từng phân hệ (Contextual PageAside)**: Loại bỏ triệt để tình trạng hiển thị tràn lan cột "Gợi ý theo dõi" ở mọi nơi:
+     - **Bảng tin (`/`)**: Duy trì cột `RightSidebar` (Gợi ý bạn bè, xu hướng và hoàn thiện hồ sơ) - đúng mục đích kết nối sinh viên.
+     - **Học phần (`/courses`)**: Sử dụng [`CoursesAside`](apps/web/src/components/courses/courses-aside.tsx) hiển thị các học phần sôi nổi nhất, lối tắt tới kho đề thi/tài liệu và ôn thi N7AI.
+     - **Cộng đồng (`/communities`)**: Sử dụng [`CommunitiesAside`](apps/web/src/components/communities/communities-aside.tsx) hiển thị danh sách cộng đồng của sinh viên (đã tham gia), cộng đồng nổi bật và bộ quy chuẩn văn hóa học đường Phenikaa.
+     - **Hồ sơ cá nhân (`/[username]`)**: Sử dụng [`ProfileAside`](apps/web/src/components/profile/profile-aside.tsx) hiển thị hồ sơ học thuật (Khoa/Viện, Chuyên ngành, Khóa), thống kê đóng góp và tài liệu tiêu biểu.
+     - **Thông báo (`/notifications`)**: Chuyển sang chế độ toàn cột rộng (`WIDE_MAIN_WIDTH` qua [`isFullWidthPath`](apps/web/src/lib/layout.ts)) giúp không gian đọc thông báo, tin nhắn và mention thoáng đãng, loại bỏ hoàn toàn cột thừa.
+
 - [x] **Khắc phục triệt để lỗi cuộn giao diện, thanh trên trượt mất & chuẩn hóa cuộn nội bộ Tin nhắn (2026-10-21)**:
   1. **Khóa cố định Top Bar (`Header`) chống trôi (`sticky top-0 z-40`)**: Khắc phục lỗi thanh Header trong [`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx) bị bọc trong thẻ div `overflow-hidden` thông thường khiến khi cuộn trang thì Top Bar bị trượt hẳn lên trên biến mất. Giờ đây Header luôn cố định chắc chắn ở đỉnh màn hình (`sticky top-0 z-40 w-full`), không bị trượt khi cuộn.
   2. **Triệt tiêu thanh cuộn thừa trên các trang nội dung ngắn (Zero False Overflow)**: Sửa cấu trúc flex shell và `<main>` từ `min-h-screen` (100vh) + `pb-12` (khiến tổng chiều cao luôn vượt 100vh + 104px ngay cả khi trang rỗng) thành `min-h-[calc(100vh-3.5rem)] pb-8`. Các trang có nội dung ngắn vừa vặn màn hình (như [`/tools`](apps/web/src/app/(app)/tools/page.tsx), danh mục công cụ, trang cài đặt...) đạt tổng chiều cao đúng 100vh, hoàn toàn không xuất hiện thanh cuộn và không bị kéo trượt giao diện.

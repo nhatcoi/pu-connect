@@ -14,14 +14,16 @@ export const WIDE_MAIN_WIDTH = 'max-w-[1072px]'
 // Cân bằng toán học tuyệt đối: Sidebar (64px) + gap-6 (24px) + Workspace (1232px) = 1320px
 export const MESSAGES_WORKSPACE_WIDTH = 'max-w-[1232px]'
 
-// Ẩn cột phải: Công cụ (/tools), Tin nhắn (/messages) và Không gian N7AI (/n7ai)
+// Ẩn cột phải: Công cụ (/tools), Tin nhắn (/messages), Không gian N7AI (/n7ai) và Thông báo (/notifications)
 export const isFullWidthPath = (pathname: string) =>
   pathname === '/tools' ||
   pathname.startsWith('/tools/') ||
   pathname === '/messages' ||
   pathname.startsWith('/messages/') ||
   pathname === '/n7ai' ||
-  pathname.startsWith('/n7ai/')
+  pathname.startsWith('/n7ai/') ||
+  pathname === '/notifications' ||
+  pathname.startsWith('/notifications/')
 
 // Trang cần không gian rộng (tin nhắn, N7AI) ⇒ thu gọn thanh bên thành icon-only giống X (Twitter)
 // Khi vào N7AI: thanh bên thu gọn thành icon và dạt sát mép trái ngoài cùng
