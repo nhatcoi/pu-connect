@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
+import { SettingsListSkeleton } from '@/components/skeletons/catalog-skeleton'
 import { useAiConnectors, useAiSkills, useAiTasks } from '@/hooks/chat'
 import { n7aiThreadHref } from '@/lib/n7ai-routes'
 import { formatRelativeTime } from '@/lib/utils'
@@ -52,7 +53,7 @@ export function TasksPanel() {
   const [editing, setEditing] = useState<{ id: string | null; input: AiTaskInput } | null>(null)
 
   if (editing) return <TaskForm initial={editing.input} id={editing.id} onDone={() => setEditing(null)} />
-  if (isLoading) return <Loader2 className="mx-auto my-6 h-4 w-4 animate-spin text-muted-foreground" />
+  if (isLoading) return <div className="p-4"><SettingsListSkeleton count={4} /></div>
 
   const toInput = (t: AiTask): AiTaskInput => ({
     title: t.title,

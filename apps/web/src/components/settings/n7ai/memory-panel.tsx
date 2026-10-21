@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Check, Loader2, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
+import { Check, Pencil, Pin, PinOff, Plus, Trash2, X } from 'lucide-react'
 import { AI_MEMORY_LIMIT, type AiMemory } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAiMemories, useAiSettings } from '@/hooks/chat'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import { SettingsGroup, SwitchRow } from '../settings-ui'
@@ -48,7 +49,11 @@ export function MemoryPanel() {
           </Button>
         </form>
         {isLoading ? (
-          <Loader2 className="mx-auto my-4 h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="space-y-2 py-2 px-1">
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-lg" />
+            ))}
+          </div>
         ) : memories.length ? (
           memories.map((m) => <MemoryRow key={m.id} memory={m} onDelete={() => remove.mutate(m.id)} />)
         ) : (

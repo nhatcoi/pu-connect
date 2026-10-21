@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Loader2 } from 'lucide-react'
+import { SettingsListSkeleton } from '@/components/skeletons/catalog-skeleton'
 import { useAiConnectors, useConnectorPrefs } from '@/hooks/chat'
 import { SettingRow, SettingsGroup } from '../settings-ui'
 import { Switch } from '@/components/ui/switch'
@@ -10,7 +10,7 @@ import { Switch } from '@/components/ui/switch'
 export function WebPanel() {
   const { data, isPending } = useAiConnectors()
   const { connectors, toggle } = useConnectorPrefs()
-  if (isPending) return <Loader2 className="mx-auto my-6 h-4 w-4 animate-spin text-muted-foreground" />
+  if (isPending) return <div className="p-4"><SettingsListSkeleton count={3} /></div>
   const search = data?.find((c) => c.id === 'web_search')
 
   return (

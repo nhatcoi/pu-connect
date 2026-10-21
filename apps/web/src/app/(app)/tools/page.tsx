@@ -2,7 +2,8 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ChevronRight, Loader2, Wrench } from 'lucide-react'
+import { ChevronRight, Wrench } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { StudySetRow } from '@/components/tools/study-set-row'
 import { StudyStatsCard } from '@/components/tools/study-stats-card'
@@ -57,7 +58,11 @@ export default function ToolsPage() {
         <section className="space-y-2">
           <h2 className="px-2 sm:px-0 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gần đây</h2>
           {isPending ? (
-            <Loader2 className="mx-auto my-6 h-4 w-4 animate-spin text-muted-foreground" />
+            <div className="space-y-2">
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-xl" />
+              ))}
+            </div>
           ) : data?.recent.length ? (
             data.recent.map((s) => <StudySetRow key={s.id} set={s} showKind />)
           ) : (

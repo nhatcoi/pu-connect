@@ -2,7 +2,8 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ArrowUpRight, Loader2, Users } from 'lucide-react'
+import { ArrowUpRight, Users } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SkillLibraryRow } from '@/components/chat/composer/skill-library-row'
 import { useAiSkillActions, useSkillLibrary } from '@/hooks/chat'
 import { SettingsGroup } from '../settings-ui'
@@ -27,7 +28,11 @@ export function CommunityPanel() {
       </div>
       <SettingsGroup label="Skill nổi bật">
         {isPending ? (
-          <Loader2 className="mx-auto my-4 h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="space-y-2 py-1">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-xl" />
+            ))}
+          </div>
         ) : top.length ? (
           <ul className="-mx-3 divide-y divide-border/60">
             {top.map((s) => (

@@ -7,6 +7,10 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Chuẩn hóa 100% UI Skeleton toàn hệ thống & N7AI (Zero Layout Shift / Zero Spinners on First Load) (2026-10-21)**:
+  - Loại bỏ hoàn toàn các spinner tải lần đầu (`Loader2 animate-spin`) còn sót lại tại các panel Cài đặt N7AI ([`memory-panel.tsx`](apps/web/src/components/settings/n7ai/memory-panel.tsx), [`tasks-panel.tsx`](apps/web/src/components/settings/n7ai/tasks-panel.tsx), [`web-panel.tsx`](apps/web/src/components/settings/n7ai/web-panel.tsx), [`community-panel.tsx`](apps/web/src/components/settings/n7ai/community-panel.tsx)) và phân hệ Công cụ học tập ([`tools/page.tsx`](apps/web/src/app/(app)/tools/page.tsx), [`tools/[kind]/page.tsx`](apps/web/src/app/(app)/tools/[kind]/page.tsx), [`tools/[kind]/[id]/page.tsx`](apps/web/src/app/(app)/tools/[kind]/[id]/page.tsx)).
+  - Đảm bảo 100% màn hình khi tải lần đầu hiển thị đúng Skeleton shape (khung bài viết, danh sách cài đặt, thẻ học tập, bong bóng chat) tương ứng chuẩn kích thước thật, chỉ sử dụng Spinner cho các tác vụ tương tác chủ động (submit form, bấm nút, hoặc tải thêm cuối trang).
+
 - [x] **Giữ cố định Sidebar N7AI không animate khi chuyển route nội bộ (`Zero Route Jitter`) (2026-10-21)**:
   1. **Bảo toàn cấu trúc layout lồng nhau (`app-layout.tsx`)**: Gỡ bỏ thuộc tính `key={pathname}` và class hiệu ứng mờ toàn khung `<main>` trong [`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx) để Next.js App Router giữ nguyên DOM instance của các layout lồng nhau (`N7AiShell` và `N7AiSidebar`), không bị unmount/remount khi chuyển đổi giữa các trang `/n7ai`, `/n7ai/[id]`, `/n7ai/library`, `/n7ai/settings`, `/n7ai/temporary`.
   2. **Triệt tiêu animation trượt của N7AiShell (`n7ai-shell.tsx`)**: Gỡ bỏ animation `slide-in-from-right-8` tại khung chứa N7AI trong [`n7ai-shell.tsx`](apps/web/src/components/n7ai/n7ai-shell.tsx), giúp toàn bộ thanh bên N7AI Studio và thanh rail PU Connector 64px giữ nguyên vị trí tuyệt đối, 100% không rung lắc hay trượt giật khi người dùng chuyển tab hoặc mở các cuộc trò chuyện.

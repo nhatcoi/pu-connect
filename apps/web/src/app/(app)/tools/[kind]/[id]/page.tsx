@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, MoreHorizontal, PenLine, Trash2 } from 'lucide-react'
+import { ArrowLeft, MoreHorizontal, PenLine, Trash2 } from 'lucide-react'
 import { correctAnswers, type StudySetDetail } from '@pu/schemas'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
@@ -13,6 +13,7 @@ import { QuizRunner } from '@/components/tools/quiz-runner'
 import { StudySetEditor } from '@/components/tools/study-set-editor'
 import { TOOL_META, asCard, asQuestion, isToolKind, toolHref } from '@/components/tools/tool-catalog'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { AppCollapsible } from '@/components/ui/collapsible'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useStudySet, useStudySetActions } from '@/hooks/use-study-tools'
@@ -23,7 +24,21 @@ export default function StudySetPage() {
   const { data: set, isPending, error } = useStudySet(isToolKind(kind) ? id : null)
   if (!isToolKind(kind)) notFound()
 
-  if (isPending) return <Loader2 className="mx-auto my-16 h-5 w-5 animate-spin text-muted-foreground" />
+  if (isPending) {
+    return (
+      <div className="mx-auto w-full max-w-xl px-2 sm:px-0 py-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-6 w-48" />
+        </div>
+        <Skeleton className="h-60 w-full rounded-2xl" />
+        <div className="flex justify-between pt-2">
+          <Skeleton className="h-9 w-28 rounded-full" />
+          <Skeleton className="h-9 w-28 rounded-full" />
+        </div>
+      </div>
+    )
+  }
   if (error || !set) return <p className="py-16 text-center text-sm text-muted-foreground">Không tìm thấy bộ này hoặc bạn không có quyền xem.</p>
   return <StudySetView set={set} />
 }

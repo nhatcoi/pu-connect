@@ -3,7 +3,8 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Loader2, PenLine, Plus, Search } from 'lucide-react'
+import { ArrowLeft, PenLine, Plus, Search } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { StudySetEditor } from '@/components/tools/study-set-editor'
 import { StudySetRow } from '@/components/tools/study-set-row'
@@ -62,7 +63,11 @@ function ToolKindView({ kind }: { kind: keyof typeof TOOL_META }) {
 
       <div className="px-2 sm:px-0 space-y-2 pb-6">
         {isPending ? (
-          <Loader2 className="mx-auto my-10 h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="space-y-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-xl" />
+            ))}
+          </div>
         ) : data?.length ? (
           data.map((s) => <StudySetRow key={s.id} set={s} />)
         ) : (
