@@ -1,14 +1,16 @@
 'use client'
 
 import React from 'react'
-import { Telescope, Wand2, X } from 'lucide-react'
-import type { AiMode, AiSkill, ChatRef } from '@pu/schemas'
+import { Telescope, TextQuote, Wand2, X } from 'lucide-react'
+import type { AiMode, AiSkill, ChatQuote, ChatRef } from '@pu/schemas'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { REF_META } from '../refs'
 
 interface Props {
   refs: ChatRef[]
   onRemoveRef: (ref: ChatRef) => void
+  quotes: ChatQuote[]
+  onRemoveQuote: (index: number) => void
   skill: AiSkill | null
   onClearSkill: () => void
   mode: AiMode | null // nhóm: chế độ chọn qua "/" (gửi 1 lần)
@@ -17,14 +19,24 @@ interface Props {
   onClearResearch: () => void
 }
 
-// Chip phía trên ô soạn: ngữ cảnh đã gắn, skill / chế độ N7AI, Research
-export function ContextChips({ refs, onRemoveRef, skill, onClearSkill, mode, onClearMode, research, onClearResearch }: Props) {
-  if (!refs.length && !skill && !mode && !research) return null
+// Chip phía trên ô soạn: ngữ cảnh đã gắn, đoạn trích bôi đen, skill / chế độ N7AI, Research
+export function ContextChips({ refs, onRemoveRef, quotes, onRemoveQuote, skill, onClearSkill, mode, onClearMode, research, onClearResearch }: Props) {
+  if (!refs.length && !quotes.length && !skill && !mode && !research) return null
   return (
     <div className="flex flex-wrap gap-1.5 mx-1 mt-0.5 mb-1.5">
       {mode && <Chip icon={AI_MODE_META[mode].icon} label={`N7AI · ${AI_MODE_META[mode].label}`} accent onRemove={onClearMode} />}
       {skill && <Chip icon={Wand2} label={`/${skill.slug}`} title={skill.name} accent onRemove={onClearSkill} />}
       {research && <Chip icon={Telescope} label="Research · 2 lượt" accent onRemove={onClearResearch} />}
+      {quotes.map((q, i) => (
+        <Chip
+          key={`quote:${i}`}
+          icon={TextQuote}
+          label={q.locator ? `${q.title} · ${q.locator}` : q.title}
+          title={q.text.length > 300 ? `${q.text.slice(0, 300)}…` : q.text}
+          accent
+          onRemove={() => onRemoveQuote(i)}
+        />
+      ))}
       {refs.map((r) => (
         <Chip
           key={`${r.type}:${r.id}`}

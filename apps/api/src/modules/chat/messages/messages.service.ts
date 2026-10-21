@@ -21,6 +21,7 @@ import { AiSkillsService } from '../n7ai/ai-skills.service'
 import { deriveThreadTitle, mapThread, THREAD_COLUMNS } from '../n7ai/ai-threads.service'
 import { N7AiService, type ReplyOutcome } from '../n7ai/n7ai.service'
 import { ChatRefsService } from '../refs/chat-refs.service'
+import { ChatQuotesService } from '../quotes/chat-quotes.service'
 import { MessageEmbedService } from '../embeds/message-embed.service'
 import { N7AI_MENTION } from '../../ai/ai.constants'
 
@@ -42,6 +43,7 @@ export class MessagesService {
     private readonly chatPush: ChatPushService,
     private readonly mentions: ChatMentionsService,
     private readonly refs: ChatRefsService,
+    private readonly quotes: ChatQuotesService,
     private readonly skills: AiSkillsService,
     private readonly embeds: MessageEmbedService
   ) {}
@@ -195,6 +197,9 @@ export class MessagesService {
     }
     const refs = await this.refs.resolve(client, userId, input.refs, member.type === 'ai')
     if (refs.length) extra.refs = refs
+    // Đoạn trích chỉ có nghĩa khi hỏi N7AI trong thread riêng (nơi có panel tài liệu)
+    const quotes = member.type === 'ai' ? await this.quotes.resolve(client, userId, input.quotes) : []
+    if (quotes.length) extra.quotes = quotes
     if (member.type !== 'direct') {
       const skill = await this.skills.useForMessage(client, userId, input.skillId)
       if (skill) extra.skill = skill

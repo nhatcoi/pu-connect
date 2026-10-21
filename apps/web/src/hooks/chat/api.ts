@@ -5,6 +5,7 @@ import type {
   AiFolder,
   AiSource,
   AiSourceInput,
+  AiSourcePatch,
   AiLearnerProfile,
   AiMemory,
   AiModelOption,
@@ -27,6 +28,7 @@ import type {
   AiThreadShare,
   AiThreadsPage,
   ChatRefSuggestion,
+  ChatQuote,
   ChatRefType,
   AiSuggestionsResponse,
   ChatAttachment,
@@ -56,6 +58,7 @@ export type SendBody = {
   attachments?: ChatAttachment[]
   aiMode?: AiMode
   refs?: { type: ChatRefType; id: string }[]
+  quotes?: ChatQuote[]
   skillId?: string
   research?: boolean
   connectors?: AiConnectorId[]
@@ -137,6 +140,7 @@ export const chatApi = {
   aiSources: (threadId?: string) => unwrap(apiClient<Envelope<AiSource[]>>(`/ai/sources${threadId ? `?threadId=${threadId}` : ''}`)),
   aiSourceContent: (id: string) => unwrap(apiClient<Envelope<{ content: string | null }>>(`/ai/sources/${id}/content`)),
   addAiSource: (input: AiSourceInput) => unwrap(apiClient<Envelope<AiSource>>('/ai/sources', json('POST', input))),
+  patchAiSource: (id: string, input: AiSourcePatch) => unwrap(apiClient<Envelope<AiSource>>(`/ai/sources/${id}`, json('PATCH', input))),
   deleteAiSource: (id: string) => apiClient(`/ai/sources/${id}`, json('DELETE')),
   // Chia sẻ công khai qua link (ảnh chụp tới tin cuối)
   aiThreadShare: (id: string) => unwrap(apiClient<Envelope<AiThreadShare | null>>(`/ai/threads/${id}/share`)),

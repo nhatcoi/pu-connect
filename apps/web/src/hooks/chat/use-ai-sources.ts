@@ -19,12 +19,25 @@ export function useAiSources(threadId?: string) {
     onSuccess: (source) => qc.setQueryData<AiSource[]>(key, (list) => [source, ...(list ?? []).filter((s) => s.id !== source.id)]),
     onError
   })
+  // Bật / tắt cho N7AI đọc: cập nhật ngay trên danh sách, lỗi thì hoàn lại
+  const setInContext = useMutation({
+    mutationFn: ({ id, inContext }: { id: string; inContext: boolean }) => chatApi.patchAiSource(id, { inContext }),
+    onMutate: ({ id, inContext }) => {
+      const before = qc.getQueryData<AiSource[]>(key)
+      qc.setQueryData<AiSource[]>(key, (list) => (list ?? []).map((s) => (s.id === id ? { ...s, inContext } : s)))
+      return { before }
+    },
+    onError: (err, _vars, ctx) => {
+      if (ctx?.before) qc.setQueryData(key, ctx.before)
+      onError(err)
+    }
+  })
   const remove = useMutation({
     mutationFn: (id: string) => chatApi.deleteAiSource(id),
     onSuccess: (_, id) => qc.setQueryData<AiSource[]>(key, (list) => (list ?? []).filter((s) => s.id !== id)),
     onError
   })
-  return { sources: query.data ?? [], isPending: query.isPending, add, remove }
+  return { sources: query.data ?? [], isPending: query.isPending, add, remove, setInContext }
 }
 
 // Nội dung chữ của tài liệu (văn bản dán, trang web, YouTube)

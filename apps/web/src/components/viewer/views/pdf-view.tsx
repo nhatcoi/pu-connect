@@ -83,6 +83,7 @@ function PdfPage({
     <div
       ref={holder}
       data-page={index + 1}
+      data-quote-at={`trang ${index + 1}`}
       style={{ width: size.width * scale, height: size.height * scale, ['--total-scale-factor' as string]: scale }}
       className="relative mx-auto shrink-0 bg-white shadow-md ring-1 ring-black/5"
     >

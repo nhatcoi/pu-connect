@@ -13,6 +13,17 @@ export type AiMode = (typeof AI_MODES)[number]
 
 // Ngữ cảnh gắn vào tin (chip trên ô soạn): server kiểm quyền rồi mới lưu meta.refs
 export const CHAT_MAX_REFS = 5
+
+// Đoạn bôi đen trong tài liệu / phụ đề video gắn vào câu hỏi N7AI (chip trên ô soạn); chỉ thread N7AI riêng
+export const CHAT_MAX_QUOTES = 3
+export const CHAT_QUOTE_MAX_CHARS = 2000
+export const ChatQuoteSchema = z.object({
+  title: z.string().trim().min(1).max(200), // tên tài liệu
+  text: z.string().trim().min(1).max(CHAT_QUOTE_MAX_CHARS),
+  locator: z.string().trim().max(40).optional(), // vị trí trong tài liệu: "12:30" (video) · "trang 5" (PDF)
+  sourceId: z.string().uuid().optional() // tài liệu đã thêm (ai_sources) ⇒ bấm thẻ để mở lại; server bỏ nếu không phải của mình
+})
+export type ChatQuote = z.infer<typeof ChatQuoteSchema>
 // thread / study_set: dữ liệu riêng của người hỏi ⇒ chỉ gắn khi hỏi N7AI trong thread riêng
 export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread', 'study_set'] as const
 export type ChatRefType = (typeof CHAT_REF_TYPES)[number]
@@ -60,6 +71,7 @@ export const SendMessageSchema = z
       .array(z.object({ type: z.enum(CHAT_REF_TYPES), id: z.string().uuid() }))
       .max(CHAT_MAX_REFS)
       .optional(),
+    quotes: z.array(ChatQuoteSchema).max(CHAT_MAX_QUOTES).optional(),
     skillId: z.string().uuid().optional(),
     research: z.boolean().optional(),
     connectors: z.array(z.enum(AI_CONNECTORS)).max(AI_CONNECTORS.length).optional()
@@ -174,6 +186,7 @@ export interface ChatMessageMeta {
   mentions?: ChatMentionedUser[]
   mentionAll?: boolean
   refs?: ChatRef[]
+  quotes?: ChatQuote[] // đoạn trích người dùng chọn từ tài liệu để hỏi (thẻ trích dẫn trên bong bóng)
   skill?: ChatSkillRef
   research?: boolean
   connectors?: AiConnectorId[]
@@ -326,6 +339,7 @@ export interface AiSource {
   attachment: ChatAttachment | null // kind = file
   chars: number | null // độ dài văn bản đã đọc (text, url, youtube)
   meta: AiSourceMeta | null
+  inContext: boolean // false ⇒ vẫn lưu trong cuộc trò chuyện nhưng N7AI không đọc ở các lượt trả lời
   createdAt: string
 }
 const sourceThread = z.string().uuid().optional() // bỏ trống ⇒ thư viện
@@ -345,6 +359,8 @@ export const AiSourceInputSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() }) // thêm tài liệu thư viện vào cuộc trò chuyện
 ])
 export type AiSourceInput = z.infer<typeof AiSourceInputSchema>
+export const AiSourcePatchSchema = z.object({ inContext: z.boolean() })
+export type AiSourcePatch = z.infer<typeof AiSourcePatchSchema>
 // Lọc danh sách thread: 'all' (tìm kiếm) · 'root' (chưa vào thư mục) · id thư mục
 export type AiThreadFolderFilter = 'all' | 'root' | (string & {})
 export interface AiThreadsPage {

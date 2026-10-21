@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useMemo } from 'react'
-import { FolderOpen, Loader2, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, FolderOpen, Loader2, Trash2 } from 'lucide-react'
 import { fileExt } from '@/components/chat/utils'
 import { startAttachmentDrag } from '@/components/chat/composer/use-file-drop'
 import { DropZone } from '@/components/chat/composer/drop-zone'
@@ -52,7 +52,14 @@ export function PanelDocs({ threadId }: { threadId?: string }) {
             <p className="text-xs leading-relaxed">Kéo tệp vào đây, hoặc bấm “Thêm tài liệu” để tải tệp, dán văn bản, thêm link web hay YouTube. N7AI sẽ đọc để tóm tắt, tạo quiz, flashcard…</p>
           </div>
         ) : (
-          entries.map((entry) => <DocRow key={entry.id} entry={entry} onRemove={entry.source ? () => adder.remove(entry.source!.id) : undefined} />)
+          entries.map((entry) => (
+            <DocRow
+              key={entry.id}
+              entry={entry}
+              onRemove={entry.source ? () => adder.remove(entry.source!.id) : undefined}
+              onToggleContext={entry.source && threadId ? () => adder.setInContext({ id: entry.source!.id, inContext: !entry.source!.inContext }) : undefined}
+            />
+          ))
         )}
       </div>
     </DropZone>
@@ -61,28 +68,44 @@ export function PanelDocs({ threadId }: { threadId?: string }) {
 
 const rowClass = 'flex w-full items-center gap-2.5 rounded-xl border bg-card px-3 py-2 text-left'
 
-// Một tài liệu: tệp kéo được vào ô chat; tài liệu đã thêm có nút xóa
-export function DocRow({ entry, onRemove, selected }: { entry: DocEntry; onRemove?: () => void; selected?: boolean }) {
+// Một tài liệu: tệp kéo được vào ô chat; tài liệu đã thêm có nút bật / tắt cho N7AI đọc và nút xóa
+export function DocRow({ entry, onRemove, onToggleContext, selected }: { entry: DocEntry; onRemove?: () => void; onToggleContext?: () => void; selected?: boolean }) {
   const Icon = KIND_ICON[entry.kind]
   const att = entry.attachment
+  const inContext = entry.source?.inContext ?? true
   return (
-    <div className="group relative">
+    <div className={cn('group relative', !inContext && 'opacity-60')}>
       <button
         type="button"
         draggable={!!att}
         onDragStart={att ? (e) => startAttachmentDrag(e, att) : undefined}
         onClick={() => openDoc(entry)}
         title={att ? 'Bấm để xem · kéo vào ô chat để đính kèm' : 'Bấm để xem'}
-        className={cn(rowClass, 'cursor-pointer transition-colors hover:bg-muted/60', onRemove && 'pr-10', selected && 'border-primary ring-1 ring-primary/40')}
+        className={cn(rowClass, 'cursor-pointer transition-colors hover:bg-muted/60', onRemove && (onToggleContext ? 'pr-[4.75rem]' : 'pr-10'), selected && 'border-primary ring-1 ring-primary/40')}
       >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-[10px] font-bold text-primary">
           {att ? fileExt(att.name) : <Icon className="h-4 w-4" />}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] font-medium">{entry.title}</span>
-          <span className="block truncate text-[11px] text-muted-foreground">{entry.subtitle}</span>
+          <span className="block truncate text-[11px] text-muted-foreground">{inContext ? entry.subtitle : 'Đã tắt · N7AI không đọc'}</span>
         </span>
       </button>
+      {onToggleContext && (
+        <button
+          type="button"
+          onClick={onToggleContext}
+          aria-pressed={inContext}
+          aria-label={inContext ? `Tắt ${entry.title} khỏi ngữ cảnh` : `Bật ${entry.title} vào ngữ cảnh`}
+          title={inContext ? 'N7AI đang đọc tài liệu này ở mọi lượt trả lời — bấm để tắt' : 'N7AI không đọc tài liệu này — bấm để bật lại'}
+          className={cn(
+            'absolute right-9 top-1/2 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-muted',
+            inContext ? 'text-primary' : 'text-muted-foreground'
+          )}
+        >
+          {inContext ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+        </button>
+      )}
       {onRemove && (
         <button
           type="button"

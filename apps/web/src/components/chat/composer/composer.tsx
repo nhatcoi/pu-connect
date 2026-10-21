@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { trackSuggestionClick, useConnectorPrefs, useTypingEmitter, type Draft, type UiMessage } from '@/hooks/chat'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { useQuoteStore } from '../quotes/quote-store'
 import { AiModelPicker } from '../ai/ai-model-picker'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
@@ -70,6 +71,8 @@ export function Composer({
   const [text, setText] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
   const [refs, setRefs] = useState<ChatRef[]>([])
+  const quotes = useQuoteStore((s) => s.quotes)
+  const focusTick = useQuoteStore((s) => s.focusTick)
   const [skill, setSkill] = useState<AiSkill | null>(null)
   const [groupMode, setGroupMode] = useState<AiMode | null>(null) // nhóm: chế độ qua "/" (1 lần)
   const [research, setResearch] = useState(false)
@@ -160,6 +163,16 @@ export function Composer({
     })
   }, [isAi, aiHandoff, setAiHandoff])
 
+  // Thread N7AI: đăng ký ô soạn để trình xem tài liệu hiện nút "Hỏi N7AI"; đổi / rời thread ⇒ bỏ đoạn trích đang chờ
+  useEffect(() => (isAi ? useQuoteStore.getState().mountComposer() : undefined), [isAi, conversationId])
+  // Vừa thêm đoạn trích từ panel tài liệu ⇒ đưa con trỏ vào ô soạn để gõ câu hỏi
+  const seenFocus = useRef(focusTick)
+  useEffect(() => {
+    if (focusTick === seenFocus.current) return
+    seenFocus.current = focusTick
+    if (isAi) ref.current?.focus()
+  }, [focusTick, isAi])
+
   // Tự giãn chiều cao theo nội dung (tối đa ~6 dòng)
   useLayoutEffect(() => {
     const el = ref.current
@@ -182,6 +195,7 @@ export function Composer({
         replyTo,
         aiMode: isAi ? aiMode : (groupMode ?? undefined),
         refs,
+        quotes: isAi && quotes.length ? quotes : undefined,
         skill: skill && { id: skill.id, slug: skill.slug, name: skill.name },
         research: aiTools && research
       })
@@ -189,6 +203,7 @@ export function Composer({
       setPanelOpen(false)
       // Ngữ cảnh / skill dùng 1 lần; Research giữ trong thread AI (giống Claude), nhóm thì tắt
       setRefs([])
+      useQuoteStore.getState().clear()
       setSkill(null)
       setGroupMode(null)
       if (!isAi) setResearch(false)
@@ -255,6 +270,8 @@ export function Composer({
           <ContextChips
             refs={refs}
             onRemoveRef={(r) => setRefs((prev) => prev.filter((x) => !(x.type === r.type && x.id === r.id)))}
+            quotes={isAi ? quotes : []}
+            onRemoveQuote={useQuoteStore.getState().remove}
             skill={skill}
             onClearSkill={() => setSkill(null)}
             mode={groupMode}

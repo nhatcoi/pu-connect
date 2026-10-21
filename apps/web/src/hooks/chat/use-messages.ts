@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { AiConnectorId, AiMode, ChatAttachment, ChatMessage, ChatMessageMeta, ChatReaction, ChatRef, ChatSkillRef } from '@pu/schemas'
+import type { AiConnectorId, AiMode, ChatAttachment, ChatMessage, ChatMessageMeta, ChatQuote, ChatReaction, ChatRef, ChatSkillRef } from '@pu/schemas'
 import { ApiError } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { useAppStore } from '@/store'
@@ -16,6 +16,7 @@ export type Draft = {
   replyTo?: UiMessage | null
   aiMode?: AiMode
   refs?: ChatRef[]
+  quotes?: ChatQuote[]
   skill?: ChatSkillRef | null
   research?: boolean
   connectors?: AiConnectorId[]
@@ -26,6 +27,7 @@ function draftMeta(d: Draft): ChatMessageMeta | null {
   const meta: ChatMessageMeta = {}
   if (d.aiMode && d.aiMode !== 'ask') meta.aiMode = d.aiMode
   if (d.refs?.length) meta.refs = d.refs
+  if (d.quotes?.length) meta.quotes = d.quotes
   if (d.skill) meta.skill = d.skill
   if (d.research) meta.research = true
   return Object.keys(meta).length ? meta : null
@@ -93,6 +95,7 @@ export function useMessages(conversationId: string) {
           attachments: draft.attachments?.length ? draft.attachments : undefined,
           aiMode: draft.aiMode,
           refs: draft.refs?.length ? draft.refs.map((r) => ({ type: r.type, id: r.id })) : undefined,
+          quotes: draft.quotes?.length ? draft.quotes : undefined,
           skillId: draft.skill?.id,
           research: draft.research || undefined,
           connectors: draft.connectors
@@ -117,6 +120,7 @@ export function useMessages(conversationId: string) {
           replyTo: m.replyToId ? ({ id: m.replyToId, sender: null, content: m.replyTo?.content ?? '', attachments: null } as UiMessage) : null,
           aiMode: m.meta?.aiMode,
           refs: m.meta?.refs,
+          quotes: m.meta?.quotes,
           skill: m.meta?.skill,
           research: m.meta?.research,
           connectors: m.meta?.connectors

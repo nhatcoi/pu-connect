@@ -35,7 +35,16 @@ export const AI_CONNECTORS = [
   'semantic_scholar'
 ] as const
 export const CHAT_MAX_REFS = 5
+export const CHAT_MAX_QUOTES = 3
+export const CHAT_QUOTE_MAX_CHARS = 2000
 export const AI_SKILL_LIMIT = 30
+
+const QuoteBodySchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  text: z.string().trim().min(1).max(CHAT_QUOTE_MAX_CHARS),
+  locator: z.string().trim().max(40).optional(),
+  sourceId: z.string().uuid().optional()
+})
 
 const AttachmentBodySchema = z.object({
   url: z.string().url(),
@@ -57,6 +66,7 @@ export const SendMessageBodySchema = z
       .array(z.object({ type: z.enum(CHAT_REF_TYPES), id: z.string().uuid() }))
       .max(CHAT_MAX_REFS, { message: `Tối đa ${CHAT_MAX_REFS} ngữ cảnh mỗi tin` })
       .optional(),
+    quotes: z.array(QuoteBodySchema).max(CHAT_MAX_QUOTES, { message: `Tối đa ${CHAT_MAX_QUOTES} đoạn trích mỗi tin` }).optional(),
     skillId: z.string().uuid().optional(),
     research: z.boolean().optional(),
     connectors: z.array(z.enum(AI_CONNECTORS)).max(AI_CONNECTORS.length).optional()
@@ -110,6 +120,7 @@ export const AiSourceBodySchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() })
 ])
 export const AiSourcesQuerySchema = z.object({ threadId: z.string().uuid().optional() })
+export const AiSourcePatchBodySchema = z.object({ inContext: z.boolean() })
 
 export const AiThreadUpdateBodySchema = z.object({ title: z.string().trim().min(1, { message: 'Nhập tên' }).max(150) })
 export const AiThreadMoveBodySchema = z.object({ folderId: z.string().uuid().nullable() })

@@ -22,6 +22,7 @@ Một cuộc trò chuyện N7AI (hoặc thư viện) có **tài liệu** để N
 | GET | `/ai/sources?threadId=` | Bỏ `threadId` ⇒ thư viện; thread không phải của mình ⇒ 404 |
 | GET | `/ai/sources/:id/content` | Chữ của `text` / `url` / `youtube` |
 | POST | `/ai/sources` | `{type:'file', file:{key,name,size,mime}}` · `{type:'text', title?, content}` · `{type:'link', url}` · `{type:'copy', threadId, sourceId}`; thêm `threadId` ⇒ vào thread, không có ⇒ thư viện |
+| PATCH | `/ai/sources/:id` | `{inContext: boolean}`: tắt / bật cho N7AI đọc (không xóa); không phải của mình ⇒ 404 |
 | DELETE | `/ai/sources/:id` | Chỉ xóa dòng tài liệu, không xóa tệp trên R2 |
 
 Kiểm tra phía máy chủ:
@@ -36,6 +37,22 @@ Kiểm tra phía máy chủ:
 `n7ai.service.ts` (cuộc trò chuyện riêng, không phải nhóm): sau tệp gửi kèm tin và tài liệu gần nhất, thêm tài liệu của thread: tệp qua `attachmentParts` (cache theo key), chữ qua `source-context.ts` (≤ 30.000 ký tự / tài liệu, ≤ 60.000 tổng, mới nhất trước). Tệp trùng key với tệp đã gửi kèm không đọc lại.
 
 Đọc được nội dung (`doc-text.ts`): PDF, Word, **PowerPoint** (chữ từng slide), **Excel** (từng sheet, ≤ 500 dòng), TXT, Markdown, CSV, mã nguồn.
+
+### Bật / tắt tài liệu cho N7AI đọc
+
+Mặc định mọi tài liệu của thread được đọc ở mọi lượt. Cột `ai_sources.in_context` (migration `ai-sources-upgrade.sql`, mặc định `TRUE`) cho phép tắt từng tài liệu mà không xóa: `context()` bỏ các dòng `in_context = FALSE`. Ở panel Tài liệu, mỗi tài liệu đã thêm có nút con mắt (cập nhật ngay, lỗi thì hoàn lại); tài liệu đang tắt mờ đi và ghi "Đã tắt · N7AI không đọc". Tệp gửi kèm trong tin nhắn không có công tắc này (đã được gửi chủ động ở lượt đó).
+
+## Đoạn trích bôi đen: hỏi N7AI về đúng đoạn
+
+Bôi đen chữ trong trình xem tài liệu (PDF, Word, PowerPoint, Excel, văn bản, trang web) hoặc bản chép lời video ⇒ nút nổi **Hỏi N7AI** ngay cạnh vùng chọn. Bấm nút ⇒ đoạn thành chip trong ô soạn (`TextQuote`, rê chuột xem nội dung, ✕ để bỏ) và con trỏ nhảy vào ô soạn. **Chỉ bôi đen thì không tự gắn**: tránh đẩy chữ vào ngữ cảnh khi người dùng chỉ định sao chép hay đánh dấu.
+
+- **Giới hạn**: tối đa 3 đoạn mỗi tin (`CHAT_MAX_QUOTES`), mỗi đoạn tối đa 2.000 ký tự (`CHAT_QUOTE_MAX_CHARS`, dài hơn thì cắt và báo). Đoạn trùng không thêm lần hai.
+- **Vị trí**: vùng xem đánh dấu `data-quote-at` (PDF: `trang N`, bản chép lời: mốc `mm:ss` của dòng bắt đầu); mốc giờ trong bản chép lời không bị chọn lẫn vào chữ. Bấm dòng phụ đề để tua vẫn hoạt động, nhưng đang bôi đen thì không tua.
+- **Gửi**: `POST /chat/conversations/:id/messages` nhận `quotes: [{title, text, locator?, sourceId?}]`; chỉ lưu khi hội thoại là thread N7AI riêng (chat 1-1 / nhóm bỏ qua). Server chuẩn hóa chữ và chỉ giữ `sourceId` nếu tài liệu thuộc chính người gửi. Lưu ở `messages.meta.quotes`; bong bóng câu hỏi hiện thẻ trích dẫn (tài liệu còn tồn tại ⇒ bấm để mở lại).
+- **Prompt** (`n7ai.quotes.ts`): lượt hiện tại có khối `<selected_passages>` đứng trước câu hỏi, mỗi đoạn kèm `source` và `at`, dặn ưu tiên trả lời về các đoạn này và dẫn lại tên tài liệu + vị trí. Đoạn nằm ngoài ngân sách ký tự của tài liệu (30.000 / tài liệu) nên **luôn vào ngữ cảnh**, kể cả khi tài liệu / video dài hơn giới hạn. Lượt cũ trong lịch sử chỉ ghi `[đã chọn đoạn: "…" (tài liệu, vị trí)]` (cắt 300 ký tự) để câu hỏi nối tiếp còn hiểu; đoạn chỉ gắn cho đúng lượt đã chọn.
+- **Mã**: `components/chat/quotes/` (`quote-store.ts` cầu nối panel ↔ ô soạn, `read-selection.ts`, `quote-selection.tsx` bọc trình xem bằng `display: contents`), `chat/composer/context-chips.tsx`, `chat/thread/message-quotes.tsx`; API `chat/quotes/chat-quotes.service.ts`.
+- **Hiện nút khi nào**: chỉ khi có ô soạn thread N7AI đang mở (thư viện hay chat thường không hiện). Màn cảm ứng đặt nút bên dưới vùng chọn để không đè menu của hệ điều hành. Đổi / rời thread ⇒ bỏ các đoạn đang chờ.
+- **Chưa làm**: bấm thẻ trích dẫn mở tài liệu nhưng chưa nhảy đúng chỗ (tua video tới mốc, cuộn tới trang).
 
 ## Video YouTube: xem cùng phụ đề, học tiếp
 
@@ -65,4 +82,4 @@ Bấm tài liệu YouTube ở panel ⇒ trình phát nhúng (`youtube-nocookie`)
 - Kiểm tra trước khi tải: dung lượng ≤ 25 MB, đuôi tệp được hỗ trợ (`attachment-files.ts`); tài liệu học còn phải là loại N7AI đọc được.
 - Mã: `components/chat/composer/{use-file-drop,drop-zone,drop-hint,attachment-files}`, `components/n7ai/sources/`.
 
-Test: `n7ai-sources.e2e-spec.ts`, `doc-text.e2e-spec.ts`.
+Test: `n7ai-sources.e2e-spec.ts`, `n7ai-quotes.e2e-spec.ts`, `doc-text.e2e-spec.ts`.

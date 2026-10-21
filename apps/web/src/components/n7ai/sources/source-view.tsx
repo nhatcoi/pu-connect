@@ -9,6 +9,7 @@ import { Stage, ViewerError, ViewerLoading } from '@/components/viewer/views/vie
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { cn } from '@/lib/utils'
 import { STUDY_TOOLS, useStudyTool } from '../side-panel/study-tools'
+import { QuoteSelection } from '@/components/chat/quotes/quote-selection'
 import { KIND_ICON, entryFromSource } from './doc-entries'
 import { useSourceView } from './source-view-store'
 import { activeLine, parseTranscript } from './transcript'
@@ -94,16 +95,19 @@ function VideoLesson({ source, videoId }: { source: AiSource; videoId: string })
           <ViewerLoading label="Đang tải phụ đề…" />
         ) : (
           lines.map((line, i) => (
-            <button
+            // Bấm dòng ⇒ tua; đang bôi đen chữ (để hỏi N7AI) thì không tua. Mốc giờ là nút thật (bàn phím) và không bị chọn lẫn vào đoạn trích
+            <div
               key={i}
-              type="button"
               data-line={i}
-              onClick={() => seekTo(line.seconds)}
+              data-quote-at={line.time}
+              onClick={() => window.getSelection()?.isCollapsed !== false && seekTo(line.seconds)}
               className={cn('flex w-full cursor-pointer gap-3 rounded-lg px-2 py-1.5 text-left text-sm leading-relaxed transition-colors hover:bg-muted/60', i === active && 'bg-primary/10')}
             >
-              <span className="mt-0.5 shrink-0 font-mono text-[11px] text-primary">{line.time}</span>
+              <button type="button" onClick={() => seekTo(line.seconds)} className="mt-0.5 shrink-0 cursor-pointer select-none self-start font-mono text-[11px] text-primary">
+                {line.time}
+              </button>
               <span>{line.text}</span>
-            </button>
+            </div>
           ))
         )}
       </div>
@@ -135,7 +139,9 @@ export function SourceView({ source, onClose, title }: { source: AiSource; onClo
         </button>
       </div>
       <div className="min-h-0 flex-1">
-        {source.kind === 'youtube' && source.meta?.videoId ? <VideoLesson key={source.id} source={source} videoId={source.meta.videoId} /> : <SourceText key={source.id} source={source} />}
+        <QuoteSelection title={source.title} sourceId={source.id}>
+          {source.kind === 'youtube' && source.meta?.videoId ? <VideoLesson key={source.id} source={source} videoId={source.meta.videoId} /> : <SourceText key={source.id} source={source} />}
+        </QuoteSelection>
       </div>
     </>
   )

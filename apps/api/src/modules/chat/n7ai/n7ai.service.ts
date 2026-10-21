@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import type { AiConnectorId, AiMode, AiSettings, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatRef } from '@pu/schemas'
+import type { AiConnectorId, AiMode, AiSettings, ChatAttachment, ChatCitation, ChatMessage, ChatMessageMeta, ChatQuote, ChatRef } from '@pu/schemas'
 import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { stripN7AiMention } from '../../ai/ai.constants'
 import { contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
@@ -29,6 +29,7 @@ import { AiSkillsService } from './ai-skills.service'
 import { attachmentParts, isReadableDoc } from './n7ai.attachments'
 import { AiSourcesService } from './sources/ai-sources.service'
 import { sourceTextParts } from './sources/source-context'
+import { quotesBlock, quotesHistoryNote } from './n7ai.quotes'
 import { ACTIONS_PROMPT, FOLLOWUP_PROMPT, FollowUpSplitter, MEMORY_PROMPT, SOURCES_PROMPT } from './n7ai.followups'
 import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, learnerPrompt, profilePrompt, skillPrompt, summaryPrompt, type LearnerContext } from './n7ai.prompts'
 
@@ -45,6 +46,7 @@ type Trigger = {
   aiMode: AiMode
   senderName: string
   refs: ChatRef[]
+  quotes: ChatQuote[]
   skillId: string | null
   research: boolean
   connectors: AiConnectorId[] | undefined
@@ -277,6 +279,7 @@ export class N7AiService {
       aiMode: meta.aiMode || 'ask',
       senderName: r.display_name || 'Thành viên',
       refs: meta.refs ?? [],
+      quotes: meta.quotes ?? [],
       skillId: meta.skill?.id ?? null,
       research: !!meta.research,
       connectors: meta.connectors
@@ -357,7 +360,7 @@ ${convBlock.trim()}` : '') : '') +
     }
     const label = inGroup ? `${trigger.senderName}: ` : ''
     const fileNote = notes.length ? `\n\n(Người dùng có gửi kèm tệp N7AI chưa đọc được: ${notes.join(', ')})` : ''
-    const text = `${contextBlock(sources, failures)}${label}${question || '(Xem tệp đính kèm)'}${fileNote}${docNote}`
+    const text = `${contextBlock(sources, failures)}${quotesBlock(trigger.quotes)}${label}${question || '(Xem tệp đính kèm)'}${fileNote}${docNote}`
     const current: Msg = { role: 'user', content: parts.length ? [{ type: 'text', text }, ...parts] : text }
 
     return [{ role: 'system', content: system }, ...history, current]
@@ -401,7 +404,7 @@ ${convBlock.trim()}` : '') : '') +
   // AI riêng: sau mốc "Chủ đề mới" / phần đã tóm tắt; nhóm: vài tin gần nhất kèm tên người gửi
   private async loadHistory(conversationId: string, botId: string, beforeId: string, inGroup: boolean): Promise<Msg[]> {
     const res = await this.db.query(
-      `SELECT m.sender_id, m.content, m.attachments, u.display_name
+      `SELECT m.sender_id, m.content, m.attachments, m.meta, u.display_name
        FROM messages m JOIN conversations c ON c.id = m.conversation_id LEFT JOIN users u ON u.id = m.sender_id
        WHERE m.conversation_id = $1 AND m.id < $2 AND m.deleted_at IS NULL AND m.status = 'done' AND m.kind <> 'system'
          AND m.id > ${AI_HISTORY_FLOOR}
@@ -412,7 +415,8 @@ ${convBlock.trim()}` : '') : '') +
     for (const row of res.rows.reverse()) {
       const role = row.sender_id === botId ? 'assistant' : 'user'
       const files = row.attachments?.length ? ` [đã gửi ${row.attachments.length} tệp]` : ''
-      const body = (inGroup && role === 'user' ? `${row.display_name}: ` : '') + (inGroup ? clip(row.content || '', GROUP_MESSAGE_CHARS) : row.content || '') + files
+      const quoted = role === 'user' ? quotesHistoryNote(row.meta?.quotes) : ''
+      const body = (inGroup && role === 'user' ? `${row.display_name}: ` : '') + (inGroup ? clip(row.content || '', GROUP_MESSAGE_CHARS) : row.content || '') + files + quoted
       if (!body.trim()) continue
       const last = turns[turns.length - 1]
       if (last && last.role === role) last.content = `${last.content}\n\n${body}`

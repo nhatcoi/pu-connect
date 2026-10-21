@@ -1,5 +1,5 @@
 import { BadGatewayException, BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
-import type { AiSource, AiSourceInput, AiSourceMeta, ChatAttachment } from '@pu/schemas'
+import type { AiSource, AiSourceInput, AiSourceMeta, AiSourcePatch, ChatAttachment } from '@pu/schemas'
 import { DatabaseService } from '../../../../database/database.service'
 import { WebReaderService } from '../../../ai/connectors/web-reader.service'
 import { isExtractableMime } from '../../../ai/doc-text'
@@ -10,7 +10,7 @@ import { fetchYoutubeTranscript, youtubeId, YoutubeTranscriptError } from './you
 
 const THREAD_LIMIT = 30 // tài liệu / cuộc trò chuyện
 const LIBRARY_LIMIT = 100 // tài liệu / thư viện
-const COLUMNS = `id, thread_id, kind, title, url, file_key, mime, size, created_at, meta, LENGTH(content) AS chars`
+const COLUMNS = `id, thread_id, kind, title, url, file_key, mime, size, created_at, meta, in_context, LENGTH(content) AS chars`
 
 type SourceFile = { key: string; name: string; size: number; mime: string }
 
@@ -29,6 +29,7 @@ const mapSource = (r: any): AiSource => ({
   attachment: r.kind === 'file' ? toAttachment(r) : null,
   chars: r.chars ?? null,
   meta: r.meta ?? null,
+  inContext: r.in_context,
   createdAt: new Date(r.created_at).toISOString()
 })
 
@@ -72,16 +73,23 @@ export class AiSourcesService {
     }
   }
 
+  // Bật / tắt tài liệu cho N7AI đọc (không xóa gì)
+  async patch(userId: string, id: string, input: AiSourcePatch): Promise<AiSource> {
+    const res = await this.db.query(`UPDATE ai_sources SET in_context = $3 WHERE id = $1 AND user_id = $2 RETURNING ${COLUMNS}`, [id, userId, input.inContext])
+    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy tài liệu')
+    return mapSource(res.rows[0])
+  }
+
   async remove(userId: string, id: string): Promise<{ deleted: boolean }> {
     const res = await this.db.query(`DELETE FROM ai_sources WHERE id = $1 AND user_id = $2`, [id, userId])
     if (!res.rowCount) throw new NotFoundException('Không tìm thấy tài liệu')
     return { deleted: true }
   }
 
-  // Tài liệu của thread cho lượt trả lời: tệp (đọc qua attachmentParts) + chữ đã lưu; bỏ tệp đã có ở tin gửi / tin trước
+  // Tài liệu của thread cho lượt trả lời: tệp (đọc qua attachmentParts) + chữ đã lưu; bỏ tài liệu đã tắt và tệp đã có ở tin gửi / tin trước
   async context(userId: string, threadId: string, skipKeys: ReadonlySet<string>): Promise<{ files: ChatAttachment[]; texts: SourceText[] }> {
     const res = await this.db.query(
-      `SELECT kind, title, url, file_key, mime, size, content, meta FROM ai_sources WHERE user_id = $1 AND thread_id = $2 ORDER BY created_at DESC`,
+      `SELECT kind, title, url, file_key, mime, size, content, meta FROM ai_sources WHERE user_id = $1 AND thread_id = $2 AND in_context ORDER BY created_at DESC`,
       [userId, threadId]
     )
     const files = res.rows.filter((r) => r.kind === 'file' && !skipKeys.has(r.file_key)).map(toAttachment)

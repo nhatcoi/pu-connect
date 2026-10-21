@@ -22,3 +22,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_sources_library ON ai_sources (user_id, create
 
 -- Thông tin thêm của tài liệu (YouTube: videoId, ngôn ngữ phụ đề, kênh, độ dài)
 ALTER TABLE ai_sources ADD COLUMN IF NOT EXISTS meta JSONB;
+
+-- Tắt = tài liệu vẫn nằm trong cuộc trò chuyện nhưng N7AI không đọc ở các lượt trả lời (bật lại bất cứ lúc nào)
+ALTER TABLE ai_sources ADD COLUMN IF NOT EXISTS in_context BOOLEAN NOT NULL DEFAULT TRUE;

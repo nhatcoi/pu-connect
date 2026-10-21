@@ -7,6 +7,7 @@ import { Download, ExternalLink, X } from 'lucide-react'
 import { fileExt, fileSize } from '@/components/chat/utils'
 import { cn } from '@/lib/utils'
 import { KIND_LABEL, previewKind, type PreviewFile } from './file-kind'
+import { QuoteSelection } from '@/components/chat/quotes/quote-selection'
 import { PreviewBody } from './preview-body'
 
 // Tệp đang xem (mở từ thẻ tệp ở chat / thư viện / thông tin hội thoại)
@@ -57,7 +58,9 @@ export function FilePreviewView({ file, title, onClose }: { file: PreviewFile; t
         </button>
       </div>
       <div className="min-h-0 flex-1">
-        <PreviewBody key={file.url} file={file} />
+        <QuoteSelection title={file.name}>
+          <PreviewBody key={file.url} file={file} />
+        </QuoteSelection>
       </div>
     </>
   )

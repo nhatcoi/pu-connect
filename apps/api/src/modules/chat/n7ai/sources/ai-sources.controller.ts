@@ -1,10 +1,10 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AiSourceInput } from '@pu/schemas'
+import type { AiSourceInput, AiSourcePatch } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../../auth/guards/authenticated.guard'
-import { AiSourceBodySchema, AiSourcesQuerySchema } from '../../dto/chat.dto'
+import { AiSourceBodySchema, AiSourcePatchBodySchema, AiSourcesQuerySchema } from '../../dto/chat.dto'
 import { AiSourcesService } from './ai-sources.service'
 
 // Tài liệu của cuộc trò chuyện N7AI (?threadId=) hoặc của thư viện (không có threadId)
@@ -26,6 +26,11 @@ export class AiSourcesController {
   @Post()
   add(@Body(new ZodValidationPipe(AiSourceBodySchema)) body: AiSourceInput, @Req() req: Request) {
     return this.sources.add(requireUserId(req), body)
+  }
+
+  @Patch(':id')
+  patch(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiSourcePatchBodySchema)) body: AiSourcePatch, @Req() req: Request) {
+    return this.sources.patch(requireUserId(req), id, body)
   }
 
   @Delete(':id')
