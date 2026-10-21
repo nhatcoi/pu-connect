@@ -29,13 +29,22 @@ Kiểm tra phía máy chủ:
 - Tệp phải của chính mình (`isOwnedKey`, chặn `..`) và N7AI đọc được: PDF, Word, PowerPoint, Excel, văn bản / mã nguồn hoặc ảnh. ZIP, video, âm thanh bị từ chối.
 - Thêm lại cùng tệp / cùng link vào cùng nơi ⇒ trả dòng cũ, không trùng.
 - Link: chỉ http(s), cổng 80/443, từng chặng redirect đều kiểm tra địa chỉ (chặn mạng nội bộ, SSRF), tối đa 1 MB, 8 giây; chỉ HTML / văn bản. Trang gần như không có chữ ⇒ báo lỗi.
-- YouTube: đọc track phụ đề (ưu tiên tiếng Việt, rồi tiếng Anh; phụ đề người làm trước phụ đề tự động); `baseUrl` phải thuộc `*.youtube.com`. Video không có phụ đề ⇒ 422 kèm hướng dẫn. YouTube có thể chặn IP máy chủ ⇒ 502 "thử lại hoặc dán nội dung".
+- YouTube (`youtube-transcript.ts`): hỏi Innertube bằng client Android (trang xem video trả phụ đề rỗng nếu thiếu PO token), chọn track (ưu tiên tiếng Việt, rồi tiếng Anh; phụ đề người làm trước phụ đề tự động), `baseUrl` phải thuộc `*.youtube.com`. Video không có phụ đề ⇒ 422 kèm hướng dẫn; video riêng tư / bị chặn / YouTube không trả lời ⇒ 502. Mọi dạng link (watch, youtu.be, shorts, `&t=`) quy về một link chuẩn nên không thêm trùng. `meta` lưu videoId, ngôn ngữ và loại phụ đề, kênh, độ dài.
 
 ## N7AI đọc tài liệu
 
 `n7ai.service.ts` (cuộc trò chuyện riêng, không phải nhóm): sau tệp gửi kèm tin và tài liệu gần nhất, thêm tài liệu của thread: tệp qua `attachmentParts` (cache theo key), chữ qua `source-context.ts` (≤ 30.000 ký tự / tài liệu, ≤ 60.000 tổng, mới nhất trước). Tệp trùng key với tệp đã gửi kèm không đọc lại.
 
 Đọc được nội dung (`doc-text.ts`): PDF, Word, **PowerPoint** (chữ từng slide), **Excel** (từng sheet, ≤ 500 dòng), TXT, Markdown, CSV, mã nguồn.
+
+## Video YouTube: xem cùng phụ đề, học tiếp
+
+Bấm tài liệu YouTube ở panel ⇒ trình phát nhúng (`youtube-nocookie`) + phụ đề bên dưới (`source-view.tsx`):
+
+- Bấm một dòng phụ đề (mốc `[mm:ss]`) ⇒ video tua tới đó và phát. Trình phát gửi thời điểm hiện tại qua `postMessage` nên dòng đang phát được tô sáng và tự cuộn theo (tắt được bằng "Cuộn theo video").
+- Thanh "Học từ video": Tóm tắt, Quiz, Flashcard gửi yêu cầu vào cuộc trò chuyện (dùng chung `study-tools.ts` với tab Công cụ). Chat bình thường cũng hỏi được về video vì N7AI đọc phụ đề ở mọi lượt.
+- N7AI được báo nguồn là phụ đề có mốc thời gian và được dặn dẫn mốc `[mm:ss]` khi trả lời dựa vào video.
+- Giới hạn: phụ đề lưu tối đa 100.000 ký tự, N7AI đọc tối đa 30.000 ký tự / tài liệu (video rất dài chỉ đọc phần đầu). Video không có phụ đề: dán transcript vào bằng "Dán văn bản". Tệp video tự tải lên (phiên âm giọng nói) chưa hỗ trợ.
 
 ## Giao diện
 

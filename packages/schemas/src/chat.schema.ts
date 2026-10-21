@@ -309,6 +309,14 @@ export const AI_SOURCE_LIMIT = 30 // / cuộc trò chuyện
 export const AI_LIBRARY_SOURCE_LIMIT = 100 // / thư viện
 export const AI_SOURCE_TEXT_MAX = 100_000
 export type AiSourceKind = 'file' | 'text' | 'url' | 'youtube'
+// YouTube: video + phụ đề đã lấy
+export interface AiSourceMeta {
+  videoId?: string
+  lang?: string // ngôn ngữ phụ đề, vd 'vi'
+  auto?: boolean // phụ đề tự động (không phải do người làm video)
+  author?: string
+  seconds?: number // độ dài video
+}
 export interface AiSource {
   id: string
   threadId: string | null // null ⇒ thư viện
@@ -317,6 +325,7 @@ export interface AiSource {
   url: string | null // liên kết gốc (url, youtube)
   attachment: ChatAttachment | null // kind = file
   chars: number | null // độ dài văn bản đã đọc (text, url, youtube)
+  meta: AiSourceMeta | null
   createdAt: string
 }
 const sourceThread = z.string().uuid().optional() // bỏ trống ⇒ thư viện

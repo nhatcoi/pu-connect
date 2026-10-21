@@ -1,5 +1,5 @@
 import { BadGatewayException, BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
-import type { AiSource, AiSourceInput, ChatAttachment } from '@pu/schemas'
+import type { AiSource, AiSourceInput, AiSourceMeta, ChatAttachment } from '@pu/schemas'
 import { DatabaseService } from '../../../../database/database.service'
 import { WebReaderService } from '../../../ai/connectors/web-reader.service'
 import { isExtractableMime } from '../../../ai/doc-text'
@@ -10,7 +10,7 @@ import { fetchYoutubeTranscript, youtubeId, YoutubeTranscriptError } from './you
 
 const THREAD_LIMIT = 30 // tài liệu / cuộc trò chuyện
 const LIBRARY_LIMIT = 100 // tài liệu / thư viện
-const COLUMNS = `id, thread_id, kind, title, url, file_key, mime, size, created_at, LENGTH(content) AS chars`
+const COLUMNS = `id, thread_id, kind, title, url, file_key, mime, size, created_at, meta, LENGTH(content) AS chars`
 
 type SourceFile = { key: string; name: string; size: number; mime: string }
 
@@ -28,6 +28,7 @@ const mapSource = (r: any): AiSource => ({
   url: r.kind === 'file' ? null : r.url,
   attachment: r.kind === 'file' ? toAttachment(r) : null,
   chars: r.chars ?? null,
+  meta: r.meta ?? null,
   createdAt: new Date(r.created_at).toISOString()
 })
 
@@ -80,11 +81,11 @@ export class AiSourcesService {
   // Tài liệu của thread cho lượt trả lời: tệp (đọc qua attachmentParts) + chữ đã lưu; bỏ tệp đã có ở tin gửi / tin trước
   async context(userId: string, threadId: string, skipKeys: ReadonlySet<string>): Promise<{ files: ChatAttachment[]; texts: SourceText[] }> {
     const res = await this.db.query(
-      `SELECT kind, title, url, file_key, mime, size, content FROM ai_sources WHERE user_id = $1 AND thread_id = $2 ORDER BY created_at DESC`,
+      `SELECT kind, title, url, file_key, mime, size, content, meta FROM ai_sources WHERE user_id = $1 AND thread_id = $2 ORDER BY created_at DESC`,
       [userId, threadId]
     )
     const files = res.rows.filter((r) => r.kind === 'file' && !skipKeys.has(r.file_key)).map(toAttachment)
-    const texts: SourceText[] = res.rows.filter((r) => r.kind !== 'file' && r.content).map((r) => ({ title: r.title, kind: r.kind, url: r.url, content: r.content }))
+    const texts: SourceText[] = res.rows.filter((r) => r.kind !== 'file' && r.content).map((r) => ({ title: r.title, kind: r.kind, url: r.url, content: r.content, meta: r.meta }))
     return { files, texts }
   }
 
@@ -104,10 +105,12 @@ export class AiSourcesService {
   private async addLink(userId: string, threadId: string | undefined, raw: string) {
     const url = new URL(raw)
     if (url.protocol !== 'http:' && url.protocol !== 'https:') throw new BadRequestException('Chỉ nhận liên kết http hoặc https')
-    const existing = await this.db.query(`SELECT ${COLUMNS} FROM ai_sources WHERE user_id = $1 AND thread_id IS NOT DISTINCT FROM $2::uuid AND url = $3`, [userId, threadId ?? null, url.toString()])
+    const videoId = youtubeId(raw)
+    // Cùng video dán bằng nhiều dạng link (youtu.be, shorts, có &t=…) ⇒ so theo link chuẩn
+    const canonical = videoId ? watchUrl(videoId) : url.toString()
+    const existing = await this.db.query(`SELECT ${COLUMNS} FROM ai_sources WHERE user_id = $1 AND thread_id IS NOT DISTINCT FROM $2::uuid AND url = $3`, [userId, threadId ?? null, canonical])
     if (existing.rows[0]) return mapSource(existing.rows[0])
 
-    const videoId = youtubeId(raw)
     if (videoId) {
       const video = await fetchYoutubeTranscript(videoId).catch((err: unknown) => {
         if (err instanceof YoutubeTranscriptError && err.code === 'no-captions') {
@@ -115,7 +118,8 @@ export class AiSourcesService {
         }
         throw new BadGatewayException('Không tải được video YouTube. Thử lại sau hoặc dán nội dung vào.')
       })
-      return this.insert(userId, threadId, { kind: 'youtube', title: video.title, url: url.toString(), content: video.text.slice(0, AI_SOURCE_TEXT_MAX) })
+      const meta: AiSourceMeta = { videoId, lang: video.lang, auto: video.auto, author: video.author, seconds: video.seconds }
+      return this.insert(userId, threadId, { kind: 'youtube', title: video.title, url: watchUrl(videoId), content: video.text.slice(0, AI_SOURCE_TEXT_MAX), meta })
     }
 
     const page = await this.web.readPage(url.toString(), AI_SOURCE_TEXT_MAX).catch((err: Error) => {
@@ -129,30 +133,32 @@ export class AiSourcesService {
 
   // Thêm tài liệu của mình (thư viện hoặc thread khác) vào thread: nhân bản dòng, giữ nguyên tệp trên R2
   private async copy(userId: string, threadId: string, sourceId: string) {
-    const res = await this.db.query(`SELECT kind, title, url, file_key, mime, size, content FROM ai_sources WHERE id = $1 AND user_id = $2`, [sourceId, userId])
+    const res = await this.db.query(`SELECT kind, title, url, file_key, mime, size, content, meta FROM ai_sources WHERE id = $1 AND user_id = $2`, [sourceId, userId])
     const src = res.rows[0]
     if (!src) throw new NotFoundException('Không tìm thấy tài liệu')
     if (src.kind === 'file') return this.addFile(userId, threadId, { key: src.file_key, name: src.title, size: src.size, mime: src.mime })
-    return this.insert(userId, threadId, { kind: src.kind, title: src.title, url: src.url, content: src.content })
+    return this.insert(userId, threadId, { kind: src.kind, title: src.title, url: src.url, content: src.content, meta: src.meta })
   }
 
   private async insert(
     userId: string,
     threadId: string | undefined,
-    s: { kind: AiSource['kind']; title: string; url?: string | null; fileKey?: string; mime?: string; size?: number; content?: string }
+    s: { kind: AiSource['kind']; title: string; url?: string | null; fileKey?: string; mime?: string; size?: number; content?: string; meta?: AiSourceMeta | null }
   ): Promise<AiSource> {
     const limit = threadId ? THREAD_LIMIT : LIBRARY_LIMIT
     const res = await this.db.query(
-      `INSERT INTO ai_sources (user_id, thread_id, kind, title, url, file_key, mime, size, content)
-       SELECT $1, $2::uuid, $3, $4, $5, $6, $7, $8, $9
-       WHERE (SELECT COUNT(*) FROM ai_sources WHERE user_id = $1 AND thread_id IS NOT DISTINCT FROM $2::uuid) < $10
+      `INSERT INTO ai_sources (user_id, thread_id, kind, title, url, file_key, mime, size, content, meta)
+       SELECT $1, $2::uuid, $3, $4, $5, $6, $7, $8, $9, $10::jsonb
+       WHERE (SELECT COUNT(*) FROM ai_sources WHERE user_id = $1 AND thread_id IS NOT DISTINCT FROM $2::uuid) < $11
        RETURNING ${COLUMNS}`,
-      [userId, threadId ?? null, s.kind, s.title.slice(0, 200), s.url ?? null, s.fileKey ?? null, s.mime ?? null, s.size ?? null, s.content ?? null, limit]
+      [userId, threadId ?? null, s.kind, s.title.slice(0, 200), s.url ?? null, s.fileKey ?? null, s.mime ?? null, s.size ?? null, s.content ?? null, s.meta ? JSON.stringify(s.meta) : null, limit]
     )
     if (!res.rows[0]) throw new BadRequestException(`Tối đa ${limit} tài liệu ${threadId ? 'trong một cuộc trò chuyện' : 'trong thư viện'}`)
     return mapSource(res.rows[0])
   }
 }
+
+const watchUrl = (videoId: string) => `https://www.youtube.com/watch?v=${videoId}`
 
 // Tiêu đề cho văn bản dán: dòng đầu có chữ, ngắn gọn
 function firstLine(content: string): string {

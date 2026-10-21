@@ -1,6 +1,7 @@
 import * as JSZipModule from 'jszip'
 import { PPTX_MIME, XLSX_MIME, bufferToText } from '../src/modules/ai/doc-text'
-import { youtubeId } from '../src/modules/chat/n7ai/sources/youtube-transcript'
+import { pickTrack, transcriptLines, youtubeId } from '../src/modules/chat/n7ai/sources/youtube-transcript'
+import { sourceTextParts } from '../src/modules/chat/n7ai/sources/source-context'
 
 const CONTENT_TYPES = '<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
 
@@ -39,5 +40,26 @@ describe('đọc tài liệu cho N7AI', () => {
     }
     expect(youtubeId('https://example.com/watch?v=dQw4w9WgXcQ')).toBeNull()
     expect(youtubeId('https://www.youtube.com/@kenh')).toBeNull()
+  })
+
+  it('phụ đề YouTube ⇒ dòng ~30 giây có mốc [mm:ss]', () => {
+    const seg = (tStartMs: number, utf8: string) => ({ tStartMs, segs: [{ utf8 }] })
+    const lines = transcriptLines([seg(0, 'Xin chào'), seg(4000, 'các bạn\n'), seg(31_000, 'Bài hôm nay'), seg(62_500, '  '), seg(65_000, 'Kết thúc')])
+    expect(lines).toEqual(['[00:00] Xin chào các bạn', '[00:31] Bài hôm nay', '[01:05] Kết thúc'])
+  })
+
+  it('chọn phụ đề: tiếng Việt do người làm > Việt tự động > tiếng Anh', () => {
+    const track = (languageCode: string, kind?: string) => ({ baseUrl: 'https://www.youtube.com/api/timedtext', languageCode, kind })
+    expect(pickTrack([track('en'), track('vi', 'asr'), track('vi')])).toMatchObject({ languageCode: 'vi', kind: undefined })
+    expect(pickTrack([track('en', 'asr'), track('vi', 'asr')])).toMatchObject({ languageCode: 'vi' })
+    expect(pickTrack([track('fr'), track('en')])).toMatchObject({ languageCode: 'en' })
+  })
+
+  it('nguồn video gửi cho N7AI kèm hướng dẫn dẫn mốc thời gian', () => {
+    const [part] = sourceTextParts([{ title: 'Bài giảng', kind: 'youtube', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', content: '[00:00] Xin chào', meta: { author: 'Thầy A', seconds: 1800, lang: 'vi', auto: true } }])
+    expect(part).toMatchObject({ type: 'text' })
+    const text = (part as { text: string }).text
+    expect(text).toContain('kênh Thầy A, dài 30 phút, phụ đề tự động vi')
+    expect(text).toContain('[00:00] Xin chào')
   })
 })

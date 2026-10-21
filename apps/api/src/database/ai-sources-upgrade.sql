@@ -19,3 +19,6 @@ CREATE TABLE IF NOT EXISTS ai_sources (
 );
 CREATE INDEX IF NOT EXISTS idx_ai_sources_thread ON ai_sources (thread_id, created_at DESC) WHERE thread_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_ai_sources_library ON ai_sources (user_id, created_at DESC) WHERE thread_id IS NULL;
+
+-- Thông tin thêm của tài liệu (YouTube: videoId, ngôn ngữ phụ đề, kênh, độ dài)
+ALTER TABLE ai_sources ADD COLUMN IF NOT EXISTS meta JSONB;

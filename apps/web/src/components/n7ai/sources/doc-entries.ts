@@ -24,8 +24,10 @@ const host = (url: string | null) => {
 
 export const entryFromAttachment = (a: ChatAttachment): DocEntry => ({ id: `file:${a.key}`, kind: 'file', title: a.name, subtitle: fileSize(a.size), attachment: a, source: null })
 
+const videoSubtitle = (s: AiSource) => [s.meta?.author, s.meta?.seconds ? `${Math.max(1, Math.round(s.meta.seconds / 60))} phút` : null].filter(Boolean).join(' · ') || 'YouTube'
+
 export function entryFromSource(s: AiSource): DocEntry {
-  const subtitle = s.attachment ? fileSize(s.attachment.size) : s.kind === 'text' ? `Văn bản · ${(s.chars ?? 0).toLocaleString('vi-VN')} ký tự` : s.kind === 'youtube' ? 'YouTube' : host(s.url)
+  const subtitle = s.attachment ? fileSize(s.attachment.size) : s.kind === 'text' ? `Văn bản · ${(s.chars ?? 0).toLocaleString('vi-VN')} ký tự` : s.kind === 'youtube' ? videoSubtitle(s) : host(s.url)
   return { id: s.attachment ? `file:${s.attachment.key}` : `source:${s.id}`, kind: s.kind, title: s.title, subtitle, attachment: s.attachment, source: s }
 }
 
