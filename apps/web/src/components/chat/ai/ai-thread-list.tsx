@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronRight, Folder, FolderInput, FolderMinus, FolderPlus, Loader2, MoreHorizontal, Pencil, Search, Share2, Trash2, X } from 'lucide-react'
+import { motion } from 'motion/react'
 import type { AiFolder, AiThread } from '@pu/schemas'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -277,14 +279,25 @@ function FolderRow({ folder, activeId, onHover, onNavigate }: RowProps & { folde
   }
 
   return (
-    <div {...drop.props} className={cn('rounded-lg transition-colors', drop.over && 'bg-primary/10 ring-1 ring-primary/40')}>
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      {...drop.props}
+      className={cn('rounded-lg transition-colors', drop.over && 'bg-primary/10 ring-1 ring-primary/40')}
+    >
       <div className="group flex h-8 items-center rounded-lg pr-1 hover:bg-muted">
-        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 text-xs">
-          <ChevronRight className={cn('h-3 w-3 shrink-0 text-muted-foreground transition-transform', open && 'rotate-90')} />
+        <CollapsibleTrigger className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 text-xs">
+          <motion.span
+            animate={{ rotate: open ? 90 : 0 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+            className="inline-flex shrink-0 text-muted-foreground"
+          >
+            <ChevronRight className="h-3 w-3" />
+          </motion.span>
           <Folder className="h-3.5 w-3.5 shrink-0 text-primary" />
           <span className="truncate">{folder.name}</span>
           <span className="ml-auto pl-1 text-[10px] tabular-nums text-muted-foreground">{folder.threadCount || ''}</span>
-        </button>
+        </CollapsibleTrigger>
         <RowMenu label={folder.name}>
           <DropdownMenuItem onSelect={() => setEditing(true)}>
             <Pencil /> Đổi tên
@@ -294,8 +307,10 @@ function FolderRow({ folder, activeId, onHover, onNavigate }: RowProps & { folde
           </DropdownMenuItem>
         </RowMenu>
       </div>
-      {open && <FolderThreads folderId={folder.id} activeId={activeId} onHover={onHover} onNavigate={onNavigate} />}
-    </div>
+      <CollapsibleContent>
+        <FolderThreads folderId={folder.id} activeId={activeId} onHover={onHover} onNavigate={onNavigate} />
+      </CollapsibleContent>
+    </Collapsible>
   )
 }
 

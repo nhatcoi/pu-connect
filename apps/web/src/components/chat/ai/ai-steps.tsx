@@ -17,9 +17,11 @@ import {
   Search,
   Users
 } from 'lucide-react'
+import { motion } from 'motion/react'
 import type { AiStep } from '@pu/schemas'
 import { PuMark } from '@/components/brand/pu-logo'
 import { ConnectorIcon } from '@/components/n7ai/connector-icon'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
 
 const ICONS: Partial<Record<AiStep['provider'], React.ComponentType<{ className?: string }>>> = {
@@ -135,29 +137,30 @@ export function AiSteps({
   }
   if (!steps.length && !durationMs) return null
   const info = summary(steps)
+
   return (
-    <div className="mb-1.5">
-      <button
-        type="button"
-        onClick={() => steps.length && setOpen((o) => !o)}
-        aria-expanded={open}
-        disabled={!steps.length}
-        className="flex items-center gap-1.5 text-[11px] text-muted-foreground enabled:cursor-pointer enabled:hover:text-foreground"
-      >
+    <Collapsible open={open} onOpenChange={setOpen} disabled={!steps.length} className="mb-1.5">
+      <CollapsibleTrigger className="group flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground">
         <span className="flex -space-x-1">
           {[...new Set(steps.map((s) => s.provider))].slice(0, 4).map((p) => (
             <StepIcon key={p} provider={p} />
           ))}
         </span>
-        {durationMs ? `Đã xử lý ${seconds(durationMs)}s` : `Đã dùng ${steps.length} bước`}
+        <span>{durationMs ? `Đã xử lý ${seconds(durationMs)}s` : `Đã dùng ${steps.length} bước`}</span>
         {info && <span>· {info}</span>}
-        {steps.length > 0 && <ChevronDown className={cn('h-3 w-3 transition-transform', open && 'rotate-180')} />}
-      </button>
-      {open && (
-        <div className="mt-2">
-          <StepList steps={steps} />
-        </div>
-      )}
-    </div>
+        {steps.length > 0 && (
+          <motion.span
+            animate={{ rotate: open ? 180 : 0 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+            className="inline-flex text-muted-foreground/80 group-hover:text-foreground"
+          >
+            <ChevronDown className="h-3 w-3" />
+          </motion.span>
+        )}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-2">
+        <StepList steps={steps} />
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

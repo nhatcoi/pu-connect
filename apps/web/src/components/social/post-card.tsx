@@ -32,6 +32,7 @@ import {
   Sparkles
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { AnonymousAvatar, anonymousName } from './anonymous-author'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
@@ -641,7 +642,13 @@ export function PostCard({
                 )}
               </div>
             )}
-            {isSummaryOpen && showAiSummary && <PostSummary postId={post.id} />}
+            {showAiSummary && (
+              <Collapsible open={isSummaryOpen} onOpenChange={setIsSummaryOpen}>
+                <CollapsibleContent>
+                  <PostSummary postId={post.id} />
+                </CollapsibleContent>
+              </Collapsible>
+            )}
 
             {/* Student Poll */}
             {post.poll && (

@@ -2,8 +2,9 @@
 
 import React, { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ChevronDown, Layers, ListChecks } from 'lucide-react'
+import { Layers, ListChecks } from 'lucide-react'
 import type { AiLibraryItem, ChatAttachment } from '@pu/schemas'
+import { AppCollapsible } from '@/components/ui/collapsible'
 import { FlashcardDeck } from '@/components/chat/ai/flashcard-deck'
 import { QuizCard } from '@/components/chat/ai/quiz-card'
 import { splitStudyBlocks, type FlashcardData, type QuizData } from '@/components/chat/ai/study-blocks'
@@ -85,30 +86,26 @@ export function LibraryStudy({ items }: { items: AiLibraryItem[] }) {
 }
 
 function StudyCard({ item, block }: { item: AiLibraryItem; block: StudyBlock }) {
-  const [open, setOpen] = useState(false)
   const isQuiz = block.kind === 'quiz'
   const Icon = isQuiz ? ListChecks : Layers
   const count = isQuiz ? `${block.data.questions.length} câu hỏi` : `${block.data.cards.length} thẻ`
+
   return (
-    <div className="rounded-xl bg-card">
-      <button onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-3 p-3 text-left cursor-pointer">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
+    <AppCollapsible
+      variant="card"
+      icon={<Icon className="h-4 w-4" />}
+      title={block.data.title || item.threadTitle || (isQuiz ? 'Quiz' : 'Flashcard')}
+      subtitle={`${isQuiz ? 'Bộ câu hỏi trắc nghiệm' : 'Bộ thẻ ghi nhớ'} · ${count}`}
+      badge={
+        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          {isQuiz ? 'Quiz' : 'Flashcard'}
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-semibold">{block.data.title || item.threadTitle || (isQuiz ? 'Quiz' : 'Flashcard')}</span>
-          <span className="block text-[11px] text-muted-foreground">
-            {isQuiz ? 'Quiz' : 'Flashcard'} · {count}
-          </span>
-        </span>
-        <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="space-y-2 px-3 pb-3">
-          {isQuiz ? <QuizCard data={block.data} /> : <FlashcardDeck data={block.data} />}
-          <SourceLink item={item} />
-        </div>
-      )}
-    </div>
+      }
+    >
+      <div className="space-y-2 pt-1">
+        {isQuiz ? <QuizCard data={block.data} /> : <FlashcardDeck data={block.data} />}
+        <SourceLink item={item} />
+      </div>
+    </AppCollapsible>
   )
 }

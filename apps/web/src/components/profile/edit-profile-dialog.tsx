@@ -5,7 +5,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { X, Camera, Image as ImageIcon, ChevronRight, Loader2, Check, RotateCcw, Palette } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { motion } from 'motion/react'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { AcademicUnitSelector } from './academic-unit-selector'
 import { errorMessage } from '@/lib/api-client'
 
@@ -492,27 +493,27 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
             />
 
             {/* 5. Hàng Birth Date (Theme Adaptive & Tương Tác Chọn Ngày) */}
-            <div className="pt-2 border-t border-border">
-              <button
-                type="button"
-                onClick={() => setIsEditingBirthDate(!isEditingBirthDate)}
-                className="w-full flex items-center justify-between py-2 text-left group cursor-pointer hover:bg-muted/50 rounded-xl px-2.5 transition-colors"
-                aria-expanded={isEditingBirthDate}
-              >
+            <Collapsible
+              open={isEditingBirthDate}
+              onOpenChange={setIsEditingBirthDate}
+              className="pt-2 border-t border-border"
+            >
+              <CollapsibleTrigger className="w-full flex items-center justify-between py-2 text-left group cursor-pointer hover:bg-muted/50 rounded-xl px-2.5 transition-colors">
                 <div>
                   <span className="block text-xs text-muted-foreground font-normal">Birth date</span>
                   <span className="text-sm font-medium text-foreground">{formatBirthDate(birthDate)}</span>
                 </div>
-                <ChevronRight
-                  className={cn(
-                    'h-4 w-4 text-muted-foreground group-hover:text-foreground transition-transform duration-200',
-                    isEditingBirthDate && 'rotate-90 text-foreground'
-                  )}
-                />
-              </button>
+                <motion.span
+                  animate={{ rotate: isEditingBirthDate ? 90 : 0 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                  className="inline-flex shrink-0 text-muted-foreground group-hover:text-foreground"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </motion.span>
+              </CollapsibleTrigger>
 
-              {isEditingBirthDate && (
-                <div className="mt-2 p-3 bg-muted/40 rounded-xl border border-border flex items-center gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              <CollapsibleContent>
+                <div className="mt-2 p-3 bg-muted/40 rounded-xl border border-border flex items-center gap-3">
                   <input
                     type="date"
                     value={/^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? birthDate : ''}
@@ -528,8 +529,8 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
                     <span>Xong</span>
                   </button>
                 </div>
-              )}
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
           </div>
         </div>
       </DialogContent>

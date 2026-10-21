@@ -7,6 +7,8 @@ import { CommentListSkeleton } from '@/components/skeletons/comment-skeleton'
 import { CommentComposer } from './comment-composer'
 import { CommentItemCard } from './comment-item-card'
 import { Button } from '@/components/ui/button'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { motion } from 'motion/react'
 import { Loader2, MessageSquare, ChevronDown } from 'lucide-react'
 import type { MentionCandidate, PostItem } from '@pu/schemas'
 import { N7AI_USERNAME } from '@/lib/mention'
@@ -171,19 +173,24 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
 
                   {/* Toggle nested replies */}
                   {replies.length > 0 && (
-                    <div className="pl-9 ml-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleReplies(comment.id)}
-                        className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
-                      >
-                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${areRepliesExpanded ? 'rotate-180' : ''}`} />
+                    <Collapsible
+                      open={areRepliesExpanded}
+                      onOpenChange={() => toggleReplies(comment.id)}
+                      className="pl-9 ml-2"
+                    >
+                      <CollapsibleTrigger className="group flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors py-1 cursor-pointer">
+                        <motion.span
+                          animate={{ rotate: areRepliesExpanded ? 180 : 0 }}
+                          transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+                          className="inline-flex shrink-0 text-muted-foreground group-hover:text-foreground"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </motion.span>
                         <span>{areRepliesExpanded ? 'Thu gọn phản hồi' : `Xem ${replies.length} phản hồi`}</span>
-                      </button>
+                      </CollapsibleTrigger>
 
-                      {/* Render nested replies if expanded */}
-                      {areRepliesExpanded && (
-                        <div className="pl-3 border-l-2 border-border/60 space-y-2 mt-1">
+                      <CollapsibleContent>
+                        <div className="pl-3 border-l-2 border-border/60 space-y-2 mt-1 pb-1">
                           {replies.map((reply) => (
                             <CommentItemCard
                               key={reply.id}
@@ -201,8 +208,8 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
                             />
                           ))}
                         </div>
-                      )}
-                    </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   )}
                 </div>
               )

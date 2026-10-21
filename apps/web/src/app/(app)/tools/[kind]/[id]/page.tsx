@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { notFound, useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, ChevronDown, Loader2, MoreHorizontal, PenLine, Trash2 } from 'lucide-react'
+import { ArrowLeft, Loader2, MoreHorizontal, PenLine, Trash2 } from 'lucide-react'
 import { correctAnswers, type StudySetDetail } from '@pu/schemas'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
@@ -13,9 +13,9 @@ import { QuizRunner } from '@/components/tools/quiz-runner'
 import { StudySetEditor } from '@/components/tools/study-set-editor'
 import { TOOL_META, asCard, asQuestion, isToolKind, toolHref } from '@/components/tools/tool-catalog'
 import { Button } from '@/components/ui/button'
+import { AppCollapsible } from '@/components/ui/collapsible'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useStudySet, useStudySetActions } from '@/hooks/use-study-tools'
-import { cn } from '@/lib/utils'
 
 // Học 1 bộ: ôn flashcard (lặp lại ngắt quãng) hoặc làm quiz; sửa / xóa; xem toàn bộ mục
 export default function StudySetPage() {
@@ -80,48 +80,50 @@ function StudySetView({ set }: { set: StudySetDetail }) {
         {/* Sửa bộ ⇒ updatedAt đổi ⇒ dựng lại phiên học */}
         {set.kind === 'flashcards' ? <FlashcardReview key={set.updatedAt} set={set} /> : <QuizRunner key={set.updatedAt} set={set} />}
 
-        <section className="rounded-2xl bg-card">
-          <button
-            type="button"
-            onClick={() => setShowItems((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold"
-            aria-expanded={showItems}
-          >
-            Tất cả {meta.itemLabel} ({set.items.length})
-            <ChevronDown className={cn('h-4 w-4 text-muted-foreground transition-transform', showItems && 'rotate-180')} />
-          </button>
-          {showItems && (
-            <ol className="divide-y border-t">
-              {set.items.map((it, i) => (
-                <li key={it.id} className="px-4 py-2.5 text-sm">
-                  {set.kind === 'flashcards' ? (
-                    <div className="grid grid-cols-[auto_1fr_1fr] gap-3">
-                      <span className="text-[11px] text-muted-foreground pt-0.5">{i + 1}</span>
-                      <div className="min-w-0 flex items-start gap-2">
-                        {asCard(it.content).image && (
-                          // eslint-disable-next-line @next/next/no-img-element -- ảnh R2 người dùng tải lên
-                          <img src={asCard(it.content).image} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-md border object-cover" />
-                        )}
-                        <div className="min-w-0">
-                          <MarkdownPreview content={clozeText(asCard(it.content).front, true)} className="font-medium [&>p]:m-0" />
-                          {asCard(it.content).phonetic && <span className="text-[11px] font-mono text-muted-foreground">{asCard(it.content).phonetic}</span>}
-                        </div>
+        <AppCollapsible
+          variant="card"
+          title={`Tất cả ${meta.itemLabel}`}
+          subtitle={`Toàn bộ ${set.items.length} ${meta.itemLabel} trong bộ này`}
+          badge={
+            <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {set.items.length} mục
+            </span>
+          }
+          open={showItems}
+          onOpenChange={setShowItems}
+          headerClassName="px-4 py-3"
+          contentClassName="p-0"
+        >
+          <ol className="divide-y border-t border-border/70">
+            {set.items.map((it, i) => (
+              <li key={it.id} className="px-4 py-2.5 text-sm">
+                {set.kind === 'flashcards' ? (
+                  <div className="grid grid-cols-[auto_1fr_1fr] gap-3">
+                    <span className="text-[11px] text-muted-foreground pt-0.5">{i + 1}</span>
+                    <div className="min-w-0 flex items-start gap-2">
+                      {asCard(it.content).image && (
+                        // eslint-disable-next-line @next/next/no-img-element -- ảnh R2 người dùng tải lên
+                        <img src={asCard(it.content).image} alt="" loading="lazy" className="h-9 w-9 shrink-0 rounded-md border object-cover" />
+                      )}
+                      <div className="min-w-0">
+                        <MarkdownPreview content={clozeText(asCard(it.content).front, true)} className="font-medium [&>p]:m-0" />
+                        {asCard(it.content).phonetic && <span className="text-[11px] font-mono text-muted-foreground">{asCard(it.content).phonetic}</span>}
                       </div>
-                      <MarkdownPreview content={asCard(it.content).back} className="text-muted-foreground [&>p]:m-0" />
                     </div>
-                  ) : (
-                    <div className="space-y-0.5">
-                      <MarkdownPreview content={`${i + 1}. ${asQuestion(it.content).q}`} className="font-medium [&>p]:m-0" />
-                      <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                        ✓ {correctAnswers(asQuestion(it.content)).map((a) => asQuestion(it.content).options[a]).join(' · ')}
-                      </p>
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+                    <MarkdownPreview content={asCard(it.content).back} className="text-muted-foreground [&>p]:m-0" />
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    <MarkdownPreview content={`${i + 1}. ${asQuestion(it.content).q}`} className="font-medium [&>p]:m-0" />
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                      ✓ {correctAnswers(asQuestion(it.content)).map((a) => asQuestion(it.content).options[a]).join(' · ')}
+                    </p>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        </AppCollapsible>
       </div>
 
       <StudySetEditor open={editing} onOpenChange={setEditing} kind={set.kind} initial={set} />

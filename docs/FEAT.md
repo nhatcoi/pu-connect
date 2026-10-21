@@ -7,6 +7,19 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Hệ thống Collapsible / Accordion chuẩn hóa PU Connector (`AppCollapsible` & `Collapsible`) (2026-10-21)**: Giải quyết triệt để tình trạng các khối collapse/accordion tự chế rời rạc (`useState` + xoay mũi tên giật hình, layout shift đột ngột).
+  - Component chuẩn tại [`apps/web/src/components/ui/collapsible.tsx`](apps/web/src/components/ui/collapsible.tsx) gồm:
+    - **Low-level Headless Primitives**: `Collapsible`, `CollapsibleTrigger` (hỗ trợ `asChild` qua Radix Slot, đồng bộ accessibility `aria-expanded` & `aria-controls`), `CollapsibleContent` (tích hợp `AnimatePresence` + Spring Physics từ `motion/react` v12: `stiffness: 360, damping: 32`, zero layout thrashing, chống giật màn hình CLS).
+    - **High-level Signature Component**: `AppCollapsible` mang đậm ngôn ngữ thiết kế PU Connector: 4 biến thể (`card`, `bordered`, `ghost`, `subtle`), icon nổi bật `bg-primary/10`, tiêu đề, phụ đề, badges số lượng, nút thao tác phụ (`actions` ngăn chặn nổi bọt sự kiện), và mũi tên chevron xoay vật lý mượt mà.
+  - Chuẩn hóa và áp dụng đồng bộ trên toàn bộ các phân hệ chính:
+    1. **Tiến trình suy nghĩ & công cụ AI N7AI** ([`ai-steps.tsx`](apps/web/src/components/chat/ai/ai-steps.tsx)): Mở/thu gọn timeline các bước xử lý và tool calling mượt mà.
+    2. **Thư viện học liệu N7AI** ([`library-items.tsx`](apps/web/src/components/n7ai/library/library-items.tsx)): Thẻ Flashcard & Quiz học tập hiển thị dạng card co giãn mượt mà.
+    3. **Bộ công cụ học tập** ([`tools/[kind]/[id]/page.tsx`](apps/web/src/app/(app)/tools/[kind]/[id]/page.tsx)): Khối danh sách câu hỏi / thẻ ôn tập chuẩn `AppCollapsible` có badge số lượng.
+    4. **Cây thư mục chat N7AI** ([`ai-thread-list.tsx`](apps/web/src/components/chat/ai/ai-thread-list.tsx)): Mở/đóng thư mục hội thoại trượt êm ái, không giật sidebar.
+    5. **Phản hồi bình luận mạng xã hội** ([`post-comments-section.tsx`](apps/web/src/components/social/comments/post-comments-section.tsx)): Thu gọn và mở rộng chuỗi phản hồi con trượt xuống mượt mà.
+    6. **Tóm tắt bài viết N7AI** ([`post-card.tsx`](apps/web/src/components/social/post-card.tsx)): Khối tóm tắt bài viết dài trượt nở mượt mà.
+    7. **Hộp thoại chỉnh sửa hồ sơ** ([`edit-profile-dialog.tsx`](apps/web/src/components/profile/edit-profile-dialog.tsx)): Chỉnh sửa ngày sinh dạng toggle accordion.
+
 - [x] **Hiển thị ảnh đa phương tiện chuẩn X & khắc phục lỗi ảnh đơn bị đen xì (2026-10-19)**: khắc phục triệt để lỗi ảnh bài viết đơn lẻ (`mediaUrls.length === 1`) bị container `max-h-[420px]` cắt xén từ đỉnh xuống khiến ảnh dọc (ví dụ ảnh chụp đêm 9:16) chỉ lộ vùng trời tối đen xì trên bảng tin/hồ sơ. Chuyển sang hiển thị theo tỉ lệ tự nhiên (`max-h-[520px] w-auto max-w-full rounded-2xl object-contain`, container `w-fit max-w-full`); lưới nhiều ảnh (2-4+) hỗ trợ huy hiệu `+N` khi $> 4$ ảnh; nhận diện định dạng video native; Lightbox modal hỗ trợ phím mũi tên `←` / `→` / `Esc`, nút chuyển ảnh Trước/Sau và bộ đếm `x / y`. Đồng thời bổ sung `rehype-raw` và cấu hình `@tiptap/markdown` để ngăn chặn lộ thẻ HTML thô (`<p>...</p>`) ra giao diện.
 
 - [x] **Chia sẻ hội thoại N7AI qua link công khai** ([thiết kế](./core/11-n7ai-space.md#6-chia-sẻ-hội-thoại)): nút Chia sẻ ở đầu thread AI và menu ⋯ trong lịch sử N7AI ⇒ hộp thoại tạo link / sao chép / cập nhật / ngắt. Link = ảnh chụp tới tin cuối lúc tạo (`ai_thread_shares.until_message_id`, migration `ai-thread-share-upgrade.sql`), token 128-bit giữ nguyên khi cập nhật. API `GET/POST/DELETE /api/ai/threads/:id/share` (chủ thread) + `GET /api/ai/shared/:token` (không đăng nhập). Trang `/share/[token]` (route group `(shared)`, render server, `noindex`): ẩn tệp đính kèm (chỉ báo số lượng), nguồn Drive/Lịch/tài liệu và bài không công khai; `share` vào danh sách username dành riêng.
