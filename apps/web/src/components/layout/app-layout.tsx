@@ -87,8 +87,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {!immersive && (
               <div
                 className={cn(
-                  'hidden md:flex shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30 transition-[width] duration-300 ease-in-out',
-                  compactSidebar ? 'w-14 xl:w-16' : 'w-14 xl:w-56'
+                  'hidden md:flex shrink-0 sticky top-14 h-[calc(100vh-3.5rem)] py-3 flex-col justify-between z-30 transition-[width] duration-300 ease-in-out overflow-hidden',
+                  compactSidebar ? 'w-16' : 'w-16 xl:w-56'
                 )}
               >
                 <Sidebar compact={compactSidebar} />

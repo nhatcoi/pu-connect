@@ -22,7 +22,6 @@ import {
   PenSquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Highlight, HighlightItem } from '@/components/animate-ui/primitives/effects/highlight'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useAppStore } from '@/store'
@@ -100,102 +99,99 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
   const userInitials = (user?.displayName || user?.username || 'PU').slice(0, 2).toUpperCase()
 
   return (
-    <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full">
-      <div className="space-y-6">
-        {/* 1. Điều hướng chính (icon-only on md, full on xl khi không compact) */}
-        <div className={cn('space-y-0.5 flex flex-col', compact ? 'items-center' : 'items-center xl:items-stretch')}>
-          {/* Highlight trượt theo chuột (animate-ui, giống menu dropdown) */}
-          <Highlight
-            hover
-            controlledItems
-            className={cn('inset-0 rounded-full bg-muted/80', !compact && 'xl:rounded-xl')}
-            transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-          >
-            {navItems.map((item) => {
-              const Icon = item.icon
-              // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
-              const isActive = currentTab
-                ? currentTab === item.id
-                : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
+    <aside className="flex flex-col justify-between h-full min-h-[calc(100vh-5rem)] py-2 w-full overflow-hidden select-none">
+      <div className="space-y-4">
+        {/* 1. Điều hướng chính: các icon luôn cố định tâm ở 32px (left: 8px + slot 48px / 2 = 32px) */}
+        <div className="space-y-1 flex flex-col w-full px-2">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
+            const isActive = currentTab
+              ? currentTab === item.id
+              : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
 
-              const itemContent = (
-                <div className={cn('flex items-center', compact ? 'justify-center relative' : 'gap-3')}>
-                  <div className="relative flex items-center justify-center">
-                    <Icon
+            const buttonClass = cn(
+              'group flex items-center h-11 rounded-full transition-colors cursor-pointer select-none overflow-hidden',
+              compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-start',
+              isActive
+                ? 'bg-primary/10 text-primary font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted/70'
+            )
+
+            const itemContent = (
+              <>
+                {/* Khung icon cố định 48x44px — tâm đúng 32px tính từ lề thanh bên */}
+                <div className="w-12 h-11 flex items-center justify-center shrink-0 relative">
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 shrink-0 transition-transform group-hover:scale-110',
+                      isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
+                    )}
+                  />
+                  {item.badge && (
+                    <span
                       className={cn(
-                        'h-[18px] w-[18px] shrink-0 transition-transform group-hover:scale-110',
-                        isActive ? 'text-primary stroke-[2.25]' : 'text-muted-foreground group-hover:text-foreground'
+                        'absolute top-1.5 right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange px-1 text-[9px] font-bold text-white shadow-xs',
+                        !compact && 'xl:hidden'
                       )}
-                    />
-                    {item.badge && compact && (
-                      <span className="absolute -top-1 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-orange px-1 text-[9px] font-bold text-white shadow-xs">
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+
+                {/* Nhãn chữ: tự động ẩn khi compact hoặc dưới xl */}
+                {!compact && (
+                  <div className="hidden xl:flex items-center justify-between min-w-0 flex-1 pr-3.5">
+                    <span className="truncate text-[13px] font-medium">{item.label}</span>
+                    {item.badge && (
+                      <span className="rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange">
                         {item.badge}
                       </span>
                     )}
                   </div>
-                  {!compact && <span className="hidden xl:inline truncate">{item.label}</span>}
-                </div>
-              )
+                )}
+              </>
+            )
 
-              const badgeContent = item.badge && !compact && (
-                <span
-                  className={cn(
-                    'hidden xl:inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold shrink-0 bg-brand-orange/15 text-brand-orange'
-                  )}
-                >
-                  {item.badge}
-                </span>
-              )
+            return onTabChange ? (
+              <button key={item.id} type="button" onClick={() => onTabChange(item.id)} className={buttonClass} title={item.label}>
+                {itemContent}
+              </button>
+            ) : (
+              <Link key={item.id} href={item.path} prefetch className={buttonClass} title={item.label}>
+                {itemContent}
+              </Link>
+            )
+          })}
 
-              const buttonClass = cn(
-                'group flex items-center rounded-full transition-colors cursor-pointer select-none',
-                compact
-                  ? 'w-10 h-10 justify-center p-0 text-[13px] font-medium'
-                  : 'w-10 h-10 xl:w-full xl:h-9 justify-center xl:justify-between px-0 xl:px-3 xl:rounded-xl text-[13px] font-medium',
-                isActive ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'
-              )
-
-              return (
-                <HighlightItem key={item.id} value={item.id} disabled={isActive} className={cn(!compact && 'xl:w-full')}>
-                  {onTabChange ? (
-                    <button type="button" onClick={() => onTabChange(item.id)} className={buttonClass} title={item.label}>
-                      {itemContent}
-                      {badgeContent}
-                    </button>
-                  ) : (
-                    <Link href={item.path} prefetch className={buttonClass} title={item.label}>
-                      {itemContent}
-                      {badgeContent}
-                    </Link>
-                  )}
-                </HighlightItem>
-              )
-            })}
-          </Highlight>
-
-          {/* Nút Đăng bài chuẩn X: tròn gọn khi compact/tablet, thanh rộng khi mở rộng desktop */}
-          <div className={cn('pt-2 flex justify-center w-full', !compact && 'xl:block xl:px-1')}>
+          {/* Nút Đăng bài chuẩn X: icon PenSquare nằm chính xác ở tâm 32px */}
+          <div className="pt-2 w-full">
             <Button
               type="button"
               onClick={() => setCreatePostOpen(true)}
               className={cn(
-                'rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs flex items-center justify-center cursor-pointer transition-all hover:scale-105 active:scale-95',
-                compact
-                  ? 'w-10 h-10 p-0'
-                  : 'w-10 h-10 p-0 xl:w-full xl:h-10 xl:rounded-full xl:px-4 xl:gap-2'
+                'h-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xs flex items-center cursor-pointer transition-all hover:scale-[1.02] active:scale-[0.98] overflow-hidden p-0',
+                compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-start'
               )}
               title="Đăng bài mới"
             >
-              <PenSquare className="h-4 w-4 shrink-0" />
-              {!compact && <span className="hidden xl:inline text-xs font-bold tracking-tight">Đăng bài</span>}
+              <div className="w-12 h-11 flex items-center justify-center shrink-0">
+                <PenSquare className="h-5 w-5" />
+              </div>
+              {!compact && (
+                <span className="hidden xl:inline text-xs font-bold tracking-tight pr-4">
+                  Đăng bài
+                </span>
+              )}
             </Button>
           </div>
         </div>
 
         {/* 2. Môn học sôi nổi (Desktop xl: only, ẩn hoàn toàn khi compact) */}
         {FEATURES.hotCourses && !compact && (
-          <div className="hidden xl:block space-y-1">
-            <p className="px-3 pb-1 text-[11px] font-medium text-muted-foreground/80 uppercase tracking-wider">Môn học sôi nổi</p>
+          <div className="hidden xl:block space-y-1 px-3 pt-2">
+            <p className="px-2 pb-1 text-[11px] font-medium text-muted-foreground/80 uppercase tracking-wider">Môn học sôi nổi</p>
             <div className="space-y-0.5">
               {hotCourses.map((course) => (
                 <div
@@ -215,28 +211,28 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
         )}
       </div>
 
-      {/* 3. Bottom User Profile Card & Logout (Like X User Capsule: avatar-only khi compact) */}
-      <div className="pt-4">
+      {/* 3. Bottom User Profile Card & Logout: Avatar nằm chính xác ở tâm 32px */}
+      <div className="pt-4 px-2 w-full">
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
                 className={cn(
-                  'flex items-center transition-colors cursor-pointer group rounded-full',
-                  compact
-                    ? 'w-10 h-10 justify-center p-0 hover:bg-muted/70 mx-auto'
-                    : 'w-full justify-center xl:justify-between p-1.5 xl:p-2 xl:rounded-2xl hover:bg-muted/70'
+                  'flex items-center h-11 transition-colors cursor-pointer group rounded-full overflow-hidden p-0 hover:bg-muted/70',
+                  compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-between'
                 )}
                 title={compact ? `${user.displayName || user.username} (@${user.username})` : undefined}
               >
-                <div className={cn('flex items-center min-w-0', compact ? 'justify-center' : 'gap-2.5')}>
-                  <Avatar className="h-8 w-8 shrink-0 transition-transform group-hover:scale-105">
-                    <AvatarImage src={user.avatarUrl || ''} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
-                  </Avatar>
+                <div className="flex items-center min-w-0">
+                  <div className="w-12 h-11 flex items-center justify-center shrink-0">
+                    <Avatar className="h-8 w-8 shrink-0 transition-transform group-hover:scale-105">
+                      <AvatarImage src={user.avatarUrl || ''} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">{userInitials}</AvatarFallback>
+                    </Avatar>
+                  </div>
                   {!compact && (
-                    <div className="hidden xl:flex flex-col text-left min-w-0">
+                    <div className="hidden xl:flex flex-col text-left min-w-0 pr-2">
                       <span className="text-xs font-bold text-foreground truncate group-hover:text-primary transition-colors">
                         {user.displayName || user.username}
                       </span>
@@ -244,7 +240,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
                     </div>
                   )}
                 </div>
-                {!compact && <MoreHorizontal className="hidden xl:block h-4 w-4 text-muted-foreground shrink-0" />}
+                {!compact && <MoreHorizontal className="hidden xl:block h-4 w-4 text-muted-foreground shrink-0 mr-3" />}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align={compact ? 'center' : 'end'} className="w-56 p-1.5 rounded-2xl shadow-xl border border-border bg-popover">
@@ -274,15 +270,17 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <div className={cn('flex justify-center', !compact && 'xl:block')}>
+          <div className={cn(compact ? 'w-12 flex justify-center' : 'w-12 xl:w-full')}>
             <Button
               size="sm"
               variant="outline"
               onClick={() => router.push('/')}
-              className={cn('rounded-full text-xs font-semibold', compact ? 'w-10 h-10 p-0 justify-center' : 'w-10 h-10 xl:w-full xl:h-9')}
+              className={cn('rounded-full text-xs font-semibold h-11 p-0 flex items-center', compact ? 'w-12 justify-center' : 'w-12 xl:w-full xl:justify-start')}
             >
-              <User className={cn('h-4 w-4', !compact && 'xl:mr-1.5')} />
-              {!compact && <span className="hidden xl:inline">Đăng nhập</span>}
+              <div className="w-12 h-11 flex items-center justify-center shrink-0">
+                <User className="h-4 w-4" />
+              </div>
+              {!compact && <span className="hidden xl:inline pr-3">Đăng nhập</span>}
             </Button>
           </div>
         )}
