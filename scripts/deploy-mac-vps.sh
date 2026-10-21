@@ -53,15 +53,18 @@ pnpm exec turbo run build --filter='!@pu/web'
   exit 1
 }
 
-# Build Web vào slot tương ứng trên Mac
-echo "Đang build Next.js Web vào apps/web/$SLOT trên Mac Mini..."
-rm -rf "apps/web/$SLOT"
-NEXT_DIST_DIR=$SLOT NEXT_SKIP_CHECKS=1 pnpm --filter @pu/web build
+# Build Web trên Mac vào .next rồi copy vào slot
+echo "Đang build Next.js Web trên Mac Mini..."
+NEXT_SKIP_CHECKS=1 pnpm --filter @pu/web build
 
-[ -f "apps/web/$SLOT/BUILD_ID" ] || {
-  echo -e "${RED}Lỗi: Web build không tạo được BUILD_ID tại apps/web/$SLOT.${NC}"
+[ -f "apps/web/.next/BUILD_ID" ] || {
+  echo -e "${RED}Lỗi: Web build không tạo được BUILD_ID tại apps/web/.next.${NC}"
   exit 1
 }
+
+echo "Chuẩn bị slot $SLOT cho bản build mới..."
+rm -rf "apps/web/$SLOT"
+cp -R apps/web/.next "apps/web/$SLOT"
 echo -e "${GREEN}✓ Build hoàn tất trên Mac Mini!${NC}"
 
 # 3. Đồng bộ mã nguồn & Build Artifacts lên VPS
