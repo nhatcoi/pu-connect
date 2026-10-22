@@ -7,6 +7,25 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Trang quản lý Tool thu thập tin tức & AI News Aggregator Hub (2026-10-22)**:
+  - **Trang quản trị chuyên biệt ([`news-page.tsx`](apps/admin/src/features/news/news-page.tsx))**:
+    - Tích hợp mục "Thu thập tin" trên thanh điều hướng Admin (`#/news`).
+    - Thống kê thời gian thực: Tổng số bài đã thu thập, Số bài chờ duyệt, Số bài đã đăng lên PUC, Số nguồn RSS theo dõi.
+    - 3 tab vận hành tinh gọn: `Bản tin thu thập`, `Nguồn RSS`, `Cấu hình & Telegram`.
+  - **Quản lý Nguồn tin RSS ([`news-sources-tab.tsx`](apps/admin/src/features/news/news-sources-tab.tsx))**:
+    - Quản lý danh sách nguồn tin RSS/Feed công nghệ (Google News AI, OpenAI, The Verge, TechCrunch, ArXiv...).
+    - Bật/tắt nguồn và thêm mới nguồn RSS theo từng chuyên mục (`ai`, `tech`, `security`, `robotics`, `general`).
+  - **Duyệt bài & Đăng tin tự động ([`news-feed-tab.tsx`](apps/admin/src/features/news/news-feed-tab.tsx))**:
+    - Bộ lọc bài viết theo chuyên mục và trạng thái (`pending`, `posted`, `rejected`).
+    - Nút đăng tức thì bài viết lên bảng tin PUC dưới danh nghĩa Bot `@ainews` (kèm dẫn nguồn Markdown và phân tích tác động).
+  - **Cấu hình AI & Kênh Telegram Monitor ([`news-config-tab.tsx`](apps/admin/src/features/news/news-config-tab.tsx))**:
+    - Chọn Bot đăng bài mặc định và chọn Model AI tóm tắt.
+    - Chế độ tự động hoàn toàn (Full Auto) hoặc duyệt thủ công.
+    - Kết nối Telegram Bot Token & Chat ID để bắn bản tin mới vào kênh Telegram cho Admin review.
+  - **Backend & Database Migration**:
+    - Migration [`news-crawler-upgrade.sql`](apps/api/src/database/news-crawler-upgrade.sql) tạo các bảng `news_sources`, `news_articles`, `news_crawler_config`.
+    - API endpoints tại [`AdminNewsController`](apps/api/src/modules/admin/admin-news.controller.ts) và [`AdminNewsService`](apps/api/src/modules/admin/admin-news.service.ts).
+
 - [x] **Tinh gọn giao diện AI Admin Console: 3 mục chuẩn mực LLM, RAG, OCR & Clean text (2026-10-22)**:
   - **Tối giản hóa cấu trúc theo 3 mục AI cốt lõi**:
     - **LLM**: Gom nhóm gọn gàng Provider (Gateways) và Model Mapping, loại bỏ hoàn toàn các dòng hint văn bản thừa (`Lỗi gateway => tự chuyển...`, `Tắt model => người đang chọn...`).

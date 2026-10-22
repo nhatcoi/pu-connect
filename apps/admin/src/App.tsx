@@ -16,6 +16,7 @@ import {
   PanelLeftOpen,
   Monitor,
   Moon,
+  Newspaper,
   RefreshCw,
   Search,
   Sun,
@@ -34,9 +35,10 @@ import { UsersPage } from '@/features/users/users-page'
 import { AiOpsTab } from '@/tabs/ai-ops-tab'
 import { AcademicTab } from '@/tabs/academic-tab'
 import { BotsPage } from '@/features/bots/bots-page'
+import { NewsPage } from '@/features/news/news-page'
 import { AuditLogsTab, BroadcastTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
 
-export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'audit'
+export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'news' | 'audit'
 
 interface NavItem {
   id: NavId
@@ -46,7 +48,7 @@ interface NavItem {
   badge?: number
 }
 
-const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'bots', 'audit']
+const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'bots', 'news', 'audit']
 
 // Điều hướng theo hash (#/users) — giữ trang khi F5
 function readHash(): NavId {
@@ -150,7 +152,8 @@ export function App() {
       label: 'Nội dung',
       items: [
         { id: 'academic', label: 'Học thuật', icon: BookOpen, perm: 'academic:read' },
-        { id: 'ai', label: 'N7AI', icon: Bot, perm: 'ai:read', badge: stats.data?.openSupportTickets }
+        { id: 'ai', label: 'N7AI', icon: Bot, perm: 'ai:read', badge: stats.data?.openSupportTickets },
+        { id: 'news', label: 'Thu thập tin', icon: Newspaper, perm: 'bots:manage' }
       ]
     },
     {
@@ -326,6 +329,7 @@ export function App() {
             {current === 'search' && <SearchAnalyticsTab />}
             {current === 'broadcast' && <BroadcastTab />}
             {current === 'bots' && <BotsPage />}
+            {current === 'news' && <NewsPage />}
             {current === 'audit' && <AuditLogsTab />}
           </div>
         </main>
