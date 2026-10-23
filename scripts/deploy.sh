@@ -267,6 +267,10 @@ systemctl is-active --quiet pu-bot && echo "pu-bot (Bot Simulator): ACTIVE" || e
 cp scripts/ops/nginx-admin-puc.conf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf
 ln -sf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf /etc/nginx/sites-enabled/admin-puc.vnhat.dev.conf
 
+# Cấu hình Nginx cho Documentation Portal (docs-puc.vnhat.dev — Static SPA 0 MB RAM)
+cp scripts/ops/nginx-docs-puc.conf /etc/nginx/sites-available/docs-puc.vnhat.dev.conf 2>/dev/null || true
+ln -sf /etc/nginx/sites-available/docs-puc.vnhat.dev.conf /etc/nginx/sites-enabled/docs-puc.vnhat.dev.conf
+
 # Nếu đã có chứng chỉ SSL Let's Encrypt cho admin-puc.vnhat.dev (hoặc dùng cert puc.vnhat.dev cho Cloudflare Full)
 if [ -f /etc/letsencrypt/live/admin-puc.vnhat.dev/fullchain.pem ]; then
   CERT_DIR="/etc/letsencrypt/live/admin-puc.vnhat.dev"
@@ -349,10 +353,12 @@ sleep 2
 
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN")
 ADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://admin-$DOMAIN")
+DOCS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://docs-$DOMAIN")
 API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN/api/auth/me")
 
 echo -e "Web (https://$DOMAIN): HTTP Status ${GREEN}$HTTP_STATUS${NC}"
 echo -e "Admin (https://admin-$DOMAIN): HTTP Status ${GREEN}$ADMIN_STATUS${NC}"
+echo -e "Docs (https://docs-$DOMAIN): HTTP Status ${GREEN}$DOCS_STATUS${NC}"
 echo -e "API (https://$DOMAIN/api/auth/me): HTTP Status ${GREEN}$API_STATUS${NC} (Session Check)"
 
 if [ "$HTTP_STATUS" -eq 200 ]; then

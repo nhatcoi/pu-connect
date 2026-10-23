@@ -12,29 +12,10 @@ Toàn bộ hệ thống UI, State Management và Pipeline Render tài liệu k�
 pu-connector/
 ├── apps/
 │   ├── web/                     # Frontend Next.js 15+ (App Router, Tailwind v4, shadcn/ui)
-│   │   ├── src/
-│   │   │   ├── app/             # Next.js App Router (Layout, Providers, Pages)
-│   │   │   ├── components/
-│   │   │   │   ├── ui/          # Radix UI + CVA + Tailwind components (Button, Dialog, etc.)
-│   │   │   │   ├── renderer/    # Document Renderer (Markdown, LaTeX KaTeX, Mermaid Diagrams, Code)
-│   │   │   │   ├── editor/      # Tiptap WYSIWYG & Markdown Editor
-│   │   │   │   └── social/      # PostCard, DocumentCard, Composer, Header, Sidebar
-│   │   │   ├── lib/             # Utilities (cn), Serialized Mermaid Queue, API Client
-│   │   │   ├── store/           # Zustand Store (Slice-based pattern)
-│   │   │   └── styles/          # Global styles & Markdown typography theme
-│   │   └── package.json
-│   │
-│   └── api/                     # Backend NestJS 11+ (Modular Architecture)
-│       ├── src/
-│       │   ├── common/          # Global Exception Filters & Transform Interceptors
-│       │   ├── modules/
-│       │   │   ├── auth/        # JWT Auth, Passport Strategy, User Service
-│       │   │   ├── posts/       # Social Feed API, Likes & Comments
-│       │   │   ├── documents/   # Document Sharing, Download Tracker, Search
-│       │   │   └── realtime/    # WebSocket Gateway (Socket.io)
-│       │   ├── app.module.ts
-│       │   └── main.ts
-│       └── package.json
+│   ├── admin/                   # Admin Console Vite SPA (admin-puc.vnhat.dev, 0 MB RAM)
+│   ├── docs/                    # Technical Documentation Vite SPA (docs-puc.vnhat.dev, 0 MB RAM)
+│   ├── ai-news/                 # AI News Intelligence Service (ai-news.vnhat.dev)
+│   └── api/                     # Backend NestJS 11+ (Modular Architecture, Native PostgreSQL)
 │
 ├── packages/
 │   ├── schemas/                 # Shared Zod Schemas & TypeScript Types (DTOs)
@@ -112,6 +93,7 @@ Dự án hỗ trợ 2 phương thức deploy linh hoạt:
 
 * **Production URL:** [https://puc.vnhat.dev](https://puc.vnhat.dev)
 * **Admin Console:** [https://admin-puc.vnhat.dev](https://admin-puc.vnhat.dev)
+* **Documentation Portal:** [https://docs-puc.vnhat.dev](https://docs-puc.vnhat.dev)
 * **REST API:** [https://puc.vnhat.dev/api](https://puc.vnhat.dev/api)
 * **GraphQL Endpoint:** [https://puc.vnhat.dev/graphql](https://puc.vnhat.dev/graphql)
 

@@ -7,6 +7,20 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
+- [x] **Cổng Tài liệu Kỹ thuật Hệ thống (`docs-puc.vnhat.dev`) & Cụm FAB Kép Thông Minh (2026-10-23)**:
+  - **Triển khai toàn bộ trang tài liệu chuyên biệt ([`apps/docs`](apps/docs))**:
+    - Xây dựng ứng dụng Documentation Portal độc lập bằng Vite 6, React 19, TailwindCSS 4, chạy với kiến trúc Static SPA tiêu tốn **0 MB RAM Node.js** trên máy chủ VPS.
+    - Script tiền biên dịch [`build-docs-data.mjs`](apps/docs/scripts/build-docs-data.mjs) tự động quét, bóc tách và lập chỉ mục toàn bộ 52+ tài liệu Markdown từ `docs/` (`core/` ADRs 01-24, `diagrams/` sơ đồ Mermaid C4/ERD/Flows, `FEAT.md`, `architecture.md`, `api-specification.md`, `database-schema.md`).
+    - **Trình dựng sơ đồ Mermaid tương tác ([`MermaidBlock.tsx`](apps/docs/src/components/MermaidBlock.tsx))**: Tự động nhận diện code block `mermaid`, render SVG sắc nét theo theme Sáng/Tối, hỗ trợ xem mã nguồn, sao chép code và chế độ Toàn màn hình (Fullscreen Modal) kèm công cụ Zoom in/out/reset cho các sơ đồ ERD phức tạp.
+    - **Tìm kiếm tức thời toàn văn (Full-Text Search Modal [`SearchModal.tsx`](apps/docs/src/components/SearchModal.tsx))**: Kích hoạt nhanh bằng phím tắt `⌘K` / `Ctrl+K`, thuật toán tính điểm trọng số theo tiêu đề, slug, đoạn trích và nội dung, hỗ trợ phím mũi tên và Enter để chuyển trang ngay.
+    - **Giao diện hiện đại chuẩn Phenikaa**: Theme tokens đồng bộ (`#0b3d91`, `#f7941d`), thanh điều hướng danh mục phân cấp bên trái, mục lục động theo dõi vị trí cuộn (Scrollspy Table of Contents) bên phải, breadcrumbs, nút chuyển bài trước/sau, chuyển theme Sáng/Tối/Hệ thống.
+  - **Cụm Floating Action Buttons (FAB) trên Web Client ([`n7ai-fab.tsx`](apps/web/src/components/n7ai/n7ai-fab.tsx))**:
+    - Dịch chuyển vị trí cụm FAB sang trái một khoảng hợp lý (`right-6 md:right-10, bottom-20 md:bottom-8`) tạo khoảng thở thẩm mỹ, không che thanh cuộn trang.
+    - Bổ sung FAB Tài liệu (Documentation) nằm ngay phía trên Chat FAB: biểu tượng `BookOpen`, tooltip hover mượt mà, liên kết trực tiếp tới `https://docs-puc.vnhat.dev`.
+  - **Hạ tầng Nginx & Tích hợp Deploy VPS**:
+    - Cấu hình Nginx Vhost [`nginx-docs-puc.conf`](scripts/ops/nginx-docs-puc.conf) phục vụ tĩnh tại `docs-puc.vnhat.dev` với chứng chỉ SSL, HTTP/2, gzip, cache bất biến cho static assets có hash và fallback SPA.
+    - Tích hợp vào quy trình biên dịch và kiểm tra trạng thái tự động trong [`deploy-mac-vps.sh`](deploy-mac-vps.sh) và [`scripts/deploy.sh`](scripts/deploy.sh).
+
 - [x] **Trang quản lý Tool thu thập tin tức & AI News Aggregator Hub (2026-10-22)**:
   - **Trang quản trị chuyên biệt ([`news-page.tsx`](apps/admin/src/features/news/news-page.tsx))**:
     - Tích hợp mục "Thu thập tin" trên thanh điều hướng Admin (`#/news`).

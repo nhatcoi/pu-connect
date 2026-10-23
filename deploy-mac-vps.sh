@@ -91,9 +91,10 @@ rsync -avz --delete \
   ./ "$VPS_HOST:$VPS_DIR/"
 
 # Đồng bộ trực tiếp các Artifacts đã build trên Mac sang VPS
-echo "Đang đẩy Artifacts (API dist, Admin dist, Web $SLOT) lên VPS..."
+echo "Đang đẩy Artifacts (API dist, Admin dist, Docs dist, Web $SLOT) lên VPS..."
 rsync -avz --delete apps/api/dist/ "$VPS_HOST:$VPS_DIR/apps/api/dist/"
 rsync -avz --delete apps/admin/dist/ "$VPS_HOST:$VPS_DIR/apps/admin/dist/"
+rsync -avz --delete apps/docs/dist/ "$VPS_HOST:$VPS_DIR/apps/docs/dist/"
 rsync -avz --delete --exclude 'cache' "apps/web/$SLOT/" "$VPS_HOST:$VPS_DIR/apps/web/$SLOT/"
 
 # 4. Cấu hình môi trường, CSDL & Dependencies trên VPS
@@ -269,6 +270,10 @@ systemctl is-active --quiet pu-bot && echo "pu-bot (Bot Simulator): ACTIVE" || e
 cp scripts/ops/nginx-admin-puc.conf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf 2>/dev/null || true
 ln -sf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf /etc/nginx/sites-enabled/admin-puc.vnhat.dev.conf
 
+# Cấu hình Nginx Documentation Portal (docs-puc.vnhat.dev)
+cp scripts/ops/nginx-docs-puc.conf /etc/nginx/sites-available/docs-puc.vnhat.dev.conf 2>/dev/null || true
+ln -sf /etc/nginx/sites-available/docs-puc.vnhat.dev.conf /etc/nginx/sites-enabled/docs-puc.vnhat.dev.conf
+
 if [ -f /etc/letsencrypt/live/admin-puc.vnhat.dev/fullchain.pem ]; then
   CERT_DIR="/etc/letsencrypt/live/admin-puc.vnhat.dev"
 else
@@ -344,10 +349,12 @@ sleep 2
 
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN")
 ADMIN_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://admin-$DOMAIN")
+DOCS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://docs-$DOMAIN")
 API_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "https://$DOMAIN/api/auth/me")
 
 echo -e "Web (https://$DOMAIN): HTTP Status ${GREEN}$HTTP_STATUS${NC}"
 echo -e "Admin (https://admin-$DOMAIN): HTTP Status ${GREEN}$ADMIN_STATUS${NC}"
+echo -e "Docs (https://docs-$DOMAIN): HTTP Status ${GREEN}$DOCS_STATUS${NC}"
 echo -e "API (https://$DOMAIN/api/auth/me): HTTP Status ${GREEN}$API_STATUS${NC} (Session Check)"
 
 # Dọn dẹp artifact slot local sau khi push xong
