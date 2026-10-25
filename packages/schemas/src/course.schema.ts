@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 export const DepartmentSchema = z.object({
   id: z.string(),
-  code: z.string(), // e.g. "FIT", "FET", "FBA", "FEE"
+  code: z.string(), // e.g. "CNTT", "KHMT", "QTKD"
   name: z.string(), // e.g. "Khoa Công nghệ Thông tin", "Khoa Điện - Điện tử"
   icon: z.string().optional(),
   description: z.string().optional()

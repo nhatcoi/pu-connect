@@ -16,8 +16,8 @@ const DEFAULT_COURSES = [
   { id: 'CS201', code: 'CS201', name: 'Cơ sở Dữ liệu', faculty: 'FIT' },
   { id: 'CS301', code: 'CS301', name: 'Lập trình Web & Ứng dụng', faculty: 'FIT' },
   { id: 'CS305', code: 'CS305', name: 'Trí tuệ Nhân tạo & Học máy', faculty: 'FIT' },
-  { id: 'MAT101', code: 'MAT101', name: 'Giải tích 1', faculty: 'FCS' },
-  { id: 'MAT102', code: 'MAT102', name: 'Đại số Tuyến tính', faculty: 'FCS' },
+  { id: 'MAT101', code: 'MAT101', name: 'Giải tích 1', faculty: 'KHCB' },
+  { id: 'MAT102', code: 'MAT102', name: 'Đại số Tuyến tính', faculty: 'KHCB' },
   { id: 'PHY101', code: 'PHY101', name: 'Vật lý Đại cương 1', faculty: 'FEE' },
   { id: 'ENG101', code: 'ENG101', name: 'Tiếng Anh Học thuật 1', faculty: 'FL' },
   { id: 'PBL3', code: 'PBL3', name: 'Đồ án PBL Chuyên ngành', faculty: 'FIT' }

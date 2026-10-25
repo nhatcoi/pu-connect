@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { AcademicUnit } from '@pu/schemas'
 import { apiClient } from '@/lib/api-client'
@@ -14,4 +15,23 @@ export function useAcademicUnits() {
     queryFn: async () => (await apiClient<Envelope<AcademicUnit[]>>('/academic-units')).data,
     staleTime: 5 * 60_000
   })
+}
+
+export interface FacultyOption {
+  code: string // giá trị gửi lên API (?faculty=): tên viết tắt, API so theo nhánh đơn vị
+  name: string
+}
+
+// Bộ lọc "Khoa / Viện": trường, khoa, viện, trung tâm từ cây đơn vị (không gồm ngành)
+export function useFacultyOptions(allLabel: string): FacultyOption[] {
+  const { data } = useAcademicUnits()
+  return useMemo(
+    () => [
+      { code: 'ALL', name: allLabel },
+      ...(data ?? [])
+        .filter((u) => u.type !== 'major')
+        .map((u) => ({ code: u.shortName || u.name, name: u.name }))
+    ],
+    [data, allLabel]
+  )
 }

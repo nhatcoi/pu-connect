@@ -78,9 +78,7 @@ function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolea
 
     const FACULTY_MAP: Record<string, string> = {
       FIT: 'Khoa Công nghệ Thông tin',
-      FCS: 'Khoa Khoa học Máy tính',
       FEE: 'Khoa Điện - Điện tử',
-      FBA: 'Khoa Kinh tế & QTKD',
       FAE: 'Khoa Kỹ thuật Ô tô',
       FMS: 'Khoa Y Dược',
       FEL: 'Khoa Ngôn ngữ Anh',

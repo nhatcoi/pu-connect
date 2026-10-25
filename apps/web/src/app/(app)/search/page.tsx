@@ -18,6 +18,7 @@ import { SearchOptionsSheet } from '@/components/search/search-options-sheet'
 import { AdvancedSearchDialog } from '@/components/search/advanced-search-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { useFacultyOptions } from '@/hooks/use-academic-units'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { apiClient } from '@/lib/api-client'
 import type { SearchResult, SearchType, Course, UserSummary } from '@pu/schemas'
@@ -25,17 +26,6 @@ import { Search, X, ArrowLeft, Settings, MoreHorizontal, SlidersHorizontal, File
 import { cn } from '@/lib/utils'
 import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
 
-const FACULTIES = [
-  { code: 'ALL', name: 'Tất cả khoa' },
-  { code: 'FIT', name: 'Khoa Công nghệ Thông tin (FIT)' },
-  { code: 'FCS', name: 'Khoa Khoa học Máy tính (FCS)' },
-  { code: 'FEE', name: 'Khoa Điện - Điện tử (FEE)' },
-  { code: 'FBA', name: 'Khoa Kinh tế & QTKD (FBA)' },
-  { code: 'FAE', name: 'Khoa Kỹ thuật Ô tô (FAE)' },
-  { code: 'FMS', name: 'Khoa Y Dược (FMS)' },
-  { code: 'FEL', name: 'Khoa Ngôn ngữ Anh (FEL)' },
-  { code: 'FAS', name: 'Khoa Vật liệu & Công nghệ cao (FAS)' }
-]
 
 // Sample Trending Topics for Explore Feed (Matching X style)
 const TRENDING_TOPICS = [
@@ -108,6 +98,7 @@ const ACADEMIC_STORIES = [
 function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const faculties = useFacultyOptions('Tất cả khoa')
   const queryParam = searchParams.get('q') || ''
   const activeType = (searchParams.get('type') as SearchType) || 'all'
   const facultyParam = searchParams.get('faculty') || 'ALL'
@@ -131,7 +122,7 @@ function SearchContent() {
   const { data: searchResult = null, isLoading } = useQuery({
     queryKey: queryKeys.search(trimmedQuery, activeType, selectedFaculty),
     queryFn: async () => {
-      const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${selectedFaculty}` : ''
+      const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${encodeURIComponent(selectedFaculty)}` : ''
       const res = await apiClient<{ success: boolean; data: SearchResult }>(
         `/search?q=${encodeURIComponent(trimmedQuery)}&type=${activeType}${facultyQuery}&limit=30`
       )
@@ -158,18 +149,18 @@ function SearchContent() {
       router.push('/search')
       return
     }
-    const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${selectedFaculty}` : ''
+    const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${encodeURIComponent(selectedFaculty)}` : ''
     router.push(`/search?q=${encodeURIComponent(inputQuery.trim())}&type=${activeType}${facultyQuery}`)
   }
 
   const handleTabChange = (type: SearchType) => {
-    const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${selectedFaculty}` : ''
+    const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${encodeURIComponent(selectedFaculty)}` : ''
     router.push(`/search?q=${encodeURIComponent(queryParam)}&type=${type}${facultyQuery}`)
   }
 
   const handleFacultyChange = (code: string) => {
     setSelectedFaculty(code)
-    const facultyQuery = code !== 'ALL' ? `&faculty=${code}` : ''
+    const facultyQuery = code !== 'ALL' ? `&faculty=${encodeURIComponent(code)}` : ''
     router.push(`/search?q=${encodeURIComponent(queryParam)}&type=${activeType}${facultyQuery}`)
   }
 
@@ -514,7 +505,7 @@ function SearchContent() {
             </div>
           </CardHeader>
           <CardContent className="p-2 space-y-0.5">
-            {FACULTIES.map((fac) => {
+            {faculties.map((fac) => {
               const isSelected = selectedFaculty === fac.code
               return (
                 <button

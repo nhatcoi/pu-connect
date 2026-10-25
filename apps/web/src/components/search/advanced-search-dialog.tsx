@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { useFacultyOptions } from '@/hooks/use-academic-units'
 import { Input } from '@/components/ui/input'
 import { SlidersHorizontal } from 'lucide-react'
 
@@ -16,20 +17,10 @@ interface AdvancedSearchDialogProps {
   initialFaculty?: string
 }
 
-const FACULTIES = [
-  { code: 'ALL', name: 'Tất cả Khoa / Viện' },
-  { code: 'FIT', name: 'Khoa Công nghệ Thông tin (FIT)' },
-  { code: 'FCS', name: 'Khoa Khoa học Máy tính (FCS)' },
-  { code: 'FEE', name: 'Khoa Điện - Điện tử (FEE)' },
-  { code: 'FBA', name: 'Khoa Kinh tế & QTKD (FBA)' },
-  { code: 'FAE', name: 'Khoa Kỹ thuật Ô tô (FAE)' },
-  { code: 'FMS', name: 'Khoa Y Dược (FMS)' },
-  { code: 'FEL', name: 'Khoa Ngôn ngữ Anh (FEL)' },
-  { code: 'FAS', name: 'Khoa Vật liệu & Công nghệ cao (FAS)' }
-]
 
 export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', initialFaculty = 'ALL' }: AdvancedSearchDialogProps) {
   const router = useRouter()
+  const faculties = useFacultyOptions('Tất cả Khoa / Viện')
   const [exactWords, setExactWords] = useState(initialQuery)
   const [tag, setTag] = useState('')
   const [faculty, setFaculty] = useState(initialFaculty)
@@ -45,7 +36,7 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
 
     if (!q) return
 
-    const facultyParam = faculty !== 'ALL' ? `&faculty=${faculty}` : ''
+    const facultyParam = faculty !== 'ALL' ? `&faculty=${encodeURIComponent(faculty)}` : ''
     const typeParam = searchType !== 'all' ? `&type=${searchType}` : ''
 
     onOpenChange(false)
@@ -77,7 +68,7 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
           {/* Tag search */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">Thẻ chủ đề / Mã học phần (Hashtag)</label>
-            <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="ví dụ: #IT101, #DoAnTotNghiep, #FIT" className="rounded-xl h-10 text-xs" />
+            <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="ví dụ: #IT101, #DoAnTotNghiep, #KHMT" className="rounded-xl h-10 text-xs" />
           </div>
 
           {/* Faculty select */}
@@ -88,7 +79,7 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
               onChange={(e) => setFaculty(e.target.value)}
               className="w-full h-10 rounded-xl border border-input bg-background px-3 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              {FACULTIES.map((fac) => (
+              {faculties.map((fac) => (
                 <option key={fac.code} value={fac.code}>
                   {fac.name}
                 </option>
