@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { setTrashActor } from '../../database/trash'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet, type NotifyInput } from '../notifications/notification.types'
@@ -380,6 +381,7 @@ export class CommentsService {
          SELECT COUNT(*)::int AS c FROM thread`,
         [commentId]
       )
+      await setTrashActor(client, currentUserId)
       await client.query(`DELETE FROM comments WHERE id = $1`, [commentId])
       await client.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - $2) WHERE id = $1`, [comment.post_id, removed.rows[0]?.c || 1])
 

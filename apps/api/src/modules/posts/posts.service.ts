@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { setTrashActor } from '../../database/trash'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet } from '../notifications/notification.types'
@@ -588,6 +589,7 @@ export class PostsService {
         throw new ForbiddenException('Bạn không có quyền xóa bài viết này')
       }
 
+      await setTrashActor(client, userId)
       await client.query(`DELETE FROM posts WHERE id = $1`, [postId])
 
       if (post.course_id) {

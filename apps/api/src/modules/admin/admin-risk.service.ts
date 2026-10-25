@@ -1,5 +1,6 @@
 import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
+import { TRASH_RETENTION_DAYS } from '../../database/trash'
 
 // IP có quá nhiều tài khoản ⇒ thường là NAT / wifi trường, không coi là dấu hiệu clone
 export const SHARED_IP_MAX_ACCOUNTS = 10
@@ -92,7 +93,8 @@ export class AdminRiskService implements OnModuleInit, OnModuleDestroy {
       const res = await this.db.query(RISK_SQL)
       const purge = await this.db.query(`DELETE FROM user_security_events WHERE created_at < NOW() - INTERVAL '90 days'`)
       const views = await this.db.query(`DELETE FROM profile_views WHERE last_at < NOW() - INTERVAL '90 days'`)
-      return { updated: res.rowCount ?? 0, purged: (purge.rowCount ?? 0) + (views.rowCount ?? 0) }
+      const trash = await this.db.query(`DELETE FROM deleted_records WHERE deleted_at < NOW() - make_interval(days => $1)`, [TRASH_RETENTION_DAYS])
+      return { updated: res.rowCount ?? 0, purged: (purge.rowCount ?? 0) + (views.rowCount ?? 0) + (trash.rowCount ?? 0) }
     } finally {
       this.running = false
     }

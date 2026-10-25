@@ -78,6 +78,14 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 - Đã công bố trong Chính sách bảo mật (Nghị định 13/2023).
 - IP thật lấy qua Nginx snippet `pu-cloudflare-realip.conf` (chỉ tin `CF-Connecting-IP` từ dải IP Cloudflare).
 
+## Thùng rác (xóa mềm)
+
+- Xóa **bài viết, bình luận, tài liệu, bộ học (Flashcard/Quiz), đơn vị học thuật** không mất hẳn: trigger `trash_row` (migration `trash-upgrade.sql`) lưu bản sao dòng bị xóa (cả dòng bị cascade, vd bình luận của bài) vào `deleted_records`, nhóm theo `batch` (một giao dịch xóa). Truy vấn đọc hiện có không đổi.
+- `GET admin/trash?table=` liệt kê các lần xóa; `POST admin/trash/:batch/restore` khôi phục cả batch (cha trước con) và tính lại `comments_count`; ghi audit `trash.restore`. Quyền `moderation:read` / `moderation:write`.
+- Giữ 30 ngày, job rủi ro (10 phút) dọn hẳn bản ghi quá hạn. Người xóa lấy từ `app.user_id` (service gọi `setTrashActor`).
+- Không khôi phục: reaction, lượt lưu và dữ liệu cascade ở bảng khác (chỉ 5 bảng trên); nếu tác giả hoặc bài gốc đã bị xóa thì báo lỗi, không khôi phục dở.
+- Không dùng cho dữ liệu cá nhân người dùng chủ động xóa (bộ nhớ AI, token connector…): các mục này vẫn xóa thật.
+
 ## Bot (Admin → Bot)
 
 Trang gồm một trang dọc, theo thứ tự: **công tắc daemon (tự đăng + tương tác)** · **tài khoản bot** (CRUD, soul, quyền, giao việc) · **AI & chủ đề** · **lịch đăng & việc giao (+ Import Excel)** · **nhật ký**.

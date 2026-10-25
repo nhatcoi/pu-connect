@@ -17,6 +17,7 @@ import type {
   ZeroResultQuery
 } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
+import { setTrashActor } from '../../database/trash'
 import { NotificationsService } from '../notifications/notifications.service'
 import { type AuditEntry, writeAudit } from './admin-audit'
 import { getRolePermissions } from './dto/admin.dto'
@@ -160,6 +161,7 @@ export class AdminService {
       const target = await client.query(`SELECT id, post_id, author_id, left(content, 120) AS snippet FROM comments WHERE id = $1 FOR UPDATE`, [commentId])
       if (target.rows.length === 0) throw new NotFoundException('Bình luận không tồn tại')
       const { post_id: postId, snippet } = target.rows[0]
+      await setTrashActor(client, adminId)
       await client.query(`DELETE FROM comments WHERE id = $1`, [commentId])
       await client.query(
         `UPDATE posts SET comments_count = (SELECT COUNT(*)::int FROM comments WHERE post_id = $1) WHERE id = $1`,
@@ -405,6 +407,7 @@ export class AdminService {
       const target = await client.query(`SELECT id, title, course_id FROM documents WHERE id = $1 FOR UPDATE`, [docId])
       if (target.rows.length === 0) throw new NotFoundException('Tài liệu không tồn tại')
       const { title, course_id: courseId } = target.rows[0]
+      await setTrashActor(client, adminId)
       await client.query(`DELETE FROM documents WHERE id = $1`, [docId])
       if (courseId) {
         await client.query(
@@ -540,6 +543,7 @@ export class AdminService {
   async bulkComments(adminId: string, input: AdminBulkCommentInput): Promise<AdminBulkResult> {
     const ids = [...new Set(input.ids)]
     const deleted = await this.db.transaction(async (client) => {
+      await setTrashActor(client, adminId)
       const res = await client.query(
         `DELETE FROM comments WHERE id = ANY($1::uuid[]) RETURNING id, post_id, left(content, 120) AS snippet`,
         [ids]

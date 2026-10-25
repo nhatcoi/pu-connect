@@ -3,6 +3,7 @@ import { assertNotRestricted } from '../../../common/guards/not-restricted.guard
 import { CommentType } from '../types/comment.type'
 import { CreateCommentInput } from '../dto/create-comment.input'
 import { DatabaseService } from '../../../database/database.service'
+import { setTrashActor } from '../../../database/trash'
 import { UnauthorizedException, NotFoundException } from '@nestjs/common'
 
 @Resolver(() => CommentType)
@@ -100,8 +101,11 @@ export class CommentResolver {
       throw new UnauthorizedException('Bạn không có quyền xóa bình luận này')
     }
 
-    await this.db.query(`DELETE FROM comments WHERE id = $1`, [id])
-    await this.db.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = $1`, [comment.post_id])
+    await this.db.transaction(async (client) => {
+      await setTrashActor(client, user.id)
+      await client.query(`DELETE FROM comments WHERE id = $1`, [id])
+      await client.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - 1) WHERE id = $1`, [comment.post_id])
+    })
 
     return true
   }

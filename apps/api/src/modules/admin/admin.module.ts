@@ -27,11 +27,13 @@ import { AdminNewsController } from './admin-news.controller'
 import { AdminNewsService } from './admin-news.service'
 import { AdminBotsController } from './admin-bots.controller'
 import { AdminBotsService } from './admin-bots.service'
+import { AdminTrashController } from './admin-trash.controller'
+import { AdminTrashService } from './admin-trash.service'
 import { AdminGuard } from './admin.guard'
 
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule],
-  controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, AdminNewsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminGuard]
+  controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController, AdminTrashController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, AdminNewsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AdminGuard]
 })
 export class AdminModule {}
