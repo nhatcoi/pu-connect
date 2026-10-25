@@ -25,10 +25,10 @@ describe('Cá nhân hóa (e2e)', () => {
     expect(empty.body.data.personalized).toBe(false)
     expect(empty.body.data.items).toHaveLength(4)
 
-    const post = await agentB
-      .post('/api/posts')
-      .send({ content: 'Thuật toán Dijkstra trên đồ thị có trọng số', tags: ['Lý thuyết đồ thị'] })
-      .expect(201)
+    // Tín hiệu bảng tin (thẻ bài viết, từ khóa tìm kiếm) không phải chủ đề học ⇒ không thành gợi ý
+    const code = `PZ${Date.now().toString(36).toUpperCase()}`
+    const course = await db.query(`INSERT INTO courses (code, name, credits) VALUES ($1, 'Lý thuyết đồ thị kiểm thử', 3) RETURNING id`, [code])
+    const post = await agentB.post('/api/posts').send({ content: 'Thuật toán Dijkstra trên đồ thị có trọng số', tags: ['anuong', 'reviewquan'] }).expect(201)
     const postId = post.body.data.id
     await db.query(`INSERT INTO saved_posts (user_id, post_id) VALUES ($1, $2)`, [a.id, postId])
     await agentA
@@ -40,14 +40,20 @@ describe('Cá nhân hóa (e2e)', () => {
         ]
       })
       .expect(204)
+    await db.query(`UPDATE users SET interests_updated_at = NULL WHERE id = $1`, [a.id])
+    const feedOnly = await agentA.get('/api/ai/suggestions?mode=quiz').expect(200)
+    expect(feedOnly.body.data.personalized).toBe(false)
+    expect(feedOnly.body.data.items.map((s: { text: string }) => s.text).join(' ')).not.toMatch(/anuong|reviewquan|dijkstra/i)
 
-    // Hồ sơ cũ (đã tính lúc rỗng) ⇒ ép tính lại
+    // Gắn bài vào môn học ⇒ môn học trở thành chủ đề quan tâm
+    await db.query(`UPDATE posts SET course_id = $2 WHERE id = $1`, [postId, course.rows[0].id])
     await db.query(`UPDATE users SET interests_updated_at = NULL WHERE id = $1`, [a.id])
     const quiz = await agentA.get('/api/ai/suggestions?mode=quiz').expect(200)
     expect(quiz.body.data.personalized).toBe(true)
     const texts: string[] = quiz.body.data.items.map((s: { text: string }) => s.text)
-    expect(texts).toContain('Quiz 5 câu về lý thuyết đồ thị')
-    expect(texts).toContain('Quiz 5 câu về "dijkstra"')
+    expect(texts).toContain('Quiz 5 câu ôn tập môn Lý thuyết đồ thị kiểm thử')
+    expect(quiz.body.data.items[0].topic).toMatchObject({ kind: 'course' })
+    expect(texts.join(' ')).not.toMatch(/anuong|reviewquan|dijkstra/i)
 
     // "Hỏi đáp" ⇒ trộn nhiều chế độ
     const mixed = await agentA.get('/api/ai/suggestions').expect(200)

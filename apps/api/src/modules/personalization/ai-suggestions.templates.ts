@@ -1,43 +1,21 @@
-import type { AiMode, AiSuggestion, InterestKind } from '@pu/schemas'
+import type { AiMode, AiSuggestion } from '@pu/schemas'
 
 type StudyMode = Exclude<AiMode, 'ask'>
 
-// Mẫu câu theo chế độ học × loại chủ đề ({t} = tên môn / tag / từ khóa)
-// Prompt templates per study mode and topic kind
-const TEMPLATES: Record<StudyMode, Record<InterestKind, string>> = {
-  explain: {
-    course: 'Giải thích các khái niệm trọng tâm môn {t}',
-    tag: 'Giải thích {t} bằng ví dụ dễ hiểu',
-    query: 'Giải thích "{t}" bằng ví dụ dễ hiểu'
-  },
-  quiz: {
-    course: 'Quiz 5 câu ôn tập môn {t}',
-    tag: 'Quiz 5 câu về {t}',
-    query: 'Quiz 5 câu về "{t}"'
-  },
-  flashcards: {
-    course: 'Flashcard thuật ngữ quan trọng môn {t}',
-    tag: 'Flashcard các ý chính về {t}',
-    query: 'Flashcard về "{t}"'
-  },
-  summarize: {
-    course: 'Tóm tắt kiến thức trọng tâm môn {t}',
-    tag: 'Tóm tắt những điều cần biết về {t}',
-    query: 'Tóm tắt những điều cần biết về "{t}"'
-  },
-  plan: {
-    course: 'Lộ trình ôn {t} trong 7 ngày, mỗi ngày 2 tiếng',
-    tag: 'Lộ trình tự học {t} trong 2 tuần',
-    query: 'Lộ trình tự học "{t}" trong 2 tuần'
-  }
+// Mẫu câu theo chế độ học ({t} = tên môn)
+// Chỉ môn học: thẻ bài viết / từ khóa tìm kiếm là tín hiệu của bảng tin, không phải chủ đề học (vd #anuong, #reviewquan)
+const TEMPLATES: Record<StudyMode, string> = {
+  explain: 'Giải thích các khái niệm trọng tâm môn {t}',
+  quiz: 'Quiz 5 câu ôn tập môn {t}',
+  flashcards: 'Flashcard thuật ngữ quan trọng môn {t}',
+  summarize: 'Tóm tắt kiến thức trọng tâm môn {t}',
+  plan: 'Lộ trình ôn {t} trong 7 ngày, mỗi ngày 2 tiếng'
 }
 
 // "Hỏi đáp": trộn nhiều chế độ để người mới thấy N7AI làm được gì
 export const MIXED_MODES: StudyMode[] = ['explain', 'quiz', 'flashcards', 'plan']
 
-export function fillTemplate(mode: StudyMode, kind: InterestKind, label: string): string {
-  return TEMPLATES[mode][kind].replace('{t}', label)
-}
+export const fillTemplate = (mode: StudyMode, course: string): string => TEMPLATES[mode].replace('{t}', course)
 
 // Gợi ý mặc định khi chưa đủ dữ liệu / tắt cá nhân hóa
 const d = (mode: AiMode, text: string): AiSuggestion => ({ mode, text, topic: null })

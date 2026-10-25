@@ -4,12 +4,13 @@ import { DEFAULT_SUGGESTIONS, MIXED_MODES, fillTemplate } from './ai-suggestions
 import { InterestProfileService, type InterestTopic } from './interest-profile.service'
 
 const SUGGESTION_COUNT = 4
+const MAX_PERSONAL = 3 // luôn chừa chỗ cho gợi ý mặc định (đa dạng chủ đề)
 export const SUGGESTION_POOL = 12 // số chủ đề top đọc từ hồ sơ
-const MAX_QUERY_TOPICS = 1 // từ khóa tìm kiếm dễ nhiễu ⇒ tối đa 1
 const MAX_LABEL = 50
 
-// Gợi ý mở đầu N7AI: chủ đề quan tâm (SQL) × mẫu câu theo chế độ — không gọi LLM
-// Zero-state AI suggestions: interest topics × per-mode templates, no LLM call
+// Gợi ý mở đầu N7AI: môn học đang quan tâm (SQL) × mẫu câu theo chế độ — không gọi LLM
+// Chỉ lấy chủ đề là môn học: thẻ bài viết và từ khóa tìm kiếm thuộc bảng tin, đưa vào đây ra gợi ý như "Giải thích anuong"
+// Zero-state AI suggestions: courses of interest × per-mode templates, no LLM call
 @Injectable()
 export class AiSuggestionsService {
   constructor(private readonly profile: InterestProfileService) {}
@@ -20,33 +21,34 @@ export class AiSuggestionsService {
 
   // Thuần: chủ đề sẵn có → gợi ý (admin xem trước dùng lại, không tính lại hồ sơ)
   fromTopics(mode: AiMode, ranked: InterestTopic[]): AiSuggestionsResponse {
-    const topics = pickTopics(ranked)
-    const items: AiSuggestion[] = topics.map((t, i) => {
+    const courses = pickCourses(ranked)
+    // "Hỏi đáp": mỗi gợi ý một chế độ; ít môn thì dùng lại môn hàng đầu cho nhiều chế độ. Chế độ cụ thể: mỗi môn một gợi ý
+    const slots = courses.length ? (mode === 'ask' ? MAX_PERSONAL : Math.min(courses.length, MAX_PERSONAL)) : 0
+    const items: AiSuggestion[] = Array.from({ length: slots }, (_, i) => {
+      const course = courses[i % courses.length]
       const m = mode === 'ask' ? MIXED_MODES[i % MIXED_MODES.length] : mode
-      return { mode: m, text: fillTemplate(m, t.kind, t.label), topic: { kind: t.kind, key: t.key } }
+      return { mode: m, text: fillTemplate(m, course.label), topic: { kind: course.kind, key: course.key } }
     })
     // Chưa đủ ⇒ bù gợi ý mặc định của chế độ
     for (const fallback of DEFAULT_SUGGESTIONS[mode]) {
       if (items.length >= SUGGESTION_COUNT) break
       if (!items.some((s) => s.text === fallback.text)) items.push(fallback)
     }
-    return { personalized: topics.length > 0, items }
+    return { personalized: courses.length > 0, items }
   }
 }
 
-// Đa dạng: bỏ trùng tên, giới hạn từ khóa tìm kiếm, cắt nhãn quá dài
-function pickTopics(topics: InterestTopic[]): InterestTopic[] {
+// Chỉ môn học, bỏ trùng tên, cắt nhãn quá dài
+function pickCourses(topics: InterestTopic[]): InterestTopic[] {
   const seen = new Set<string>()
   const picked: InterestTopic[] = []
-  let queries = 0
   for (const t of topics) {
+    if (t.kind !== 'course') continue
     const label = t.label.trim().slice(0, MAX_LABEL)
-    const norm = label.toLowerCase()
-    if (!label || seen.has(norm)) continue
-    if (t.kind === 'query' && ++queries > MAX_QUERY_TOPICS) continue
-    seen.add(norm)
+    if (!label || seen.has(label.toLowerCase())) continue
+    seen.add(label.toLowerCase())
     picked.push({ ...t, label })
-    if (picked.length === SUGGESTION_COUNT) break
+    if (picked.length === MAX_PERSONAL) break
   }
   return picked
 }
