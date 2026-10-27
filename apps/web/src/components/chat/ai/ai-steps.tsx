@@ -94,18 +94,7 @@ function useElapsed(since: string | undefined, running: boolean) {
   return since ? Math.max(0, now - new Date(since).getTime()) : 0
 }
 
-// Tóm tắt khi xong: "3 công cụ · 4 nguồn" — công cụ = mọi bước không phải chuẩn bị (tệp, mục gắn @, bộ nhớ); nguồn = tổng kết quả
-const PREP: AiStep['provider'][] = ['refs', 'files', 'memory']
-function summary(steps: AiStep[]) {
-  const tools = steps.filter((s) => !PREP.includes(s.provider))
-  const sources = tools.reduce(
-    (n, s) => n + (s.resultCount ?? (Number(/^(\d+) (nguồn|trang)/.exec(s.detail ?? '')?.[1]) || 0)), // tin cũ: số nằm trong detail
-    0
-  )
-  return [tools.length ? `${tools.length} công cụ` : null, sources ? `${sources} nguồn` : null].filter(Boolean).join(' · ')
-}
-
-// Tiến trình N7AI: đọc tệp / bộ nhớ, tìm nguồn, gọi tool — đang trả lời ⇒ timeline + đồng hồ; xong ⇒ thu gọn "Đã xử lý 6.2s · 4 nguồn"
+// Tiến trình N7AI: đọc tệp / bộ nhớ, tìm nguồn, gọi tool — đang trả lời ⇒ timeline + đồng hồ; xong ⇒ một dòng "Xem quá trình · 6s", bấm mới hiện các bước
 export function AiSteps({
   steps,
   live,
@@ -136,18 +125,12 @@ export function AiSteps({
     )
   }
   if (!steps.length && !durationMs) return null
-  const info = summary(steps)
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} disabled={!steps.length} className="mb-1.5">
       <CollapsibleTrigger className="group flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground">
-        <span className="flex -space-x-1">
-          {[...new Set(steps.map((s) => s.provider))].slice(0, 4).map((p) => (
-            <StepIcon key={p} provider={p} />
-          ))}
-        </span>
-        <span>{durationMs ? `Đã xử lý ${seconds(durationMs)}s` : `Đã dùng ${steps.length} bước`}</span>
-        {info && <span>· {info}</span>}
+        <Brain className="h-3.5 w-3.5 text-primary/80" aria-hidden />
+        <span>Xem quá trình{durationMs ? ` · ${seconds(durationMs)}s` : ''}</span>
         {steps.length > 0 && (
           <motion.span
             animate={{ rotate: open ? 180 : 0 }}

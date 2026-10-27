@@ -37,6 +37,7 @@ import { GROUP_PROMPT, MODE_PROMPTS, RESEARCH_PROMPT, learnerPrompt, profileProm
 const AI_HISTORY_LIMIT = 20
 const GROUP_HISTORY_LIMIT = 30 // Nhóm / chat cá nhân: nhiều tin gần nhất (cũ hơn ⇒ N7AI tự đọc ngược bằng tool chat__earlier)
 const GROUP_MESSAGE_CHARS = 1200
+const MEMORY_RECALL_MIN_CHARS = 12 // Dưới ngưỡng này (chào, "ok", "cảm ơn") bỏ qua bước nhớ lại
 
 type Trigger = {
   id: string
@@ -335,11 +336,13 @@ export class N7AiService {
   ): Promise<Msg[]> {
     const inGroup = trigger.type !== 'ai'
     const memoryOn = !!settings?.memoryEnabled
+    // Lời chào / câu ngắn không cần lục trí nhớ: chỉ nhớ lại khi câu hỏi đủ nội dung
+    const recallOn = memoryOn && question.trim().length >= MEMORY_RECALL_MIN_CHARS
     const [history, skill, summary, profile, learner, convBlock] = await Promise.all([
       this.loadHistory(conversationId, botId, trigger.id, inGroup),
       trigger.skillId ? this.skills.instructions(trigger.senderId, trigger.skillId) : null,
       inGroup ? null : this.summaries.summary(conversationId),
-      memoryOn ? this.memories.recall(trigger.senderId, question) : [],
+      recallOn ? this.memories.recall(trigger.senderId, question) : [],
       settings ? this.loadLearner(trigger.senderId, settings) : null,
       inGroup ? this.conversationContext.block(conversationId) : ''
     ])
