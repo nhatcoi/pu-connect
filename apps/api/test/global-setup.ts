@@ -62,6 +62,7 @@ export const MIGRATIONS = [
   'moderation-terms-upgrade.sql',
   'user-reports-upgrade.sql',
   'moderation-upgrade.sql',
+  'trash-upgrade.sql',
   'documents-library-upgrade.sql'
 ]
 

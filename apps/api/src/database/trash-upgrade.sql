@@ -30,6 +30,7 @@ DO $$
 DECLARE t TEXT;
 BEGIN
     FOREACH t IN ARRAY ARRAY['posts', 'comments', 'documents', 'study_sets', 'academic_units'] LOOP
+        CONTINUE WHEN to_regclass(t) IS NULL; -- DB test / cài mới chưa có bảng ⇒ bỏ qua
         EXECUTE format('DROP TRIGGER IF EXISTS trg_trash_%1$s ON %1$s', t);
         EXECUTE format('CREATE TRIGGER trg_trash_%1$s BEFORE DELETE ON %1$s FOR EACH ROW EXECUTE FUNCTION trash_row()', t);
     END LOOP;
