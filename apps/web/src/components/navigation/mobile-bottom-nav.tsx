@@ -46,7 +46,7 @@ export function MobileBottomNav() {
     },
     {
       id: 'courses',
-      label: 'Môn học',
+      label: 'Tài liệu',
       icon: GraduationCap,
       path: '/courses',
       isActive: pathname === '/courses' || pathname.startsWith('/courses/')

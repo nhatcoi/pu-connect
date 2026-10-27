@@ -65,7 +65,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
     { id: 'feed' as const, path: '/', label: 'Bảng tin', icon: Home },
     { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
     { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
-    { id: 'courses' as const, path: '/courses', label: 'Môn học', icon: GraduationCap },
+    { id: 'courses' as const, path: '/courses', label: 'Tài liệu', icon: GraduationCap },
     { id: 'tools' as const, path: '/tools', label: 'Công cụ', icon: Wrench },
     {
       id: 'messages' as const,
