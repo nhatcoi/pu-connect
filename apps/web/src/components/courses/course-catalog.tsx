@@ -9,6 +9,7 @@ import { useCourses } from '@/hooks/use-course'
 import { useFollowedCourseIds } from '@/hooks/use-course-follow'
 import { cn } from '@/lib/utils'
 import { CourseTable } from './course-table'
+import { SuggestCourseDialog } from './suggest-course-dialog'
 import { buildFaculties } from './course-faculty'
 
 type Sort = 'hot' | 'docs' | 'name'
@@ -37,6 +38,7 @@ export function CourseCatalog() {
   const [facultyId, setFacultyId] = useState('')
   const [sort, setSort] = useState<Sort>('name')
   const [onlyFollowed, setOnlyFollowed] = useState(false)
+  const [suggestOpen, setSuggestOpen] = useState(false)
 
   const faculties = useMemo(() => buildFaculties(courses), [courses])
   const followed = useMemo(() => new Set(followedIds), [followedIds])
@@ -86,7 +88,10 @@ export function CourseCatalog() {
       </div>
 
       <p className="mx-3 text-[11px] text-muted-foreground sm:mx-0">
-        {filtered.length} / {courses.length} môn
+        {filtered.length} / {courses.length} môn · Thiếu môn?{' '}
+        <button type="button" onClick={() => setSuggestOpen(true)} className="font-medium text-foreground underline underline-offset-2 cursor-pointer">
+          Đề xuất môn học
+        </button>
       </p>
 
       {filtered.length === 0 ? (
@@ -96,6 +101,7 @@ export function CourseCatalog() {
           <CourseTable courses={filtered} followedIds={followed} />
         </div>
       )}
+      <SuggestCourseDialog open={suggestOpen} onOpenChange={setSuggestOpen} />
     </div>
   )
 }

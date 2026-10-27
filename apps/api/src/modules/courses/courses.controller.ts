@@ -2,12 +2,18 @@ import { Controller, Delete, Get, Post, Put, Body, Param, ParseUUIDPipe, Query, 
 import type { Request } from 'express'
 import { requireRole, requireUserId } from '../../common/http/current-user'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
+import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
+import { CourseSuggestionsService } from './course-suggestions.service'
+import { CourseSuggestionSchema, type CourseSuggestionBody } from './course-suggestions.dto'
 import { CoursesService } from './courses.service'
 import type { CreateCourseInput } from '@pu/schemas'
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) {}
+  constructor(
+    private readonly coursesService: CoursesService,
+    private readonly suggestions: CourseSuggestionsService
+  ) {}
 
   @Get()
   async findAll(@Query('department') department?: string) {
@@ -19,6 +25,18 @@ export class CoursesController {
   @UseGuards(AuthenticatedGuard)
   async followed(@Req() req: Request) {
     return this.coursesService.followedIds(requireUserId(req))
+  }
+
+  @Get('suggestions/mine')
+  @UseGuards(AuthenticatedGuard)
+  async mySuggestions(@Req() req: Request) {
+    return this.suggestions.mine(requireUserId(req))
+  }
+
+  @Post('suggestions')
+  @UseGuards(AuthenticatedGuard)
+  async suggest(@Body(new ZodValidationPipe(CourseSuggestionSchema)) body: CourseSuggestionBody, @Req() req: Request) {
+    return this.suggestions.create(requireUserId(req), body)
   }
 
   @Put(':id/follow')

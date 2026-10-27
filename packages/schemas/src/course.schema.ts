@@ -54,3 +54,33 @@ export interface CourseOverview {
     contributions: number
   }[]
 }
+
+// Đề xuất môn học: người dùng gợi ý, admin duyệt (duyệt ⇒ tạo môn thật)
+export type CourseSuggestionStatus = 'pending' | 'approved' | 'rejected'
+
+export interface CourseSuggestion {
+  id: string
+  name: string
+  code: string | null
+  facultyCode: string | null
+  credits: number | null
+  note: string | null
+  status: CourseSuggestionStatus
+  reviewNote: string | null
+  // Môn đã tạo khi được duyệt
+  courseId: string | null
+  createdAt: string
+  reviewedAt: string | null
+}
+
+export interface CourseSuggestionInput {
+  name: string
+  code?: string
+  facultyCode?: string
+  credits?: number
+  note?: string
+}
+
+export interface AdminCourseSuggestion extends CourseSuggestion {
+  requester: { id: string; username: string; displayName: string }
+}

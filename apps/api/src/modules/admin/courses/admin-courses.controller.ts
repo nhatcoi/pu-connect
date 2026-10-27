@@ -4,7 +4,18 @@ import { requireUserId } from '../../../common/http/current-user'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from '../admin.guard'
 import { AdminCoursesService } from './admin-courses.service'
-import { CourseImportSchema, CourseLecturersSchema, CourseMergeSchema, LecturerSearchSchema, type CourseImport } from './admin-courses.dto'
+import {
+  CourseImportSchema,
+  CourseLecturersSchema,
+  CourseMergeSchema,
+  LecturerSearchSchema,
+  SuggestionApproveSchema,
+  SuggestionListSchema,
+  SuggestionRejectSchema,
+  type CourseImport,
+  type SuggestionApprove,
+  type SuggestionList
+} from './admin-courses.dto'
 
 // Phần mở rộng của admin/courses (danh sách, tạo, sửa nằm ở AdminController)
 @Controller('admin/courses')
@@ -16,6 +27,27 @@ export class AdminCoursesController {
   @RequireAdminPermission('academic:read')
   candidates(@Query(new ZodValidationPipe(LecturerSearchSchema)) q: { q?: string }) {
     return this.courses.candidates(q.q)
+  }
+
+  // Đề xuất môn học từ người dùng (đứng trước ':id')
+  @Get('suggestions')
+  @RequireAdminPermission('academic:read')
+  suggestions(@Query(new ZodValidationPipe(SuggestionListSchema)) q: SuggestionList) {
+    return this.courses.suggestions(q.status)
+  }
+
+  @Post('suggestions/:id/approve')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('academic:manage')
+  approve(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(SuggestionApproveSchema)) body: SuggestionApprove, @Req() req: Request) {
+    return this.courses.approveSuggestion(requireUserId(req), id, body)
+  }
+
+  @Post('suggestions/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @RequireAdminPermission('academic:manage')
+  reject(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(SuggestionRejectSchema)) body: { note: string }, @Req() req: Request) {
+    return this.courses.rejectSuggestion(requireUserId(req), id, body.note)
   }
 
   @Post('import')

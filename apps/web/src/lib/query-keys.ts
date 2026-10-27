@@ -28,6 +28,7 @@ export const queryKeys = {
   notifications: (filter: string) => ['notifications', filter] as const,
   courses: ['courses'] as const,
   courseFollows: ['course-follows'] as const,
+  courseSuggestions: ['course-suggestions'] as const,
   course: (code: string) => ['course', code.toUpperCase()] as const,
   coursePosts: (code: string) => ['feed', 'course', code.toUpperCase()] as const,
   courseDocuments: (code: string) => ['course-documents', code.toUpperCase()] as const,

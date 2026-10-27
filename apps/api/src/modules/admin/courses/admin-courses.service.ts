@@ -1,8 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
-import type { AdminCourseImportResult, AdminCourseLecturer } from '@pu/schemas'
+import type { AdminCourseImportResult, AdminCourseLecturer, AdminCourseSuggestion } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
 import { writeAudit } from '../admin-audit'
-import { CourseRowSchema, type CourseImport } from './admin-courses.dto'
+import { toSuggestion } from '../../courses/course-suggestions.service'
+import { CourseRowSchema, type CourseImport, type SuggestionApprove } from './admin-courses.dto'
 
 type FkRef = { tbl: string; col: string }
 
@@ -20,6 +21,47 @@ export class AdminCoursesService {
          AND c.conrelid <> 'course_lecturers'::regclass`
     )
     return res.rows
+  }
+
+  // Đề xuất môn học theo trạng thái (mới nhất trước)
+  async suggestions(status: string): Promise<AdminCourseSuggestion[]> {
+    const res = await this.db.query(
+      `SELECT s.*, u.username, u.display_name FROM course_suggestions s JOIN users u ON u.id = s.requester_id
+       WHERE s.status = $1 ORDER BY s.created_at DESC LIMIT 200`,
+      [status]
+    )
+    return res.rows.map((r) => ({ ...toSuggestion(r), requester: { id: r.requester_id, username: r.username, displayName: r.display_name } }))
+  }
+
+  // Duyệt ⇒ tạo môn thật theo thông tin admin chốt
+  async approveSuggestion(adminId: string, id: string, input: SuggestionApprove): Promise<{ courseId: string }> {
+    return this.db.transaction(async (client) => {
+      const sug = (await client.query(`SELECT status FROM course_suggestions WHERE id = $1 FOR UPDATE`, [id])).rows[0]
+      if (!sug) throw new NotFoundException('Đề xuất không tồn tại')
+      if (sug.status !== 'pending') throw new ConflictException('Đề xuất này đã được xử lý')
+      if ((await client.query(`SELECT 1 FROM courses WHERE upper(code) = $1`, [input.code])).rows.length) throw new ConflictException(`Mã môn ${input.code} đã tồn tại`)
+      const fac = await client.query(`SELECT id FROM faculties WHERE upper(code) = $1 LIMIT 1`, [input.facultyCode.toUpperCase()])
+      const course = await client.query(
+        `INSERT INTO courses (code, name, credits, faculty_id, faculty_code) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+        [input.code, input.name, input.credits, fac.rows[0]?.id ?? null, input.facultyCode.toUpperCase()]
+      )
+      const courseId = course.rows[0].id as string
+      await client.query(`UPDATE course_suggestions SET status = 'approved', reviewer_id = $2, course_id = $3, reviewed_at = NOW() WHERE id = $1`, [id, adminId, courseId])
+      await writeAudit(client, adminId, { action: 'course.suggestion.approve', targetType: 'course', targetId: courseId, details: { suggestionId: id, code: input.code } })
+      return { courseId }
+    })
+  }
+
+  async rejectSuggestion(adminId: string, id: string, note: string): Promise<{ ok: true }> {
+    await this.db.transaction(async (client) => {
+      const res = await client.query(
+        `UPDATE course_suggestions SET status = 'rejected', review_note = $2, reviewer_id = $3, reviewed_at = NOW() WHERE id = $1 AND status = 'pending' RETURNING id`,
+        [id, note, adminId]
+      )
+      if (!res.rows.length) throw new ConflictException('Đề xuất không còn chờ duyệt')
+      await writeAudit(client, adminId, { action: 'course.suggestion.reject', targetType: 'course', targetId: id, details: { note } })
+    })
+    return { ok: true }
   }
 
   async lecturers(courseId: string): Promise<AdminCourseLecturer[]> {

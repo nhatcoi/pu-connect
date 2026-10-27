@@ -27,4 +27,11 @@ export const CourseMergeSchema = z.object({ intoId: z.string().uuid() }).strict(
 export const CourseLecturersSchema = z.object({ userIds: z.array(z.string().uuid()).max(50) }).strict()
 export const LecturerSearchSchema = z.object({ q: z.string().trim().max(60).optional() })
 
+// Duyệt đề xuất: admin chốt mã / khoa / tín chỉ (cùng quy tắc tạo môn); từ chối cần lý do
+export const SuggestionApproveSchema = CourseRowSchema.pick({ code: true, name: true, credits: true, facultyCode: true }).strict()
+export const SuggestionRejectSchema = z.object({ note: z.string().trim().min(3, 'Nhập lý do từ chối').max(500) }).strict()
+export const SuggestionListSchema = z.object({ status: z.enum(['pending', 'approved', 'rejected']).default('pending') })
+
 export type CourseImport = z.infer<typeof CourseImportSchema>
+export type SuggestionApprove = z.infer<typeof SuggestionApproveSchema>
+export type SuggestionList = z.infer<typeof SuggestionListSchema>
