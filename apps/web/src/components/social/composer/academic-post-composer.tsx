@@ -1,7 +1,7 @@
 'use client'
 
 import { FEATURES } from '@/lib/features'
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -15,6 +15,7 @@ import { AnonymousToggle } from '../anonymous-toggle'
 import { apiClient, uploadFileToR2, errorMessage } from '@/lib/api-client'
 import type { ClassifyDocumentInput, PostItem, PostType, TargetAudience } from '@pu/schemas'
 import { useCourses } from '@/hooks/use-course'
+import { useDraft } from '@/hooks/use-draft'
 import { classifyDocument, discardDocumentDraft, suggestDocument, uploadDocumentDraft, writeDocumentPost } from '@/lib/document-api'
 
 import { ComposerProgressRing } from './composer-progress-ring'
@@ -26,6 +27,24 @@ import { ComposerToolbar } from './composer-toolbar'
 import { ComposerDocumentCard } from './composer-document-card'
 
 const MAX_CHAR_LIMIT = 1000
+// Bản nháp tài liệu trên server bị dọn sau 24h ⇒ nháp trình duyệt bỏ tệp cũ hơn mốc này
+const DOC_DRAFT_TTL_MS = 20 * 60 * 60 * 1000
+
+// Phần trạng thái soạn bài lưu trên trình duyệt (ảnh là blob nên không lưu)
+interface PostDraft {
+  savedAt: number
+  postType: PostType
+  title: string
+  content: string
+  courseId?: string
+  audience: TargetAudience
+  anonymous: boolean
+  tags: string[]
+  slotsTotal: number
+  slotsFilled: number
+  poll: { question: string; options: string[] } | null
+  docs: Pick<AttachedFile, 'id' | 'name' | 'size' | 'doc' | 'duplicateOf' | 'reused' | 'listedTouched'>[]
+}
 
 interface AcademicPostComposerProps {
   onPostCreated?: (post: PostItem) => void
@@ -62,6 +81,58 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string>('')
   const { data: courses = [] } = useCourses()
+
+  // Nháp: tự lưu mọi thứ đang soạn, giữ qua chuyển trang / tải lại; xoá khi đăng xong
+  const draftValue = (() => {
+    const docs = attachedFiles.filter((f) => f.type === 'document' && f.doc && !f.uploading)
+    const empty = !content.trim() && !title.trim() && !docs.length && !tags.length && !(showPollCreator && pollQuestion.trim())
+    if (empty) return ''
+    const draft: PostDraft = {
+      savedAt: Date.now(),
+      postType,
+      title,
+      content,
+      courseId: selectedCourseId,
+      audience: targetAudience,
+      anonymous: isAnonymous,
+      tags,
+      slotsTotal,
+      slotsFilled,
+      poll: showPollCreator ? { question: pollQuestion, options: pollOptions } : null,
+      docs: docs.map(({ id, name, size, doc, duplicateOf, reused, listedTouched }) => ({ id, name, size, doc, duplicateOf, reused, listedTouched }))
+    }
+    return JSON.stringify(draft)
+  })()
+  const restoreDraft = useCallback((raw: string) => {
+    let d: PostDraft
+    try {
+      d = JSON.parse(raw)
+    } catch {
+      return
+    }
+    const fresh = Date.now() - d.savedAt < DOC_DRAFT_TTL_MS
+    setPostType(d.postType)
+    setTitle(d.title ?? '')
+    setContent(d.content ?? '')
+    setSelectedCourseId(d.courseId)
+    setTargetAudience(d.audience ?? 'everyone')
+    setIsAnonymous(!!d.anonymous)
+    setTags(d.tags ?? [])
+    setSlotsTotal(d.slotsTotal ?? 4)
+    setSlotsFilled(d.slotsFilled ?? 1)
+    if (d.poll) {
+      setShowPollCreator(true)
+      setPollQuestion(d.poll.question)
+      setPollOptions(d.poll.options)
+    }
+    setAttachedFiles(
+      (d.docs ?? [])
+        .filter((f) => f.reused || fresh)
+        .map((f) => ({ ...f, type: 'document' as const, url: '' }))
+    )
+    setIsExpanded(true)
+  }, [])
+  const clearDraft = useDraft(user ? `post:${user.id}:${defaultCommunityId ?? defaultCourseId ?? 'feed'}` : undefined, draftValue, restoreDraft)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
@@ -337,6 +408,7 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
       }
 
       // Reset form
+      clearDraft()
       setTitle('')
       setContent('')
       setIsAnonymous(false)
