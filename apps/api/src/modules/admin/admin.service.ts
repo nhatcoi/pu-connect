@@ -58,6 +58,7 @@ export class AdminService {
       this.db.query(`
         SELECT
           (SELECT COUNT(*) FROM post_reports WHERE status = 'pending')::int AS pending_reports,
+          (SELECT COUNT(*) FROM moderation_events WHERE review_status = 'pending' AND action <> 'block')::int AS pending_moderation,
           (SELECT COUNT(DISTINCT post_id) FROM post_reports WHERE status = 'pending')::int AS reported_posts,
           (SELECT COUNT(*) FROM posts WHERE hidden_at IS NOT NULL)::int AS hidden_posts,
           (SELECT COUNT(*) FROM posts)::int AS total_posts,
@@ -88,6 +89,7 @@ export class AdminService {
     const r = kpiRes.rows[0]
     return {
       pendingReports: r.pending_reports,
+      pendingModeration: r.pending_moderation,
       reportedPosts: r.reported_posts,
       hiddenPosts: r.hidden_posts,
       totalPosts: r.total_posts,

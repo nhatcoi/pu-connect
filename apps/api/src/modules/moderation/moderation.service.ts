@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { join } from 'path'
 import { DatabaseService } from '../../database/database.service'
+import { NotificationsService } from '../notifications/notifications.service'
 import { decide, DEFAULT_POLICY, type ModerationDecision, type ModerationPolicyConfig } from './moderation.policy'
 import { HttpToxicityClassifier, OnnxToxicityClassifier, type ToxicityClassifier, type ToxicityScores } from './toxicity-classifier'
 import { buildProfanityChecker, type ProfanityResult } from './vi-profanity.filter'
 import type { ProfanitySeverity } from './vi-profanity.lexicon'
 import { normalize } from './vi-text-normalizer'
+import type { NotifyInput } from '../notifications/notification.types'
 
 export type ModerationSurface = 'post' | 'comment'
 /** off: không làm gì · shadow: chạy + ghi log nhưng luôn cho qua · enforce: áp dụng quyết định. */
@@ -28,7 +30,10 @@ export class ModerationService {
   private classifier: ToxicityClassifier | null = null
   private checker: { fn: (text: string) => ProfanityResult; loadedAt: number } | null = null
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly notifications: NotificationsService
+  ) {}
 
   get mode(): ModerationMode {
     const m = process.env.MODERATION_MODE
@@ -39,6 +44,7 @@ export class ModerationService {
     const num = (v: string | undefined, d: number) => (v && !Number.isNaN(Number(v)) ? Number(v) : d)
     return {
       hateThreshold: num(process.env.MODERATION_HATE_THRESHOLD, DEFAULT_POLICY.hateThreshold),
+      softHateThreshold: num(process.env.MODERATION_SOFT_HATE_THRESHOLD, DEFAULT_POLICY.softHateThreshold),
       offenseThreshold: num(process.env.MODERATION_OFFENSE_THRESHOLD, DEFAULT_POLICY.offenseThreshold),
       offenseAction: process.env.MODERATION_OFFENSE_ACTION === 'hold' ? 'hold' : 'flag'
     }
@@ -103,7 +109,40 @@ export class ModerationService {
     const enforced = this.mode === 'enforce'
     const eventId = await this.logEvent(input, decision, scores, t1.matches.map(m => m.term), enforced)
     if (!enforced) return { ...allow }
+    if (decision.action !== 'block') void this.notifyFlagged(input, decision.action)
     return { ...decision, eventId }
+  }
+
+  /**
+   * Gắn cờ / ẩn chờ duyệt ⇒ báo cho admin (xem ở Admin → Kiểm duyệt → Tự động) và báo cho chính người đăng.
+   * Chặn (block) không báo: người đăng đã nhận lỗi ngay khi bấm đăng.
+   */
+  private async notifyFlagged(input: ModerationInput, action: 'flag' | 'hold'): Promise<void> {
+    try {
+      const what = input.surface === 'post' ? 'bài viết' : 'bình luận'
+      const snippet = input.text.replace(/\s+/g, ' ').trim().slice(0, 120)
+      const admins = await this.db.query(`SELECT id FROM users WHERE role = 'admin' AND account_type = 'human' AND status <> 'suspended' AND id <> $1`, [input.userId])
+      const author = await this.db.query(`SELECT username FROM users WHERE id = $1`, [input.userId])
+      const who = author.rows[0]?.username ? `@${author.rows[0].username}` : 'Một người dùng'
+      await this.notifications.fanOut([
+        ...admins.rows.map((a): NotifyInput => ({
+          type: 'account_notice',
+          recipientId: a.id,
+          actorId: null,
+          verb: action === 'hold' ? `${what} bị ẩn chờ duyệt` : `${what} bị gắn cờ`,
+          message: `${who}: ${snippet}. Xem tại Admin → Kiểm duyệt → Tự động.`
+        })),
+        {
+          type: 'account_notice',
+          recipientId: input.userId,
+          actorId: null,
+          verb: action === 'hold' ? `Bài viết của bạn đang chờ quản trị viên duyệt vì có thể vi phạm quy tắc cộng đồng` : `${what[0].toUpperCase()}${what.slice(1)} của bạn đã được gắn cờ để quản trị viên xem lại`,
+          message: snippet
+        }
+      ])
+    } catch (err: any) {
+      this.logger.error(`notifyFlagged: ${err.message}`)
+    }
   }
 
   private async logEvent(

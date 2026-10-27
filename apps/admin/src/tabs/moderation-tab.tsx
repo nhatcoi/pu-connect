@@ -72,7 +72,7 @@ function usePostBulk(onDone?: () => void) {
   )
 }
 
-export function ModerationTab({ permissions, pendingCount }: { permissions: AdminPermission[]; pendingCount?: number }) {
+export function ModerationTab({ permissions, pendingCount, autoCount }: { permissions: AdminPermission[]; pendingCount?: number; autoCount?: number }) {
   const [params, set] = useHashQuery()
   const tab = (['reports', 'posts', 'comments', 'auto', 'terms'].includes(params.tab) ? params.tab : 'reports') as Tab
   const canWrite = permissions.includes('moderation:write')
@@ -90,7 +90,7 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
               { id: 'reports', label: 'Báo cáo', count: pendingCount },
               { id: 'posts', label: 'Bài viết' },
               { id: 'comments', label: 'Bình luận' },
-              { id: 'auto', label: 'Tự động' },
+              { id: 'auto', label: 'Tự động', count: autoCount },
               { id: 'terms', label: 'Từ cấm' }
             ]}
           />

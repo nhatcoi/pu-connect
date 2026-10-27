@@ -17,6 +17,9 @@ describe('moderation decide', () => {
   it('offenseAction=hold → giữ lại', () => {
     expect(decide(t1('xin chào'), scores(0.2, 0.7, 0.1), { ...DEFAULT_POLICY, offenseAction: 'hold' }).action).toBe('hold')
   })
+  it('hate vùng xám (0.3–0.6) → flag để admin xem', () => {
+    expect(decide(t1('xin chào'), scores(0.6, 0.01, 0.39))).toMatchObject({ action: 'flag', tier: 2, reason: 'hate_soft' })
+  })
   it('clean → allow', () => {
     expect(decide(t1('hôm nay trời đẹp'), scores(0.95, 0.04, 0.01))).toMatchObject({ action: 'allow', tier: null })
   })

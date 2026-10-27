@@ -203,6 +203,7 @@ export interface AdminSessionInfo {
 
 export interface AdminStats {
   pendingReports: number
+  pendingModeration: number
   reportedPosts: number
   hiddenPosts: number
   totalPosts: number

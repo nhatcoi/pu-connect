@@ -8,10 +8,12 @@ export interface ModerationPolicyConfig {
   hateThreshold: number
   /** p(offense) từ ngưỡng này → gắn cờ (hoặc giữ, tùy offenseAction). */
   offenseThreshold: number
+  /** p(hate) từ ngưỡng này (nhưng chưa tới hateThreshold) → gắn cờ để admin xem. */
+  softHateThreshold: number
   offenseAction: 'flag' | 'hold'
 }
 
-export const DEFAULT_POLICY: ModerationPolicyConfig = { hateThreshold: 0.6, offenseThreshold: 0.7, offenseAction: 'flag' }
+export const DEFAULT_POLICY: ModerationPolicyConfig = { hateThreshold: 0.6, softHateThreshold: 0.3, offenseThreshold: 0.7, offenseAction: 'flag' }
 
 export interface ModerationDecision {
   action: ModerationAction
@@ -29,6 +31,8 @@ export function decide(t1: ProfanityResult, scores: ToxicityScores | null, cfg: 
   if (t1.verdict === 'block') return { action: 'block', tier: 1, reason: 'profanity_heavy' }
 
   if (scores && scores.hate >= cfg.hateThreshold) return { action: 'hold', tier: 2, reason: 'hate' }
+
+  if (scores && scores.hate >= cfg.softHateThreshold) return { action: 'flag', tier: 2, reason: 'hate_soft' }
 
   const offensive = !!scores && scores.offense + scores.hate >= cfg.offenseThreshold
   if (offensive || t1.verdict === 'review') {

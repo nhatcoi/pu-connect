@@ -144,7 +144,7 @@ export function App() {
     {
       items: [
         { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, perm: 'dashboard:view' },
-        { id: 'moderation', label: 'Kiểm duyệt', icon: Flag, perm: 'moderation:read', badge: stats.data?.pendingReports },
+        { id: 'moderation', label: 'Kiểm duyệt', icon: Flag, perm: 'moderation:read', badge: (stats.data?.pendingReports ?? 0) + (stats.data?.pendingModeration ?? 0) || undefined },
         { id: 'users', label: 'Người dùng', icon: Users, perm: 'users:read' }
       ]
     },
@@ -322,7 +322,7 @@ export function App() {
             {current === 'dashboard' && (
               <DashboardTab stats={stats.data} isLoading={stats.isPending} permissions={perms} userName={session.user.displayName} onNavigate={navigate} />
             )}
-            {current === 'moderation' && <ModerationTab permissions={perms} pendingCount={stats.data?.pendingReports} />}
+            {current === 'moderation' && <ModerationTab permissions={perms} pendingCount={stats.data?.pendingReports} autoCount={stats.data?.pendingModeration} />}
             {current === 'users' && <UsersPage currentUserId={session.user.id} />}
             {current === 'academic' && <AcademicTab permissions={perms} />}
             {current === 'ai' && <AiOpsTab permissions={perms} openTickets={stats.data?.openSupportTickets} />}
