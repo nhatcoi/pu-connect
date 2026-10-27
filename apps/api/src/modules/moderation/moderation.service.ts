@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { join } from 'path'
 import { DatabaseService } from '../../database/database.service'
 import { decide, DEFAULT_POLICY, type ModerationDecision, type ModerationPolicyConfig } from './moderation.policy'
-import { OnnxToxicityClassifier, type ToxicityClassifier, type ToxicityScores } from './toxicity-classifier'
+import { HttpToxicityClassifier, OnnxToxicityClassifier, type ToxicityClassifier, type ToxicityScores } from './toxicity-classifier'
 import { buildProfanityChecker, type ProfanityResult } from './vi-profanity.filter'
 import type { ProfanitySeverity } from './vi-profanity.lexicon'
 import { normalize } from './vi-text-normalizer'
@@ -45,7 +45,9 @@ export class ModerationService {
   }
 
   private getClassifier(): ToxicityClassifier {
-    this.classifier ??= new OnnxToxicityClassifier(process.env.MODERATION_MODEL_DIR || join(process.cwd(), 'models', 'visobert-onnx'))
+    // MODERATION_CLASSIFIER_URL: model chạy ở máy khác (sidecar trên Mac); không đặt ⇒ chạy ONNX trong tiến trình
+    const url = process.env.MODERATION_CLASSIFIER_URL
+    this.classifier ??= url ? new HttpToxicityClassifier(url) : new OnnxToxicityClassifier(process.env.MODERATION_MODEL_DIR || join(process.cwd(), 'models', 'visobert-onnx'))
     return this.classifier
   }
 

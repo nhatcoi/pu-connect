@@ -58,3 +58,24 @@ export class OnnxToxicityClassifier implements ToxicityClassifier {
     return { clean, offense, hate }
   }
 }
+
+/** Gọi sidecar chạy model ở máy khác (Mac qua reverse SSH tunnel). Lỗi/timeout ⇒ throw để ModerationService chỉ dùng tầng 1. */
+export class HttpToxicityClassifier implements ToxicityClassifier {
+  constructor(
+    private readonly baseUrl: string,
+    private readonly timeoutMs = 2000
+  ) {}
+
+  async classify(text: string): Promise<ToxicityScores> {
+    const res = await fetch(`${this.baseUrl.replace(/\/$/, '')}/classify`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(this.timeoutMs)
+    })
+    if (!res.ok) throw new Error(`Sidecar kiểm duyệt trả ${res.status}`)
+    const { clean, offense, hate } = (await res.json()) as ToxicityScores
+    if (![clean, offense, hate].every(n => typeof n === 'number')) throw new Error('Sidecar kiểm duyệt trả dữ liệu sai định dạng')
+    return { clean, offense, hate }
+  }
+}
