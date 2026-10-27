@@ -29,6 +29,28 @@ export class CoursesService {
     return res.rows.map((row) => this.mapRowToCourse(row))
   }
 
+  // Id các môn người dùng đang theo dõi
+  async followedIds(userId: string): Promise<string[]> {
+    const res = await this.db.query('SELECT course_id FROM course_follows WHERE user_id = $1 ORDER BY created_at DESC', [userId])
+    return res.rows.map((r) => r.course_id)
+  }
+
+  // Theo dõi / bỏ theo dõi (idempotent); id môn không tồn tại ⇒ 404
+  async setFollow(userId: string, courseId: string, follow: boolean): Promise<{ following: boolean }> {
+    if (follow) {
+      const res = await this.db.query(
+        `INSERT INTO course_follows (user_id, course_id) SELECT $1, id FROM courses WHERE id = $2 ON CONFLICT DO NOTHING RETURNING course_id`,
+        [userId, courseId]
+      )
+      if (!res.rows.length && !(await this.db.query('SELECT 1 FROM courses WHERE id = $1', [courseId])).rows.length) {
+        throw new NotFoundException('Không tìm thấy môn học')
+      }
+    } else {
+      await this.db.query('DELETE FROM course_follows WHERE user_id = $1 AND course_id = $2', [userId, courseId])
+    }
+    return { following: follow }
+  }
+
   async findOne(id: string): Promise<Course> {
     const res = await this.db.query(
       `SELECT c.*, f.name as department_name, ${LIVE_COUNTS}

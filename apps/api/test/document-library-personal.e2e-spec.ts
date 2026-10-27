@@ -1,3 +1,4 @@
+import * as request from 'supertest'
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { CommentItem, DocumentDetail, DocumentListPage, DocumentSuggestion, DocumentUploadResult, LibraryFolder, LibraryPage, PostItem } from '@pu/schemas'
 import type { DatabaseService } from '../src/database/database.service'
@@ -167,5 +168,24 @@ describe('Document library — AI, personal library, pages (e2e)', () => {
     await readerAgent.get(`/api/documents/${a}/detail`).expect(404)
     const trashed = await db.query(`SELECT 1 FROM deleted_records WHERE table_name = 'documents' AND row_id = $1`, [a])
     expect(trashed.rowCount).toBe(1)
+  })
+
+  it('theo dõi môn học: bật / tắt idempotent, riêng từng người, cần đăng nhập, id lạ ⇒ 404', async () => {
+    const user = await createUser(db)
+    const other = await createUser(db)
+    const agent = await loginAgent(app, user)
+    await request(app.getHttpServer()).get('/api/courses/followed').expect(401)
+
+    await agent.put(`/api/courses/${courseId}/follow`).expect(200)
+    await agent.put(`/api/courses/${courseId}/follow`).expect(200)
+    expect((await agent.get('/api/courses/followed').expect(200)).body.data).toEqual([courseId])
+    expect((await (await loginAgent(app, other)).get('/api/courses/followed').expect(200)).body.data).toEqual([])
+
+    await agent.delete(`/api/courses/${courseId}/follow`).expect(200)
+    await agent.delete(`/api/courses/${courseId}/follow`).expect(200)
+    expect((await agent.get('/api/courses/followed').expect(200)).body.data).toEqual([])
+
+    await agent.put('/api/courses/00000000-0000-4000-8000-000000000000/follow').expect(404)
+    await agent.put('/api/courses/khong-phai-uuid/follow').expect(400)
   })
 })

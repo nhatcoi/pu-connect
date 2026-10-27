@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Query, Req } from '@nestjs/common'
+import { Controller, Delete, Get, Post, Put, Body, Param, ParseUUIDPipe, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import { requireRole } from '../../common/http/current-user'
+import { requireRole, requireUserId } from '../../common/http/current-user'
+import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import { CoursesService } from './courses.service'
 import type { CreateCourseInput } from '@pu/schemas'
 
@@ -11,6 +12,25 @@ export class CoursesController {
   @Get()
   async findAll(@Query('department') department?: string) {
     return this.coursesService.findAll(department)
+  }
+
+  // Phải đứng trước ':id'
+  @Get('followed')
+  @UseGuards(AuthenticatedGuard)
+  async followed(@Req() req: Request) {
+    return this.coursesService.followedIds(requireUserId(req))
+  }
+
+  @Put(':id/follow')
+  @UseGuards(AuthenticatedGuard)
+  async follow(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.coursesService.setFollow(requireUserId(req), id, true)
+  }
+
+  @Delete(':id/follow')
+  @UseGuards(AuthenticatedGuard)
+  async unfollow(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.coursesService.setFollow(requireUserId(req), id, false)
   }
 
   @Get(':id/overview')

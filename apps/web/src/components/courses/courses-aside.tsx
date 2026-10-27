@@ -1,56 +1,32 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import Link from 'next/link'
-import { FileText, Flame, GraduationCap, HelpCircle, Sparkles } from 'lucide-react'
-import { useCourses } from '@/hooks/use-course'
-import { Skeleton } from '@/components/ui/skeleton'
+import { FileText, GraduationCap, HelpCircle, Sparkles } from 'lucide-react'
 
 export function CoursesAside() {
-  const { data: courses = [], isPending } = useCourses()
-
-  // Top 4 học phần sôi nổi nhất tính theo số lượng tài liệu + thảo luận
-  const topCourses = useMemo(() => {
-    return courses
-      .slice()
-      .sort((a, b) => b.documentCount + b.postCount - (a.documentCount + a.postCount))
-      .slice(0, 4)
-  }, [courses])
-
   return (
     <div className="w-full space-y-5">
-      {/* 1. Học phần sôi nổi */}
-      <section className="space-y-2">
-        <h3 className="px-1 text-[13px] font-semibold text-foreground flex items-center gap-1.5">
-          <Flame className="h-4 w-4 text-brand-orange" />
-          <span>Học phần sôi nổi</span>
-        </h3>
-        {isPending ? (
-          <div className="space-y-1.5">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-xl" />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {topCourses.map((c) => (
-              <Link
-                key={c.id}
-                href={`/courses/${encodeURIComponent(c.code)}`}
-                className="group flex flex-col rounded-xl px-3 py-2 hover:bg-muted/70 transition-colors border border-transparent hover:border-border/60"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-primary font-mono group-hover:underline">{c.code}</span>
-                  <span className="text-[10px] text-muted-foreground">{c.credits} tín chỉ</span>
-                </div>
-                <span className="text-[13px] font-medium text-foreground truncate mt-0.5">{c.name}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
-                  {c.documentCount} tài liệu · {c.postCount} thảo luận
-                </span>
-              </Link>
-            ))}
-          </div>
-        )}
+      {/* 1. Ôn thi cùng N7AI */}
+      <section className="space-y-3 rounded-xl bg-brand-navy p-4 text-white">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-brand-orange">
+          <Sparkles className="h-3.5 w-3.5" /> N7AI
+        </p>
+        <div>
+          <h3 className="text-base font-bold">Ôn thi cùng N7AI</h3>
+          <p className="mt-1 text-xs leading-relaxed text-white/75">Tạo đề thi thử, tóm tắt và quiz từ tài liệu của các môn bạn đang theo dõi.</p>
+        </div>
+        <Link href="/n7ai" className="flex h-9 items-center justify-center rounded-lg bg-brand-orange text-xs font-bold text-white transition-opacity hover:opacity-90">
+          Tạo đề thi thử
+        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href="/n7ai" className="flex h-8 items-center justify-center rounded-lg border border-white/25 text-xs font-semibold transition-colors hover:bg-white/10">
+            Tóm tắt
+          </Link>
+          <Link href="/tools/quiz" className="flex h-8 items-center justify-center rounded-lg border border-white/25 text-xs font-semibold transition-colors hover:bg-white/10">
+            Quiz
+          </Link>
+        </div>
       </section>
 
       {/* 2. Lối tắt học thuật Phenikaa */}
@@ -83,19 +59,6 @@ export function CoursesAside() {
             <div>
               <span className="block font-semibold text-foreground group-hover:text-primary">Hỏi đáp & Luyện đề</span>
               <span className="text-[11px] text-muted-foreground">Giải đáp bài tập cùng cộng đồng</span>
-            </div>
-          </Link>
-
-          <Link
-            href="/n7ai"
-            className="flex items-start gap-2.5 text-xs text-muted-foreground hover:text-foreground group transition-colors"
-          >
-            <div className="h-7 w-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
-              <Sparkles className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <span className="block font-semibold text-foreground group-hover:text-primary">Ôn thi cùng N7AI</span>
-              <span className="text-[11px] text-muted-foreground">Tạo đề thi thử, tóm tắt và quiz</span>
             </div>
           </Link>
         </div>
