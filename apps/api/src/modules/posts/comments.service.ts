@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common'
+import { Injectable, BadRequestException, NotFoundException, UnauthorizedException, ForbiddenException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { setTrashActor } from '../../database/trash'
 import { MentionsService, type MentionedUser } from '../mentions/mentions.service'
@@ -8,6 +8,7 @@ import { blockExistsSql } from '../blocks/blocks.sql'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
 import type { ReportCommentBody } from './dto/comment.dto'
 import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
+import { ModerationService } from '../moderation/moderation.service'
 import { PostDocumentsService } from '../documents/post-documents.service'
 
 export interface CommentsResult {
@@ -27,6 +28,7 @@ export class CommentsService {
     private readonly db: DatabaseService,
     private readonly mentions: MentionsService,
     private readonly notifications: NotificationsService,
+    private readonly moderation: ModerationService,
     private readonly documents: PostDocumentsService
   ) {}
 
@@ -95,6 +97,9 @@ export class CommentsService {
     let postAuthorId: string | null = null
     let parentAuthorId: string | null = null
     const anonymous = !!data.isAnonymous
+    // Bình luận chưa có cơ chế ẩn ⇒ chỉ chặn từ cấm; flag/hold chỉ ghi log để admin xem
+    const verdict = await this.moderation.check({ text: data.content, userId: authorId, surface: 'comment' })
+    if (verdict.action === 'block') throw new BadRequestException('Nội dung chứa ngôn từ không phù hợp với quy tắc cộng đồng')
     const created = await this.db.transaction(async (client) => {
       // 1. Check if post exists with row-level lock
       const postRes = await client.query(`SELECT id, author_id FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [data.postId])

@@ -51,3 +51,6 @@ index.html
 
 # Ghi chú local chứa dữ liệu thật (tài khoản, email)
 *.local.md
+
+# Model kiểm duyệt (ONNX ~100MB, không commit)
+apps/api/models/

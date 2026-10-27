@@ -10,6 +10,7 @@ import { featuredCommentsSql } from './featured-comment.sql'
 import { PostDocumentsService } from '../documents/post-documents.service'
 import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
+import { ModerationService } from '../moderation/moderation.service'
 import type { AttachedDocument, CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
 
 export interface FeedResult {
@@ -77,7 +78,8 @@ export class PostsService {
     private readonly mentions: MentionsService,
     private readonly postDocuments: PostDocumentsService,
     private readonly notifications: NotificationsService,
-    private readonly realtime: RealtimeGateway
+    private readonly realtime: RealtimeGateway,
+    private readonly moderation: ModerationService
   ) {}
 
   async findAll(
@@ -308,6 +310,10 @@ export class PostsService {
   async create(authorId: string, data: CreatePostInput): Promise<PostItem> {
     let mentioned: MentionedUser[] = []
     const anonymous = !!data.isAnonymous
+    // Kiểm duyệt tự động: từ cấm ⇒ chặn ngay; hate ⇒ lưu nhưng ẩn chờ admin (posts.hidden_at)
+    const verdict = await this.moderation.check({ text: [data.title, data.content].filter(Boolean).join('\n'), userId: authorId, surface: 'post' })
+    if (verdict.action === 'block') throw new BadRequestException('Nội dung chứa ngôn từ không phù hợp với quy tắc cộng đồng')
+    const held = verdict.action === 'hold'
     const created = await this.db.transaction(async (client) => {
       // 1. Resolve author details
       const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
@@ -390,6 +396,9 @@ export class PostsService {
       )
 
       const postRow = insertRes.rows[0]
+      if (held) {
+        await client.query(`UPDATE posts SET hidden_at = NOW(), hidden_reason = $2 WHERE id = $1`, [postRow.id, `auto-moderation: ${verdict.reason}`])
+      }
 
       // 4.1. Ghi @mention trong cùng transaction
       mentioned = await this.mentions.record(client, 'post', postRow.id, authorId, data.title, data.content)
@@ -496,6 +505,9 @@ export class PostsService {
       }
     })
 
+    void this.moderation.attachTarget(verdict.eventId, 'post', created.id)
+    // Bài đang chờ duyệt: chưa báo ai (mention/follower) cho tới khi admin duyệt
+    if (held) return created
     // Thông báo mention sau khi commit; ẩn danh: không nêu người gửi, không báo follower
     const mentionEvents = this.mentions.toNotifications(mentioned, {
       sourceType: 'post',
