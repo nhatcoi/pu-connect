@@ -16,14 +16,6 @@
   --color-primary: var(--primary);
   --color-brand-navy: var(--brand-navy);
   --color-brand-orange: var(--brand-orange);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-chart-6: var(--chart-6);
-  --color-chart-7: var(--chart-7);
-  --color-chart-8: var(--chart-8);
   --color-surface: var(--surface);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -62,14 +54,6 @@
   --primary-foreground: #ffffff;
   --brand-navy: #0b3d91;
   --brand-orange: #f7941d;
-  --chart-1: #2563eb;
-  --chart-2: #7c3aed;
-  --chart-3: #ea580c;
-  --chart-4: #0d9488;
-  --chart-5: #db2777;
-  --chart-6: #ca8a04;
-  --chart-7: #64748b;
-  --chart-8: #16a34a;
   --surface: #f5f6f8;
 
   --secondary: #f4f4f5;
@@ -103,14 +87,6 @@
   --primary-foreground: #ffffff;
   --brand-navy: #4f86e8;
   --brand-orange: #ffa940;
-  --chart-1: #60a5fa;
-  --chart-2: #a78bfa;
-  --chart-3: #fb923c;
-  --chart-4: #2dd4bf;
-  --chart-5: #f472b6;
-  --chart-6: #facc15;
-  --chart-7: #94a3b8;
-  --chart-8: #4ade80;
   --surface: #050507;
 
   --secondary: #27272a;
