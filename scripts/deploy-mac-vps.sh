@@ -210,6 +210,7 @@ fi
 
 # Cài đặt / cập nhật dependencies (nếu có thay đổi lockfile)
 echo "Đang kiểm tra dependencies trên VPS..."
+export ONNXRUNTIME_NODE_INSTALL=skip  # bỏ tải bản CUDA của onnxruntime-node
 pnpm install --frozen-lockfile --prefer-offline 2>/dev/null || pnpm install
 REMOTE_SETUP
 

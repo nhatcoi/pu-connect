@@ -194,7 +194,8 @@ ssh -o ServerAliveInterval=15 -o ServerAliveCountMax=6 "$VPS_HOST" "bash -s" << 
 set -e
 cd /var/www/pu-connector
 echo "Đang chạy pnpm install..."
-pnpm install
+# onnxruntime-node: bỏ tải bản CUDA (VPS không có GPU, nuget không có gói khớp)
+ONNXRUNTIME_NODE_INSTALL=skip pnpm install
 
 echo "Đang build API & packages..."
 pnpm exec turbo run build --concurrency=1 --filter='!@pu/web'  # tuần tự: VPS 2GB RAM, build song song dễ hết bộ nhớ
