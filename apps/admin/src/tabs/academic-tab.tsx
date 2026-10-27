@@ -1,11 +1,13 @@
 import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Compass, ExternalLink, FileText, Plus, Trash2 } from 'lucide-react'
+import { BookOpen, Compass, ExternalLink, FileSpreadsheet, FileText, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminCommunityRow, AdminCourseInput, AdminCourseRow, AdminDocumentRow, AdminPermission } from '@pu/schemas'
 import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/lib/api'
 import { SavedViews } from '@/components/list/saved-views'
 import { UnitsSection } from '@/features/units/units-panel'
+import { CourseEditDialog } from '@/features/courses/course-edit-dialog'
+import { CourseImportDialog } from '@/features/courses/course-import-dialog'
 import { useHashQuery } from '@/hooks/use-hash-query'
 import {
   Badge,
@@ -55,6 +57,7 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
   const [params, set] = useHashQuery()
   const tab = (['courses', 'documents', 'communities', 'units'].includes(params.tab) ? params.tab : 'courses') as Sub
   const [createOpen, setCreateOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const canManage = permissions.includes('academic:manage')
 
   return (
@@ -65,9 +68,14 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
           <>
             <SavedViews page="academic" />
             {canManage && tab === 'courses' && (
-              <Button variant="primary" onClick={() => setCreateOpen(true)}>
-                <Plus /> Thêm học phần
-              </Button>
+              <>
+                <Button onClick={() => setImportOpen(true)}>
+                  <FileSpreadsheet /> Nhập file
+                </Button>
+                <Button variant="primary" onClick={() => setCreateOpen(true)}>
+                  <Plus /> Thêm học phần
+                </Button>
+              </>
             )}
           </>
         }
@@ -84,11 +92,12 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
           />
         }
       />
-      {tab === 'courses' && <CoursesSection />}
+      {tab === 'courses' && <CoursesSection canManage={canManage} />}
       {tab === 'documents' && <DocumentsSection canManage={canManage} />}
       {tab === 'communities' && <CommunitiesSection />}
       {tab === 'units' && <UnitsSection canManage={canManage} />}
       {canManage && <CreateCourseDialog open={createOpen} onClose={() => setCreateOpen(false)} />}
+      {canManage && <CourseImportDialog open={importOpen} onClose={() => setImportOpen(false)} />}
     </>
   )
 }
@@ -113,7 +122,8 @@ function Total({ n, unit }: { n?: number; unit: string }) {
 
 /* ── Học phần ────────────────────────────────────────────── */
 
-function CoursesSection() {
+function CoursesSection({ canManage }: { canManage: boolean }) {
+  const [editing, setEditing] = useState<AdminCourseRow | null>(null)
   const state = useListState({ sort: 'posts' })
   const list = usePaged<AdminCourseRow>('courses', '/admin/courses', state.params, ['q', 'faculty'])
   const rows = list.data?.items ?? []
@@ -157,7 +167,7 @@ function CoursesSection() {
             </THead>
             <TBody>
               {rows.map((c) => (
-                <Tr key={c.id}>
+                <Tr key={c.id} onClick={canManage ? () => setEditing(c) : undefined}>
                   <Td className="font-mono text-xs font-semibold text-primary">{c.code}</Td>
                   <Td className="max-w-[420px]">
                     <p className="truncate font-medium text-foreground">{c.name}</p>
@@ -175,6 +185,7 @@ function CoursesSection() {
           <ListFooter state={state} total={list.data?.total ?? 0} />
         </div>
       )}
+      {canManage && <CourseEditDialog course={editing} onClose={() => setEditing(null)} />}
     </>
   )
 }

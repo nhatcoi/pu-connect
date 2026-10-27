@@ -19,7 +19,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | Đặt lại mật khẩu cho người dùng | menu **⋯** của hồ sơ / thanh thao tác hàng loạt (biểu tượng chìa khóa) › *Gửi link đặt lại mật khẩu* hoặc *Bắt đổi mật khẩu* |
 | Cây đơn vị (trường / khoa / ngành, viện, trung tâm): thêm, sửa, sắp xếp, gộp | **Học thuật** › tab **Đơn vị** |
 | Khóa nhanh | nút **Khóa** đầu hồ sơ (hộp Xử phạt chọn sẵn *Khóa*, chọn thời hạn) |
-| Học phần, tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
+| Học phần: thêm, sửa, gán giảng viên, gộp môn trùng, xóa môn trống, nhập Excel/CSV/JSON (bấm hàng để sửa); tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
 | Telemetry, phản hồi, ticket, skill, danh mục model N7AI | **N7AI** |
 | Từ khóa tìm nhiều / không có kết quả | **Tìm kiếm** |
 | Thông báo hệ thống: nhắm theo vai trò / đơn vị / khóa, hẹn giờ, banner đầu trang web, lịch sử và hủy | **Thông báo** |

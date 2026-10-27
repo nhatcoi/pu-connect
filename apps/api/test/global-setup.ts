@@ -56,7 +56,8 @@ export const MIGRATIONS = [
   'bot-soul-upgrade.sql',
   'bot-jobs-upgrade.sql',
   'comment-reports-upgrade.sql',
-  'announcements-upgrade.sql'
+  'announcements-upgrade.sql',
+  'course-lecturers-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

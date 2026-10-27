@@ -547,6 +547,21 @@ export interface AdminCourseRow {
   createdAt: string
 }
 
+export interface AdminCourseLecturer {
+  id: string
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  role: AdminUserRole
+}
+
+export interface AdminCourseImportResult {
+  created: number
+  updated: number
+  errors: { row: number; message: string }[]
+  applied: boolean
+}
+
 export interface AdminDocumentRow {
   id: string
   title: string
