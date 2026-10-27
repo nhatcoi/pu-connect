@@ -8,6 +8,7 @@ import { blockExistsSql } from '../blocks/blocks.sql'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
 import type { ReportCommentBody } from './dto/comment.dto'
 import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
+import { PostDocumentsService } from '../documents/post-documents.service'
 
 export interface CommentsResult {
   data: CommentItem[]
@@ -25,7 +26,8 @@ export class CommentsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly mentions: MentionsService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly documents: PostDocumentsService
   ) {}
 
   // Phân trang theo bình luận gốc; kèm toàn bộ phản hồi của các gốc trong trang (2 cấp)
@@ -70,6 +72,11 @@ export class CommentsService {
       params
     )
     const items = res.rows.map((row) => this.mapRowToCommentItem(row, currentUserId))
+    const docs = await this.documents.forComments(
+      items.map((c) => c.id),
+      currentUserId
+    )
+    for (const c of items) c.documents = docs.get(c.id) ?? []
     const rootsLoaded = items.filter((c) => !c.parentId).length
     const nextOffset = safeOffset + rootsLoaded
     const remainingCount = Math.max(0, rootsTotal - nextOffset)
@@ -143,6 +150,11 @@ export class CommentsService {
 
       const commentRow = insertRes.rows[0]
 
+      // 3.0. Tài liệu đính kèm (bản nháp đã tải lên) ⇒ published + comment_documents
+      const documentIds = Array.isArray(data.documentIds) ? data.documentIds : []
+      await this.documents.attachToComment(client, commentRow.id, data.postId, authorId, documentIds)
+      const attached = documentIds.length ? ((await this.documents.forComments([commentRow.id], authorId, client)).get(commentRow.id) ?? []) : []
+
       // 3.1. Ghi @mention trong cùng transaction
       mentioned = await this.mentions.record(client, 'comment', commentRow.id, authorId, data.content)
 
@@ -160,6 +172,7 @@ export class CommentsService {
         parentId: commentRow.parent_id || null,
         content: commentRow.content,
         mediaUrls: data.mediaUrls || [],
+        documents: attached,
         likesCount: 0,
         isSolution: false,
         isLikedByMe: false,

@@ -2,28 +2,29 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { DOC_CATEGORY_LABELS, type AttachedDocument } from '@pu/schemas'
+import type { AttachedDocument } from '@pu/schemas'
 import { Download, FileText, Library } from 'lucide-react'
 import { openDocument } from '@/lib/document-api'
+import { cn } from '@/lib/utils'
+import { docMetaLine } from '@/components/documents/document-format'
+import { SaveDocumentButton } from '@/components/documents/save-document-button'
 
-function formatSize(bytes: number) {
-  if (!bytes) return null
-  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`
-}
-
-// Tài liệu đính kèm bài viết: loại, môn, đã vào kho môn học; bấm để mở (đếm lượt tải)
-export function PostDocumentList({ documents }: { documents: AttachedDocument[] }) {
+// Tài liệu đính kèm bài viết / bình luận: loại, môn, đã vào kho môn học; bấm tên ⇒ trang chi tiết, nút tải ⇒ mở tệp (đếm lượt tải)
+export function PostDocumentList({ documents, compact = false }: { documents: AttachedDocument[]; compact?: boolean }) {
   if (!documents.length) return null
   return (
     <div className="space-y-1.5">
       {documents.map((doc) => {
-        const meta = [doc.docCategory && DOC_CATEGORY_LABELS[doc.docCategory], doc.academicYear, formatSize(doc.fileSize)].filter(Boolean).join(' · ')
+        const meta = docMetaLine(doc)
         return (
-          <div key={doc.id} className="flex items-center gap-2.5 rounded-xl border border-border/70 bg-muted/30 px-3 py-2 text-xs">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div
+            key={doc.id}
+            className={cn('flex items-center gap-2.5 rounded-xl border border-border/70 bg-muted/30 text-xs', compact ? 'px-2.5 py-1.5' : 'px-3 py-2')}
+          >
+            <div className={cn('flex shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary', compact ? 'h-7 w-7' : 'h-8 w-8')}>
               <FileText className="h-4 w-4" />
             </div>
-            <button type="button" onClick={() => void openDocument(doc)} className="min-w-0 flex-1 text-left cursor-pointer group">
+            <Link href={`/documents/${doc.id}`} className="min-w-0 flex-1 group">
               <p className="truncate font-semibold text-foreground group-hover:text-primary group-hover:underline">{doc.title}</p>
               <p className="flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
                 {meta && <span>{meta}</span>}
@@ -33,7 +34,7 @@ export function PostDocumentList({ documents }: { documents: AttachedDocument[] 
                   </span>
                 )}
               </p>
-            </button>
+            </Link>
             {doc.courseCode && (
               <Link
                 href={`/courses/${encodeURIComponent(doc.courseCode)}`}
@@ -42,6 +43,7 @@ export function PostDocumentList({ documents }: { documents: AttachedDocument[] 
                 {doc.courseCode}
               </Link>
             )}
+            <SaveDocumentButton documentId={doc.id} />
             <button
               type="button"
               onClick={() => void openDocument(doc)}

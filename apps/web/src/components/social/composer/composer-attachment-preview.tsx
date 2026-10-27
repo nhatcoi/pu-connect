@@ -21,6 +21,8 @@ export interface AttachedFile {
   reused?: boolean
   // Người đăng đã tự bật/tắt "Đưa vào kho" ⇒ không tự bật nữa
   listedTouched?: boolean
+  // N7AI đang đọc tệp để gợi ý phân loại
+  suggesting?: boolean
 }
 
 interface ComposerAttachmentPreviewProps {

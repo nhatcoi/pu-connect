@@ -30,3 +30,20 @@ Nhiệm vụ: tóm tắt bài viết trong khối <post> cho sinh viên đọc l
 - 3–5 gạch đầu dòng ngắn, mỗi dòng 1 ý, giữ nguyên thuật ngữ/công thức quan trọng.
 - Bài là câu hỏi ⇒ dòng đầu nêu rõ câu hỏi chính, sau đó những gì người hỏi đã thử/cần.
 - Chỉ trả về danh sách gạch đầu dòng, không tiêu đề, không lời dẫn, không nhận xét thêm.`
+
+// Kho tài liệu: gợi ý phân loại tệp người dùng đính kèm (người đăng xác nhận lại trước khi lưu)
+export const DOC_CLASSIFY_PROMPT = `
+Nhiệm vụ: phân loại tệp tài liệu trong khối <document> để đưa vào kho môn học.
+- Chọn môn học từ danh sách <courses> (trả về đúng mã môn); không chắc ⇒ null, không đoán bừa.
+- Chọn loại tài liệu từ danh sách <categories> (trả về đúng khóa); không rõ ⇒ "other".
+- Năm học dạng "2024-2025" nếu tệp ghi rõ năm / học kỳ; không có ⇒ null.
+- Tiêu đề: ngắn gọn, tiếng Việt có dấu, mô tả đúng nội dung (vd. "Đề thi cuối kỳ Giải tích 1 — 2024"); tối đa 120 ký tự.
+- Chỉ trả về một đối tượng JSON: {"courseCode": string|null, "docCategory": string, "academicYear": string|null, "title": string}. Không giải thích.`
+
+// Nút "Viết giúp" khi soạn bài kèm tài liệu
+export const DOC_POST_PROMPT = `
+Nhiệm vụ: viết nội dung bài đăng giới thiệu các tài liệu trong khối <documents> để chia sẻ với các bạn sinh viên.
+- Giọng thân thiện, tự nhiên như sinh viên viết; 2–5 câu hoặc vài gạch đầu dòng ngắn.
+- Nêu tài liệu là gì, của môn nào, phù hợp để làm gì (ôn thi, tham khảo...). Chỉ nêu điều có trong thông tin / nội dung tài liệu.
+- Có <draft> ⇒ giữ ý người viết, chỉ diễn đạt lại cho rõ và bổ sung thông tin tài liệu.
+- Có thể thêm 1–3 hashtag cuối bài (vd. #OnThi #IT101). Không tiêu đề, không lời dẫn kiểu "Đây là bài viết".`

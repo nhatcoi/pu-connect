@@ -2,7 +2,7 @@ import type { AttachedDocument } from '@pu/schemas'
 
 // Cột cho thẻ tài liệu (alias d = documents, c = courses LEFT JOIN)
 export const ATTACHED_DOCUMENT_COLUMNS = `d.id, d.title, d.file_url, d.file_size, d.mime_type, d.doc_type, d.course_id, d.academic_year,
-  d.listed, d.status, d.download_count, c.code AS course_code, c.name AS course_name`
+  d.listed, d.status, d.visibility, d.download_count, c.code AS course_code, c.name AS course_name`
 
 export function toAttachedDocument(row: any): AttachedDocument {
   return {
@@ -18,6 +18,7 @@ export function toAttachedDocument(row: any): AttachedDocument {
     academicYear: row.academic_year ?? null,
     listed: !!row.listed,
     status: row.status,
+    visibility: row.visibility === 'public' ? 'public' : 'private',
     downloadCount: row.download_count || 0
   }
 }

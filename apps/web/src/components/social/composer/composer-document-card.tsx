@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, type ClassifyDocumentInput, type Course, type DocCategory } from '@pu/schemas'
-import { AlertTriangle, FileText, Library, Loader2, X } from 'lucide-react'
+import { AlertTriangle, FileText, Library, Loader2, Sparkles, X } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import type { AttachedFile } from './composer-attachment-preview'
@@ -14,6 +14,7 @@ interface ComposerDocumentCardProps {
   required: boolean
   onClassify: (file: AttachedFile, patch: ClassifyDocumentInput) => void
   onUseDuplicate: (file: AttachedFile) => void
+  onSuggest: (file: AttachedFile) => void
   onRemove: (id: string) => void
 }
 
@@ -31,7 +32,7 @@ function formatSize(bytes: number) {
 }
 
 // Thẻ tệp đính kèm: tải lên ngay, người đăng phân loại (môn, loại, năm học) để đưa vào kho môn học
-export function ComposerDocumentCard({ file, courses, required, onClassify, onUseDuplicate, onRemove }: ComposerDocumentCardProps) {
+export function ComposerDocumentCard({ file, courses, required, onClassify, onUseDuplicate, onSuggest, onRemove }: ComposerDocumentCardProps) {
   const doc = file.doc
   const ready = !!doc && !file.uploading
   const classified = !!doc?.courseId && !!doc?.docCategory
@@ -44,7 +45,9 @@ export function ComposerDocumentCard({ file, courses, required, onClassify, onUs
           {file.uploading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : <FileText className="h-4 w-4" />}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[12px] font-semibold leading-tight">{file.name}</p>
+          <p className="truncate text-[12px] font-semibold leading-tight" title={file.name}>
+            {doc?.title || file.name}
+          </p>
           <p className="text-[10px] text-muted-foreground">
             {formatSize(file.size)}
             {file.uploading && ' · Đang tải lên...'}
@@ -56,6 +59,18 @@ export function ComposerDocumentCard({ file, courses, required, onClassify, onUs
             )}
           </p>
         </div>
+        {ready && !file.reused && (
+          <button
+            type="button"
+            onClick={() => onSuggest(file)}
+            disabled={file.suggesting}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 px-2 py-1 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/5 disabled:opacity-60 cursor-pointer"
+            title="N7AI đọc tệp và điền môn, loại, năm học, tiêu đề"
+          >
+            {file.suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            N7AI gợi ý
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onRemove(file.id)}

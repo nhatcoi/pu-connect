@@ -85,8 +85,8 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   }, [isOpen, isLoaded, totalCount, onCountChange])
 
   // Gửi bình luận gốc ⇒ đưa lên đầu, nháy viền ngắn và giữ khung nhìn ở form
-  const submitRoot = async (text: string, media?: string[], anonymous?: boolean) => {
-    const created = await addComment(text, undefined, media, anonymous)
+  const submitRoot = async (text: string, media?: string[], anonymous?: boolean, documentIds?: string[]) => {
+    const created = await addComment(text, undefined, media, anonymous, documentIds)
     if (created) {
       setFreshIds((prev) => [created.id, ...prev])
       setHighlighted(created.id)
@@ -96,8 +96,8 @@ export function PostCommentsSection({ post, isOpen, highlightCommentId, onCountC
   }
 
   // Gửi phản hồi ⇒ mở luồng của bình luận gốc để thấy ngay
-  const submitReply = async (text: string, parentId: string, media?: string[], anonymous?: boolean) => {
-    const created = await addComment(text, parentId, media, anonymous)
+  const submitReply = async (text: string, parentId: string, media?: string[], anonymous?: boolean, documentIds?: string[]) => {
+    const created = await addComment(text, parentId, media, anonymous, documentIds)
     if (created) setExpandedReplies((prev) => ({ ...prev, [rootOf(parentId)]: true }))
     return created
   }

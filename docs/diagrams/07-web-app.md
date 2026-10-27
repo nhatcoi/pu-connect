@@ -124,7 +124,8 @@ Quản lý state & cache: xem [08-web-state](../core/08-web-state.md).
 | Communities | `communities`, `communities/:slug/*` | — | — |
 | NotificationsPopover / `/notifications` | `notifications`, `notifications/*/read*`, `notifications/settings` | — | `notification`, `notification.read` |
 | `/post/[id]` | `posts/:id`, `posts/:postId/comments` | — | — |
-| `/courses`, `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `study-groups?course=`, `study-groups/:id/join` | — | — |
+| `/courses` (tab Môn học · Tài liệu · Kho của tôi), `/courses/[code]` | `courses`, `courses/:code/overview`, `posts?course=`, `documents?course=`, `documents/browse`, `library*`, `study-groups?course=`, `study-groups/:id/join` | — | — |
+| `/documents/[id]` | `documents/:id/detail`, `library`, `PATCH/DELETE documents/:id`, `upload/read` (xem trước) | — | — |
 | `/tools`, `/tools/[kind]`, `/tools/[kind]/[id]` | `tools/overview`, `tools/stats`, `tools/sets*` (gồm `draft`, `review`, `attempts`), `upload/file` (ảnh thẻ) | — | — |
 | `/n7ai`, `/n7ai/[id]`, `/n7ai/library`, `/n7ai/settings*` | `ai/threads`, `ai/library`, `ai/quota`, `ai/settings`, `ai/*` (skills, connectors, memories, tasks…), `conversations/:id*` | — | như dòng dưới (thread AI không vá danh sách Tin nhắn; tệp / quiz mới ⇒ làm mới Thư viện) |
 | `/messages`, `/messages/[id]`, badge Tin nhắn (không gồm thread AI) | `conversations*`, `messages/:id*`, `ai/*` (threads, skills, connectors), `chat/refs`, `upload/file?folder=chat`, `search?type=users`, `presence` | localStorage `pu.ai.connectors` | `message.new/updated/delta`, `conv.read/updated/removed`, `ai.thread.updated`, `typing`, `presence.update` (useChatRealtime trong AppLayout, `hooks/chat/`) |

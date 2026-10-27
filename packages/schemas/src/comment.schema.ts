@@ -1,10 +1,13 @@
 import { z } from 'zod'
+import type { AttachedDocument } from './document.schema'
 
 export const CreateCommentSchema = z.object({
   postId: z.string(),
   parentId: z.string().optional(),
   content: z.string().min(1, { message: 'Nội dung bình luận không được để trống' }),
   mediaUrls: z.array(z.string().url()).default([]),
+  // Tài liệu đính kèm (bản nháp từ POST /documents/upload hoặc tài liệu công khai có sẵn), tối đa 3
+  documentIds: z.array(z.string()).max(3).optional(),
   // Bình luận ẩn danh: người khác thấy "Ẩn danh"
   isAnonymous: z.boolean().default(false)
 })
@@ -16,6 +19,7 @@ export const CommentItemSchema = z.object({
   parentId: z.string().nullable().optional(),
   content: z.string(),
   mediaUrls: z.array(z.string()).default([]),
+  documents: z.array(z.custom<AttachedDocument>()).optional(),
   likesCount: z.number().default(0),
   isSolution: z.boolean().default(false),
   isLikedByMe: z.boolean().default(false),

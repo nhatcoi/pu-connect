@@ -9,6 +9,7 @@ import { N7AiMark } from '@/components/brand/pu-logo'
 import { PostMediaGallery } from '../post-media-gallery'
 import { ReportPostDialog } from '../report-post-dialog'
 import { CommentComposer } from './comment-composer'
+import { PostDocumentList } from '../post-document-list'
 import { Heart, MessageSquare, CheckCircle2, Trash2, Check, Pencil, Flag } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { CommentItem, MentionCandidate } from '@pu/schemas'
@@ -25,7 +26,7 @@ interface CommentItemCardProps {
   onLikeToggle: (commentId: string) => void
   onAcceptSolution?: (commentId: string) => void
   onDeleteComment?: (commentId: string) => void
-  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[], anonymous?: boolean) => Promise<unknown>
+  onReplySubmit: (content: string, parentId: string, mediaUrls?: string[], anonymous?: boolean, documentIds?: string[]) => Promise<unknown>
   onEditComment?: (commentId: string, content: string) => Promise<boolean>
   mentionContext?: MentionCandidate[]
   // Bình luận được mở từ thông báo (cuộn tới + viền nổi bật)
@@ -191,6 +192,7 @@ export function CommentItemCard({
         )}
 
         {comment.mediaUrls && comment.mediaUrls.length > 0 && <PostMediaGallery mediaUrls={comment.mediaUrls} className="mt-1" />}
+        {!!comment.documents?.length && <PostDocumentList documents={comment.documents} compact />}
 
         {/* Actions bar: Like, Reply */}
         <div className="flex items-center gap-4 pt-1 text-xs text-muted-foreground">
@@ -223,8 +225,8 @@ export function CommentItemCard({
               postId={comment.postId}
               mentionContext={mentionContext}
               draftKey={`reply:${comment.id}`}
-              onSubmit={async (text, media, anonymous) => {
-                const created = await onReplySubmit(text, comment.id, media, anonymous)
+              onSubmit={async (text, media, anonymous, documentIds) => {
+                const created = await onReplySubmit(text, comment.id, media, anonymous, documentIds)
                 if (created) setShowReplyComposer(false)
                 return created
               }}

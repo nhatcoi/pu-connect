@@ -93,13 +93,13 @@ export function useComments(postId: string, initialOpen = false) {
   })
 
   const addComment = useCallback(
-    async (content: string, parentId?: string, mediaUrls: string[] = [], isAnonymous = false) => {
+    async (content: string, parentId?: string, mediaUrls: string[] = [], isAnonymous = false, documentIds: string[] = []) => {
       if (!content.trim()) return null
       setIsSubmitting(true)
       try {
         const res = await apiClient<{ success: boolean; data: CommentItem }>(`/posts/${postId}/comments`, {
           method: 'POST',
-          body: JSON.stringify({ content: content.trim(), parentId, mediaUrls, isAnonymous })
+          body: JSON.stringify({ content: content.trim(), parentId, mediaUrls, isAnonymous, documentIds: documentIds.length ? documentIds : undefined })
         })
         if (res?.data) {
           const created = res.data

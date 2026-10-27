@@ -92,7 +92,8 @@ flowchart TB
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `PATCH comments/:id` · `DELETE comments/:id` |
 | Mentions | `GET mentions/suggest` |
 | Communities | `GET communities` · `GET communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` |
-| Documents | `GET documents` (`type`, `search`, `course`) · `GET documents/:id` · `POST documents` · `POST documents/:id/download` |
+| Documents | `GET documents` (`type`, `search`, `course`) · `GET documents/browse` (`course`, `category`, `q`, `sort`, `cursor`) · `GET documents/:id` · `GET documents/:id/detail` · `POST documents` · `POST documents/upload` (bản nháp) · `PATCH documents/:id` (phân loại) · `POST documents/:id/suggest` · `POST documents/write-post` (N7AI) · `DELETE documents/:id` · `DELETE documents/:id/draft` · `POST documents/:id/download` |
+| Library (kho cá nhân, cần đăng nhập) | `GET library` (`scope=saved\|mine`, `folder`, `q`, `cursor`) · `GET library/ids` · `POST library` · `PATCH/DELETE library/:documentId` · `POST library/upload` · `GET/POST library/folders` · `PATCH/DELETE library/folders/:id` |
 | Courses | `GET courses` · `GET courses/:id` · `GET courses/:id/overview` (số liệu + người đóng góp) · `POST courses` |
 | Study groups | `GET study-groups` · `GET study-groups/:id` · `POST study-groups` · `POST study-groups/:id/join` |
 | Campus | `GET campus-events` · `POST campus-events` |
@@ -141,6 +142,7 @@ flowchart TB
 - 2026-10-20 — `posts/anonymity.ts` (che tác giả, `anonymizeNotification`, hạn mức 24h) dùng bởi `PostsService`, `CommentsService`, tìm kiếm, chat share / embed, post-ai; cột `is_anonymous` (migration `anonymous-upgrade.sql`).
 - 2026-10-19 — Chat: `ChatShareController` `POST chat/share/post` + `ChatShareService` (mở DM, `MessagesService.sendShared` với `meta.sharedPost`, cộng `shares_count`).
 - 2026-10-19 — `StudyToolsModule`: `GET tools/stats` (chuỗi ngày, lịch nhiệt, dự báo thẻ đến hạn) từ bảng mới `study_events` (ghi trong `review` / `attempt`); thẻ flashcard thêm `image`, điền chỗ trống `{{…}}` (mặt sau không bắt buộc), mẫu `cloze`; `StudyKindDef.aiItem` (N7AI không đặt ảnh).
+- 2026-10-27 — Kho tài liệu đợt 2–4: `DocumentAiService` (N7AI gợi ý phân loại, viết bài), `LibraryService` + `LibraryController` (kho cá nhân, thư mục), `PostDocumentsService.attachToComment/forComments` (bình luận kèm tài liệu), `DocumentsService.browse/detail/remove`. Migration `document-library-personal-upgrade.sql`.
 - 2026-10-19 — `ai/rag/`: `EmbeddingService` (`/v1/embeddings`, Ollama trên Mac mini qua tunnel), `RagIndexService` + queue BullMQ `rag-index` (trích tệp R2 → `document_chunks`, embedding đoạn & bài viết), `RagSearchService` (tìm kết hợp cho `AiRetrieval` library / my_documents). `DocumentsService.create` gọi `RagIndexQueue.kick()`. Migration `rag-upgrade.sql`.
 - 2026-10-18 — Socket `message.progress` (bước tool MCP: nhãn, chi tiết ngắn, trạng thái) + `meta.steps` trên tin N7AI hoàn tất.
 - 2026-10-18 — Registry loại bộ `study-tools/kinds/` (schema mục, tùy chọn, hợp đồng tool N7AI); `StudyCreateToolsService` (`my_study__create_flashcards`, `my_study__create_quiz`) trong mọi thread N7AI riêng, server chèn khối ```` ```flashcards ```` chuẩn vào tin; `tools/sets/draft` dùng cùng JSON Schema. `study_sets.options` (mẫu, ngôn ngữ phát âm).

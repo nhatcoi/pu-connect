@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { createHash } from 'crypto'
-import type { AttachedDocument, DocumentItem, DocumentUploadResult } from '@pu/schemas'
+import type { AttachedDocument, DocCategory, DocumentDetail, DocumentItem, DocumentListItem, DocumentListPage, DocumentSort, DocumentUploadResult } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { setTrashActor } from '../../database/trash'
 import { RagIndexQueue } from '../ai/rag/rag-index.processor'
@@ -11,6 +11,12 @@ import type { ClassifyDocumentInput } from '@pu/schemas'
 
 const DRAFT_TTL_HOURS = 24
 const DRAFT_SWEEP_MS = 60 * 60 * 1000
+const BROWSE_PAGE_SIZE = 20
+
+// Cột thẻ danh sách kho chung (alias d, c, u = users người đăng)
+const LIST_COLUMNS = `${ATTACHED_DOCUMENT_COLUMNS}, d.owner_id, d.save_count, d.created_at, u.username AS owner_username, u.display_name AS owner_name`
+
+export type BrowseQuery = { course?: string; category?: DocCategory; q?: string; sort?: DocumentSort; cursor?: string }
 
 @Injectable()
 export class DocumentsService implements OnModuleInit, OnModuleDestroy {
@@ -62,6 +68,102 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
 
     const res = await this.db.query(sql, params)
     return res.rows.map((row) => this.mapRowToDocument(row))
+  }
+
+  // Trang "Tài liệu": kho chung (đã vào kho môn học), lọc môn / loại / từ khóa; phân trang offset (sắp theo lượt tải đổi liên tục)
+  async browse(query: BrowseQuery): Promise<DocumentListPage> {
+    const params: unknown[] = []
+    const where = ['d.listed']
+    if (query.course) {
+      params.push(query.course)
+      where.push(`(c.code ILIKE $${params.length} OR c.id::text = $${params.length})`)
+    }
+    if (query.category) {
+      params.push(query.category)
+      where.push(`d.doc_type = $${params.length}::doc_type_enum`)
+    }
+    if (query.q?.trim()) {
+      params.push(`%${query.q.trim()}%`)
+      where.push(`(d.title ILIKE $${params.length} OR d.description ILIKE $${params.length} OR c.code ILIKE $${params.length} OR c.name ILIKE $${params.length})`)
+    }
+    const offset = Math.max(0, Math.min(Number.parseInt(query.cursor ?? '0', 10) || 0, 10_000))
+    const order = query.sort === 'newest' ? 'd.created_at DESC, d.id DESC' : 'd.download_count + d.save_count * 2 DESC, d.created_at DESC, d.id DESC'
+    const res = await this.db.query(
+      `SELECT ${LIST_COLUMNS}
+       FROM documents d LEFT JOIN courses c ON c.id = d.course_id JOIN users u ON u.id = d.owner_id
+       WHERE ${where.join(' AND ')}
+       ORDER BY ${order} LIMIT ${BROWSE_PAGE_SIZE + 1} OFFSET ${offset}`,
+      params
+    )
+    return {
+      data: res.rows.slice(0, BROWSE_PAGE_SIZE).map(toListItem),
+      nextCursor: res.rows.length > BROWSE_PAGE_SIZE ? String(offset + BROWSE_PAGE_SIZE) : null
+    }
+  }
+
+  // Trang chi tiết: tài liệu công khai đã đăng (hoặc của chính mình) + bài viết có đính kèm + tài liệu cùng môn
+  async detail(id: string, viewerId?: string | null): Promise<DocumentDetail> {
+    const res = await this.db.query(
+      `SELECT ${LIST_COLUMNS}, d.description, d.original_name, d.view_count,
+              EXISTS (SELECT 1 FROM library_items li WHERE li.document_id = d.id AND li.owner_id::text = $2) AS is_saved
+       FROM documents d LEFT JOIN courses c ON c.id = d.course_id JOIN users u ON u.id = d.owner_id
+       WHERE d.id = $1 AND d.status = 'published' AND (d.visibility = 'public' OR d.owner_id::text = $2)`,
+      [id, viewerId ?? '']
+    )
+    const row = res.rows[0]
+    if (!row) throw new NotFoundException('Không tìm thấy tài liệu')
+    const isMine = row.owner_id === viewerId
+    if (!isMine) await this.db.query(`UPDATE documents SET view_count = view_count + 1 WHERE id = $1`, [id])
+
+    const [posts, related] = await Promise.all([
+      this.db.query(
+        `SELECT p.id, p.title, left(p.content, 160) AS excerpt, p.created_at,
+                CASE WHEN p.is_anonymous THEN 'Ẩn danh' ELSE u.display_name END AS author_name
+         FROM post_documents pd JOIN posts p ON p.id = pd.post_id JOIN users u ON u.id = p.author_id
+         WHERE pd.document_id = $1 AND p.visibility = 'public' AND p.hidden_at IS NULL
+         ORDER BY p.created_at DESC LIMIT 5`,
+        [id]
+      ),
+      row.course_id
+        ? this.db.query(
+            `SELECT ${LIST_COLUMNS}
+             FROM documents d LEFT JOIN courses c ON c.id = d.course_id JOIN users u ON u.id = d.owner_id
+             WHERE d.listed AND d.course_id = $1 AND d.id <> $2
+             ORDER BY (d.doc_type IS NOT DISTINCT FROM $3::doc_type_enum) DESC, d.download_count DESC, d.created_at DESC LIMIT 6`,
+            [row.course_id, id, row.doc_type]
+          )
+        : Promise.resolve({ rows: [] as any[] })
+    ])
+    return {
+      ...toListItem(row),
+      description: row.description ?? null,
+      originalName: row.original_name ?? null,
+      viewCount: (row.view_count || 0) + (isMine ? 0 : 1),
+      isMine,
+      isSaved: !!row.is_saved,
+      posts: posts.rows.map((p) => ({
+        id: p.id,
+        title: p.title ?? null,
+        excerpt: p.excerpt ?? '',
+        authorName: p.author_name,
+        createdAt: new Date(p.created_at).toISOString()
+      })),
+      related: related.rows.map(toListItem)
+    }
+  }
+
+  // Chủ tài liệu xóa tài liệu đã đăng: gỡ khỏi bài / bình luận / kho của mọi người (bản ghi vào thùng rác 30 ngày)
+  async remove(id: string, userId: string): Promise<{ deleted: boolean }> {
+    return this.db.transaction(async (client) => {
+      await setTrashActor(client, userId)
+      const res = await client.query(`DELETE FROM documents WHERE id = $1 AND owner_id = $2 RETURNING file_url`, [id, userId])
+      if (!res.rowCount) throw new NotFoundException('Tài liệu không tồn tại')
+      // Cột URL cũ của bài (đếm tệp đính kèm) bỏ tệp vừa xóa
+      await client.query(`UPDATE posts SET attached_document_ids = array_remove(attached_document_ids, $1) WHERE $1 = ANY(attached_document_ids)`, [
+        res.rows[0].file_url
+      ])
+      return { deleted: true }
+    })
   }
 
   // Tài liệu riêng tư / bản nháp: chỉ chủ sở hữu xem được
@@ -179,9 +281,16 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
     })
   }
 
-  // Bản nháp bị bỏ (không đăng bài) quá DRAFT_TTL_HOURS ⇒ xóa (bản ghi vào thùng rác, tệp R2 còn lại)
+  // Bản nháp bị bỏ (không đăng bài) quá DRAFT_TTL_HOURS ⇒ xóa bản ghi (vào thùng rác) + tệp R2 nếu không bản ghi nào khác dùng
   async purgeDrafts(): Promise<number> {
-    const res = await this.db.query(`DELETE FROM documents WHERE status = 'draft' AND created_at < NOW() - make_interval(hours => $1)`, [DRAFT_TTL_HOURS])
+    const res = await this.db.query(
+      `DELETE FROM documents d WHERE d.status = 'draft' AND d.created_at < NOW() - make_interval(hours => $1)
+       RETURNING d.file_url, EXISTS (SELECT 1 FROM documents o WHERE o.file_url = d.file_url AND o.id <> d.id) AS shared`,
+      [DRAFT_TTL_HOURS]
+    )
+    const prefix = this.storage.publicUrlFor('')
+    const keys = res.rows.filter((r) => !r.shared && r.file_url?.startsWith(prefix)).map((r) => (r.file_url as string).slice(prefix.length))
+    if (keys.length) await this.storage.deleteObjects(keys)
     return res.rowCount ?? 0
   }
 
@@ -223,5 +332,16 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : new Date().toISOString()
     }
+  }
+}
+
+function toListItem(row: any): DocumentListItem {
+  return {
+    ...toAttachedDocument(row),
+    ownerId: row.owner_id,
+    ownerUsername: row.owner_username,
+    ownerName: row.owner_name,
+    saveCount: row.save_count || 0,
+    createdAt: new Date(row.created_at).toISOString()
   }
 }

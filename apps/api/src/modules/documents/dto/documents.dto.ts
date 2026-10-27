@@ -15,7 +15,22 @@ export const DOC_CATEGORIES = [
   'other'
 ] as const satisfies readonly DocCategory[]
 
+// Nhãn tiếng Việt (prompt N7AI); bản web ở @pu/schemas
+export const DOC_CATEGORY_LABELS: Record<DocCategory, string> = {
+  midterm_exam: 'Đề giữa kỳ',
+  final_exam: 'Đề cuối kỳ',
+  lecture_slide: 'Slide bài giảng',
+  syllabus: 'Đề cương',
+  textbook: 'Giáo trình / Sách',
+  exercise: 'Bài tập & lời giải',
+  sample_project: 'Đồ án / Báo cáo mẫu',
+  internship_report: 'Báo cáo thực tập',
+  scientific_paper: 'Bài báo khoa học',
+  other: 'Khác'
+}
+
 export const MAX_POST_DOCUMENTS = 10
+export const MAX_COMMENT_DOCUMENTS = 3
 
 export const ClassifyDocumentSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
@@ -43,3 +58,32 @@ export const CreateDocumentBodySchema = z.object({
   visibility: z.enum(['public', 'private']).default('public')
 })
 export type CreateDocumentBody = z.infer<typeof CreateDocumentBodySchema>
+
+// "Viết giúp": N7AI viết bài giới thiệu tài liệu đang đính kèm
+export const WriteDocumentPostSchema = z.object({
+  documentIds: z.array(z.string().uuid()).min(1).max(MAX_POST_DOCUMENTS),
+  content: z.string().max(5000).optional()
+})
+
+// Kho cá nhân
+export const SaveToLibrarySchema = z.object({
+  documentId: z.string().uuid(),
+  folderId: z.string().uuid().nullable().optional()
+})
+export type SaveToLibraryBody = z.infer<typeof SaveToLibrarySchema>
+
+export const MoveLibraryItemSchema = z.object({ folderId: z.string().uuid().nullable() })
+export type MoveLibraryItemBody = z.infer<typeof MoveLibraryItemSchema>
+
+export const LibraryFolderSchema = z.object({ name: z.string().trim().min(1, { message: 'Nhập tên thư mục' }).max(80) })
+export type LibraryFolderBody = z.infer<typeof LibraryFolderSchema>
+
+// GET /documents/browse
+export const BrowseDocumentsSchema = z.object({
+  course: z.string().trim().max(40).optional(),
+  category: z.enum(DOC_CATEGORIES).optional(),
+  q: z.string().trim().max(100).optional(),
+  sort: z.enum(['popular', 'newest']).default('popular'),
+  cursor: z.string().regex(/^\d{1,5}$/).optional()
+})
+export type BrowseDocumentsQuery = z.infer<typeof BrowseDocumentsSchema>

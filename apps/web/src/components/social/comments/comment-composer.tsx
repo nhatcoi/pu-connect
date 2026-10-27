@@ -9,14 +9,17 @@ import { MentionPopover, mentionOptionId } from '@/components/mentions/mention-p
 import { useAppStore } from '@/store'
 import { useMentionPicker } from '@/hooks/use-mention-picker'
 import { useDraft } from '@/hooks/use-draft'
-import { uploadFileToR2 } from '@/lib/api-client'
+import { errorMessage, uploadFileToR2 } from '@/lib/api-client'
+import { discardDocumentDraft, uploadDocumentDraft } from '@/lib/document-api'
 import { N7AI_MENTION } from '@/lib/mention'
-import { Image as ImageIcon, Binary, Code2, Loader2, X } from 'lucide-react'
+import { Image as ImageIcon, Binary, Code2, FileText, Loader2, Paperclip, X } from 'lucide-react'
 import { AnonymousToggle } from '../anonymous-toggle'
 import { toast } from 'sonner'
 
+const MAX_COMMENT_DOCS = 3
+
 interface CommentComposerProps {
-  onSubmit: (content: string, mediaUrls?: string[], anonymous?: boolean) => Promise<unknown>
+  onSubmit: (content: string, mediaUrls?: string[], anonymous?: boolean, documentIds?: string[]) => Promise<unknown>
   parentId?: string
   placeholder?: string
   autoFocus?: boolean
@@ -51,6 +54,10 @@ export function CommentComposer({
   const [anonymous, setAnonymous] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const docInputRef = useRef<HTMLInputElement>(null)
+  // Tài liệu đính kèm: tải lên ngay thành bản nháp (đăng cùng bình luận), tối đa MAX_COMMENT_DOCS
+  const [attachedDocs, setAttachedDocs] = useState<{ key: string; name: string; id?: string; uploading: boolean }[]>([])
+  const docsUploading = attachedDocs.some((d) => d.uploading)
 
   const listId = useId()
   const mention = useMentionPicker({
@@ -111,12 +118,35 @@ export function CommentComposer({
     }
   }
 
+  const handleDocChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []).filter((f) => !f.type.startsWith('image/'))
+    e.target.value = ''
+    const room = MAX_COMMENT_DOCS - attachedDocs.length
+    if (files.length > room) toast.info(`Bình luận đính kèm tối đa ${MAX_COMMENT_DOCS} tài liệu`)
+    for (const file of files.slice(0, Math.max(0, room))) {
+      const key = `doc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+      setAttachedDocs((prev) => [...prev, { key, name: file.name, uploading: true }])
+      uploadDocumentDraft(file)
+        .then((res) => setAttachedDocs((prev) => prev.map((d) => (d.key === key ? { ...d, id: res.document.id, uploading: false } : d))))
+        .catch((err) => {
+          toast.error(errorMessage(err, 'Tải tài liệu thất bại'))
+          setAttachedDocs((prev) => prev.filter((d) => d.key !== key))
+        })
+    }
+  }
+
+  const handleRemoveDoc = (key: string) => {
+    const doc = attachedDocs.find((d) => d.key === key)
+    if (doc?.id) void discardDocumentDraft(doc.id).catch(() => undefined)
+    setAttachedDocs((prev) => prev.filter((d) => d.key !== key))
+  }
+
   const handleRemoveImage = (id: string) => {
     setAttachedImages((prev) => prev.filter((img) => img.id !== id))
   }
 
   const handleSubmit = async () => {
-    if (!content.trim() && attachedImages.length === 0) return
+    if ((!content.trim() && attachedImages.length === 0) || docsUploading) return
 
     setIsSubmitting(true)
     try {
@@ -131,13 +161,15 @@ export function CommentComposer({
         }
       }
 
-      const ok = await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined, !isEdit && anonymous)
+      const documentIds = attachedDocs.map((d) => d.id).filter((id): id is string => !!id)
+      const ok = await onSubmit(content.trim(), uploadedUrls.length > 0 ? uploadedUrls : undefined, !isEdit && anonymous, documentIds.length ? documentIds : undefined)
       // onSubmit trả null/false = lỗi ⇒ giữ nguyên nội dung để gửi lại
       if (ok === null || ok === false) return
       clearDraft()
       setContent('')
       setAnonymous(false)
       setAttachedImages([])
+      setAttachedDocs([])
     } catch {
       toast.error('Không thể gửi bình luận')
     } finally {
@@ -225,6 +257,20 @@ export function CommentComposer({
           </div>
         )}
 
+        {attachedDocs.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {attachedDocs.map((d) => (
+              <span key={d.key} className="inline-flex max-w-[220px] items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2 py-1 text-[11px]">
+                {d.uploading ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" /> : <FileText className="h-3 w-3 shrink-0 text-primary" />}
+                <span className="truncate">{d.name}</span>
+                <button type="button" onClick={() => handleRemoveDoc(d.key)} className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground" title="Gỡ tài liệu">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
         {/* Bottom Toolbar & Submit Button */}
         <div className="flex items-center justify-between pt-1 border-t border-border/40">
           <div className="flex items-center gap-1">
@@ -238,6 +284,16 @@ export function CommentComposer({
                   title="Đính kèm ảnh"
                 >
                   <ImageIcon className="h-3.5 w-3.5" />
+                </button>
+                <input ref={docInputRef} type="file" multiple className="hidden" onChange={handleDocChange} />
+                <button
+                  type="button"
+                  onClick={() => docInputRef.current?.click()}
+                  disabled={attachedDocs.length >= MAX_COMMENT_DOCS}
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer disabled:opacity-40"
+                  title="Đính kèm tài liệu (PDF, Word, slide…)"
+                >
+                  <Paperclip className="h-3.5 w-3.5" />
                 </button>
               </>
             )}
@@ -280,7 +336,7 @@ export function CommentComposer({
               type="button"
               size="sm"
               onClick={handleSubmit}
-              disabled={(!content.trim() && attachedImages.length === 0) || isSubmitting}
+              disabled={(!content.trim() && attachedImages.length === 0) || isSubmitting || docsUploading}
               className="h-7 px-3 text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs rounded-full gap-1"
             >
               {isSubmitting ? <Loader2 className="h-3 w-3 animate-spin" /> : <span>{isEdit ? 'Lưu' : parentId ? 'Trả lời' : 'Bình luận'}</span>}

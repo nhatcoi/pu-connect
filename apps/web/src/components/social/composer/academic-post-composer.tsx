@@ -15,7 +15,7 @@ import { AnonymousToggle } from '../anonymous-toggle'
 import { apiClient, uploadFileToR2, errorMessage } from '@/lib/api-client'
 import type { ClassifyDocumentInput, PostItem, PostType, TargetAudience } from '@pu/schemas'
 import { useCourses } from '@/hooks/use-course'
-import { classifyDocument, discardDocumentDraft, uploadDocumentDraft } from '@/lib/document-api'
+import { classifyDocument, discardDocumentDraft, suggestDocument, uploadDocumentDraft, writeDocumentPost } from '@/lib/document-api'
 
 import { ComposerProgressRing } from './composer-progress-ring'
 import { ComposerAudienceMenu } from './composer-audience-menu'
@@ -160,6 +160,45 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
       patchFile(item.id, { doc })
     } catch (err) {
       toast.error(errorMessage(err, 'Không lưu được phân loại'))
+    }
+  }
+
+  // N7AI gợi ý phân loại: điền các ô N7AI chắc chắn, người đăng xem lại trước khi đăng
+  const handleSuggest = async (item: AttachedFile) => {
+    if (!item.doc) return
+    patchFile(item.id, { suggesting: true })
+    try {
+      const s = await suggestDocument(item.doc.id)
+      const patch: ClassifyDocumentInput = {}
+      if (s.title) patch.title = s.title
+      if (s.courseId) patch.courseId = s.courseId
+      if (s.docCategory) patch.docCategory = s.docCategory
+      if (s.academicYear) patch.academicYear = s.academicYear
+      if (!Object.keys(patch).length) return void toast.info('N7AI chưa đủ thông tin để phân loại tệp này')
+      await handleClassify(item, patch)
+      toast.success(s.courseId ? 'N7AI đã điền gợi ý — kiểm tra lại trước khi đăng' : 'N7AI chưa nhận ra môn học, bạn chọn giúp nhé')
+    } catch (err) {
+      toast.error(errorMessage(err, 'N7AI chưa gợi ý được'))
+    } finally {
+      patchFile(item.id, { suggesting: false })
+    }
+  }
+
+  // "Viết giúp": N7AI viết nội dung bài từ tài liệu đính kèm (giữ ý bản đang viết); có thể hoàn tác
+  const [isWriting, setIsWriting] = useState(false)
+  const readyDocIds = attachedFiles.filter((f) => f.type === 'document' && f.doc && !f.uploading).map((f) => f.doc!.id)
+  const handleWritePost = async () => {
+    if (!readyDocIds.length) return
+    const previous = content
+    setIsWriting(true)
+    try {
+      const res = await writeDocumentPost({ documentIds: readyDocIds, content: previous.trim() || undefined })
+      setContent(res.content.slice(0, MAX_CHAR_LIMIT))
+      toast.success('N7AI đã viết nội dung', { action: { label: 'Hoàn tác', onClick: () => setContent(previous) } })
+    } catch (err) {
+      toast.error(errorMessage(err, 'N7AI chưa viết được'))
+    } finally {
+      setIsWriting(false)
     }
   }
 
@@ -510,10 +549,23 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
                 required={postType === 'document'}
                 onClassify={handleClassify}
                 onUseDuplicate={handleUseDuplicate}
+                onSuggest={handleSuggest}
                 onRemove={handleRemoveFile}
               />
             )}
           />
+
+          {isExpanded && readyDocIds.length > 0 && (
+            <button
+              type="button"
+              onClick={handleWritePost}
+              disabled={isWriting}
+              className="inline-flex items-center gap-1.5 self-start rounded-full border border-primary/30 px-3 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/5 disabled:opacity-60 cursor-pointer"
+            >
+              {isWriting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {content.trim() ? 'N7AI viết lại giúp' : 'N7AI viết giúp'}
+            </button>
+          )}
 
           {/* Expanded Inline Tag Input */}
           {isExpanded && showTagInput && (

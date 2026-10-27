@@ -31,6 +31,13 @@ export const queryKeys = {
   coursePosts: (code: string) => ['feed', 'course', code.toUpperCase()] as const,
   courseDocuments: (code: string) => ['course-documents', code.toUpperCase()] as const,
   courseGroups: (code: string) => ['course-groups', code.toUpperCase()] as const,
+  // Kho tài liệu: kho chung (trang Tài liệu), chi tiết, kho cá nhân (gốc 'library' ⇒ lưu / bỏ lưu làm mới chung)
+  documentBrowse: (filters: Record<string, string | undefined>) => ['document-browse', filters] as const,
+  documentDetail: (id: string) => ['document-detail', id] as const,
+  libraryAll: ['library'] as const,
+  library: (scope: string, folder?: string, q?: string) => ['library', 'items', scope, folder ?? null, q ?? ''] as const,
+  libraryFolders: ['library', 'folders'] as const,
+  librarySavedIds: ['library', 'ids'] as const,
   conversations: ['conversations'] as const, // gốc: mọi dữ liệu hội thoại
   conversationLists: ['conversations', 'list'] as const,
   conversationList: (filter: string) => ['conversations', 'list', filter] as const,

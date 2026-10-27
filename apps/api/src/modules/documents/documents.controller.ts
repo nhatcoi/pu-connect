@@ -2,22 +2,39 @@ import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatu
 import { FileInterceptor } from '@nestjs/platform-express'
 import type { Request } from 'express'
 import 'multer'
-import type { ClassifyDocumentInput } from '@pu/schemas'
+import type { ClassifyDocumentInput, WriteDocumentPostInput } from '@pu/schemas'
 import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import { optionalUserId, requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AuthenticatedGuard } from '../auth/guards/authenticated.guard'
 import { validateUpload } from '../storage/storage.controller'
+import { DocumentAiService } from './document-ai.service'
 import { DocumentsService } from './documents.service'
-import { ClassifyDocumentSchema, type CreateDocumentBody, CreateDocumentBodySchema } from './dto/documents.dto'
+import {
+  type BrowseDocumentsQuery,
+  BrowseDocumentsSchema,
+  ClassifyDocumentSchema,
+  type CreateDocumentBody,
+  CreateDocumentBodySchema,
+  WriteDocumentPostSchema
+} from './dto/documents.dto'
 
 @Controller('documents')
 export class DocumentsController {
-  constructor(private readonly documentsService: DocumentsService) {}
+  constructor(
+    private readonly documentsService: DocumentsService,
+    private readonly documentAi: DocumentAiService
+  ) {}
 
   @Get()
   async findAll(@Query('type') type?: string, @Query('search') search?: string, @Query('course') course?: string) {
     return this.documentsService.findAll(type, search, course)
+  }
+
+  // Trang "Tài liệu": kho chung có lọc + phân trang
+  @Get('browse')
+  async browse(@Query(new ZodValidationPipe(BrowseDocumentsSchema)) query: BrowseDocumentsQuery) {
+    return this.documentsService.browse(query)
   }
 
   // Đính kèm khi soạn bài: tải tệp + tạo bản nháp (guard chạy trước khi multer đọc tệp)
@@ -29,6 +46,19 @@ export class DocumentsController {
     validateUpload('documents', [file])
     if (file.mimetype.startsWith('image/')) throw new BadRequestException('Ảnh đính kèm dùng mục ảnh của bài viết')
     return this.documentsService.upload(requireUserId(req), file)
+  }
+
+  // "Viết giúp": N7AI viết nội dung bài từ các tài liệu đang đính kèm (1 lượt N7AI)
+  @Post('write-post')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthenticatedGuard)
+  async writePost(@Body(new ZodValidationPipe(WriteDocumentPostSchema)) body: WriteDocumentPostInput, @Req() req: Request) {
+    return this.documentAi.writePost(requireUserId(req), body)
+  }
+
+  @Get(':id/detail')
+  async detail(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.documentsService.detail(id, optionalUserId(req))
   }
 
   @Get(':id')
@@ -46,6 +76,21 @@ export class DocumentsController {
   @UseGuards(AuthenticatedGuard)
   async classify(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(ClassifyDocumentSchema)) body: ClassifyDocumentInput, @Req() req: Request) {
     return this.documentsService.classify(id, requireUserId(req), body)
+  }
+
+  // N7AI gợi ý môn / loại / năm học / tiêu đề từ nội dung tệp (chủ tài liệu, 1 lượt N7AI)
+  @Post(':id/suggest')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthenticatedGuard)
+  async suggest(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.documentAi.suggest(id, requireUserId(req))
+  }
+
+  // Chủ tài liệu xóa tài liệu đã đăng (gỡ khỏi bài, bình luận, kho của mọi người)
+  @Delete(':id')
+  @UseGuards(AuthenticatedGuard)
+  async remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.documentsService.remove(id, requireUserId(req))
   }
 
   @Delete(':id/draft')

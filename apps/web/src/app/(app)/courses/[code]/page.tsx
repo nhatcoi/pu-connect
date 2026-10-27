@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
 import { VirtualPostList } from '@/components/social/virtual-post-list'
-import { DocumentCard } from '@/components/social/document-card'
+import { DocumentsBrowse } from '@/components/documents/documents-browse'
 import { StudyGroupCard } from '@/components/social/study-group-card'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { PageAside } from '@/components/layout/page-aside'
@@ -28,7 +28,6 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
   const courseCode = decodeURIComponent(code).toUpperCase()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('posts')
-  const setCreateDocumentOpen = useAppStore((s) => s.setCreateDocumentOpen)
   const setCreateGroupOpen = useAppStore((s) => s.setCreateGroupOpen)
   const c = useCourse(courseCode)
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -53,7 +52,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
         <BookOpen className="h-10 w-10 mx-auto opacity-30 text-primary" />
         <p className="text-sm font-medium">Không tìm thấy học phần {courseCode}</p>
         <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/courses')}>
-          Xem danh mục học phần
+          Xem danh mục môn học
         </Button>
       </div>
     )
@@ -138,20 +137,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
             </div>
           )}
 
-          {tab === 'documents' && (
-            <div className="px-2 sm:px-0 space-y-2.5">
-              <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={() => setCreateDocumentOpen(true)}>
-                <Plus className="h-3.5 w-3.5" /> Chia sẻ tài liệu
-              </Button>
-              {c.documentsLoading ? (
-                <CardListSkeleton label="Đang tải tài liệu" />
-              ) : c.documents.length === 0 ? (
-                <Empty icon={FileText} title="Chưa có tài liệu" hint="Slide, đề thi, bài tập của môn sẽ hiện ở đây." />
-              ) : (
-                c.documents.map((doc) => <DocumentCard key={doc.id} document={doc} />)
-              )}
-            </div>
-          )}
+          {tab === 'documents' && <DocumentsBrowse courseCode={course.code} />}
 
           {tab === 'groups' && (
             <div className="px-2 sm:px-0 space-y-2.5">

@@ -88,6 +88,7 @@ export interface AttachedDocument {
   // Đã vào kho môn học (đủ môn + loại); false = chỉ là tệp đính kèm của bài
   listed: boolean
   status: 'draft' | 'published'
+  visibility: 'public' | 'private'
   downloadCount: number
 }
 
@@ -104,4 +105,79 @@ export interface ClassifyDocumentInput {
   docCategory?: DocCategory | null
   academicYear?: string | null
   listed?: boolean
+}
+
+// POST /documents/:id/suggest: N7AI đọc nội dung tệp, gợi ý phân loại (người đăng xem rồi mới lưu)
+export interface DocumentSuggestion {
+  title: string | null
+  courseId: string | null
+  courseCode: string | null
+  docCategory: DocCategory | null
+  academicYear: string | null
+}
+
+// POST /documents/write-post: N7AI viết nội dung bài đăng giới thiệu tài liệu ("Viết giúp")
+export interface WriteDocumentPostInput {
+  documentIds: string[]
+  content?: string
+}
+export interface WriteDocumentPostResult {
+  content: string
+}
+
+// ── Kho cá nhân: tham chiếu tới tài liệu (gốc bị xóa / chuyển riêng tư ⇒ tự biến mất) ──
+export interface LibraryFolder {
+  id: string
+  name: string
+  itemCount: number
+  createdAt: string
+}
+
+export interface LibraryItem {
+  document: AttachedDocument
+  folderId: string | null
+  savedAt: string
+  // Tài liệu do chính mình đăng / tải lên
+  ownedByMe: boolean
+  ownerName: string
+}
+
+// GET /library: scope saved = đã lưu (gồm tệp riêng tải lên kho), mine = tài liệu mình đã đăng
+export interface LibraryPage {
+  data: LibraryItem[]
+  nextCursor: string | null
+}
+
+export interface SaveToLibraryInput {
+  documentId: string
+  folderId?: string | null
+}
+
+// ── Trang Tài liệu & chi tiết tài liệu ──
+export type DocumentSort = 'popular' | 'newest'
+
+// Thẻ trong danh sách kho chung (kèm người đăng, lượt lưu)
+export interface DocumentListItem extends AttachedDocument {
+  ownerId: string
+  ownerUsername: string
+  ownerName: string
+  saveCount: number
+  createdAt: string
+}
+
+export interface DocumentListPage {
+  data: DocumentListItem[]
+  nextCursor: string | null
+}
+
+// GET /documents/:id/detail
+export interface DocumentDetail extends DocumentListItem {
+  description: string | null
+  originalName: string | null
+  viewCount: number
+  isMine: boolean
+  isSaved: boolean
+  // Bài viết công khai có đính kèm tài liệu này (mới nhất trước)
+  posts: { id: string; title: string | null; excerpt: string; authorName: string; createdAt: string }[]
+  related: DocumentListItem[]
 }
