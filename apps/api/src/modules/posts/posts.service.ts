@@ -251,7 +251,7 @@ export class PostsService {
     let whereClause =
       feedType === 'archived'
         ? ` WHERE p.hidden_at IS NULL AND ${viewer ? 'p.author_id = $1 AND p.archived_at IS NOT NULL' : '1=0'}`
-        : ` WHERE p.hidden_at IS NULL AND ${postListedSql(viewer)}`
+        : ` WHERE (p.hidden_at IS NULL${viewer ? ` OR (p.author_id = $1 AND p.hidden_reason LIKE 'auto-moderation:%')` : ''}) AND ${postListedSql(viewer)}`
     // Ẩn bài của người có quan hệ chặn với mình
     if (currentUserId) whereClause += ` AND NOT ${blockExistsSql('$1', 'p.author_id')}`
 
@@ -328,7 +328,7 @@ export class PostsService {
     // Kiểm duyệt tự động: từ cấm ⇒ chặn ngay; hate ⇒ lưu nhưng ẩn chờ admin (posts.hidden_at)
     const verdict = await this.moderation.check({ text: [data.title, data.content].filter(Boolean).join('\n'), userId: authorId, surface: 'post' })
     if (verdict.action === 'block') throw new BadRequestException('Nội dung chứa ngôn từ không phù hợp với quy tắc cộng đồng')
-    const held = verdict.action === 'hold'
+    const held = verdict.action === 'hold' || verdict.action === 'flag'
     const created = await this.db.transaction(async (client) => {
       // 1. Resolve author details
       const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
@@ -492,6 +492,7 @@ export class PostsService {
         facultyCode: anonymous ? null : authorUser.faculty,
         targetAudience: data.targetAudience || 'everyone',
         isPinned: false,
+        pendingReview: held,
         isResolved: false,
         recruitSlotsTotal: data.recruitSlotsTotal,
         recruitSlotsFilled: data.recruitSlotsFilled,
@@ -634,7 +635,7 @@ export class PostsService {
         )
       }
 
-      if (verdict?.action === 'hold') {
+      if (verdict?.action === 'hold' || verdict?.action === 'flag') {
         await client.query(`UPDATE posts SET hidden_at = NOW(), hidden_reason = $2 WHERE id = $1`, [postId, `auto-moderation: ${verdict.reason}`])
       }
 
@@ -983,6 +984,7 @@ export class PostsService {
       visibility: VISIBILITIES.includes(row.visibility) ? row.visibility : 'public',
       archivedAt: row.archived_at ? new Date(row.archived_at).toISOString() : null,
       isPinned: !!row.is_pinned,
+      pendingReview: !!row.hidden_at,
       isResolved: row.is_resolved || false,
       tags: row.tags || [],
       mediaUrls: row.media_urls || [],

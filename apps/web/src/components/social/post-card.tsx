@@ -426,9 +426,16 @@ export function PostCard({
             ? 'rounded-xl bg-card px-4 py-3.5 sm:px-5'
             : 'px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background hover:bg-muted/[0.03]',
           // Focus ring khi mở bình luận (ring không đổi layout → no CLS)
-          isCommentsOpen && (variant === 'card' ? 'ring-1 ring-sky-500/60' : 'ring-1 ring-inset ring-sky-500/60')
+          isCommentsOpen && (variant === 'card' ? 'ring-1 ring-sky-500/60' : 'ring-1 ring-inset ring-sky-500/60'),
+          // Bài đang chờ admin duyệt (kiểm duyệt tự động): chỉ tác giả thấy, làm mờ
+          post.pendingReview && 'opacity-60 saturate-50'
         )}
       >
+        {post.pendingReview && (
+          <p role="status" className="mb-2 rounded-md bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+            Bài viết đang chờ quản trị viên duyệt, chỉ mình bạn nhìn thấy cho đến khi được duyệt.
+          </p>
+        )}
         {/* Pinned Top Banner (Only visible on author profile page) */}
         {post.isPinned && !!post.author?.username && (pathname === `/${post.author.username}` || pathname.startsWith(`/${post.author.username}?`)) && (
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary mb-1.5 ml-13">

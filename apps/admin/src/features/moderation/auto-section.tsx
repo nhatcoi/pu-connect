@@ -8,7 +8,7 @@ import { ListFooter, ListSearch, ParamSelect, useBulk, useListState, usePaged } 
 const ACTION: Record<AdminModerationEvent['action'], { label: string; tone: 'danger' | 'warning' | 'neutral'; hint: string }> = {
   block: { label: 'Đã chặn', tone: 'danger', hint: 'Không đăng được, chỉ còn bản ghi này' },
   hold: { label: 'Ẩn chờ duyệt', tone: 'warning', hint: 'Bài đã lưu nhưng đang ẩn' },
-  flag: { label: 'Gắn cờ', tone: 'neutral', hint: 'Vẫn hiển thị, chỉ để admin xem' }
+  flag: { label: 'Gắn cờ', tone: 'warning', hint: 'Bài bị ẩn khỏi người khác chờ admin xem' }
 }
 const SURFACE = { post: 'Bài viết', comment: 'Bình luận' }
 const REASON: Record<string, string> = { profanity: 'Từ cấm', hate: 'Thù ghét', offense: 'Xúc phạm' }
@@ -96,8 +96,8 @@ export function AutoSection({ canWrite }: { canWrite: boolean }) {
                         <Button size="sm" variant="primary" disabled={act.isPending} onClick={() => act.mutate({ ids: [e.id], resolution: 'confirmed' })}>
                           Đúng
                         </Button>
-                        <Button size="sm" variant="ghost" disabled={act.isPending} title={e.action === 'hold' ? 'Hệ thống sai: hiện lại bài' : 'Hệ thống sai'} onClick={() => act.mutate({ ids: [e.id], resolution: 'dismissed' })}>
-                          {e.action === 'hold' ? 'Sai, hiện lại' : 'Bỏ qua'}
+                        <Button size="sm" variant="ghost" disabled={act.isPending} title={e.surface === 'post' ? 'Hệ thống sai: hiện lại bài' : 'Hệ thống sai'} onClick={() => act.mutate({ ids: [e.id], resolution: 'dismissed' })}>
+                          {e.surface === 'post' ? 'Sai, hiện lại' : 'Bỏ qua'}
                         </Button>
                       </>
                     )}

@@ -125,6 +125,8 @@ export const PostItemSchema = z.object({
   // Có giá trị = bài đang lưu trữ (chỉ tác giả thấy)
   archivedAt: z.string().nullable().optional(),
   isPinned: z.boolean().default(false),
+  // Bài bị kiểm duyệt tự động ẩn chờ admin: chỉ tác giả thấy (làm mờ)
+  pendingReview: z.boolean().optional(),
   isResolved: z.boolean().default(false),
   acceptedCommentId: z.string().nullable().optional(),
   recruitSlotsTotal: z.number().optional(),

@@ -63,7 +63,7 @@ export class AdminModerationEventsService {
 
   /**
    * confirmed: đồng ý với hệ thống (giữ nguyên chặn/ẩn).
-   * dismissed: hệ thống sai ⇒ bài đang bị ẩn tự động được hiện lại (nội dung bị chặn không tạo bài nên không khôi phục được).
+   * dismissed: hệ thống sai ⇒ bài đang bị ẩn tự động được hiện lại (nội dung bị chặn không tạo bài nên không khôi phục được). Bài bị gắn cờ cũng đang ẩn nên được hiện lại.
    */
   async review(adminId: string, ids: string[], resolution: 'confirmed' | 'dismissed'): Promise<AdminBulkResult> {
     const unique = [...new Set(ids)]
@@ -75,7 +75,7 @@ export class AdminModerationEventsService {
       )
       let restored = 0
       for (const r of res.rows) {
-        if (resolution === 'dismissed' && r.action === 'hold' && r.target_type === 'post' && r.target_id) {
+        if (resolution === 'dismissed' && r.action !== 'block' && r.target_type === 'post' && r.target_id) {
           const up = await client.query(`UPDATE posts SET hidden_at = NULL, hidden_reason = NULL WHERE id = $1 AND hidden_reason LIKE 'auto-moderation:%'`, [r.target_id])
           restored += up.rowCount ?? 0
         }
