@@ -77,6 +77,8 @@ export const ACTION_LABELS: Record<string, string> = {
   'moderation_term.update': 'Sửa từ cấm',
   'moderation_term.delete': 'Xóa từ cấm',
   'moderation_term.import': 'Nhập từ cấm',
+  'moderation_event.confirmed': 'Xác nhận kiểm duyệt tự động',
+  'moderation_event.dismissed': 'Bỏ qua kiểm duyệt tự động',
   'announcement.create': 'Tạo thông báo hệ thống',
   'announcement.cancel': 'Hủy thông báo hệ thống',
   'bot.account_create': 'Tạo bot',

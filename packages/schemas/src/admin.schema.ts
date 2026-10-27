@@ -477,6 +477,7 @@ export type AdminBulkUserInput = z.infer<typeof AdminBulkUserSchema>
 export interface AdminBulkResult {
   affected: number
   skipped: number
+  restored?: number
 }
 
 export const AdminUserNoteSchema = z.object({
@@ -571,6 +572,25 @@ export interface AdminModerationTerm {
   note: string | null
   createdBy: string | null
   createdAt: string
+}
+
+// Nhật ký kiểm duyệt tự động
+export interface AdminModerationEvent {
+  id: string
+  surface: 'post' | 'comment'
+  action: 'block' | 'hold' | 'flag'
+  tier: number | null
+  reason: string | null
+  scores: { clean: number; offense: number; hate: number } | null
+  matchedTerms: string[]
+  content: string
+  enforced: boolean
+  targetType: string | null
+  targetId: string | null
+  targetHidden: boolean
+  reviewStatus: 'pending' | 'confirmed' | 'dismissed'
+  createdAt: string
+  user: { id: string; username: string; displayName: string; avatarUrl: string | null } | null
 }
 
 // Nhóm quyền quản trị
