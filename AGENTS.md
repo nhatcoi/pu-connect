@@ -120,15 +120,13 @@ Tài liệu này định nghĩa các quy tắc cốt lõi bắt buộc mà toàn
 
 ---
 
-## 🚦 7. Cổng Deploy (Deploy Gate)
+## 🚦 7. Deploy
 
 > [!IMPORTANT]
-> **CÁC SESSION KHÁC TUYỆT ĐỐI KHÔNG TỰ CHẠY `pnpm deploy:vps` / `scripts/deploy.sh`. MỌI DEPLOY PHẢI ĐI QUA SESSION CỔNG GÁC `DevOpsVPS-CICD`.**
+> **Không còn cổng gác `DevOpsVPS-CICD`.** Session nào làm xong thì tự deploy (skill `deploy` / `scripts/deploy.sh`), không gửi qua session khác.
 
-1. **Khi code xong và muốn deploy:** gửi `SendMessage` tới `DevOpsVPS-CICD`, kèm:
-   - Danh sách file đã sửa + commit hash đã push (chỉ stage hunk của chính mình, không kéo WIP của session khác).
-   - Tóm tắt thay đổi, có migration SQL / biến môi trường mới hay không.
-2. **Cổng gác kiểm tra trước khi deploy:** `pnpm typecheck`, `pnpm lint`, `pnpm build`, docs đã cập nhật (mục 1), migration idempotent, commit đúng Conventional Commits.
-3. **Chỉ cổng gác chạy deploy** và verify health Web / Admin / API, rồi báo lại session gốc. Fail ⇒ chặn và báo lý do, không tự sửa code của session khác.
-4. **Tên đăng ký của cổng gác là `DevOpsVPS-CICD`** (xem bằng `ListAgents`). Gửi tới tên khác sẽ không tới nơi.
-5. **`scripts/deploy.sh` rsync `--delete` cả working tree** (kể cả WIP chưa commit và file untracked của session khác), KHÔNG deploy theo commit. Cổng gác phải: (a) đọc `git status` và báo cho người yêu cầu những WIP nào sẽ bị kéo theo; (b) nếu chỉ muốn deploy commit thì tạo bản copy sạch từ `HEAD` (`git worktree` / `git archive`) rồi rsync từ đó. Không stash/revert đồ của người khác.
+1. **Trước khi deploy:** `pnpm typecheck`, `pnpm lint`, build các app đã sửa, docs đã cập nhật (mục 1), migration idempotent và có trong `scripts/deploy.sh`, commit Conventional Commits đã push (chỉ stage hunk của mình).
+2. **Chạy deploy một lần, một session:** kiểm tra VPS rảnh trước (`ssh root@103.195.237.112 'pgrep -af "next build|rsync|turbo"'`); hai deploy đồng thời làm hỏng slot web.
+3. **Verify sau deploy:** web 200, admin 200, `/api/auth/me` 401, `pu-api`/`pu-web` active, `nginx -t`, log không lỗi SQL.
+4. **Dừng và hỏi user** khi build/typecheck/lint fail, migration phá hủy (DROP/DELETE/TRUNCATE), hoặc có secret trong diff.
+5. **`scripts/deploy.sh` rsync `--delete` cả working tree** (kể cả WIP chưa commit và file untracked của session khác), KHÔNG deploy theo commit. Người deploy phải: (a) đọc `git status` và báo những WIP của session khác sẽ bị kéo theo; (b) nếu chỉ muốn deploy commit thì tạo bản copy sạch từ `HEAD` (`git worktree` / `git archive`) rồi rsync từ đó. Không stash/revert đồ của người khác.
