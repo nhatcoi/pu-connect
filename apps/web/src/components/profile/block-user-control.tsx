@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Ban, Loader2, MoreHorizontal } from 'lucide-react'
+import { Ban, Flag, Loader2, MoreHorizontal } from 'lucide-react'
 import type { BlockState } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useBlockActions } from '@/hooks/use-blocks'
+import { ReportPostDialog } from '@/components/social/report-post-dialog'
 
 interface BlockUserControlProps {
   userId: string
@@ -18,6 +19,7 @@ interface BlockUserControlProps {
 export function BlockUserControl({ userId, username, blockState }: BlockUserControlProps) {
   const { block, unblock } = useBlockActions()
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   if (blockState === 'blocking') {
     return (
@@ -42,11 +44,16 @@ export function BlockUserControl({ userId, username, blockState }: BlockUserCont
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onSelect={() => setReportOpen(true)}>
+            <Flag /> Báo cáo @{username}
+          </DropdownMenuItem>
           <DropdownMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
             <Ban /> Chặn @{username}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {reportOpen && <ReportPostDialog postId="" userId={userId} open={reportOpen} onOpenChange={setReportOpen} />}
 
       <Dialog open={confirmOpen} onOpenChange={(open) => !block.isPending && setConfirmOpen(open)}>
         <DialogContent className="max-w-sm p-5 gap-4">

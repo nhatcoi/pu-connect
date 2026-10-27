@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common'
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings, FeaturePreferences } from '@pu/schemas'
 import { findUnitNames } from '../academic-units/unit-names'
@@ -14,6 +14,19 @@ export class UsersService {
     private readonly db: DatabaseService,
     private readonly userEvents: UserEventsService
   ) {}
+
+  // Báo cáo người dùng: không tự báo cáo, không trùng khi báo cáo cũ còn chờ
+  async report(reportedId: string, reporterId: string, data: { reason?: string; details?: string }): Promise<{ success: boolean }> {
+    if (reportedId === reporterId) throw new ForbiddenException('Không thể báo cáo chính bạn')
+    const target = await this.db.query(`SELECT 1 FROM users WHERE id = $1 AND account_type = 'human'`, [reportedId])
+    if (!target.rows[0]) throw new NotFoundException('Không tìm thấy người dùng')
+    await this.db.query(
+      `INSERT INTO user_reports (reported_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (reported_id, reporter_id) WHERE status = 'pending' DO NOTHING`,
+      [reportedId, reporterId, data.reason ?? 'other', data.details || null]
+    )
+    return { success: true }
+  }
 
   /**
    * Lấy thông tin hồ sơ sinh viên, tự động lọc theo privacy_settings

@@ -9,6 +9,8 @@ import type { UpdateProfileInput, UpdatePrivacySettingsInput, ProfileActivityTyp
 import { ACTIVITY_TYPES, UpdatePrivacyBodySchema } from './dto/privacy.dto'
 import { UpdatePreferencesBodySchema, type UpdatePreferencesInput } from './dto/preferences.dto'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
+import { ReportUserBodySchema, type ReportUserBody } from './dto/report.dto'
+import { NotRestrictedGuard } from '../../common/guards/not-restricted.guard'
 import type { Request } from 'express'
 
 @Controller('users')
@@ -93,6 +95,14 @@ export class UsersController {
   async updatePreferences(@Req() req: Request, @Body(new ZodValidationPipe(UpdatePreferencesBodySchema)) body: UpdatePreferencesInput) {
     const userId = (req.user as any).id
     return this.usersService.updatePreferences(userId, body)
+  }
+
+  // Báo cáo người dùng (đưa vào hàng chờ kiểm duyệt của admin)
+  @Post(':id/report')
+  @UseGuards(AuthenticatedGuard, NotRestrictedGuard)
+  @HttpCode(HttpStatus.OK)
+  async report(@Param('id') id: string, @Req() req: Request, @Body(new ZodValidationPipe(ReportUserBodySchema)) body: ReportUserBody) {
+    return this.usersService.report(id, (req.user as any).id, body)
   }
 
   @Post('verify-university')

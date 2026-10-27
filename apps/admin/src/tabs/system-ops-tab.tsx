@@ -37,6 +37,7 @@ export const ACTION_LABELS: Record<string, string> = {
   'post.pin': 'Ghim bài viết',
   'post.unpin': 'Bỏ ghim bài viết',
   'report.dismiss': 'Bỏ qua báo cáo',
+  'report.resolve': 'Đóng báo cáo (đã xử lý)',
   'comment.delete': 'Xóa bình luận',
   'user.warn': 'Cảnh cáo',
   'user.restrict': 'Hạn chế (chỉ xem)',

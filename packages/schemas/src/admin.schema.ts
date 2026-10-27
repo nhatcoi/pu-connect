@@ -251,6 +251,20 @@ export interface AdminReportedComment {
   lastReportedAt: string
 }
 
+// Báo cáo người dùng gom theo người bị báo cáo
+export interface AdminReportedUser {
+  userId: string
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  status: string
+  role: AdminUserRole
+  reportCount: number
+  reasons: { reason: string; count: number }[]
+  details: string[]
+  lastReportedAt: string
+}
+
 export interface AdminPostRow {
   id: string
   title: string | null

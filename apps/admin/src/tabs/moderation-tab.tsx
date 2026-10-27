@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { CheckCircle2, ExternalLink, Eye, EyeOff, FileText, MessageSquare, Pin, PinOff, Trash2 } from 'lucide-react'
 import { TermsSection } from '@/features/moderation/terms-section'
-import type { AdminBulkPostAction, AdminCommentRow, AdminPermission, AdminPostRow, AdminReportedComment, AdminReportedPost } from '@pu/schemas'
+import type { AdminBulkPostAction, AdminCommentRow, AdminPermission, AdminPostRow, AdminReportedComment, AdminReportedPost, AdminReportedUser } from '@pu/schemas'
 import { cn, formatNumber, formatRelativeTime, markdownToPlainText, WEB_PORTAL_URL } from '@/lib/api'
 import {
   Avatar,
@@ -107,7 +107,7 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
 // Hàng chờ chung: báo cáo bài viết và báo cáo bình luận
 function ReportsTab({ canWrite }: { canWrite: boolean }) {
   const [params, set] = useHashQuery()
-  const kind = params.kind === 'comments' ? 'comments' : 'posts'
+  const kind = params.kind === 'comments' ? 'comments' : params.kind === 'users' ? 'users' : 'posts'
   return (
     <>
       <Segmented
@@ -115,10 +115,109 @@ function ReportsTab({ canWrite }: { canWrite: boolean }) {
         onChange={(v) => set({ kind: v === 'posts' ? undefined : v, page: undefined, status: undefined, reason: undefined, q: undefined }, { replace: true })}
         items={[
           { id: 'posts', label: 'Bài viết' },
-          { id: 'comments', label: 'Bình luận' }
+          { id: 'comments', label: 'Bình luận' },
+          { id: 'users', label: 'Người dùng' }
         ]}
       />
-      {kind === 'posts' ? <ReportsSection canWrite={canWrite} /> : <CommentReportsSection canWrite={canWrite} />}
+      {kind === 'posts' ? <ReportsSection canWrite={canWrite} /> : kind === 'comments' ? <CommentReportsSection canWrite={canWrite} /> : <UserReportsSection canWrite={canWrite} />}
+    </>
+  )
+}
+
+function UserReportsSection({ canWrite }: { canWrite: boolean }) {
+  const state = useListState({ sort: 'recent' })
+  const list = usePaged<AdminReportedUser>('user-reports', '/admin/user-reports', state.params, ['status', 'reason', 'q'])
+  const rows = list.data?.items ?? []
+  const sel = useSelection(
+    rows.map((r) => r.userId),
+    JSON.stringify(state.params)
+  )
+  const act = useBulk<{ ids: string[]; resolution: 'actioned' | 'dismissed' }>('/admin/user-reports/resolve', (n, v) => `${v.resolution === 'actioned' ? 'Đã xử lý' : 'Đã bỏ qua'} báo cáo của ${n} người`, () => sel.clear())
+  const status = state.params.status === 'resolved' ? 'resolved' : 'pending'
+
+  return (
+    <>
+      <Toolbar>
+        <Segmented
+          value={status}
+          onChange={(v) => state.set({ status: v === 'pending' ? undefined : v })}
+          items={[
+            { id: 'pending', label: 'Chờ xử lý' },
+            { id: 'resolved', label: 'Đã xử lý' }
+          ]}
+        />
+        <ListSearch state={state} placeholder="Tên, @username" />
+        <ParamSelect state={state} name="reason" all="Mọi lý do" options={Object.entries(REASON_LABELS).map(([value, label]) => ({ value, label }))} className="w-36" />
+        <Total n={list.data?.total} unit="người bị báo cáo" />
+      </Toolbar>
+
+      {list.isPending ? (
+        <LoadingRows rows={4} />
+      ) : rows.length === 0 ? (
+        <EmptyState icon={CheckCircle2} title={status === 'pending' ? 'Không còn báo cáo người dùng nào' : 'Không có báo cáo phù hợp'} />
+      ) : (
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <SelectAllRow sel={sel} canWrite={canWrite} />
+          <ul className="divide-y divide-border rounded-b-xl border border-t-0 border-border bg-card">
+            {rows.map((r) => (
+              <li key={r.userId} className={cn('flex gap-3 p-4', sel.has(r.userId) && 'bg-primary/5')}>
+                {canWrite && status === 'pending' && <Checkbox className="mt-1" label="Chọn" checked={sel.has(r.userId)} onChange={(on) => sel.toggle(r.userId, on)} />}
+                <Avatar src={r.avatarUrl} name={r.displayName} className="hidden sm:inline-flex" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
+                    <span className="font-semibold text-foreground">{r.displayName}</span>
+                    <span className="text-muted-foreground">@{r.username}</span>
+                    <span className="text-muted-foreground">· {formatRelativeTime(r.lastReportedAt)}</span>
+                    {r.status === 'suspended' && <Badge tone="danger">Đang bị khóa</Badge>}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone="warning">{r.reportCount} báo cáo</Badge>
+                    {r.reasons.map((x) => (
+                      <Badge key={x.reason}>
+                        {REASON_LABELS[x.reason] || x.reason} · {x.count}
+                      </Badge>
+                    ))}
+                  </div>
+                  {r.details.length > 0 && (
+                    <ul className="space-y-1 border-l-2 border-border pl-3 text-xs text-muted-foreground">
+                      {r.details.slice(0, 3).map((d, i) => (
+                        <li key={i} className="line-clamp-1">
+                          “{d}”
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                <div className="flex shrink-0 flex-col items-stretch gap-2">
+                  <a href={`#/users?user=${r.userId}`} className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-border px-3 text-sm font-medium hover:bg-accent">
+                    <ExternalLink className="size-3.5" /> Mở hồ sơ
+                  </a>
+                  {canWrite && status === 'pending' && (
+                    <>
+                      <Button size="sm" variant="primary" disabled={act.isPending} onClick={() => act.mutate({ ids: [r.userId], resolution: 'actioned' })}>
+                        Đã xử lý
+                      </Button>
+                      <Button size="sm" variant="ghost" disabled={act.isPending} onClick={() => act.mutate({ ids: [r.userId], resolution: 'dismissed' })}>
+                        Bỏ qua
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
+      )}
+
+      <BulkBar count={sel.count} onClear={sel.clear}>
+        <Button size="sm" variant="primary" disabled={act.isPending} onClick={() => act.mutate({ ids: sel.ids(), resolution: 'actioned' })}>
+          Đã xử lý
+        </Button>
+        <Button size="sm" variant="ghost" disabled={act.isPending} onClick={() => act.mutate({ ids: sel.ids(), resolution: 'dismissed' })}>
+          Bỏ qua báo cáo
+        </Button>
+      </BulkBar>
     </>
   )
 }
