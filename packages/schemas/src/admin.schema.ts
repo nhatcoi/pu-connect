@@ -549,6 +549,16 @@ export interface AdminCourseRow {
   createdAt: string
 }
 
+// Từ cấm do admin quản lý
+export interface AdminModerationTerm {
+  id: string
+  term: string
+  severity: 'heavy' | 'medium' | 'light'
+  note: string | null
+  createdBy: string | null
+  createdAt: string
+}
+
 // Nhóm quyền quản trị
 export interface AdminGroup {
   id: string

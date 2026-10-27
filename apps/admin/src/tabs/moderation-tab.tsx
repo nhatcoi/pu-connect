@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { CheckCircle2, ExternalLink, Eye, EyeOff, FileText, MessageSquare, Pin, PinOff, Trash2 } from 'lucide-react'
+import { TermsSection } from '@/features/moderation/terms-section'
 import type { AdminBulkPostAction, AdminCommentRow, AdminPermission, AdminPostRow, AdminReportedComment, AdminReportedPost } from '@pu/schemas'
 import { cn, formatNumber, formatRelativeTime, markdownToPlainText, WEB_PORTAL_URL } from '@/lib/api'
 import {
@@ -58,7 +59,7 @@ const POST_BULK_MSG: Record<AdminBulkPostAction, string> = {
   dismiss: 'Đã bỏ qua báo cáo của'
 }
 
-type Tab = 'reports' | 'posts' | 'comments'
+type Tab = 'reports' | 'posts' | 'comments' | 'terms'
 const postUrl = (id: string) => `${WEB_PORTAL_URL}/post/${id}`
 
 // Thao tác bài viết (1 hay nhiều) đi qua POST admin/posts/bulk
@@ -72,7 +73,7 @@ function usePostBulk(onDone?: () => void) {
 
 export function ModerationTab({ permissions, pendingCount }: { permissions: AdminPermission[]; pendingCount?: number }) {
   const [params, set] = useHashQuery()
-  const tab = (['reports', 'posts', 'comments'].includes(params.tab) ? params.tab : 'reports') as Tab
+  const tab = (['reports', 'posts', 'comments', 'terms'].includes(params.tab) ? params.tab : 'reports') as Tab
   const canWrite = permissions.includes('moderation:write')
 
   return (
@@ -87,7 +88,8 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
             items={[
               { id: 'reports', label: 'Báo cáo', count: pendingCount },
               { id: 'posts', label: 'Bài viết' },
-              { id: 'comments', label: 'Bình luận' }
+              { id: 'comments', label: 'Bình luận' },
+              { id: 'terms', label: 'Từ cấm' }
             ]}
           />
         }
@@ -95,6 +97,7 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
       {tab === 'reports' && <ReportsTab canWrite={canWrite} />}
       {tab === 'posts' && <PostsSection canWrite={canWrite} />}
       {tab === 'comments' && <CommentsSection canWrite={canWrite} />}
+      {tab === 'terms' && <TermsSection canWrite={canWrite} />}
     </>
   )
 }

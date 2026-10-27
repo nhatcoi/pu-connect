@@ -8,6 +8,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — vai trò `admin`
 |---|---|
 | Số liệu tổng quan, việc cần xử lý | **Tổng quan** |
 | Báo cáo vi phạm bài viết và bình luận (hàng chờ chung, lọc theo lý do, ẩn / xóa / bỏ qua hàng loạt), bài viết, bình luận | **Kiểm duyệt** |
+| Từ cấm do admin thêm (nặng / vừa / nhẹ, dán nhiều từ) | **Kiểm duyệt** › tab **Từ cấm** |
 | Danh sách người dùng: lọc, sắp xếp (gồm *Rủi ro*), thao tác hàng loạt, xuất CSV | **Người dùng** |
 | Toàn bộ dữ liệu 1 người | **Người dùng** › bấm người đó › nút ⤢ phóng to |
 | — bài viết, bình luận, cảm xúc, đã lưu, theo dõi, cộng đồng, nhóm học, tài liệu, hội thoại, báo cáo, xem & tìm kiếm | tab **Hoạt động** |

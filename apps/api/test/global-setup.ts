@@ -59,6 +59,7 @@ export const MIGRATIONS = [
   'announcements-upgrade.sql',
   'course-lecturers-upgrade.sql',
   'admin-groups-upgrade.sql',
+  'moderation-terms-upgrade.sql',
   'moderation-upgrade.sql'
 ]
 

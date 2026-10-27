@@ -31,6 +31,8 @@ import { AdminCoursesController } from './courses/admin-courses.controller'
 import { AdminCoursesService } from './courses/admin-courses.service'
 import { AdminGroupsController } from './groups/admin-groups.controller'
 import { AdminGroupsService } from './groups/admin-groups.service'
+import { ModerationTermsController } from './moderation-terms/moderation-terms.controller'
+import { ModerationTermsService } from './moderation-terms/moderation-terms.service'
 import { StorageModule } from '../storage/storage.module'
 import { AdminNewsController } from './admin-news.controller'
 import { AdminNewsService } from './admin-news.service'
@@ -41,7 +43,7 @@ import { AdminGuard } from './admin.guard'
 
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule, PostsModule],
-  controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController, AdminTrashController, AdminAnnouncementsController, PublicAnnouncementsController, AdminCoursesController, AdminGroupsController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, BotAccountsService, BotJobsService, BotJobRunner, AdminNewsService, BotImageUploadService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AnnouncementsService, AdminCoursesService, AdminGroupsService, AdminGuard]
+  controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController, AdminTrashController, AdminAnnouncementsController, PublicAnnouncementsController, AdminCoursesController, AdminGroupsController, ModerationTermsController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, BotAccountsService, BotJobsService, BotJobRunner, AdminNewsService, BotImageUploadService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AnnouncementsService, AdminCoursesService, AdminGroupsService, ModerationTermsService, AdminGuard]
 })
 export class AdminModule {}
