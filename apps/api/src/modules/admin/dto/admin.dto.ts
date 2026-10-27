@@ -34,7 +34,8 @@ export const ADMIN_PERMISSIONS_RUNTIME: readonly AdminPermission[] = [
   'search:read',
   'system:broadcast',
   'bots:manage',
-  'audit:read'
+  'audit:read',
+  'roles:manage'
 ]
 
 export const ROLE_PERMISSIONS_RUNTIME: Record<AdminUserRole, readonly AdminPermission[]> = {

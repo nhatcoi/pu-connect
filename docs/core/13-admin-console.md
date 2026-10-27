@@ -1,6 +1,6 @@
 # 13 — Admin Console (`admin-puc.vnhat.dev`)
 
-Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `admin`** truy cập được (`AdminGuard`, lecturer / ta = 0 quyền). API dưới `/api/admin/*` (`apps/api/src/modules/admin`).
+Cổng quản trị Static SPA (`apps/admin`, Vite + React) — vai trò `admin` có mọi quyền; người khác chỉ vào được khi thuộc một **nhóm quyền** (`admin_groups`, `admin_group_members`). `AdminGuard` tính quyền hiệu lực = quyền vai trò + quyền các nhóm (cache 30 giây, xóa khi đổi nhóm). Quyền `users:role`, `users:insight`, `roles:manage` không đưa vào nhóm được. Chưa có phạm vi theo khoa/môn. API dưới `/api/admin/*` (`apps/api/src/modules/admin`).
 
 ## Xem gì ở đâu
 
@@ -23,6 +23,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | Telemetry, phản hồi, ticket, skill, danh mục model N7AI | **N7AI** |
 | Từ khóa tìm nhiều / không có kết quả | **Tìm kiếm** |
 | Thông báo hệ thống: nhắm theo vai trò / đơn vị / khóa, hẹn giờ, banner đầu trang web, lịch sử và hủy | **Thông báo** |
+| Nhóm quyền: gộp quyền chi tiết rồi gán cho người dùng (kiểm duyệt viên, biên tập học thuật…) để họ vào cổng không cần vai trò admin | **Nhóm quyền** |
 | Nhập bài sưu tầm (Excel/JSON), job đăng bài của bot, bot tự trả lời/thả tim | **Bot** |
 | Admin đã làm gì (không sửa được) | **Nhật ký › Thao tác quản trị** |
 | Đăng nhập / sai mật khẩu / bị chặn của mọi tài khoản (lọc theo IP, @username) | **Nhật ký › Đăng nhập** |

@@ -21,7 +21,8 @@ export const ADMIN_PERMISSIONS = [
   'search:read', // Xem phân tích tìm kiếm (Zero-result & Top queries)
   'system:broadcast', // Phát thông báo hệ thống toàn trường / theo nhóm vai trò
   'bots:manage', // Điều khiển Bot Simulator (bật/tắt, tốc độ, lệnh thủ công)
-  'audit:read' // Xem nhật ký kiểm toán bảo mật (admin_audit_logs)
+  'audit:read', // Xem nhật ký kiểm toán bảo mật (admin_audit_logs)
+  'roles:manage' // Tạo nhóm quyền và gán cho người dùng (chỉ vai trò admin)
 ] as const
 
 export type AdminPermission = (typeof ADMIN_PERMISSIONS)[number]
@@ -79,7 +80,8 @@ export const ADMIN_PERMISSION_META: Record<AdminPermission, { label: string; gro
   'search:read': { label: 'Xem xu hướng & từ khóa tìm trống', group: 'Hệ thống' },
   'system:broadcast': { label: 'Gửi thông báo hệ thống', group: 'Hệ thống' },
   'bots:manage': { label: 'Điều khiển Bot Simulator', group: 'Hệ thống' },
-  'audit:read': { label: 'Xem nhật ký kiểm toán (Audit Log)', group: 'Hệ thống' }
+  'audit:read': { label: 'Xem nhật ký kiểm toán (Audit Log)', group: 'Hệ thống' },
+  'roles:manage': { label: 'Quản lý nhóm quyền', group: 'Hệ thống' }
 }
 
 export function hasAdminPermission(role: string | undefined | null, permission: AdminPermission): boolean {
@@ -546,6 +548,27 @@ export interface AdminCourseRow {
   ratingAvg: number
   createdAt: string
 }
+
+// Nhóm quyền quản trị
+export interface AdminGroup {
+  id: string
+  name: string
+  description: string | null
+  permissions: AdminPermission[]
+  memberCount: number
+}
+
+export interface AdminGroupMember {
+  id: string
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  role: AdminUserRole
+  assignedAt: string
+}
+
+// Quyền chỉ vai trò admin giữ: không đưa được vào nhóm (tránh leo thang đặc quyền)
+export const ADMIN_ONLY_PERMISSIONS: readonly AdminPermission[] = ['users:role', 'users:insight', 'roles:manage']
 
 export interface AdminCourseLecturer {
   id: string

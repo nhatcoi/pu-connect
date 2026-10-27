@@ -19,7 +19,7 @@ import { DatabaseService } from '../../database/database.service'
 import { setTrashActor } from '../../database/trash'
 import { NotificationsService } from '../notifications/notifications.service'
 import { type AuditEntry, writeAudit } from './admin-audit'
-import { getRolePermissions } from './dto/admin.dto'
+import { effectivePermissions } from './admin-permissions'
 
 
 @Injectable()
@@ -47,7 +47,7 @@ export class AdminService {
         avatarUrl: row.avatar_url,
         role
       },
-      permissions: getRolePermissions(role)
+      permissions: await effectivePermissions(this.db, userId, role)
     }
   }
 

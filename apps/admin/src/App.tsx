@@ -21,10 +21,11 @@ import {
   Search,
   Sun,
   Users,
-  X
+  X,
+  ShieldCheck
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { canAccessAdminPortal, type AdminPermission, type AdminSessionInfo, type AdminStats, type UserProfile } from '@pu/schemas'
+import type { AdminPermission, AdminSessionInfo, AdminStats, UserProfile } from '@pu/schemas'
 import { adminApi, cn, ROLE_SHORT, WEB_PORTAL_URL } from '@/lib/api'
 import { useTheme, type ThemeMode } from '@/hooks/use-theme'
 import { Avatar, Button, Menu, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui'
@@ -37,9 +38,10 @@ import { AcademicTab } from '@/tabs/academic-tab'
 import { BotsPage } from '@/features/bots/bots-page'
 import { NewsPage } from '@/features/news/news-page'
 import { AnnouncementsPage } from '@/features/announcements/announcements-page'
+import { GroupsPage } from '@/features/groups/groups-page'
 import { AuditLogsTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
 
-export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'news' | 'audit'
+export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'news' | 'audit' | 'roles'
 
 interface NavItem {
   id: NavId
@@ -49,7 +51,7 @@ interface NavItem {
   badge?: number
 }
 
-const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'bots', 'news', 'audit']
+const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'bots', 'news', 'audit', 'roles']
 
 // Điều hướng theo hash (#/users) — giữ trang khi F5
 function readHash(): NavId {
@@ -99,11 +101,10 @@ export function App() {
     queryFn: () => adminApi.get<UserProfile>('/auth/me'),
     retry: false
   })
-  const hasPortalRole = canAccessAdminPortal(authMe.data?.role)
   const adminMe = useQuery({
     queryKey: ['admin', 'me'],
     queryFn: () => adminApi.get<AdminSessionInfo>('/admin/me'),
-    enabled: !!authMe.data && hasPortalRole,
+    enabled: !!authMe.data,
     retry: false
   })
   const stats = useQuery({
@@ -123,7 +124,7 @@ export function App() {
     toast.success('Đã đăng xuất')
   }
 
-  if (authMe.isPending || (hasPortalRole && adminMe.isPending)) {
+  if (authMe.isPending || (!!authMe.data && adminMe.isPending)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-surface">
         <Loader2 className="size-5 animate-spin text-primary" />
@@ -133,7 +134,7 @@ export function App() {
   if (authMe.isError || !authMe.data) {
     return <LoginScreen onSuccess={() => void authMe.refetch()} />
   }
-  if (!hasPortalRole || !adminMe.data) {
+  if (!adminMe.data) {
     return <LoginScreen forbiddenRole={authMe.data.role} onSuccess={() => void authMe.refetch()} onLogout={handleLogout} />
   }
 
@@ -163,6 +164,7 @@ export function App() {
         { id: 'search', label: 'Tìm kiếm', icon: Search, perm: 'search:read' },
         { id: 'broadcast', label: 'Thông báo', icon: Megaphone, perm: 'system:broadcast' },
         { id: 'bots', label: 'Bot', icon: Cpu, perm: 'bots:manage' },
+        { id: 'roles', label: 'Nhóm quyền', icon: ShieldCheck, perm: 'roles:manage' },
         { id: 'audit', label: 'Nhật ký', icon: History, perm: 'audit:read' }
       ]
     }
@@ -329,6 +331,7 @@ export function App() {
             {current === 'ai' && <AiOpsTab permissions={perms} openTickets={stats.data?.openSupportTickets} />}
             {current === 'search' && <SearchAnalyticsTab />}
             {current === 'broadcast' && <AnnouncementsPage />}
+            {current === 'roles' && <GroupsPage />}
             {current === 'bots' && <BotsPage />}
             {current === 'news' && <NewsPage />}
             {current === 'audit' && <AuditLogsTab />}
