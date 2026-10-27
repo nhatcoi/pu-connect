@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { CheckCircle2, ExternalLink, Eye, EyeOff, FileText, MessageSquare, Pin, PinOff, Trash2 } from 'lucide-react'
-import type { AdminBulkPostAction, AdminCommentRow, AdminPermission, AdminPostRow, AdminReportedPost } from '@pu/schemas'
+import type { AdminBulkPostAction, AdminCommentRow, AdminPermission, AdminPostRow, AdminReportedComment, AdminReportedPost } from '@pu/schemas'
 import { cn, formatNumber, formatRelativeTime, markdownToPlainText, WEB_PORTAL_URL } from '@/lib/api'
 import {
   Avatar,
@@ -92,7 +92,7 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
           />
         }
       />
-      {tab === 'reports' && <ReportsSection canWrite={canWrite} />}
+      {tab === 'reports' && <ReportsTab canWrite={canWrite} />}
       {tab === 'posts' && <PostsSection canWrite={canWrite} />}
       {tab === 'comments' && <CommentsSection canWrite={canWrite} />}
     </>
@@ -100,6 +100,154 @@ export function ModerationTab({ permissions, pendingCount }: { permissions: Admi
 }
 
 /* ── Báo cáo ─────────────────────────────────────────────── */
+
+// Hàng chờ chung: báo cáo bài viết và báo cáo bình luận
+function ReportsTab({ canWrite }: { canWrite: boolean }) {
+  const [params, set] = useHashQuery()
+  const kind = params.kind === 'comments' ? 'comments' : 'posts'
+  return (
+    <>
+      <Segmented
+        value={kind}
+        onChange={(v) => set({ kind: v === 'posts' ? undefined : v, page: undefined, status: undefined, reason: undefined, q: undefined }, { replace: true })}
+        items={[
+          { id: 'posts', label: 'Bài viết' },
+          { id: 'comments', label: 'Bình luận' }
+        ]}
+      />
+      {kind === 'posts' ? <ReportsSection canWrite={canWrite} /> : <CommentReportsSection canWrite={canWrite} />}
+    </>
+  )
+}
+
+function CommentReportsSection({ canWrite }: { canWrite: boolean }) {
+  const state = useListState({ sort: 'reports' })
+  const list = usePaged<AdminReportedComment>('comment-reports', '/admin/comment-reports', state.params, ['status', 'reason', 'q'])
+  const rows = list.data?.items ?? []
+  const sel = useSelection(
+    rows.map((r) => r.commentId),
+    JSON.stringify(state.params)
+  )
+  const [delIds, setDelIds] = useState<string[]>([])
+  const done = () => {
+    setDelIds([])
+    sel.clear()
+  }
+  const del = useBulk<{ ids: string[]; action: 'delete'; reason?: string }>('/admin/comments/bulk', (n) => `Đã xóa ${n} bình luận`, done)
+  const dismiss = useBulk<{ ids: string[]; action: 'dismiss' }>('/admin/comments/bulk', (n) => `Đã bỏ qua báo cáo của ${n} bình luận`, done)
+  const busy = del.isPending || dismiss.isPending
+  const status = state.params.status === 'resolved' ? 'resolved' : 'pending'
+
+  return (
+    <>
+      <Toolbar>
+        <Segmented
+          value={status}
+          onChange={(v) => state.set({ status: v === 'pending' ? undefined : v })}
+          items={[
+            { id: 'pending', label: 'Chờ xử lý' },
+            { id: 'resolved', label: 'Đã xử lý' }
+          ]}
+        />
+        <ListSearch state={state} placeholder="Nội dung bình luận, @tác giả" />
+        <ParamSelect state={state} name="reason" all="Mọi lý do" options={Object.entries(REASON_LABELS).map(([value, label]) => ({ value, label }))} className="w-36" />
+        <SortSelect
+          state={state}
+          options={[
+            ['reports', 'Nhiều báo cáo nhất'],
+            ['recent', 'Báo cáo mới nhất']
+          ]}
+        />
+        <Total n={list.data?.total} unit="bình luận bị báo cáo" />
+      </Toolbar>
+
+      {list.isPending ? (
+        <LoadingRows rows={4} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          icon={CheckCircle2}
+          title={status === 'pending' ? 'Không còn báo cáo bình luận nào' : 'Không có báo cáo phù hợp'}
+          description={status === 'pending' && !state.params.q && !state.params.reason ? 'Mọi báo cáo đã được xử lý.' : undefined}
+        />
+      ) : (
+        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
+          <SelectAllRow sel={sel} canWrite={canWrite} />
+          <ul className="divide-y divide-border rounded-b-xl border border-t-0 border-border bg-card">
+            {rows.map((r) => (
+              <li key={r.commentId} className={cn('flex gap-3 p-4', sel.has(r.commentId) && 'bg-primary/5')}>
+                {canWrite && <Checkbox className="mt-1" label="Chọn" checked={sel.has(r.commentId)} onChange={(on) => sel.toggle(r.commentId, on)} />}
+                <Avatar src={r.author.avatarUrl} name={r.author.displayName} className="hidden sm:inline-flex" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex flex-wrap items-center gap-x-1.5 text-sm">
+                    <span className="font-semibold text-foreground">{r.author.displayName}</span>
+                    <span className="text-muted-foreground">@{r.author.username}</span>
+                    <span className="text-muted-foreground">· {formatRelativeTime(r.lastReportedAt)}</span>
+                    {r.author.status === 'suspended' && <Badge tone="danger">Tác giả bị khóa</Badge>}
+                  </div>
+                  <p className="line-clamp-3 text-sm text-foreground">{markdownToPlainText(r.content)}</p>
+                  <a href={postUrl(r.postId)} target="_blank" rel="noreferrer" className="inline-block max-w-full truncate text-xs text-muted-foreground hover:text-primary">
+                    trong “{r.postTitle || r.postId.slice(0, 8)}”
+                  </a>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Badge tone="warning">{r.reportCount} báo cáo</Badge>
+                    {r.reasons.map((x) => (
+                      <Badge key={x.reason}>
+                        {REASON_LABELS[x.reason] || x.reason} · {x.count}
+                      </Badge>
+                    ))}
+                  </div>
+                  {r.details.length > 0 && (
+                    <ul className="space-y-1 border-l-2 border-border pl-3 text-xs text-muted-foreground">
+                      {r.details.slice(0, 3).map((d, i) => (
+                        <li key={i} className="line-clamp-1">
+                          “{d}”
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {canWrite && status === 'pending' && (
+                  <div className="flex shrink-0 flex-col items-stretch gap-2">
+                    <Button size="sm" variant="danger" disabled={busy} onClick={() => setDelIds([r.commentId])}>
+                      <Trash2 /> Xóa
+                    </Button>
+                    <Button size="sm" variant="ghost" disabled={busy} onClick={() => dismiss.mutate({ ids: [r.commentId], action: 'dismiss' })}>
+                      Bỏ qua
+                    </Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+          <ListFooter state={state} total={list.data?.total ?? 0} />
+        </div>
+      )}
+
+      <BulkBar count={sel.count} onClear={sel.clear}>
+        <Button size="sm" variant="danger-soft" disabled={busy} onClick={() => setDelIds(sel.ids())}>
+          <Trash2 /> Xóa
+        </Button>
+        {status === 'pending' && (
+          <Button size="sm" variant="ghost" disabled={busy} onClick={() => dismiss.mutate({ ids: sel.ids(), action: 'dismiss' })}>
+            Bỏ qua báo cáo
+          </Button>
+        )}
+      </BulkBar>
+
+      <ConfirmDialog
+        open={delIds.length > 0}
+        onClose={() => setDelIds([])}
+        title={delIds.length > 1 ? `Xóa ${delIds.length} bình luận?` : 'Xóa bình luận?'}
+        description="Bình luận vào thùng rác, báo cáo liên quan được đóng."
+        confirmLabel="Xóa"
+        withReason
+        loading={del.isPending}
+        onConfirm={(reason) => del.mutate({ ids: delIds, action: 'delete', reason })}
+      />
+    </>
+  )
+}
+
 
 function ReportsSection({ canWrite }: { canWrite: boolean }) {
   const state = useListState({ sort: 'reports' })

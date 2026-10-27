@@ -10,6 +10,8 @@ import { ShieldAlert, Loader2 } from 'lucide-react'
 
 interface ReportPostDialogProps {
   postId: string
+  // Có commentId ⇒ báo cáo bình luận đó thay vì cả bài
+  commentId?: string
   open: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -22,7 +24,7 @@ const REPORT_REASONS = [
   { id: 'other', label: 'Lý do khác' }
 ]
 
-export function ReportPostDialog({ postId, open, onOpenChange }: ReportPostDialogProps) {
+export function ReportPostDialog({ postId, commentId, open, onOpenChange }: ReportPostDialogProps) {
   const [selectedReason, setSelectedReason] = useState<string>('spam')
   const [details, setDetails] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,7 +33,7 @@ export function ReportPostDialog({ postId, open, onOpenChange }: ReportPostDialo
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await apiClient(`/posts/${postId}/report`, {
+      await apiClient(commentId ? `/comments/${commentId}/report` : `/posts/${postId}/report`, {
         method: 'POST',
         body: JSON.stringify({
           reason: selectedReason,
@@ -55,7 +57,7 @@ export function ReportPostDialog({ postId, open, onOpenChange }: ReportPostDialo
         <DialogHeader>
           <div className="flex items-center gap-2 text-destructive">
             <ShieldAlert className="h-5 w-5" />
-            <DialogTitle>Báo cáo vi phạm bài viết</DialogTitle>
+            <DialogTitle>{commentId ? 'Báo cáo vi phạm bình luận' : 'Báo cáo vi phạm bài viết'}</DialogTitle>
           </div>
           <DialogDescription className="text-xs text-muted-foreground">
             Báo cáo của bạn giúp duy trì môi trường học tập văn minh, chuẩn mực tại Đại học Phenikaa.

@@ -7,7 +7,7 @@ import type { CreateCommentInput } from '@pu/schemas'
 import type { Request } from 'express'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
-import { UpdateCommentBodySchema, type UpdateCommentBody } from './dto/comment.dto'
+import { ReportCommentBodySchema, UpdateCommentBodySchema, type ReportCommentBody, type UpdateCommentBody } from './dto/comment.dto'
 
 @Controller()
 export class CommentsController {
@@ -75,6 +75,12 @@ export class CommentsController {
   async update(@Param('id') id: string, @Body(new ZodValidationPipe(UpdateCommentBodySchema)) body: UpdateCommentBody, @Req() req: Request) {
     const userId = requireUserId(req, 'Vui lòng đăng nhập')
     return { success: true, data: await this.commentsService.update(id, userId, body.content) }
+  }
+
+  @Post('comments/:id/report')
+  @UseGuards(NotRestrictedGuard)
+  async report(@Param('id') id: string, @Body(new ZodValidationPipe(ReportCommentBodySchema)) body: ReportCommentBody, @Req() req: Request) {
+    return this.commentsService.report(id, requireUserId(req, 'Vui lòng đăng nhập'), body)
   }
 
   @Delete('comments/:id')

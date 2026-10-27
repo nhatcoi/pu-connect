@@ -8,6 +8,7 @@ import type {
   AdminDocumentRow,
   AdminPage,
   AdminPostRow,
+  AdminReportedComment,
   AdminReportedPost,
   AdminSecurityEventRow
 } from '@pu/schemas'
@@ -68,6 +69,47 @@ export class AdminListsService {
         content: row.content,
         createdAt: iso(row.created_at) as string,
         hiddenAt: iso(row.hidden_at),
+        author: { id: row.author_id, username: row.username, displayName: row.display_name, avatarUrl: row.avatar_url, status: row.author_status },
+        reportCount: row.report_count,
+        reasons: row.reasons || [],
+        details: row.details || [],
+        lastReportedAt: iso(row.last_reported_at) as string
+      })
+    })
+  }
+
+  // Báo cáo bình luận gom theo bình luận (cùng bộ lọc với báo cáo bài)
+  async commentReports(q: ReportsQuery): Promise<AdminPage<AdminReportedComment>> {
+    const p = new SqlParams()
+    const statusCond = q.status === 'pending' ? `r.status = 'pending'` : `r.status <> 'pending'`
+    const conds = [
+      statusCond,
+      searchCondition(p, q.q, { username: 'u.username', like: ['cm.content'] }),
+      q.reason && `EXISTS (SELECT 1 FROM comment_reports r2 WHERE r2.comment_id = cm.id AND r2.reason = ${p.add(q.reason)})`
+    ]
+    const from = `comment_reports r JOIN comments cm ON cm.id = r.comment_id JOIN posts p ON p.id = cm.post_id
+      JOIN users u ON u.id = cm.author_id ${whereOf(conds)} GROUP BY cm.id, p.id, u.id`
+    const sort = q.sort === 'recent' ? 'MAX(r.created_at)' : 'COUNT(r.id)'
+    return pagedQuery(this.db, {
+      params: p,
+      page: q.page,
+      pageSize: q.pageSize,
+      select: `cm.id AS comment_id, cm.post_id, cm.content, cm.created_at, p.title AS post_title,
+        u.id AS author_id, u.username, u.display_name, u.avatar_url, u.status AS author_status,
+        COUNT(r.id)::int AS report_count, MAX(r.created_at) AS last_reported_at,
+        (SELECT json_agg(json_build_object('reason', x.reason, 'count', x.cnt) ORDER BY x.cnt DESC)
+           FROM (SELECT reason, COUNT(*)::int AS cnt FROM comment_reports r3
+                 WHERE r3.comment_id = cm.id AND ${statusCond.replace(/\br\./g, 'r3.')} GROUP BY reason) x) AS reasons,
+        (ARRAY_AGG(r.details ORDER BY r.created_at DESC) FILTER (WHERE r.details IS NOT NULL AND r.details <> ''))[1:5] AS details`,
+      from,
+      order: orderBy(sort, q.dir, 'cm.id'),
+      countSql: `SELECT COUNT(*)::int AS n FROM (SELECT 1 FROM ${from}) x`,
+      map: (row): AdminReportedComment => ({
+        commentId: row.comment_id,
+        postId: row.post_id,
+        postTitle: row.post_title,
+        content: row.content,
+        createdAt: iso(row.created_at) as string,
         author: { id: row.author_id, username: row.username, displayName: row.display_name, avatarUrl: row.avatar_url, status: row.author_status },
         reportCount: row.report_count,
         reasons: row.reasons || [],

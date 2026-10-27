@@ -143,6 +143,12 @@ export class AdminController {
     return this.admin.dismissReports(requireUserId(req), id)
   }
 
+  @Get('comment-reports')
+  @RequireAdminPermission('moderation:read')
+  commentReports(@Query(new ZodValidationPipe(ReportsQuerySchema)) q: ReportsQuery) {
+    return this.lists.commentReports(q)
+  }
+
   @Get('comments')
   @RequireAdminPermission('moderation:read')
   comments(@Query(new ZodValidationPipe(CommentsQuerySchema)) q: CommentsQuery) {

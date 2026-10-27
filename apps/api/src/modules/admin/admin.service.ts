@@ -542,6 +542,7 @@ export class AdminService {
   // Xóa nhiều bình luận + đếm lại comments_count cho các bài liên quan
   async bulkComments(adminId: string, input: AdminBulkCommentInput): Promise<AdminBulkResult> {
     const ids = [...new Set(input.ids)]
+    if (input.action === 'dismiss') return this.dismissCommentReports(adminId, ids)
     const deleted = await this.db.transaction(async (client) => {
       await setTrashActor(client, adminId)
       const res = await client.query(
@@ -566,6 +567,22 @@ export class AdminService {
       return res.rowCount ?? 0
     })
     return { affected: deleted, skipped: ids.length - deleted }
+  }
+
+  // Bỏ qua báo cáo bình luận: đóng báo cáo đang chờ, giữ nguyên bình luận
+  private async dismissCommentReports(adminId: string, ids: string[]): Promise<AdminBulkResult> {
+    return this.db.transaction(async (client) => {
+      const res = await client.query(
+        `UPDATE comment_reports SET status = 'resolved', resolution = 'dismissed', resolved_by = $2, resolved_at = NOW()
+         WHERE comment_id = ANY($1::uuid[]) AND status = 'pending' RETURNING comment_id`,
+        [ids, adminId]
+      )
+      const done = [...new Set(res.rows.map((r) => r.comment_id as string))]
+      for (const id of done) {
+        await this.audit(client, adminId, { action: 'report.dismiss', targetType: 'comment', targetId: id, details: { bulk: ids.length > 1 ? ids.length : undefined } })
+      }
+      return { affected: done.length, skipped: ids.length - done.length }
+    })
   }
 
   private async assertPostExists(client: PoolClient, postId: string) {

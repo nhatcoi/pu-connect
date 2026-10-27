@@ -6,6 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { snippet, type NotifyInput } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import type { CreateCommentInput, CommentItem } from '@pu/schemas'
+import type { ReportCommentBody } from './dto/comment.dto'
 import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
 
 export interface CommentsResult {
@@ -356,6 +357,19 @@ export class CommentsService {
     })
     void this.notifications.dispatch(updated.isAnonymous ? editMentions.map(anonymizeNotification) : editMentions)
     return { id: updated.id, content: updated.content, editedAt: updated.editedAt }
+  }
+
+  // Báo cáo bình luận: không tự báo cáo, không báo cáo trùng khi báo cáo cũ còn chờ
+  async report(commentId: string, reporterId: string, data: ReportCommentBody): Promise<{ success: boolean }> {
+    const res = await this.db.query(`SELECT author_id FROM comments WHERE id = $1 LIMIT 1`, [commentId])
+    if (res.rows.length === 0) throw new NotFoundException('Không tìm thấy bình luận')
+    if (res.rows[0].author_id === reporterId) throw new ForbiddenException('Không thể báo cáo bình luận của chính bạn')
+    await this.db.query(
+      `INSERT INTO comment_reports (comment_id, reporter_id, reason, details) VALUES ($1, $2, $3, $4)
+       ON CONFLICT (comment_id, reporter_id) WHERE status = 'pending' DO NOTHING`,
+      [commentId, reporterId, data.reason ?? 'other', data.details || null]
+    )
+    return { success: true }
   }
 
   async delete(commentId: string, currentUserId: string, isAdmin = false): Promise<boolean> {

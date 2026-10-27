@@ -20,6 +20,8 @@ export const ReportsQuerySchema = z.object({
   sort: opt(['reports', 'recent'] as const).default('reports')
 })
 
+export const CommentReportsQuerySchema = ReportsQuerySchema
+
 export const PostsQuerySchema = z.object({
   ...paging,
   q: text(),
@@ -74,6 +76,7 @@ export const AuditQuerySchema = z.object({
 })
 
 export type ReportsQuery = z.infer<typeof ReportsQuerySchema>
+export type CommentReportsQuery = ReportsQuery
 export type PostsQuery = z.infer<typeof PostsQuerySchema>
 export type CommentsQuery = z.infer<typeof CommentsQuerySchema>
 export type CoursesQuery = z.infer<typeof CoursesQuerySchema>
@@ -91,7 +94,7 @@ export const BulkPostBodySchema = z.object({
 
 export const BulkCommentBodySchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(100),
-  action: z.literal('delete'),
+  action: z.enum(['delete', 'dismiss']),
   reason: z.string().trim().max(255).optional()
 })
 

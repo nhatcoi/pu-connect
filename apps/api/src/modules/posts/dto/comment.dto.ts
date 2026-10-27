@@ -8,3 +8,13 @@ export const UpdateCommentBodySchema = z
   .strict()
 
 export type UpdateCommentBody = z.infer<typeof UpdateCommentBodySchema>
+
+// POST /comments/:id/report
+export const ReportCommentBodySchema = z
+  .object({
+    reason: z.string().trim().min(1, { message: 'Vui lòng chọn lý do báo cáo' }).max(50),
+    details: z.string().trim().max(500).optional()
+  })
+  .strict()
+
+export type ReportCommentBody = z.infer<typeof ReportCommentBodySchema>

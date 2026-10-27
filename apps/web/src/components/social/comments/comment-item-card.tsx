@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { PostMediaGallery } from '../post-media-gallery'
+import { ReportPostDialog } from '../report-post-dialog'
 import { CommentComposer } from './comment-composer'
-import { Heart, MessageSquare, CheckCircle2, Trash2, Check, Pencil } from 'lucide-react'
+import { Heart, MessageSquare, CheckCircle2, Trash2, Check, Pencil, Flag } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { CommentItem, MentionCandidate } from '@pu/schemas'
 import { useQueryClient } from '@tanstack/react-query'
@@ -46,6 +47,7 @@ export function CommentItemCard({
 }: CommentItemCardProps) {
   const [showReplyComposer, setShowReplyComposer] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [isReporting, setIsReporting] = useState(false)
   const queryClient = useQueryClient()
 
   const authorInitials = (comment.author?.displayName || comment.author?.username || 'PU').slice(0, 2).toUpperCase()
@@ -142,6 +144,18 @@ export function CommentItemCard({
             </button>
           )}
 
+          {!isMyComment && currentUserId && (
+            <button
+              type="button"
+              onClick={() => setIsReporting(true)}
+              className="sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-all cursor-pointer rounded-full"
+              title="Báo cáo bình luận"
+              aria-label="Báo cáo bình luận"
+            >
+              <Flag className="h-3.5 w-3.5" />
+            </button>
+          )}
+
           {isMyComment && onDeleteComment && (
             <button
               type="button"
@@ -219,6 +233,8 @@ export function CommentItemCard({
           </div>
         )}
       </div>
+
+      {isReporting && <ReportPostDialog postId={comment.postId} commentId={comment.id} open={isReporting} onOpenChange={setIsReporting} />}
     </div>
   )
 }

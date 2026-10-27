@@ -200,6 +200,20 @@ export interface AdminReportedPost {
   lastReportedAt: string
 }
 
+// Báo cáo bình luận gom theo bình luận
+export interface AdminReportedComment {
+  commentId: string
+  postId: string
+  postTitle: string | null
+  content: string
+  createdAt: string
+  author: { id: string; username: string; displayName: string; avatarUrl: string | null; status: string }
+  reportCount: number
+  reasons: { reason: string; count: number }[]
+  details: string[]
+  lastReportedAt: string
+}
+
 export interface AdminPostRow {
   id: string
   title: string | null
@@ -341,7 +355,7 @@ export interface AdminBulkPostInput {
 }
 export interface AdminBulkCommentInput {
   ids: string[]
-  action: 'delete'
+  action: 'delete' | 'dismiss'
   reason?: string
 }
 
