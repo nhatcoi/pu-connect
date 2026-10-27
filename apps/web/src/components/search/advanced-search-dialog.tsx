@@ -20,7 +20,7 @@ interface AdvancedSearchDialogProps {
 
 export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', initialFaculty = 'ALL' }: AdvancedSearchDialogProps) {
   const router = useRouter()
-  const faculties = useFacultyOptions('Tất cả Khoa / Viện')
+  const faculties = useFacultyOptions('Tất cả trường')
   const [exactWords, setExactWords] = useState(initialQuery)
   const [tag, setTag] = useState('')
   const [faculty, setFaculty] = useState(initialFaculty)
@@ -73,7 +73,7 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
 
           {/* Faculty select */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Khoa / Viện đào tạo</label>
+            <label className="text-xs font-semibold text-foreground">Trường đào tạo</label>
             <select
               value={faculty}
               onChange={(e) => setFaculty(e.target.value)}

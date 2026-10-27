@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, MapPin, IdCard, GraduationCap, Edit3, Mail, CheckCircle2, Settings, BookOpen, School, Globe } from 'lucide-react'
+import { Calendar, MapPin, IdCard, GraduationCap, Edit3, Mail, CheckCircle2, Settings, School, Globe } from 'lucide-react'
 import { useAppStore } from '@/store'
 import type { UserProfileData } from '@/hooks/use-profile'
 import { toast } from 'sonner'
@@ -203,7 +203,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
             )}
           </div>
 
-          {/* Academic Info Hierarchy: School, Khoa, Major, Class, Year, MSSV */}
+          {/* Thông tin học thuật: trường, MSSV (khoa/ngành/lớp/khóa tạm ẩn) */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="font-medium text-foreground/90">@{profile.username}</span>
 
@@ -220,33 +220,6 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
                 <span>{profile.school}</span>
               </div>
             )}
-
-            {profile.faculty && profile.faculty !== profile.school && (
-              <div className="flex items-center gap-1 font-medium text-foreground/80">
-                <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                <span>
-                  {profile.faculty.startsWith('Khoa') || profile.faculty.startsWith('Viện') || profile.faculty.startsWith('Trung tâm')
-                    ? profile.faculty
-                    : `Khoa ${profile.faculty}`}
-                </span>
-              </div>
-            )}
-
-            {profile.major && (
-              <div className="flex items-center gap-1 font-medium text-primary">
-                <BookOpen className="h-3.5 w-3.5 text-primary" />
-                <span>{profile.major}</span>
-              </div>
-            )}
-
-            {profile.className && (
-              <div className="flex items-center gap-1">
-                <School className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Lớp {profile.className}</span>
-              </div>
-            )}
-
-            {profile.academicYear && <span>• Khóa {profile.academicYear}</span>}
           </div>
         </div>
 

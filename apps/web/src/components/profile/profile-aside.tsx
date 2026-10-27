@@ -33,28 +33,10 @@ export function ProfileAside({ profile, isOwner }: ProfileAsideProps) {
               {profile.isVerified && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
             </span>
           </div>
-          {profile.faculty && (
-            <div className="flex items-center justify-between py-1 border-b border-border/40">
-              <span className="text-muted-foreground">Khoa / Viện</span>
-              <span className="font-medium text-foreground text-right truncate max-w-[150px]">{profile.faculty}</span>
-            </div>
-          )}
-          {profile.major && (
-            <div className="flex items-center justify-between py-1 border-b border-border/40">
-              <span className="text-muted-foreground">Chuyên ngành</span>
-              <span className="font-medium text-foreground text-right truncate max-w-[150px]">{profile.major}</span>
-            </div>
-          )}
-          {profile.academicYear && (
-            <div className="flex items-center justify-between py-1 border-b border-border/40">
-              <span className="text-muted-foreground">Khóa học</span>
-              <span className="font-medium text-foreground">{profile.academicYear}</span>
-            </div>
-          )}
-          {profile.className && (
+          {profile.school && (
             <div className="flex items-center justify-between py-1">
-              <span className="text-muted-foreground">Lớp</span>
-              <span className="font-medium text-foreground">{profile.className}</span>
+              <span className="text-muted-foreground">Trường</span>
+              <span className="font-medium text-foreground text-right truncate max-w-[150px]">{profile.school}</span>
             </div>
           )}
         </div>

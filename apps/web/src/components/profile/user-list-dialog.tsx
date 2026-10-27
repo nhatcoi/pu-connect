@@ -118,12 +118,6 @@ export function UserListDialog({ userId, username, type, open, onOpenChange }: U
                     </div>
                     <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground truncate">
                       <span>@{item.username}</span>
-                      {item.faculty && (
-                        <>
-                          <span>•</span>
-                          <span className="truncate">{item.faculty}</span>
-                        </>
-                      )}
                     </div>
                   </div>
                 </Link>

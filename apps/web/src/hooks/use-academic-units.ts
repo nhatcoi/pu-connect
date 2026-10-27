@@ -22,7 +22,7 @@ export interface FacultyOption {
   name: string
 }
 
-// Bộ lọc "Khoa / Viện": trường, khoa, viện, trung tâm từ cây đơn vị (không gồm ngành)
+// Bộ lọc theo đơn vị: lấy từ cây đơn vị (hiện chỉ có trường; thêm khoa/viện sau thì tự hiện), không gồm ngành
 export function useFacultyOptions(allLabel: string): FacultyOption[] {
   const { data } = useAcademicUnits()
   return useMemo(

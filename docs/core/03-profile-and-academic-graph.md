@@ -10,8 +10,8 @@ Hồ sơ cá nhân trên PU Connection được chuẩn hóa để phản ánh �
 * **Định danh cơ bản:** `id (UUID)`, `email (edu mail)`, `username`, `display_name`, `avatar_url`, `bio`.
 * **Cây định danh học thuật:**
   * `student_id`: Mã số sinh viên (ví dụ: `22010123`).
-  * `faculty`: Khoa/Viện đào tạo (`FIT` - CNTT, `FEE` - Điện-Điện tử, `FBA` - Quản trị kinh doanh...).
-  * `academic_year`: Niên khóa đào tạo (`K15`, `K16`, `K17`...).
+  * `school` / `unit_id`: Trường thành viên (cây `academic_units`, hiện chỉ có cấp trường: CNTT, Kỹ thuật, Kinh tế, NN&KHXH, Y Dược, CNSLN, Du lịch).
+  * `faculty`, `major`, `academic_year`, `class_name`: giữ trong DB nhưng **tạm ẩn** khỏi hồ sơ, form chỉnh sửa và thẻ hoàn thiện hồ sơ (2026-10-27); khoa/ngành/viện/trung tâm thêm lại sau qua Admin → Đơn vị học thuật.
   * `role`: Phân quyền RBAC (`student`, `lecturer`, `ta`, `club_lead`, `admin`).
 * **Hồ sơ năng lực & Sở thích:**
   * `skills (TEXT[])`: Mảng kỹ năng chuyên môn (`React Native`, `NestJS`, `Python AI`, `PostgreSQL`...).

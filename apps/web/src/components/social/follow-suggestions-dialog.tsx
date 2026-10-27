@@ -113,7 +113,6 @@ function SuggestionRow({ suggestion: s, onFollowChange }: { suggestion: FollowSu
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
             @{s.username}
-            {s.faculty && <> · {s.faculty}</>}
           </span>
           {s.bio && <span className="mt-1 line-clamp-1 text-xs text-foreground/80">{s.bio}</span>}
           <span className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">

@@ -98,7 +98,7 @@ const ACADEMIC_STORIES = [
 function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const faculties = useFacultyOptions('Tất cả khoa')
+  const faculties = useFacultyOptions('Tất cả trường')
   const queryParam = searchParams.get('q') || ''
   const activeType = (searchParams.get('type') as SearchType) || 'all'
   const facultyParam = searchParams.get('faculty') || 'ALL'
@@ -501,7 +501,7 @@ function SearchContent() {
           <CardHeader className="pb-1">
             <div className="flex items-center gap-2 text-xs font-bold text-foreground">
               <Filter className="h-4 w-4 text-primary" />
-              <span>Lọc theo Khoa / Viện</span>
+              <span>Lọc theo trường</span>
             </div>
           </CardHeader>
           <CardContent className="p-2 space-y-0.5">
