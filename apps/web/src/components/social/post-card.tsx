@@ -61,6 +61,7 @@ import { prefetchProfile } from '@/hooks/use-profile'
 import { prefetchCommunity } from '@/hooks/use-community'
 import { patchPostEverywhere, removePostEverywhere, patchAuthorFollowed, invalidateFollowRelated } from '@/lib/post-cache'
 import { useDwellTracking } from '@/hooks/use-dwell-tracking'
+import { PostDocumentList } from './post-document-list'
 
 // Helper: Convert UUID / raw faculty code into human-readable label
 function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolean; href?: string } | null {
@@ -671,8 +672,10 @@ export function PostCard({
               </div>
             )}
 
-            {/* Attached Documents */}
-            {post.attachedDocumentIds && post.attachedDocumentIds.length > 0 && (
+            {/* Tài liệu đính kèm: thẻ có phân loại; bài cũ chưa có metadata ⇒ dòng đếm */}
+            {post.documents && post.documents.length > 0 ? (
+              <PostDocumentList documents={post.documents} />
+            ) : post.attachedDocumentIds && post.attachedDocumentIds.length > 0 && (
               <div className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
                 <FileText className="h-4 w-4 text-primary shrink-0" />
                 <span>Đính kèm {post.attachedDocumentIds.length} tài liệu học phần</span>

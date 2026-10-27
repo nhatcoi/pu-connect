@@ -7,9 +7,10 @@ import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import { hotScoreSql, rankedScoreSql, seenFactorSql, seenJoinSql } from './feed-ranking.sql'
 import { featuredCommentsSql } from './featured-comment.sql'
+import { PostDocumentsService } from '../documents/post-documents.service'
 import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
-import type { CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
+import type { AttachedDocument, CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
 
 export interface FeedResult {
   data: PostItem[]
@@ -74,6 +75,7 @@ export class PostsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly mentions: MentionsService,
+    private readonly postDocuments: PostDocumentsService,
     private readonly notifications: NotificationsService,
     private readonly realtime: RealtimeGateway
   ) {}
@@ -160,14 +162,16 @@ export class PostsService {
 
     // 3. Batch fetch polls + bình luận nổi bật cho các bài trong trang
     const postIds = res.rows.map((r) => r.id)
-    const [pollsMap, featuredMap] = await Promise.all([
+    const [pollsMap, featuredMap, docsMap] = await Promise.all([
       this.fetchPollsForPosts(postIds, currentUserId),
-      window.featuredComment === false ? new Map<string, FeaturedComment>() : this.fetchFeaturedComments(postIds, currentUserId)
+      window.featuredComment === false ? new Map<string, FeaturedComment>() : this.fetchFeaturedComments(postIds, currentUserId),
+      this.postDocuments.forPosts(postIds)
     ])
 
     const items = res.rows.map((row) => ({
       ...this.mapRowToPostItem(row, pollsMap.get(row.id), currentUserId),
-      featuredComment: featuredMap.get(row.id) ?? null
+      featuredComment: featuredMap.get(row.id) ?? null,
+      documents: docsMap.get(row.id) ?? []
     }))
 
     return {
@@ -297,8 +301,8 @@ export class PostsService {
       throw new NotFoundException(`Bài viết không tồn tại (ID: ${id})`)
     }
 
-    const pollsMap = await this.fetchPollsForPosts([id], currentUserId)
-    return this.mapRowToPostItem(res.rows[0], pollsMap.get(id), currentUserId)
+    const [pollsMap, docsMap] = await Promise.all([this.fetchPollsForPosts([id], currentUserId), this.postDocuments.forPosts([id])])
+    return { ...this.mapRowToPostItem(res.rows[0], pollsMap.get(id), currentUserId), documents: docsMap.get(id) ?? [] }
   }
 
   async create(authorId: string, data: CreatePostInput): Promise<PostItem> {
@@ -390,6 +394,14 @@ export class PostsService {
       // 4.1. Ghi @mention trong cùng transaction
       mentioned = await this.mentions.record(client, 'post', postRow.id, authorId, data.title, data.content)
 
+      // 4.2. Tài liệu đính kèm (bản nháp đã tải lên) ⇒ published + post_documents
+      let attachedDocs: AttachedDocument[] = []
+      if (data.documentIds?.length) {
+        await this.postDocuments.attach(client, postRow.id, authorId, data.documentIds, data.visibility || 'public')
+        attachedDocs = (await this.postDocuments.forPosts([postRow.id], client)).get(postRow.id) ?? []
+        postRow.attached_document_ids = attachedDocs.map((d) => d.fileUrl)
+      }
+
       // 5. Create Poll if provided
       let pollData: PollData | null = null
       if (data.pollQuestion && data.pollOptions && data.pollOptions.length >= 2) {
@@ -471,6 +483,7 @@ export class PostsService {
         tags: postRow.tags || [],
         mediaUrls: postRow.media_urls || [],
         attachedDocumentIds: postRow.attached_document_ids || [],
+        documents: attachedDocs,
         likesCount: 0,
         commentsCount: 0,
         sharesCount: 0,

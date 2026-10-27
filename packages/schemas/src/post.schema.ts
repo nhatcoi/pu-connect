@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { AttachedDocument } from './document.schema'
 
 export const PostTypeEnum = z.enum(['general', 'qa', 'document', 'group_recruit', 'review'])
 export type PostType = z.infer<typeof PostTypeEnum>
@@ -36,6 +37,8 @@ export const CreatePostSchema = z.object({
   targetAudience: TargetAudienceEnum.default('everyone'),
   tags: z.array(z.string()).default([]),
   attachedDocumentIds: z.array(z.string()).default([]),
+  // Tài liệu đã tải lên qua POST /documents/upload (bản nháp của chính người đăng)
+  documentIds: z.array(z.string().uuid()).max(10).default([]),
   mediaUrls: z.array(z.string().url()).default([]),
   visibility: z.enum(['public', 'followers', 'private']).default('public'),
   recruitSlotsTotal: z.number().int().nonnegative().optional(),
@@ -117,6 +120,8 @@ export const PostItemSchema = z.object({
   tags: z.array(z.string()),
   mediaUrls: z.array(z.string()),
   attachedDocumentIds: z.array(z.string()),
+  // Thẻ tài liệu (metadata + phân loại); bài cũ chỉ có attachedDocumentIds (URL)
+  documents: z.array(z.custom<AttachedDocument>()).optional(),
   likesCount: z.number().default(0),
   commentsCount: z.number().default(0),
   sharesCount: z.number().default(0),

@@ -4,7 +4,7 @@ import type { Course, CourseOverview, CreateCourseInput } from '@pu/schemas'
 
 // Đếm trực tiếp (cột document_count / post_count không được cập nhật)
 const LIVE_COUNTS = `
-  (SELECT COUNT(*) FROM documents d WHERE d.course_id = c.id AND d.visibility = 'public')::int AS live_document_count,
+  (SELECT COUNT(*) FROM documents d WHERE d.course_id = c.id AND d.listed)::int AS live_document_count,
   (SELECT COUNT(*) FROM posts p WHERE p.course_id = c.id AND p.hidden_at IS NULL)::int AS live_post_count`
 
 @Injectable()
@@ -60,7 +60,7 @@ export class CoursesService {
          FROM (
            SELECT author_id AS uid, COUNT(*) AS n FROM posts WHERE course_id = $1 AND hidden_at IS NULL AND NOT is_anonymous GROUP BY author_id
            UNION ALL
-           SELECT owner_id, COUNT(*) FROM documents WHERE course_id = $1 AND visibility = 'public' GROUP BY owner_id
+           SELECT owner_id, COUNT(*) FROM documents WHERE course_id = $1 AND listed GROUP BY owner_id
            UNION ALL
            SELECT c.author_id, COUNT(*) FROM comments c JOIN posts p ON p.id = c.post_id
            WHERE p.course_id = $1 AND c.is_solution AND NOT c.is_anonymous GROUP BY c.author_id

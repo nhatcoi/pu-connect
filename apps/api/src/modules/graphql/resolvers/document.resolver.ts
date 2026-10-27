@@ -15,18 +15,23 @@ export class DocumentResolver {
   ): Promise<DocumentType[]> {
     let sql = `
       SELECT d.*,
-             d.owner_id as uploader_id,
-             u.id as user_id, u.email as user_email, u.username as user_username,
+             d.owner_id as uploader_id, c.code as course_code,
+             u.id as user_id, u.username as user_username,
              u.display_name as user_display_name, u.avatar_url as user_avatar_url,
              u.role as user_role, u.faculty as user_faculty, u.reputation_points as user_reputation_points,
              u.created_at as user_created_at
       FROM documents d
       JOIN users u ON d.owner_id = u.id
-      WHERE 1=1
+      LEFT JOIN courses c ON c.id = d.course_id
+      WHERE d.visibility = 'public' AND d.status = 'published'
     `
     const params: any[] = []
 
     if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
+    if (courseCode) {
+      params.push(courseCode)
+      sql += ` AND d.course_id = (SELECT id FROM courses WHERE code ILIKE $${params.length} LIMIT 1)`
+    }
     if (type) {
       params.push(type)
       sql += ` AND d.type = $${params.length}`
@@ -46,7 +51,7 @@ export class DocumentResolver {
       fileUrl: row.file_url,
       fileSize: `${((row.file_size || 1024000) / (1024 * 1024)).toFixed(1)} MB`,
       faculty: row.user_faculty,
-      courseCode: row.tags && row.tags[0] ? row.tags[0] : 'IT101',
+      courseCode: row.course_code ?? null,
       tags: row.tags || [],
       downloadCount: row.download_count || 0,
       viewCount: row.view_count || 0,
@@ -54,7 +59,8 @@ export class DocumentResolver {
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : '',
       uploader: {
         id: row.user_id,
-        email: row.user_email || '',
+        // Không trả email người đăng (API công khai)
+        email: '',
         username: row.user_username || '',
         displayName: row.user_display_name || '',
         avatarUrl: row.user_avatar_url || null,

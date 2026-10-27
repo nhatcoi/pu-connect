@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/store'
 import { trackOnce } from '@/lib/track'
+import { openDocument } from '@/lib/document-api'
 
 interface DocumentCardProps {
   document: DocumentItem
@@ -112,10 +113,7 @@ export function DocumentCard({ document: item }: DocumentCardProps) {
             className="gap-1.5 text-xs"
             onClick={() => {
               trackOnce({ type: 'doc_download', targetType: 'document', targetId: item.id })
-              const a = window.document.createElement('a')
-              a.href = item.fileUrl
-              a.download = item.title
-              a.click()
+              void openDocument(item)
             }}
           >
             <Download className="h-3.5 w-3.5" />

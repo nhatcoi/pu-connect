@@ -11,11 +11,12 @@ import { ChatModule } from '../chat/chat.module'
 import { PostAiService } from './post-ai.service'
 import { PostContextService } from './post-context.service'
 import { PostThreadToolsService } from './post-thread-tools.service'
+import { PostDocumentsService } from '../documents/post-documents.service'
 
 @Module({
   imports: [MentionsModule, NotificationsModule, AiModule, RealtimeModule, ChatModule],
   controllers: [PostsController, CommentsController],
-  providers: [PostsService, CommentsService, PostAiService, PostContextService, PostThreadToolsService],
+  providers: [PostsService, CommentsService, PostAiService, PostContextService, PostThreadToolsService, PostDocumentsService],
   exports: [PostsService, CommentsService]
 })
 export class PostsModule {}

@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import type { AttachedDocument, DocumentUploadResult } from '@pu/schemas'
 import { FileText, X, Hash, UserPlus, AlignLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -11,6 +12,15 @@ export interface AttachedFile {
   type: 'image' | 'document'
   url: string
   file?: File
+  // Tệp tài liệu: tải lên ngay khi đính kèm ⇒ bản nháp trên server
+  doc?: AttachedDocument
+  uploading?: boolean
+  error?: string
+  duplicateOf?: DocumentUploadResult['duplicateOf']
+  // Đã chọn dùng tài liệu có sẵn (của người khác) ⇒ không phân loại lại
+  reused?: boolean
+  // Người đăng đã tự bật/tắt "Đưa vào kho" ⇒ không tự bật nữa
+  listedTouched?: boolean
 }
 
 interface ComposerAttachmentPreviewProps {
@@ -18,9 +28,11 @@ interface ComposerAttachmentPreviewProps {
   tags: string[]
   onRemoveFile: (id: string) => void
   onRemoveTag: (tag: string) => void
+  // Thẻ tài liệu có phân loại (composer cung cấp); không có ⇒ chip tên tệp đơn giản
+  renderDocument?: (file: AttachedFile) => React.ReactNode
 }
 
-export function ComposerAttachmentPreview({ files, tags, onRemoveFile, onRemoveTag }: ComposerAttachmentPreviewProps) {
+export function ComposerAttachmentPreview({ files, tags, onRemoveFile, onRemoveTag, renderDocument }: ComposerAttachmentPreviewProps) {
   const images = files.filter((f) => f.type === 'image')
   const docs = files.filter((f) => f.type === 'document')
 
@@ -96,7 +108,7 @@ export function ComposerAttachmentPreview({ files, tags, onRemoveFile, onRemoveT
       {/* 2. Document Attachments (PDF / Slide) */}
       {docs.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {docs.map((doc) => (
+          {docs.map((doc) => renderDocument ? <React.Fragment key={doc.id}>{renderDocument(doc)}</React.Fragment> : (
             <div key={doc.id} className="flex items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-xs text-foreground shadow-xs">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-background border border-border text-foreground">
                 <FileText className="h-4 w-4" />

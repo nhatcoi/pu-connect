@@ -13,7 +13,9 @@ import { toast } from 'sonner'
 import { Loader2, Sparkles, X, Users, Tag, BarChart2 } from 'lucide-react'
 import { AnonymousToggle } from '../anonymous-toggle'
 import { apiClient, uploadFileToR2, errorMessage } from '@/lib/api-client'
-import type { PostItem, PostType, TargetAudience } from '@pu/schemas'
+import type { ClassifyDocumentInput, PostItem, PostType, TargetAudience } from '@pu/schemas'
+import { useCourses } from '@/hooks/use-course'
+import { classifyDocument, discardDocumentDraft, uploadDocumentDraft } from '@/lib/document-api'
 
 import { ComposerProgressRing } from './composer-progress-ring'
 import { ComposerAudienceMenu } from './composer-audience-menu'
@@ -21,6 +23,7 @@ import { ComposerIntentSelector } from './composer-intent-selector'
 import { ComposerCoursePicker } from './composer-course-picker'
 import { ComposerAttachmentPreview, type AttachedFile } from './composer-attachment-preview'
 import { ComposerToolbar } from './composer-toolbar'
+import { ComposerDocumentCard } from './composer-document-card'
 
 const MAX_CHAR_LIMIT = 1000
 
@@ -58,6 +61,7 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
   const [pollOptions, setPollOptions] = useState<string[]>(['', ''])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string>('')
+  const { data: courses = [] } = useCourses()
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
@@ -125,9 +129,51 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
     })
     setAttachedFiles((prev) => [...prev, ...newFiles])
     setIsExpanded(true)
+    for (const f of newFiles) if (f.type === 'document') void uploadDraft(f)
+  }
+
+  const patchFile = (id: string, patch: Partial<AttachedFile>) => setAttachedFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)))
+
+  // Tài liệu tải lên ngay khi đính kèm ⇒ bản nháp; gắn sẵn môn đang chọn của bài
+  const uploadDraft = async (item: AttachedFile) => {
+    if (!item.file) return
+    patchFile(item.id, { uploading: true, error: undefined })
+    try {
+      const res = await uploadDocumentDraft(item.file)
+      patchFile(item.id, { uploading: false, doc: res.document, duplicateOf: res.duplicateOf })
+      const course = courses.find((c) => c.id === selectedCourseId || c.code === selectedCourseId)
+      if (course) await handleClassify({ ...item, doc: res.document }, { courseId: course.id })
+    } catch (err) {
+      patchFile(item.id, { uploading: false, error: errorMessage(err, 'Tải lên thất bại') })
+    }
+  }
+
+  // Phân loại: đủ môn + loại lần đầu ⇒ tự bật "Đưa vào kho" (trừ khi người đăng đã tự tắt)
+  const handleClassify = async (item: AttachedFile, patch: ClassifyDocumentInput) => {
+    if (!item.doc) return
+    const next = { ...item.doc, ...patch }
+    const body: ClassifyDocumentInput = { ...patch }
+    if ('listed' in patch) patchFile(item.id, { listedTouched: true })
+    else if (!item.listedTouched && next.courseId && next.docCategory) body.listed = true
+    try {
+      const doc = await classifyDocument(item.doc.id, body)
+      patchFile(item.id, { doc })
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không lưu được phân loại'))
+    }
+  }
+
+  // Dùng tài liệu trùng đã có trong kho: bỏ bản nháp vừa tải
+  const handleUseDuplicate = (item: AttachedFile) => {
+    const dup = item.duplicateOf
+    if (!dup || !item.doc) return
+    void discardDocumentDraft(item.doc.id).catch(() => undefined)
+    patchFile(item.id, { reused: true, duplicateOf: null, name: dup.title, doc: { ...item.doc, id: dup.id, title: dup.title, status: 'published' } })
   }
 
   const handleRemoveFile = (id: string) => {
+    const item = attachedFiles.find((f) => f.id === id)
+    if (item?.doc && item.doc.status === 'draft' && !item.reused) void discardDocumentDraft(item.doc.id).catch(() => undefined)
     setAttachedFiles((prev) => prev.filter((f) => f.id !== id))
   }
 
@@ -175,25 +221,37 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
       }
     }
 
+    const docFiles = attachedFiles.filter((f) => f.type === 'document')
+    if (docFiles.some((f) => f.uploading)) {
+      toast.error('Đang tải tài liệu lên, vui lòng đợi')
+      return
+    }
+    if (docFiles.some((f) => !f.doc)) {
+      toast.error('Có tệp tải lên thất bại, hãy gỡ hoặc đính kèm lại')
+      return
+    }
+    if (postType === 'document' && docFiles.length === 0) {
+      toast.error('Bài Đề thi & Slide cần đính kèm ít nhất 1 tài liệu')
+      return
+    }
+    if (postType === 'document' && docFiles.some((f) => !f.reused && !(f.doc?.courseId && f.doc?.docCategory))) {
+      toast.error('Chọn môn học và loại cho từng tài liệu')
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      // 1. Upload files to Cloudflare R2
+      // 1. Ảnh tải lên R2 lúc đăng; tài liệu đã tải lên lúc đính kèm (bản nháp)
       const uploadedMediaUrls: string[] = []
-      const uploadedDocUrls: string[] = []
 
       for (const item of attachedFiles) {
+        if (item.type !== 'image') continue
         if (item.file) {
-          setUploadStatus(`Đang tải ${item.name} lên Cloudflare R2...`)
-          const folder = item.type === 'image' ? 'posts/images' : 'documents'
-          const res = await uploadFileToR2(item.file, folder)
-          if (item.type === 'image') {
-            uploadedMediaUrls.push(res.url)
-          } else {
-            uploadedDocUrls.push(res.url)
-          }
+          setUploadStatus(`Đang tải ${item.name} lên...`)
+          const res = await uploadFileToR2(item.file, 'posts/images')
+          uploadedMediaUrls.push(res.url)
         } else if (item.url && !item.url.startsWith('blob:')) {
-          if (item.type === 'image') uploadedMediaUrls.push(item.url)
-          else uploadedDocUrls.push(item.url)
+          uploadedMediaUrls.push(item.url)
         }
       }
 
@@ -217,7 +275,7 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
         targetAudience,
         tags: allTags,
         mediaUrls: uploadedMediaUrls,
-        attachedDocumentIds: uploadedDocUrls,
+        documentIds: docFiles.map((f) => f.doc!.id),
         recruitSlotsTotal: postType === 'group_recruit' ? slotsTotal : undefined,
         recruitSlotsFilled: postType === 'group_recruit' ? slotsFilled : undefined,
         pollQuestion: showPollCreator && pollQuestion.trim() ? pollQuestion.trim() : undefined,
@@ -440,7 +498,22 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
           </div>
 
           {/* Attachment Preview Chips */}
-          <ComposerAttachmentPreview files={attachedFiles} tags={tags} onRemoveFile={handleRemoveFile} onRemoveTag={handleRemoveTag} />
+          <ComposerAttachmentPreview
+            files={attachedFiles}
+            tags={tags}
+            onRemoveFile={handleRemoveFile}
+            onRemoveTag={handleRemoveTag}
+            renderDocument={(f) => (
+              <ComposerDocumentCard
+                file={f}
+                courses={courses}
+                required={postType === 'document'}
+                onClassify={handleClassify}
+                onUseDuplicate={handleUseDuplicate}
+                onRemove={handleRemoveFile}
+              />
+            )}
+          />
 
           {/* Expanded Inline Tag Input */}
           {isExpanded && showTagInput && (

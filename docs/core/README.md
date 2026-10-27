@@ -29,6 +29,7 @@
 | [**`22-n7ai-context.md`**](./22-n7ai-context.md) | N7AI hiểu ngữ cảnh theo nơi gọi (bình luận, nhóm, chat cá nhân). | ✅ Đã triển khai |
 | [**`23-n7ai-folders.md`**](./23-n7ai-folders.md) | Thư mục lịch sử N7AI (kéo thả) và panel phải: Tài liệu (xem trước) · Công cụ (tạo học liệu). | ✅ Đã triển khai |
 | [**`24-n7ai-sources.md`**](./24-n7ai-sources.md) | Tài liệu của cuộc trò chuyện N7AI (tệp, văn bản dán, link web, YouTube), N7AI đọc PowerPoint / Excel, kéo thả tệp. | ✅ Đã triển khai |
+| [**`25-document-library.md`**](./25-document-library.md) | Kho tài liệu: tệp đính kèm bài viết thành tài liệu thật, phân loại môn / loại / năm học, đưa vào kho môn học, chống trùng. | ✅ Đợt 1 |
 
 ---
 

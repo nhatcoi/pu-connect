@@ -45,7 +45,7 @@ const ALLOWED_TYPES: Record<UploadFolder, string[]> = {
   chat: DOCUMENT_TYPES // tệp đính kèm tin nhắn
 }
 
-function validateUpload(folder: string | undefined, files: Express.Multer.File[]): UploadFolder {
+export function validateUpload(folder: string | undefined, files: Express.Multer.File[]): UploadFolder {
   const target = (folder || 'posts/images') as UploadFolder
   const allowed = ALLOWED_TYPES[target]
   if (!allowed) throw new BadRequestException('Thư mục tải lên không hợp lệ')

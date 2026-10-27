@@ -61,7 +61,8 @@ export const MIGRATIONS = [
   'admin-groups-upgrade.sql',
   'moderation-terms-upgrade.sql',
   'user-reports-upgrade.sql',
-  'moderation-upgrade.sql'
+  'moderation-upgrade.sql',
+  'documents-library-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

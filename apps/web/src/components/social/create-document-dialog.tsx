@@ -1,14 +1,17 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useAppStore } from '@/store'
 import { toast } from 'sonner'
-import { FileUp, Loader2 } from 'lucide-react'
-import { apiClient, errorMessage } from '@/lib/api-client'
-import type { DocumentItem } from '@pu/schemas'
+import { FileUp, Loader2, Paperclip } from 'lucide-react'
+import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, type DocCategory, type DocumentItem } from '@pu/schemas'
+import { apiClient, errorMessage, uploadFileToR2 } from '@/lib/api-client'
+import { useCourses } from '@/hooks/use-course'
+import { queryKeys } from '@/lib/query-keys'
 
 interface CreateDocumentDialogProps {
   open: boolean
@@ -16,52 +19,68 @@ interface CreateDocumentDialogProps {
   onSuccess?: () => void
 }
 
-export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDocumentDialogProps) {
-  const addDocument = useAppStore((state) => state.addDocument)
+const SELECT = 'w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring'
 
+// Chia sẻ tài liệu thẳng vào kho môn học (không qua bài viết): tải tệp lên R2 rồi tạo tài liệu đã phân loại
+export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDocumentDialogProps) {
+  const queryClient = useQueryClient()
+  const pathname = usePathname()
+  const { data: courses = [] } = useCourses()
+  // Mở từ trang môn học ⇒ gắn sẵn môn đó
+  const routeCode = decodeURIComponent(pathname.match(/^\/courses\/([^/]+)/)?.[1] ?? '')
+  const routeCourse = courses.find((c) => c.code.toLowerCase() === routeCode.toLowerCase())
+
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [type, setType] = useState<'pdf' | 'code' | 'sheet' | 'markdown'>('pdf')
-  const [fileUrl, setFileUrl] = useState('')
-  const [tagInput, setTagInput] = useState('')
+  const [courseId, setCourseId] = useState('')
+  const [category, setCategory] = useState<DocCategory | ''>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const effectiveCourseId = courseId || routeCourse?.id || ''
+
+  const pickFile = (f: File | undefined) => {
+    if (!f) return
+    setFile(f)
+    if (!title.trim()) setTitle(f.name.replace(/\.[A-Za-z0-9]{1,8}$/, '').replace(/_+/g, ' '))
+  }
+
+  const reset = () => {
+    setFile(null)
+    setTitle('')
+    setDescription('')
+    setCourseId('')
+    setCategory('')
+  }
 
   const handleSubmit = async () => {
-    if (!title.trim()) {
-      toast.error('Vui lòng nhập tên tài liệu hoặc đề thi')
-      return
-    }
-
-    const tags = tagInput
-      .split(',')
-      .map((t) => t.trim().toLowerCase())
-      .filter(Boolean)
+    if (!file) return toast.error('Chọn tệp tài liệu')
+    if (!title.trim()) return toast.error('Vui lòng nhập tên tài liệu')
+    if (!effectiveCourseId || !category) return toast.error('Chọn môn học và loại tài liệu')
 
     setIsSubmitting(true)
     try {
-      const response = await apiClient<{ success: boolean; data: DocumentItem }>('/documents', {
+      const uploaded = await uploadFileToR2(file, 'documents')
+      await apiClient<{ success: boolean; data: DocumentItem }>('/documents', {
         method: 'POST',
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,
-          type,
-          fileUrl: fileUrl.trim() || 'https://storage.puconnector.com/docs/' + encodeURIComponent(title),
-          fileSize: 1024 * 1024 * 2,
-          mimeType: type === 'pdf' ? 'application/pdf' : 'text/plain',
-          tags,
+          courseId: effectiveCourseId,
+          docCategory: category,
+          fileUrl: uploaded.url,
+          fileSize: uploaded.size,
+          mimeType: file.type || 'application/octet-stream',
           visibility: 'public'
         })
       })
-
-      if (response && response.data) {
-        addDocument(response.data)
-        toast.success('Đã đăng tài liệu')
+      const code = courses.find((c) => c.id === effectiveCourseId)?.code
+      if (code) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.courseDocuments(code) })
+        void queryClient.invalidateQueries({ queryKey: queryKeys.course(code) })
       }
-
-      setTitle('')
-      setDescription('')
-      setFileUrl('')
-      setTagInput('')
+      toast.success('Đã đưa tài liệu vào kho môn học')
+      reset()
       onOpenChange(false)
       onSuccess?.()
     } catch (err) {
@@ -77,60 +96,54 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
             <FileUp className="h-4 w-4 text-primary" />
-            Thêm tài liệu và đề thi học phần
+            Chia sẻ tài liệu vào kho môn học
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-3 py-2 text-xs">
-          <div>
-            <label className="font-semibold block mb-1 text-foreground">Tên tài liệu hoặc mã đề thi</label>
-            <Input
-              placeholder="Ví dụ: De_thi_Cuoi_Ky_IT101_Cau_truc_du_lieu_2025.pdf"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="bg-background text-foreground"
-            />
-          </div>
+          <input ref={inputRef} type="file" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex w-full items-center gap-2 rounded-xl border border-dashed border-border px-3 py-3 text-left hover:bg-muted/40 cursor-pointer"
+          >
+            <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="truncate text-foreground">{file ? file.name : 'Chọn tệp (PDF, Word, PowerPoint, Excel, ZIP…, tối đa 50MB)'}</span>
+          </button>
 
           <div>
-            <label className="font-semibold block mb-1 text-foreground">Mô tả tóm tắt</label>
-            <Input
-              placeholder="Tổng hợp đề thi và đáp án chi tiết..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="bg-background text-foreground"
-            />
+            <label className="font-semibold block mb-1 text-foreground">Tên tài liệu</label>
+            <Input placeholder="Đề thi cuối kỳ Cấu trúc dữ liệu 2025" value={title} onChange={(e) => setTitle(e.target.value)} className="bg-background text-foreground" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="font-semibold block mb-1 text-foreground">Định dạng</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as typeof type)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
-              >
-                <option value="pdf">Tệp PDF</option>
-                <option value="code">Mã nguồn (Code)</option>
-                <option value="sheet">Bảng tính (Excel/Sheet)</option>
-                <option value="markdown">Văn bản Markdown</option>
+              <label className="font-semibold block mb-1 text-foreground">Môn học</label>
+              <select value={effectiveCourseId} onChange={(e) => setCourseId(e.target.value)} className={SELECT}>
+                <option value="">Chọn môn</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code} · {c.name}
+                  </option>
+                ))}
               </select>
             </div>
-
             <div>
-              <label className="font-semibold block mb-1 text-foreground">Thẻ tags (Mã môn)</label>
-              <Input
-                placeholder="it101, math201, dethi"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                className="bg-background text-foreground"
-              />
+              <label className="font-semibold block mb-1 text-foreground">Loại tài liệu</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value as DocCategory | '')} className={SELECT}>
+                <option value="">Chọn loại</option>
+                {DOC_CATEGORIES.map((k) => (
+                  <option key={k} value={k}>
+                    {DOC_CATEGORY_LABELS[k]}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 
           <div>
-            <label className="font-semibold block mb-1 text-foreground">Đường dẫn tệp</label>
-            <Input placeholder="https://..." value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} className="bg-background text-foreground" />
+            <label className="font-semibold block mb-1 text-foreground">Mô tả (tùy chọn)</label>
+            <Input placeholder="Có đáp án chi tiết câu 1–5..." value={description} onChange={(e) => setDescription(e.target.value)} className="bg-background text-foreground" />
           </div>
         </div>
 
@@ -140,7 +153,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-1.5 bg-primary text-primary-foreground">
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            <span>Lưu tài liệu</span>
+            <span>Đưa vào kho</span>
           </Button>
         </DialogFooter>
       </DialogContent>
