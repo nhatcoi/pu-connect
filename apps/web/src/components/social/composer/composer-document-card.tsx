@@ -3,6 +3,7 @@
 import React from 'react'
 import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, type ClassifyDocumentInput, type Course, type DocCategory } from '@pu/schemas'
 import { AlertTriangle, FileText, Library, Loader2, Sparkles, X } from 'lucide-react'
+import { CourseSelect } from '@/components/documents/course-select'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import type { AttachedFile } from './composer-attachment-preview'
@@ -86,19 +87,13 @@ export function ComposerDocumentCard({ file, courses, required, onClassify, onUs
       {ready && !file.reused && (
         <>
           <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-            <select
-              aria-label="Môn học"
+            <CourseSelect
+              courses={courses}
               value={doc.courseId ?? ''}
-              onChange={(e) => onClassify(file, { courseId: e.target.value || null })}
-              className={SELECT}
-            >
-              <option value="">{required ? 'Chọn môn học *' : 'Môn học'}</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.code} · {c.name}
-                </option>
-              ))}
-            </select>
+              onChange={(v) => onClassify(file, { courseId: v || null })}
+              placeholder={required ? 'Chọn môn học *' : 'Môn học'}
+              className="text-[11px]"
+            />
             <select
               aria-label="Loại tài liệu"
               value={doc.docCategory ?? ''}

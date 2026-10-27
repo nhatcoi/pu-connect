@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PageAside } from '@/components/layout/page-aside'
 import { PreviewBody } from '@/components/viewer/preview-body'
+import { CourseSelect } from '@/components/documents/course-select'
 import { DocumentRow } from '@/components/documents/document-row'
 import { SaveDocumentButton } from '@/components/documents/save-document-button'
 import { docExt, docMetaLine } from '@/components/documents/document-format'
@@ -224,14 +225,7 @@ function ClassifyForm({ doc, onDone }: { doc: DocumentDetail; onDone: () => void
   return (
     <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">
       <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-3">
-        <select aria-label="Môn học" value={courseId} onChange={(e) => setCourseId(e.target.value)} className={SELECT}>
-          <option value="">Môn học</option>
-          {courses.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.code} · {c.name}
-            </option>
-          ))}
-        </select>
+        <CourseSelect courses={courses} value={courseId} onChange={setCourseId} placeholder="Môn học" />
         <select aria-label="Loại tài liệu" value={category} onChange={(e) => setCategory(e.target.value as DocCategory | '')} className={SELECT}>
           <option value="">Loại tài liệu</option>
           {DOC_CATEGORIES.map((k) => (

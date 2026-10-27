@@ -1,5 +1,6 @@
 'use client'
 
+import { CourseSelect } from '@/components/documents/course-select'
 import React, { useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
@@ -119,14 +120,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="font-semibold block mb-1 text-foreground">Môn học</label>
-              <select value={effectiveCourseId} onChange={(e) => setCourseId(e.target.value)} className={SELECT}>
-                <option value="">Chọn môn</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} · {c.name}
-                  </option>
-                ))}
-              </select>
+              <CourseSelect courses={courses} value={effectiveCourseId} onChange={setCourseId} placeholder="Chọn môn" className="w-full h-9" />
             </div>
             <div>
               <label className="font-semibold block mb-1 text-foreground">Loại tài liệu</label>

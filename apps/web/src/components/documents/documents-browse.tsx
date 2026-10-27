@@ -11,6 +11,7 @@ import { useDocumentBrowse } from '@/hooks/use-document-library'
 import { useLoadMore } from '@/hooks/use-load-more'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { CourseSelect } from './course-select'
 import { DocumentRow } from './document-row'
 
 const SELECT = 'h-8 min-w-0 rounded-full border border-input bg-background px-3 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer'
@@ -44,14 +45,7 @@ export function DocumentsBrowse({ courseCode }: { courseCode?: string } = {}) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {!courseCode && (
-            <select aria-label="Môn học" value={course} onChange={(e) => setCourse(e.target.value)} className={cn(SELECT, 'max-w-[220px]')}>
-              <option value="">Mọi môn</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.code}>
-                  {c.code} · {c.name}
-                </option>
-              ))}
-            </select>
+            <CourseSelect courses={courses} value={course} onChange={setCourse} valueBy="code" placeholder="Mọi môn" className="h-8 max-w-[220px] rounded-full px-3" />
           )}
           <select aria-label="Sắp xếp" value={sort} onChange={(e) => setSort(e.target.value as 'popular' | 'newest')} className={SELECT}>
             <option value="popular">Nhiều lượt tải</option>
