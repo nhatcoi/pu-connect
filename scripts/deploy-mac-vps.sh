@@ -178,6 +178,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/bot-governance-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/bot-actions-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/bot-soul-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/bot-jobs-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/academic-units-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-models-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-providers-upgrade.sql
@@ -229,30 +230,12 @@ cat > /etc/systemd/system/pu-web.service.d/slot.conf << 'UNIT'
 EnvironmentFile=-/var/www/pu-connector/.web-slot.env
 UNIT
 
-# Bot Simulator daemon config
-cat > /etc/systemd/system/pu-bot.service << 'UNIT'
-[Unit]
-Description=PU Connector Bot Simulator
-After=network.target docker.service pu-api.service
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/var/www/pu-connector
-ExecStart=/usr/bin/node tools/bot-simulator/daemon.mjs
-Restart=always
-RestartSec=10
-MemoryMax=200M
-Environment=NODE_ENV=production
-Environment=BOT_API_URL=https://puc.vnhat.dev/api
-EnvironmentFile=/var/www/pu-connector/.env
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=pu-bot
-UNIT
+# Bot chạy trong API (Admin → Bot → Job); daemon pu-bot cũ đã bỏ
+systemctl disable --now pu-bot 2>/dev/null || true
+rm -f /etc/systemd/system/pu-bot.service
 
 systemctl daemon-reload
-systemctl enable pu-api pu-web pu-bot
+systemctl enable pu-api pu-web
 systemctl restart pu-api
 systemctl restart pu-web
 
@@ -262,9 +245,6 @@ sleep 5
 # Verify services
 systemctl is-active --quiet pu-api && echo "pu-api (NestJS): ACTIVE" || { echo "pu-api: FAILED"; exit 1; }
 systemctl is-active --quiet pu-web && echo "pu-web (Next.js): ACTIVE" || { echo "pu-web: FAILED"; exit 1; }
-systemctl restart pu-bot
-sleep 2
-systemctl is-active --quiet pu-bot && echo "pu-bot (Bot Simulator): ACTIVE" || echo "pu-bot: FAILED (xem journalctl -u pu-bot)"
 
 # Cấu hình Nginx Admin Console
 cp scripts/ops/nginx-admin-puc.conf /etc/nginx/sites-available/admin-puc.vnhat.dev.conf 2>/dev/null || true

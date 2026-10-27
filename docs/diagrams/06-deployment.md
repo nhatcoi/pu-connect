@@ -12,7 +12,6 @@ flowchart LR
     nginx["<b>nginx</b> :443 (Let's Encrypt)<br/>:80 → 301 HTTPS"]
     subgraph systemd["systemd"]
       web["<b>pu-web.service</b><br/>next start :3000"]
-      bot["<b>pu-bot.service</b><br/>node tools/bot-simulator/daemon.mjs<br/>điều khiển từ Admin (mặc định tắt)"]
       api["<b>pu-api.service</b><br/>node dist/main.js :4001<br/>NODE_ENV=production<br/>EnvironmentFile=.env"]
     end
     subgraph docker["Docker Compose"]
@@ -96,3 +95,4 @@ Bucket R2 public ⇒ backup luôn mã hóa bằng `BACKUP_PASSPHRASE` (`.env`, g
 - 2026-10-04 — thêm cron backup DB mã hóa lên R2, healthcheck 5 phút, restore-db.sh.
 - 2026-10-04 — Postgres/Redis chỉ bind localhost (Docker bỏ qua firewall), thêm pu_redis, build tuần tự, migration push.
 - 2026-10-04 — tạo mới; thêm `location /api/socket.io` (websocket), `messaging-upgrade.sql`, session lưu Postgres.
+- 2026-10-27 — Bỏ service `pu-bot`: bot chạy trong API (`BotJobRunner`); `deploy.sh` tự `disable --now pu-bot` và xóa unit cũ.

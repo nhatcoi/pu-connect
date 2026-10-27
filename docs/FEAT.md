@@ -68,6 +68,10 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
     - **Backend ([`admin-ai-models.controller.ts`](apps/api/src/modules/admin/admin-ai-models.controller.ts))**: Hỗ trợ endpoint root `@Patch()` nhận `currentId` trực tiếp trong request body, cùng route wildcard `@Patch(':id(*)')` và `@Delete(':id(*)')`.
     - **Admin Console ([`use-llm.ts`](apps/admin/src/features/llm/use-llm.ts))**: Gửi cập nhật model qua `PATCH /admin/ai/models` với `currentId` trong request body JSON, an toàn tuyệt đối với mọi ký tự đặc biệt; đồng thời hỗ trợ xóa model qua query parameter `?id=...`.
 
+- [x] **Bot theo Job (2026-10-27)**: bỏ hệ bot phức tạp (daemon, quyền/chủ đề/hạn mức, bộ chỉ huy). Admin nhập bài đã sưu tầm (`.xlsx`/`.csv`/`.json`, đủ tiêu đề, nội dung, ảnh, thẻ, loại bài, môn, cộng đồng, khảo sát, giờ đăng) → tạo **job** giao cho một bot → bot đăng theo lịch; bật *Tự trả lời* / *Tự thả tim* thì bot phản hồi bình luận của người thật ở các bài của job. Chi tiết: [`docs/core/13-admin-console.md`](core/13-admin-console.md#bot-admin--bot).
+  - **Backend**: `apps/api/src/modules/admin/bots/` (`bot-jobs.service.ts`, `bot-job-runner.service.ts`, `bot-accounts.service.ts`), migration `bot-jobs-upgrade.sql`.
+  - **Admin**: `apps/admin/src/features/bots/` (`jobs-card`, `job-create-dialog`, `job-detail-dialog`, `bot-accounts-card`, `job-sheet.ts`).
+
 - [x] **Tái cấu trúc & Tinh gọn toàn diện Hệ thống Bot & Bộ điều hành Bot (Bot Commander) (2026-10-22)**:
   - **Khởi tạo Bot 1-click & Mặc định sẵn sàng**:
     - Khi tạo bot mới, hệ thống tự động kích hoạt bot (`enabled: true, can_post: true, can_comment: true, can_like: true, interact_humans: true`), không bắt admin phải qua các modal cấu hình thứ cấp để cấp quyền.

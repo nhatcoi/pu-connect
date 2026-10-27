@@ -1,109 +1,86 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, ParseUUIDPipe, Patch, Post, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
-import type { AdminBotAccountInput, AdminBotAccountUpdate, BotGenerateContentInput, BotImportInput, BotImportMapRequest, AdminBotCommandInput, AdminBotControlInput, AdminBotProfileInput, AdminBotTopicInput } from '@pu/schemas'
+import type { AdminBotAccountInput, AdminBotAccountUpdate, AdminBotJobInput, AdminBotJobPatch, AdminBotOverview } from '@pu/schemas'
 import { requireUserId } from '../../common/http/current-user'
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe'
 import { AdminGuard, RequireAdminPermission } from './admin.guard'
-import { AdminBotsService } from './admin-bots.service'
-import { BotImportService } from './bot-import/bot-import.service'
-import {
-  BotAccountCreateSchema,
-  BotImportBodySchema,
-  BotImportMapBodySchema,
-  BotAccountUpdateSchema,
-  BotActivityQuerySchema,
-  BotCommandBodySchema,
-  BotControlBodySchema,
-  BotGenerateContentSchema,
-  BotProfileBodySchema,
-  BotTopicBodySchema,
-  type BotActivityQuery
-} from './dto/admin-bots.dto'
+import { BotAccountsService } from './bots/bot-accounts.service'
+import { BotJobsService } from './bots/bot-jobs.service'
+import { BOT_USERNAME, BotAccountCreateSchema, BotAccountUpdateSchema, BotJobCreateSchema, BotJobPatchSchema } from './dto/admin-bots.dto'
 
-const USERNAME = /^[a-zA-Z0-9._]{1,40}$/
+const username = (v: string) => (BOT_USERNAME.test(v) ? v : '')
 
 @Controller('admin/bots')
 @UseGuards(AdminGuard)
 @RequireAdminPermission('bots:manage')
 export class AdminBotsController {
   constructor(
-    private readonly bots: AdminBotsService,
-    private readonly importer: BotImportService
+    private readonly accounts: BotAccountsService,
+    private readonly jobs: BotJobsService
   ) {}
 
+  private async overview(): Promise<AdminBotOverview> {
+    const [bots, jobs] = await Promise.all([this.accounts.list(), this.jobs.list()])
+    return { bots, jobs }
+  }
+
   @Get()
-  overview() {
-    return this.bots.overview()
-  }
-
-  @Get('activity')
-  activity(@Query(new ZodValidationPipe(BotActivityQuerySchema)) q: BotActivityQuery) {
-    return this.bots.activity(q)
-  }
-
-  @Patch('control')
-  control(@Body(new ZodValidationPipe(BotControlBodySchema)) body: AdminBotControlInput, @Req() req: Request) {
-    return this.bots.setControl(requireUserId(req), body)
-  }
-
-  @Patch('profiles/:username')
-  profile(@Param('username') username: string, @Body(new ZodValidationPipe(BotProfileBodySchema)) body: AdminBotProfileInput, @Req() req: Request) {
-    return this.bots.updateProfile(requireUserId(req), USERNAME.test(username) ? username : '', body)
-  }
-
-  @Put('topics')
-  upsertTopic(@Body(new ZodValidationPipe(BotTopicBodySchema)) body: AdminBotTopicInput, @Req() req: Request) {
-    return this.bots.upsertTopic(requireUserId(req), body)
-  }
-
-  @Delete('topics/:slug')
-  deleteTopic(@Param('slug') slug: string, @Req() req: Request) {
-    return this.bots.deleteTopic(requireUserId(req), slug)
+  get() {
+    return this.overview()
   }
 
   @Post('accounts')
-  createAccount(@Body(new ZodValidationPipe(BotAccountCreateSchema)) body: AdminBotAccountInput, @Req() req: Request) {
-    return this.bots.createAccount(requireUserId(req), body)
+  async createAccount(@Body(new ZodValidationPipe(BotAccountCreateSchema)) body: AdminBotAccountInput, @Req() req: Request) {
+    await this.accounts.create(requireUserId(req), body)
+    return this.overview()
   }
 
   @Patch('accounts/:username')
-  updateAccount(@Param('username') username: string, @Body(new ZodValidationPipe(BotAccountUpdateSchema)) body: AdminBotAccountUpdate, @Req() req: Request) {
-    return this.bots.updateAccount(requireUserId(req), USERNAME.test(username) ? username : '', body)
+  async updateAccount(@Param('username') name: string, @Body(new ZodValidationPipe(BotAccountUpdateSchema)) body: AdminBotAccountUpdate, @Req() req: Request) {
+    await this.accounts.update(requireUserId(req), username(name), body)
+    return this.overview()
   }
 
   @Delete('accounts/:username')
-  deleteAccount(@Param('username') username: string, @Req() req: Request) {
-    return this.bots.deleteAccount(requireUserId(req), USERNAME.test(username) ? username : '')
+  async deleteAccount(@Param('username') name: string, @Req() req: Request) {
+    await this.accounts.remove(requireUserId(req), username(name))
+    return this.overview()
   }
 
-  @Delete('commands/:id')
-  cancelCommand(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
-    return this.bots.cancelCommand(requireUserId(req), id)
+  // Tạo job từ file đã parse ở trình duyệt; dryRun=true chỉ kiểm tra từng dòng
+  @Post('jobs')
+  @HttpCode(HttpStatus.OK)
+  createJob(@Body(new ZodValidationPipe(BotJobCreateSchema)) body: AdminBotJobInput, @Req() req: Request) {
+    return this.jobs.create(requireUserId(req), body)
   }
 
-  @Post('import')
-  importRows(@Body(new ZodValidationPipe(BotImportBodySchema)) body: BotImportInput, @Req() req: Request) {
-    return this.importer.import(requireUserId(req), body)
+  @Get('jobs/:id')
+  jobDetail(@Param('id', ParseUUIDPipe) id: string) {
+    return this.jobs.detail(id)
   }
 
-  @Post('import/map-columns')
-  mapColumns(@Body(new ZodValidationPipe(BotImportMapBodySchema)) body: BotImportMapRequest) {
-    return this.importer.mapColumns(body)
+  @Patch('jobs/:id')
+  async patchJob(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(BotJobPatchSchema)) body: AdminBotJobPatch, @Req() req: Request) {
+    await this.jobs.patch(requireUserId(req), id, body)
+    return this.overview()
   }
 
-  @Get('recent-posts')
-  recentPosts() {
-    return this.bots.recentPosts()
+  @Delete('jobs/:id')
+  async deleteJob(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    await this.jobs.remove(requireUserId(req), id)
+    return this.overview()
   }
 
-  @Post('generate-content')
-  generateContent(@Body(new ZodValidationPipe(BotGenerateContentSchema)) body: BotGenerateContentInput) {
-    return this.bots.generateContent(body)
+  @Post('jobs/:id/posts/:postId/publish')
+  @HttpCode(HttpStatus.OK)
+  async publishNow(@Param('id', ParseUUIDPipe) id: string, @Param('postId', ParseIntPipe) postId: number, @Req() req: Request) {
+    await this.jobs.publishNow(requireUserId(req), id, postId)
+    return this.jobs.detail(id)
   }
 
-  @Post('commands')
-  @HttpCode(HttpStatus.ACCEPTED)
-  command(@Body(new ZodValidationPipe(BotCommandBodySchema)) body: AdminBotCommandInput, @Req() req: Request) {
-    return this.bots.enqueue(requireUserId(req), body)
+  @Delete('jobs/:id/posts/:postId')
+  async removePost(@Param('id', ParseUUIDPipe) id: string, @Param('postId', ParseIntPipe) postId: number, @Req() req: Request) {
+    await this.jobs.removePost(requireUserId(req), id, postId)
+    return this.jobs.detail(id)
   }
 }

@@ -64,12 +64,14 @@ export const ACTION_LABELS: Record<string, string> = {
   'course.update': 'Sửa học phần',
   'document.delete': 'Xóa tài liệu',
   'system.broadcast': 'Gửi thông báo',
-  'bot.control': 'Điều khiển Bot (bật/tắt, tốc độ)',
-  'bot.command': 'Gửi lệnh thủ công cho Bot',
-  'bot.profile': 'Sửa quyền/hạn mức Bot',
-  'bot.topic': 'Sửa chủ đề Bot',
-  'bot.topic_delete': 'Xóa chủ đề Bot',
-  'bot.feed_review': 'Duyệt bài crawl của Bot'
+  'bot.account_create': 'Tạo bot',
+  'bot.account_update': 'Sửa bot',
+  'bot.account_delete': 'Xóa bot',
+  'bot.job_create': 'Tạo job đăng bài của Bot',
+  'bot.job_update': 'Sửa job Bot (bật/tắt, tự trả lời/thả tim)',
+  'bot.job_delete': 'Xóa job Bot',
+  'bot.job_post_now': 'Đăng ngay / thử lại bài của job Bot',
+  'bot.job_post_remove': 'Bỏ bài khỏi job Bot'
 }
 
 const ACTION_TONE = (action: string) =>

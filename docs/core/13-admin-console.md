@@ -23,7 +23,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | Telemetry, phản hồi, ticket, skill, danh mục model N7AI | **N7AI** |
 | Từ khóa tìm nhiều / không có kết quả | **Tìm kiếm** |
 | Gửi thông báo hệ thống | **Thông báo** |
-| Bật/tắt bot mô phỏng, tốc độ, lệnh thủ công, nhật ký bot | **Bot** |
+| Nhập bài sưu tầm (Excel/JSON), job đăng bài của bot, bot tự trả lời/thả tim | **Bot** |
 | Admin đã làm gì (không sửa được) | **Nhật ký › Thao tác quản trị** |
 | Đăng nhập / sai mật khẩu / bị chặn của mọi tài khoản (lọc theo IP, @username) | **Nhật ký › Đăng nhập** |
 | Bộ lọc hay dùng | nút **View** trên mỗi trang (có sẵn + lưu riêng / chia sẻ) |
@@ -88,36 +88,42 @@ Bị báo cáo 30 ngày · bài bị ẩn 90 ngày · bị xử phạt 180 ngày
 
 ## Bot (Admin → Bot)
 
-Trang gồm một trang dọc, theo thứ tự: **công tắc daemon (tự đăng + tương tác)** · **tài khoản bot** (CRUD, soul, quyền, giao việc) · **AI & chủ đề** · **lịch đăng & việc giao (+ Import Excel)** · **nhật ký**.
+Bot = tài khoản `users.is_bot = true`. Mô hình rất đơn giản: **admin nhập bài đã sưu tầm → tạo job → bot đăng theo lịch → bot tự trả lời/thả tim bình luận ở bài của job**. Không có daemon riêng: vòng chạy (`BotJobRunner`, 15 giây/lần) nằm trong API và đăng bài qua `PostsService.create` / `CommentsService.create`, nên bài của bot đủ thông báo, @mention, tìm kiếm như bài người thật.
 
-Ba nguồn việc của bot, tách bạch: (1) **tự đăng theo soul** — daemon bật thì bot có quyền đăng tự viết bài theo soul + chủ đề; (2) **lịch import Excel** — mỗi dòng file là một bài hẹn giờ; (3) **giao tay** — admin bắt bot đăng/bình luận/thả tim. Thêm vào đó bot tự **tương tác** bot ↔ bot và bot ↔ người thật. **Tool cào dữ liệu là phần riêng** (`tools/fb-group-digest`), chỉ ra file Excel; hệ bot không còn kho/duyệt/đăng dữ liệu crawl.
+Trang gồm hai thẻ: **Job đăng bài** và **Bot**.
 
-**CRUD tài khoản bot** (tab *Tài khoản bot*): *Tạo bot* (username, tên, vai trò `student/lecturer/ta`, khoa, ngành, bio, **soul** — tính cách/sở thích/cách viết AI bám theo —, giọng văn; mật khẩu hệ thống cấp từ `BOT_PASSWORD`, bot mới mặc định không có quyền nào), *Sửa hồ sơ*, *Cấu hình* (quyền/chủ đề/hạn mức), *Xóa* (xóa hẳn bot kèm bài/bình luận/tim của bot, tính lại bộ đếm, hủy lệnh đang chờ; muốn chỉ dừng bot thì tắt *Bot đang hoạt động*). Daemon đọc danh sách bot từ DB mỗi 30 giây nên bot mới tự đăng nhập, bot đã xóa tự bị gỡ, không cần restart. Endpoint `POST/PATCH/DELETE admin/bots/accounts[/:username]`.
+**Bot** (CRUD tài khoản, `POST/PATCH/DELETE admin/bots/accounts[/:username]`): username, tên hiển thị, vai trò `student/lecturer/ta`, khoa, ngành, bio, giọng văn (tone) và **soul** (tính cách, cách viết; AI bám theo khi trả lời bình luận). Mật khẩu hệ thống cấp từ `BOT_PASSWORD`. Xóa bot xóa luôn job, bài, bình luận, tim của bot (tính lại bộ đếm).
 
-**Hành động giao cho bot** (nút *Giao việc*, hàng đợi `bot_commands`): *Đăng bài* (nội dung tự viết hoặc để AI tự viết theo soul + chủ đề của bot), *Bình luận* (nội dung tự viết hoặc AI), *Thả tim*. Mỗi việc chạy **ngay** hoặc **hẹn giờ** (`scheduled_at`; lệnh chờ hủy được), tùy chọn **AI viết lại** (giữ nguyên sự thật, không thêm thông tin; AI lỗi ⇒ lệnh thất bại, không đăng bản chưa xử lý). Việc admin giao bỏ qua hạn mức ngày nhưng bot phải tồn tại và đang bật. Endpoint `POST admin/bots/commands`, `DELETE admin/bots/commands/:id`.
+**Job** (`POST admin/bots/jobs`): một lô bài giao cho **một bot**. Nút *Tạo job*: đặt tên → chọn bot → bật/tắt *Tự trả lời bình luận* và *Tự thả tim bình luận* → chọn file `.xlsx` / `.csv` / `.json` (có nút tải mẫu Excel và JSON). Trình duyệt đọc file, **tự ghép cột** theo tên thường gặp (VI/EN; mở “Ghép cột” để chỉnh tay), rồi API **kiểm tra từng dòng** (dry-run) trước khi tạo.
 
-Bot = tài khoản `users.is_bot = true`, chạy bởi daemon `pu-bot` (`tools/bot-simulator`, không nằm trong API). Admin ↔ daemon giao tiếp qua DB, không mở cổng. **Nguyên tắc: bot chỉ làm đúng việc admin cho phép, không tương tác lung tung.**
+Cột của file (chỉ `content` bắt buộc; JSON dùng cùng tên khóa, giá trị mảng được giữ nguyên):
 
-**Kiểm soát từng bot** (nút *Cấu hình*, bảng `bot_profiles`; mặc định mọi quyền TẮT):
-- Việc được phép: đăng bài (tự viết theo soul; cũng là điều kiện để được chia bài import) · bình luận · thả tim. Công tắc *Bot đang hoạt động* tắt ⇒ bot không làm gì, kể cả lệnh thủ công.
-- Chủ đề được phép (`bot_topics`, admin thêm/sửa/xóa + từ khóa): bài tự sinh chỉ trong chủ đề của bot; bot chỉ tương tác với bài khớp từ khóa chủ đề (khớp nguyên từ, không dấu) **và** AI xác nhận liên quan (không thì bỏ qua, không bình luận, không thả tim).
-- Hạn mức mỗi ngày (giờ VN) riêng từng bot cho bài/bình luận/tim; bảng hiện số đã dùng hôm nay.
-- *Tương tác với người thật* (mặc định tắt: bot chỉ tương tác với bot). Bật: bot bình luận/thả tim bài người thật liên quan chủ đề, và **trả lời người thật bình luận dưới bài của chính bot** (bình luận 3 ngày gần đây, chưa có bot trả lời; AI thấy không có gì hữu ích thì bỏ qua). Bot không chen vào cuộc trò chuyện giữa những người thật.
-- Không còn: chat giữa các bot, bình chọn khảo sát, ảnh stock ngẫu nhiên, mẫu nội dung dự phòng. LLM lỗi hoặc không có gì hữu ích để nói ⇒ bỏ qua lượt đó. Bài/bình luận không bịa trải nghiệm hay số liệu cá nhân.
+| Cột | Ý nghĩa |
+|---|---|
+| `content` | Nội dung bài (≤ 20.000 ký tự) |
+| `title` | Tiêu đề (≤ 200) |
+| `images` | URL ảnh https, tối đa 8, cách nhau bằng `\|` hoặc xuống dòng. URL R2 giữ nguyên; URL ngoài được server tải về R2 (chặn IP nội bộ, không theo redirect, ≤ 8MB); ảnh lỗi bị bỏ kèm cảnh báo, bài vẫn nhập |
+| `tags` | Thẻ, cách nhau bằng dấu phẩy (tối đa 10) |
+| `postType` | `general` (mặc định) · `qa` · `document` · `group_recruit` · `review` |
+| `visibility` | `public` (mặc định) · `followers` · `private` |
+| `course` | Mã môn hoặc id; phải tồn tại |
+| `community` | Slug cộng đồng; phải tồn tại |
+| `pollQuestion` + `pollOptions` | Khảo sát (2–6 lựa chọn, cách nhau bằng `\|`); phải có đủ cả hai |
+| `scheduledAt` | Giờ đăng (`2026-10-21 08:30` hoặc `21/10/2026 08:30`). Bỏ trống ⇒ giãn cách đều (mặc định 30 phút/bài, chỉnh được); giờ quá khứ ⇒ đăng ngay; tối đa 1 năm |
 
-**Import Excel/CSV = lịch đăng** (nút *Import Excel* ở thẻ *Lịch đăng & việc giao*; `POST admin/bots/import`, `…/import/map-columns`): nguồn là file `.xlsx`/`.csv` từ tool crawl (`tools/fb-group-digest`, `npm run digest`) hoặc tự soạn, miễn đúng cột chuẩn (nút *Tải file mẫu*). Cột: `content` (bắt buộc), `key` (chống trùng), `title`, `images` (URL https, nhiều ảnh cách nhau bằng xuống dòng/`|`), `topic`, `bot`, `scheduled_at`, `enhance` (`ai`/`none`, mặc định `none` = đăng nguyên văn). **Mỗi dòng hợp lệ = một lệnh `post` hẹn giờ trong `bot_commands`** (payload có `content`, `imageUrls`, `hash`, `key`, `source: 'import'`): có `scheduled_at` ⇒ đăng đúng giờ; không giờ ⇒ giãn cách (mặc định 30 phút/bài, chỉnh được); giờ quá khứ ⇒ đăng ngay. Không ghi `bot` ⇒ hệ thống **chia đều** cho các bot đang bật + được phép đăng bài (nếu dòng có `topic` thì chỉ bot được cấp chủ đề đó; bot ít việc nhất trong lần import được chọn trước). Luồng: trình duyệt đọc file → **tự ghép cột** theo tên thường gặp (VI/EN), header lạ thì **AI đoán cột** (admin chỉnh được) → **kiểm tra từng dòng** (dry-run hiện bot được chia + kế hoạch: nội dung 40–3000 ký tự, từ khóa chặn, bot/chủ đề tồn tại, giờ ≤ 1 năm, trùng key/nội dung trong file và trong lịch đăng đang chờ/đã chạy) → nhập. Dòng lỗi không làm hỏng cả file; cả lô ghi trong 1 transaction (khóa `bot_control`, kiểm tra trần 500 lệnh chờ và trùng lần nữa). Lệnh import bỏ qua hạn mức ngày (admin chủ động) nhưng bot phải đang bật; sai khác với daemon tắt: lệnh vẫn chờ và chạy khi daemon sống lại. Ảnh: URL R2 giữ nguyên, URL ngoài được server tải về R2 (chỉ https, chặn IP nội bộ, không theo redirect, ≤ 8MB, ≤ 4 ảnh); ảnh lỗi bị bỏ kèm cảnh báo, bài vẫn nhập. Tối đa 200 dòng/lần. Huỷ bài chưa đến giờ ở danh sách lệnh.
+Mỗi dòng hợp lệ thành một bản ghi `bot_job_posts` (`pending`); cả lô và job ghi trong **một transaction**, tối đa 500 dòng/job. Dòng lỗi không làm hỏng cả file. **Chống trùng** theo hash nội dung đã chuẩn hóa (trong file và với mọi job khác, trừ bài đã lỗi). Bài đến giờ ⇒ runner nhận (`FOR UPDATE SKIP LOCKED`) và đăng; lỗi ⇒ `failed` kèm lý do, bấm *Thử lại* hoặc *Bỏ bài*; *Đăng ngay* đưa bài chờ lên đầu hàng. API tắt giữa lúc đăng ⇒ bài kẹt `posting` được đánh `failed` khi khởi động lại (không đăng lại để tránh trùng).
 
-**AI** (thẻ *AI viết nội dung*): model (v10, v9, n7ai-fast hoặc tên khác) và Base URL do admin chọn (`bot_control.ai_model`, `ai_base_url`; key ở env `AI_API_KEY` của VPS, không lưu DB). Dùng cho bot tự đăng theo soul, bình luận/trả lời và “AI viết lại” nội dung import.
+**Tự động tương tác** (theo cờ của job, chỉ ở bài job đã đăng): bình luận của **người thật** trong 7 ngày gần đây, sau ≥ 20 giây, chưa xử lý (`bot_job_handled`, mỗi bình luận một lần) ⇒ *thả tim* (nếu bật) và/hoặc *trả lời* (nếu bật): AI viết 1–2 câu theo bio/tone/soul của bot, bám nội dung bài, trả `SKIP` khi là spam/không cần đáp. Trần 20 bình luận bot mỗi bài; lỗi AI chỉ ghi vào `bot_job_handled.error`, không đăng gì. Bot không trả lời bot khác, không chen vào bài của người khác. Job *Tạm dừng* ⇒ không đăng, không tương tác.
 
-**Tool crawl (phần riêng)** `tools/fb-group-digest`: chạy trên máy cá nhân, lấy bài nhóm Facebook ra `out/YYYY-MM-DD.xlsx` (đúng cột chuẩn) và không nối vào bot/API ngoài việc xin URL ảnh bền qua `POST /api/bots/ingest/images` (header `x-bot-ingest-token` = `BOT_INGEST_TOKEN`; ảnh Facebook hết hạn nên cần đưa lên R2). Lấy token: `ssh root@103.195.237.112 'grep BOT_INGEST_TOKEN /var/www/pu-connector/.env'`. Luồng cũ (kho `bot_feed_items`, AI duyệt, `FeedPoster`, đăng crawl tự động) đã bỏ từ migration `bot-soul-upgrade.sql`; bảng `bot_feed_items` và các cột `feed_*` còn trong DB nhưng không dùng.
+**AI**: dùng model mặc định trong tab *N7AI → LLM* (key ở DB mã hóa hoặc env).
 
-**Kỹ thuật**: `bot_control` (bật/tắt, tốc độ, AI, heartbeat), `bot_commands` (hành động đăng bài/bình luận/thả tim, hẹn giờ `scheduled_at`, `FOR UPDATE SKIP LOCKED`), `bot_activity` (nhật ký 7 ngày), `bot_profiles` (quyền, chủ đề, hạn mức, `tone`/`major`/`soul`), `bot_topics`. Endpoint `admin/bots*` (quyền `bots:manage`, mọi thao tác ghi audit `bot.*`). Daemon Offline nếu heartbeat quá 30 giây. Mặc định mọi thứ TẮT; tài khoản bot luôn là `student/lecturer/ta`; mật khẩu `BOT_PASSWORD` trên VPS. Bot làm méo số liệu hoạt động thật ⇒ lọc theo `is_bot`. Vận hành: `journalctl -u pu-bot -f` · `systemctl restart pu-bot` · local `pnpm bot:setup` rồi `pnpm bot:sim`.
+**Tool crawl (phần riêng)** `tools/fb-group-digest`: chạy trên máy cá nhân, ra file `out/YYYY-MM-DD.xlsx` rồi admin nhập vào job. Chỉ nối vào API để xin URL ảnh bền qua `POST /api/bots/ingest/images` (header `x-bot-ingest-token` = `BOT_INGEST_TOKEN`; ảnh Facebook hết hạn nên cần đưa lên R2). Lấy token: `ssh root@103.195.237.112 'grep BOT_INGEST_TOKEN /var/www/pu-connector/.env'`. Cột file crawl cũ (`key`, `topic`, `bot`, `enhance`) bị bỏ qua.
 
-**Dọn dữ liệu bot cũ** (2026-10-20, `scripts/ops/sql/bot-cleanup.sql`): xóa bình luận/tim/chat của bot và 61 bài bot chưa có người thật tương tác; giữ 15 bài đã có người thật tương tác và hội thoại có người thật; xóa thông báo do bot gây ra, tính lại bộ đếm. Bản sao nằm ở `archive_bot_cleanup_*` (xóa khi không cần khôi phục).
+**Kỹ thuật**: bảng `bot_jobs`, `bot_job_posts`, `bot_job_handled` (migration `bot-jobs-upgrade.sql`) + `bot_profiles` (chỉ còn `tone`/`major`/`soul`). Endpoint `admin/bots*` (quyền `bots:manage`, mọi thao tác ghi audit `bot.*`). Các bảng của hệ cũ (`bot_control`, `bot_commands`, `bot_topics`, `bot_activity`, `bot_feed_items`, cột quyền/hạn mức trong `bot_profiles`) còn trong DB nhưng không dùng; lệnh đang chờ bị hủy khi migrate; daemon `pu-bot` đã bị bỏ (deploy tự tắt và xóa unit). Bot làm méo số liệu hoạt động thật ⇒ lọc theo `is_bot`. Local: `pnpm bot:setup` tạo bot mẫu.
 
 ## Vận hành
 
-- Migration: `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security`, `profile-views-upgrade.sql`, `bot-simulator-upgrade.sql`, `bot-governance-upgrade.sql`, `bot-actions-upgrade.sql`, `bot-soul-upgrade.sql` (đều trong `scripts/deploy.sh`).
+- Migration: `admin-users`, `admin-lists`, `admin-sanctions`, `admin-security`, `profile-views-upgrade.sql`, `bot-simulator-upgrade.sql`, `bot-governance-upgrade.sql`, `bot-actions-upgrade.sql`, `bot-soul-upgrade.sql`, `bot-jobs-upgrade.sql` (đều trong `scripts/deploy.sh`).
 - Job nền trong API: gỡ chế tài hết hạn (1 phút, `AdminUsersService`), điểm rủi ro + xóa nhật ký / lượt xem quá 90 ngày (10 phút, `AdminRiskService`).
 - **Chỉ một deploy tại một thời điểm**: `deploy.sh` build web vào slot rảnh `.next-a/.next-b`, hai deploy song song ghi đè slot của nhau. Kiểm tra trước: `ssh root@103.195.237.112 'pgrep -af "next build|rsync"'`.
 - `deploy.sh` rsync **thư mục làm việc** (cả file chưa commit). File ghi chú local `*.local.md` bị loại trừ.

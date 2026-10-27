@@ -49,7 +49,12 @@ export const MIGRATIONS = [
   'quiz-upgrade.sql',
   'ai-models-upgrade.sql',
   'ai-providers-upgrade.sql',
-  'ai-llm-upgrade.sql'
+  'ai-llm-upgrade.sql',
+  'bot-simulator-upgrade.sql',
+  'bot-governance-upgrade.sql',
+  'bot-actions-upgrade.sql',
+  'bot-soul-upgrade.sql',
+  'bot-jobs-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

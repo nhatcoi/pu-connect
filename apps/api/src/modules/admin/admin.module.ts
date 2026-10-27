@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { AiModule } from '../ai/ai.module'
 import { AuthModule } from '../auth/auth.module'
+import { PostsModule } from '../posts/posts.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PersonalizationModule } from '../personalization/personalization.module'
 import { RealtimeModule } from '../realtime/realtime.module'
@@ -20,20 +21,21 @@ import { AdminUnitsController } from './admin-units.controller'
 import { AdminUnitsService } from './admin-units.service'
 import { BotIngestController } from './bot-import/bot-ingest.controller'
 import { BotImageUploadService } from './bot-import/bot-image-upload.service'
-import { BotImportService } from './bot-import/bot-import.service'
+import { BotAccountsService } from './bots/bot-accounts.service'
+import { BotJobsService } from './bots/bot-jobs.service'
+import { BotJobRunner } from './bots/bot-job-runner.service'
 import { BotIngestGuard } from './bot-import/bot-ingest.guard'
 import { StorageModule } from '../storage/storage.module'
 import { AdminNewsController } from './admin-news.controller'
 import { AdminNewsService } from './admin-news.service'
 import { AdminBotsController } from './admin-bots.controller'
-import { AdminBotsService } from './admin-bots.service'
 import { AdminTrashController } from './admin-trash.controller'
 import { AdminTrashService } from './admin-trash.service'
 import { AdminGuard } from './admin.guard'
 
 @Module({
-  imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule],
+  imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule, PostsModule],
   controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController, AdminTrashController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, AdminBotsService, AdminNewsService, BotImageUploadService, BotImportService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AdminGuard]
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, BotAccountsService, BotJobsService, BotJobRunner, AdminNewsService, BotImageUploadService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AdminGuard]
 })
 export class AdminModule {}

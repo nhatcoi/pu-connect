@@ -4,7 +4,7 @@ import type { AdminBotOverview } from '@pu/schemas'
 import { adminApi } from '@/lib/api'
 
 export const BOTS_KEY = ['admin', 'bots'] as const
-export const POLL_MS = 5_000
+const POLL_MS = 10_000
 
 export const useBotOverview = () =>
   useQuery({ queryKey: BOTS_KEY, queryFn: () => adminApi.get<AdminBotOverview>('/admin/bots'), refetchInterval: POLL_MS })

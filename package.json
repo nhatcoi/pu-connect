@@ -16,7 +16,6 @@
     "deploy:mac": "bash scripts/deploy-mac-vps.sh",
     "docs:erd": "node scripts/gen-erd.mjs",
     "user:insight": "bash scripts/ops/user-insight.sh",
-    "bot:sim": "node tools/bot-simulator/daemon.mjs",
     "bot:setup": "node tools/bot-simulator/setup-bots.mjs",
     "dev": "turbo run dev",
     "dev:fe": "turbo run dev --filter=@pu/web",
