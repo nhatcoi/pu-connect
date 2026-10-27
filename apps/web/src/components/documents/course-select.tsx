@@ -26,10 +26,12 @@ export function CourseSelect({ courses, value, onChange, placeholder, valueBy = 
   const keyOf = (c: Course) => (valueBy === 'code' ? c.code : c.id)
   const selected = courses.find((c) => keyOf(c) === value)
 
+  // A–Z theo tên (locale vi), rồi lọc theo từ khóa
+  const sorted = useMemo(() => [...courses].sort((a, b) => a.name.localeCompare(b.name, 'vi')), [courses])
   const filtered = useMemo(() => {
     const needle = normalize(q.trim())
-    return needle ? courses.filter((c) => normalize(`${c.name} ${c.code}`).includes(needle)) : courses
-  }, [courses, q])
+    return needle ? sorted.filter((c) => normalize(`${c.name} ${c.code}`).includes(needle)) : sorted
+  }, [sorted, q])
 
   const pick = (next: string) => {
     onChange(next)
