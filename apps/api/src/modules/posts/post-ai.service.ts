@@ -84,7 +84,7 @@ export class PostAiService {
     const res = await this.db.query(
       `SELECT p.title, p.content, s.content_hash, s.summary
        FROM posts p LEFT JOIN post_summaries s ON s.post_id = p.id
-       WHERE p.id = $1 AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)
+       WHERE p.id = $1 AND p.hidden_at IS NULL AND (p.archived_at IS NULL OR p.author_id = $2) AND (p.visibility = 'public' OR p.author_id = $2)
          AND NOT ${blockExistsSql('$2::uuid', 'p.author_id')}`,
       [postId, requesterId]
     )

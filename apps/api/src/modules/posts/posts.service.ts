@@ -5,6 +5,7 @@ import { MentionsService, type MentionedUser } from '../mentions/mentions.servic
 import { NotificationsService } from '../notifications/notifications.service'
 import { snippet } from '../notifications/notification.types'
 import { blockExistsSql } from '../blocks/blocks.sql'
+import { postListedSql, postOpenableSql } from './post-access.sql'
 import { hotScoreSql, rankedScoreSql, seenFactorSql, seenJoinSql } from './feed-ranking.sql'
 import { featuredCommentsSql } from './featured-comment.sql'
 import { PostDocumentsService } from '../documents/post-documents.service'
@@ -58,6 +59,13 @@ export interface NewPostsSummary {
   count: number
   authors: { id: string; username: string; displayName: string; avatarUrl: string | null }[]
 }
+
+// Loại bài của UI → giá trị enum trong DB
+const DB_POST_TYPE: Record<string, string> = { general: 'general', qa: 'question', document: 'resource_share', group_recruit: 'pbl_recruitment', review: 'review' }
+const VISIBILITIES = ['public', 'followers', 'private']
+
+const DB_POST_TYPES = new Set(Object.values(DB_POST_TYPE))
+const toDbPostType = (type = 'general'): string => DB_POST_TYPE[type] ?? (DB_POST_TYPES.has(type) ? type : 'general')
 
 // Đếm tối đa N bài mới (pill hiển thị "N+")
 const NEW_POSTS_MAX = 50
@@ -237,8 +245,13 @@ export class PostsService {
       joins += ` LEFT JOIN users cu ON cu.id = $1`
     }
 
-    // Bài bị admin ẩn không xuất hiện trên bảng tin
-    let whereClause = ` WHERE p.hidden_at IS NULL`
+    // Bài bị admin ẩn không xuất hiện trên bảng tin; riêng tư / chỉ người theo dõi / lưu trữ theo quyền xem
+    // Mục Lưu trữ: chỉ bài lưu trữ của chính mình
+    const viewer = currentUserId ? '$1' : undefined
+    let whereClause =
+      feedType === 'archived'
+        ? ` WHERE p.hidden_at IS NULL AND ${viewer ? 'p.author_id = $1 AND p.archived_at IS NOT NULL' : '1=0'}`
+        : ` WHERE p.hidden_at IS NULL AND ${postListedSql(viewer)}`
     // Ẩn bài của người có quan hệ chặn với mình
     if (currentUserId) whereClause += ` AND NOT ${blockExistsSql('$1', 'p.author_id')}`
 
@@ -263,6 +276,8 @@ export class PostsService {
         whereClause += ` AND 1=0`
       }
       orderBy = `ORDER BY p.created_at DESC`
+    } else if (feedType === 'archived') {
+      orderBy = `ORDER BY p.archived_at DESC`
     } else if (feedType === 'qa') {
       whereClause += ` AND p.post_type = 'question'`
     } else if (feedType === 'courses') {
@@ -296,7 +311,7 @@ export class PostsService {
     }
 
     sql += ` FROM posts p JOIN users u ON p.author_id = u.id LEFT JOIN courses c ON p.course_id = c.id LEFT JOIN communities comm ON p.community_id = comm.id WHERE p.id = $1
-             AND (p.hidden_at IS NULL${currentUserId ? ' OR p.author_id = $2' : ''}) LIMIT 1`
+             AND (p.hidden_at IS NULL${currentUserId ? ' OR p.author_id = $2' : ''}) AND ${postOpenableSql(currentUserId ? '$2' : undefined)} LIMIT 1`
 
     const res = await this.db.query(sql, params)
     if (res.rows.length === 0) {
@@ -355,16 +370,7 @@ export class PostsService {
       }
 
       // 3. Normalize post_type
-      let dbPostType = 'general'
-      if (data.postType === 'qa' || (data.postType as any) === 'question') {
-        dbPostType = 'question'
-      } else if (data.postType === 'document' || (data.postType as any) === 'resource_share') {
-        dbPostType = 'resource_share'
-      } else if (data.postType === 'group_recruit' || (data.postType as any) === 'pbl_recruitment') {
-        dbPostType = 'pbl_recruitment'
-      } else if (data.postType === 'review') {
-        dbPostType = 'review'
-      }
+      const dbPostType = toDbPostType(data.postType)
 
       // 3.1. Ẩn danh: chỉ bài hỏi đáp công khai, có hạn mức 24h
       if (anonymous) {
@@ -560,10 +566,20 @@ export class PostsService {
     }
   }
 
+  // Sửa bài (tác giả hoặc admin): nội dung, loại bài, học phần, quyền xem, thẻ, ảnh; chỉ trường được gửi mới đổi
   async update(postId: string, userId: string, data: UpdatePostInput): Promise<PostItem> {
+    if (data.visibility !== undefined && !VISIBILITIES.includes(data.visibility)) throw new BadRequestException('Chế độ hiển thị không hợp lệ')
+    if (data.postType !== undefined && !(data.postType in DB_POST_TYPE)) throw new BadRequestException('Loại bài không hợp lệ')
+    if (data.content !== undefined && !data.content.trim()) throw new BadRequestException('Nội dung bài viết không được để trống')
+    const textChanged = data.title !== undefined || data.content !== undefined
+
+    // Sửa nội dung cũng qua kiểm duyệt như lúc đăng (từ cấm ⇒ chặn; hate ⇒ ẩn chờ admin)
+    const verdict = textChanged ? await this.moderation.check({ text: [data.title, data.content].filter(Boolean).join('\n'), userId, surface: 'post' }) : null
+    if (verdict?.action === 'block') throw new BadRequestException('Nội dung chứa ngôn từ không phù hợp với quy tắc cộng đồng')
+
     let mentioned: MentionedUser[] = []
-    const updated = await this.db.transaction(async (client) => {
-      const postRes = await client.query(`SELECT p.*, u.role as author_role FROM posts p JOIN users u ON p.author_id = u.id WHERE p.id = $1 LIMIT 1`, [postId])
+    await this.db.transaction(async (client) => {
+      const postRes = await client.query(`SELECT * FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [postId])
       if (postRes.rows.length === 0) {
         throw new NotFoundException('Bài viết không tồn tại')
       }
@@ -576,17 +592,58 @@ export class PostsService {
         throw new ForbiddenException('Bạn không có quyền chỉnh sửa bài viết này')
       }
 
-      const newTitle = data.title !== undefined ? data.title : post.title
-      const newContent = data.content !== undefined ? data.content : post.content
-      const newTags = data.tags !== undefined ? data.tags : post.tags
+      const visibility = data.visibility ?? (VISIBILITIES.includes(post.visibility) ? post.visibility : 'public')
+      const dbPostType = data.postType !== undefined ? toDbPostType(data.postType) : post.post_type
+      // Bài ẩn danh: luôn là hỏi đáp công khai (giữ như lúc đăng)
+      if (post.is_anonymous && (visibility !== 'public' || dbPostType !== 'question')) {
+        throw new BadRequestException('Bài ẩn danh phải là hỏi đáp ở chế độ công khai')
+      }
 
-      await client.query(`UPDATE posts SET title = $1, content = $2, tags = $3, updated_at = NOW() WHERE id = $4`, [newTitle, newContent, newTags, postId])
+      // Học phần: null/'' = gỡ; giá trị mới phải tồn tại (id hoặc mã)
+      let courseId: string | null = post.course_id
+      if (data.courseId !== undefined) {
+        if (!data.courseId) courseId = null
+        else {
+          const courseRes = await client.query(`SELECT id FROM courses WHERE id::text = $1 OR code ILIKE $1 LIMIT 1`, [data.courseId])
+          if (courseRes.rows.length === 0) throw new BadRequestException('Học phần không tồn tại')
+          courseId = courseRes.rows[0].id
+        }
+      }
+
+      const title = data.title !== undefined ? data.title.trim() : post.title
+      const content = data.content !== undefined ? data.content : post.content
+      const tags = data.tags !== undefined ? data.tags : post.tags
+      const mediaUrls = data.mediaUrls !== undefined ? data.mediaUrls : post.media_urls
+
+      await client.query(
+        `UPDATE posts SET title = $2, content = $3, tags = $4, post_type = $5, course_id = $6, visibility = $7, media_urls = $8, updated_at = NOW() WHERE id = $1`,
+        [postId, title, content, tags, dbPostType, courseId, visibility, mediaUrls]
+      )
+
+      if (courseId !== post.course_id) {
+        if (post.course_id) await client.query(`UPDATE courses SET post_count = GREATEST(0, post_count - 1) WHERE id = $1`, [post.course_id])
+        if (courseId) await client.query(`UPDATE courses SET post_count = post_count + 1 WHERE id = $1`, [courseId])
+      }
+
+      // Tài liệu đính kèm theo quyền xem của bài (không công khai ⇒ riêng tư)
+      if (visibility !== post.visibility) {
+        await client.query(
+          `UPDATE documents d SET visibility = CASE WHEN $2 = 'public' THEN 'public' ELSE 'private' END, updated_at = NOW()
+            FROM post_documents pd WHERE pd.post_id = $1 AND pd.document_id = d.id AND d.owner_id = $3`,
+          [postId, visibility, post.author_id]
+        )
+      }
+
+      if (verdict?.action === 'hold') {
+        await client.query(`UPDATE posts SET hidden_at = NOW(), hidden_reason = $2 WHERE id = $1`, [postId, `auto-moderation: ${verdict.reason}`])
+      }
 
       // Chỉ người mới được nhắc mới nhận thông báo
-      mentioned = await this.mentions.record(client, 'post', postId, userId, newTitle, newContent)
-
-      return this.findOne(postId, userId)
+      if (textChanged) mentioned = await this.mentions.record(client, 'post', postId, userId, title, content)
     })
+
+    // Đọc lại sau khi commit (findOne dùng kết nối khác, không thấy dữ liệu chưa commit)
+    const updated = await this.findOne(postId, userId)
 
     const editMentions = this.mentions.toNotifications(mentioned, {
       sourceType: 'post',
@@ -597,6 +654,21 @@ export class PostsService {
     })
     void this.notifications.dispatch(updated.isAnonymous ? editMentions.map(anonymizeNotification) : editMentions)
     return updated
+  }
+
+  // Lưu trữ / bỏ lưu trữ (chỉ tác giả): bài lưu trữ biến khỏi bảng tin, tìm kiếm, hồ sơ; không mất bình luận / lượt thích
+  async setArchived(postId: string, userId: string, archived: boolean): Promise<{ success: boolean; archivedAt: string | null }> {
+    const res = await this.db.query(`SELECT author_id FROM posts WHERE id = $1 LIMIT 1`, [postId])
+    if (res.rows.length === 0) throw new NotFoundException('Bài viết không tồn tại')
+    if (res.rows[0].author_id !== userId) throw new ForbiddenException('Chỉ tác giả mới lưu trữ được bài viết này')
+
+    // Lưu trữ cũng bỏ ghim khỏi hồ sơ
+    const upd = await this.db.query(
+      `UPDATE posts SET archived_at = CASE WHEN $2 THEN COALESCE(archived_at, NOW()) ELSE NULL END, is_pinned = CASE WHEN $2 THEN FALSE ELSE is_pinned END
+        WHERE id = $1 RETURNING archived_at`,
+      [postId, archived]
+    )
+    return { success: true, archivedAt: upd.rows[0].archived_at ? new Date(upd.rows[0].archived_at).toISOString() : null }
   }
 
   async delete(postId: string, userId: string): Promise<{ success: boolean }> {
@@ -908,6 +980,8 @@ export class PostsService {
       communityName: row.community_name || null,
       facultyCode: row.faculty_code || (anonymous ? null : row.author_faculty) || null,
       targetAudience: 'everyone',
+      visibility: VISIBILITIES.includes(row.visibility) ? row.visibility : 'public',
+      archivedAt: row.archived_at ? new Date(row.archived_at).toISOString() : null,
       isPinned: !!row.is_pinned,
       isResolved: row.is_resolved || false,
       tags: row.tags || [],

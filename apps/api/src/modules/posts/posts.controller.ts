@@ -94,6 +94,18 @@ export class PostsController {
     }
   }
 
+  @Post(':id/archive')
+  async archive(@Param('id') id: string, @Req() req: Request) {
+    const userId = await this.resolveUserId(req)
+    return this.postsService.setArchived(id, userId, true)
+  }
+
+  @Delete(':id/archive')
+  async unarchive(@Param('id') id: string, @Req() req: Request) {
+    const userId = await this.resolveUserId(req)
+    return this.postsService.setArchived(id, userId, false)
+  }
+
   @Delete(':id')
   async delete(@Param('id') id: string, @Req() req: Request) {
     const userId = await this.resolveUserId(req)

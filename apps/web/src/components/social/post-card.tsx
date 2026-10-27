@@ -4,7 +4,7 @@ import { FEATURES } from '@/lib/features'
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import type { PostItem } from '@pu/schemas'
+import type { PostItem, PostVisibility } from '@pu/schemas'
 import {
   Heart,
   MessageCircle,
@@ -29,17 +29,21 @@ import {
   Pin,
   PinOff,
   EyeOff,
-  Sparkles
+  Sparkles,
+  Archive,
+  ArchiveRestore
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible'
 import { AnonymousAvatar, anonymousName } from './anonymous-author'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AcademicBadge } from '@/components/ui/academic-badge'
 import { MarkdownPreview } from '@/components/renderer/markdown-preview'
 import { PostPollCard } from './post-poll-card'
 import { EditPostDialog } from './edit-post-dialog'
+import { DeletePostDialog } from './delete-post-dialog'
+import { PostAccessBadge, POST_VISIBILITY, POST_VISIBILITY_ORDER } from './post-visibility'
 import { ReportPostDialog } from './report-post-dialog'
 import { PostAnalyticsDialog } from './post-analytics-dialog'
 import { PostMediaGallery } from './post-media-gallery'
@@ -51,7 +55,7 @@ import { N7AiMark } from '@/components/brand/pu-logo'
 import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { useAppStore } from '@/store'
 import { useFeatureEnabled } from '@/hooks/use-settings'
-import { apiClient } from '@/lib/api-client'
+import { apiClient, errorMessage } from '@/lib/api-client'
 import { graphqlClient } from '@/lib/graphql-client'
 import { markdownToPlainText } from '@/lib/plain-text'
 import { cn, formatRelativeTime } from '@/lib/utils'
@@ -151,6 +155,8 @@ export function PostCard({
     [queryClient, initialPost.id]
   )
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
   const [isShareChatOpen, setIsShareChatOpen] = useState(false)
@@ -319,19 +325,48 @@ export function PostCard({
     toast.success('Đã ẩn bài viết khỏi bảng tin')
   }
 
-  // Handle Delete Post
+  // Xóa bài (đã xác nhận trong hộp thoại)
   const handleDeletePost = async () => {
-    if (!confirm('Bạn có chắc chắn muốn xóa bài viết này không? Toàn bộ thảo luận sẽ bị gỡ bỏ.')) return
-
+    setIsDeleting(true)
     try {
       await apiClient(`/posts/${post.id}`, { method: 'DELETE' })
       toast.success('Đã xóa bài viết')
       removePostEverywhere(queryClient, post.id)
-      if (onDeleteSuccess) {
-        onDeleteSuccess(post.id)
-      }
+      setIsDeleteDialogOpen(false)
+      onDeleteSuccess?.(post.id)
     } catch {
       toast.error('Không thể xóa bài viết. Vui lòng thử lại!')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  // Lưu trữ / bỏ lưu trữ: bài rời khỏi danh sách hiện tại, mục Lưu trữ và bảng tin tải lại khi mở
+  const handleToggleArchive = async () => {
+    const archive = !post.archivedAt
+    try {
+      await apiClient(`/posts/${post.id}/archive`, { method: archive ? 'POST' : 'DELETE' })
+      removePostEverywhere(queryClient, post.id)
+      void queryClient.invalidateQueries({ queryKey: ['feed'] })
+      toast.success(archive ? 'Đã lưu trữ bài viết. Xem lại ở mục Lưu trữ trên trang cá nhân' : 'Đã bỏ lưu trữ, bài viết hiển thị lại')
+      onDeleteSuccess?.(post.id)
+    } catch (err) {
+      toast.error(errorMessage(err, archive ? 'Không thể lưu trữ bài viết' : 'Không thể bỏ lưu trữ bài viết'))
+    }
+  }
+
+  // Đổi nhanh quyền xem (công khai / người theo dõi / chỉ mình tôi)
+  const handleChangeVisibility = async (next: PostVisibility) => {
+    if (next === (post.visibility ?? 'public')) return
+    try {
+      const res = await apiClient<{ success: boolean; data: PostItem }>(`/posts/${post.id}`, { method: 'PATCH', body: JSON.stringify({ visibility: next }) })
+      if (res?.data) {
+        setPost(res.data)
+        patchEverywhere(() => res.data)
+        toast.success(`Đã chuyển sang "${POST_VISIBILITY[next].label}"`)
+      }
+    } catch (err) {
+      toast.error(errorMessage(err, 'Không thể đổi quyền xem'))
     }
   }
 
@@ -443,6 +478,7 @@ export function PostCard({
                 )}
                 <span className="text-xs text-muted-foreground">·</span>
                 <span className="text-xs text-muted-foreground whitespace-nowrap">{formatRelativeTime(post.createdAt)}</span>
+                <PostAccessBadge visibility={post.visibility} archived={!!post.archivedAt} />
 
                 {/* Academic Role Badge */}
                 {!post.isAnonymous && <AcademicBadge role={post.author?.role} />}
@@ -556,38 +592,81 @@ export function PostCard({
                       </>
                     ) : (
                       <>
-                        {/* 1. Ghim / Bỏ ghim bài viết lên trang cá nhân */}
-                        <DropdownMenuItem
-                          onClick={handleTogglePin}
-                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
-                        >
-                          {post.isPinned ? (
-                            <>
-                              <PinOff className="h-4 w-4 text-amber-500 shrink-0" />
-                              <span>Bỏ ghim khỏi trang cá nhân</span>
-                            </>
-                          ) : (
-                            <>
-                              <Pin className="h-4 w-4 text-primary shrink-0" />
-                              <span>Ghim lên đầu trang cá nhân</span>
-                            </>
-                          )}
-                        </DropdownMenuItem>
-
-                        {/* 2. Chỉnh sửa bài viết */}
+                        {/* Chỉnh sửa */}
                         <DropdownMenuItem
                           onClick={() => setIsEditDialogOpen(true)}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
                         >
-                          <Pencil className="h-4 w-4 text-blue-500 shrink-0" />
+                          <Pencil className="h-4 w-4 text-primary shrink-0" />
                           <span>Chỉnh sửa bài viết</span>
                         </DropdownMenuItem>
 
+                        {/* Ghim / Bỏ ghim lên trang cá nhân (bài lưu trữ không ghim được) */}
+                        {!post.archivedAt && (
+                          <DropdownMenuItem
+                            onClick={handleTogglePin}
+                            className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
+                          >
+                            {post.isPinned ? (
+                              <>
+                                <PinOff className="h-4 w-4 text-amber-500 shrink-0" />
+                                <span>Bỏ ghim khỏi trang cá nhân</span>
+                              </>
+                            ) : (
+                              <>
+                                <Pin className="h-4 w-4 text-primary shrink-0" />
+                                <span>Ghim lên trang cá nhân</span>
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        )}
+
+                        {/* Quyền xem (bài ẩn danh luôn công khai) */}
+                        {!post.isAnonymous && (
+                          <>
+                            <DropdownMenuSeparator className="my-1" />
+                            <DropdownMenuLabel className="px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ai xem được</DropdownMenuLabel>
+                            {POST_VISIBILITY_ORDER.map((key) => {
+                              const { label, icon: VisibilityIcon } = POST_VISIBILITY[key]
+                              const selected = (post.visibility ?? 'public') === key
+                              return (
+                                <DropdownMenuItem
+                                  key={key}
+                                  onClick={() => handleChangeVisibility(key)}
+                                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
+                                >
+                                  <VisibilityIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                                  <span className="flex-1">{label}</span>
+                                  {selected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                                </DropdownMenuItem>
+                              )
+                            })}
+                          </>
+                        )}
+
                         <DropdownMenuSeparator className="my-1" />
 
-                        {/* 3. Xóa bài viết */}
+                        {/* Lưu trữ / Bỏ lưu trữ */}
                         <DropdownMenuItem
-                          onClick={handleDeletePost}
+                          onClick={handleToggleArchive}
+                          className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer text-foreground"
+                        >
+                          {post.archivedAt ? (
+                            <>
+                              <ArchiveRestore className="h-4 w-4 text-primary shrink-0" />
+                              <span>Bỏ lưu trữ</span>
+                            </>
+                          ) : (
+                            <>
+                              <Archive className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <span>Lưu trữ</span>
+                            </>
+                          )}
+                        </DropdownMenuItem>
+
+                        {/* Xóa */}
+                        <DropdownMenuItem
+                          onClick={() => setIsDeleteDialogOpen(true)}
                           className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-destructive/10 cursor-pointer text-destructive"
                         >
                           <Trash2 className="h-4 w-4 shrink-0" />
@@ -810,6 +889,9 @@ export function PostCard({
           }}
         />
       )}
+
+      {/* Xác nhận xóa bài */}
+      {isDeleteDialogOpen && <DeletePostDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen} onConfirm={handleDeletePost} isDeleting={isDeleting} />}
 
       {/* Report Post Dialog */}
       {isReportDialogOpen && <ReportPostDialog postId={post.id} open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen} />}

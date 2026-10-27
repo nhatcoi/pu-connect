@@ -18,8 +18,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { ProfileSkeleton } from '@/components/skeletons/profile-skeleton'
 import { PageAside } from '@/components/layout/page-aside'
 import { ProfileAside } from '@/components/profile/profile-aside'
+import { ProfileArchivedTab } from '@/components/profile/profile-archived-tab'
 
-type TabType = 'posts' | 'documents' | 'questions' | ProfileActivityType
+type TabType = 'posts' | 'documents' | 'questions' | 'archived' | ProfileActivityType
 
 const ACTIVITY_LABEL: Record<ProfileActivityType, string> = {
   commented: 'Bình luận',
@@ -45,7 +46,8 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   // Tab hoạt động server cho phép; chủ hồ sơ thấy ổ khoá ở mục đang ẩn với người khác
   const activityTabs = ACTIVITY_ORDER.filter((t) => profile?.activityTabs?.includes(t))
   const isPrivateToOthers = (t: ProfileActivityType) => isOwner && !me?.privacySettings?.[ACTIVITY_PRIVACY_FLAG[t]]
-  const currentTab: TabType = (activityTabs as string[]).includes(activeTab) || ['posts', 'documents', 'questions'].includes(activeTab) ? activeTab : 'posts'
+  const currentTab: TabType =
+    (activityTabs as string[]).includes(activeTab) || ['posts', 'documents', 'questions'].includes(activeTab) || (isOwner && activeTab === 'archived') ? activeTab : 'posts'
 
   return (
     <>
@@ -133,7 +135,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                       ) : (
                         ACTIVITY_LABEL[t]
                       )
-                    }))
+                    })),
+                    // Lưu trữ: chỉ chủ hồ sơ
+                    ...(isOwner ? [{ id: 'archived' as TabType, label: 'Lưu trữ' }] : [])
                   ]}
                 />
               </div>
@@ -186,6 +190,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
                   )}
                 </div>
               )}
+
+              {/* Tab Lưu trữ (chủ hồ sơ) */}
+              {currentTab === 'archived' && <ProfileArchivedTab />}
 
               {/* Tab hoạt động: đã thích / đã lưu / đã bình luận */}
               {(activityTabs as TabType[]).includes(currentTab) && (

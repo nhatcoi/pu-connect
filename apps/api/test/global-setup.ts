@@ -64,7 +64,8 @@ export const MIGRATIONS = [
   'moderation-upgrade.sql',
   'trash-upgrade.sql',
   'documents-library-upgrade.sql',
-  'document-library-personal-upgrade.sql'
+  'document-library-personal-upgrade.sql',
+  'post-manage-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

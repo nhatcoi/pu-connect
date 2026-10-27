@@ -4,6 +4,9 @@ import type { AttachedDocument } from './document.schema'
 export const PostTypeEnum = z.enum(['general', 'qa', 'document', 'group_recruit', 'review'])
 export type PostType = z.infer<typeof PostTypeEnum>
 
+export const PostVisibilityEnum = z.enum(['public', 'followers', 'private'])
+export type PostVisibility = z.infer<typeof PostVisibilityEnum>
+
 export const TargetAudienceEnum = z.enum(['everyone', 'faculty', 'course_members', 'followers'])
 export type TargetAudience = z.infer<typeof TargetAudienceEnum>
 
@@ -40,7 +43,7 @@ export const CreatePostSchema = z.object({
   // Tài liệu đã tải lên qua POST /documents/upload (bản nháp của chính người đăng)
   documentIds: z.array(z.string().uuid()).max(10).default([]),
   mediaUrls: z.array(z.string().url()).default([]),
-  visibility: z.enum(['public', 'followers', 'private']).default('public'),
+  visibility: PostVisibilityEnum.default('public'),
   recruitSlotsTotal: z.number().int().nonnegative().optional(),
   recruitSlotsFilled: z.number().int().nonnegative().optional(),
   pollQuestion: z.string().optional(),
@@ -51,10 +54,16 @@ export const CreatePostSchema = z.object({
   isAnonymous: z.boolean().default(false)
 })
 
+// Sửa bài: các trường như lúc đăng (trừ khảo sát & tệp tải lên mới); chỉ gửi trường đổi
 export const UpdatePostSchema = z.object({
   title: z.string().max(200).optional(),
   content: z.string().min(1).optional(),
-  tags: z.array(z.string()).optional()
+  tags: z.array(z.string()).optional(),
+  postType: PostTypeEnum.optional(),
+  // null = gỡ khỏi học phần
+  courseId: z.string().nullable().optional(),
+  visibility: PostVisibilityEnum.optional(),
+  mediaUrls: z.array(z.string().url()).optional()
 })
 export type UpdatePostInput = z.infer<typeof UpdatePostSchema>
 
@@ -112,6 +121,9 @@ export const PostItemSchema = z.object({
   communityName: z.string().nullable().optional(),
   facultyCode: z.string().nullable().optional(),
   targetAudience: TargetAudienceEnum.default('everyone'),
+  visibility: PostVisibilityEnum.default('public'),
+  // Có giá trị = bài đang lưu trữ (chỉ tác giả thấy)
+  archivedAt: z.string().nullable().optional(),
   isPinned: z.boolean().default(false),
   isResolved: z.boolean().default(false),
   acceptedCommentId: z.string().nullable().optional(),

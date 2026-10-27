@@ -5,6 +5,7 @@ import { blockExistsSql } from '../blocks/blocks.sql'
 import { anonymousAuthor } from '../posts/anonymity'
 import { userFacultySql } from '../academic-units/faculty-filter.sql'
 import type { SearchQueryInput, SearchResult, Course, DocumentItem, PostItem, UserSummary, StudyGroup } from '@pu/schemas'
+import { postListedSql } from '../posts/post-access.sql'
 
 type Queryable = { query: (sql: string, params?: any[]) => Promise<{ rows: any[] }> }
 type Mode = 'fts' | 'fuzzy'
@@ -261,7 +262,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         LEFT JOIN courses c ON p.course_id = c.id
         WHERE ${m.where}
           AND p.hidden_at IS NULL
-          AND (p.visibility = 'public' OR p.author_id = ${viewer}::uuid)
+          AND ${postListedSql(`${viewer}::uuid`)}
           AND (${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, 'p.author_id')})`
       if (faculty) {
         params.push(faculty)

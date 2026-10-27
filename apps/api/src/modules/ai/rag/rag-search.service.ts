@@ -77,7 +77,7 @@ export class RagSearchService {
         ? this.ids(
             `WITH q AS (SELECT to_tsquery('simple', $1) AS tsq)
              SELECT p.id FROM posts p, q
-             WHERE p.search_tsv @@ q.tsq AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)
+             WHERE p.search_tsv @@ q.tsq AND p.hidden_at IS NULL AND (p.archived_at IS NULL OR p.author_id = $2) AND (p.visibility = 'public' OR p.author_id = $2)
                ${gate ? `AND NOT EXISTS (SELECT 1 FROM post_embeddings e WHERE e.post_id = p.id AND e.model = $4 AND 1 - (e.embedding <=> $3::vector) < ${MIN_SIMILARITY})` : ''}
              ORDER BY ts_rank(p.search_tsv, q.tsq) DESC LIMIT ${CANDIDATES}`,
             [q.tsquery, userId, ...(gate ?? [])]
@@ -87,7 +87,7 @@ export class RagSearchService {
         ? this.nearest(
             `SELECT p.id, 1 - (e.embedding <=> $1::vector) AS sim
              FROM post_embeddings e JOIN posts p ON p.id = e.post_id
-             WHERE e.model = $3 AND p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = $2)
+             WHERE e.model = $3 AND p.hidden_at IS NULL AND (p.archived_at IS NULL OR p.author_id = $2) AND (p.visibility = 'public' OR p.author_id = $2)
              ORDER BY e.embedding <=> $1::vector LIMIT ${CANDIDATES}`,
             [toVectorLiteral(q.vector), userId, this.embedding.model]
           )

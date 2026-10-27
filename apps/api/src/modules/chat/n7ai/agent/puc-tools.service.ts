@@ -236,7 +236,7 @@ export class PucToolsService {
   private async publicIds(refs: Pick<ChatRef, 'type' | 'id'>[]) {
     const rows = await this.db.query(
       `SELECT id FROM documents WHERE id = ANY($1::uuid[]) AND visibility = 'public'
-       UNION ALL SELECT id FROM posts WHERE id = ANY($2::uuid[]) AND visibility = 'public' AND hidden_at IS NULL`,
+       UNION ALL SELECT id FROM posts WHERE id = ANY($2::uuid[]) AND visibility = 'public' AND hidden_at IS NULL AND archived_at IS NULL`,
       [refs.filter((r) => r.type === 'document').map((r) => r.id), refs.filter((r) => r.type === 'post').map((r) => r.id)]
     )
     return new Set<string>(rows.rows.map((r) => r.id))

@@ -10,6 +10,7 @@ import { NotFoundException, BadRequestException, UnauthorizedException, Forbidde
 import type { BlockState } from '@pu/schemas'
 import { blockExistsSql, blockStateSql } from '../../blocks/blocks.sql'
 import { ProfileAccessService } from '../../users/profile-access.service'
+import { postListedSql } from '../../posts/post-access.sql'
 
 @Resolver(() => UserType)
 export class UserResolver {
@@ -233,10 +234,10 @@ export class UserResolver {
               u.created_at as author_created_at
        FROM posts p
        JOIN users u ON p.author_id = u.id
-       WHERE p.author_id = $1 AND p.hidden_at IS NULL AND NOT p.is_anonymous
+       WHERE p.author_id = $1 AND p.hidden_at IS NULL AND NOT p.is_anonymous AND ${postListedSql('$2::uuid')}
        ORDER BY p.is_pinned DESC, p.created_at DESC
        LIMIT 50`,
-      [user.id]
+      [user.id, this.viewerId(context) ?? null]
     )
 
     return res.rows.map((row) => ({

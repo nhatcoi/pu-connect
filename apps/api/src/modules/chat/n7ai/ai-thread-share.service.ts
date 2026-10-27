@@ -97,7 +97,7 @@ export class AiThreadShareService {
   private async publicPostIds(ids: string[]): Promise<Set<string>> {
     const uuids = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id))
     if (!uuids.length) return new Set()
-    const res = await this.db.query(`SELECT id FROM posts WHERE id = ANY($1::uuid[]) AND visibility = 'public' AND hidden_at IS NULL`, [uuids])
+    const res = await this.db.query(`SELECT id FROM posts WHERE id = ANY($1::uuid[]) AND visibility = 'public' AND hidden_at IS NULL AND archived_at IS NULL`, [uuids])
     return new Set(res.rows.map((r) => String(r.id)))
   }
 }

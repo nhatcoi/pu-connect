@@ -1,7 +1,7 @@
 import type { AiThreadFolderFilter } from '@pu/schemas'
 
 // Khóa cache tập trung: mọi useQuery / invalidate / prefetch dùng chung một nguồn
-export type FeedType = 'for_you' | 'following' | 'qa' | 'courses' | 'explore' | 'bookmarks'
+export type FeedType = 'for_you' | 'following' | 'qa' | 'courses' | 'explore' | 'bookmarks' | 'archived'
 export type CommunitySort = 'hot' | 'new' | 'top'
 
 export const queryKeys = {

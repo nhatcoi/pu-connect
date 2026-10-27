@@ -18,7 +18,7 @@ const STUDY_KIND_LABEL = `CASE s.kind WHEN 'flashcards' THEN 'Flashcard' ELSE 'Q
 // Quyền xem từng loại ref (alias theo bảng; $U = người xem)
 const VISIBLE = {
   document: (u: string) => `(d.visibility = 'public' OR d.owner_id = ${u})`,
-  post: (u: string) => `(p.hidden_at IS NULL AND (p.visibility = 'public' OR p.author_id = ${u}))`,
+  post: (u: string) => `(p.hidden_at IS NULL AND (p.archived_at IS NULL OR p.author_id = ${u}) AND (p.visibility = 'public' OR p.author_id = ${u}))`,
   thread: (u: string) => `(c.type = 'ai' AND c.created_by = ${u})`,
   study_set: (u: string) => `(s.owner_id = ${u})`
 }

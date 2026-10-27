@@ -125,6 +125,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/puai-settings-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-skills-seed.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/courses-capstone-seed.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/post-manage-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-users-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-lists-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-sanctions-upgrade.sql
