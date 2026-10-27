@@ -142,13 +142,48 @@ export const AdminCourseInputSchema = z.object({
 })
 export type AdminCourseInput = z.infer<typeof AdminCourseInputSchema>
 
-export const AdminBroadcastInputSchema = z.object({
-  title: z.string().trim().min(3, 'Tiêu đề tối thiểu 3 ký tự').max(120),
-  message: z.string().trim().min(5, 'Nội dung tối thiểu 5 ký tự').max(500),
-  link: z.string().trim().max(255).optional().nullable(),
-  targetRole: z.enum(['all', ...USER_ROLES]).default('all')
-})
-export type AdminBroadcastInput = z.infer<typeof AdminBroadcastInputSchema>
+// Thông báo hệ thống: đối tượng, hẹn giờ, banner
+export interface AdminAnnouncementAudience {
+  roles?: AdminUserRole[]
+  unitIds?: string[]
+  years?: string[]
+}
+
+export interface AdminAnnouncement {
+  id: string
+  title: string
+  message: string
+  link: string | null
+  audience: AdminAnnouncementAudience
+  sendInApp: boolean
+  banner: boolean
+  bannerUntil: string | null
+  status: 'scheduled' | 'sent' | 'cancelled'
+  scheduledAt: string
+  sentAt: string | null
+  recipientsCount: number | null
+  createdBy: string | null
+  createdAt: string
+}
+
+export interface AdminAnnouncementInput {
+  title: string
+  message: string
+  link?: string | null
+  audience: AdminAnnouncementAudience
+  sendInApp: boolean
+  banner: boolean
+  bannerUntil?: string | null
+  scheduledAt?: string | null
+}
+
+// Banner hiện cho người dùng trên web
+export interface AdminAnnouncementBanner {
+  id: string
+  title: string
+  message: string
+  link: string | null
+}
 
 // ── 3. Response Interfaces ─────────────────────────────────────────────────
 

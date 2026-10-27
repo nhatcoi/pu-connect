@@ -22,7 +22,7 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — **chỉ role `ad
 | Học phần, tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
 | Telemetry, phản hồi, ticket, skill, danh mục model N7AI | **N7AI** |
 | Từ khóa tìm nhiều / không có kết quả | **Tìm kiếm** |
-| Gửi thông báo hệ thống | **Thông báo** |
+| Thông báo hệ thống: nhắm theo vai trò / đơn vị / khóa, hẹn giờ, banner đầu trang web, lịch sử và hủy | **Thông báo** |
 | Nhập bài sưu tầm (Excel/JSON), job đăng bài của bot, bot tự trả lời/thả tim | **Bot** |
 | Admin đã làm gì (không sửa được) | **Nhật ký › Thao tác quản trị** |
 | Đăng nhập / sai mật khẩu / bị chặn của mọi tài khoản (lọc theo IP, @username) | **Nhật ký › Đăng nhập** |

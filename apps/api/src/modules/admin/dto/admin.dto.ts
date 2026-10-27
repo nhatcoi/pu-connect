@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import type {
-  AdminBroadcastInput,
   AdminBulkUserInput,
   AdminCourseInput,
   AdminModerateSkillInput,
@@ -98,13 +97,6 @@ export const AdminCourseBodySchema = z.object({
   syllabusUrl: z.string().trim().max(500).optional().nullable()
 })
 
-export const AdminBroadcastBodySchema = z.object({
-  title: z.string().trim().min(3, 'Tiêu đề tối thiểu 3 ký tự').max(120),
-  message: z.string().trim().min(5, 'Nội dung tối thiểu 5 ký tự').max(500),
-  link: z.string().trim().max(255).optional().nullable(),
-  targetRole: z.enum(['all', ...USER_ROLES_RUNTIME]).default('all')
-})
-
 // ── Danh sách người dùng: query string → tham số đã chuẩn hóa ──
 const optEnum = <T extends readonly [string, ...string[]]>(values: T) =>
   z.preprocess((v) => (v === '' || v === undefined ? undefined : v), z.enum(values).optional())
@@ -175,9 +167,8 @@ const _checkPin: AdminPinPostInput = {} as z.infer<typeof AdminPinPostBodySchema
 const _checkTicket: AdminTicketStatusInput = {} as z.infer<typeof AdminTicketStatusBodySchema>
 const _checkSkill: AdminModerateSkillInput = {} as z.infer<typeof AdminModerateSkillBodySchema>
 const _checkCourse: AdminCourseInput = {} as z.infer<typeof AdminCourseBodySchema>
-const _checkBroadcast: AdminBroadcastInput = {} as z.infer<typeof AdminBroadcastBodySchema>
 const _checkBulk: AdminBulkUserInput = {} as z.infer<typeof AdminBulkUserBodySchema>
 const _checkNote: AdminUserNoteInput = {} as z.infer<typeof AdminUserNoteBodySchema>
 const _checkQuery: AdminUserQuery = {} as AdminUserQueryParsed
 void [_checkBulk, _checkNote, _checkQuery]
-void [_checkReason, _checkRole, _checkVerify, _checkPin, _checkTicket, _checkSkill, _checkCourse, _checkBroadcast]
+void [_checkReason, _checkRole, _checkVerify, _checkPin, _checkTicket, _checkSkill, _checkCourse]

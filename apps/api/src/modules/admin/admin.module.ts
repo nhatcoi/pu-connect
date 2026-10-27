@@ -25,6 +25,8 @@ import { BotAccountsService } from './bots/bot-accounts.service'
 import { BotJobsService } from './bots/bot-jobs.service'
 import { BotJobRunner } from './bots/bot-job-runner.service'
 import { BotIngestGuard } from './bot-import/bot-ingest.guard'
+import { AdminAnnouncementsController, PublicAnnouncementsController } from './announcements/announcements.controller'
+import { AnnouncementsService } from './announcements/announcements.service'
 import { StorageModule } from '../storage/storage.module'
 import { AdminNewsController } from './admin-news.controller'
 import { AdminNewsService } from './admin-news.service'
@@ -35,7 +37,7 @@ import { AdminGuard } from './admin.guard'
 
 @Module({
   imports: [RealtimeModule, PersonalizationModule, NotificationsModule, AuthModule, StorageModule, AiModule, PostsModule],
-  controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController, AdminTrashController],
-  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, BotAccountsService, BotJobsService, BotJobRunner, AdminNewsService, BotImageUploadService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AdminGuard]
+  controllers: [AdminController, AdminBotsController, AdminNewsController, BotIngestController, AdminUnitsController, AdminAiModelsController, AdminAiProvidersController, AdminAiServicesController, AdminTrashController, AdminAnnouncementsController, PublicAnnouncementsController],
+  providers: [AdminService, AdminUsersService, AdminListsService, AdminViewsService, AdminUserDataService, AdminRiskService, BotAccountsService, BotJobsService, BotJobRunner, AdminNewsService, BotImageUploadService, BotIngestGuard, AdminUnitsService, AdminAiModelsService, AdminAiProvidersService, AdminTrashService, AnnouncementsService, AdminGuard]
 })
 export class AdminModule {}

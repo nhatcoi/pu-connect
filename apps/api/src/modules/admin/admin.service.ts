@@ -5,7 +5,6 @@ import type {
   AdminBulkCommentInput,
   AdminBulkPostInput,
   AdminBulkResult,
-  AdminBroadcastInput,
   AdminCourseInput,
   AdminCourseRow,
   AdminModerateSkillInput,
@@ -459,33 +458,6 @@ export class AdminService {
   }
 
   // Phát thông báo hệ thống tới toàn bộ người dùng hoặc theo vai trò (ACID)
-  async broadcastSystemNotification(adminId: string, input: AdminBroadcastInput): Promise<{ sentCount: number }> {
-    const sentCount = await this.db.transaction(async (client) => {
-      const params: unknown[] = [input.title, input.message, input.link || null]
-      let roleFilter = ''
-      if (input.targetRole && input.targetRole !== 'all') {
-        params.push(input.targetRole)
-        roleFilter = `AND role = $${params.length}::user_role_enum`
-      }
-      const res = await client.query(
-        `INSERT INTO notifications (recipient_id, actor_id, actor_ids, actors_count, type, title, message, link, updated_at)
-         SELECT id, NULL, '{}'::uuid[], 1, 'account_verified'::notification_type_enum, $1, $2, $3, NOW()
-         FROM users
-         WHERE account_type = 'human' AND status = 'active' ${roleFilter}`,
-        params
-      )
-      const count = res.rowCount ?? 0
-      await this.audit(client, adminId, {
-        action: 'system.broadcast',
-        targetType: 'system',
-        targetId: input.targetRole,
-        details: { title: input.title, message: input.message, link: input.link, sentCount: count }
-      })
-      return count
-    })
-    return { sentCount }
-  }
-
   // ── Hàng loạt: bài viết (1 transaction, SQL theo tập, audit 1 dòng/bài) ──
   async bulkPosts(adminId: string, input: AdminBulkPostInput): Promise<AdminBulkResult> {
     const ids = [...new Set(input.ids)]

@@ -6,6 +6,7 @@ import { AuthGuard } from '@/components/auth/auth-guard'
 import { AppShellSkeleton } from '@/components/skeletons/app-shell-skeleton'
 import { Header } from '@/components/social/header'
 import { RestrictionBanner } from '@/components/layout/restriction-banner'
+import { AnnouncementBanner } from '@/components/layout/announcement-banner'
 import { Sidebar } from '@/components/social/sidebar'
 import { RightSidebar } from '@/components/social/right-sidebar'
 import { MobileBottomNav } from '@/components/navigation/mobile-bottom-nav'
@@ -91,6 +92,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Header />
           </div>
           <RestrictionBanner />
+          <AnnouncementBanner />
           <GlobalDialogs />
           {/* N7AI: thanh bên dạt sát mép trái ngoài cùng (w-full, max-w-full, px-0, gap-0), trang thường: căn giữa 1368px */}
           <div

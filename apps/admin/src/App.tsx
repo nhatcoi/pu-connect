@@ -36,7 +36,8 @@ import { AiOpsTab } from '@/tabs/ai-ops-tab'
 import { AcademicTab } from '@/tabs/academic-tab'
 import { BotsPage } from '@/features/bots/bots-page'
 import { NewsPage } from '@/features/news/news-page'
-import { AuditLogsTab, BroadcastTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
+import { AnnouncementsPage } from '@/features/announcements/announcements-page'
+import { AuditLogsTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
 
 export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'news' | 'audit'
 
@@ -327,7 +328,7 @@ export function App() {
             {current === 'academic' && <AcademicTab permissions={perms} />}
             {current === 'ai' && <AiOpsTab permissions={perms} openTickets={stats.data?.openSupportTickets} />}
             {current === 'search' && <SearchAnalyticsTab />}
-            {current === 'broadcast' && <BroadcastTab />}
+            {current === 'broadcast' && <AnnouncementsPage />}
             {current === 'bots' && <BotsPage />}
             {current === 'news' && <NewsPage />}
             {current === 'audit' && <AuditLogsTab />}

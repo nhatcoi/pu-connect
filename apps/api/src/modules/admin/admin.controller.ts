@@ -1,7 +1,6 @@
 import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import type {
-  AdminBroadcastInput,
   AdminBulkCommentInput,
   AdminBulkPostInput,
   AdminBulkUserInput,
@@ -17,7 +16,6 @@ import type {
   SanctionInput
 } from '@pu/schemas'
 import {
-  AdminBroadcastBodySchema,
   AdminBulkUserBodySchema,
   AdminCourseBodySchema,
   AdminModerateSkillBodySchema,
@@ -419,13 +417,6 @@ export class AdminController {
   @RequireAdminPermission('search:read')
   topSearches(@Query('days') days?: string, @Query('limit') limit?: string) {
     return this.admin.topSearchQueries(toInt(days, 30), toInt(limit, 50))
-  }
-
-  @Post('broadcast')
-  @HttpCode(HttpStatus.OK)
-  @RequireAdminPermission('system:broadcast')
-  broadcast(@Body(new ZodValidationPipe(AdminBroadcastBodySchema)) body: AdminBroadcastInput, @Req() req: Request) {
-    return this.admin.broadcastSystemNotification(requireUserId(req), body)
   }
 
   @Get('audit-logs')
