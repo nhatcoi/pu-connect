@@ -20,6 +20,8 @@ export const queryKeys = {
   communities: ['communities'] as const,
   community: (slug: string, sort: CommunitySort) => ['community', slug, sort] as const,
   communityAll: (slug: string) => ['community', slug] as const,
+  communityMembers: (slug: string, q: string) => ['community-members', slug, q] as const,
+  communityHidden: (slug: string) => ['community-hidden', slug] as const,
   suggestedUsers: (limit: number) => ['suggested-users', limit] as const,
   // Modal khám phá: khóa riêng ⇒ không tự tải lại (người vừa theo dõi không biến mất giữa chừng)
   followSuggestions: (limit: number) => ['follow-suggestions', limit] as const,

@@ -13,7 +13,25 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCommunity } from '@/hooks/use-community'
 import { CommunityHeaderSkeleton, PostListSkeleton } from '@/components/skeletons/feed-skeleton'
 import { LoadingRegion } from '@/components/ui/skeleton'
-import { Flame, Clock, Award, ShieldCheck, BookOpen, ArrowLeft, Loader2, Check, UserPlus, AlertCircle, Share2, Compass } from 'lucide-react'
+import {
+  Flame,
+  Clock,
+  Award,
+  ShieldCheck,
+  BookOpen,
+  ArrowLeft,
+  Loader2,
+  Check,
+  UserPlus,
+  AlertCircle,
+  Share2,
+  Compass,
+  Settings,
+  Hourglass,
+  XCircle
+} from 'lucide-react'
+import { ManageCommunityDialog } from '@/components/communities/manage-community-dialog'
+import { HidePostButton } from '@/components/communities/hide-post-button'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
@@ -21,8 +39,13 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
   const { slug } = use(params)
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<'hot' | 'new' | 'top' | 'rules'>('hot')
+  const [manageOpen, setManageOpen] = useState(false)
 
   const { community, posts, sort, setSort, isLoading, isLoadingMore, hasMore, fetchMore, toggleJoin, isJoining, addPost } = useCommunity(slug, 'hot')
+
+  // Chủ và điều hành viên được quản lý; cộng đồng chờ duyệt / bị từ chối chưa nhận bài
+  const isManager = community?.userRole === 'owner' || community?.userRole === 'moderator'
+  const isActive = community?.status === 'active'
 
   // Infinite Scroll Sentinel
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -73,11 +96,20 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs font-semibold" onClick={handleShare}>
-          <Share2 className="h-3.5 w-3.5" />
-          Chia sẻ
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {community && isManager && (
+            <Button size="sm" className="h-8 gap-1.5 rounded-full text-xs font-semibold" onClick={() => setManageOpen(true)}>
+              <Settings className="h-3.5 w-3.5" />
+              Quản lý
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs font-semibold" onClick={handleShare}>
+            <Share2 className="h-3.5 w-3.5" />
+            Chia sẻ
+          </Button>
+        </div>
       </div>
+      {community && isManager && <ManageCommunityDialog community={community} open={manageOpen} onOpenChange={setManageOpen} />}
 
       {/* Community Hero Banner & Header */}
       {isLoading && !community ? (
@@ -87,6 +119,20 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
         </LoadingRegion>
       ) : community ? (
         <div>
+          {!isActive && (
+            <div className="mx-2 sm:mx-0 mb-2.5 flex items-start gap-2.5 rounded-xl bg-amber-500/10 px-4 py-3 text-xs text-foreground">
+              {community.status === 'pending' ? (
+                <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              ) : (
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+              )}
+              <p className="leading-relaxed">
+                {community.status === 'pending'
+                  ? 'Cộng đồng đang chờ quản trị viên duyệt. Bạn vẫn chỉnh sửa giới thiệu và nội quy được; chỉ mình bạn thấy trang này.'
+                  : `Cộng đồng chưa được duyệt${community.reviewNote ? `: ${community.reviewNote}` : '.'}`}
+              </p>
+            </div>
+          )}
           <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card overflow-hidden">
             {/* Banner Image */}
             <div className="relative h-36 sm:h-44 w-full bg-muted overflow-hidden">
@@ -112,32 +158,36 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
                     </div>
                   )}
                 </div>
-                <Button
-                  variant={community.isMember ? 'outline' : 'default'}
-                  size="sm"
-                  disabled={isJoining}
-                  onClick={toggleJoin}
-                  className={cn(
-                    'h-9 rounded-full px-5 text-sm font-semibold transition-all duration-200',
-                    community.isMember
-                      ? 'border-border text-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30'
-                      : 'bg-primary text-primary-foreground shadow-md hover:bg-primary/90'
-                  )}
-                >
-                  {isJoining ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : community.isMember ? (
-                    <span className="flex items-center gap-1.5">
-                      <Check className="h-3.5 w-3.5 text-emerald-500" />
-                      Đã tham gia
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1.5">
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Gia nhập
-                    </span>
-                  )}
-                </Button>
+                {isActive && (
+                  <Button
+                    variant={community.isMember ? 'outline' : 'default'}
+                    size="sm"
+                    disabled={isJoining || community.userRole === 'owner'}
+                    onClick={toggleJoin}
+                    className={cn(
+                      'h-9 rounded-full px-5 text-sm font-semibold transition-all duration-200',
+                      community.isMember
+                        ? 'border-border text-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30'
+                        : 'bg-primary text-primary-foreground shadow-md hover:bg-primary/90'
+                    )}
+                  >
+                    {isJoining ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : community.userRole === 'owner' ? (
+                      <span className="flex items-center gap-1.5">Chủ cộng đồng</span>
+                    ) : community.isMember ? (
+                      <span className="flex items-center gap-1.5">
+                        <Check className="h-3.5 w-3.5 text-emerald-500" />
+                        Đã tham gia
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Gia nhập
+                      </span>
+                    )}
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -233,9 +283,11 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
           ) : (
             <div>
               {/* Post Composer scoped to this community */}
-              <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
-                <AcademicPostComposer onPostCreated={(post) => addPost(post)} defaultCommunityId={community.id} defaultCommunitySlug={community.slug} />
-              </div>
+              {isActive && (
+                <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
+                  <AcademicPostComposer onPostCreated={(post) => addPost(post)} defaultCommunityId={community.id} defaultCommunitySlug={community.slug} />
+                </div>
+              )}
 
               {/* Posts Stream */}
               {posts.length === 0 ? (
@@ -246,7 +298,20 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
                 </div>
               ) : (
                 <div className="space-y-2.5 px-2 sm:px-0">
-                  <VirtualPostList posts={posts} cacheKey={`community:${slug}:${sort}`} renderPost={(post) => <PostCard post={post} variant="card" />} />
+                  <VirtualPostList
+                    posts={posts}
+                    cacheKey={`community:${slug}:${sort}`}
+                    renderPost={(post) =>
+                      isManager ? (
+                        <div className="relative">
+                          <PostCard post={post} variant="card" />
+                          <HidePostButton slug={community.slug} postId={post.id} />
+                        </div>
+                      ) : (
+                        <PostCard post={post} variant="card" />
+                      )
+                    }
+                  />
                 </div>
               )}
 

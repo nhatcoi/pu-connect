@@ -12,7 +12,9 @@ import { apiClient, errorMessage } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { prefetchCommunity } from '@/hooks/use-community'
 import type { Community } from '@pu/schemas'
-import { Compass, Search, Users, MessageSquare, ArrowRight, Loader2, Check, UserPlus, ArrowLeft } from 'lucide-react'
+import { Compass, Search, Users, MessageSquare, ArrowRight, Loader2, Check, UserPlus, ArrowLeft, Plus } from 'lucide-react'
+import { CreateCommunityDialog } from '@/components/communities/create-community-dialog'
+import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { CommunityCardsSkeleton } from '@/components/skeletons/catalog-skeleton'
@@ -36,6 +38,8 @@ export default function CommunitiesDirectoryPage() {
   // Từ khóa đã gửi (chỉ tìm khi bấm Enter, không tìm theo từng phím)
   const [appliedSearch, setAppliedSearch] = useState('')
   const [joiningSlug, setJoiningSlug] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const user = useAppStore((s) => s.user)
 
   // Cache theo (loại, từ khóa): quay lại trang hiện ngay, không tải lại
   const listKey = [...queryKeys.communities, selectedType, appliedSearch.trim()] as const
@@ -93,7 +97,15 @@ export default function CommunitiesDirectoryPage() {
             <p className="text-xs text-muted-foreground mt-1">Khám phá và tham gia các tiểu cộng đồng theo khoa, sở thích và đồ án</p>
           </div>
         </div>
+        <Button
+          size="sm"
+          className="h-8 gap-1.5 rounded-full text-xs font-semibold shrink-0"
+          onClick={() => (user ? setCreateOpen(true) : toast.info('Đăng nhập để tạo cộng đồng'))}
+        >
+          <Plus className="h-3.5 w-3.5" /> Tạo cộng đồng
+        </Button>
       </div>
+      <CreateCommunityDialog open={createOpen} onOpenChange={setCreateOpen} />
 
       {/* Search and Category Filters */}
       <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card p-4 space-y-3">
@@ -163,32 +175,43 @@ export default function CommunitiesDirectoryPage() {
                     )}
                   </div>
 
-                  <Button
-                    variant={comm.isMember ? 'outline' : 'default'}
-                    size="sm"
-                    disabled={joiningSlug === comm.slug}
-                    onClick={() => handleToggleJoin(comm.slug)}
-                    className={cn(
-                      'h-8 rounded-full px-4 text-xs font-semibold',
-                      comm.isMember
-                        ? 'border-border text-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30'
-                        : 'bg-primary text-primary-foreground'
-                    )}
-                  >
-                    {joiningSlug === comm.slug ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : comm.isMember ? (
-                      <span className="flex items-center gap-1">
-                        <Check className="h-3 w-3 text-emerald-500" />
-                        Đã tham gia
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <UserPlus className="h-3 w-3" />
-                        Gia nhập
-                      </span>
-                    )}
-                  </Button>
+                  {comm.status !== 'active' ? (
+                    <Badge
+                      variant="secondary"
+                      className="h-8 rounded-full border-0 bg-amber-500/15 px-3 text-xs font-semibold text-amber-700 dark:text-amber-400"
+                    >
+                      {comm.status === 'pending' ? 'Chờ duyệt' : 'Chưa được duyệt'}
+                    </Badge>
+                  ) : (
+                    <Button
+                      variant={comm.isMember ? 'outline' : 'default'}
+                      size="sm"
+                      disabled={joiningSlug === comm.slug || comm.userRole === 'owner'}
+                      onClick={() => handleToggleJoin(comm.slug)}
+                      className={cn(
+                        'h-8 rounded-full px-4 text-xs font-semibold',
+                        comm.isMember
+                          ? 'border-border text-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30'
+                          : 'bg-primary text-primary-foreground'
+                      )}
+                    >
+                      {joiningSlug === comm.slug ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : comm.userRole === 'owner' ? (
+                        <span>Chủ cộng đồng</span>
+                      ) : comm.isMember ? (
+                        <span className="flex items-center gap-1">
+                          <Check className="h-3 w-3 text-emerald-500" />
+                          Đã tham gia
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <UserPlus className="h-3 w-3" />
+                          Gia nhập
+                        </span>
+                      )}
+                    </Button>
+                  )}
                 </div>
 
                 <div className="space-y-2">
