@@ -366,3 +366,93 @@ mutation ToggleLike($postId: String!) {
 }
 ```
 
+---
+
+## 6. Cộng đồng & Diễn đàn (`/api/communities`)
+
+Mọi response bọc `{ success, data }` (kể cả `join`: kết quả nằm ở `data`). Chi tiết nghiệp vụ: [`core/26`](./core/26-community-management.md).
+
+| Method | Endpoint | Quyền | Mô tả |
+| --- | --- | --- | --- |
+| `GET` | `/communities?type&search` | khách | Danh sách cộng đồng `active` (người tạo còn thấy cộng đồng chờ duyệt / bị từ chối của mình). Kèm `isMember`, `userRole`, `status` |
+| `GET` | `/communities/:slug` | khách | Chi tiết; cộng đồng chưa duyệt ⇒ 404 với người không phải chủ |
+| `GET` | `/communities/:slug/posts?sort=hot\|new\|top&limit&offset` | khách | Bảng tin cộng đồng (bỏ bài bị ẩn / lưu trữ) |
+| `POST` | `/communities/:slug/join` | đăng nhập | Tham gia / rời (toggle). Chủ không rời được; cộng đồng chưa duyệt ⇒ 404 |
+| `POST` | `/communities` | tích xanh, hoặc email xác thực + ≥ 14 ngày + ≥ 5 bài | Tạo cộng đồng ở trạng thái `pending`; tối đa 3 mỗi người; loại `academic\|life\|club`; slug trùng ⇒ 409 |
+| `PATCH` | `/communities/:slug` | owner, moderator | Sửa `description`, `rules`, `avatarUrl`, `bannerUrl` (body rỗng ⇒ 400) |
+| `GET` | `/communities/:slug/members?q&limit&offset` | owner, moderator | Danh sách thành viên (chủ → điều hành viên → mới vào) |
+| `PUT` | `/communities/:slug/members/:userId/role` `{ role: "moderator" \| "member" }` | owner | Đặt / gỡ điều hành viên |
+| `DELETE` | `/communities/:slug/members/:userId` | owner; moderator (chỉ member) | Xóa thành viên |
+| `POST` | `/communities/:slug/posts/:postId/hide` `{ reason? }` | owner, moderator | Ẩn bài vi phạm, thông báo tác giả |
+| `DELETE` | `/communities/:slug/posts/:postId/hide` | owner, moderator | Khôi phục (chỉ bài do chủ / điều hành viên ẩn) |
+| `GET` | `/communities/:slug/hidden-posts` | owner, moderator | Bài đã ẩn để khôi phục |
+
+### 6.1. Admin cộng đồng (`/api/admin/communities`, quyền `academic:manage`)
+
+| Method | Endpoint | Mô tả |
+| --- | --- | --- |
+| `GET` | `/admin/communities?status&type&q&sort&page` | Danh sách + facet `type`, `status`; có `ownerName`, `createdByName` |
+| `POST` | `/admin/communities` | Tạo thẳng (`active` ngay); `ownerUsername` tùy chọn |
+| `POST` | `/admin/communities/:id/approve` | Duyệt cộng đồng `pending`; thông báo chủ |
+| `POST` | `/admin/communities/:id/reject` `{ note? }` | Từ chối kèm lý do; thông báo chủ |
+| `PUT` | `/admin/communities/:id/owner` `{ username }` | Đổi chủ (chủ cũ xuống điều hành viên) |
+| `DELETE` | `/admin/communities/:id` | Gỡ cộng đồng; bài viết giữ lại (`community_id` = NULL) |
+
+Mọi thao tác ghi `admin_audit_logs` (`community.create / approve / reject / owner / delete`).
+
+---
+
+## 7. Kho tài liệu — khám phá, đánh giá, bộ sưu tập (`/api/documents`, `/api/collections`)
+
+Thiết kế: [`core/25`](./core/25-document-library.md).
+
+### 7.1. Tài liệu (`/api/documents`)
+
+| Method | Endpoint | Mô tả |
+| --- | --- | --- |
+| `GET` | `/documents/browse?course&docCategory&academicYear&sort&q&cursor` | Duyệt kho (tài liệu đã phân loại và công khai). `course` nhận mã hoặc id, nhiều giá trị cách nhau dấu phẩy (tối đa 400 ký tự) |
+| `GET` | `/documents/course-path?course=` | Lộ trình học của môn: tài liệu theo thứ tự ôn + đề thi theo năm |
+| `GET` | `/documents/:id/detail` | Chi tiết (kèm `ratingAvg`, `ratingCount`, `myRating`) |
+| `PUT` | `/documents/:id/rating` `{ rating: 1–5 }` | Chấm sao (đổi được; không tự chấm tài liệu của mình ⇒ 403) |
+| `DELETE` | `/documents/:id/rating` | Bỏ chấm |
+| `POST` | `/documents/:id/summarize` | N7AI tóm tắt từ nội dung tệp (400 nếu không trích được chữ) |
+| `POST` | `/documents/:id/study-draft` `{ kind: "flashcards" \| "quiz" }` | N7AI soạn nháp bộ học từ tài liệu; web lưu qua `/study-tools` |
+| `POST` | `/documents/upload`, `/documents/suggest-file`, `/documents/:id/suggest` | Tải nháp, N7AI gợi ý phân loại |
+| `PATCH` / `DELETE` | `/documents/:id`, `/documents/:id/draft` | Cập nhật phân loại, xóa tài liệu / nháp |
+| `POST` | `/documents/:id/download` | Ghi nhận lượt tải |
+
+`summarize` và `study-draft` chỉ chạy với tài liệu của chính người gọi hoặc công khai đã đăng, tối đa 8000 ký tự nội dung.
+
+### 7.2. Bộ sưu tập (`/api/collections`)
+
+| Method | Endpoint | Mô tả |
+| --- | --- | --- |
+| `GET` | `/collections?scope=mine\|public&cursor` | Bộ của mình / bộ công khai |
+| `GET` | `/collections/membership?documentId=` | Bộ nào của mình đã chứa tài liệu này (popover *Bộ sưu tập*) |
+| `GET` | `/collections/:id` | Chi tiết + tài liệu; bộ riêng tư ⇒ 404 với người khác |
+| `POST` | `/collections` `{ title, description?, visibility }` | Tạo (tối đa 50 bộ / người) |
+| `PATCH` / `DELETE` | `/collections/:id` | Sửa / xóa (chủ bộ) |
+| `PUT` / `DELETE` | `/collections/:id/documents/:documentId` | Thêm / bỏ tài liệu (tối đa 200 / bộ) |
+
+---
+
+## 8. Thùng rác admin (`/api/admin/trash`)
+
+| Method | Endpoint | Mô tả |
+| --- | --- | --- |
+| `GET` | `/admin/trash?table=` | Liệt kê các lần xóa mềm (theo bảng) |
+| `POST` | `/admin/trash/:batch/restore` | Khôi phục cả batch (cha trước con), tính lại `comments_count`. Tài liệu khôi phục chưa được gắn lại vào bài viết cũ |
+
+Xem [`core/13`](./core/13-admin-console.md) mục *Thùng rác*.
+
+---
+
+## 9. Sự kiện trường (`/api/campus-events`)
+
+| Method | Endpoint | Quyền | Mô tả |
+| --- | --- | --- | --- |
+| `GET` | `/campus-events` | khách | Danh sách sự kiện (`CampusEvent`: tiêu đề, đơn vị tổ chức, địa điểm, giờ, banner, link đăng ký, thẻ) |
+| `POST` | `/campus-events` | `admin`, `lecturer`, `club_lead` | Tạo sự kiện |
+
+Web hiển thị qua `CampusCard` (cột phải) và store `campus-slice`; N7AI có tool `list_campus_events` ([`core/06`](./core/06-messaging-and-ai.md)).
+

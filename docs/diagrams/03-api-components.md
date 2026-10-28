@@ -1,6 +1,6 @@
 # 03 · API Components (C4 Level 3 — `apps/api`)
 
-> Module NestJS, phụ thuộc giữa chúng và endpoint. Cập nhật lần cuối: **2026-10-20**.
+> Module NestJS, phụ thuộc giữa chúng và endpoint. Cập nhật lần cuối: **2026-10-28**.
 
 ## Module & phụ thuộc
 
@@ -16,7 +16,7 @@ flowchart TB
     blocks["<b>Blocks</b><br/>chặn 2 chiều · blocks.sql<br/>(feed, bình luận, chat, TB lọc bằng SQL)"]
     posts["<b>Posts</b><br/>feed ranking · comments Q&A"]
     gql["<b>SocialGraphQL</b><br/>user · feed · comment<br/>document · study-group"]
-    others["<b>Communities · Documents<br/>Courses · StudyGroups<br/>Campus · Search</b>"]
+    others["<b>Communities</b> (+ quản lý: tạo · chủ / điều hành viên · ẩn bài)<br/><b>Documents</b> (browse · rating · collections · course-path · N7AI học)<br/><b>Courses · StudyGroups · Campus · Search</b>"]
     storage["<b>Storage</b><br/>R2 upload"]
     admin["<b>Admin</b><br/>AdminGuard (role=admin)<br/>báo cáo · khóa TK · audit log"]
     chat["<b>Chat</b><br/>ChatCore · Conversations · Messages · ChatMentions · ChatRefs<br/>N7Ai (stream · vision) · AiThreads · AiThreadShare · AiLibrary · AiSkills · AiSummary<br/>AiSettings · AiMemories · AiTasks · AiFeedback · AiData · worker ai-maintenance<br/>agent: HistoryTools (my_chats) · PucTools (hybrid search · read · app_help) · ai-actions<br/>context: ConversationContext · ConversationTools (chat__earlier)"]
@@ -91,8 +91,9 @@ flowchart TB
 | Posts | `GET posts` (feedType `for_you`/`following`/`qa`/`courses`/`bookmarks`, `course=<mã>`, `before`/`after` = cửa sổ snapshot; mỗi bài kèm `featuredComment`) · `GET posts/new-since?since=` (pill "bài mới") · `GET/PATCH/DELETE posts/:id` · `POST posts` · `POST posts/:id/{like,bookmark,vote-poll,pin,resolve,report}` · `POST posts/:id/summary` (N7AI, có cache) |
 | Comments | `GET/POST posts/:postId/comments` · `POST comments/:id/like` · `POST comments/:id/accept-solution` · `PATCH comments/:id` · `DELETE comments/:id` |
 | Mentions | `GET mentions/suggest` |
-| Communities | `GET communities` · `GET communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` |
-| Documents | `GET documents` (`type`, `search`, `course`) · `GET documents/browse` (`course`, `category`, `q`, `sort`, `cursor`) · `GET documents/:id` · `GET documents/:id/detail` · `POST documents` · `POST documents/upload` (bản nháp) · `PATCH documents/:id` (phân loại) · `POST documents/:id/suggest` · `POST documents/write-post` (N7AI) · `DELETE documents/:id` · `DELETE documents/:id/draft` · `POST documents/:id/download` |
+| Communities | `GET communities` · `POST communities` (chờ duyệt) · `GET/PATCH communities/:slug` · `POST communities/:slug/join` · `GET communities/:slug/posts` · `GET communities/:slug/members` · `PUT communities/:slug/members/:userId/role` · `DELETE communities/:slug/members/:userId` · `GET communities/:slug/hidden-posts` · `POST/DELETE communities/:slug/posts/:postId/hide` |
+| Collections (bộ sưu tập tài liệu) | `GET collections` (`scope=mine\|public`) · `GET collections/membership` · `GET/PATCH/DELETE collections/:id` · `POST collections` · `PUT/DELETE collections/:id/documents/:documentId` |
+| Documents | `GET documents/course-path` · `PUT/DELETE documents/:id/rating` · `POST documents/:id/summarize` · `POST documents/:id/study-draft` · `GET documents` (`type`, `search`, `course`) · `GET documents/browse` (`course`, `category`, `q`, `sort`, `cursor`) · `GET documents/:id` · `GET documents/:id/detail` · `POST documents` · `POST documents/upload` (bản nháp) · `PATCH documents/:id` (phân loại) · `POST documents/:id/suggest` · `POST documents/write-post` (N7AI) · `DELETE documents/:id` · `DELETE documents/:id/draft` · `POST documents/:id/download` |
 | Library (kho cá nhân, cần đăng nhập) | `GET library` (`scope=saved\|mine`, `folder`, `q`, `cursor`) · `GET library/ids` · `POST library` · `PATCH/DELETE library/:documentId` · `POST library/upload` · `GET/POST library/folders` · `PATCH/DELETE library/folders/:id` |
 | Courses | `GET courses` · `GET courses/:id` · `GET courses/:id/overview` (số liệu + người đóng góp) · `POST courses` |
 | Study groups | `GET study-groups` · `GET study-groups/:id` · `POST study-groups` · `POST study-groups/:id/join` |

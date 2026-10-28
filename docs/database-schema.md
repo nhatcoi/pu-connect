@@ -732,6 +732,54 @@ CREATE TABLE audit_logs (
 
 ---
 
+### 📌 Phân hệ 8: Cộng đồng, Đánh giá & Bộ sưu tập tài liệu (bổ sung 2026-10-28)
+
+Migration: `community-management-upgrade.sql`, `community-posts-count-upgrade.sql`, `document-community-upgrade.sql` (idempotent, đăng ký trong `scripts/deploy.sh` và `apps/api/test/global-setup.ts`). Thiết kế: [`core/26`](./core/26-community-management.md), [`core/25`](./core/25-document-library.md).
+
+```sql
+-- 8.1. communities: bổ sung vòng đời duyệt và chủ sở hữu (bảng gốc: add-communities.sql)
+ALTER TABLE communities ADD COLUMN created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE communities ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active'; -- CHECK: active | pending | rejected
+ALTER TABLE communities ADD COLUMN review_note TEXT;                              -- lý do từ chối
+ALTER TABLE communities ADD COLUMN reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE communities ADD COLUMN reviewed_at TIMESTAMPTZ;
+-- community_members.role: 'owner' | 'moderator' | 'member' (vai trò 'admin' cũ → 'owner')
+CREATE UNIQUE INDEX uq_community_one_owner ON community_members (community_id) WHERE role = 'owner'; -- tối đa 1 chủ
+CREATE INDEX idx_communities_status ON communities (status, created_at DESC);
+CREATE INDEX idx_communities_created_by ON communities (created_by) WHERE created_by IS NOT NULL;
+
+-- 8.2. Đánh giá sao tài liệu (1 lượt / người / tài liệu); documents giữ sẵn trung bình + số lượt
+ALTER TABLE documents ADD COLUMN rating_count INT NOT NULL DEFAULT 0;
+ALTER TABLE documents ADD COLUMN rating_avg NUMERIC(3,2) NOT NULL DEFAULT 0;
+CREATE TABLE document_ratings (
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (document_id, user_id)
+);
+
+-- 8.3. Bộ sưu tập tài liệu (công khai hoặc riêng tư)
+CREATE TABLE document_collections (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(120) NOT NULL,
+    description VARCHAR(500),
+    visibility VARCHAR(10) NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE document_collection_items (
+    collection_id UUID NOT NULL REFERENCES document_collections(id) ON DELETE CASCADE,
+    document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (collection_id, document_id)
+);
+```
+
+Giới hạn do service giữ (không ràng buộc DB): 50 bộ / người, 200 tài liệu / bộ, 3 cộng đồng (chờ duyệt + hoạt động) / người.
+
 ## 4. Chiến lược Đánh Chỉ mục & Tối ưu Hiệu năng (Indexes & Optimization)
 
 ```sql
@@ -814,4 +862,26 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_reward_solution
 AFTER INSERT ON comment_solutions
 FOR EACH ROW EXECUTE FUNCTION reward_solution_author();
+
+-- Trigger 3: communities.posts_count luôn đúng (community-posts-count-upgrade.sql)
+-- Đếm lại khi bài vào / rời cộng đồng, bị ẩn (hidden_at) hoặc lưu trữ (archived_at); khớp bảng tin cộng đồng
+CREATE OR REPLACE FUNCTION sync_community_posts_count() RETURNS trigger AS $$
+DECLARE cid UUID;
+BEGIN
+  FOR cid IN SELECT DISTINCT x FROM unnest(ARRAY[
+      CASE WHEN TG_OP <> 'INSERT' THEN OLD.community_id END,
+      CASE WHEN TG_OP <> 'DELETE' THEN NEW.community_id END]) AS x WHERE x IS NOT NULL
+  LOOP
+    UPDATE communities SET posts_count = (SELECT COUNT(*) FROM posts WHERE community_id = cid AND hidden_at IS NULL AND archived_at IS NULL) WHERE id = cid;
+  END LOOP;
+  RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_community_posts_count
+AFTER INSERT OR DELETE OR UPDATE OF community_id, hidden_at, archived_at ON posts
+FOR EACH ROW EXECUTE FUNCTION sync_community_posts_count();
 ```
+
+> Lưu ý: Trigger 2 (cộng `reputation_points` khi có đáp án) là thiết kế ban đầu. Hệ thống hiện **không còn cộng điểm uy tín** (xem FEAT: loại bỏ Gamification), nên điều kiện tạo cộng đồng không dựa vào điểm này.
+
