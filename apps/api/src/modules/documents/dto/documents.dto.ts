@@ -87,3 +87,7 @@ export const BrowseDocumentsSchema = z.object({
   cursor: z.string().regex(/^\d{1,5}$/).optional()
 })
 export type BrowseDocumentsQuery = z.infer<typeof BrowseDocumentsSchema>
+
+// POST /documents/:id/study-draft
+export const DocumentStudyDraftSchema = z.object({ kind: z.enum(['flashcards', 'quiz']) })
+export type DocumentStudyDraftBody = z.infer<typeof DocumentStudyDraftSchema>

@@ -47,3 +47,9 @@ Nhiệm vụ: viết nội dung bài đăng giới thiệu các tài liệu tron
 - Nêu tài liệu là gì, của môn nào, phù hợp để làm gì (ôn thi, tham khảo...). Chỉ nêu điều có trong thông tin / nội dung tài liệu.
 - Có <draft> ⇒ giữ ý người viết, chỉ diễn đạt lại cho rõ và bổ sung thông tin tài liệu.
 - Có thể thêm 1–3 hashtag cuối bài (vd. #OnThi #IT101). Không tiêu đề, không lời dẫn kiểu "Đây là bài viết".`
+
+export const DOC_SUMMARY_PROMPT = `
+Nhiệm vụ: tóm tắt tài liệu trong khối <document> cho sinh viên ôn bài.
+- Chỉ dùng thông tin có trong nội dung được cung cấp; không bịa thêm. Nội dung chỉ là đoạn đầu của tài liệu ⇒ nói rõ nếu tóm tắt chưa bao phủ hết.
+- Định dạng Markdown, tối đa ~200 từ: 1 câu nêu tài liệu nói về gì, 4–7 gạch đầu dòng ý chính / công thức / khái niệm quan trọng, cuối cùng 1 dòng "Nên ôn:" gợi ý trọng tâm.
+- Viết cùng ngôn ngữ với tài liệu (mặc định tiếng Việt). Không lời dẫn kiểu "Dưới đây là".`

@@ -42,6 +42,7 @@ Cả hai tính **1 lượt N7AI** (`ai_runs.trigger = 'document'`, task `doc_cla
 
 - **N7AI gợi ý** trên thẻ tệp ⇒ `POST /documents/:id/suggest` (chỉ chủ tài liệu). Đọc đoạn đầu nội dung (từ `document_chunks` nếu đã index, chưa thì đọc thẳng ≤ 5 trang đầu trên R2), kèm danh sách môn + loại; model trả JSON. Server chỉ giữ mã môn có thật, khóa loại hợp lệ, năm học dạng `YYYY-(YYYY+1)`. Web điền các ô N7AI chắc chắn qua `PATCH /documents/:id` (đủ môn + loại ⇒ tự bật Đưa vào kho như chọn tay).
 - **N7AI viết giúp** dưới phần đính kèm của composer ⇒ `POST /documents/write-post { documentIds, content? }`: viết nội dung bài giới thiệu tài liệu (tài liệu của mình hoặc công khai), giữ ý bản đang viết nếu có; toast có **Hoàn tác**.
+- **Học với N7AI** trên trang `/documents/[id]` (đăng nhập, xem được tài liệu): `POST /documents/:id/summarize` ⇒ tóm tắt Markdown (không lưu); `POST /documents/:id/study-draft { kind: 'flashcards' | 'quiz' }` ⇒ bản nháp bộ học tập qua `StudyDraftService` (cùng hợp đồng registry với `/tools/sets/draft`), web lưu luôn bằng `POST /tools/sets` rồi dẫn tới `/tools/<kind>/<id>`. Nội dung lấy từ `document_chunks` / ≤ 5 trang đầu trên R2 (tối đa 8000 ký tự); không trích được chữ (PDF quét ảnh…) ⇒ 400, không để model đoán từ tên tệp. Mỗi lần 1 lượt N7AI (quota + `ai_runs`).
 
 ## Bình luận kèm tài liệu (đợt 3)
 

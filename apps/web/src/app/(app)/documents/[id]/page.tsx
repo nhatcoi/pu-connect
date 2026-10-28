@@ -15,6 +15,7 @@ import { PreviewBody } from '@/components/viewer/preview-body'
 import { CourseSelect } from '@/components/documents/course-select'
 import { DocumentRow } from '@/components/documents/document-row'
 import { SaveDocumentButton } from '@/components/documents/save-document-button'
+import { StudyWithAi } from '@/components/documents/study-with-ai'
 import { docExt, docMetaLine } from '@/components/documents/document-format'
 import { useCourses } from '@/hooks/use-course'
 import { useDocumentDetail } from '@/hooks/use-document-library'
@@ -154,6 +155,8 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
 
         {doc.isMine && editing && <ClassifyForm doc={doc} onDone={() => setEditing(false)} />}
       </div>
+
+      <StudyWithAi documentId={doc.id} />
 
       <div className="mx-2 sm:mx-0 h-[70vh] overflow-hidden rounded-xl border border-border bg-card">
         <PreviewBody file={{ url: doc.fileUrl, name: fileName, size: doc.fileSize, mime: doc.mimeType }} />

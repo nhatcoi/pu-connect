@@ -1,16 +1,18 @@
 import { BadRequestException, ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import type { Readable } from 'stream'
-import type { DocCategory, DocumentSuggestion, WriteDocumentPostInput, WriteDocumentPostResult } from '@pu/schemas'
+import type { DocCategory, DocumentSummary, DocumentSuggestion, StudySetDraft, StudyToolKind, WriteDocumentPostInput, WriteDocumentPostResult } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import type { AiRef } from '../ai/ai.constants'
-import { DOC_CLASSIFY_PROMPT, DOC_POST_PROMPT, SYSTEM_PROMPT } from '../ai/ai.prompts'
+import { DOC_CLASSIFY_PROMPT, DOC_POST_PROMPT, DOC_SUMMARY_PROMPT, SYSTEM_PROMPT } from '../ai/ai.prompts'
 import { bufferToText, isExtractableMime } from '../ai/doc-text'
 import { LlmService, type LlmMessage } from '../ai/llm.service'
 import { StorageService } from '../storage/storage.service'
+import { StudyDraftService } from '../study-tools/study-draft.service'
 import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, MAX_POST_DOCUMENTS } from './dto/documents.dto'
 
 const SUGGEST_INPUT_CHARS = 6000
 const POST_INPUT_CHARS = 2500 // mỗi tài liệu khi viết bài
+const STUDY_INPUT_CHARS = 8000 // nội dung đưa vào tóm tắt / tạo flashcard, quiz
 const LIVE_READ_MAX_BYTES = 20 * 1024 * 1024
 const LIVE_READ_PAGES = 5
 const AI_MAX_TOKENS = 2048 // gồm token suy nghĩ của model
@@ -24,7 +26,8 @@ export class DocumentAiService {
   constructor(
     private readonly db: DatabaseService,
     private readonly llm: LlmService,
-    private readonly storage: StorageService
+    private readonly storage: StorageService,
+    private readonly studyDrafts: StudyDraftService
   ) {}
 
   async suggest(id: string, userId: string): Promise<DocumentSuggestion> {
@@ -78,6 +81,39 @@ export class DocumentAiService {
       { role: 'user', content: user }
     ])
     return { content: content.trim() }
+  }
+
+  // "Học với N7AI": tóm tắt tài liệu (người xem được tài liệu đều dùng được, 1 lượt N7AI mỗi lần)
+  async summarize(id: string, userId: string): Promise<DocumentSummary> {
+    const { doc, context } = await this.studyContext(id, userId)
+    const text = await this.run(userId, 'doc_summary', { type: 'document', id }, [
+      { role: 'system', content: SYSTEM_PROMPT + DOC_SUMMARY_PROMPT },
+      { role: 'user', content: `<document>\n${context}\n</document>` }
+    ])
+    return { documentId: doc.id, summary: text.trim() }
+  }
+
+  // Bản nháp bộ Flashcard / Quiz từ nội dung tài liệu (chưa lưu; StudyDraftService tự kiểm quota + ghi ai_runs)
+  async studyDraft(id: string, userId: string, kind: StudyToolKind): Promise<StudySetDraft> {
+    const { doc, context } = await this.studyContext(id, userId)
+    const draft = await this.studyDrafts.draft(userId, kind, `Tạo bộ ôn tập từ tài liệu "${doc.title}" dưới đây, chỉ dựa trên nội dung được cung cấp.\n\n${context}`)
+    return { ...draft, title: draft.title || doc.title }
+  }
+
+  // Tài liệu xem được (của mình hoặc công khai đã đăng) + nội dung đã trích; không trích được thì từ chối thay vì để AI bịa từ tên tệp
+  private async studyContext(id: string, userId: string): Promise<{ doc: DocRow; context: string }> {
+    const res = await this.db.query(
+      `SELECT d.id, d.title, d.original_name, d.file_url, d.mime_type, d.owner_id, c.code AS course_code, c.name AS course_name
+       FROM documents d LEFT JOIN courses c ON c.id = d.course_id
+       WHERE d.id = $1 AND (d.owner_id = $2 OR (d.visibility = 'public' AND d.status = 'published'))`,
+      [id, userId]
+    )
+    const row = res.rows[0] as (DocRow & { course_code: string | null; course_name: string | null }) | undefined
+    if (!row) throw new NotFoundException('Tài liệu không tồn tại hoặc bạn không có quyền xem')
+    const excerpt = await this.excerpt(row, STUDY_INPUT_CHARS)
+    if (!excerpt) throw new BadRequestException('N7AI chưa đọc được nội dung tài liệu này (tệp quét ảnh hoặc định dạng chưa hỗ trợ)')
+    const head = [`Tên: ${row.title}`, row.course_code && `Môn: ${row.course_code} — ${row.course_name}`].filter(Boolean).join('\n')
+    return { doc: row, context: `${head}\nNội dung (đoạn đầu):\n${excerpt}` }
   }
 
   // Kiểm quota + ghi ai_runs quanh 1 lần gọi model

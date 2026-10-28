@@ -78,6 +78,38 @@ describe('Document library — AI, personal library, pages (e2e)', () => {
     await (await loginAgent(app, other)).post('/api/documents/write-post').send({ documentIds: [document.id] }).expect(400)
   })
 
+  it('Học với N7AI: tóm tắt + nháp flashcard từ nội dung tài liệu; không đọc được nội dung ⇒ 400; nháp người khác ⇒ 404', async () => {
+    const owner = await createUser(db)
+    const other = await createUser(db)
+    const ownerAgent = await loginAgent(app, owner)
+    const otherAgent = await loginAgent(app, other)
+    const { document } = (await upload(ownerAgent, 'giai tich chuong 1')) as DocumentUploadResult
+
+    // Chưa có nội dung đã trích (tệp giả không đọc được) ⇒ từ chối, không gọi model
+    const spy = jest.spyOn(llm, 'complete')
+    const calls = spy.mock.calls.length
+    await ownerAgent.post(`/api/documents/${document.id}/summarize`).expect(400)
+    expect(spy.mock.calls.length).toBe(calls)
+
+    await db.query(`INSERT INTO document_chunks (document_id, chunk_index, content_text) VALUES ($1, 0, 'Giới hạn của dãy số: định nghĩa epsilon-N.')`, [document.id])
+    spy.mockResolvedValueOnce({ text: '- Giới hạn dãy số\n\nNên ôn: định nghĩa epsilon-N', finishReason: 'stop' })
+    const sum = (await ownerAgent.post(`/api/documents/${document.id}/summarize`).expect(200)).body.data
+    expect(sum).toEqual({ documentId: document.id, summary: '- Giới hạn dãy số\n\nNên ôn: định nghĩa epsilon-N' })
+    expect(JSON.stringify(spy.mock.calls.at(-1)?.[0])).toContain('epsilon-N')
+
+    spy.mockResolvedValueOnce({
+      text: JSON.stringify({ title: 'Giới hạn dãy số', cards: [{ front: 'Định nghĩa giới hạn dãy số?', back: 'Với mọi epsilon tồn tại N…' }] }),
+      finishReason: 'stop'
+    })
+    const draft = (await ownerAgent.post(`/api/documents/${document.id}/study-draft`).send({ kind: 'flashcards' }).expect(200)).body.data
+    expect(draft).toMatchObject({ kind: 'flashcards', title: 'Giới hạn dãy số' })
+    expect(draft.items).toHaveLength(1)
+    await ownerAgent.post(`/api/documents/${document.id}/study-draft`).send({ kind: 'khac' }).expect(400)
+
+    // Tài liệu nháp của chủ ⇒ người khác không thấy
+    await otherAgent.post(`/api/documents/${document.id}/summarize`).expect(404)
+  })
+
   it('kho cá nhân: lưu tài liệu công khai, thư mục, bỏ lưu; tài liệu bị chuyển riêng tư biến mất', async () => {
     const author = await createUser(db)
     const reader = await createUser(db)

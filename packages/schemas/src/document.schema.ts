@@ -181,3 +181,9 @@ export interface DocumentDetail extends DocumentListItem {
   posts: { id: string; title: string | null; excerpt: string; authorName: string; createdAt: string }[]
   related: DocumentListItem[]
 }
+
+// POST /documents/:id/summarize: tóm tắt Markdown do N7AI viết (không lưu)
+export interface DocumentSummary {
+  documentId: string
+  summary: string
+}

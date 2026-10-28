@@ -4,10 +4,13 @@ import type {
   DocumentDetail,
   DocumentListPage,
   DocumentSuggestion,
+  DocumentSummary,
   DocumentUploadResult,
   LibraryFolder,
   LibraryItem,
   LibraryPage,
+  StudySetDraft,
+  StudyToolKind,
   WriteDocumentPostInput,
   WriteDocumentPostResult
 } from '@pu/schemas'
@@ -46,6 +49,15 @@ export async function classifyDocument(id: string, input: ClassifyDocumentInput)
 // N7AI đọc tệp, gợi ý môn / loại / năm học / tiêu đề (chưa lưu; 1 lượt N7AI)
 export async function suggestDocument(id: string): Promise<DocumentSuggestion> {
   return (await apiClient<Envelope<DocumentSuggestion>>(`/documents/${id}/suggest`, { method: 'POST' })).data
+}
+
+// "Học với N7AI": tóm tắt tài liệu / bản nháp bộ flashcard, quiz từ nội dung tài liệu (mỗi lần 1 lượt N7AI)
+export async function summarizeDocument(id: string): Promise<DocumentSummary> {
+  return (await apiClient<Envelope<DocumentSummary>>(`/documents/${id}/summarize`, { method: 'POST' })).data
+}
+
+export async function draftStudySetFromDocument(id: string, kind: StudyToolKind): Promise<StudySetDraft> {
+  return (await apiClient<Envelope<StudySetDraft>>(`/documents/${id}/study-draft`, { method: 'POST', body: JSON.stringify({ kind }) })).data
 }
 
 // "Viết giúp": N7AI viết nội dung bài từ tài liệu đính kèm (giữ ý của bản nháp nếu có)

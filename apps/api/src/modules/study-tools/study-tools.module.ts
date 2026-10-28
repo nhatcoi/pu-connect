@@ -12,6 +12,6 @@ import { StudyToolsService } from './study-tools.service'
   imports: [AiModule],
   controllers: [StudyToolsController],
   providers: [StudyToolsService, StudyDraftService, StudyAgentToolsService, StudyCreateToolsService, StudyProgressMemoryService],
-  exports: [StudyToolsService, StudyAgentToolsService, StudyCreateToolsService]
+  exports: [StudyToolsService, StudyAgentToolsService, StudyCreateToolsService, StudyDraftService]
 })
 export class StudyToolsModule {}

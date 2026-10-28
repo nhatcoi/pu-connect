@@ -16,6 +16,8 @@ import {
   ClassifyDocumentSchema,
   type CreateDocumentBody,
   CreateDocumentBodySchema,
+  type DocumentStudyDraftBody,
+  DocumentStudyDraftSchema,
   WriteDocumentPostSchema
 } from './dto/documents.dto'
 
@@ -84,6 +86,22 @@ export class DocumentsController {
   @UseGuards(AuthenticatedGuard)
   async suggest(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
     return this.documentAi.suggest(id, requireUserId(req))
+  }
+
+  // "Học với N7AI": tóm tắt tài liệu (1 lượt N7AI)
+  @Post(':id/summarize')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthenticatedGuard)
+  async summarize(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.documentAi.summarize(id, requireUserId(req))
+  }
+
+  // "Học với N7AI": bản nháp bộ Flashcard / Quiz từ nội dung tài liệu (chưa lưu, 1 lượt N7AI)
+  @Post(':id/study-draft')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthenticatedGuard)
+  async studyDraft(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(DocumentStudyDraftSchema)) body: DocumentStudyDraftBody, @Req() req: Request) {
+    return this.documentAi.studyDraft(id, requireUserId(req), body.kind)
   }
 
   // Chủ tài liệu xóa tài liệu đã đăng (gỡ khỏi bài, bình luận, kho của mọi người)
