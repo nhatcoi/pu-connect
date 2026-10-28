@@ -162,7 +162,8 @@ export function useComments(postId: string, initialOpen = false) {
   const acceptSolution = useCallback(
     async (commentId: string) => {
       try {
-        const res = await apiClient<{ isSolution: boolean; message: string }>(`/comments/${commentId}/accept-solution`, { method: 'POST' })
+        // API bọc kết quả trong { success, data }
+        const res = (await apiClient<{ data: { isSolution: boolean; message: string } }>(`/comments/${commentId}/accept-solution`, { method: 'POST' })).data
         if (res) {
           update((items) => items.map((c) => ({ ...c, isSolution: c.id === commentId ? res.isSolution : false })))
           toast.success(res.message)

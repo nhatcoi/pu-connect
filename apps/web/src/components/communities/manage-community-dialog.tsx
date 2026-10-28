@@ -6,7 +6,7 @@ import { Crown, ImagePlus, Loader2, Plus, ShieldCheck, Trash2, UserMinus } from 
 import type { Community, CommunityMemberItem, CommunityRule } from '@pu/schemas'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
@@ -191,9 +191,7 @@ function MembersTab({ community }: { community: Community }) {
     return () => clearTimeout(t)
   }, [q])
 
-  const confirmRemove = (m: CommunityMemberItem) => {
-    if (window.confirm(`Xóa ${m.displayName} khỏi cộng đồng?`)) remove.mutate(m.userId)
-  }
+  const [removing, setRemoving] = useState<CommunityMemberItem | null>(null)
 
   return (
     <div className="space-y-2 text-xs">
@@ -238,7 +236,7 @@ function MembersTab({ community }: { community: Community }) {
                     className="h-7 w-7 text-destructive hover:text-destructive"
                     aria-label={`Xóa ${m.displayName}`}
                     disabled={remove.isPending}
-                    onClick={() => confirmRemove(m)}
+                    onClick={() => setRemoving(m)}
                   >
                     <UserMinus className="h-3.5 w-3.5" />
                   </Button>
@@ -251,6 +249,29 @@ function MembersTab({ community }: { community: Community }) {
         <p className="py-6 text-center text-muted-foreground">Không có thành viên phù hợp.</p>
       )}
       {members.data && <p className="pt-1 text-muted-foreground">{members.data.total} thành viên</p>}
+      <Dialog open={!!removing} onOpenChange={(open) => !open && setRemoving(null)}>
+        <DialogContent className="max-w-sm gap-3 p-5">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold">Xóa thành viên?</DialogTitle>
+            <DialogDescription className="text-xs">
+              {removing ? `${removing.displayName} sẽ bị xóa khỏi cộng đồng và có thể gia nhập lại.` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setRemoving(null)}>
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={remove.isPending}
+              onClick={() => removing && remove.mutate(removing.userId, { onSettled: () => setRemoving(null) })}
+            >
+              Xóa
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
