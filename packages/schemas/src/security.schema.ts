@@ -105,7 +105,7 @@ export interface AdminActivityItem {
   title: string
   subtitle: string | null
   at: string
-  // Liên kết sang PU Connector (bài viết, hồ sơ…) hoặc sang hồ sơ admin của người khác
+  // Liên kết sang PU Connect (bài viết, hồ sơ…) hoặc sang hồ sơ admin của người khác
   href: string | null
   user: { id: string; username: string; displayName: string; avatarUrl: string | null } | null
   badge: string | null

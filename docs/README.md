@@ -1,6 +1,6 @@
-# 📚 PU Connector — Tài liệu Kỹ thuật (Technical Documentation)
+# 📚 PU Connect — Tài liệu Kỹ thuật (Technical Documentation)
 
-Chào mừng bạn đến với trung tâm tài liệu kỹ thuật của dự án **PU Connector** — Nền tảng Mạng xã hội & Kho chia sẻ tài liệu kỹ thuật thế hệ mới.
+Chào mừng bạn đến với trung tâm tài liệu kỹ thuật của dự án **PU Connect** — Nền tảng Mạng xã hội & Kho chia sẻ tài liệu kỹ thuật thế hệ mới.
 
 ---
 

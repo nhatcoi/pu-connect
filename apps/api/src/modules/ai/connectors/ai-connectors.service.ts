@@ -54,7 +54,7 @@ export class AiConnectorsService {
         description: 'Tìm bài báo khoa học, abstract, trích dẫn & link PDF (Semantic Scholar & arXiv)'
       }),
       {
-        id: 'pu_connector', name: 'PU Connector', description: 'Lịch học, điểm và deadline từ tài khoản trường',
+        id: 'pu_connector', name: 'PU Connect', description: 'Lịch học, điểm và deadline từ tài khoản trường',
         available: true, requiresAuth: true, connected: linked.has('pu_connector'),
         account: linked.get('pu_connector')?.account_email ?? null,
         lastUsedAt: linked.get('pu_connector')?.last_used_at ? new Date(linked.get('pu_connector')!.last_used_at!).toISOString() : null,

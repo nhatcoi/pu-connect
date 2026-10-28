@@ -1,6 +1,6 @@
-# 🚪 Đặc Tả Luồng Đăng Xuất — PU Connector Logout Flow
+# 🚪 Đặc Tả Luồng Đăng Xuất — PU Connect Logout Flow
 
-Tài liệu tóm tắt cơ chế và quy chuẩn xử lý **Đăng xuất (Logout)** an toàn, đồng bộ giữa Server và Client trong hệ thống **PU Connector**.
+Tài liệu tóm tắt cơ chế và quy chuẩn xử lý **Đăng xuất (Logout)** an toàn, đồng bộ giữa Server và Client trong hệ thống **PU Connect**.
 
 ---
 

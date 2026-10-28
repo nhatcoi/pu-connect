@@ -8,7 +8,7 @@ flowchart TB
   lecturer(["👨‍🏫 Giảng viên / Trợ giảng<br/>thông báo, duyệt lời giải"])
   admin(["🛡️ Quản trị<br/>/admin: xử lý báo cáo, khóa tài khoản"])
 
-  puc["<b>PU Connector</b><br/>Mạng xã hội học thuật Phenikaa<br/>https://puc.vnhat.dev"]
+  puc["<b>PU Connect</b><br/>Mạng xã hội học thuật Phenikaa<br/>https://puc.vnhat.dev"]
 
   google["Google OAuth 2.0<br/>đăng nhập Google"]
   gmail["Gmail SMTP<br/>email xác thực tài khoản"]

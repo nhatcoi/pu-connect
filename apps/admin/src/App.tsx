@@ -229,7 +229,7 @@ export function App() {
         <a href="#/dashboard" onClick={() => navigate('dashboard')} className="flex items-center gap-2.5">
           <img src="/brand/pu-mark.svg" alt="" className="size-8" />
           <span className="text-base font-extrabold tracking-tight text-foreground">
-            PU Connector <span className="font-semibold text-muted-foreground">Admin</span>
+            PU Connect <span className="font-semibold text-muted-foreground">Admin</span>
           </span>
         </a>
 
@@ -279,7 +279,7 @@ export function App() {
             <MenuSeparator />
             <MenuLabel>{perms.length} quyền được cấp</MenuLabel>
             <MenuItem icon={ExternalLink} onSelect={() => window.open(WEB_PORTAL_URL, '_blank', 'noopener')}>
-              Mở PU Connector
+              Mở PU Connect
             </MenuItem>
             <MenuItem icon={LogOut} danger onSelect={handleLogout}>
               Đăng xuất

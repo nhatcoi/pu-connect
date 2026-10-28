@@ -74,7 +74,7 @@ export function Header() {
           <Link href="/" className="flex items-center gap-2.5 group cursor-pointer">
             <PuMark className="h-9 w-9 group-hover:scale-105 transition-transform" />
             <div className="flex flex-col">
-              <span className="font-extrabold text-base tracking-tight leading-none text-foreground">PU Connector</span>
+              <span className="font-extrabold text-base tracking-tight leading-none text-foreground">PU Connect</span>
               <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase">Phenikaa University</span>
             </div>
           </Link>

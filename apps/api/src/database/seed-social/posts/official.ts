@@ -8,10 +8,10 @@ export const OFFICIAL_POSTS: SeedPost[] = [
     daysAgo: 33,
     at: '08:30',
     type: 'announcement',
-    title: 'Chào mừng K20 đến với PU Connector 👋',
+    title: 'Chào mừng K20 đến với PU Connect 👋',
     content: `Chào các bạn tân sinh viên K20!
 
-PU Connector là nơi để mọi người hỏi bài, chia sẻ tài liệu, tìm nhóm đồ án và… tìm quán ăn ngon quanh trường 😄 Một vài mẹo để dùng cho hiệu quả:
+PU Connect là nơi để mọi người hỏi bài, chia sẻ tài liệu, tìm nhóm đồ án và… tìm quán ăn ngon quanh trường 😄 Một vài mẹo để dùng cho hiệu quả:
 
 1. **Cập nhật hồ sơ**: điền khoa, khóa, môn đang học → bảng tin "Dành cho bạn" sẽ ưu tiên bài đúng môn của bạn.
 2. **Hỏi bài**: chọn loại bài *Hỏi đáp*, gắn đúng mã học phần (VD: IT101). Ai trả lời đúng thì bấm *Chọn làm lời giải* để người sau tìm lại dễ.

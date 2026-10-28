@@ -1,6 +1,6 @@
-# 📡 Đặc tả API — PU Connector API Specification
+# 📡 Đặc tả API — PU Connect API Specification
 
-Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ thống **PU Connector**.
+Tài liệu này mô tả các Endpoint RESTful và WebSocket Events của hệ thống **PU Connect**.
 
 * **Base URL:** `http://localhost:4000/api` (hoặc `http://<LAN_IP>:4000/api`)
 * **Format Response:** Mọi response thành công đều được chuẩn hóa qua `TransformInterceptor`:

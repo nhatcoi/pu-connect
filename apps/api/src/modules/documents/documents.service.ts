@@ -260,7 +260,7 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
   // Tạo tài liệu trực tiếp: chỉ nhận tệp nằm trên R2 của hệ thống (chặn link ngoài / javascript:)
   async create(ownerId: string, data: CreateDocumentBody): Promise<DocumentItem> {
     if (!data.fileUrl.startsWith(this.storage.publicUrlFor('documents/'))) {
-      throw new BadRequestException('Tệp phải được tải lên qua PU Connector')
+      throw new BadRequestException('Tệp phải được tải lên qua PU Connect')
     }
     const listed = data.visibility === 'public' && !!data.courseId && !!data.docCategory
     const insertRes = await this.db.query(

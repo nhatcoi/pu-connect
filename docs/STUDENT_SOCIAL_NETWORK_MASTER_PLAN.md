@@ -1,12 +1,12 @@
-# 🎓 PU Connection — Mạng Xã Hội Sinh Viên Toàn Diện (Master Architecture Plan)
+# 🎓 PU Connect — Mạng Xã Hội Sinh Viên Toàn Diện (Master Architecture Plan)
 
-> **Tài liệu đặc tả kiến trúc, 14 phân hệ nghiệp vụ (Domains) và lộ trình phát triển chi tiết cho nền tảng Mạng xã hội Sinh viên PU Connection.**
+> **Tài liệu đặc tả kiến trúc, 14 phân hệ nghiệp vụ (Domains) và lộ trình phát triển chi tiết cho nền tảng Mạng xã hội Sinh viên PU Connect.**
 
 ---
 
 ## 💡 Triết Lý & Lợi Thế Sản Phẩm (Product Moat)
 
-PU Connection **không phải là một bản sao generic của Facebook hay X**. Lợi thế cạnh tranh cốt lõi (Product Moat) nằm ở mô hình đồ thị quan hệ học đường khép kín:
+PU Connect **không phải là một bản sao generic của Facebook hay X**. Lợi thế cạnh tranh cốt lõi (Product Moat) nằm ở mô hình đồ thị quan hệ học đường khép kín:
 
 $$\mathbf{Product\ Moat} = \mathbf{University\ Graph} \times \mathbf{Course\ Graph} \times \mathbf{Student\ Graph} \times \mathbf{Academic\ Data}$$
 
@@ -27,7 +27,7 @@ graph TD
 Hệ thống được tổ chức thành 8 domain nghiệp vụ độc lập nhưng liên kết chặt chẽ:
 
 ```text
-                                PU CONNECTION
+                                PU CONNECT   
                                      │
         ┌────────────────────────────┼────────────────────────────┐
         │                            │                            │
@@ -242,7 +242,7 @@ Lợi thế tạo nên sự đột phá cho mạng xã hội sinh viên:
 
 ```mermaid
 gantt
-    title Lộ Trình Phát Triển PU Connection
+    title Lộ Trình Phát Triển PU Connect
     dateFormat  YYYY-MM-DD
     section Phase 1: Core Social
     Auth & Student Profile           :done, p1_1, 2026-08-01, 2026-08-15
@@ -375,4 +375,4 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_conv ON chat_messages(conversation_
 
 ---
 
-Tài liệu này là **kim chỉ nam kiến trúc độc lập và chuẩn mực** cho toàn bộ quá trình mở rộng hệ thống PU Connection. Toàn bộ các module tiếp theo đều phải tuân thủ đúng 14 domain và 4 giai đoạn đã được hoạch định ở trên.
+Tài liệu này là **kim chỉ nam kiến trúc độc lập và chuẩn mực** cho toàn bộ quá trình mở rộng hệ thống PU Connect. Toàn bộ các module tiếp theo đều phải tuân thủ đúng 14 domain và 4 giai đoạn đã được hoạch định ở trên.

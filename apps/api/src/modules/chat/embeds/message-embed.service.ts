@@ -24,10 +24,10 @@ const APP_PAGES: Record<string, { title: string; description: string }> = {
   tools: { title: 'Công cụ', description: 'Flashcard, Quiz và công cụ học tập' },
   search: { title: 'Tìm kiếm', description: 'Tìm bài viết, người dùng, học phần' },
   messages: { title: 'Tin nhắn', description: 'Trò chuyện với bạn bè và nhóm' },
-  n7ai: { title: 'N7AI', description: 'Trợ lý AI học tập của PU Connector' },
-  notifications: { title: 'Thông báo', description: 'Thông báo từ PU Connector' }
+  n7ai: { title: 'N7AI', description: 'Trợ lý AI học tập của PU Connect' },
+  notifications: { title: 'Thông báo', description: 'Thông báo từ PU Connect' }
 }
-const BRAND_EMBED = { title: 'PU Connector', description: 'Mạng xã hội học tập của sinh viên Phenikaa University' }
+const BRAND_EMBED = { title: 'PU Connect', description: 'Mạng xã hội học tập của sinh viên Phenikaa University' }
 
 const clip = (text: string | null | undefined, max = DESC_MAX) => {
   const plain = markdownToPlainText(text || '').replace(/\s+/g, ' ').trim()
@@ -67,8 +67,8 @@ export class MessageEmbedService {
     const parts = url.pathname.split('/').filter(Boolean).map(decodeURIComponent)
     const [head, key] = parts
     const path = url.pathname
-    if (!head) return { kind: 'page', url: '/', ...BRAND_EMBED, image: null, siteName: 'PU Connector' }
-    if (parts.length === 1 && APP_PAGES[head]) return { kind: 'page', url: path, ...APP_PAGES[head], image: null, siteName: 'PU Connector' }
+    if (!head) return { kind: 'page', url: '/', ...BRAND_EMBED, image: null, siteName: 'PU Connect' }
+    if (parts.length === 1 && APP_PAGES[head]) return { kind: 'page', url: path, ...APP_PAGES[head], image: null, siteName: 'PU Connect' }
 
     if (head === 'post' && key) {
       if (!/^[0-9a-f-]{36}$/i.test(key)) return null
@@ -94,7 +94,7 @@ export class MessageEmbedService {
       return row ? { kind: 'course', url: path, title: `${row.code} · ${row.name}`, description: clip(row.description), image: null, siteName: 'Học phần' } : null
     }
     if (head === 'settings' && key && SETTINGS_LABELS[key]) {
-      return { kind: 'page', url: path, title: SETTINGS_LABELS[key], description: 'Cài đặt trên PU Connector', image: null, siteName: 'Cài đặt' }
+      return { kind: 'page', url: path, title: SETTINGS_LABELS[key], description: 'Cài đặt trên PU Connect', image: null, siteName: 'Cài đặt' }
     }
     // /:username (một đoạn, không trùng route hệ thống) ⇒ hồ sơ; hồ sơ riêng tư chỉ lộ tên
     if (parts.length === 1 && /^[a-zA-Z0-9_]{3,30}$/.test(head)) {

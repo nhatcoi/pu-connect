@@ -1,11 +1,11 @@
 ---
 name: git-workflow
-description: Chuẩn quy trình Git commit, chia nhỏ commit theo Conventional Commits (feat, fix, chore, perf, refactor, docs) và push an toàn cho dự án PU Connector.
+description: Chuẩn quy trình Git commit, chia nhỏ commit theo Conventional Commits (feat, fix, chore, perf, refactor, docs) và push an toàn cho dự án PU Connect.
 ---
 
-# Git Workflow & Commit Convention (PU Connector)
+# Git Workflow & Commit Convention (PU Connect)
 
-Quy chuẩn quản lý phiên bản mã nguồn, quy tắc đặt tên commit và quy trình đẩy code (push) cho dự án monorepo PU Connector.
+Quy chuẩn quản lý phiên bản mã nguồn, quy tắc đặt tên commit và quy trình đẩy code (push) cho dự án monorepo PU Connect.
 
 ---
 

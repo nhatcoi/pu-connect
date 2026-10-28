@@ -104,7 +104,7 @@ export function CommunitiesAside() {
         </h3>
         <div className="rounded-xl border border-border/60 bg-card p-3 space-y-2 text-xs text-muted-foreground leading-relaxed">
           <p>
-            Cộng đồng PU Connector là không gian học thuật văn minh của sinh viên và giảng viên Trường Đại học Phenikaa.
+            Cộng đồng PU Connect là không gian học thuật văn minh của sinh viên và giảng viên Trường Đại học Phenikaa.
           </p>
           <ul className="list-disc pl-4 space-y-1 text-[11px]">
             <li>Tôn trọng người khác & thảo luận mang tính xây dựng.</li>
@@ -131,7 +131,7 @@ export function CommunitiesAside() {
         </div>
         <div className="flex items-center gap-1.5 pt-0.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>PU Connector © 2026 Phenikaa</span>
+          <span>PU Connect © 2026 Phenikaa</span>
         </div>
       </div>
     </div>

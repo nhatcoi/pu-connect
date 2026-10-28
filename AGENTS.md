@@ -1,6 +1,6 @@
-# Quy Tắc Phát Triển & Chuẩn Mực Dự Án PU Connector
+# Quy Tắc Phát Triển & Chuẩn Mực Dự Án PU Connect
 
-Tài liệu này định nghĩa các quy tắc cốt lõi bắt buộc mà toàn bộ AI Agents (Antigravity, Claude, v.v.) và lập trình viên phải tuân thủ nghiêm ngặt khi phát triển và bảo trì codebase **PU Connector**.
+Tài liệu này định nghĩa các quy tắc cốt lõi bắt buộc mà toàn bộ AI Agents (Antigravity, Claude, v.v.) và lập trình viên phải tuân thủ nghiêm ngặt khi phát triển và bảo trì codebase **PU Connect**.
 
 ---
 

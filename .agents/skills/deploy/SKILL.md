@@ -1,9 +1,9 @@
 ---
 name: deploy
-description: Deploy PU Connector to its production VPS using scripts/deploy.sh, monitor the release, and verify Web, Admin, and API health. Use when the user requests deployment, release, or running the deploy script; creating or editing this skill does not authorize deployment.
+description: Deploy PU Connect to its production VPS using scripts/deploy.sh, monitor the release, and verify Web, Admin, and API health. Use when the user requests deployment, release, or running the deploy script; creating or editing this skill does not authorize deployment.
 ---
 
-# PU Connector Deployment
+# PU Connect Deployment
 
 Use the existing `scripts/deploy.sh` from the repository root. Treat its current contents as the source of truth. Read `docs/diagrams/06-deployment.md` for infrastructure context when needed.
 

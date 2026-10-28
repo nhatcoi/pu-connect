@@ -31,7 +31,7 @@ export function N7AiFab() {
         href={DOCS_URL}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Tài liệu dự án PU Connector (docs-puc.vnhat.dev)"
+        aria-label="Tài liệu dự án PU Connect (docs-puc.vnhat.dev)"
         title="Tài liệu dự án (docs-puc.vnhat.dev)"
         className="group relative flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full bg-card text-foreground shadow-lg ring-1 ring-border transition-all duration-200 hover:scale-105 hover:ring-primary/50 hover:text-primary active:scale-95"
       >

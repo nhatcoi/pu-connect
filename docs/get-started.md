@@ -1,6 +1,6 @@
-# 🚀 Hướng Dẫn Bắt Đầu & Bản Đồ Nghiệp Vụ — PU Connector Get Started
+# 🚀 Hướng Dẫn Bắt Đầu & Bản Đồ Nghiệp Vụ — PU Connect Get Started
 
-Tài liệu này cung cấp hướng dẫn từng bước để cài đặt, khởi chạy, phát triển dự án **PU Connector** cùng với bản đồ tóm lược **Logic nghiệp vụ cốt lõi** của toàn bộ hệ thống.
+Tài liệu này cung cấp hướng dẫn từng bước để cài đặt, khởi chạy, phát triển dự án **PU Connect** cùng với bản đồ tóm lược **Logic nghiệp vụ cốt lõi** của toàn bộ hệ thống.
 
 ---
 
@@ -59,11 +59,11 @@ pnpm dev
 
 ## 3. Kiến Trúc Đa Giao Thức (Hybrid Protocols)
 
-PU Connector sử dụng kết hợp thông minh 3 giao thức theo đúng bản chất của từng loại nghiệp vụ:
+PU Connect sử dụng kết hợp thông minh 3 giao thức theo đúng bản chất của từng loại nghiệp vụ:
 
 ```
                       ┌─────────────────────────────────────────┐
-                      │           PU CONNECTOR CLIENT           │
+                      │           PU CONNECT  CLIENT           │
                       └────┬────────────────┬──────────────┬────┘
                            │                │              │
                      HTTP / REST        GraphQL        WebSocket
@@ -145,7 +145,7 @@ Không có bước onboarding bắt buộc: đăng ký (email + mật khẩu ho�
 
 | Username | Họ và Tên | Vai Trò & Khoa | Email Đăng Nhập |
 |---|---|---|---|
-| `pu_admin_lead` | Ban Quản Trị PU Connector | **Admin** (Quản trị viên) | `mod.phenikaa@phenikaa-uni.edu.vn` |
+| `pu_admin_lead` | Ban Quản Trị PU Connect | **Admin** (Quản trị viên) | `mod.phenikaa@phenikaa-uni.edu.vn` |
 | `gv_nguyenvanha` | TS. Nguyễn Văn Hà | **Giảng viên** Khoa CNTT (FIT) | `gv.nguyenvanha@phenikaa-uni.edu.vn` |
 | `gv_tranthithu` | PGS.TS Trần Thị Thu | **Giảng viên** Khoa học Máy tính (FCS) | `gv.tranthithu@phenikaa-uni.edu.vn` |
 | `gv_lequangthang` | TS. Lê Quang Thắng | **Giảng viên** Điện tử & Robot (FEE) | `gv.lequangthang@phenikaa-uni.edu.vn` |

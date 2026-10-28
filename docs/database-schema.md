@@ -1,6 +1,6 @@
-# 🗄️ Thiết kế Toàn diện Cơ sở Dữ liệu — PU Connector Master Database Schema
+# 🗄️ Thiết kế Toàn diện Cơ sở Dữ liệu — PU Connect Master Database Schema
 
-Tài liệu này chứa đặc tả kỹ thuật thiết kế Cơ sở dữ liệu quan hệ **PostgreSQL 16+** kết hợp **pgvector** cho toàn bộ các phân hệ của nền tảng **PU Connector (Phenikaa University Connection)**.
+Tài liệu này chứa đặc tả kỹ thuật thiết kế Cơ sở dữ liệu quan hệ **PostgreSQL 16+** kết hợp **pgvector** cho toàn bộ các phân hệ của nền tảng **PU Connect (Phenikaa University Connection)**.
 
 ---
 

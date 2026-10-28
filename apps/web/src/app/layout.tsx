@@ -16,7 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'PU Connector — Mạng xã hội & Trao đổi học thuật sinh viên',
+  title: 'PU Connect — Mạng xã hội & Trao đổi học thuật sinh viên',
   description: 'Nền tảng mạng xã hội kết nối sinh viên, chia sẻ tài liệu học phần, công thức toán học, và ghép nhóm đồ án Phenikaa.'
 }
 

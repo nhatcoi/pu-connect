@@ -201,6 +201,6 @@ flowchart TB
 
 - 2026-10-19 — Demand-driven retrieval tools, AgentToolRunner, source registry, lazy MCP and timing ([18](../core/18-agent-harness-performance.md)).
 
-- 2026-10-19: Added PU Connector controller/service and remote PKA MCP; university SSO remains on PKA.
+- 2026-10-19: Added PU Connect controller/service and remote PKA MCP; university SSO remains on PKA.
 
 - 2026-10-20 — N7AI theo ngữ cảnh ([22](../core/22-n7ai-context.md)): `PostContextService` + `PostThreadToolsService` (Posts), `ConversationContextService` + `ConversationToolsService` (Chat); PostsModule import ChatModule (xuất PucToolsService); model nền mặc định `n7ai-fast`.

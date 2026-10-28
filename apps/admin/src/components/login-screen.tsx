@@ -37,7 +37,7 @@ export function LoginScreen({ forbiddenRole, onSuccess, onLogout }: LoginScreenP
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <img src="/brand/pu-mark.svg" alt="" className="mb-4 size-12" />
-          <h1 className="text-xl font-bold tracking-tight text-foreground">PU Connector Admin</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">PU Connect Admin</h1>
           <p className="mt-1 text-sm text-muted-foreground">Đăng nhập để tiếp tục</p>
         </div>
 
@@ -60,7 +60,7 @@ export function LoginScreen({ forbiddenRole, onSuccess, onLogout }: LoginScreenP
                   </Button>
                 )}
                 <a href={WEB_PORTAL_URL} className="text-sm font-medium text-primary hover:underline">
-                  Về PU Connector
+                  Về PU Connect
                 </a>
               </div>
             </div>

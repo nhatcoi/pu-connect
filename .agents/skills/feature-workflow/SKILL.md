@@ -1,11 +1,11 @@
 ---
 name: feature-workflow
-description: Step-by-step development workflow for building, testing, verifying, and documenting features in PU Connector.
+description: Step-by-step development workflow for building, testing, verifying, and documenting features in PU Connect.
 ---
 
-# Feature Development Workflow (PU Connector)
+# Feature Development Workflow (PU Connect)
 
-Quy trình chuẩn mực 7 bước khi phát triển bất kỳ tính năng mới nào trong hệ thống PU Connector, đảm bảo tính nhất quán tuyệt đối từ Database, Schema, Backend, Frontend đến Tài liệu và Kiểm thử.
+Quy trình chuẩn mực 7 bước khi phát triển bất kỳ tính năng mới nào trong hệ thống PU Connect, đảm bảo tính nhất quán tuyệt đối từ Database, Schema, Backend, Frontend đến Tài liệu và Kiểm thử.
 
 ---
 

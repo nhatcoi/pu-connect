@@ -123,7 +123,7 @@ export function NotificationSettingsPanel() {
           <p className="text-[13px] font-semibold">Thông báo trên trình duyệt</p>
           <p className="text-xs text-muted-foreground">
             {iosHint
-              ? 'Trên iPhone: bấm Chia sẻ → "Thêm vào Màn hình chính", mở PU Connector từ màn hình chính rồi bật tại đây.'
+              ? 'Trên iPhone: bấm Chia sẻ → "Thêm vào Màn hình chính", mở PU Connect từ màn hình chính rồi bật tại đây.'
               : pushStatus
                 ? PUSH_STATUS_TEXT[pushStatus]
                 : 'Đang kiểm tra…'}

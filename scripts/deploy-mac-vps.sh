@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# 🚀 PU CONNECTOR - LOCAL FAST DEPLOY SCRIPT (Mac Mini -> VPS puc.vnhat.dev)
+# 🚀 PU CONNECT  - LOCAL FAST DEPLOY SCRIPT (Mac Mini -> VPS puc.vnhat.dev)
 # ==============================================================================
 # Mô hình tối ưu: Build toàn bộ Monorepo trên Mac Mini (siêu nhanh ~30s),
 # sau đó rsync mã nguồn và build artifacts lên VPS rồi chuyển slot Blue/Green.
@@ -23,7 +23,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${BLUE}  PU CONNECTOR - FAST DEPLOY (MAC MINI -> VPS)        ${NC}"
+echo -e "${BLUE}  PU CONNECT  - FAST DEPLOY (MAC MINI -> VPS)        ${NC}"
 echo -e "${BLUE}======================================================${NC}"
 
 # 1. Kiểm tra môi trường Local & Kết nối SSH tới VPS

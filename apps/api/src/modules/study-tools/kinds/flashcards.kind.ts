@@ -45,7 +45,7 @@ export const flashcardsKind: StudyKindDef<FlashcardContent> = {
   ai: {
     tool: 'create_flashcards',
     description:
-      'Create a flashcard deck and save it to the user\'s PU Connector Tools › Flashcard (spaced-repetition review). Use when the user wants to memorise terms, vocabulary, formulas or key concepts, or asks for flashcards.',
+      'Create a flashcard deck and save it to the user\'s PU Connect Tools › Flashcard (spaced-repetition review). Use when the user wants to memorise terms, vocabulary, formulas or key concepts, or asks for flashcards.',
     instructions: [
       `Topic only ⇒ 8–12 core cards. The user gives a concrete list (vocabulary, terms, a photo of a word list) or a number ⇒ include EVERY item, no merging or dropping (max ${STUDY_AI_MAX_ITEMS}).`,
       'Foreign-language vocabulary ⇒ template "vocab", set lang, fill phonetic and a short example for every card; the back holds the Vietnamese meaning.',

@@ -6,7 +6,7 @@
 flowchart LR
   browser(["🌐 Trình duyệt<br/>desktop / mobile web"])
 
-  subgraph PUC["PU Connector (monorepo pnpm + Turborepo)"]
+  subgraph PUC["PU Connect (monorepo pnpm + Turborepo)"]
     direction LR
     web["<b>apps/web</b><br/>Next.js 15 App Router<br/>React 19 · Tailwind v4 · animate-ui<br/>Zustand store"]
     adminspa["<b>apps/admin</b><br/>Vite + React 19 Static SPA<br/>admin-puc.vnhat.dev (0 MB Node RAM)"]

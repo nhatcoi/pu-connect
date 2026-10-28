@@ -1,9 +1,9 @@
 ---
 name: backend-db-architecture
-description: Quy chuẩn kiến trúc Backend NestJS, Native PostgreSQL (pg.Pool), ACID Transactions, Idempotent Migrations, BullMQ và Bảo mật danh tính cho PU Connector.
+description: Quy chuẩn kiến trúc Backend NestJS, Native PostgreSQL (pg.Pool), ACID Transactions, Idempotent Migrations, BullMQ và Bảo mật danh tính cho PU Connect.
 ---
 
-# Backend & Database Architecture Guidelines (PU Connector)
+# Backend & Database Architecture Guidelines (PU Connect)
 
 Tài liệu quy chuẩn cho AI Agents (Antigravity) khi triển khai API, cơ sở dữ liệu, hàng đợi và bảo mật trên backend NestJS (`apps/api`).
 

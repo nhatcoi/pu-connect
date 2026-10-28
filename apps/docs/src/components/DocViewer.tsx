@@ -161,7 +161,7 @@ export function DocViewer({ doc, onNavigate }: DocViewerProps) {
 
       {/* Footer bản quyền & liên kết */}
       <div className="mt-12 pt-6 border-t border-border/50 flex flex-wrap items-center justify-between text-xs text-muted-foreground gap-4">
-        <div>PU Connector Architecture & Developer Documentation © {new Date().getFullYear()} Phenikaa University</div>
+        <div>PU Connect Architecture & Developer Documentation © {new Date().getFullYear()} Phenikaa University</div>
         <div className="flex items-center gap-4">
           <a
             href="https://puc.vnhat.dev"
@@ -169,7 +169,7 @@ export function DocViewer({ doc, onNavigate }: DocViewerProps) {
             rel="noopener noreferrer"
             className="flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            Mở PU Connector Web <ExternalLink className="h-3 w-3" />
+            Mở PU Connect Web <ExternalLink className="h-3 w-3" />
           </a>
           <a
             href="https://admin-puc.vnhat.dev"

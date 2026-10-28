@@ -1,6 +1,6 @@
-# 🚀 Triển khai & DevOps — PU Connector Deployment & DevOps Guide
+# 🚀 Triển khai & DevOps — PU Connect Deployment & DevOps Guide
 
-Tài liệu này hướng dẫn cách cấu hình môi trường, đóng gói container Docker và triển khai hệ thống **PU Connector** lên môi trường Production (VPS, Cloudflare R2, Vercel, AWS/DigitalOcean).
+Tài liệu này hướng dẫn cách cấu hình môi trường, đóng gói container Docker và triển khai hệ thống **PU Connect** lên môi trường Production (VPS, Cloudflare R2, Vercel, AWS/DigitalOcean).
 
 ---
 

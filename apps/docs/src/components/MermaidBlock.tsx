@@ -149,7 +149,7 @@ export function MermaidBlock({ code, title }: MermaidBlockProps) {
         <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold">{title || 'Sơ đồ hệ thống PU Connector'}</span>
+              <span className="text-sm font-semibold">{title || 'Sơ đồ hệ thống PU Connect'}</span>
               <div className="flex items-center gap-1 bg-muted px-2 py-1 rounded-lg text-xs">
                 <button
                   onClick={() => setZoom((z) => Math.max(0.4, z - 0.2))}

@@ -49,7 +49,7 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587          # 465 = TLS
 SMTP_USER=...
 SMTP_PASS=...
-MAIL_FROM="PU Connector <no-reply@puc.vnhat.dev>"
+MAIL_FROM="PU Connect <no-reply@puc.vnhat.dev>"
 ```
 Không đặt `SMTP_HOST`: API chỉ ghi link xác thực vào log (`[MailService] [DEV] Link xác thực…`), không gửi mail thật.
 

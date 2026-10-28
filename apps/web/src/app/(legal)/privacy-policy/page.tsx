@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { LegalDocument, type LegalSection } from '@/components/legal/legal-document'
 
 export const metadata: Metadata = {
-  title: 'Chính sách bảo mật — PU Connector',
-  description: 'Cách PU Connector thu thập, sử dụng, lưu trữ và bảo vệ dữ liệu cá nhân của bạn.'
+  title: 'Chính sách bảo mật — PU Connect',
+  description: 'Cách PU Connect thu thập, sử dụng, lưu trữ và bảo vệ dữ liệu cá nhân của bạn.'
 }
 
 // Nội dung bám theo dữ liệu hệ thống thực sự lưu (bảng users, messages, push_subscriptions, R2, N7AI)
@@ -14,7 +14,7 @@ const SECTIONS: LegalSection[] = [
     title: 'Phạm vi áp dụng',
     body: (
       <p>
-        Chính sách này áp dụng cho website PU Connector và mọi tính năng đi kèm: bảng tin, cộng đồng, học phần, tài liệu, nhóm học, tin nhắn và trợ lý N7AI.
+        Chính sách này áp dụng cho website PU Connect và mọi tính năng đi kèm: bảng tin, cộng đồng, học phần, tài liệu, nhóm học, tin nhắn và trợ lý N7AI.
         Khi dùng dịch vụ, bạn đồng ý với cách xử lý dữ liệu mô tả dưới đây, cùng với <Link href="/terms">Điều khoản dịch vụ</Link>.
       </p>
     )
@@ -166,7 +166,7 @@ const SECTIONS: LegalSection[] = [
     title: 'Liên hệ',
     body: (
       <p>
-        Mọi câu hỏi hoặc yêu cầu về dữ liệu cá nhân, vui lòng gửi tới ban quản trị PU Connector qua email đã đăng ký tài khoản, hoặc dùng tính năng báo cáo
+        Mọi câu hỏi hoặc yêu cầu về dữ liệu cá nhân, vui lòng gửi tới ban quản trị PU Connect qua email đã đăng ký tài khoản, hoặc dùng tính năng báo cáo
         trong ứng dụng.
       </p>
     )
@@ -179,7 +179,7 @@ export default function PrivacyPolicyPage() {
       title="Chính sách bảo mật"
       intro={
         <p>
-          PU Connector là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Chúng tôi chỉ thu thập dữ liệu cần thiết để vận hành dịch vụ và không bán
+          PU Connect là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Chúng tôi chỉ thu thập dữ liệu cần thiết để vận hành dịch vụ và không bán
           dữ liệu của bạn.
         </p>
       }

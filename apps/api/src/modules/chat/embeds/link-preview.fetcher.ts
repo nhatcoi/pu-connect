@@ -113,7 +113,7 @@ export async function fetchLinkPreview(start: URL): Promise<LinkPreview | null> 
       const res = await fetch(url, {
         redirect: 'manual',
         signal: AbortSignal.timeout(TIMEOUT_MS),
-        headers: { 'user-agent': 'PUConnectorBot/1.0 (+link preview)', accept: 'text/html,application/xhtml+xml' }
+        headers: { 'user-agent': 'PU ConnectBot/1.0 (+link preview)', accept: 'text/html,application/xhtml+xml' }
       })
       const location = res.headers.get('location')
       if (res.status >= 300 && res.status < 400 && location) {

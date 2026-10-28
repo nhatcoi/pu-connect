@@ -359,7 +359,7 @@ function getRandomInt(min: number, max: number): number {
 }
 
 async function main() {
-  console.log('🚀 Starting PU Connector Database Seeding for 280+ Posts...')
+  console.log('🚀 Starting PU Connect Database Seeding for 280+ Posts...')
 
   // 1. Seed Faculties
   console.log('📦 Seeding faculties...')
@@ -580,7 +580,7 @@ async function main() {
       authorRole: 'lecturer',
       preferredUsername: 'gv_nguyenvanha',
       title: '[Khoa CNTT] Thông báo lịch nộp Báo cáo Tiến độ Đồ án Tốt nghiệp K15 (Đợt 1 - 2026)',
-      content: `Kính gửi toàn thể sinh viên K15 Khoa Công nghệ Thông tin đang thực hiện Đồ án Tốt nghiệp!\n\nKhoa thông báo kế hoạch kiểm tra tiến độ Đợt 1 như sau:\n\n### 📅 Thời gian & Hình thức nộp:\n- **Hạn chót:** 23h59 ngày 15/03/2026.\n- **Hồ sơ gồm:**\n  1. Báo cáo tiến độ (PDF theo mẫu chuẩn của Trường).\n  2. Link Git Repository (chứa mã nguồn và tài liệu kiến trúc SRS/SDD).\n  3. Video Demo ngắn 3-5 phút các chức năng đã hoàn thành.\n\n### ⚠️ Lưu ý quan trọng:\n- Sinh viên không nộp báo cáo đúng hạn sẽ bị trừ điểm tiến độ theo quy chế.\n- Mọi thắc mắc liên hệ Trợ giảng hoặc Giáo viên hướng dẫn qua hệ thống PU Connector.\n\nChúc các em hoàn thành tốt đồ án!`,
+      content: `Kính gửi toàn thể sinh viên K15 Khoa Công nghệ Thông tin đang thực hiện Đồ án Tốt nghiệp!\n\nKhoa thông báo kế hoạch kiểm tra tiến độ Đợt 1 như sau:\n\n### 📅 Thời gian & Hình thức nộp:\n- **Hạn chót:** 23h59 ngày 15/03/2026.\n- **Hồ sơ gồm:**\n  1. Báo cáo tiến độ (PDF theo mẫu chuẩn của Trường).\n  2. Link Git Repository (chứa mã nguồn và tài liệu kiến trúc SRS/SDD).\n  3. Video Demo ngắn 3-5 phút các chức năng đã hoàn thành.\n\n### ⚠️ Lưu ý quan trọng:\n- Sinh viên không nộp báo cáo đúng hạn sẽ bị trừ điểm tiến độ theo quy chế.\n- Mọi thắc mắc liên hệ Trợ giảng hoặc Giáo viên hướng dẫn qua hệ thống PU Connect.\n\nChúc các em hoàn thành tốt đồ án!`,
       tags: ['FIT', 'DoAnTotNghiep', 'K15', 'ThongBao', 'TienDo'],
       daysAgo: 7,
       comments: [
@@ -790,9 +790,9 @@ async function main() {
       facultyCode: 'FIT',
       preferredUsername: 'pu_admin_lead',
       authorRole: 'admin',
-      title: 'Chào mừng các bạn đến với PU Connector - Nền tảng Học tập & Kết nối Sinh viên Phenikaa',
-      content: `🎉 **Chào mừng toàn thể Giảng viên và Sinh viên Đại học Phenikaa!**\n\n**PU Connector** là không gian số được xây dựng nhằm thúc đẩy văn hóa học tập, nghiên cứu và trao đổi học thuật sôi nổi trong toàn trường.\n\n### 🌟 Các phân hệ nổi bật:\n- **Bảng tin Học thuật & Q&A:** Đặt câu hỏi, thảo luận đồ án và nhận câu trả lời từ Giảng viên & Trợ giảng.\n- **Kho Tri thức & Đề thi:** Tìm kiếm slide, đề thi cũ và tài liệu học tập có gắn nhãn phân loại theo từng học phần.\n- **Ghép nhóm PBL & NCKH:** Tìm đồng đội cùng chí hướng để thực hiện đồ án, tham gia Robocon, Hackathon.\n- **Nhịp sống Phenikaa:** Cập nhật thông báo đào tạo, sự kiện CLB, thông tin nhà trọ và xe bus.\n\nChúc các bạn có những trải nghiệm học tập và kết nối tuyệt vời tại Phenikaa University! 🚀`,
-      tags: ['PUConnector', 'PhenikaaUniversity', 'ThongBao', 'Welcome', 'Community'],
+      title: 'Chào mừng các bạn đến với PU Connect - Nền tảng Học tập & Kết nối Sinh viên Phenikaa',
+      content: `🎉 **Chào mừng toàn thể Giảng viên và Sinh viên Đại học Phenikaa!**\n\n**PU Connect** là không gian số được xây dựng nhằm thúc đẩy văn hóa học tập, nghiên cứu và trao đổi học thuật sôi nổi trong toàn trường.\n\n### 🌟 Các phân hệ nổi bật:\n- **Bảng tin Học thuật & Q&A:** Đặt câu hỏi, thảo luận đồ án và nhận câu trả lời từ Giảng viên & Trợ giảng.\n- **Kho Tri thức & Đề thi:** Tìm kiếm slide, đề thi cũ và tài liệu học tập có gắn nhãn phân loại theo từng học phần.\n- **Ghép nhóm PBL & NCKH:** Tìm đồng đội cùng chí hướng để thực hiện đồ án, tham gia Robocon, Hackathon.\n- **Nhịp sống Phenikaa:** Cập nhật thông báo đào tạo, sự kiện CLB, thông tin nhà trọ và xe bus.\n\nChúc các bạn có những trải nghiệm học tập và kết nối tuyệt vời tại Phenikaa University! 🚀`,
+      tags: ['PU Connect', 'PhenikaaUniversity', 'ThongBao', 'Welcome', 'Community'],
       daysAgo: 20,
       comments: [
         {

@@ -8,7 +8,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
     <div className="flex min-h-screen flex-col bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-4">
-          <Link href="/" aria-label="PU Connector">
+          <Link href="/" aria-label="PU Connect">
             <PuLogo markClassName="h-8 w-8" />
           </Link>
           <nav className="hidden gap-4 text-[13px] sm:flex text-muted-foreground">
@@ -21,7 +21,7 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         </div>
       </header>
       <div className="flex-1">{children}</div>
-      <footer className="border-t border-border py-6 text-center text-[12px] text-muted-foreground">© 2026 PU Connector · Phenikaa University</footer>
+      <footer className="border-t border-border py-6 text-center text-[12px] text-muted-foreground">© 2026 PU Connect · Phenikaa University</footer>
     </div>
   )
 }

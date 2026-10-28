@@ -36,7 +36,7 @@ export function LandingView() {
               <Link href="/privacy-policy" className="text-primary hover:underline">
                 Chính sách bảo mật
               </Link>{' '}
-              của PU Connector.
+              của PU Connect.
             </p>
           </div>
         </div>
@@ -53,7 +53,7 @@ export function LandingView() {
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-foreground">Quét để tải App</span>
-                <span className="text-[10px] text-muted-foreground">PU Connector Mobile (Expo)</span>
+                <span className="text-[10px] text-muted-foreground">PU Connect Mobile (Expo)</span>
                 <span className="text-[10px] font-mono text-primary font-semibold mt-0.5">iOS & Android</span>
               </div>
             </div>

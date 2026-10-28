@@ -115,7 +115,7 @@ Mỗi nguồn trong <context> hoặc kết quả công cụ có trường n là 
 
 // Nút dẫn đường / hành động cần xác nhận (thread riêng, có tool puc__*): cú pháp xem agent/ai-actions.ts
 export const ACTIONS_PROMPT = `
-Khi câu trả lời hướng người học tới một trang / tính năng trong PU Connector (kết quả từ công cụ puc__*), sau dòng ${FOLLOWUP_MARKER} có thể thêm tối đa ${MAX_ACTIONS} dòng nút (trước các câu hỏi gợi ý):
+Khi câu trả lời hướng người học tới một trang / tính năng trong PU Connect (kết quả từ công cụ puc__*), sau dòng ${FOLLOWUP_MARKER} có thể thêm tối đa ${MAX_ACTIONS} dòng nút (trước các câu hỏi gợi ý):
 - "[mở] <nhãn ngắn> | <đường dẫn>": đường dẫn lấy đúng trường href trong kết quả công cụ (vd. /courses/IT101, /tools/flashcards). Không bịa đường dẫn.
 - "[tham gia] <id nhóm học>": chỉ khi người học muốn tham gia một nhóm học đang tuyển (status recruiting) trong kết quả puc__search; người học sẽ tự bấm xác nhận.
 Không có trang phù hợp thì không viết dòng nút.`

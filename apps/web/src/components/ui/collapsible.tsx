@@ -165,7 +165,7 @@ export const CollapsibleContent = React.forwardRef<HTMLDivElement, CollapsibleCo
 CollapsibleContent.displayName = 'CollapsibleContent'
 
 /* -------------------------------------------------------------------------- */
-/* High-Level Signature Component: AppCollapsible (PU Connector Standard)    */
+/* High-Level Signature Component: AppCollapsible (PU Connect Standard)    */
 /* -------------------------------------------------------------------------- */
 
 export type AppCollapsibleVariant = 'card' | 'bordered' | 'ghost' | 'subtle'

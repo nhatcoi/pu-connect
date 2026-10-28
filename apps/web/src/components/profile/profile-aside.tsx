@@ -110,7 +110,7 @@ export function ProfileAside({ profile, isOwner }: ProfileAsideProps) {
         </div>
         <div className="flex items-center gap-1.5 pt-0.5">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span>PU Connector © 2026 Phenikaa</span>
+          <span>PU Connect © 2026 Phenikaa</span>
         </div>
       </div>
     </div>

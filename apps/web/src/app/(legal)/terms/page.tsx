@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { LegalDocument, type LegalSection } from '@/components/legal/legal-document'
 
 export const metadata: Metadata = {
-  title: 'Điều khoản dịch vụ — PU Connector',
-  description: 'Điều khoản sử dụng và quy tắc cộng đồng của PU Connector.'
+  title: 'Điều khoản dịch vụ — PU Connect',
+  description: 'Điều khoản sử dụng và quy tắc cộng đồng của PU Connect.'
 }
 
 const SECTIONS: LegalSection[] = [
@@ -13,7 +13,7 @@ const SECTIONS: LegalSection[] = [
     title: 'Chấp nhận điều khoản',
     body: (
       <p>
-        Khi tạo tài khoản hoặc sử dụng PU Connector, bạn đồng ý với Điều khoản này và <Link href="/privacy-policy">Chính sách bảo mật</Link>. Nếu không đồng ý,
+        Khi tạo tài khoản hoặc sử dụng PU Connect, bạn đồng ý với Điều khoản này và <Link href="/privacy-policy">Chính sách bảo mật</Link>. Nếu không đồng ý,
         vui lòng ngừng sử dụng dịch vụ.
       </p>
     )
@@ -36,7 +36,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Bạn giữ quyền sở hữu với bài viết, bình luận, tài liệu và tin nhắn mình tạo. Khi đăng lên, bạn cho phép PU Connector lưu trữ, hiển thị và phân phối
+          Bạn giữ quyền sở hữu với bài viết, bình luận, tài liệu và tin nhắn mình tạo. Khi đăng lên, bạn cho phép PU Connect lưu trữ, hiển thị và phân phối
           nội dung đó tới những người có quyền xem, chỉ nhằm mục đích vận hành dịch vụ.
         </p>
         <p>
@@ -51,7 +51,7 @@ const SECTIONS: LegalSection[] = [
     title: 'Quy tắc cộng đồng',
     body: (
       <>
-        <p>Bạn không được dùng PU Connector để:</p>
+        <p>Bạn không được dùng PU Connect để:</p>
         <ul>
           <li>Quấy rối, đe dọa, bắt nạt, phân biệt đối xử hoặc kích động thù ghét.</li>
           <li>Đăng nội dung khiêu dâm, bạo lực, vi phạm pháp luật Việt Nam.</li>
@@ -89,7 +89,7 @@ const SECTIONS: LegalSection[] = [
     title: 'Giới hạn trách nhiệm',
     body: (
       <p>
-        PU Connector được cung cấp theo hiện trạng và đang trong giai đoạn phát triển. Chúng tôi không bảo đảm dịch vụ luôn hoạt động liên tục, không lỗi, và
+        PU Connect được cung cấp theo hiện trạng và đang trong giai đoạn phát triển. Chúng tôi không bảo đảm dịch vụ luôn hoạt động liên tục, không lỗi, và
         không chịu trách nhiệm về nội dung do người dùng đăng tải. Chúng tôi có thể thay đổi, tạm ngừng hoặc dừng một tính năng mà không cần báo trước.
       </p>
     )
@@ -127,7 +127,7 @@ export default function TermsPage() {
       title="Điều khoản dịch vụ"
       intro={
         <p>
-          PU Connector là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Các điều khoản dưới đây giúp cộng đồng an toàn, tôn trọng và hữu ích cho
+          PU Connect là mạng xã hội học thuật dành cho cộng đồng sinh viên Phenikaa. Các điều khoản dưới đây giúp cộng đồng an toàn, tôn trọng và hữu ích cho
           việc học.
         </p>
       }

@@ -33,7 +33,7 @@ export function N7AiSidebar() {
           <span>N7AI Studio</span>
         </span>
         <Link href="/" className="flex md:hidden items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> PU Connector
+          <ArrowLeft className="h-3.5 w-3.5" /> PU Connect
         </Link>
         <button
           type="button"

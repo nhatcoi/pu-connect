@@ -1,6 +1,6 @@
-# PU Connector: extension and PKA MCP
+# PU Connect: extension and PKA MCP
 
-Implemented: 2026-10-19. Connector ID `pu_connector`, display name **PU Connector**. This source reads the student's university account, separate from the social app's always-available `puc__*` tools.
+Implemented: 2026-10-19. Connector ID `pu_connector`, display name **PU Connect**. This source reads the student's university account, separate from the social app's always-available `puc__*` tools.
 
 ## Connection
 
@@ -56,5 +56,5 @@ Protocol reference: [MCP Streamable HTTP](https://modelcontextprotocol.io/specif
 - Gateway and landing were deployed with PKA's existing scripts, preserving environment and SQLite state. PUC deployed through `scripts/deploy.sh`, switching Web `.next-b` → `.next-a`. An immediate API health probe during restart returned 502; after startup, repeated checks returned the expected 401. No persistent API failure was found.
 - Final health: Web/Admin/PKA consent page 200; unauthenticated PUC API and PKA MCP POST 401; MCP GET 405; invalid token exchange 400. All three systemd services active, Nginx valid.
 - A normally registered QA account on production verified the connector name/availability, authenticated redirect to PKA with S256 challenge and exact callback, absence of the verifier in the URL, and rejection of invalid state. The QA session was logged out. The university consent step was not completed using a real student account.
-- The three new connector service/controller files, registry, schemas and Web components match the tested release. A separate concurrent change added an optional model override to the existing agent loop after the release snapshot; the PU Connector integration hooks remain intact and the compiled API module loads successfully. This task did not overwrite that change.
+- The three new connector service/controller files, registry, schemas and Web components match the tested release. A separate concurrent change added an optional model override to the existing agent loop after the release snapshot; the PU Connect integration hooks remain intact and the compiled API module loads successfully. This task did not overwrite that change.
 - Browser inventory exposed no controllable browser surface, so visual verification and real extension login are not claimed. Git was not committed or pushed.

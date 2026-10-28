@@ -1,6 +1,6 @@
 # 🏛️ Phân Hệ Core: Mạng Xã Hội Học Thuật (Social Network Core)
 
-> **Tầm nhìn sản phẩm:** Định hình PU Connection thành **University Super App & Social Learning Platform** — kết hợp ưu điểm của **Facebook (cộng đồng/kết nối)** + **X (tốc độ/ngắn gọn/bảng tin realtime)** + **Reddit (chuyên sâu theo chủ đề/môn học/Q&A giải pháp)**, được tinh chỉnh hoàn hảo cho môi trường đại học (Phenikaa University).
+> **Tầm nhìn sản phẩm:** Định hình PU Connect thành **University Super App & Social Learning Platform** — kết hợp ưu điểm của **Facebook (cộng đồng/kết nối)** + **X (tốc độ/ngắn gọn/bảng tin realtime)** + **Reddit (chuyên sâu theo chủ đề/môn học/Q&A giải pháp)**, được tinh chỉnh hoàn hảo cho môi trường đại học (Phenikaa University).
 
 ---
 
@@ -18,13 +18,13 @@
 | [**`08-web-state.md`**](./08-web-state.md) | Quản lý state phía web (ADR): TanStack Query cho dữ liệu server, zustand cho UI, layout chung, cache/prefetch/cập nhật lạc quan. | ✅ Đã triển khai |
 | [**`06-messaging-and-ai.md`**](./06-messaging-and-ai.md) | Nhắn tin 1-1/nhóm, N7AI (`@n7ai` là bot user), AI drawer theo ngữ cảnh, tác vụ nhanh, RAG pgvector, lộ trình P0–P5. | 📐 Thiết kế |
 | [**`14-google-mcp-connectors.md`**](./14-google-mcp-connectors.md) | Google MCP client + server tự host `workspace-mcp`: Drive, Calendar, Gmail; vòng lặp tool calling, OAuth, quyền chỉ đọc và cấu hình. | ✅ Đã triển khai |
-| [**`16-n7ai-agent-tools.md`**](./16-n7ai-agent-tools.md) | N7AI agent: tool hội thoại cũ (`my_chats`), tool PU Connector (tìm kiếm + hướng dẫn app), nút dẫn đường / tham gia nhóm có xác nhận, hồ sơ học, ghim bộ nhớ; nguyên tắc chọn prompt / prefetch / tool. | ✅ Đã triển khai |
+| [**`16-n7ai-agent-tools.md`**](./16-n7ai-agent-tools.md) | N7AI agent: tool hội thoại cũ (`my_chats`), tool PU Connect (tìm kiếm + hướng dẫn app), nút dẫn đường / tham gia nhóm có xác nhận, hồ sơ học, ghim bộ nhớ; nguyên tắc chọn prompt / prefetch / tool. | ✅ Đã triển khai |
 | [**`18-agent-harness-performance.md`**](./18-agent-harness-performance.md) | Model chọn tìm nguồn; tìm PUC theo lô, search/read, cache và chạy song song chỉ đọc, MCP lazy, ngân sách và thời gian từng giai đoạn. | ✅ Đã triển khai |
 | [**`19-n7ai-temporary-chat.md`**](./19-n7ai-temporary-chat.md) | Chat tạm N7AI: stateless SSE, không lưu hội thoại / bộ nhớ, chỉ tool đọc, vẫn tính quota. | ✅ Đã triển khai |
 | [**`20-n7ai-model-tiers.md`**](./20-n7ai-model-tiers.md) | Mức model N7AI (n7ai-fast mặc định · n7ai-perfect · n7ai-deep ẩn), lưu theo người dùng, quota theo mức. | ✅ Đã triển khai |
 | [**`17-rag-hybrid-search.md`**](./17-rag-hybrid-search.md) | RAG N7AI: trích nội dung tài liệu (document_chunks), embedding bài viết/tài liệu bằng Ollama qwen3-embedding trên Mac mini (reverse SSH tunnel), tìm kết hợp full-text + vector (RRF), worker BullMQ, eval tự động. | ✅ Đã triển khai |
 | [**`13-admin-console.md`**](./13-admin-console.md) | Cổng quản trị (chỉ admin): xem gì ở đâu, xử phạt theo bậc, điểm rủi ro, nhật ký bảo mật, lượt xem hồ sơ, quyền riêng tư & vận hành. | ✅ Đã triển khai |
-| [**`20-pu-connector-mcp.md`**](./20-pu-connector-mcp.md) | PU Connector: extension và PKA MCP, 8 tool chỉ đọc Canvas/QLĐT qua Streamable HTTP, PKCE. | ✅ Đã triển khai |
+| [**`20-pu-connector-mcp.md`**](./20-pu-connector-mcp.md) | PU Connect: extension và PKA MCP, 8 tool chỉ đọc Canvas/QLĐT qua Streamable HTTP, PKCE. | ✅ Đã triển khai |
 | [**`21-semantic-scholar-connector.md`**](./21-semantic-scholar-connector.md) | Semantic Scholar & arXiv: tìm kiếm bài báo khoa học toàn cầu, abstract, citations, PDF link, dự phòng tự động. | ✅ Đã triển khai |
 | [**`22-n7ai-context.md`**](./22-n7ai-context.md) | N7AI hiểu ngữ cảnh theo nơi gọi (bình luận, nhóm, chat cá nhân). | ✅ Đã triển khai |
 | [**`23-n7ai-folders.md`**](./23-n7ai-folders.md) | Thư mục lịch sử N7AI (kéo thả) và panel phải: Tài liệu (xem trước) · Công cụ (tạo học liệu). | ✅ Đã triển khai |
@@ -36,7 +36,7 @@
 ## 🧩 Bản Đồ 13 Trụ Cột Tính Năng Core (Core Pillars)
 
 ```text
-                                  PU CONNECTION — SOCIAL CORE
+                                  PU CONNECT    — SOCIAL CORE
                                                │
       ┌────────────────────────┬───────────────┴───────────────┬────────────────────────┐
       │                        │                               │                        │
@@ -62,4 +62,4 @@
 4. **Monorepo Contracts (`@pu/schemas` & `@pu/ui`):**
    - Mọi payload trao đổi giữa Backend (NestJS) và Frontend (Next.js 15) bắt buộc tuân thủ hợp đồng dữ liệu **Zod Schema** tại `packages/schemas`.
 
-- [PU Connector: extension + PKA MCP](./20-pu-connector-mcp.md) — cấp quyền, dữ liệu trường và 8 công cụ chỉ đọc.
+- [PU Connect: extension + PKA MCP](./20-pu-connector-mcp.md) — cấp quyền, dữ liệu trường và 8 công cụ chỉ đọc.

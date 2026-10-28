@@ -1,4 +1,4 @@
-# 🗺️ Sơ Đồ Hệ Thống PU Connector (Diagrams-as-Code)
+# 🗺️ Sơ Đồ Hệ Thống PU Connect (Diagrams-as-Code)
 
 > Mọi sơ đồ viết bằng **Mermaid** ngay trong Markdown: GitHub, VS Code (extension *Markdown Preview Mermaid*) và Obsidian tự hiển thị. Sơ đồ nằm cạnh code, đi qua review và có lịch sử git như code.
 > Sơ đồ ở đây mô tả **hệ thống đang chạy thật** (không phải kế hoạch). Thiết kế tương lai nằm ở `docs/core/*`.

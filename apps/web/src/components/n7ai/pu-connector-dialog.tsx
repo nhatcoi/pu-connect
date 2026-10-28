@@ -13,7 +13,7 @@ export function PuConnectorDialog({ open, onOpenChange }: { open: boolean; onOpe
       <DialogContent className="max-w-sm rounded-2xl">
         <DialogHeader>
           <ConnectorIcon id="pu_connector" className="mb-2 h-10 w-10" />
-          <DialogTitle>Kết nối PU Connector</DialogTitle>
+          <DialogTitle>Kết nối PU Connect</DialogTitle>
           <DialogDescription>Lịch học, điểm và deadline từ tài khoản trường.</DialogDescription>
         </DialogHeader>
         <ol className="space-y-3 text-sm">

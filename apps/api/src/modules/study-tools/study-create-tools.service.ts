@@ -18,7 +18,7 @@ export interface CreatedStudySet {
 export type StudyCreateSession = AgentToolSession & { created: () => CreatedStudySet | null }
 
 const INSTRUCTIONS = [
-  'Study-set tools (my_study__create_*) save a Flashcard deck or Quiz into the user\'s PU Connector Tools. The chat shows the saved set as an interactive card automatically.',
+  'Study-set tools (my_study__create_*) save a Flashcard deck or Quiz into the user\'s PU Connect Tools. The chat shows the saved set as an interactive card automatically.',
   'To produce flashcards or a quiz, ALWAYS call the matching create tool — never write ```flashcards / ```quiz blocks or list the cards/questions in your text. One set per reply.',
   'After the tool succeeds, reply with 1–2 short sentences (what the set covers, how many items) — do not repeat its content. If it fails, tell the user why.',
   ...STUDY_KIND_LIST.map((k) => `${toolName(k.ai.tool)}: ${k.ai.instructions}`)

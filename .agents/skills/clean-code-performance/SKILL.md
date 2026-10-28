@@ -1,11 +1,11 @@
 ---
 name: clean-code-performance
-description: Clean code and performance-first engineering guidelines for PU Connector, inspired by Orca architecture and Claude-standard production codebase.
+description: Clean code and performance-first engineering guidelines for PU Connect, inspired by Orca architecture and Claude-standard production codebase.
 ---
 
-# Clean Code & Performance Guidelines (PU Connector)
+# Clean Code & Performance Guidelines (PU Connect)
 
-Quy chuẩn viết code sạch, kiến trúc module rõ ràng và ưu tiên hiệu năng tối đa cho toàn bộ dự án PU Connector.
+Quy chuẩn viết code sạch, kiến trúc module rõ ràng và ưu tiên hiệu năng tối đa cho toàn bộ dự án PU Connect.
 
 ---
 

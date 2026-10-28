@@ -21,7 +21,7 @@ alert() {
   if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
     curl -s -m 15 -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
       --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-      --data-urlencode "text=🚨 PU Connector: ${msg}" || true
+      --data-urlencode "text=🚨 PU Connect: ${msg}" || true
   fi
 }
 
@@ -31,6 +31,6 @@ notify_ok() {
   if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
     curl -s -m 15 -o /dev/null "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
       --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
-      --data-urlencode "text=✅ PU Connector: ${msg}" || true
+      --data-urlencode "text=✅ PU Connect: ${msg}" || true
   fi
 }

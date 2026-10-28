@@ -1,6 +1,6 @@
 # 🌟 Phân Hệ Core: Danh Mục Tính Năng & Lộ Trình (Social Core Features & Roadmap)
 
-Tài liệu ghi nhận ngắn gọn, súc tích toàn bộ các tính năng **Đã Triển Khai (Completed)** và **Sắp Triển Khai (Roadmap & Backlog)** của phân hệ Mạng Xã Hội Học Thuật Core trong dự án **PU Connector**.
+Tài liệu ghi nhận ngắn gọn, súc tích toàn bộ các tính năng **Đã Triển Khai (Completed)** và **Sắp Triển Khai (Roadmap & Backlog)** của phân hệ Mạng Xã Hội Học Thuật Core trong dự án **PU Connect**.
 
 ---
 

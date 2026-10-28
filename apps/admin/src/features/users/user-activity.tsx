@@ -202,7 +202,7 @@ function ActivityRow({ it, type, onOpenUser }: { it: AdminActivityItem; type: Ad
           href={external}
           target="_blank"
           rel="noreferrer"
-          title="Mở trên PU Connector"
+          title="Mở trên PU Connect"
           className="mr-2 inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
         >
           <ExternalLink className="size-3.5" />

@@ -1,4 +1,4 @@
-# 🎨 Hướng dẫn Phát triển Frontend — PU Connector Frontend Guide
+# 🎨 Hướng dẫn Phát triển Frontend — PU Connect Frontend Guide
 
 Tài liệu này hướng dẫn cách cấu trúc, sử dụng và mở rộng hệ thống UI, Component, Renderers và State Management trong ứng dụng **Next.js (`apps/web`)**.
 

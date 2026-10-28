@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { LegalDocument, type LegalSection } from '@/components/legal/legal-document'
 
 export const metadata: Metadata = {
-  title: 'Điều khoản N7AI — PU Connector',
+  title: 'Điều khoản N7AI — PU Connect',
   description: 'Điều khoản sử dụng trợ lý học tập N7AI: giới hạn, dữ liệu, liêm chính học thuật.'
 }
 
@@ -14,7 +14,7 @@ const SECTIONS: LegalSection[] = [
     title: 'N7AI là gì',
     body: (
       <p>
-        N7AI là trợ lý học tập dùng mô hình ngôn ngữ lớn, trả lời dựa trên nội dung trên PU Connector và các nguồn bạn cho phép (tài liệu của bạn, Google
+        N7AI là trợ lý học tập dùng mô hình ngôn ngữ lớn, trả lời dựa trên nội dung trên PU Connect và các nguồn bạn cho phép (tài liệu của bạn, Google
         Drive, Google Calendar, trang web bạn gửi). Câu trả lời có thể sai hoặc thiếu — hãy kiểm chứng với giảng viên, giáo trình và nguồn chính thức.
       </p>
     )
@@ -45,7 +45,7 @@ const SECTIONS: LegalSection[] = [
     body: (
       <>
         <p>
-          Câu hỏi, tệp đính kèm và nội dung nguồn liên quan được gửi tới nhà cung cấp mô hình AI để tạo câu trả lời. PU Connector không dùng hội thoại của bạn
+          Câu hỏi, tệp đính kèm và nội dung nguồn liên quan được gửi tới nhà cung cấp mô hình AI để tạo câu trả lời. PU Connect không dùng hội thoại của bạn
           để huấn luyện mô hình.
         </p>
         <p>

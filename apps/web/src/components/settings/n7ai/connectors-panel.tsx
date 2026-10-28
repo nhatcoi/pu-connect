@@ -17,7 +17,7 @@ import { SettingsListSkeleton } from '@/components/skeletons/catalog-skeleton'
 import { SettingsGroup } from '../settings-ui'
 
 const CONNECTOR_NAMES: Record<string, string> = {
-  'pu-connector': 'PU Connector',
+  'pu-connector': 'PU Connect',
   'semantic-scholar': 'Semantic Scholar',
   'google-drive': 'Google Drive',
   'google-calendar': 'Google Calendar',
@@ -112,7 +112,7 @@ export function ConnectorsPanel() {
 
   return (
     <>
-      <SettingsGroup label="Nguồn trong PU Connector" hint="Công tắc bật = N7AI dùng nguồn này mặc định trong hội thoại riêng. Nhóm chat chỉ dùng Thư viện PU.">
+      <SettingsGroup label="Nguồn trong PU Connect" hint="Công tắc bật = N7AI dùng nguồn này mặc định trong hội thoại riêng. Nhóm chat chỉ dùng Thư viện PU.">
         {internal.map(row)}
       </SettingsGroup>
       {academic.length > 0 && (

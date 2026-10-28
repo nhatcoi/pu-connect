@@ -6,7 +6,7 @@ import { createTestApp, createUser, loginAgent } from './helpers'
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 
-describe('PU Connector / PKA', () => {
+describe('PU Connect / PKA', () => {
   let app: NestExpressApplication
   let db: DatabaseService
   const realFetch = global.fetch
@@ -48,7 +48,7 @@ describe('PU Connector / PKA', () => {
     const agent = await loginAgent(app, user)
     const list = await agent.get('/api/ai/connectors').expect(200)
     expect(list.body.data.find((item: { id: string }) => item.id === 'pu_connector')).toMatchObject({
-      name: 'PU Connector',
+      name: 'PU Connect',
       requiresAuth: true,
       connected: false
     })

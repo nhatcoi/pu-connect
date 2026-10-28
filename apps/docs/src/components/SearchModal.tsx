@@ -94,7 +94,7 @@ export function SearchModal({ open, onClose, onSelect }: SearchModalProps) {
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
           {query.trim() === '' ? (
             <div className="py-12 text-center text-xs text-muted-foreground">
-              Nhập từ khóa để tra cứu toàn bộ 52+ tài liệu đặc tả PU Connector.
+              Nhập từ khóa để tra cứu toàn bộ 52+ tài liệu đặc tả PU Connect.
             </div>
           ) : results.length === 0 ? (
             <div className="py-12 text-center text-xs text-muted-foreground">

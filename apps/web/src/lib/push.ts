@@ -121,7 +121,7 @@ export async function diagnosePush(): Promise<PushDiagnosis> {
   let shown = false
   if (reg && Notification.permission === 'granted') {
     try {
-      await reg.showNotification('Thử trực tiếp — PU Connector', {
+      await reg.showNotification('Thử trực tiếp — PU Connect', {
         body: 'Nếu bạn thấy thông báo này, trình duyệt và hệ điều hành đang hiển thị bình thường.',
         icon: '/brand/icon-192.png',
         tag: 'local-test'

@@ -56,7 +56,7 @@ import { ChatShareService } from './share/chat-share.service'
 // AiModule (LLM, quota, truy xuất) ← n7ai; core · notify (Web Push) ← conversations ← study-group-chat / messages (không vòng phụ thuộc)
 // core ← mentions · refs · ai-skills · ai-summary · ai-settings · ai-memories ← n7ai ← messages ← ai-tasks (worker ai-maintenance)
 // StudyGroupsModule dùng StudyGroupChatService (chat không phụ thuộc ngược lại)
-// n7ai/agent: tool N7AI về hội thoại cũ (my_chats) & chính PU Connector (puc, dùng SearchService)
+// n7ai/agent: tool N7AI về hội thoại cũ (my_chats) & chính PU Connect (puc, dùng SearchService)
 @Module({
   imports: [AiModule, StudyToolsModule, SearchModule, RealtimeModule, StorageModule, PushModule, BullModule.registerQueue({ name: CHAT_PUSH_QUEUE }, { name: AI_MAINTENANCE_QUEUE })],
   controllers: [

@@ -66,9 +66,9 @@ export class PuConnectorMcpService {
         }
       })),
       instructions: [
-        'PU Connector reads the user’s own university profile, grades, timetable, attendance and Canvas courses/deadlines through the PKA MCP service.',
-        'Use pu_connector__* for university account facts; puc__* searches the PU Connector social app. These are different data sources.',
-        'Never invent personal academic facts. If disconnected or expired, ask the user to reconnect PU Connector in Settings using the extension. Only read operations are available.'
+        'PU Connect reads the user’s own university profile, grades, timetable, attendance and Canvas courses/deadlines through the PKA MCP service.',
+        'Use pu_connector__* for university account facts; puc__* searches the PU Connect social app. These are different data sources.',
+        'Never invent personal academic facts. If disconnected or expired, ask the user to reconnect PU Connect in Settings using the extension. Only read operations are available.'
       ],
       describe: (name) => (labels.has(name) ? { provider: 'pu_connector', label: labels.get(name)! } : null),
       readOnly: (name) => labels.has(name),
@@ -83,13 +83,13 @@ export class PuConnectorMcpService {
             signal: AbortSignal.any([signal, callSignal]),
             timeout: 15_000
           })
-          const error = result.isError ? 'Chưa đọc được dữ liệu. Kiểm tra tham số hoặc kết nối lại PU Connector.' : null
+          const error = result.isError ? 'Chưa đọc được dữ liệu. Kiểm tra tham số hoặc kết nối lại PU Connect.' : null
           await this.connector.record(userId, error)
           const content = Array.isArray(result.content) ? result.content.filter((block) => block.type === 'text') : []
           const text = JSON.stringify({ provider: 'pu_connector', isError: !!result.isError, data: content })
           return text.length <= 16_000 ? text : toolError('Kết quả quá dài. Hãy thu hẹp truy vấn.')
         } catch {
-          const error = 'Chưa đọc được dữ liệu. Kết nối lại PU Connector trong Cài đặt.'
+          const error = 'Chưa đọc được dữ liệu. Kết nối lại PU Connect trong Cài đặt.'
           await this.connector.record(userId, error).catch(() => undefined)
           return toolError(error)
         }

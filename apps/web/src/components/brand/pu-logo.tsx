@@ -9,7 +9,7 @@ function BrandMark({ src, label, className }: { src: string; label: string; clas
 
 // Logo app: chữ P (người dùng) + U/i cam (kết nối)
 export function PuMark({ className }: { className?: string }) {
-  return <BrandMark src="/brand/pu-mark.svg" label="PU Connector" className={className} />
+  return <BrandMark src="/brand/pu-mark.svg" label="PU Connect" className={className} />
 }
 
 // Logo trợ lý AI (N7AI): kim cương xanh-cam + node mạch
@@ -23,7 +23,7 @@ export function PuLogo({ className, markClassName, showTagline = false }: { clas
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <PuMark className={markClassName} />
       <span className="flex flex-col">
-        <span className="font-extrabold text-base tracking-tight leading-none text-foreground">PU Connector</span>
+        <span className="font-extrabold text-base tracking-tight leading-none text-foreground">PU Connect</span>
         {showTagline && <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase mt-1">Phenikaa University</span>}
       </span>
     </span>

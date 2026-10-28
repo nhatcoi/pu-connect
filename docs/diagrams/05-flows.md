@@ -369,7 +369,7 @@ sequenceDiagram
 
 - 2026-10-19 — Chat: bỏ prefetch, model chọn nguồn, read batching/cache, Google MCP lazy và stage timing.
 
-## PU Connector: extension authorization and remote MCP (2026-10-19)
+## PU Connect: extension authorization and remote MCP (2026-10-19)
 
 ```mermaid
 sequenceDiagram
@@ -378,7 +378,7 @@ sequenceDiagram
   participant A as PUC API
   participant P as PKA service
   participant E as Extension on PKA
-  U->>W: Connect PU Connector
+  U->>W: Connect PU Connect
   W-->>U: Install extension guide
   W->>A: Begin connection
   A-->>P: Redirect with state and S256 challenge

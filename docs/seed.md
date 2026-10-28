@@ -3,7 +3,7 @@
 
 | Username | Họ và Tên | Vai Trò & Đơn Vị | Email Trường | Mật Khẩu |
 |---|---|---|---|---|
-| `pu_admin_lead` | Ban Quản Trị PU Connector | **Admin** (Quản trị hệ thống) | `mod.phenikaa@phenikaa-uni.edu.vn` | `password123` |
+| `pu_admin_lead` | Ban Quản Trị PU Connect | **Admin** (Quản trị hệ thống) | `mod.phenikaa@phenikaa-uni.edu.vn` | `password123` |
 | `gv_nguyenvanha` | TS. Nguyễn Văn Hà | **Giảng viên** Khoa CNTT (FIT) | `gv.nguyenvanha@phenikaa-uni.edu.vn` | `password123` |
 | `gv_tranthithu` | PGS.TS Trần Thị Thu | **Giảng viên** Khoa học Máy tính & AI (FCS) | `gv.tranthithu@phenikaa-uni.edu.vn` | `password123` |
 | `gv_lequangthang` | TS. Lê Quang Thắng | **Giảng viên** Điện tử & Robot (FEE) | `gv.lequangthang@phenikaa-uni.edu.vn` | `password123` |

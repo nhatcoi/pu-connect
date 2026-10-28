@@ -13,7 +13,7 @@ import { learnerPrompt } from '../src/modules/chat/n7ai/n7ai.prompts'
 import { StudyProgressMemoryService } from '../src/modules/study-tools/study-progress-memory.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
-// N7AI agent (docs/core/16-n7ai-agent-tools.md): hội thoại cũ, tool PU Connector, nút dẫn đường, hồ sơ học, ghim bộ nhớ
+// N7AI agent (docs/core/16-n7ai-agent-tools.md): hội thoại cũ, tool PU Connect, nút dẫn đường, hồ sơ học, ghim bộ nhớ
 describe('N7AI agent tools (e2e)', () => {
   let app: NestExpressApplication
   let db: DatabaseService
@@ -85,7 +85,7 @@ describe('N7AI agent tools (e2e)', () => {
     })
   })
 
-  it('PU Connector: tìm nhóm học / cộng đồng, hướng dẫn app; chỉ nhóm còn nhận người mới thành nút tham gia', async () => {
+  it('PU Connect: tìm nhóm học / cộng đồng, hướng dẫn app; chỉ nhóm còn nhận người mới thành nút tham gia', async () => {
     const user = await createUser(db)
     const leader = await createUser(db)
     const code = `AG${Date.now() % 100000}`

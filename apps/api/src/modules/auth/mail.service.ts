@@ -14,7 +14,7 @@ export class MailService {
   constructor(config: ConfigService) {
     const host = config.get<string>('SMTP_HOST')
     const port = Number(config.get('SMTP_PORT') || 587)
-    this.from = config.get<string>('MAIL_FROM') || 'PU Connector <no-reply@puc.vnhat.dev>'
+    this.from = config.get<string>('MAIL_FROM') || 'PU Connect <no-reply@puc.vnhat.dev>'
     this.transporter = host
       ? nodemailer.createTransport({
           host,
@@ -41,15 +41,15 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.from,
       to,
-      subject: 'Xác thực email PU Connector',
-      text: `Chào ${safeName},\n\nBấm vào liên kết sau để xác thực email (hết hạn sau 24 giờ):\n${link}\n\nNếu bạn không đăng ký PU Connector, hãy bỏ qua email này.`,
+      subject: 'Xác thực email PU Connect',
+      text: `Chào ${safeName},\n\nBấm vào liên kết sau để xác thực email (hết hạn sau 24 giờ):\n${link}\n\nNếu bạn không đăng ký PU Connect, hãy bỏ qua email này.`,
       html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#111">
   <h2 style="color:#0B3D91;margin:0 0 12px">Xác thực email</h2>
   <p>Chào ${safeName},</p>
-  <p>Bấm nút bên dưới để xác thực email và hoàn tất tài khoản PU Connector. Liên kết hết hạn sau 24 giờ.</p>
+  <p>Bấm nút bên dưới để xác thực email và hoàn tất tài khoản PU Connect. Liên kết hết hạn sau 24 giờ.</p>
   <p style="margin:24px 0"><a href="${link}" style="background:#0B3D91;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600">Xác thực email</a></p>
   <p style="font-size:12px;color:#666">Nếu nút không hoạt động, mở liên kết: <br><a href="${link}">${link}</a></p>
-  <p style="font-size:12px;color:#666">Nếu bạn không đăng ký PU Connector, hãy bỏ qua email này.</p>
+  <p style="font-size:12px;color:#666">Nếu bạn không đăng ký PU Connect, hãy bỏ qua email này.</p>
 </div>`
     })
   }
@@ -64,12 +64,12 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.from,
       to,
-      subject: 'Đặt lại mật khẩu PU Connector',
+      subject: 'Đặt lại mật khẩu PU Connect',
       text: `Chào ${safeName},\n\nBấm vào liên kết sau để đặt mật khẩu mới (hết hạn sau 30 phút, chỉ dùng một lần):\n${link}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này — mật khẩu của bạn không thay đổi.`,
       html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#111">
   <h2 style="color:#0B3D91;margin:0 0 12px">Đặt lại mật khẩu</h2>
   <p>Chào ${safeName},</p>
-  <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản PU Connector của bạn. Liên kết hết hạn sau 30 phút và chỉ dùng được một lần.</p>
+  <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản PU Connect của bạn. Liên kết hết hạn sau 30 phút và chỉ dùng được một lần.</p>
   <p style="margin:24px 0"><a href="${link}" style="background:#0B3D91;color:#fff;padding:12px 24px;border-radius:999px;text-decoration:none;font-weight:600">Đặt mật khẩu mới</a></p>
   <p style="font-size:12px;color:#666">Nếu nút không hoạt động, mở liên kết: <br><a href="${link}">${link}</a></p>
   <p style="font-size:12px;color:#666">Nếu bạn không yêu cầu, hãy bỏ qua email này — mật khẩu của bạn không thay đổi.</p>
@@ -87,12 +87,12 @@ export class MailService {
     await this.transporter.sendMail({
       from: this.from,
       to,
-      subject: 'Mật khẩu PU Connector đã được thay đổi',
-      text: `Chào ${safeName},\n\nMật khẩu tài khoản PU Connector của bạn vừa được thay đổi và mọi phiên đăng nhập cũ đã bị đăng xuất.\n\nNếu không phải bạn, hãy đặt lại mật khẩu ngay tại trang đăng nhập (Quên mật khẩu).`,
+      subject: 'Mật khẩu PU Connect đã được thay đổi',
+      text: `Chào ${safeName},\n\nMật khẩu tài khoản PU Connect của bạn vừa được thay đổi và mọi phiên đăng nhập cũ đã bị đăng xuất.\n\nNếu không phải bạn, hãy đặt lại mật khẩu ngay tại trang đăng nhập (Quên mật khẩu).`,
       html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:auto;color:#111">
   <h2 style="color:#0B3D91;margin:0 0 12px">Mật khẩu đã được thay đổi</h2>
   <p>Chào ${safeName},</p>
-  <p>Mật khẩu tài khoản PU Connector của bạn vừa được thay đổi và mọi phiên đăng nhập cũ đã bị đăng xuất.</p>
+  <p>Mật khẩu tài khoản PU Connect của bạn vừa được thay đổi và mọi phiên đăng nhập cũ đã bị đăng xuất.</p>
   <p style="font-size:13px;color:#b91c1c">Nếu không phải bạn, hãy dùng "Quên mật khẩu" tại trang đăng nhập để lấy lại tài khoản ngay.</p>
 </div>`
     })

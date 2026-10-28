@@ -1,6 +1,6 @@
 # 📱 Hướng dẫn Mở rộng Ứng dụng Di động — Mobile Expansion Guide
 
-Tài liệu này hướng dẫn cách tích hợp ứng dụng **React Native (Expo)** vào Monorepo **PU Connector** bằng cách sử dụng thư viện **`react-native-reusables` (RNR)** kết hợp cùng các package dùng chung `@pu/schemas` và `@pu/ui`.
+Tài liệu này hướng dẫn cách tích hợp ứng dụng **React Native (Expo)** vào Monorepo **PU Connect** bằng cách sử dụng thư viện **`react-native-reusables` (RNR)** kết hợp cùng các package dùng chung `@pu/schemas` và `@pu/ui`.
 
 ---
 

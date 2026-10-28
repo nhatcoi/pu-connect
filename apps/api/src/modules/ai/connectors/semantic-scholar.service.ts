@@ -73,7 +73,7 @@ export class SemanticScholarService {
 
     try {
       const headers: Record<string, string> = {
-        'User-Agent': 'PUConnector/1.0 (academic-assistant; contact: admin@puc.vnhat.dev)'
+        'User-Agent': 'PU Connect/1.0 (academic-assistant; contact: admin@puc.vnhat.dev)'
       }
       if (apiKey) headers['x-api-key'] = apiKey
 
@@ -113,7 +113,7 @@ export class SemanticScholarService {
 
     try {
       const headers: Record<string, string> = {
-        'User-Agent': 'PUConnector/1.0 (academic-assistant; contact: admin@puc.vnhat.dev)'
+        'User-Agent': 'PU Connect/1.0 (academic-assistant; contact: admin@puc.vnhat.dev)'
       }
       if (apiKey) headers['x-api-key'] = apiKey
 
@@ -225,7 +225,7 @@ export class SemanticScholarService {
     }
   }
 
-  // Chuyển đổi sang đối tượng Source thống nhất với hệ thống trích dẫn của PU Connector
+  // Chuyển đổi sang đối tượng Source thống nhất với hệ thống trích dẫn của PU Connect
   private toSource(paper: AcademicPaper): Source {
     const lines = [
       `Tác giả: ${paper.authors.length ? paper.authors.join(', ') : 'Không rõ'}`,

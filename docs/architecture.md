@@ -1,8 +1,8 @@
-# 🏗️ Kiến trúc Hệ thống — PU Connector Architecture
+# 🏗️ Kiến trúc Hệ thống — PU Connect Architecture
 
 > 🗺️ Sơ đồ **đúng theo hệ thống đang chạy** (được cập nhật mỗi khi code đổi) nằm ở [`docs/diagrams/`](./diagrams/README.md). Tài liệu này mô tả định hướng kiến trúc tổng thể.
 
-Tài liệu mô tả chi tiết mô hình kiến trúc 5 tầng kỹ thuật, 7 phân hệ nghiệp vụ cốt lõi, và **chiến lược giao thức giao tiếp đa kênh (Communication Protocols Strategy)** của nền tảng mạng xã hội học thuật **PU Connector**.
+Tài liệu mô tả chi tiết mô hình kiến trúc 5 tầng kỹ thuật, 7 phân hệ nghiệp vụ cốt lõi, và **chiến lược giao thức giao tiếp đa kênh (Communication Protocols Strategy)** của nền tảng mạng xã hội học thuật **PU Connect**.
 
 ---
 
@@ -89,7 +89,7 @@ graph TD
 
 ## 2. Chiến Lược Giao Thức Giao Tiếp & Phân Tích Kỹ Thuật (Protocols Strategy)
 
-Hệ thống mạng xã hội học thuật PU Connector áp dụng mô hình **Hybrid Multi-Protocol** để tối ưu hóa hiệu năng, độ trễ và băng thông:
+Hệ thống mạng xã hội học thuật PU Connect áp dụng mô hình **Hybrid Multi-Protocol** để tối ưu hóa hiệu năng, độ trễ và băng thông:
 
 ### 📊 Bảng Phân Bổ Giao Thức Theo Phân Hệ Nghiệp Vụ
 
@@ -140,7 +140,7 @@ Hệ thống mạng xã hội học thuật PU Connector áp dụng mô hình **
 
 ```text
 ┌───────────────────────────────────────────────────────────────────────────┐
-│                     CÁC PHÂN HỆ NGHIỆP VỤ PU CONNECTOR                    │
+│                     CÁC PHÂN HỆ NGHIỆP VỤ PU CONNECT                     │
 ├────────────────────────────────┬──────────────────────────────────────────┤
 │ 1. Identity & Profile          │ Quản lý định danh, sinh viên/giảng viên, │
 │                                │ điểm danh vọng và huy hiệu học thuật.    │

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # ==============================================================================
-# 🚀 PU CONNECTOR - PRODUCTION DEPLOY SCRIPT (VPS puc.vnhat.dev)
+# 🚀 PU CONNECT  - PRODUCTION DEPLOY SCRIPT (VPS puc.vnhat.dev)
 # ==============================================================================
 
 set -e
@@ -19,7 +19,7 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}======================================================${NC}"
-echo -e "${BLUE}  PU CONNECTOR - DEPLOYING TO VPS (puc.vnhat.dev)     ${NC}"
+echo -e "${BLUE}  PU CONNECT  - DEPLOYING TO VPS (puc.vnhat.dev)     ${NC}"
 echo -e "${BLUE}======================================================${NC}"
 
 # 1. Check SSH Connection

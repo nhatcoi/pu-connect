@@ -6,7 +6,7 @@ Implemented: 2026-10-19. Connector ID `semantic_scholar`, display name **Semanti
 
 ## 1. Kiến trúc & Cơ chế vận hành
 
-Khác với Google Connectors và PU Connector yêu cầu OAuth hoặc token tài khoản cá nhân, **Semantic Scholar** là trình kết nối công cộng (public research connector) hoạt động trực tiếp ở cấp server:
+Khác với Google Connectors và PU Connect yêu cầu OAuth hoặc token tài khoản cá nhân, **Semantic Scholar** là trình kết nối công cộng (public research connector) hoạt động trực tiếp ở cấp server:
 
 1. **Không yêu cầu xác thực người dùng (`requiresAuth: false`)**:
    - Mọi sinh viên đều có thể bật/tắt trong *Cài đặt › Trình kết nối* (`/n7ai/settings/connectors`) hoặc menu `+` › *Connectors* trong khung soạn thảo chat.

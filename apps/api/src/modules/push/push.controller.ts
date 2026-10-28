@@ -55,7 +55,7 @@ export class PushController {
     const result = await this.push.sendToUser(
       userId,
       {
-        title: 'PU Connector',
+        title: 'PU Connect',
         body: 'Thông báo trên trình duyệt đã hoạt động 🎉',
         url: '/notifications',
         tag: 'push-test'

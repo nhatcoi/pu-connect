@@ -400,7 +400,7 @@ ${article.impact ? `💡 **Tác động:** ${article.impact}\n\n` : ''}📌 **Ng
   private async parseRss(url: string): Promise<Array<{ title: string; link: string; pubDate?: string; description?: string }>> {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'PUConnectorNewsBot/1.0 (Mozilla/5.0; compatible)'
+        'User-Agent': 'PU ConnectNewsBot/1.0 (Mozilla/5.0; compatible)'
       },
       signal: AbortSignal.timeout(10_000)
     })

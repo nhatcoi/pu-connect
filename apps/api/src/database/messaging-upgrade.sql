@@ -20,7 +20,7 @@ INSERT INTO users (email, username, display_name, account_type, role, reputation
 VALUES ('n7ai@system.local', 'n7ai', 'N7AI', 'bot', 'student', 0,
         TRUE, TRUE, NOW(), TRUE, NOW(),
         'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=puai&backgroundColor=1e3a8a',
-        'Trợ lý học tập của PU Connector. Tag @n7ai để hỏi.')
+        'Trợ lý học tập của PU Connect. Tag @n7ai để hỏi.')
 ON CONFLICT DO NOTHING;
 
 -- Đảm bảo @n7ai luôn là bot (kể cả khi username đã tồn tại từ trước)

@@ -470,7 +470,7 @@ export interface AiQuota {
 
 // Sự kiện realtime (Socket.IO, room user:{id})
 // Bước N7AI đang làm (tool call: Google MCP / Học tập của tôi): provider = connector, label tiếng Việt, detail = từ khóa / phạm vi ngắn (không có dữ liệu trả về)
-// Nguồn tool của bước: connector hoặc 'puc' (tool về chính PU Connector: tìm kiếm, hướng dẫn app — luôn có trong thread riêng)
+// Nguồn tool của bước: connector hoặc 'puc' (tool về chính PU Connect: tìm kiếm, hướng dẫn app — luôn có trong thread riêng)
 export type AiToolProvider = AiConnectorId | 'puc'
 // Nguồn của 1 bước tiến trình: tool / connector truy xuất (library, web…) hoặc bước nội bộ — đọc mục gắn @, tệp đính kèm, bộ nhớ
 export type AiStepSource = AiToolProvider | 'refs' | 'files' | 'memory'

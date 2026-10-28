@@ -4,7 +4,7 @@
 
 ## 1. Cấu Trúc Hồ Sơ Học Thuật (Academic Student Profile)
 
-Hồ sơ cá nhân trên PU Connection được chuẩn hóa để phản ánh đầy đủ năng lực, chuyên môn và quá trình học tập của sinh viên tại Trường Đại học Phenikaa.
+Hồ sơ cá nhân trên PU Connect được chuẩn hóa để phản ánh đầy đủ năng lực, chuyên môn và quá trình học tập của sinh viên tại Trường Đại học Phenikaa.
 
 ### 1.1. Các Trường Dữ Liệu Cốt Lõi (`users` Table)
 * **Định danh cơ bản:** `id (UUID)`, `email (edu mail)`, `username`, `display_name`, `avatar_url`, `bio`.

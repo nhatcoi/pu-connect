@@ -1,9 +1,9 @@
 ---
 name: ui-ux-mobile-responsive
-description: Quy chuẩn thiết kế giao diện Web & Mobile Responsive, Animate UI motion, Semantic CSS tokens và chống giật layout (Zero CLS) cho PU Connector.
+description: Quy chuẩn thiết kế giao diện Web & Mobile Responsive, Animate UI motion, Semantic CSS tokens và chống giật layout (Zero CLS) cho PU Connect.
 ---
 
-# UI/UX & Mobile Responsive Guidelines (PU Connector)
+# UI/UX & Mobile Responsive Guidelines (PU Connect)
 
 Tài liệu quy chuẩn giao diện cho AI Agents (Antigravity) nhằm đảm bảo mọi trang, component và modal đều đạt độ hoàn thiện cao nhất trên cả Desktop, Tablet và Mobile.
 

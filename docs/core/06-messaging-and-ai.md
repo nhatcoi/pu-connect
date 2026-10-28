@@ -99,7 +99,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS account_type VARCHAR(10) NOT NULL DEF
 -- Tài khoản @n7ai: không mật khẩu, không google_id ⇒ không thể đăng nhập
 INSERT INTO users (email, username, display_name, account_type, is_verified, email_verified, bio, role)
 VALUES ('n7ai@system.local', 'n7ai', 'N7AI', 'bot', TRUE, TRUE,
-        'Trợ lý học tập của PU Connector. Tag @n7ai để hỏi.', 'student')
+        'Trợ lý học tập của PU Connect. Tag @n7ai để hỏi.', 'student')
 ON CONFLICT (username) DO NOTHING;
 ```
 

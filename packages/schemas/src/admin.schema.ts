@@ -60,7 +60,7 @@ export const ADMIN_ROLE_LABELS: Record<AdminUserRole, { label: string; badgeColo
   student: {
     label: 'Sinh viên',
     badgeColor: 'slate',
-    description: 'Thành viên tiêu chuẩn trên mạng xã hội học thuật PU Connector.'
+    description: 'Thành viên tiêu chuẩn trên mạng xã hội học thuật PU Connect.'
   }
 }
 

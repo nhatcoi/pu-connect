@@ -16,7 +16,7 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
       <DialogContent className="max-w-sm p-6 gap-5">
         <DialogHeader className="items-center text-center sm:text-center space-y-2">
           <PuMark className="h-10 w-10" />
-          <DialogTitle className="text-lg font-semibold">Đăng nhập PU Connector</DialogTitle>
+          <DialogTitle className="text-lg font-semibold">Đăng nhập PU Connect</DialogTitle>
           <DialogDescription className="text-[13px]">Chia sẻ tài liệu, đặt câu hỏi và kết nối cùng cộng đồng Phenikaa.</DialogDescription>
         </DialogHeader>
         <AuthForm onSuccess={() => onOpenChange(false)} />

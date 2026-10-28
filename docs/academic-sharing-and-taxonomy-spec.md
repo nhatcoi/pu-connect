@@ -1,6 +1,6 @@
 # 📐 Đặc Tả Logic Phân Loại & Trực Quan Hóa Chia Sẻ Học Thuật (Academic Sharing & Visual Taxonomy Spec)
 
-Tài liệu thiết kế kiến trúc dữ liệu, luồng tương tác và giao diện trực quan cho tính năng cốt lõi: **Chia sẻ thông tin và trao đổi học tập sinh viên Phenikaa (PU Connector)**.
+Tài liệu thiết kế kiến trúc dữ liệu, luồng tương tác và giao diện trực quan cho tính năng cốt lõi: **Chia sẻ thông tin và trao đổi học tập sinh viên Phenikaa (PU Connect)**.
 
 ---
 

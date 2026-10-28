@@ -1,4 +1,4 @@
-# 🧭 N7AI Agent: Hội thoại cũ · Tool PU Connector · Nút dẫn đường · Hồ sơ học
+# 🧭 N7AI Agent: Hội thoại cũ · Tool PU Connect · Nút dẫn đường · Hồ sơ học
 
 > Trạng thái: **Đã triển khai (2026-10-18)**. Nối tiếp [`14-google-mcp-connectors.md`](./14-google-mcp-connectors.md) (vòng tool, `AgentToolSession`) và [`15-study-tools.md`](./15-study-tools.md) (`my_study`).
 
@@ -27,7 +27,7 @@ Tool nội bộ chạy chung vòng `McpAgentService` với Google MCP qua `Agent
 
 Không làm tool cho bộ nhớ: dòng `[nhớ]` ghi trong cùng lượt trả lời đã đủ, không tốn thêm lượt.
 
-## 3. Tool PU Connector (`puc`, luôn có trong thread riêng)
+## 3. Tool PU Connect (`puc`, luôn có trong thread riêng)
 
 `chat/n7ai/agent/puc-tools.service.ts`:
 - `puc__search(query, queries?, type?)` tìm tối đa 3 biến thể từ khóa cùng lúc: bài/tài liệu qua `RagSearchService`, học phần/người/nhóm qua `SearchService`, cộng đồng qua SQL có giới hạn. Bài/tài liệu theo connector `library`. Kết quả ngắn, loại trùng, tối đa 5 mỗi loại.

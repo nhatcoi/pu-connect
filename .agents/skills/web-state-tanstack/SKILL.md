@@ -1,6 +1,6 @@
 ---
 name: web-state-tanstack
-description: Chuẩn mực quản lý state phía web bằng TanStack Query, Zustand Slices, đồng bộ phiên làm việc và cập nhật lạc quan (Optimistic Cache Everywhere) cho PU Connector.
+description: Chuẩn mực quản lý state phía web bằng TanStack Query, Zustand Slices, đồng bộ phiên làm việc và cập nhật lạc quan (Optimistic Cache Everywhere) cho PU Connect.
 ---
 
 # Web State & TanStack Query Management Guidelines

@@ -1,4 +1,4 @@
-# 🚀 PU Connector — High Performance Social & Document Knowledge Platform
+# 🚀 PU Connect — High Performance Social & Document Knowledge Platform
 
 Dự án Monorepo kiến trúc chuẩn công nghiệp (Production-ready) kết hợp **Next.js (Web)**, **NestJS (API)** và sẵn sàng mở rộng **React Native (Mobile)**. 
 
@@ -153,6 +153,6 @@ Khi bạn muốn bổ sung Mobile App:
 ## 🔐 Xác thực
 Email + mật khẩu và Google OAuth (tùy chọn). Biến môi trường `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL` (xem `.env.example`) và hướng dẫn cấu hình tại [`docs/auth-google.md`](docs/auth-google.md). Connector Google Drive / Calendar / Gmail / Forms / Sheets / Tasks của N7AI gọi MCP server tự host [`workspace-mcp`](https://github.com/taylorwilsdon/google_workspace_mcp) (`127.0.0.1:8765`, service systemd `workspace-mcp`) qua `GOOGLE_WORKSPACE_MCP_URL`; không cần Developer Preview của Google. Cấu hình `CONNECTOR_ENCRYPTION_KEY`, callback `GOOGLE_CONNECTOR_CALLBACK_URL` (mặc định `GOOGLE_CALLBACK_URL`), tùy chọn client riêng `GOOGLE_MCP_CLIENT_ID` / `GOOGLE_MCP_CLIENT_SECRET` (mặc định client đăng nhập), bật Drive / Calendar / Gmail / Forms / Sheets / Tasks API trong Google Cloud. Model/gateway `AI_MODEL` phải hỗ trợ Chat Completions tool calling. Chi tiết: [`docs/core/14-google-mcp-connectors.md`](docs/core/14-google-mcp-connectors.md). Tìm kiếm web cho N7AI: `TAVILY_API_KEY` (tùy chọn). Tìm kiếm bài báo khoa học toàn cầu (Semantic Scholar & arXiv): `SEMANTIC_SCHOLAR_API_KEY` (tùy chọn; tự động dự phòng sang arXiv khi không có key hoặc rate-limit). Kiểm tra mã: `pnpm lint` (ESLint flat config ở `apps/web`, `apps/api`). Tài khoản seed local dùng mật khẩu `password123`.
 
-### PU Connector — dữ liệu tài khoản trường
+### PU Connect — dữ liệu tài khoản trường
 
 Connector dùng extension tại [PKA](https://pka.vnhat.dev/extension) và MCP trên service PKA. `PKA_CONNECTOR_URL` mặc định `https://pka.vnhat.dev`; không đưa cookie trường vào PUC. Xem [thiết kế kết nối](docs/core/20-pu-connector-mcp.md).

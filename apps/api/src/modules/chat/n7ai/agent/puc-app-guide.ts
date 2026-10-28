@@ -1,4 +1,4 @@
-// Danh mục tính năng PU Connector cho N7AI (tool puc__app_help): ở đâu, làm thế nào
+// Danh mục tính năng PU Connect cho N7AI (tool puc__app_help): ở đâu, làm thế nào
 // Feature catalog N7AI uses to answer "how do I…" questions and link to the right page; keep in sync with the web routes
 
 export interface AppGuideEntry {

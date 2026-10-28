@@ -1,6 +1,6 @@
 # 🤝 Đặc Tả Tính Năng: Hệ Thống Theo Dõi & Kết Nối (Follow / Following)
 
-Tài liệu này mô tả toàn diện kiến trúc kỹ thuật, thiết kế Cơ sở dữ liệu PostgreSQL, GraphQL API và luồng trải nghiệm người dùng (UX) cho phân hệ **Theo dõi & Mạng lưới kết nối (Social Graph)** trong nền tảng học thuật **PU Connector**.
+Tài liệu này mô tả toàn diện kiến trúc kỹ thuật, thiết kế Cơ sở dữ liệu PostgreSQL, GraphQL API và luồng trải nghiệm người dùng (UX) cho phân hệ **Theo dõi & Mạng lưới kết nối (Social Graph)** trong nền tảng học thuật **PU Connect**.
 
 ---
 

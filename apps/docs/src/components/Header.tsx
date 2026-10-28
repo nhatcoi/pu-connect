@@ -26,9 +26,9 @@ export function Header({ onOpenSearch, onToggleMobileMenu, onGoHome }: HeaderPro
             onClick={onGoHome}
             className="flex items-center gap-2.5 text-left group cursor-pointer"
           >
-            <img src="/brand/pu-mark.svg" alt="PU Connector" className="h-7 w-7 transition-transform group-hover:scale-105" />
+            <img src="/brand/pu-mark.svg" alt="PU Connect" className="h-7 w-7 transition-transform group-hover:scale-105" />
             <div className="flex items-center gap-2">
-              <span className="font-bold text-sm tracking-tight text-foreground">PU Connector</span>
+              <span className="font-bold text-sm tracking-tight text-foreground">PU Connect</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20">
                 Docs
               </span>

@@ -192,7 +192,7 @@ export class N7AiService {
       // Thread riêng: luôn có tool tạo bộ Flashcard / Quiz (registry); tool đọc tiến độ theo connector my_study
       const creator = inGroup ? null : this.studyCreateTools.open(requesterId, placeholder.id)
       const slideCreator = this.presentationTools.open(requesterId, placeholder.id)
-      // Thread riêng: tool về chính PU Connector luôn có; hội thoại cũ / tiến độ học theo connector
+      // Thread riêng: tool về chính PU Connect luôn có; hội thoại cũ / tiến độ học theo connector
       const catalog = new AgentSources(retrieved.sources)
       const local = [
         this.pucTools.open(requesterId, inGroup ? ['library'] : connectors, catalog, inGroup),

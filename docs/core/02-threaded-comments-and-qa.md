@@ -4,7 +4,7 @@
 
 ## 1. Hệ Thống Bình Luận Phân Cấp (Threaded Comments)
 
-Mô hình thảo luận học thuật yêu cầu trao đổi sâu sắc theo từng luồng chủ đề (Threads). PU Connection áp dụng cấu trúc bình luận cây lồng nhau (Hierarchical Comments).
+Mô hình thảo luận học thuật yêu cầu trao đổi sâu sắc theo từng luồng chủ đề (Threads). PU Connect áp dụng cấu trúc bình luận cây lồng nhau (Hierarchical Comments).
 
 ### 1.1. Cấu Trúc Bảng Dữ Liệu `comments`
 

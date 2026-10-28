@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${share.title || UNTITLED} — N7AI`
   const first = share.messages.find((m) => m.role === 'user')?.content.slice(0, 160)
   // Không cho máy tìm kiếm lập chỉ mục: chỉ người có link mới xem
-  return { title, description: first || 'Hội thoại học tập với N7AI trên PU Connector', robots: { index: false, follow: false }, openGraph: { title } }
+  return { title, description: first || 'Hội thoại học tập với N7AI trên PU Connect', robots: { index: false, follow: false }, openGraph: { title } }
 }
 
 // /share/[token]: hội thoại N7AI được chia sẻ công khai (ảnh chụp, chỉ đọc, không cần đăng nhập)

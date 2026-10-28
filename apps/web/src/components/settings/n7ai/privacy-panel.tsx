@@ -82,7 +82,7 @@ export function PrivacyPanel() {
       </SettingsGroup>
       <SettingsGroup
         label="Dữ liệu của bạn"
-        hint="Nội dung câu hỏi được gửi tới nhà cung cấp mô hình AI để tạo câu trả lời; PU Connector không dùng để huấn luyện mô hình."
+        hint="Nội dung câu hỏi được gửi tới nhà cung cấp mô hình AI để tạo câu trả lời; PU Connect không dùng để huấn luyện mô hình."
       >
         <SettingRow label="Tải dữ liệu N7AI" description="Hội thoại, bộ nhớ, skill, tác vụ (JSON)">
           <Button size="sm" variant="outline" className="h-8 rounded-full gap-1 text-xs" disabled={exporting} onClick={exportData}>

@@ -1,4 +1,4 @@
--- High-Performance Indexes for PU Connector PostgreSQL
+-- High-Performance Indexes for PU Connect PostgreSQL
 
 -- 1. GIN Indexes for Array matching (tags, interests, skills)
 CREATE INDEX IF NOT EXISTS idx_posts_tags_gin ON posts USING GIN (tags);

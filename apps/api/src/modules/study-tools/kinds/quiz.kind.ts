@@ -33,7 +33,7 @@ export const quizKind: StudyKindDef<QuizQuestionContent> = {
   ai: {
     tool: 'create_quiz',
     description:
-      'Create a multiple-choice quiz and save it to the user\'s PU Connector Tools › Quiz (scored, best score kept). Use when the user wants to test themselves or asks for a quiz / practice questions.',
+      'Create a multiple-choice quiz and save it to the user\'s PU Connect Tools › Quiz (scored, best score kept). Use when the user wants to test themselves or asks for a quiz / practice questions.',
     instructions: `Default 5 questions, 4 options, one correct, difficulty increasing; use type "multi" (with "answers") only when several options are truly correct and "truefalse" for statements to judge, otherwise omit type; follow the user's requested count (max ${Math.min(30, STUDY_AI_MAX_ITEMS)}). Never reveal answers outside the tool call.`,
     defaultTitle: 'Quiz từ N7AI'
   }

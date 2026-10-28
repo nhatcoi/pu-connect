@@ -18,7 +18,7 @@ const HELP_TOOL = `${PROVIDER}__app_help`
 const SEARCH_TYPES = ['all', 'courses', 'documents', 'posts', 'users', 'groups', 'communities'] as const
 type PucSearchType = (typeof SEARCH_TYPES)[number]
 const TYPE_LABELS: Record<PucSearchType, string> = {
-  all: 'PU Connector',
+  all: 'PU Connect',
   courses: 'học phần',
   documents: 'tài liệu',
   posts: 'bài viết',
@@ -30,8 +30,8 @@ const TYPE_LABELS: Record<PucSearchType, string> = {
 const SEARCH_LIMIT = 5
 
 const INSTRUCTIONS = [
-  'PU Connector tools (puc__*) search this app (courses, documents & exams, posts, students, study groups, communities) and explain its features. Results only include what the user is allowed to see.',
-  'Use them when the user looks for people, groups, materials or courses inside PU Connector, or asks how / where to do something in the app. Prefer the href from results when pointing to a page.',
+  'PU Connect tools (puc__*) search this app (courses, documents & exams, posts, students, study groups, communities) and explain its features. Results only include what the user is allowed to see.',
+  'Use them when the user looks for people, groups, materials or courses inside PU Connect, or asks how / where to do something in the app. Prefer the href from results when pointing to a page.',
   'General knowledge and greetings need no search. Prefer this app for requests about its materials. Batch up to three distinct keyword variants in queries in ONE search call; do not repeat a successful search just to restate it.',
   'Search returns excerpts and numbered sources n. For requests to FIND, LIST or RECOMMEND materials, return the matching list immediately; do NOT call puc__read or search again merely to add descriptions or course context. Read deeper ONLY when the user asks to summarize, explain, compare or quote source CONTENT. Use source n values for citations; never invent them.',
   'Do not invent app features or pages that the tools do not return.'
@@ -43,7 +43,7 @@ const TOOLS: AgentToolSession['tools'] = [
     function: {
       name: SEARCH_TOOL,
       description:
-        'PU Connector: search courses, documents & exams, Q&A posts, students, study groups (with recruiting status) and communities. Each result has an app href.',
+        'PU Connect: search courses, documents & exams, Q&A posts, students, study groups (with recruiting status) and communities. Each result has an app href.',
       parameters: {
         type: 'object',
         properties: {
@@ -80,7 +80,7 @@ const TOOLS: AgentToolSession['tools'] = [
     function: {
       name: HELP_TOOL,
       description:
-        'PU Connector: how / where to use app features (feed, search, courses & study groups, communities, tools, messages, N7AI, settings). Returns page href and short how-to.',
+        'PU Connect: how / where to use app features (feed, search, courses & study groups, communities, tools, messages, N7AI, settings). Returns page href and short how-to.',
       parameters: {
         type: 'object',
         properties: { topic: { type: 'string', description: 'What the user wants to do; omit to list all features' } },
@@ -92,7 +92,7 @@ const TOOLS: AgentToolSession['tools'] = [
 
 const unaccent = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase()
 
-// Tool về chính PU Connector: tìm trong app (dùng SearchService ⇒ đúng quyền xem) + hướng dẫn tính năng
+// Tool về chính PU Connect: tìm trong app (dùng SearchService ⇒ đúng quyền xem) + hướng dẫn tính năng
 @Injectable()
 export class PucToolsService {
   constructor(
@@ -128,7 +128,7 @@ export class PucToolsService {
                 const all = [...(merged[key] ?? []), ...values]
                 merged[key] = [...new Map(all.map((v) => [v.id ?? v.href ?? v.name, v])).values()].slice(0, SEARCH_LIMIT)
               }
-            return toolResult('PU Connector', {
+            return toolResult('PU Connect', {
               ...merged,
               guidance:
                 'If these matches satisfy a find/list/recommend request, answer now using titles, excerpts and hrefs. Do not read deeper or repeat search for cosmetic completeness.'
@@ -140,12 +140,12 @@ export class PucToolsService {
             if (!ref) return toolError('Chỉ đọc mục đã trả về từ tìm kiếm trong lượt này')
             const source = (await this.refs.sources(userId, [ref]))[0]
             if (!source || (publicOnly && !(await this.publicIds([ref])).has(ref.id))) return toolError('Nguồn không tồn tại hoặc bạn không còn quyền xem')
-            return toolResult('PU Connector', { ...catalog.preview(source), content: source.body.slice(0, 8000) })
+            return toolResult('PU Connect', { ...catalog.preview(source), content: source.body.slice(0, 8000) })
           }
-          if (name === HELP_TOOL && !publicOnly) return toolResult('PU Connector', appHelp(argText(args.topic, 120)))
+          if (name === HELP_TOOL && !publicOnly) return toolResult('PU Connect', appHelp(argText(args.topic, 120)))
           return toolError('Công cụ không được cấp quyền trong lượt hỏi này')
         } catch {
-          return toolError('Không tìm được trong PU Connector, thử lại sau')
+          return toolError('Không tìm được trong PU Connect, thử lại sau')
         }
       },
       close: async () => undefined
@@ -290,7 +290,7 @@ function describe(name: string, args: Record<string, unknown>): AgentStepInfo | 
   if (name === READ_TOOL) return { provider: PROVIDER, label: 'Đọc chi tiết nguồn' }
   if (name === HELP_TOOL) {
     const topic = argText(args.topic, 60)
-    return { provider: PROVIDER, label: 'Xem hướng dẫn PU Connector', ...(topic ? { detail: topic } : {}) }
+    return { provider: PROVIDER, label: 'Xem hướng dẫn PU Connect', ...(topic ? { detail: topic } : {}) }
   }
   return null
 }

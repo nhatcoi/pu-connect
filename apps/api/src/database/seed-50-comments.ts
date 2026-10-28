@@ -48,7 +48,7 @@ const commentTemplates = [
   'Nhóm em đã hoàn thiện backend NestJS + PostgreSQL + Redis, đang ghép với Flutter mobile app.',
   'Thầy ơi cho em hỏi nếu đồ án làm sản phẩm phần cứng IoT thì mang sản phẩm đến khoa hay quay video demo là được ạ?',
   'Mọi người nhớ kiểm tra kỹ quyền truy cập link Drive và repo GitHub trước giờ G nhé, tránh bị chấm 0 điểm.',
-  'Dạ Thầy ơi, mẫu báo cáo tiến độ tải ở mục nào trên PU Connector ạ?',
+  'Dạ Thầy ơi, mẫu báo cáo tiến độ tải ở mục nào trên PU Connect ạ?',
   'Khoa CNTT Phenikaa luôn tổ chức rất chuyên nghiệp và hỗ trợ nhiệt tình!',
   'Anh em K15 điểm danh nào, ai làm đồ án Web/App thì kết nối trao đổi kinh nghiệm nhé.',
   'Nhóm em sử dụng Kafka để xử lý luồng dữ liệu thời gian thực, phần này sẽ demo trực tiếp trong video 3 phút ạ.',

@@ -36,7 +36,7 @@ export function UserActionsMenu({
         </MenuItem>
       )}
       <MenuItem icon={ExternalLink} onSelect={() => window.open(`${WEB_PORTAL_URL}/${u.username}`, '_blank', 'noopener')}>
-        Mở trên PU Connector
+        Mở trên PU Connect
       </MenuItem>
       {onInsight && (
         <MenuItem icon={Activity} onSelect={() => onInsight(u.id)}>

@@ -8,7 +8,7 @@ import { SHELL_WIDTH, MAIN_WIDTH } from '@/lib/layout'
 export function AppShellSkeleton({ immersive = false }: { immersive?: boolean }) {
   return (
     <div className="min-h-screen bg-surface">
-      <LoadingRegion label="Đang tải PU Connector">
+      <LoadingRegion label="Đang tải PU Connect">
         {!immersive && (
           <div className="w-full bg-background/95 shadow-[0_1px_0_0_rgb(0_0_0/0.04)]">
             <div className={cn('mx-auto flex h-13 md:h-14 items-center justify-between px-3.5 sm:px-6', SHELL_WIDTH)}>

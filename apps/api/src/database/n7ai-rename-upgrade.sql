@@ -7,7 +7,7 @@
 
 UPDATE users
 SET username = 'n7ai', email = 'n7ai@system.local', display_name = 'N7AI',
-    bio = 'Trợ lý học tập của PU Connector. Tag @n7ai để hỏi.', updated_at = NOW()
+    bio = 'Trợ lý học tập của PU Connect. Tag @n7ai để hỏi.', updated_at = NOW()
 WHERE email = 'puai@system.local'
   AND NOT EXISTS (SELECT 1 FROM users WHERE username = 'n7ai');
 

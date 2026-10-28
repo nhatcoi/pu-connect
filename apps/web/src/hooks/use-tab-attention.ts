@@ -37,7 +37,7 @@ async function badgedFavicon(href: string): Promise<string | null> {
   }
 }
 
-// Tab trình duyệt báo có tin: tiêu đề "(3) PU Connector…", favicon có chấm đỏ, nhấp nháy "💬 Có tin mới" khi tab ẩn mà có tin mới
+// Tab trình duyệt báo có tin: tiêu đề "(3) PU Connect…", favicon có chấm đỏ, nhấp nháy "💬 Có tin mới" khi tab ẩn mà có tin mới
 // Tiêu đề do Next đổi theo trang ⇒ theo dõi <title> để giữ tiền tố; hết chưa đọc ⇒ trả lại nguyên trạng
 export function useTabAttention(unread: number) {
   const base = useRef<string>('')

@@ -20,7 +20,7 @@ $$TrendingScore(tag) = \sum_{p \in Posts(tag, 7\text{ days})} (1.0 \times \text{
 
 ## 2. Bộ Máy Tìm Kiếm Hợp Nhất (Unified Academic Search Engine)
 
-PU Connection sở hữu hệ thống tìm kiếm đa thực thể thời gian thực, phục vụ tra cứu toàn diện trên toàn bộ hệ thống đại học.
+PU Connect sở hữu hệ thống tìm kiếm đa thực thể thời gian thực, phục vụ tra cứu toàn diện trên toàn bộ hệ thống đại học.
 
 ```mermaid
 graph TD
