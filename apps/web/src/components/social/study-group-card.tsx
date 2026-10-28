@@ -42,7 +42,7 @@ export function StudyGroupCard({ group, onJoin }: StudyGroupCardProps) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              {group.courseCode && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-bold text-[11px] text-primary font-mono">{group.courseCode}</span>}
+              {group.courseName && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-bold text-[11px] text-primary">{group.courseName}</span>}
               <span className="text-xs font-semibold text-accent">{group.topic}</span>
             </div>
             <h3 className="font-bold text-sm mt-1 text-foreground leading-snug">{group.name}</h3>

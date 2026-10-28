@@ -92,7 +92,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
               <div className="min-w-0 space-y-1">
                 <h2 className="text-xl font-bold tracking-tight">{course.name}</h2>
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-mono">{course.code}</span> · {course.credits} tín chỉ · {course.departmentName}
+                  {course.credits} tín chỉ · {course.departmentName}
                 </p>
                 {course.description && <p className="max-w-2xl pt-1 text-sm leading-relaxed text-muted-foreground">{course.description}</p>}
                 <p className="pt-1 text-xs text-muted-foreground">

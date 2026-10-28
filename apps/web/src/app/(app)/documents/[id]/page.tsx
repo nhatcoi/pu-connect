@@ -94,8 +94,8 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
             <h2 className="text-base sm:text-lg font-bold leading-snug">{doc.title}</h2>
             <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
               {doc.courseCode && (
-                <Link href={`/courses/${encodeURIComponent(doc.courseCode)}`} className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-bold text-primary hover:bg-primary/15">
-                  {doc.courseCode}
+                <Link href={`/courses/${encodeURIComponent(doc.courseCode)}`} className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-bold text-primary hover:bg-primary/15">
+                  {doc.courseName ?? 'Môn học'}
                 </Link>
               )}
               {meta && <span>{meta}</span>}
@@ -178,7 +178,7 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
 
       <PageAside>
         <div className="rounded-xl bg-card p-4 space-y-2">
-          <p className="text-[13px] font-semibold">{doc.courseCode ? `Tài liệu khác của ${doc.courseCode}` : 'Tài liệu liên quan'}</p>
+          <p className="text-[13px] font-semibold">{doc.courseCode ? `Tài liệu khác của môn ${doc.courseName ?? ''}`.trim() : 'Tài liệu liên quan'}</p>
           {doc.related.length === 0 ? (
             <p className="text-xs text-muted-foreground">Chưa có tài liệu nào khác.</p>
           ) : (

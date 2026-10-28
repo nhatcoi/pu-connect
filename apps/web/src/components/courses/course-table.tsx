@@ -47,7 +47,6 @@ export function CourseTable({ courses, followedIds }: { courses: Course[]; follo
             <FollowStar course={c} followed={followedIds.has(c.id)} />
             <span className="pointer-events-none min-w-0">
               <span className="block truncate text-[13px] font-semibold text-foreground">{c.name}</span>
-              <span className="block font-mono text-[11px] text-muted-foreground">{c.code}</span>
             </span>
             <span className="pointer-events-none hidden truncate text-muted-foreground sm:block">{shortFacultyName(c.departmentName)}</span>
             <span className="pointer-events-none text-right tabular-nums text-muted-foreground">{c.credits}</span>

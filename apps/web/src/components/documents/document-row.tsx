@@ -26,7 +26,7 @@ export function DocumentRow({ document: doc, subtitle, actions, privateBadge }: 
       <Link href={`/documents/${doc.id}`} className="min-w-0 flex-1 group">
         <p className="truncate text-[13px] font-semibold text-foreground group-hover:text-primary">{doc.title}</p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-muted-foreground">
-          {doc.courseCode && <span className="font-mono font-semibold text-primary">{doc.courseCode}</span>}
+          {doc.courseName && <span className="font-semibold text-primary">{doc.courseName}</span>}
           {meta && <span>{meta}</span>}
           {privateBadge && (
             <span className="inline-flex items-center gap-0.5">

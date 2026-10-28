@@ -79,7 +79,6 @@ export function ProfileAside({ profile, isOwner }: ProfileAsideProps) {
               >
                 <span className="text-xs font-semibold text-foreground truncate">{doc.title}</span>
                 <span className="text-[10px] text-muted-foreground mt-0.5">
-                  {doc.courseCode ? `${doc.courseCode} · ` : ''}
                   {doc.downloadCount || 0} lượt tải
                 </span>
               </div>

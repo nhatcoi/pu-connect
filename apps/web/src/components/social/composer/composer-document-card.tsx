@@ -134,7 +134,6 @@ export function ComposerDocumentCard({ file, courses, required, onClassify, onUs
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span className="min-w-0 flex-1 truncate">
                 Đã có trong kho: {file.duplicateOf.title}
-                {file.duplicateOf.courseCode && ` (${file.duplicateOf.courseCode})`}
               </span>
               <button type="button" onClick={() => onUseDuplicate(file)} className="shrink-0 font-semibold underline cursor-pointer">
                 Dùng bản đó

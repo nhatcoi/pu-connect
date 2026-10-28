@@ -177,8 +177,7 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
                           className="flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs hover:bg-muted cursor-pointer transition-colors"
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <span className="font-bold text-primary font-mono">{course.code}</span>
-                            <span className="truncate text-foreground">{course.name}</span>
+                            <span className="truncate font-semibold text-foreground">{course.name}</span>
                           </div>
                           <span className="text-[10px] text-muted-foreground shrink-0">{course.credits} tín chỉ</span>
                         </div>

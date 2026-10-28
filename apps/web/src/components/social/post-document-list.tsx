@@ -38,9 +38,9 @@ export function PostDocumentList({ documents, compact = false }: { documents: At
             {doc.courseCode && (
               <Link
                 href={`/courses/${encodeURIComponent(doc.courseCode)}`}
-                className="shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary hover:bg-primary/15"
+                className="max-w-[40%] shrink-0 truncate rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/15"
               >
-                {doc.courseCode}
+                {doc.courseName ?? 'Môn học'}
               </Link>
             )}
             <SaveDocumentButton documentId={doc.id} />

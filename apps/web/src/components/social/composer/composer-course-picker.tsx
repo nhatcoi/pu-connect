@@ -55,7 +55,7 @@ export function ComposerCoursePicker({ selectedCourseId, onChange }: ComposerCou
             }`}
           >
             <GraduationCap className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{selectedCourse ? `${selectedCourse.code} - ${selectedCourse.name}` : 'Gắn môn học'}</span>
+            <span className="truncate">{selectedCourse ? selectedCourse.name : 'Gắn môn học'}</span>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-72 p-2 space-y-2 rounded-2xl shadow-xl border border-border">
@@ -82,8 +82,7 @@ export function ComposerCoursePicker({ selectedCourseId, onChange }: ComposerCou
                     className="flex items-center justify-between p-2 rounded-xl cursor-pointer text-xs"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
-                      <span className="font-bold text-foreground truncate">{course.code}</span>
-                      <span className="text-[11px] text-muted-foreground truncate">{course.name}</span>
+                      <span className="font-bold text-foreground truncate">{course.name}</span>
                     </div>
                     {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                   </DropdownMenuItem>

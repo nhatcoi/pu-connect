@@ -71,7 +71,7 @@ import { PostDocumentList } from './post-document-list'
 function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolean; href?: string } | null {
   // Bài gắn học phần ⇒ link sang trang học phần
   if (post.courseCode) {
-    return { label: post.courseCode, isFaculty: false, href: `/courses/${encodeURIComponent(post.courseCode)}` }
+    return { label: post.courseName || post.courseCode, isFaculty: false, href: `/courses/${encodeURIComponent(post.courseCode)}` }
   }
 
   if (post.courseId) {

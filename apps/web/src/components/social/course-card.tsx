@@ -14,7 +14,6 @@ export function CourseCard({ course }: { course: Course }) {
         <div className="flex items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-xs text-primary font-mono">{course.code}</span>
               <span className="text-[11px] text-muted-foreground font-medium">{course.credits} Tín chỉ</span>
             </div>
             <h3 className="font-bold text-sm mt-1.5 text-foreground leading-snug line-clamp-1">{course.name}</h3>

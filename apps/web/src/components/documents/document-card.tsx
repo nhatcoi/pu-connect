@@ -20,7 +20,7 @@ export function DocumentCard({ document: doc, className }: { document: CardDocum
         <DocumentThumbnail document={doc} className="aspect-[4/3] w-full border-b border-border" />
         <div className="flex flex-1 flex-col gap-1 p-3">
           <p className="flex flex-wrap items-center gap-1.5 text-[10px] font-medium text-muted-foreground">
-            {doc.courseCode && <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono font-bold text-primary">{doc.courseCode}</span>}
+            {doc.courseName && <span className="max-w-full truncate rounded bg-primary/10 px-1.5 py-0.5 font-bold text-primary">{doc.courseName}</span>}
             {doc.docCategory && <span>{DOC_CATEGORY_LABELS[doc.docCategory]}</span>}
           </p>
           <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground group-hover:text-primary">{doc.title}</h3>

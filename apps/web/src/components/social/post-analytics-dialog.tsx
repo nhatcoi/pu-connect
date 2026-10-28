@@ -188,7 +188,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
             <p className="text-xs text-muted-foreground leading-relaxed">
               Bài viết đã được thuật toán phân phối ưu tiên tới sinh viên cùng{' '}
               <strong className="text-foreground">{post.facultyCode || post.author?.faculty || 'Khoa Công nghệ Thông tin'}</strong>
-              {post.courseCode ? ` và học phần ${post.courseCode}` : ''}.
+              {post.courseName ? ` và học phần ${post.courseName}` : ''}.
             </p>
           </div>
         </div>

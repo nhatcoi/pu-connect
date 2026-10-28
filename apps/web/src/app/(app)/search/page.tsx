@@ -485,8 +485,8 @@ function SearchContent() {
                   className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-left transition-all cursor-pointer space-y-1.5 group"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary">{course.code}</span>
-                    <span className="text-[10px] text-muted-foreground font-medium">{course.credits} tín chỉ</span>
+                    <span className="text-xs font-bold text-foreground line-clamp-1">{course.name}</span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground font-medium">{course.credits} tín chỉ</span>
                   </div>
                   <p className="text-xs font-bold text-foreground group-hover:text-primary transition-colors line-clamp-1">{course.name}</p>
                 </button>
@@ -559,7 +559,7 @@ function CourseCardItem({ course }: { course: Course }) {
       className="p-3 rounded-lg bg-muted/40 hover:bg-muted/70 text-card-foreground transition-all cursor-pointer space-y-1.5"
     >
       <div className="flex items-center justify-between">
-        <span className="font-mono font-bold text-xs px-2 py-0.5 rounded-md bg-primary/10 text-primary">{course.code}</span>
+        <span className="line-clamp-1 text-xs font-bold text-foreground">{course.name}</span>
         <span className="text-[10px] font-medium text-muted-foreground">{course.credits} tín chỉ</span>
       </div>
       <h4 className="font-bold text-xs text-foreground line-clamp-1">{course.name}</h4>
