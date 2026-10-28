@@ -1,5 +1,6 @@
 import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { DatabaseService } from '../src/database/database.service'
+import { StorageService } from '../src/modules/storage/storage.service'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
 const PDF = 'application/pdf'
@@ -70,5 +71,44 @@ describe('N7AI sources (e2e)', () => {
 
     for (let i = 1; i < 30; i++) await ownerAgent.post('/api/ai/sources').send({ type: 'text', threadId, title: `t${i}`, content: `nội dung ${i}` }).expect(201)
     await ownerAgent.post('/api/ai/sources').send({ type: 'text', threadId, content: 'quá giới hạn' }).expect(400)
+  })
+  // Tài liệu từ kho (documents) và bộ sưu tập: chỉ đọc được bản công khai / của mình, tệp không sao chép
+  it('tài liệu trong kho và bộ sưu tập: thêm một tài liệu · thêm cả bộ · chặn tài liệu riêng của người khác', async () => {
+    const storage = app.get(StorageService)
+    const owner = await createUser(db)
+    const reader = await createUser(db)
+    const agent = await loginAgent(app, reader)
+    const threadId = (await agent.post('/api/ai/threads').expect(200)).body.data.id
+
+    const doc = async (title: string, file: string, mime: string, visibility: string) =>
+      (
+        await db.query(
+          `INSERT INTO documents (owner_id, title, file_url, file_size, mime_type, visibility, status) VALUES ($1, $2, $3, 1000, $4, $5, 'published') RETURNING id`,
+          [owner.id, title, storage.publicUrlFor(`documents/${owner.id}/${file}`), mime, visibility]
+        )
+      ).rows[0].id as string
+    const pub = await doc('Giải tích 1', '1_gt1.pdf', PDF, 'public')
+    const priv = await doc('Bí mật', '2_bm.pdf', PDF, 'private')
+    const zip = await doc('Nén', '3_nen.zip', 'application/zip', 'public')
+
+    const added = (await agent.post('/api/ai/sources').send({ type: 'document', threadId, documentId: pub }).expect(201)).body.data
+    expect(added).toMatchObject({ kind: 'file', threadId, meta: { documentId: pub }, attachment: { key: `documents/${owner.id}/1_gt1.pdf`, mime: PDF } })
+    expect((await agent.post('/api/ai/sources').send({ type: 'document', threadId, documentId: pub }).expect(201)).body.data.id).toBe(added.id) // thêm lại ⇒ không trùng
+    await agent.post('/api/ai/sources').send({ type: 'document', threadId, documentId: priv }).expect(404) // riêng tư của người khác
+    await agent.post('/api/ai/sources').send({ type: 'document', threadId, documentId: zip }).expect(400) // định dạng chưa đọc được
+
+    const thread1 = (await agent.post('/api/ai/threads').expect(200)).body.data.id
+    const copied = (await agent.post('/api/ai/sources').send({ type: 'copy', threadId: thread1, sourceId: added.id }).expect(201)).body.data
+    expect(copied.attachment.key).toBe(added.attachment.key) // nhân bản tệp kho giữ nguyên key
+
+    const col = async (visibility: string) => {
+      const id = (await db.query(`INSERT INTO document_collections (owner_id, title, visibility) VALUES ($1, 'Ôn thi', $2) RETURNING id`, [owner.id, visibility])).rows[0].id as string
+      for (const d of [pub, priv, zip]) await db.query(`INSERT INTO document_collection_items (collection_id, document_id) VALUES ($1, $2)`, [id, d])
+      return id
+    }
+    // Thread rỗng được dùng lại ⇒ thêm bộ vào thư viện (không threadId) để không lẫn với tài liệu đã thêm ở trên
+    const res = (await agent.post('/api/ai/sources/collection').send({ collectionId: await col('public') }).expect(201)).body.data
+    expect(res).toEqual({ added: 1, skipped: 2 }) // chỉ tài liệu công khai đọc được
+    await agent.post('/api/ai/sources/collection').send({ collectionId: await col('private') }).expect(404) // bộ riêng của người khác
   })
 })

@@ -8,7 +8,7 @@ import { bufferToText, isExtractableMime } from '../ai/doc-text'
 import { LlmService, type LlmMessage } from '../ai/llm.service'
 import { StorageService } from '../storage/storage.service'
 import { StudyDraftService } from '../study-tools/study-draft.service'
-import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, MAX_POST_DOCUMENTS } from './dto/documents.dto'
+import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, MAX_POST_DOCUMENTS, type SuggestFileBody } from './dto/documents.dto'
 
 const SUGGEST_INPUT_CHARS = 6000
 const POST_INPUT_CHARS = 2500 // mỗi tài liệu khi viết bài
@@ -36,15 +36,24 @@ export class DocumentAiService {
     if (!doc) throw new NotFoundException('Tài liệu không tồn tại')
     if (doc.owner_id !== userId) throw new ForbiddenException('Chỉ người đăng được phân loại tài liệu')
 
+    return this.classifyContent(userId, { type: 'document', id }, doc.original_name || doc.title, await this.excerpt(doc, SUGGEST_INPUT_CHARS))
+  }
+
+  // Tệp vừa tải lên R2 (chưa có bản ghi tài liệu): hộp "Chia sẻ tài liệu" nhờ N7AI điền tên / loại / môn trước khi lưu
+  async suggestFile(userId: string, input: SuggestFileBody): Promise<DocumentSuggestion> {
+    const excerpt = await this.readHead(input.fileUrl, input.mimeType, SUGGEST_INPUT_CHARS)
+    return this.classifyContent(userId, { type: 'document', id: 'upload' }, input.fileName, excerpt)
+  }
+
+  private async classifyContent(userId: string, source: AiRef, name: string, excerpt: string): Promise<DocumentSuggestion> {
     const courses = (await this.db.query(`SELECT id, code, name FROM courses ORDER BY code LIMIT 400`)).rows as { id: string; code: string; name: string }[]
-    const excerpt = await this.excerpt(doc, SUGGEST_INPUT_CHARS)
     const user = [
       `<courses>\n${courses.map((c) => `${c.code} | ${c.name}`).join('\n')}\n</courses>`,
       `<categories>\n${DOC_CATEGORIES.map((k) => `${k} | ${DOC_CATEGORY_LABELS[k]}`).join('\n')}\n</categories>`,
-      `<document>\nTên tệp: ${doc.original_name || doc.title}\n${excerpt ? `Nội dung (đoạn đầu):\n${excerpt}` : '(Không đọc được nội dung, chỉ dựa vào tên tệp)'}\n</document>`
+      `<document>\nTên tệp: ${name}\n${excerpt ? `Nội dung (đoạn đầu):\n${excerpt}` : '(Không đọc được nội dung, chỉ dựa vào tên tệp)'}\n</document>`
     ].join('\n\n')
 
-    const text = await this.run(userId, 'doc_classify', { type: 'document', id }, [
+    const text = await this.run(userId, 'doc_classify', source, [
       { role: 'system', content: SYSTEM_PROMPT + DOC_CLASSIFY_PROMPT },
       { role: 'user', content: user }
     ])
@@ -139,18 +148,23 @@ export class DocumentAiService {
   // Đoạn đầu nội dung: lấy từ document_chunks (đã index); chưa index xong ⇒ đọc thẳng vài trang đầu trên R2
   private async excerpt(doc: Pick<DocRow, 'id' | 'file_url' | 'mime_type'>, maxChars: number): Promise<string> {
     const chunks = await this.db.query(`SELECT content_text FROM document_chunks WHERE document_id = $1 ORDER BY chunk_index LIMIT 12`, [doc.id])
-    let text = chunks.rows.map((r) => r.content_text as string).join('\n')
+    const text = chunks.rows.map((r) => r.content_text as string).join('\n')
+    if (text) return text.slice(0, maxChars).trim()
+    return this.readHead(doc.file_url, doc.mime_type, maxChars)
+  }
+
+  // Đọc thẳng vài trang đầu của tệp trên R2 (chỉ R2 của hệ thống: chặn SSRF)
+  private async readHead(fileUrl: string, mimeType: string, maxChars: number): Promise<string> {
     const prefix = this.storage.publicUrlFor('documents/')
-    // Chỉ đọc tệp trên R2 của hệ thống (chặn SSRF)
-    if (!text && isExtractableMime(doc.mime_type) && doc.file_url.startsWith(prefix)) {
-      try {
-        const object = await this.storage.readObject(`documents/${doc.file_url.slice(prefix.length)}`)
-        if (object && (object.size ?? 0) <= LIVE_READ_MAX_BYTES) text = await bufferToText(await readAll(object.body, LIVE_READ_MAX_BYTES), doc.mime_type, LIVE_READ_PAGES)
-      } catch {
-        text = '' // không đọc được ⇒ AI dựa vào tên tệp
-      }
+    if (!isExtractableMime(mimeType) || !fileUrl.startsWith(prefix)) return ''
+    try {
+      const object = await this.storage.readObject(`documents/${fileUrl.slice(prefix.length)}`)
+      if (!object || (object.size ?? 0) > LIVE_READ_MAX_BYTES) return ''
+      const text = await bufferToText(await readAll(object.body, LIVE_READ_MAX_BYTES), mimeType, LIVE_READ_PAGES)
+      return text.slice(0, maxChars).trim()
+    } catch {
+      return '' // không đọc được ⇒ AI dựa vào tên tệp
     }
-    return text.slice(0, maxChars).trim()
   }
 }
 

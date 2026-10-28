@@ -4,6 +4,8 @@ import type {
   AiFeedbackInput,
   AiFolder,
   AiSource,
+  AiSourceCollectionInput,
+  AiSourceCollectionResult,
   AiSourceInput,
   AiSourcePatch,
   AiLearnerProfile,
@@ -140,6 +142,7 @@ export const chatApi = {
   aiSources: (threadId?: string) => unwrap(apiClient<Envelope<AiSource[]>>(`/ai/sources${threadId ? `?threadId=${threadId}` : ''}`)),
   aiSourceContent: (id: string) => unwrap(apiClient<Envelope<{ content: string | null }>>(`/ai/sources/${id}/content`)),
   addAiSource: (input: AiSourceInput) => unwrap(apiClient<Envelope<AiSource>>('/ai/sources', json('POST', input))),
+  addAiSourceCollection: (input: AiSourceCollectionInput) => unwrap(apiClient<Envelope<AiSourceCollectionResult>>('/ai/sources/collection', json('POST', input))),
   patchAiSource: (id: string, input: AiSourcePatch) => unwrap(apiClient<Envelope<AiSource>>(`/ai/sources/${id}`, json('PATCH', input))),
   deleteAiSource: (id: string) => apiClient(`/ai/sources/${id}`, json('DELETE')),
   // Chia sẻ công khai qua link (ảnh chụp tới tin cuối)

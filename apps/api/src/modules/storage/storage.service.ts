@@ -39,6 +39,14 @@ export class StorageService {
     return `${this.publicUrl.replace(/\/$/, '')}/${key}`
   }
 
+  // Ngược lại của publicUrlFor: key của một URL R2 của hệ thống; URL ngoài ⇒ null
+  keyFromUrl(url: string): string | null {
+    const base = `${this.publicUrl.replace(/\/$/, '')}/`
+    if (!url.startsWith(base)) return null
+    const key = url.slice(base.length).split('?')[0]
+    return key && !key.includes('..') ? key : null
+  }
+
   // Key do chính user tải lên thư mục này? (chặn gắn tệp người khác / URL ngoài) / Ownership check
   isOwnedKey(key: string, folder: UploadFolder, userId: string): boolean {
     return key.startsWith(`${folder}/${userId}/`) && !key.includes('..')

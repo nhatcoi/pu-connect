@@ -3,6 +3,7 @@ import type { AttachedDocument, DocumentUploadResult, PostItem } from '@pu/schem
 import type { DatabaseService } from '../src/database/database.service'
 import { DocumentsService } from '../src/modules/documents/documents.service'
 import { StorageService } from '../src/modules/storage/storage.service'
+import * as request from 'supertest'
 import { createTestApp, createUser, loginAgent } from './helpers'
 
 // Kho tài liệu: đính kèm khi soạn bài (bản nháp) → phân loại → đăng bài → vào kho môn học
@@ -154,5 +155,15 @@ describe('Document library (e2e)', () => {
     const docs = res.body.data.documents as { id: string; uploader: { email: string } }[]
     expect(docs.map((d) => d.id)).not.toContain(draft.id)
     for (const d of docs) expect(d.uploader.email).toBe('')
+  })
+
+  it('N7AI gợi ý cho tệp chưa thành tài liệu: cần đăng nhập, kiểm tra dữ liệu; test không có model ⇒ 503', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const url = app.get(StorageService).publicUrlFor('documents/test/x.pdf')
+    const body = { fileUrl: url, fileName: 'De_thi.pdf', mimeType: 'application/pdf' }
+    await agent.post('/api/documents/suggest-file').send({ fileName: 'x' }).expect(400)
+    await request(app.getHttpServer()).post('/api/documents/suggest-file').send(body).expect(401)
+    await agent.post('/api/documents/suggest-file').send(body).expect(503)
   })
 })

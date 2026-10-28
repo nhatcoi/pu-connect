@@ -12,6 +12,16 @@ const TEMPLATES: Record<StudyMode, string> = {
   plan: 'Lộ trình ôn {t} trong 7 ngày, mỗi ngày 2 tiếng'
 }
 
+// Gợi ý từ bộ sưu tập của mình ({t} = tên bộ); bấm ⇒ bộ được thêm vào cuộc trò chuyện để N7AI đọc
+const COLLECTION_TEMPLATES: Record<StudyMode, string> = {
+  explain: 'Giải thích các khái niệm chính trong bộ «{t}»',
+  quiz: 'Quiz 5 câu ôn tập từ bộ «{t}»',
+  flashcards: 'Flashcard thuật ngữ từ bộ «{t}»',
+  summarize: 'Tóm tắt các tài liệu trong bộ «{t}»',
+  plan: 'Lộ trình ôn bằng bộ «{t}» trong 7 ngày'
+}
+export const fillCollectionTemplate = (mode: StudyMode, title: string): string => COLLECTION_TEMPLATES[mode].replace('{t}', title)
+
 // "Hỏi đáp": trộn nhiều chế độ để người mới thấy N7AI làm được gì
 export const MIXED_MODES: StudyMode[] = ['explain', 'quiz', 'flashcards', 'plan']
 

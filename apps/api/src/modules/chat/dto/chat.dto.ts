@@ -117,8 +117,10 @@ export const AiSourceBodySchema = z.discriminatedUnion('type', [
     content: z.string().trim().min(1, { message: 'Dán nội dung cần học' }).max(AI_SOURCE_TEXT_MAX, { message: 'Văn bản quá dài (tối đa 100.000 ký tự)' })
   }),
   z.object({ type: z.literal('link'), threadId: sourceThread, url: z.string().trim().url({ message: 'Nhập liên kết hợp lệ' }).max(2000) }),
-  z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() })
+  z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() }),
+  z.object({ type: z.literal('document'), threadId: sourceThread, documentId: z.string().uuid() })
 ])
+export const AiSourceCollectionBodySchema = z.object({ threadId: sourceThread, collectionId: z.string().uuid() })
 export const AiSourcesQuerySchema = z.object({ threadId: z.string().uuid().optional() })
 export const AiSourcePatchBodySchema = z.object({ inContext: z.boolean() })
 

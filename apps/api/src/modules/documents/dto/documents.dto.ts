@@ -59,6 +59,14 @@ export const CreateDocumentBodySchema = z.object({
 })
 export type CreateDocumentBody = z.infer<typeof CreateDocumentBodySchema>
 
+// N7AI gợi ý phân loại cho tệp vừa tải lên R2 nhưng chưa thành tài liệu (hộp Chia sẻ tài liệu)
+export const SuggestFileSchema = z.object({
+  fileUrl: z.string().url(),
+  fileName: z.string().trim().min(1).max(255),
+  mimeType: z.string().max(100)
+})
+export type SuggestFileBody = z.infer<typeof SuggestFileSchema>
+
 // "Viết giúp": N7AI viết bài giới thiệu tài liệu đang đính kèm
 export const WriteDocumentPostSchema = z.object({
   documentIds: z.array(z.string().uuid()).min(1).max(MAX_POST_DOCUMENTS),

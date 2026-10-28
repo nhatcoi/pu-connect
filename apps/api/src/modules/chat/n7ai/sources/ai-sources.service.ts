@@ -1,5 +1,5 @@
 import { BadGatewayException, BadRequestException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common'
-import type { AiSource, AiSourceInput, AiSourceMeta, AiSourcePatch, ChatAttachment } from '@pu/schemas'
+import type { AiSource, AiSourceCollectionInput, AiSourceCollectionResult, AiSourceInput, AiSourceMeta, AiSourcePatch, ChatAttachment } from '@pu/schemas'
 import { DatabaseService } from '../../../../database/database.service'
 import { WebReaderService } from '../../../ai/connectors/web-reader.service'
 import { isExtractableMime } from '../../../ai/doc-text'
@@ -70,7 +70,34 @@ export class AiSourcesService {
         return this.addLink(userId, threadId, input.url)
       case 'copy':
         return this.copy(userId, input.threadId, input.sourceId)
+      case 'document':
+        return this.addDocument(userId, threadId, input.documentId)
     }
+  }
+
+  // Cả bộ sưu tập (của mình hoặc công khai): mỗi tài liệu đọc được thành một nguồn, bỏ qua tài liệu trùng / chưa đọc được / vượt giới hạn
+  async addCollection(userId: string, input: AiSourceCollectionInput): Promise<AiSourceCollectionResult> {
+    if (input.threadId) await this.assertThread(userId, input.threadId)
+    const col = await this.db.query(`SELECT 1 FROM document_collections WHERE id = $1 AND (visibility = 'public' OR owner_id = $2)`, [input.collectionId, userId])
+    if (!col.rows[0]) throw new NotFoundException('Không tìm thấy bộ sưu tập')
+    const docs = await this.db.query(
+      `SELECT d.id, d.title, d.original_name, d.file_url, d.file_size, d.mime_type
+       FROM document_collection_items i JOIN documents d ON d.id = i.document_id
+       WHERE i.collection_id = $1 AND d.status = 'published' AND (d.visibility = 'public' OR d.owner_id = $2)
+       ORDER BY i.added_at`,
+      [input.collectionId, userId]
+    )
+    let added = 0
+    for (const doc of docs.rows) {
+      try {
+        const before = await this.countSources(userId, input.threadId)
+        await this.addStored(userId, input.threadId, doc)
+        if ((await this.countSources(userId, input.threadId)) > before) added++
+      } catch {
+        // bỏ qua tài liệu không thêm được (định dạng, giới hạn); phần còn lại vẫn thêm
+      }
+    }
+    return { added, skipped: docs.rows.length - added }
   }
 
   // Bật / tắt tài liệu cho N7AI đọc (không xóa gì)
@@ -104,10 +131,39 @@ export class AiSourcesService {
 
   private async addFile(userId: string, threadId: string | undefined, file: SourceFile) {
     if (!this.storage.isOwnedKey(file.key, 'chat', userId)) throw new BadRequestException('Tệp không hợp lệ')
+    return this.addKeyed(userId, threadId, file, this.storage.publicUrlFor(file.key))
+  }
+
+  private async countSources(userId: string, threadId: string | undefined): Promise<number> {
+    const res = await this.db.query(`SELECT COUNT(*)::int AS n FROM ai_sources WHERE user_id = $1 AND thread_id IS NOT DISTINCT FROM $2::uuid`, [userId, threadId ?? null])
+    return res.rows[0].n
+  }
+
+  // Tài liệu trong kho: chỉ đọc được bản công khai hoặc của chính mình; tệp vẫn nằm ở R2 của kho (không sao chép)
+  private async addDocument(userId: string, threadId: string | undefined, documentId: string) {
+    const res = await this.db.query(
+      `SELECT id, title, original_name, file_url, file_size, mime_type FROM documents WHERE id = $1 AND status = 'published' AND (visibility = 'public' OR owner_id = $2)`,
+      [documentId, userId]
+    )
+    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy tài liệu')
+    return this.addStored(userId, threadId, res.rows[0])
+  }
+
+  private async addStored(userId: string, threadId: string | undefined, doc: any) {
+    const key = this.storage.keyFromUrl(doc.file_url)
+    if (!key) throw new BadRequestException('Tài liệu này không lưu trên hệ thống nên N7AI chưa đọc được')
+    const ext = /\.[A-Za-z0-9]{1,8}$/.exec(key)?.[0] ?? ''
+    // Tên có đuôi tệp: trình xem chọn loại theo đuôi
+    const name = (doc.original_name || `${doc.title}${ext}`).slice(0, 200)
+    const size = Math.min(Number(doc.file_size) || 1, 2_000_000_000)
+    return this.addKeyed(userId, threadId, { key, name, size, mime: doc.mime_type }, doc.file_url, { documentId: doc.id })
+  }
+
+  private async addKeyed(userId: string, threadId: string | undefined, file: SourceFile, url: string, meta?: AiSourceMeta) {
     if (!isLearnable(file.mime)) throw new BadRequestException('N7AI chưa đọc được định dạng này. Dùng PDF, Word, PowerPoint, Excel, văn bản hoặc ảnh.')
     const existing = await this.db.query(`SELECT ${COLUMNS} FROM ai_sources WHERE user_id = $1 AND thread_id IS NOT DISTINCT FROM $2::uuid AND file_key = $3`, [userId, threadId ?? null, file.key])
     if (existing.rows[0]) return mapSource(existing.rows[0]) // thêm lại cùng tệp ⇒ giữ nguyên
-    return this.insert(userId, threadId, { kind: 'file', title: file.name, url: this.storage.publicUrlFor(file.key), fileKey: file.key, mime: file.mime, size: file.size })
+    return this.insert(userId, threadId, { kind: 'file', title: file.name, url, fileKey: file.key, mime: file.mime, size: file.size, meta })
   }
 
   private async addLink(userId: string, threadId: string | undefined, raw: string) {
@@ -144,7 +200,7 @@ export class AiSourcesService {
     const res = await this.db.query(`SELECT kind, title, url, file_key, mime, size, content, meta FROM ai_sources WHERE id = $1 AND user_id = $2`, [sourceId, userId])
     const src = res.rows[0]
     if (!src) throw new NotFoundException('Không tìm thấy tài liệu')
-    if (src.kind === 'file') return this.addFile(userId, threadId, { key: src.file_key, name: src.title, size: src.size, mime: src.mime })
+    if (src.kind === 'file') return this.addKeyed(userId, threadId, { key: src.file_key, name: src.title, size: src.size, mime: src.mime }, src.url, src.meta ?? undefined) // tệp đã được kiểm khi vào thư viện
     return this.insert(userId, threadId, { kind: src.kind, title: src.title, url: src.url, content: src.content, meta: src.meta })
   }
 

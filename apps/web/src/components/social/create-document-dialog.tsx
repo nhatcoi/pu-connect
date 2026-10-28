@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
-import { FileUp, Loader2, Paperclip, X } from 'lucide-react'
+import { FileUp, Loader2, Paperclip, Sparkles, X } from 'lucide-react'
 import { DOC_CATEGORIES, DOC_CATEGORY_LABELS, type DocCategory, type DocumentItem } from '@pu/schemas'
 import { apiClient, errorMessage, uploadFileToR2 } from '@/lib/api-client'
+import { suggestUploadedFile } from '@/lib/document-api'
 import { useCourses } from '@/hooks/use-course'
 import { queryKeys } from '@/lib/query-keys'
 import { cn } from '@/lib/utils'
@@ -31,6 +32,8 @@ interface Item {
   category: DocCategory | ''
   status: 'idle' | 'uploading' | 'error'
   error?: string
+  uploaded?: { url: string; size: number } // đã tải lên R2 (khi nhờ N7AI đọc tệp) ⇒ lúc lưu không tải lại
+  suggesting?: boolean
 }
 
 const titleOf = (name: string) => name.replace(/\.[A-Za-z0-9]{1,8}$/, '').replace(/_+/g, ' ')
@@ -76,6 +79,37 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
     setItems((list) => list.map((i) => ({ ...i, category: next })))
   }
 
+  // N7AI đọc tệp (tải lên R2 một lần, dùng lại khi lưu) rồi điền tên + loại của tệp; môn chung chỉ điền nếu chưa chọn
+  const suggestFor = async (item: Item): Promise<boolean> => {
+    patch(item.key, { suggesting: true })
+    try {
+      const uploaded = item.uploaded ?? (await uploadFileToR2(item.file, 'documents'))
+      const s = await suggestUploadedFile({ fileUrl: uploaded.url, fileName: item.file.name, mimeType: item.file.type || 'application/octet-stream' })
+      patch(item.key, { uploaded, ...(s.title ? { title: s.title } : {}), ...(s.docCategory ? { category: s.docCategory } : {}) })
+      if (s.courseId) setCourseId((cur) => cur || routeCourse?.id || s.courseId!)
+      return !!(s.title || s.docCategory || s.courseId)
+    } catch (err) {
+      toast.error(errorMessage(err, 'N7AI chưa gợi ý được'))
+      return false
+    } finally {
+      patch(item.key, { suggesting: false })
+    }
+  }
+
+  const suggestOne = async (item: Item) => {
+    if (await suggestFor(item)) toast.success('N7AI đã điền gợi ý — kiểm tra lại trước khi lưu')
+    else toast.info('N7AI chưa đủ thông tin để phân loại tệp này')
+  }
+
+  // Lần lượt từng tệp (mỗi tệp 1 lượt N7AI)
+  const suggestAll = async () => {
+    let filled = 0
+    for (const item of items) if (await suggestFor(item)) filled++
+    toast[filled ? 'success' : 'info'](filled ? `N7AI đã điền ${filled}/${items.length} tệp — kiểm tra lại trước khi lưu` : 'N7AI chưa đủ thông tin để phân loại')
+  }
+
+  const busy = isSubmitting || items.some((i) => i.suggesting)
+
   const reset = () => {
     setItems([])
     setDescription('')
@@ -95,7 +129,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
     for (const item of items) {
       patch(item.key, { status: 'uploading', error: undefined })
       try {
-        const uploaded = await uploadFileToR2(item.file, 'documents')
+        const uploaded = item.uploaded ?? (await uploadFileToR2(item.file, 'documents'))
         await apiClient<{ success: boolean; data: DocumentItem }>('/documents', {
           method: 'POST',
           body: JSON.stringify({
@@ -160,6 +194,18 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
             </span>
           </button>
 
+          {items.length > 1 && (
+            <button
+              type="button"
+              onClick={() => void suggestAll()}
+              disabled={busy}
+              className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 px-3 py-1.5 text-[11px] font-semibold text-primary transition-colors hover:bg-primary/5 disabled:opacity-60 cursor-pointer"
+            >
+              {items.some((i) => i.suggesting) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              N7AI điền tất cả ({items.length} tệp, {items.length} lượt)
+            </button>
+          )}
+
           {items.length > 0 && (
             <ul className="max-h-52 space-y-2 overflow-y-auto pr-1">
               {items.map((i) => (
@@ -172,6 +218,16 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
                       onChange={(e) => patch(i.key, { title: e.target.value })}
                       className="h-8 flex-1 bg-background text-xs text-foreground"
                     />
+                    <button
+                      type="button"
+                      onClick={() => void suggestOne(i)}
+                      disabled={busy}
+                      title="N7AI đọc tệp và điền tên, loại tài liệu (và môn học nếu chưa chọn)"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/30 px-2 py-1 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/5 disabled:opacity-60 cursor-pointer"
+                    >
+                      {i.suggesting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      N7AI
+                    </button>
                     {i.status === 'uploading' ? (
                       <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
                     ) : (
@@ -238,7 +294,7 @@ export function CreateDocumentDialog({ open, onOpenChange, onSuccess }: CreateDo
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
             Hủy
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting || items.length === 0} className="gap-1.5 bg-primary text-primary-foreground">
+          <Button onClick={handleSubmit} disabled={busy || items.length === 0} className="gap-1.5 bg-primary text-primary-foreground">
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
             <span>{items.length > 1 ? `Đưa ${items.length} tài liệu vào kho` : 'Đưa vào kho'}</span>
           </Button>

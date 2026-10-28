@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { AiSource, AiSourceInput } from '@pu/schemas'
+import type { AiSource, AiSourceCollectionResult, AiSourceInput } from '@pu/schemas'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
 
@@ -17,6 +17,16 @@ export function useAiSources(threadId?: string) {
     // threadId của hook luôn được gắn vào, ngoại trừ yêu cầu chép tài liệu (đã có threadId đích)
     mutationFn: (input: AiSourceInput) => chatApi.addAiSource(input.type === 'copy' ? input : { ...input, threadId }),
     onSuccess: (source) => qc.setQueryData<AiSource[]>(key, (list) => [source, ...(list ?? []).filter((s) => s.id !== source.id)]),
+    onError
+  })
+  // Cả bộ sưu tập: server trả số tài liệu đã thêm; tải lại danh sách để thấy từng tài liệu
+  const addCollection = useMutation<AiSourceCollectionResult, Error, string>({
+    mutationFn: (collectionId) => chatApi.addAiSourceCollection({ threadId, collectionId }),
+    onSuccess: ({ added, skipped }) => {
+      void qc.invalidateQueries({ queryKey: key })
+      if (added) toast.success(`Đã thêm ${added} tài liệu${skipped ? `, bỏ qua ${skipped} tài liệu trùng hoặc chưa đọc được` : ''}`)
+      else toast.error('Không thêm được tài liệu nào (trùng hoặc N7AI chưa đọc được định dạng)')
+    },
     onError
   })
   // Bật / tắt cho N7AI đọc: cập nhật ngay trên danh sách, lỗi thì hoàn lại
@@ -37,7 +47,7 @@ export function useAiSources(threadId?: string) {
     onSuccess: (_, id) => qc.setQueryData<AiSource[]>(key, (list) => (list ?? []).filter((s) => s.id !== id)),
     onError
   })
-  return { sources: query.data ?? [], isPending: query.isPending, add, remove, setInContext }
+  return { sources: query.data ?? [], isPending: query.isPending, add, addCollection, remove, setInContext }
 }
 
 // Nội dung chữ của tài liệu (văn bản dán, trang web, YouTube)

@@ -19,6 +19,8 @@ import {
   CoursePathQuerySchema,
   type RateDocumentBody,
   RateDocumentSchema,
+  type SuggestFileBody,
+  SuggestFileSchema,
   type DocumentStudyDraftBody,
   DocumentStudyDraftSchema,
   WriteDocumentPostSchema
@@ -100,6 +102,14 @@ export class DocumentsController {
   @UseGuards(AuthenticatedGuard)
   async classify(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(ClassifyDocumentSchema)) body: ClassifyDocumentInput, @Req() req: Request) {
     return this.documentsService.classify(id, requireUserId(req), body)
+  }
+
+  // N7AI gợi ý cho tệp vừa tải lên R2, chưa thành tài liệu (hộp Chia sẻ tài liệu; 1 lượt N7AI)
+  @Post('suggest-file')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthenticatedGuard)
+  async suggestFile(@Body(new ZodValidationPipe(SuggestFileSchema)) body: SuggestFileBody, @Req() req: Request) {
+    return this.documentAi.suggestFile(requireUserId(req), body)
   }
 
   // N7AI gợi ý môn / loại / năm học / tiêu đề từ nội dung tệp (chủ tài liệu, 1 lượt N7AI)

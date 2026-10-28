@@ -57,6 +57,11 @@ export async function suggestDocument(id: string): Promise<DocumentSuggestion> {
   return (await apiClient<Envelope<DocumentSuggestion>>(`/documents/${id}/suggest`, { method: 'POST' })).data
 }
 
+// N7AI gợi ý cho tệp đã tải lên R2 nhưng chưa thành tài liệu (hộp Chia sẻ tài liệu; 1 lượt N7AI)
+export async function suggestUploadedFile(input: { fileUrl: string; fileName: string; mimeType: string }): Promise<DocumentSuggestion> {
+  return (await apiClient<Envelope<DocumentSuggestion>>('/documents/suggest-file', { method: 'POST', body: JSON.stringify(input) })).data
+}
+
 // "Học với N7AI": tóm tắt tài liệu / bản nháp bộ flashcard, quiz từ nội dung tài liệu (mỗi lần 1 lượt N7AI)
 export async function summarizeDocument(id: string): Promise<DocumentSummary> {
   return (await apiClient<Envelope<DocumentSummary>>(`/documents/${id}/summarize`, { method: 'POST' })).data
