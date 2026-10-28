@@ -108,7 +108,7 @@ describe('N7AI sources (e2e)', () => {
     }
     // Thread rỗng được dùng lại ⇒ thêm bộ vào thư viện (không threadId) để không lẫn với tài liệu đã thêm ở trên
     const res = (await agent.post('/api/ai/sources/collection').send({ collectionId: await col('public') }).expect(201)).body.data
-    expect(res).toEqual({ added: 1, skipped: 2 }) // chỉ tài liệu công khai đọc được
+    expect(res).toEqual({ added: 1, skipped: 1 }) // tài liệu riêng không thấy; zip chưa đọc được ⇒ bỏ qua
     await agent.post('/api/ai/sources/collection').send({ collectionId: await col('private') }).expect(404) // bộ riêng của người khác
   })
 })
