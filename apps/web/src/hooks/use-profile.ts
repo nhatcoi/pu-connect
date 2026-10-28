@@ -13,6 +13,7 @@ export interface UserProfileData {
   interestField?: string | null
   universityId?: string | null
   interestFieldId?: string | null
+  interestFieldIds?: string[]
   universityRequest?: string | null
   interestFieldRequest?: string | null
   universityRequestStatus?: 'pending' | 'rejected' | null
@@ -52,6 +53,7 @@ const GET_USER_PROFILE_QUERY = `
       interestField
       universityId
       interestFieldId
+      interestFieldIds
       universityRequest
       interestFieldRequest
       universityRequestStatus

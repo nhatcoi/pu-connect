@@ -25,6 +25,7 @@ const UnitChoiceFields = {
   universityId: z.string().uuid().optional().nullable(),
   universityOther: z.string().trim().max(200).optional().nullable(),
   interestFieldId: z.string().uuid().optional().nullable(),
+  interestFieldIds: z.array(z.string().uuid()).max(3).optional().nullable(), // nhiều lĩnh vực (tối đa 3, gồm cả "Khác"); ưu tiên hơn interestFieldId
   interestFieldOther: z.string().trim().max(200).optional().nullable()
 }
 
@@ -74,7 +75,8 @@ export const UserProfileSchema = z.object({
   studentId: z.string().optional().nullable(),
   universityId: z.string().nullable().optional(),
   university: z.string().nullable().optional(), // "Khác" khi đang chờ duyệt
-  interestFieldId: z.string().nullable().optional(),
+  interestFieldId: z.string().nullable().optional(), // lĩnh vực chính
+  interestFieldIds: z.array(z.string()).optional(), // toàn bộ lĩnh vực quan tâm (tối đa 3), theo thứ tự chọn
   interestField: z.string().nullable().optional(), // "Khác" khi đang chờ duyệt
   universityRequest: z.string().nullable().optional(), // tên đã gửi chờ duyệt (chỉ chủ hồ sơ)
   interestFieldRequest: z.string().nullable().optional(),

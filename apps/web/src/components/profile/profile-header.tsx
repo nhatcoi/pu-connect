@@ -76,6 +76,7 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
           universityRequest: profile.universityRequest,
           universityRequestStatus: profile.universityRequestStatus,
           interestFieldId: profile.interestFieldId,
+          interestFieldIds: profile.interestFieldIds,
           interestFieldRequest: profile.interestFieldRequest,
           interestFieldRequestStatus: profile.interestFieldRequestStatus,
           avatarUrl: profile.avatarUrl,

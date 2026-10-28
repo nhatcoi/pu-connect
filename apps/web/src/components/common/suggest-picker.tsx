@@ -45,6 +45,14 @@ export interface SuggestConfig {
   history?: SuggestHistoryItem[]
 }
 
+// Chọn nhiều: bấm để bật / tắt, không đóng hộp; `reserved` = số chỗ đã bị chiếm bởi mục "Khác" đang chờ duyệt
+export interface MultiConfig {
+  max: number
+  values: string[]
+  onChange: (ids: string[]) => void
+  reserved?: number
+}
+
 interface SuggestPickerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -52,6 +60,7 @@ interface SuggestPickerProps {
   options: PickerOption[]
   value?: string | null
   onSelect?: (id: string | null) => void // bỏ qua ⇒ hộp chỉ để đề xuất
+  multi?: MultiConfig // có ⇒ chọn nhiều (bỏ qua value / onSelect / clearLabel)
   clearLabel?: string // có ⇒ thêm dòng bỏ chọn
   suggest?: SuggestConfig
   startInSuggest?: boolean
@@ -65,7 +74,7 @@ const letterOf = (name: string) => {
   return c >= 'A' && c <= 'Z' ? c : '#'
 }
 
-export function SuggestPickerDialog({ open, onOpenChange, title, options, value, onSelect, clearLabel, suggest, startInSuggest }: SuggestPickerProps) {
+export function SuggestPickerDialog({ open, onOpenChange, title, options, value, onSelect, multi, clearLabel, suggest, startInSuggest }: SuggestPickerProps) {
   const [q, setQ] = useState('')
   const [view, setView] = useState<'list' | 'suggest'>('list')
   const [values, setValues] = useState<Record<string, string>>({})
@@ -95,7 +104,16 @@ export function SuggestPickerDialog({ open, onOpenChange, title, options, value,
   }, [options, q])
   const total = groups.reduce((n, [, rows]) => n + rows.length, 0)
 
+  const used = multi ? multi.values.length + (multi.reserved ?? 0) : 0
+  const full = !!multi && used >= multi.max
+
   const pick = (id: string | null) => {
+    if (multi && id) {
+      const on = multi.values.includes(id)
+      if (!on && full) return
+      multi.onChange(on ? multi.values.filter((v) => v !== id) : [...multi.values, id])
+      return
+    }
     onSelect?.(id)
     onOpenChange(false)
   }
@@ -140,14 +158,15 @@ export function SuggestPickerDialog({ open, onOpenChange, title, options, value,
               {suggest && (
                 <button
                   type="button"
+                  disabled={full}
                   onClick={openSuggest}
-                  className="mb-1 flex w-full items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-left text-sm font-medium text-primary hover:bg-primary/10 cursor-pointer"
+                  className="mb-1 disabled:cursor-not-allowed disabled:opacity-40 flex w-full items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-3 py-2 text-left text-sm font-medium text-primary hover:bg-primary/10 cursor-pointer"
                 >
                   <Sparkles className="h-4 w-4 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">{q.trim() ? `Khác: đề xuất “${q.trim()}”` : `Khác — đề xuất ${suggest.noun} mới`}</span>
                 </button>
               )}
-              {clearLabel && (
+              {clearLabel && !multi && (
                 <button type="button" onClick={() => pick(null)} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground hover:bg-muted cursor-pointer">
                   <X className="h-3.5 w-3.5" /> {clearLabel}
                 </button>
@@ -155,22 +174,41 @@ export function SuggestPickerDialog({ open, onOpenChange, title, options, value,
               {groups.map(([letter, rows]) => (
                 <div key={letter}>
                   <p className="sticky top-0 z-10 bg-card px-3 pb-0.5 pt-2 text-[11px] font-bold text-muted-foreground">{letter}</p>
-                  {rows.map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => pick(o.id)}
-                      className={cn('flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-muted cursor-pointer', o.id === value && 'bg-muted/60 font-medium')}
-                    >
-                      <span className="min-w-0 flex-1 truncate">{o.name}</span>
-                      {o.hint && <span className="shrink-0 text-[11px] text-muted-foreground">{o.hint}</span>}
-                      {o.id === value && <Check className="h-4 w-4 shrink-0 text-primary" />}
-                    </button>
-                  ))}
+                  {rows.map((o) => {
+                    const selected = multi ? multi.values.includes(o.id) : o.id === value
+                    const blocked = !!multi && full && !selected
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        disabled={blocked}
+                        onClick={() => pick(o.id)}
+                        className={cn(
+                          'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm hover:bg-muted cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent',
+                          selected && 'bg-muted/60 font-medium'
+                        )}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{o.name}</span>
+                        {o.hint && <span className="shrink-0 text-[11px] text-muted-foreground">{o.hint}</span>}
+                        {selected && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                      </button>
+                    )
+                  })}
                 </div>
               ))}
               {total === 0 && <p className="px-3 py-6 text-center text-sm text-muted-foreground">{suggest ? `Không thấy kết quả. Chọn “Khác” để đề xuất ${suggest.noun}.` : 'Không thấy kết quả.'}</p>}
             </div>
+            {multi && (
+              <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                <span className="text-xs text-muted-foreground">
+                  Đã chọn {used}/{multi.max}
+                  {full && ' — bỏ một mục để chọn thêm'}
+                </span>
+                <Button type="button" size="sm" onClick={() => onOpenChange(false)}>
+                  Xong
+                </Button>
+              </div>
+            )}
           </>
         ) : (
           <>

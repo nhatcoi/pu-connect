@@ -5,7 +5,7 @@ import { blockExistsSql } from '../blocks/blocks.sql'
 import { anonymousAuthor } from '../posts/anonymity'
 import type { SearchQueryInput, SearchResult, Course, DocumentItem, PostItem, UserSummary, StudyGroup } from '@pu/schemas'
 import { postListedSql } from '../posts/post-access.sql'
-import { fieldNameSql } from '../units/unit-sql'
+import { fieldNameSql, userHasFieldSql } from '../units/unit-sql'
 
 type Queryable = { query: (sql: string, params?: any[]) => Promise<{ rows: any[] }> }
 type Mode = 'fts' | 'fuzzy'
@@ -268,7 +268,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
       if (field) {
         params.push(field)
         // Bài ẩn danh không lọc theo lĩnh vực tác giả (lộ lĩnh vực của người viết)
-        sql += ` AND ((NOT p.is_anonymous AND u.interest_field_id = $${params.length}::uuid) OR c.interest_field_id = $${params.length}::uuid)`
+        sql += ` AND ((NOT p.is_anonymous AND ${userHasFieldSql('u', `$${params.length}`)}) OR c.interest_field_id = $${params.length}::uuid)`
       }
       params.push(lim, off)
       // Phổ biến + mới (bán rã 90 ngày) + câu hỏi đã có lời giải được cộng nhẹ
@@ -342,7 +342,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
           AND u.status = 'active' AND u.account_type IN ('human', 'bot')`
       if (field) {
         params.push(field)
-        sql += ` AND u.interest_field_id = $${params.length}::uuid`
+        sql += ` AND ${userHasFieldSql('u', `$${params.length}`)}`
       }
       params.push(lim, off)
       // Username khớp hệt/tiền tố được ưu tiên; người có uy tín & đã xác thực nhỉnh hơn
@@ -382,7 +382,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         WHERE ${m.where}`
       if (field) {
         params.push(field)
-        sql += ` AND g.leader_id IN (SELECT id FROM users WHERE interest_field_id = $${params.length}::uuid)`
+        sql += ` AND g.leader_id IN (SELECT id FROM users lu WHERE ${userHasFieldSql('lu', `$${params.length}`)})`
       }
       params.push(lim, off)
       // Nhóm đang tuyển được ưu tiên

@@ -15,7 +15,7 @@ const MATCH = `
   AND (COALESCE(jsonb_array_length(a.audience->'universityIds'), 0) = 0
        OR u.university_id::text IN (SELECT jsonb_array_elements_text(a.audience->'universityIds')))
   AND (COALESCE(jsonb_array_length(a.audience->'fieldIds'), 0) = 0
-       OR u.interest_field_id::text IN (SELECT jsonb_array_elements_text(a.audience->'fieldIds')))`
+       OR EXISTS (SELECT 1 FROM user_interest_fields uf WHERE uf.user_id = u.id AND uf.field_id::text IN (SELECT jsonb_array_elements_text(a.audience->'fieldIds'))))`
 
 const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null)
 

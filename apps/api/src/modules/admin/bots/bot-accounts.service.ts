@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import * as bcrypt from 'bcryptjs'
 import type { AdminBotAccount, AdminBotAccountInput, AdminBotAccountUpdate } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
+import { UnitRequestsService } from '../../units/unit-requests.service'
 import { writeAudit } from '../admin-audit'
 
 const BCRYPT_ROUNDS = 10
@@ -9,7 +10,10 @@ const BCRYPT_ROUNDS = 10
 // Tài khoản bot (users.is_bot) + persona trong bot_profiles
 @Injectable()
 export class BotAccountsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly units: UnitRequestsService
+  ) {}
 
   async list(): Promise<AdminBotAccount[]> {
     const res = await this.db.query(
@@ -52,6 +56,8 @@ export class BotAccountsService {
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), $6, $7, true, NOW()) RETURNING id`,
         [`${input.username}@seed.pu-connector.test`, input.username, hash, input.displayName, input.role, input.interestFieldId ?? null, input.bio ?? '']
       )
+      // Lĩnh vực chính của bot cũng nằm trong danh sách lĩnh vực quan tâm (user_interest_fields)
+      if (input.interestFieldId) await this.units.setFieldIds(client, user.rows[0].id, [input.interestFieldId])
       await client.query(`INSERT INTO bot_profiles (user_id, tone, soul, updated_by) VALUES ($1, $2, $3, $4)`, [
         user.rows[0].id,
         input.tone ?? '',
@@ -70,6 +76,7 @@ export class BotAccountsService {
         [username, input.displayName ?? null, input.role ?? null, input.interestFieldId ?? null, input.bio ?? null]
       )
       if (!bot.rowCount) throw new NotFoundException('Không phải bot')
+      if (input.interestFieldId) await this.units.setFieldIds(client, bot.rows[0].id, [input.interestFieldId])
       await client.query(
         `INSERT INTO bot_profiles (user_id, tone, soul, updated_by) VALUES ($1, COALESCE($2, ''), COALESCE($3, ''), $4)
          ON CONFLICT (user_id) DO UPDATE SET

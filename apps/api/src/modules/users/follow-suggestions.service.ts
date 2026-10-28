@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import type { FollowSuggestion, FollowSuggestionReason } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { blockExistsSql } from '../blocks/blocks.sql'
+import { sharedFieldSql } from '../units/unit-sql'
 
 export const FOLLOW_SUGGESTION_MAX = 50
 
@@ -15,7 +16,7 @@ export class FollowSuggestionsService {
   async list(viewerId: string, limit: number): Promise<FollowSuggestion[]> {
     const res = await this.db.query(
       `WITH me AS (
-         SELECT id, interest_field_id, university_id,
+         SELECT id, university_id,
                 COALESCE(interests, '{}') || COALESCE(skills, '{}') AS tags
          FROM users WHERE id = $1
        ), my_following AS (
@@ -32,7 +33,7 @@ export class FollowSuggestionsService {
                 COALESCE(u.is_verified, FALSE) AS is_verified, u.reputation_points,
                 COALESCE(m.n, 0) AS mutual_count, m.via,
                 EXISTS (SELECT 1 FROM user_follows x WHERE x.follower_id = u.id AND x.following_id = $1) AS follows_you,
-                (u.interest_field_id IS NOT NULL AND u.interest_field_id = me.interest_field_id) AS same_field,
+                ${sharedFieldSql('u', 'me')} AS same_field,
                 (u.university_id IS NOT NULL AND u.university_id = me.university_id) AS same_university,
                 ARRAY(
                   SELECT t FROM unnest(COALESCE(u.interests, '{}') || COALESCE(u.skills, '{}')) AS t

@@ -26,6 +26,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { writeAudit } from './admin-audit'
 import { SHARED_IP_MAX_ACCOUNTS } from './admin-risk.service'
 import { AuthService } from '../auth/auth.service'
+import { userHasFieldSql } from '../units/unit-sql'
 import { formatLocation } from '../auth/security-log.service'
 import type { AdminUserQueryParsed } from './dto/admin.dto'
 
@@ -147,7 +148,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     if (f.auth === 'google') where.push(`u.google_id IS NOT NULL`)
     if (f.auth === 'password') where.push(`u.password_hash IS NOT NULL`)
     if (f.university) where.push(`u.university_id = ${p(f.university)}::uuid`)
-    if (f.field) where.push(`u.interest_field_id = ${p(f.field)}::uuid`)
+    if (f.field) where.push(userHasFieldSql('u', p(f.field)))
     if (f.risk === 'high') where.push('u.risk_score >= 50')
     if (f.risk === 'medium') where.push('u.risk_score BETWEEN 25 AND 49')
     if (f.reported) where.push(`EXISTS (SELECT 1 FROM post_reports r JOIN posts p ON p.id = r.post_id WHERE p.author_id = u.id)`)
@@ -221,7 +222,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
         FROM users WHERE account_type = 'human'`),
       this.db.query(`SELECT role, COUNT(*)::int AS n FROM users WHERE account_type = 'human' GROUP BY role`),
       this.db.query(
-        `SELECT f.id, f.name, COUNT(*)::int AS n FROM users u JOIN interest_fields f ON f.id = u.interest_field_id
+        `SELECT f.id, f.name, COUNT(*)::int AS n FROM users u JOIN user_interest_fields uf ON uf.user_id = u.id JOIN interest_fields f ON f.id = uf.field_id
          WHERE u.account_type = 'human' GROUP BY f.id, f.name ORDER BY n DESC, f.name LIMIT 30`
       )
     ])

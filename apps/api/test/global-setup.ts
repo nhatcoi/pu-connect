@@ -70,7 +70,8 @@ export const MIGRATIONS = [
   'course-suggestions-upgrade.sql',
   'document-community-upgrade.sql',
   'post-manage-upgrade.sql',
-  'units-simplify-upgrade.sql'
+  'units-simplify-upgrade.sql',
+  'interest-fields-multi-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

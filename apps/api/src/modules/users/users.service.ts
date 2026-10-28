@@ -131,7 +131,7 @@ export class UsersService {
       setClauses.push(`interests = $${values.length}`)
     }
 
-    const hasUnitChoice = [data.universityId, data.universityOther, data.interestFieldId, data.interestFieldOther].some((v) => v !== undefined)
+    const hasUnitChoice = [data.universityId, data.universityOther, data.interestFieldId, data.interestFieldIds, data.interestFieldOther].some((v) => v !== undefined)
     if (setClauses.length === 0 && !hasUnitChoice) {
       throw new BadRequestException('Không có trường nào để cập nhật')
     }

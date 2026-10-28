@@ -24,7 +24,8 @@ export interface UnitCatalog {
 export interface UnitChoiceInput {
   universityId?: string | null
   universityOther?: string | null
-  interestFieldId?: string | null
+  interestFieldId?: string | null // một lĩnh vực (client cũ)
+  interestFieldIds?: string[] | null // nhiều lĩnh vực, tối đa 3 (gồm cả "Khác"); ưu tiên hơn interestFieldId
   interestFieldOther?: string | null
 }
 
@@ -32,7 +33,8 @@ export interface UnitChoiceInput {
 export interface UserUnits {
   universityId: string | null
   university: string | null // tên trường; "Khác" khi đang chờ duyệt / bị từ chối
-  interestFieldId: string | null
+  interestFieldId: string | null // lĩnh vực chính (đầu danh sách)
+  interestFieldIds: string[]
   interestField: string | null // tên lĩnh vực; "Khác" khi đang chờ duyệt / bị từ chối
   // Tên đã gửi chờ duyệt (chỉ chủ hồ sơ thấy) để điền sẵn lại form
   universityRequest?: string | null

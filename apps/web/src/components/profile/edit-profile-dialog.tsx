@@ -20,6 +20,7 @@ interface EditProfileDialogProps {
     universityRequest?: string | null
     universityRequestStatus?: 'pending' | 'rejected' | null
     interestFieldId?: string | null
+    interestFieldIds?: string[]
     interestFieldRequest?: string | null
     interestFieldRequestStatus?: 'pending' | 'rejected' | null
     avatarUrl?: string | null

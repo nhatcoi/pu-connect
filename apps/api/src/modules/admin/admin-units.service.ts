@@ -25,7 +25,7 @@ export class AdminUnitsService {
            FROM universities t ORDER BY t.sort_order, t.name`
       ),
       this.db.query(
-        `SELECT t.id, t.code, t.name, t.sort_order, t.is_active, (SELECT COUNT(*)::int FROM users u WHERE u.interest_field_id = t.id) AS user_count,
+        `SELECT t.id, t.code, t.name, t.sort_order, t.is_active, (SELECT COUNT(*)::int FROM user_interest_fields uf WHERE uf.field_id = t.id) AS user_count,
                 (SELECT COUNT(*)::int FROM courses c WHERE c.interest_field_id = t.id) AS course_count
            FROM interest_fields t ORDER BY t.sort_order, t.name`
       )
@@ -67,8 +67,17 @@ export class AdminUnitsService {
     return this.db.transaction(async (client) => {
       const src = await this.lock(client, kind, id)
       await this.lock(client, kind, targetId)
-      const moved = await client.query(`UPDATE users SET ${userColumn} = $2 WHERE ${userColumn} = $1`, [id, targetId])
-      if (kind === 'field') await client.query(`UPDATE courses SET interest_field_id = $2 WHERE interest_field_id = $1`, [id, targetId])
+      let moved: { rowCount: number | null }
+      if (kind === 'field') {
+        // Người đã có cả hai ⇒ bỏ dòng nguồn; còn lại chuyển sang đích (giữ thứ tự); lĩnh vực chính đổi theo
+        moved = await client.query(`SELECT user_id FROM user_interest_fields WHERE field_id = $1`, [id])
+        await client.query(`DELETE FROM user_interest_fields s WHERE s.field_id = $1 AND EXISTS (SELECT 1 FROM user_interest_fields t WHERE t.user_id = s.user_id AND t.field_id = $2)`, [id, targetId])
+        await client.query(`UPDATE user_interest_fields SET field_id = $2 WHERE field_id = $1`, [id, targetId])
+        await client.query(`UPDATE users SET interest_field_id = $2 WHERE interest_field_id = $1`, [id, targetId])
+        await client.query(`UPDATE courses SET interest_field_id = $2 WHERE interest_field_id = $1`, [id, targetId])
+      } else {
+        moved = await client.query(`UPDATE users SET ${userColumn} = $2 WHERE ${userColumn} = $1`, [id, targetId])
+      }
       await client.query(`DELETE FROM ${table} WHERE id = $1`, [id])
       await writeAudit(client, adminId, { action: 'unit.merge', targetType: 'unit', targetId: id, details: { kind, name: src.name, into: targetId, users: moved.rowCount } })
       return { movedUsers: moved.rowCount ?? 0 }
@@ -80,7 +89,7 @@ export class AdminUnitsService {
     await this.db.transaction(async (client) => {
       const cur = await this.lock(client, kind, id)
       const used = await client.query(
-        `SELECT (SELECT COUNT(*)::int FROM users WHERE ${userColumn} = $1) AS users,
+        `SELECT (SELECT COUNT(*)::int FROM ${kind === 'field' ? 'user_interest_fields WHERE field_id' : `users WHERE ${userColumn}`} = $1) AS users,
                 ${kind === 'field' ? '(SELECT COUNT(*)::int FROM courses WHERE interest_field_id = $1)' : '0'} AS courses`,
         [id]
       )
@@ -155,7 +164,18 @@ export class AdminUnitsService {
         [requestId, unitId, adminId, req.kind]
       )
       const userIds: string[] = batch.rows.map((r) => r.user_id)
-      await client.query(`UPDATE users SET ${userColumn} = $1, updated_at = NOW() WHERE id = ANY($2::uuid[])`, [unitId, userIds])
+      if (req.kind === 'field') {
+        // Lĩnh vực quan tâm: thêm vào danh sách của người dùng (không thay các lĩnh vực họ đã chọn); lĩnh vực chính nếu chưa có
+        await client.query(
+          `INSERT INTO user_interest_fields (user_id, field_id, position)
+           SELECT x.id, $1, (SELECT COALESCE(MAX(position) + 1, 0) FROM user_interest_fields WHERE user_id = x.id) FROM unnest($2::uuid[]) AS x(id)
+           ON CONFLICT DO NOTHING`,
+          [unitId, userIds]
+        )
+        await client.query(`UPDATE users SET interest_field_id = COALESCE(interest_field_id, $1), updated_at = NOW() WHERE id = ANY($2::uuid[])`, [unitId, userIds])
+      } else {
+        await client.query(`UPDATE users SET ${userColumn} = $1, updated_at = NOW() WHERE id = ANY($2::uuid[])`, [unitId, userIds])
+      }
       await writeAudit(client, adminId, {
         action: 'unit_request.approve',
         targetType: 'unit_request',

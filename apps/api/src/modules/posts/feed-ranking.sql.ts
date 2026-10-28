@@ -1,3 +1,4 @@
+import { sharedFieldSql } from '../units/unit-sql'
 import { interestBoostSql } from '../personalization/interest-profile.sql'
 
 // Xếp hạng "Dành cho bạn" kiểu hot-rank (HN/Reddit): (độ hợp + log tương tác) / tuổi^gravity
@@ -23,7 +24,7 @@ const R = FEED_RANKING
 // Độ hợp với người xem: lĩnh vực quan tâm, trường, follow, sở thích/kỹ năng, hồ sơ quan tâm suy ra
 // Viewer affinity (viewer row aliased `cu`, viewer id = $1)
 const affinitySql = (viewer: string) => `(
-  (CASE WHEN u.interest_field_id IS NOT NULL AND u.interest_field_id = cu.interest_field_id THEN 30.0 ELSE 0.0 END)
+  (CASE WHEN ${sharedFieldSql('u', 'cu')} THEN 30.0 ELSE 0.0 END)
   + (CASE WHEN u.university_id IS NOT NULL AND u.university_id = cu.university_id THEN 15.0 ELSE 0.0 END)
   + (CASE WHEN EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = ${viewer} AND uf.following_id = p.author_id) THEN 35.0 ELSE 0.0 END)
   + (CASE WHEN cu.interests IS NOT NULL AND array_length(cu.interests, 1) > 0 AND p.tags && cu.interests THEN 35.0 ELSE 0.0 END)

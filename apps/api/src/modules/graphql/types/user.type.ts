@@ -30,6 +30,9 @@ export class UserType {
   @Field(() => String, { nullable: true })
   interestFieldId?: string | null
 
+  @Field(() => [String], { nullable: true, description: 'Toàn bộ lĩnh vực quan tâm (tối đa 3)' })
+  interestFieldIds?: string[]
+
   @Field(() => String, { nullable: true, description: 'Tên trường đã gửi chờ duyệt (chỉ chủ hồ sơ)' })
   universityRequest?: string | null
 

@@ -114,6 +114,35 @@ describe('Units (e2e)', () => {
     expect(courses.find((c) => c.code === code)).toMatchObject({ fieldName: existing.name })
   })
 
+  it('chọn nhiều lĩnh vực: tối đa 3 (gồm "Khác"), lĩnh vực chính là mục đầu, duyệt "Khác" thì thêm vào danh sách', async () => {
+    const user = await createUser(db)
+    const admin = await createUser(db, { role: 'admin' })
+    const agent = await loginAgent(app, user)
+    const adminAgent = await loginAgent(app, admin)
+    const [f1, f2, f3, f4] = ((await request(app.getHttpServer()).get('/api/units').expect(200)).body.data as UnitCatalog).fields
+    const set = (body: object) => agent.patch('/api/users/profile').send(body)
+
+    await set({ interestFieldIds: [f1.id, f2.id, f3.id] }).expect(200)
+    expect(await profile(agent, user.username)).toMatchObject({ interestFieldId: f1.id, interestFieldIds: [f1.id, f2.id, f3.id], interestField: `${f1.name} · ${f2.name} · ${f3.name}` })
+    await set({ interestFieldIds: [f1.id, f2.id, f3.id, f4.id] }).expect(400)
+    await set({ interestFieldIds: [f1.id, f2.id, f3.id], interestFieldOther: `Quá số lượng ${tag}` }).expect(400)
+    // Đổi thứ tự ⇒ đổi lĩnh vực chính
+    await set({ interestFieldIds: [f2.id, f1.id] }).expect(200)
+    expect(await profile(agent, user.username)).toMatchObject({ interestFieldId: f2.id, interestFieldIds: [f2.id, f1.id] })
+
+    // "Khác" chiếm một chỗ; được duyệt ⇒ thêm vào danh sách (không thay các lĩnh vực đã chọn)
+    const name = `Nhiều lĩnh vực ${tag}`
+    await set({ interestFieldIds: [f2.id, f1.id], interestFieldOther: name }).expect(200)
+    expect(await profile(agent, user.username)).toMatchObject({ interestFieldIds: [f2.id, f1.id], interestField: `${f2.name} · ${f1.name} · Khác` })
+    const req = ((await adminAgent.get('/api/admin/unit-requests').expect(200)).body.data as AdminUnitRequest[]).find((r) => r.user.id === user.id)!
+    const approved = (await adminAgent.post(`/api/admin/unit-requests/${req.id}/approve`).send({ name }).expect(200)).body.data
+    expect(await profile(agent, user.username)).toMatchObject({ interestFieldId: f2.id, interestFieldIds: [f2.id, f1.id, approved.unitId], interestFieldRequest: null })
+
+    // Bỏ hết
+    await set({ interestFieldIds: [], interestFieldOther: null }).expect(200)
+    expect(await profile(agent, user.username)).toMatchObject({ interestFieldId: null, interestFieldIds: [], interestField: null })
+  })
+
   it('admin thêm / đổi tên / tắt / gộp / xóa; mục còn người dùng thì không xóa được', async () => {
     const admin = await createUser(db, { role: 'admin' })
     const adminAgent = await loginAgent(app, admin)
@@ -126,6 +155,7 @@ describe('Units (e2e)', () => {
 
     const user = await createUser(db)
     await db.query(`UPDATE users SET interest_field_id = $2 WHERE id = $1`, [user.id, id])
+    await db.query(`INSERT INTO user_interest_fields (user_id, field_id) VALUES ($1, $2)`, [user.id, id])
     await adminAgent.delete(`/api/admin/units/field/${id}`).expect(409)
     const target = ((await adminAgent.get('/api/admin/units').expect(200)).body.data as AdminUnitCatalog).fields.find((f) => f.id !== id)!
     const merged = (await adminAgent.post(`/api/admin/units/field/${id}/merge`).send({ targetId: target.id }).expect(200)).body.data
