@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { LibraryItem } from '@pu/schemas'
-import { Check, Folder, FolderPlus, Library, Loader2, MoreHorizontal, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
+import { Check, Folder, FolderPlus, LayoutGrid, Library, List, Loader2, MoreHorizontal, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,9 +34,12 @@ import {
 import { queryKeys } from '@/lib/query-keys'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
+import { DocumentCard } from './document-card'
 import { DocumentRow } from './document-row'
 
 const CHIP = 'shrink-0 inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors cursor-pointer'
+const VIEW_KEY = 'pu:library-view'
+type ViewMode = 'grid' | 'list'
 const ITEM = 'flex items-center gap-2.5 px-3 py-2 text-xs font-semibold rounded-xl hover:bg-muted cursor-pointer'
 
 // Tab "Kho của tôi": tài liệu đã lưu (từ bài, bình luận, kho môn học) + tệp riêng tải lên, chia thư mục; tài liệu mình đã đăng
@@ -50,6 +53,19 @@ export function LibraryPanel() {
   const [folderForm, setFolderForm] = useState<{ mode: 'create' | 'rename'; name: string } | null>(null)
   const [uploading, setUploading] = useState(0)
   const fileRef = useRef<HTMLInputElement>(null)
+  // Cách xem nhớ theo trình duyệt; mặc định dạng thẻ giống trang Tài liệu
+  const [view, setView] = useState<ViewMode>('grid')
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(VIEW_KEY) === 'list') setView('list')
+    } catch {}
+  }, [])
+  const changeView = (next: ViewMode) => {
+    setView(next)
+    try {
+      localStorage.setItem(VIEW_KEY, next)
+    } catch {}
+  }
 
   useEffect(() => {
     const t = setTimeout(() => setQ(input.trim()), 300)
@@ -187,7 +203,27 @@ export function LibraryPanel() {
             ))}
           </div>
           <input ref={fileRef} type="file" multiple className="hidden" onChange={(e) => (void handleUpload(Array.from(e.target.files ?? [])), (e.target.value = ''))} />
-          <Button variant="outline" size="sm" className="ml-auto h-8 gap-1.5 rounded-full text-xs" onClick={() => fileRef.current?.click()} disabled={uploading > 0}>
+          <div className="ml-auto flex rounded-full bg-muted/60 p-0.5" role="group" aria-label="Cách xem">
+            {(
+              [
+                ['grid', 'Dạng thẻ', LayoutGrid],
+                ['list', 'Dạng danh sách', List]
+              ] as const
+            ).map(([id, label, Icon]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => changeView(id)}
+                aria-pressed={view === id}
+                title={label}
+                aria-label={label}
+                className={cn('rounded-full p-1.5 transition-colors cursor-pointer', view === id ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground')}
+              >
+                <Icon className="h-3.5 w-3.5" />
+              </button>
+            ))}
+          </div>
+          <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs" onClick={() => fileRef.current?.click()} disabled={uploading > 0}>
             {uploading > 0 ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
             Tải tệp lên kho
           </Button>
@@ -281,17 +317,31 @@ export function LibraryPanel() {
           </p>
         </div>
       ) : (
-        <div className="space-y-1.5 px-2 sm:px-0">
-          {lib.items.map((item) => (
-            <DocumentRow
-              key={item.document.id}
-              document={item.document}
-              subtitle={<span>{item.ownedByMe ? 'Của tôi' : item.ownerName}</span>}
-              privateBadge={item.document.visibility === 'private'}
-              actions={rowActions(item)}
-            />
-          ))}
-        </div>
+        view === 'grid' ? (
+          <div className="grid grid-cols-2 gap-3 px-2 sm:grid-cols-3 sm:px-0 lg:grid-cols-4">
+            {lib.items.map((item) => (
+              <DocumentCard
+                key={item.document.id}
+                document={item.document}
+                subtitle={<span className="truncate">{item.ownedByMe ? 'Của tôi' : item.ownerName}</span>}
+                privateBadge={item.document.visibility === 'private'}
+                actions={rowActions(item)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1.5 px-2 sm:px-0">
+            {lib.items.map((item) => (
+              <DocumentRow
+                key={item.document.id}
+                document={item.document}
+                subtitle={<span>{item.ownedByMe ? 'Của tôi' : item.ownerName}</span>}
+                privateBadge={item.document.visibility === 'private'}
+                actions={rowActions(item)}
+              />
+            ))}
+          </div>
+        )
       )}
       <div ref={sentinel} className="flex h-10 items-center justify-center">
         {isFetchingNextPage && <Loader2 className="h-5 w-5 animate-spin text-primary" />}

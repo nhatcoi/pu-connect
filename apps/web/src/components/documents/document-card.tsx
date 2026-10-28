@@ -4,7 +4,7 @@ import React from 'react'
 import Link from 'next/link'
 import type { AttachedDocument } from '@pu/schemas'
 import { DOC_CATEGORY_LABELS } from '@pu/schemas'
-import { Bookmark, Download } from 'lucide-react'
+import { Bookmark, Download, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { DocumentThumbnail } from './document-thumbnail'
 import { formatDocSize } from './document-format'
@@ -14,7 +14,16 @@ import { RatingBadge } from './star-rating'
 type CardDocument = AttachedDocument & { ownerName?: string; saveCount?: number; ratingAvg?: number; ratingCount?: number }
 
 // Thẻ tài liệu kiểu kệ sách: ảnh trang đầu, loại + môn, tên, lượt tải / lưu. Bấm ⇒ trang chi tiết
-export function DocumentCard({ document: doc, className }: { document: CardDocument; className?: string }) {
+// actions: nút thao tác riêng (kho cá nhân) thay cho nút Lưu; subtitle: dòng phụ (người đăng); privateBadge: tài liệu riêng tư
+interface DocumentCardProps {
+  document: CardDocument
+  className?: string
+  actions?: React.ReactNode
+  subtitle?: React.ReactNode
+  privateBadge?: boolean
+}
+
+export function DocumentCard({ document: doc, className, actions, subtitle, privateBadge }: DocumentCardProps) {
   return (
     <article className={cn('group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md', className)}>
       <Link href={`/documents/${doc.id}`} className="flex min-h-0 flex-1 flex-col">
@@ -25,6 +34,16 @@ export function DocumentCard({ document: doc, className }: { document: CardDocum
             {doc.docCategory && <span>{DOC_CATEGORY_LABELS[doc.docCategory]}</span>}
           </p>
           <h3 className="line-clamp-2 text-[13px] font-semibold leading-snug text-foreground group-hover:text-primary">{doc.title}</h3>
+          {(subtitle || privateBadge) && (
+            <p className="flex items-center gap-1.5 truncate text-[11px] text-muted-foreground">
+              {privateBadge && (
+                <span className="inline-flex shrink-0 items-center gap-0.5">
+                  <Lock className="h-3 w-3" /> Riêng tư
+                </span>
+              )}
+              {subtitle}
+            </p>
+          )}
           <p className="mt-auto flex items-center gap-2.5 pt-1 text-[11px] text-muted-foreground">
             {doc.academicYear && <span>{doc.academicYear}</span>}
             {formatDocSize(doc.fileSize) && <span>{formatDocSize(doc.fileSize)}</span>}
@@ -40,7 +59,11 @@ export function DocumentCard({ document: doc, className }: { document: CardDocum
           </p>
         </div>
       </Link>
-      <SaveDocumentButton documentId={doc.id} className="absolute right-2 top-2 rounded-full bg-background/90 shadow-sm backdrop-blur" />
+      {actions ? (
+        <div className="absolute right-2 top-2 rounded-full bg-background/90 shadow-sm backdrop-blur">{actions}</div>
+      ) : (
+        <SaveDocumentButton documentId={doc.id} className="absolute right-2 top-2 rounded-full bg-background/90 shadow-sm backdrop-blur" />
+      )}
     </article>
   )
 }
