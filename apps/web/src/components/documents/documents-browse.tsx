@@ -12,7 +12,8 @@ import { useLoadMore } from '@/hooks/use-load-more'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
 import { CourseSelect } from './course-select'
-import { DocumentRow } from './document-row'
+import { DocumentCard } from './document-card'
+import { DocumentsDiscover } from './documents-discover'
 
 const SELECT = 'h-8 min-w-0 rounded-full border border-input bg-background px-3 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer'
 
@@ -25,6 +26,10 @@ export function DocumentsBrowse({ courseCode }: { courseCode?: string } = {}) {
   const [course, setCourse] = useState('')
   const [category, setCategory] = useState<DocCategory | ''>('')
   const [sort, setSort] = useState<'popular' | 'newest'>('popular')
+  // Đã chủ động đổi sắp xếp / bấm "Xem tất cả" ⇒ thoát chế độ khám phá
+  const [sorted, setSorted] = useState(false)
+  // Nhiều môn từ kệ "môn bạn theo dõi" (CourseSelect chỉ chọn 1 môn)
+  const [followedCourses, setFollowedCourses] = useState('')
 
   // Gõ xong 300ms mới tìm
   useEffect(() => {
@@ -32,7 +37,9 @@ export function DocumentsBrowse({ courseCode }: { courseCode?: string } = {}) {
     return () => clearTimeout(t)
   }, [input])
 
-  const browse = useDocumentBrowse({ q: q || undefined, course: courseCode || course || undefined, category: category || undefined, sort })
+  // Chưa lọc gì (và không khóa 1 môn) ⇒ trang khám phá dạng kệ; có lọc ⇒ lưới kết quả
+  const discovering = !courseCode && !q && !course && !followedCourses && !category && !sorted
+  const browse = useDocumentBrowse({ q: q || undefined, course: courseCode || followedCourses || course || undefined, category: category || undefined, sort }, !discovering)
   const { fetchNextPage, hasNextPage, isFetchingNextPage } = browse
   const sentinel = useLoadMore(!!hasNextPage && !isFetchingNextPage, () => void fetchNextPage())
 
@@ -45,9 +52,15 @@ export function DocumentsBrowse({ courseCode }: { courseCode?: string } = {}) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {!courseCode && (
-            <CourseSelect courses={courses} value={course} onChange={setCourse} valueBy="code" placeholder="Mọi môn" className="h-8 max-w-[220px] rounded-full px-3" />
+            <CourseSelect courses={courses} value={course} onChange={(v) => { setCourse(v); setFollowedCourses('') }} valueBy="code" placeholder="Mọi môn" className="h-8 max-w-[220px] rounded-full px-3" />
           )}
-          <select aria-label="Sắp xếp" value={sort} onChange={(e) => setSort(e.target.value as 'popular' | 'newest')} className={SELECT}>
+          {followedCourses && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">Môn bạn theo dõi</span>}
+          {!discovering && !courseCode && (
+            <button type="button" onClick={() => { setInput(''); setQ(''); setCourse(''); setFollowedCourses(''); setCategory(''); setSort('popular'); setSorted(false) }} className="text-xs font-semibold text-primary hover:underline cursor-pointer">
+              ← Khám phá
+            </button>
+          )}
+          <select aria-label="Sắp xếp" value={sort} onChange={(e) => { setSort(e.target.value as 'popular' | 'newest'); setSorted(true) }} className={SELECT}>
             <option value="popular">Nhiều lượt tải</option>
             <option value="newest">Mới nhất</option>
           </select>
@@ -72,7 +85,17 @@ export function DocumentsBrowse({ courseCode }: { courseCode?: string } = {}) {
         </div>
       </div>
 
-      {browse.isPending ? (
+      {discovering ? (
+        <DocumentsDiscover
+          onSeeAll={(t) => {
+            setCategory(t.category ?? '')
+            setCourse('')
+            setFollowedCourses(t.course ?? '')
+            setSort(t.sort ?? 'popular')
+            setSorted(true)
+          }}
+        />
+      ) : browse.isPending ? (
         <CardListSkeleton label="Đang tải tài liệu" />
       ) : browse.isError ? (
         <p className="py-16 text-center text-sm text-muted-foreground">Không tải được tài liệu. Thử lại sau nhé.</p>
@@ -83,9 +106,9 @@ export function DocumentsBrowse({ courseCode }: { courseCode?: string } = {}) {
           <p className="text-xs">Đính kèm đề thi, slide khi đăng bài và bật “Đưa vào kho môn học” để mọi người tìm thấy.</p>
         </div>
       ) : (
-        <div className="space-y-1.5 px-2 sm:px-0">
+        <div className="grid grid-cols-2 gap-3 px-2 sm:grid-cols-3 sm:px-0 lg:grid-cols-4">
           {browse.items.map((doc) => (
-            <DocumentRow key={doc.id} document={doc} />
+            <DocumentCard key={doc.id} document={doc} />
           ))}
         </div>
       )}

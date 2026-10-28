@@ -80,7 +80,7 @@ export type LibraryFolderBody = z.infer<typeof LibraryFolderSchema>
 
 // GET /documents/browse
 export const BrowseDocumentsSchema = z.object({
-  course: z.string().trim().max(40).optional(),
+  course: z.string().trim().max(400).optional(),
   category: z.enum(DOC_CATEGORIES).optional(),
   q: z.string().trim().max(100).optional(),
   sort: z.enum(['popular', 'newest']).default('popular'),

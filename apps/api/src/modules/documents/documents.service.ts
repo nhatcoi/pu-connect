@@ -75,8 +75,10 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
     const params: unknown[] = []
     const where = ['d.listed']
     if (query.course) {
-      params.push(query.course)
-      where.push(`(c.code ILIKE $${params.length} OR c.id::text = $${params.length})`)
+      // Nhiều môn (mã hoặc id) cách nhau bằng dấu phẩy: kệ "môn bạn theo dõi"
+      const refs = query.course.split(',').map((v) => v.trim()).filter(Boolean).slice(0, 30)
+      params.push(refs.map((v) => v.toUpperCase()), refs)
+      where.push(`(UPPER(c.code) = ANY($${params.length - 1}::text[]) OR c.id::text = ANY($${params.length}::text[]))`)
     }
     if (query.category) {
       params.push(query.category)

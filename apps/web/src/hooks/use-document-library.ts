@@ -18,8 +18,9 @@ import {
 import { queryKeys } from '@/lib/query-keys'
 
 // Trang "Tài liệu": kho chung có lọc, cuộn vô hạn
-export function useDocumentBrowse(filters: BrowseFilters) {
+export function useDocumentBrowse(filters: BrowseFilters, enabled = true) {
   const query = useInfiniteQuery({
+    enabled,
     queryKey: queryKeys.documentBrowse(filters),
     queryFn: ({ pageParam }) => browseDocuments(filters, pageParam),
     initialPageParam: null as string | null,

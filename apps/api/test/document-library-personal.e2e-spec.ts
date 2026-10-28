@@ -157,6 +157,9 @@ describe('Document library — AI, personal library, pages (e2e)', () => {
     const page = (await readerAgent.get(`/api/documents/browse?course=${courseCode}&category=final_exam&sort=newest`).expect(200)).body.data as DocumentListPage
     expect(page.data.map((d) => d.id).slice(0, 2)).toEqual([b, a])
     await readerAgent.get('/api/documents/browse?category=khong-co').expect(400)
+    // Nhiều môn cách nhau bằng dấu phẩy (kệ "môn bạn theo dõi")
+    const multi = (await readerAgent.get(`/api/documents/browse?course=ZZ999,${courseCode.toLowerCase()}&sort=newest`).expect(200)).body.data as DocumentListPage
+    expect(multi.data.map((d) => d.id).slice(0, 2)).toEqual([b, a])
 
     const detail = (await readerAgent.get(`/api/documents/${a}/detail`).expect(200)).body.data as DocumentDetail
     expect(detail).toMatchObject({ id: a, isMine: false, isSaved: false, courseCode, ownerId: author.id })
