@@ -14,6 +14,7 @@ import { prefetchCommunity } from '@/hooks/use-community'
 import type { Community } from '@pu/schemas'
 import { Compass, Search, Users, MessageSquare, ArrowRight, Loader2, Check, UserPlus, ArrowLeft, Plus } from 'lucide-react'
 import { CreateCommunityDialog } from '@/components/communities/create-community-dialog'
+import { toggleCommunityJoin } from '@/lib/community-api'
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -63,7 +64,7 @@ export default function CommunitiesDirectoryPage() {
   const handleToggleJoin = async (slug: string) => {
     setJoiningSlug(slug)
     try {
-      const res = await apiClient<{ isMember: boolean; membersCount: number; message: string }>(`/communities/${slug}/join`, { method: 'POST' })
+      const res = await toggleCommunityJoin(slug)
       // Cập nhật mọi danh sách cộng đồng đã cache + trang chi tiết cộng đồng
       queryClient.setQueriesData<Community[]>({ queryKey: queryKeys.communities }, (prev) =>
         prev?.map((c) => (c.slug === slug ? { ...c, isMember: res.isMember, membersCount: res.membersCount } : c))

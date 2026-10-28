@@ -30,3 +30,7 @@ export const listHiddenPosts = (slug: string) => unwrap(apiClient<Envelope<Commu
 export const hideCommunityPost = (slug: string, postId: string, reason?: string) =>
   apiClient(`/communities/${slug}/posts/${postId}/hide`, json('POST', { reason }))
 export const unhideCommunityPost = (slug: string, postId: string) => apiClient(`/communities/${slug}/posts/${postId}/hide`, json('DELETE'))
+
+// Tham gia / rời cộng đồng (API bọc kết quả trong { success, data })
+export const toggleCommunityJoin = (slug: string) =>
+  unwrap(apiClient<Envelope<{ isMember: boolean; membersCount: number; message: string }>>(`/communities/${slug}/join`, json('POST')))

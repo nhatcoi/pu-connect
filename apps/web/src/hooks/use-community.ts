@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useInfiniteQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query'
 import { apiClient, errorMessage } from '@/lib/api-client'
+import { toggleCommunityJoin } from '@/lib/community-api'
 import { queryKeys, type CommunitySort } from '@/lib/query-keys'
 import { flattenPages, prependPost, type OffsetPage } from '@/lib/post-cache'
 import type { Community, PostItem } from '@pu/schemas'
@@ -60,7 +61,7 @@ export function useCommunity(slug: string, initialSort: CommunitySort = 'hot') {
     if (!community || isJoining) return
     setIsJoining(true)
     try {
-      const res = await apiClient<{ isMember: boolean; membersCount: number; message: string }>(`/communities/${slug}/join`, { method: 'POST' })
+      const res = await toggleCommunityJoin(slug)
       patchCommunity(queryClient, slug, (c) => ({ ...c, isMember: res.isMember, membersCount: res.membersCount }))
       toast.success(res.message)
     } catch (err) {
