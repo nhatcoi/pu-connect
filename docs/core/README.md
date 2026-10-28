@@ -30,6 +30,7 @@
 | [**`23-n7ai-folders.md`**](./23-n7ai-folders.md) | Thư mục lịch sử N7AI (kéo thả) và panel phải: Tài liệu (xem trước) · Công cụ (tạo học liệu). | ✅ Đã triển khai |
 | [**`24-n7ai-sources.md`**](./24-n7ai-sources.md) | Tài liệu của cuộc trò chuyện N7AI (tệp, văn bản dán, link web, YouTube), N7AI đọc PowerPoint / Excel, kéo thả tệp. | ✅ Đã triển khai |
 | [**`25-document-library.md`**](./25-document-library.md) | Kho tài liệu: tệp đính kèm bài viết / bình luận thành tài liệu thật, phân loại (N7AI gợi ý), kho môn học, kho cá nhân, trang Môn học & Tài liệu, trang chi tiết. | ✅ Đợt 1–4 |
+| [**`26-community-management.md`**](./26-community-management.md) | Tạo cộng đồng (chờ admin duyệt), chủ / điều hành viên, sửa giới thiệu, quản lý thành viên, ẩn bài vi phạm, màn hình duyệt của admin. | ✅ |
 
 ---
 

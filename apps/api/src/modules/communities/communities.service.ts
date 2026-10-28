@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import type { Community, CommunityRule } from '@pu/schemas'
@@ -36,7 +36,7 @@ export class CommunitiesService {
       sql += `, FALSE as is_member, NULL as user_role`
     }
 
-    sql += ` FROM communities c WHERE 1=1`
+    sql += ` FROM communities c WHERE ${currentUserId ? `(c.status = 'active' OR c.created_by = $1)` : `c.status = 'active'`}`
 
     if (type && type !== 'all') {
       params.push(type)
@@ -71,7 +71,7 @@ export class CommunitiesService {
       sql += `, FALSE as is_member, NULL as user_role`
     }
 
-    sql += ` FROM communities c WHERE c.slug = $1 LIMIT 1`
+    sql += ` FROM communities c WHERE c.slug = $1 AND ${currentUserId ? `(c.status = 'active' OR c.created_by = $2)` : `c.status = 'active'`} LIMIT 1`
 
     const res = await this.db.query(sql, params)
     if (res.rows.length === 0) {
@@ -87,18 +87,23 @@ export class CommunitiesService {
   async toggleJoin(slug: string, userId: string): Promise<{ isMember: boolean; membersCount: number; message: string }> {
     return this.db.transaction(async (client) => {
       // 1. Check community existence with lock
-      const commRes = await client.query(`SELECT id, name, members_count FROM communities WHERE slug = $1 LIMIT 1 FOR UPDATE`, [slug.toLowerCase().trim()])
+      const commRes = await client.query(`SELECT id, name, members_count, status FROM communities WHERE slug = $1 LIMIT 1 FOR UPDATE`, [
+        slug.toLowerCase().trim()
+      ])
 
       if (commRes.rows.length === 0) {
         throw new NotFoundException(`Không tìm thấy cộng đồng c/${slug}`)
       }
 
       const community = commRes.rows[0]
+      if (community.status !== 'active') throw new NotFoundException(`Không tìm thấy cộng đồng c/${slug}`)
 
       // 2. Check if already member
-      const memberRes = await client.query(`SELECT 1 FROM community_members WHERE community_id = $1 AND user_id = $2 LIMIT 1`, [community.id, userId])
+      const memberRes = await client.query(`SELECT role FROM community_members WHERE community_id = $1 AND user_id = $2 LIMIT 1`, [community.id, userId])
 
       const isCurrentlyMember = memberRes.rows.length > 0
+      // Chủ sở hữu không rời được (cộng đồng không thể thiếu chủ); cần admin chuyển quyền hoặc gỡ
+      if (memberRes.rows[0]?.role === 'owner') throw new BadRequestException('Chủ cộng đồng không thể rời cộng đồng')
 
       if (isCurrentlyMember) {
         // Leave community
@@ -262,6 +267,8 @@ export class CommunitiesService {
       postsCount: parseInt(row.posts_count || '0', 10),
       isMember: !!row.is_member,
       userRole: row.user_role || null,
+      status: row.status || 'active',
+      reviewNote: row.review_note || null,
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined
     }

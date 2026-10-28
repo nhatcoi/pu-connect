@@ -281,14 +281,16 @@ export class AdminListsService {
 
   async communities(q: CommunitiesQuery): Promise<AdminPage<AdminCommunityRow>> {
     const p = new SqlParams()
-    const conds = [searchCondition(p, q.q, { like: ['name', 'slug'] }), q.type && `community_type = ${p.add(q.type)}`]
+    const conds = [searchCondition(p, q.q, { like: ['name', 'slug'] }), q.type && `community_type = ${p.add(q.type)}`, q.status && `status = ${p.add(q.status)}`]
     const sort = { members: 'members_count', posts: 'posts_count', recent: 'created_at' }[q.sort]
-    const [page, facets] = await Promise.all([
+    const [page, facets, statuses] = await Promise.all([
       pagedQuery(this.db, {
         params: p,
         page: q.page,
         pageSize: q.pageSize,
-        select: `id, slug, name, description, community_type, members_count, posts_count, created_at`,
+        select: `id, slug, name, description, community_type, status, members_count, posts_count, created_at,
+          (SELECT u.display_name FROM community_members m JOIN users u ON u.id = m.user_id WHERE m.community_id = communities.id AND m.role = 'owner') AS owner_name,
+          (SELECT u.display_name FROM users u WHERE u.id = communities.created_by) AS created_by_name`,
         from: `communities ${whereOf(conds)}`,
         order: orderBy(sort, q.dir, 'id'),
         map: (row): AdminCommunityRow => ({
@@ -297,14 +299,18 @@ export class AdminListsService {
           name: row.name,
           description: row.description,
           communityType: row.community_type,
+          status: row.status,
+          ownerName: row.owner_name ?? null,
+          createdByName: row.created_by_name ?? null,
           membersCount: row.members_count ?? 0,
           postsCount: row.posts_count ?? 0,
           createdAt: iso(row.created_at) as string
         })
       }),
-      this.facet(`SELECT community_type AS value, COUNT(*)::int AS count FROM communities GROUP BY 1 ORDER BY 2 DESC`)
+      this.facet(`SELECT community_type AS value, COUNT(*)::int AS count FROM communities GROUP BY 1 ORDER BY 2 DESC`),
+      this.facet(`SELECT status AS value, COUNT(*)::int AS count FROM communities GROUP BY 1 ORDER BY 2 DESC`)
     ])
-    return { ...page, facets: { type: facets } }
+    return { ...page, facets: { type: facets, status: statuses } }
   }
 
   // ── N7AI Skills ─────────────────────────────────────────────────────────

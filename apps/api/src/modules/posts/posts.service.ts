@@ -362,7 +362,7 @@ export class PostsService {
 
       if (data.communityId || data.communitySlug) {
         const commTarget = data.communityId || data.communitySlug
-        const commRes = await client.query(`SELECT id, slug, name FROM communities WHERE id::text = $1 OR slug = $1 LIMIT 1`, [commTarget])
+        const commRes = await client.query(`SELECT id, slug, name FROM communities WHERE (id::text = $1 OR slug = $1) AND status = 'active' LIMIT 1`, [commTarget])
         if (commRes.rows.length > 0) {
           communityUuid = commRes.rows[0].id
           communitySlug = commRes.rows[0].slug

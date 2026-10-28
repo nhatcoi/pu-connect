@@ -56,6 +56,7 @@ export const CommunitiesQuerySchema = z.object({
   ...paging,
   q: text(),
   type: text(30),
+  status: opt(['active', 'pending', 'rejected'] as const),
   sort: opt(['members', 'posts', 'recent'] as const).default('members')
 })
 

@@ -72,6 +72,7 @@ export const MIGRATIONS = [
   'comment-moderation-upgrade.sql',
   'units-simplify-upgrade.sql',
   'interest-fields-multi-upgrade.sql',
+  'community-management-upgrade.sql',
   'legacy-units-drop-upgrade.sql'
 ]
 

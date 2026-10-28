@@ -652,6 +652,9 @@ export interface AdminCommunityRow {
   name: string
   description: string | null
   communityType: string
+  status: 'active' | 'pending' | 'rejected'
+  ownerName: string | null
+  createdByName: string | null
   membersCount: number
   postsCount: number
   createdAt: string

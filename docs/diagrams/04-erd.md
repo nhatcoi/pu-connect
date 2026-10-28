@@ -405,6 +405,11 @@ erDiagram
     integer posts_count
     timestamptz created_at
     timestamptz updated_at
+    uuid created_by FK
+    varchar status
+    text review_note
+    uuid reviewed_by FK
+    timestamptz reviewed_at
   }
   community_members {
     uuid community_id PK,FK
@@ -415,7 +420,7 @@ erDiagram
   communities ||--o{ community_members : "community_id"
 ```
 
-Liên kết ra ngoài nhóm: `community_members.user_id → users`, `posts.community_id → communities`
+Liên kết ra ngoài nhóm: `communities.created_by → users`, `communities.reviewed_by → users`, `community_members.user_id → users`, `posts.community_id → communities`
 
 ## 5. Academic
 
