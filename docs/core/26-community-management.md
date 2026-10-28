@@ -16,7 +16,7 @@ Cộng đồng có sẵn (seed) mặc định `status = 'active'`, chưa có ch�
 
 ## Điều kiện tạo
 
-- Tài khoản người thật đang hoạt động, **đã xác thực** (`users.is_verified`) **hoặc** `reputation_points ≥ 300` (`COMMUNITY_MIN_REPUTATION`).
+- Tài khoản người thật đang hoạt động, và **một trong hai**: có **tích xanh** (`users.is_verified`), hoặc **email đã xác thực** (`email_verified`) + tài khoản **≥ 14 ngày** (`COMMUNITY_MIN_ACCOUNT_DAYS`) + **≥ 5 bài viết** chưa bị ẩn (`COMMUNITY_MIN_POSTS`). Không dùng `reputation_points` vì điểm này đã ngừng cộng (xem FEAT: loại bỏ Gamification).
 - Mỗi người tối đa **3** cộng đồng đang hoạt động + chờ duyệt (`COMMUNITY_MAX_OWNED`), khóa dòng `users` để hai yêu cầu song song không vượt hạn mức.
 - Người dùng thường chọn loại `academic | life | club`; `campus` / `faculty` chỉ admin.
 - Slug `a-z 0-9 -`, 3–50 ký tự, trùng ⇒ 409.

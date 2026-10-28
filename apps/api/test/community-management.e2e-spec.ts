@@ -37,9 +37,16 @@ describe('Community management (e2e)', () => {
     const plain = await loginAgent(app, await createUser(db))
     await create(plain, slug()).expect(403)
 
-    const reputable = await createUser(db)
-    await db.query(`UPDATE users SET reputation_points = 300 WHERE id = $1`, [reputable.id])
-    const rep = await loginAgent(app, reputable)
+    // Đủ điều kiện thường: email đã xác thực + tài khoản ≥ 14 ngày + ≥ 5 bài viết
+    const regular = await createUser(db)
+    const rep = await loginAgent(app, regular)
+    for (let i = 0; i < 5; i++)
+      await rep
+        .post('/api/posts')
+        .send({ content: `Bài thứ ${i + 1} của người dùng lâu năm` })
+        .expect(201)
+    await create(rep, slug()).expect(403) // đủ bài nhưng tài khoản còn mới
+    await db.query(`UPDATE users SET created_at = NOW() - INTERVAL '15 days' WHERE id = $1`, [regular.id])
     const s = slug()
     const made = (await create(rep, s).expect(200)).body.data as Community
     expect(made).toMatchObject({ slug: s, status: 'pending', userRole: 'owner', membersCount: 1 })

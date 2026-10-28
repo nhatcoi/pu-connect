@@ -119,7 +119,7 @@ export function CreateCommunityDialog({ open, onOpenChange }: { open: boolean; o
               onChange={(e) => setDescription(e.target.value)}
             />
           </label>
-          <p className="text-muted-foreground">Cần tài khoản đã xác thực hoặc đủ điểm uy tín. Cộng đồng chỉ hiện công khai sau khi quản trị viên duyệt.</p>
+          <p className="text-muted-foreground">Cần tài khoản có tích xanh, hoặc email đã xác thực, tham gia từ 14 ngày và có ít nhất 5 bài viết. Cộng đồng chỉ hiện công khai sau khi quản trị viên duyệt.</p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Hủy

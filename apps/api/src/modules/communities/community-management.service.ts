@@ -3,7 +3,14 @@ import type { Community, CommunityHiddenPost, CommunityMemberItem, CommunityRole
 import { DatabaseService } from '../../database/database.service'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommunitiesService } from './communities.service'
-import { COMMUNITY_MAX_OWNED, COMMUNITY_MIN_REPUTATION, type CreateCommunityBody, type MembersQuery, type UpdateCommunityBody } from './communities.dto'
+import {
+  COMMUNITY_MAX_OWNED,
+  COMMUNITY_MIN_ACCOUNT_DAYS,
+  COMMUNITY_MIN_POSTS,
+  type CreateCommunityBody,
+  type MembersQuery,
+  type UpdateCommunityBody
+} from './communities.dto'
 
 type Actor = { id: string; name: string; status: string; role: CommunityRole | null }
 
@@ -16,14 +23,22 @@ export class CommunityManagementService {
     private readonly notifications: NotificationsService
   ) {}
 
-  // Tài khoản đã xác thực hoặc đủ điểm uy tín mới được lập; cộng đồng mới ở trạng thái chờ admin duyệt
+  // Tích xanh, hoặc email đã xác thực + tài khoản đủ lâu + đủ bài viết mới được lập; cộng đồng mới ở trạng thái chờ admin duyệt
   async create(userId: string, body: CreateCommunityBody): Promise<Community> {
     await this.db.transaction(async (client) => {
-      const u = await client.query(`SELECT is_verified, reputation_points, status, account_type FROM users WHERE id = $1`, [userId])
+      const u = await client.query(
+        `SELECT is_verified, email_verified, status, account_type,
+                created_at <= NOW() - make_interval(days => $2) AS old_enough,
+                (SELECT COUNT(*)::int FROM posts WHERE author_id = $1 AND hidden_at IS NULL) AS posts
+           FROM users WHERE id = $1`,
+        [userId, COMMUNITY_MIN_ACCOUNT_DAYS]
+      )
       const user = u.rows[0]
       if (!user || user.status !== 'active' || user.account_type !== 'human') throw new ForbiddenException('Tài khoản không đủ điều kiện tạo cộng đồng')
-      if (!user.is_verified && (user.reputation_points ?? 0) < COMMUNITY_MIN_REPUTATION) {
-        throw new ForbiddenException(`Cần tài khoản đã xác thực hoặc từ ${COMMUNITY_MIN_REPUTATION} điểm uy tín để tạo cộng đồng`)
+      if (!user.is_verified && !(user.email_verified && user.old_enough && user.posts >= COMMUNITY_MIN_POSTS)) {
+        throw new ForbiddenException(
+          `Cần tài khoản có tích xanh, hoặc email đã xác thực, tham gia từ ${COMMUNITY_MIN_ACCOUNT_DAYS} ngày và có ít nhất ${COMMUNITY_MIN_POSTS} bài viết để tạo cộng đồng`
+        )
       }
       // Khóa theo người dùng để hai yêu cầu song song không vượt hạn mức
       await client.query(`SELECT 1 FROM users WHERE id = $1 FOR UPDATE`, [userId])

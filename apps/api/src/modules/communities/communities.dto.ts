@@ -43,6 +43,8 @@ export const MembersQuerySchema = z.object({
 })
 export type MembersQuery = z.infer<typeof MembersQuerySchema>
 
-// Điều kiện lập cộng đồng: tài khoản đã xác thực hoặc đủ điểm uy tín; mỗi người tối đa N cộng đồng (chờ duyệt + đang hoạt động)
-export const COMMUNITY_MIN_REPUTATION = 300
+// Điều kiện lập cộng đồng: tích xanh, hoặc email đã xác thực + tài khoản đủ lâu + đủ bài viết (điểm uy tín không còn tăng nên không dùng).
+// Mỗi người tối đa N cộng đồng (chờ duyệt + đang hoạt động)
+export const COMMUNITY_MIN_ACCOUNT_DAYS = 14
+export const COMMUNITY_MIN_POSTS = 5
 export const COMMUNITY_MAX_OWNED = 3
