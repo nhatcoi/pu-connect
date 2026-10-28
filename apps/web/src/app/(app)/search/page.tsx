@@ -54,10 +54,10 @@ const TRENDING_TOPICS = [
     tag: 'GiaiTich2'
   },
   {
-    category: 'Dự án PBL · Xu hướng',
-    title: '#PBL3 - Tuyển thành viên lập trình nhúng',
+    category: 'Nhóm · Xu hướng',
+    title: '#Đồ án - Tuyển thành viên lập trình nhúng',
     postsCount: '380 bài viết',
-    tag: 'PBL3'
+    tag: 'Đồ án'
   },
   {
     category: 'Khoa Y Dược · Xu hướng',
@@ -87,8 +87,8 @@ const ACADEMIC_STORIES = [
   },
   {
     id: 3,
-    title: 'Hạn đăng ký nhóm đồ án PBL 2026 đợt 1 mở đến hết ngày 30/08',
-    category: 'Nhóm đồ án PBL',
+    title: 'Hạn đăng ký nhóm đồ án 2026 đợt 1 mở đến hết ngày 30/08',
+    category: 'Nhóm',
     timeAgo: '1 ngày trước',
     postsCount: '94 nhóm đang tuyển',
     avatars: ['https://api.dicebear.com/7.x/bottts/svg?seed=pbl1', 'https://api.dicebear.com/7.x/bottts/svg?seed=pbl2']
@@ -261,7 +261,7 @@ function SearchContent() {
               { id: 'courses' as SearchType, label: 'Môn học' },
               { id: 'documents' as SearchType, label: 'Tài liệu' },
               { id: 'users' as SearchType, label: 'Mọi người' },
-              { id: 'groups' as SearchType, label: 'Nhóm PBL' }
+              { id: 'groups' as SearchType, label: 'Nhóm' }
             ]}
           />
         ) : FEATURES.exploreSubTabs ? (
@@ -274,7 +274,7 @@ function SearchContent() {
               { id: 'trending' as const, label: 'Xu hướng (Trending)' },
               { id: 'courses' as const, label: 'Môn học hot' },
               { id: 'documents' as const, label: 'Đề thi & Slide' },
-              { id: 'groups' as const, label: 'Nhóm PBL' }
+              { id: 'groups' as const, label: 'Nhóm' }
             ]}
           />
         ) : null}
@@ -355,7 +355,7 @@ function SearchContent() {
                 <div className="rounded-xl bg-card p-4 space-y-2.5">
                   <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
                     <Users className="h-4 w-4 text-primary" />
-                    <span>Nhóm đồ án PBL ({searchResult.groups.length})</span>
+                    <span>Nhóm ({searchResult.groups.length})</span>
                   </h3>
                   <div className="space-y-2">
                     {searchResult.groups.map((group) => (
@@ -384,7 +384,7 @@ function SearchContent() {
           </div>
           <div className="space-y-1">
             <h2 className="text-[15px] font-semibold text-foreground">Tìm kiếm trong cộng đồng Phenikaa</h2>
-            <p className="text-xs text-muted-foreground">Bài viết, môn học, tài liệu, mọi người và nhóm PBL.</p>
+            <p className="text-xs text-muted-foreground">Bài viết, môn học, tài liệu, mọi người và nhóm.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-2">
             {['IT101', 'Giải tích', '#DoAnTotNghiep', 'Đề thi', 'NestJS'].map((kw) => (

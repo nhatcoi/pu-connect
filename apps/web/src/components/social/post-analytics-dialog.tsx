@@ -132,7 +132,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
                 <div style={{ width: `${commentsPercent}%` }} className="bg-sky-500 transition-all duration-500" title={`Thảo luận: ${commentsPercent}%`} />
               )}
               {sharesPercent > 0 && (
-                <div style={{ width: `${sharesPercent}%` }} className="bg-emerald-500 transition-all duration-500" title={`Gửi nhóm PBL: ${sharesPercent}%`} />
+                <div style={{ width: `${sharesPercent}%` }} className="bg-emerald-500 transition-all duration-500" title={`Gửi vào nhóm: ${sharesPercent}%`} />
               )}
               {bookmarksPercent > 0 && (
                 <div style={{ width: `${bookmarksPercent}%` }} className="bg-amber-500 transition-all duration-500" title={`Lưu trữ: ${bookmarksPercent}%`} />
@@ -163,7 +163,7 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
                   <Repeat2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-                  <span className="text-muted-foreground">Chia sẻ vào PBL</span>
+                  <span className="text-muted-foreground">Chia sẻ vào nhóm</span>
                 </div>
                 <span className="font-bold text-foreground">{post.sharesCount || 0}</span>
               </div>

@@ -477,7 +477,7 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
                     ? 'Tiêu đề câu hỏi (Ví dụ: Cần giải thích giải thuật Dijkstra...)'
                     : postType === 'document'
                       ? 'Tên tài liệu / đề thi (Ví dụ: Đề thi Cuối kỳ Giải tích 1 năm 2024)'
-                      : 'Tên đề tài đồ án PBL (Ví dụ: Xây dựng App Mobile với React Native)'
+                      : 'Tên đề tài đồ án (Ví dụ: Xây dựng App Mobile với React Native)'
                 }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}

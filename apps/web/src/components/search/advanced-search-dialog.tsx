@@ -96,7 +96,7 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
                 { id: 'posts', label: 'Bài viết Q&A' },
                 { id: 'documents', label: 'Tài liệu & Đề thi' },
                 { id: 'courses', label: 'Môn học' },
-                { id: 'groups', label: 'Nhóm PBL' }
+                { id: 'groups', label: 'Nhóm' }
               ].map((item) => (
                 <button
                   key={item.id}
