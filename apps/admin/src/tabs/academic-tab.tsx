@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Compass, ExternalLink, FileSpreadsheet, FileText, Plus, Trash2 } from 'lucide-react'
+import { BookOpen, ExternalLink, FileSpreadsheet, FileText, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AdminCommunityRow, AdminCourseInput, AdminCourseRow, AdminDocumentRow, AdminPermission } from '@pu/schemas'
+import type { AdminCourseInput, AdminCourseRow, AdminDocumentRow, AdminPermission } from '@pu/schemas'
 import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/lib/api'
 import { SavedViews } from '@/components/list/saved-views'
 import { UnitsSection } from '@/features/units/units-panel'
+import { CommunitiesSection } from '@/features/communities/communities-section'
 import { FieldSelect } from '@/features/units/field-select'
 import { CourseEditDialog } from '@/features/courses/course-edit-dialog'
 import { CourseImportDialog } from '@/features/courses/course-import-dialog'
@@ -46,19 +47,12 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   scientific_paper: 'Bài báo khoa học'
 }
 
-const COMMUNITY_TYPE_LABELS: Record<string, string> = {
-  campus: 'Toàn trường',
-  faculty: 'Lĩnh vực',
-  academic: 'Học thuật',
-  life: 'Đời sống',
-  club: 'CLB'
-}
-
 export function AcademicTab({ permissions }: { permissions: AdminPermission[] }) {
   const [params, set] = useHashQuery()
   const tab = (['courses', 'documents', 'communities', 'units'].includes(params.tab) ? params.tab : 'courses') as Sub
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [communityOpen, setCommunityOpen] = useState(false)
   const canManage = permissions.includes('academic:manage')
 
   return (
@@ -68,6 +62,11 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
         actions={
           <>
             <SavedViews page="academic" />
+            {canManage && tab === 'communities' && (
+              <Button variant="primary" onClick={() => setCommunityOpen(true)}>
+                <Plus /> Tạo cộng đồng
+              </Button>
+            )}
             {canManage && tab === 'courses' && (
               <>
                 <Button onClick={() => setImportOpen(true)}>
@@ -95,7 +94,7 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
       />
       {tab === 'courses' && <CoursesSection canManage={canManage} />}
       {tab === 'documents' && <DocumentsSection canManage={canManage} />}
-      {tab === 'communities' && <CommunitiesSection />}
+      {tab === 'communities' && <CommunitiesSection canManage={canManage} createOpen={communityOpen} onCloseCreate={() => setCommunityOpen(false)} />}
       {tab === 'units' && <UnitsSection canManage={canManage} />}
       {canManage && <CreateCourseDialog open={createOpen} onClose={() => setCreateOpen(false)} />}
       {canManage && <CourseImportDialog open={importOpen} onClose={() => setImportOpen(false)} />}
@@ -237,13 +236,7 @@ function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => v
             <FieldSelect value={form.fieldId} onChange={(fieldId) => setForm({ ...form, fieldId })} />
           </Field>
           <Field label="Tín chỉ">
-            <Input
-              type="number"
-              min={1}
-              max={15}
-              value={form.credits}
-              onChange={(e) => setForm({ ...form, credits: Number(e.target.value) || 3 })}
-            />
+            <Input type="number" min={1} max={15} value={form.credits} onChange={(e) => setForm({ ...form, credits: Number(e.target.value) || 3 })} />
           </Field>
         </div>
         <Field label="Tên học phần">
@@ -256,7 +249,6 @@ function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => v
     </Dialog>
   )
 }
-
 
 /* ── Tài liệu ────────────────────────────────────────────── */
 
@@ -376,70 +368,6 @@ function DocumentsSection({ canManage }: { canManage: boolean }) {
         loading={del.isPending}
         onConfirm={(reason) => delTarget && del.mutate({ id: delTarget.id, reason })}
       />
-    </>
-  )
-}
-
-/* ── Cộng đồng ───────────────────────────────────────────── */
-
-function CommunitiesSection() {
-  const state = useListState({ sort: 'members' })
-  const list = usePaged<AdminCommunityRow>('communities', '/admin/communities', state.params, ['q', 'type'])
-  const rows = list.data?.items ?? []
-
-  return (
-    <>
-      <Toolbar>
-        <ListSearch state={state} placeholder="Tên hoặc slug" />
-        <ParamSelect
-          state={state}
-          name="type"
-          all="Mọi loại"
-          options={(list.data?.facets?.type ?? []).map((f) => ({ value: f.value, label: COMMUNITY_TYPE_LABELS[f.value] ?? f.value, count: f.count }))}
-          className="w-40"
-        />
-        <Total n={list.data?.total} unit="cộng đồng" />
-      </Toolbar>
-      {list.isPending ? (
-        <LoadingRows />
-      ) : rows.length === 0 ? (
-        <EmptyState icon={Compass} title="Không có cộng đồng phù hợp" />
-      ) : (
-        <div className={cn(list.isPlaceholderData && 'opacity-60')}>
-          <Table>
-            <THead>
-              <Th>Cộng đồng</Th>
-              <Th className="hidden sm:table-cell">Loại</Th>
-              <Sort state={state} id="members" align="right">
-                Thành viên
-              </Sort>
-              <Sort state={state} id="posts" align="right" className="hidden sm:table-cell">
-                Bài viết
-              </Sort>
-              <Sort state={state} id="recent" className="hidden lg:table-cell">
-                Ngày tạo
-              </Sort>
-            </THead>
-            <TBody>
-              {rows.map((c) => (
-                <Tr key={c.id}>
-                  <Td className="max-w-[420px]">
-                    <p className="truncate font-medium text-foreground">{c.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{c.description || `c/${c.slug}`}</p>
-                  </Td>
-                  <Td className="hidden sm:table-cell">
-                    <Badge>{COMMUNITY_TYPE_LABELS[c.communityType] ?? c.communityType}</Badge>
-                  </Td>
-                  <Td className="text-right tabular-nums">{formatNumber(c.membersCount)}</Td>
-                  <Td className="hidden text-right tabular-nums sm:table-cell">{formatNumber(c.postsCount)}</Td>
-                  <Td className="hidden text-muted-foreground lg:table-cell">{new Date(c.createdAt).toLocaleDateString('vi-VN')}</Td>
-                </Tr>
-              ))}
-            </TBody>
-          </Table>
-          <ListFooter state={state} total={list.data?.total ?? 0} />
-        </div>
-      )}
     </>
   )
 }
