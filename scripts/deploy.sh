@@ -40,6 +40,7 @@ rsync -avz --delete \
   --exclude '.web-slot.env*' \
   --exclude 'dist' \
   --exclude '.turbo' \
+  --exclude 'apps/api/models' \
   --exclude '.git' \
   --exclude '.env' \
   --exclude '.env.local' \
