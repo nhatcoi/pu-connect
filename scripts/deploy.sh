@@ -170,6 +170,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/units-simplify-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/interest-fields-multi-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/community-management-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/community-posts-count-upgrade.sql
 
 # Bước 2 đơn vị: xóa hẳn khoa / ngành / lớp / khóa cũ. Sao lưu cả DB trước khi xóa (chỉ khi còn bảng cũ), giữ 5 bản gần nhất
 if [ -n "$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -tAc "SELECT to_regclass('faculties')")" ]; then

@@ -56,4 +56,8 @@ Danh sách / chi tiết chỉ trả cộng đồng `active`, riêng người t�
 - Web: nút *Tạo cộng đồng* + thẻ trạng thái ở `/communities`; ở `/c/[slug]` chủ / điều hành viên có nút *Quản lý* (hộp 3 tab: Giới thiệu · Thành viên · Bài đã ẩn) và nút ẩn trên từng bài; banner nhắc khi cộng đồng chờ duyệt / bị từ chối.
 - Admin: Học thuật → Cộng đồng — lọc trạng thái, Duyệt / Từ chối, đổi chủ, gỡ, tạo mới.
 
+## Bộ đếm bài
+
+`communities.posts_count` do trigger `trg_community_posts_count` (migration `community-posts-count-upgrade.sql`) tính lại khi bài vào / rời cộng đồng, bị ẩn hoặc lưu trữ; đếm khớp bảng tin (chưa ẩn, chưa lưu trữ). Code không còn tự cộng / trừ.
+
 Test: `apps/api/test/community-management.e2e-spec.ts`.

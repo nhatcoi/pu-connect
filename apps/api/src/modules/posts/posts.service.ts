@@ -460,10 +460,7 @@ export class PostsService {
         await client.query(`UPDATE courses SET post_count = post_count + 1 WHERE id = $1`, [courseUuid])
       }
 
-      // 8. Increment posts_count for community
-      if (communityUuid) {
-        await client.query(`UPDATE communities SET posts_count = posts_count + 1 WHERE id = $1`, [communityUuid])
-      }
+      // 8. communities.posts_count do trigger trg_community_posts_count giữ (community-posts-count-upgrade.sql)
 
       return {
         id: postRow.id,

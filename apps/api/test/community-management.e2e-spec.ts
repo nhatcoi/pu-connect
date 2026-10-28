@@ -146,11 +146,14 @@ describe('Community management (e2e)', () => {
     const outside = (await author.post('/api/posts').send({ content: 'Bài ngoài cộng đồng' }).expect(201)).body.data.id as string
     const feed = async () => ((await author.get(`/api/communities/${s}/posts`).expect(200)).body.data as { id: string }[]).map((p) => p.id)
     expect(await feed()).toContain(postId)
+    const count = async () => (await db.query(`SELECT posts_count FROM communities WHERE slug = $1`, [s])).rows[0].posts_count as number
+    expect(await count()).toBe(1) // bài ngoài cộng đồng không tính
 
     await author.post(`/api/communities/${s}/posts/${postId}/hide`).send({}).expect(403) // tác giả không phải điều hành viên
     await owner.post(`/api/communities/${s}/posts/${outside}/hide`).send({}).expect(404)
     await owner.post(`/api/communities/${s}/posts/${postId}/hide`).send({ reason: 'Quảng cáo' }).expect(200)
     expect(await feed()).not.toContain(postId)
+    expect(await count()).toBe(0)
 
     const hidden = (await owner.get(`/api/communities/${s}/hidden-posts`).expect(200)).body.data as CommunityHiddenPost[]
     expect(hidden).toHaveLength(1)
@@ -162,6 +165,7 @@ describe('Community management (e2e)', () => {
 
     await owner.delete(`/api/communities/${s}/posts/${postId}/hide`).expect(200)
     expect(await feed()).toContain(postId)
+    expect(await count()).toBe(1)
 
     // Bài do admin hệ thống ẩn: điều hành viên không khôi phục được
     await admin.post(`/api/admin/posts/${postId}/hide`).send({ reason: 'vi phạm' }).expect(200)
