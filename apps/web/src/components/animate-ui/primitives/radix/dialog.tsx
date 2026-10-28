@@ -51,9 +51,9 @@ export function DialogOverlay({ transition = { duration: 0.2, ease: 'easeInOut' 
     <DialogPrimitive.Overlay data-slot="dialog-overlay" asChild forceMount>
       <motion.div
         key="dialog-overlay"
-        initial={{ opacity: 0, filter: 'blur(4px)' }}
-        animate={{ opacity: 1, filter: 'blur(0px)' }}
-        exit={{ opacity: 0, filter: 'blur(4px)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         transition={transition}
         {...props}
       />
@@ -69,18 +69,15 @@ export type DialogContentProps = Omit<React.ComponentProps<typeof DialogPrimitiv
   }
 
 export function DialogContent({
-  from = 'top',
+  from: _from = 'top', // giữ prop cho tương thích (không còn hiệu ứng xoay)
   onOpenAutoFocus,
   onCloseAutoFocus,
   onEscapeKeyDown,
   onPointerDownOutside,
   onInteractOutside,
-  transition = { type: 'spring', stiffness: 350, damping: 30 },
+  transition = { type: 'tween', duration: 0.15, ease: 'easeOut' },
   ...props
 }: DialogContentProps) {
-  const initialRotation = from === 'bottom' || from === 'left' ? '8deg' : '-8deg'
-  const isVertical = from === 'top' || from === 'bottom'
-  const rotateAxis = isVertical ? 'rotateX' : 'rotateY'
 
   return (
     <DialogPrimitive.Content
@@ -95,21 +92,10 @@ export function DialogContent({
       <motion.div
         key="dialog-content"
         data-slot="dialog-content"
-        initial={{
-          opacity: 0,
-          filter: 'blur(4px)',
-          transform: `perspective(600px) ${rotateAxis}(${initialRotation}) scale(0.94)`
-        }}
-        animate={{
-          opacity: 1,
-          filter: 'blur(0px)',
-          transform: `perspective(600px) ${rotateAxis}(0deg) scale(1)`
-        }}
-        exit={{
-          opacity: 0,
-          filter: 'blur(4px)',
-          transform: `perspective(600px) ${rotateAxis}(${initialRotation}) scale(0.94)`
-        }}
+        // Chỉ opacity + scale (GPU, không blur / xoay 3D): hộp nội dung dài (danh sách, form) mở mượt, không giật
+        initial={{ opacity: 0, transform: 'scale(0.96)' }}
+        animate={{ opacity: 1, transform: 'scale(1)' }}
+        exit={{ opacity: 0, transform: 'scale(0.96)' }}
         transition={transition}
         {...props}
       />

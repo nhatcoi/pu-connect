@@ -12,11 +12,10 @@ export function useCourseSuggestConfig(enabled = true): SuggestConfig {
   return useMemo(
     () => ({
       noun: 'môn học',
-      hint: 'Không thấy môn của bạn trong danh mục? Gửi đề xuất, admin duyệt xong môn sẽ xuất hiện để chọn khi đăng tài liệu.',
       fields: [
         { key: 'name', label: 'Tên môn học', required: true, maxLength: 150, placeholder: 'Vd. An toàn thông tin' },
-        { key: 'fieldId', label: 'Lĩnh vực (nếu biết)', type: 'select' as const, options: (units?.fields ?? []).map((f) => ({ value: f.id, label: f.name })) },
-        { key: 'note', label: 'Ghi chú', maxLength: 500, placeholder: 'Mã môn, giảng viên, học kỳ… (tùy chọn)' }
+        { key: 'fieldId', label: 'Lĩnh vực', type: 'select' as const, options: (units?.fields ?? []).map((f) => ({ value: f.id, label: f.name })) },
+        { key: 'note', label: 'Ghi chú', maxLength: 500, placeholder: 'Mã môn, giảng viên… (tùy chọn)' }
       ],
       onSubmit: (v: Record<string, string>) => suggest.mutateAsync({ name: v.name.trim(), fieldId: v.fieldId || undefined, note: v.note?.trim() || undefined }),
       history: mine.map((s) => ({ id: s.id, name: s.name, status: s.status, note: s.reviewNote }))

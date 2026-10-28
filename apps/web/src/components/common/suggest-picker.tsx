@@ -40,7 +40,8 @@ export interface SuggestConfig {
   noun: string // "môn học", "trường", "lĩnh vực" — dùng trong chữ hướng dẫn
   fields: SuggestField[] // trường đầu tiên là tên đề xuất, điền sẵn từ ô tìm
   onSubmit: (values: Record<string, string>) => Promise<unknown> | unknown
-  hint?: string
+  hint?: string // dòng mô tả dưới tiêu đề form (bỏ trống ⇒ không hiện)
+  note?: string // dòng chú thích cuối form
   successMessage?: string
   history?: SuggestHistoryItem[]
 }
@@ -89,19 +90,25 @@ export function SuggestPickerDialog({ open, onOpenChange, title, options, value,
     setView(startInSuggest && canSuggest ? 'suggest' : 'list')
   }, [open, startInSuggest, canSuggest])
 
-  // A–Z theo tên (locale vi) rồi nhóm theo chữ cái đầu đã bỏ dấu
+  // Sắp A–Z (locale vi) + bỏ dấu một lần khi danh sách đổi; mỗi lần gõ chỉ còn lọc chuỗi
+  const index = useMemo(
+    () =>
+      [...options]
+        .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
+        .map((o) => ({ o, key: foldText(`${o.name} ${o.hint ?? ''}`), letter: letterOf(o.name) })),
+    [options]
+  )
   const groups = useMemo(() => {
     const needle = foldText(q.trim())
-    const rows = options
-      .filter((o) => !needle || foldText(`${o.name} ${o.hint ?? ''}`).includes(needle))
-      .sort((a, b) => a.name.localeCompare(b.name, 'vi'))
     const map = new Map<string, PickerOption[]>()
-    for (const o of rows) {
-      const k = letterOf(o.name)
-      map.set(k, [...(map.get(k) ?? []), o])
+    for (const { o, key, letter } of index) {
+      if (needle && !key.includes(needle)) continue
+      const rows = map.get(letter)
+      if (rows) rows.push(o)
+      else map.set(letter, [o])
     }
     return [...map.entries()].sort(([a], [b]) => (a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b)))
-  }, [options, q])
+  }, [index, q])
   const total = groups.reduce((n, [, rows]) => n + rows.length, 0)
 
   const used = multi ? multi.values.length + (multi.reserved ?? 0) : 0
@@ -221,9 +228,7 @@ export function SuggestPickerDialog({ open, onOpenChange, title, options, value,
                 )}
                 Đề xuất {suggest.noun}
               </DialogTitle>
-              <DialogDescription className="text-xs">
-                {suggest.hint ?? `Không thấy ${suggest.noun} của bạn? Gửi đề xuất, quản trị viên duyệt xong sẽ cập nhật cho bạn.`}
-              </DialogDescription>
+              {suggest.hint ? <DialogDescription className="text-xs">{suggest.hint}</DialogDescription> : <DialogDescription className="sr-only">Gửi đề xuất cho quản trị viên</DialogDescription>}
             </DialogHeader>
             <form onSubmit={submit} className="space-y-3 text-xs">
               {suggest.fields.map((f, i) => (
@@ -253,7 +258,7 @@ export function SuggestPickerDialog({ open, onOpenChange, title, options, value,
                   )}
                 </div>
               ))}
-              <p className="text-[11px] text-muted-foreground">Trong lúc chờ duyệt, mục của bạn hiển thị là “Khác”. Nếu bị từ chối, mục vẫn là “Khác” cho tới khi bạn chọn lại.</p>
+              {suggest.note && <p className="text-[11px] text-muted-foreground">{suggest.note}</p>}
               {suggest.history && suggest.history.length > 0 && (
                 <div className="space-y-1.5 border-t border-border pt-3">
                   <p className="text-[11px] font-semibold text-muted-foreground">Đề xuất của bạn</p>

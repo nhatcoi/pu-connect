@@ -101,7 +101,8 @@ function UnitPicker({ label, placeholder, noun, title, options, id, other, statu
         suggest={{
           noun,
           fields: [{ key: 'name', label: `Tên ${noun}`, required: true, maxLength: 200, placeholder: `Nhập tên ${noun}` }],
-          successMessage: 'Đã ghi nhận. Bấm Lưu để gửi cho quản trị viên duyệt',
+          note: 'Chờ admin duyệt; trong lúc chờ hồ sơ hiện “Khác”.',
+          successMessage: 'Đã ghi nhận, bấm Lưu để gửi duyệt',
           onSubmit: (v) => onChange(OTHER, v.name.trim())
         }}
       />
@@ -155,7 +156,8 @@ function FieldsPicker({ options, ids, other, status, onChange }: FieldsPickerPro
         suggest={{
           noun: 'lĩnh vực',
           fields: [{ key: 'name', label: 'Tên lĩnh vực', required: true, maxLength: 200, placeholder: 'Nhập tên lĩnh vực' }],
-          successMessage: 'Đã ghi nhận. Bấm Lưu để gửi cho quản trị viên duyệt',
+          note: 'Chờ admin duyệt; trong lúc chờ hồ sơ hiện “Khác”.',
+          successMessage: 'Đã ghi nhận, bấm Lưu để gửi duyệt',
           onSubmit: (v) => onChange(ids, v.name.trim())
         }}
       />
@@ -190,7 +192,7 @@ export function UnitSelector({ value, onChange }: UnitSelectorProps) {
       />
       {pending && (
         <p className="text-[11px] text-muted-foreground px-1">
-          Mục &quot;Khác&quot; chờ quản trị viên duyệt: được duyệt thì hồ sơ tự cập nhật, bị từ chối thì vẫn hiển thị là &quot;Khác&quot; cho tới khi bạn chọn lại.
+          &quot;Khác&quot; chờ admin duyệt: duyệt xong hồ sơ tự cập nhật, bị từ chối thì vẫn hiện &quot;Khác&quot;.
         </p>
       )}
     </div>

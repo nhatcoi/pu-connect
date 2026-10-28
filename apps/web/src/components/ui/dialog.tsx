@@ -42,7 +42,7 @@ export type DialogTitleProps = DialogTitlePrimitiveProps
 export type DialogDescriptionProps = DialogDescriptionPrimitiveProps
 
 function DialogOverlay({ className, ...props }: DialogOverlayProps) {
-  return <DialogOverlayPrimitive className={cn('fixed inset-0 z-50 bg-black/60 backdrop-blur-xs', className)} {...props} />
+  return <DialogOverlayPrimitive className={cn('fixed inset-0 z-50 bg-black/60', className)} {...props} />
 }
 
 export type DialogContentProps = DialogContentPrimitiveProps & {
