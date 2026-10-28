@@ -14,13 +14,13 @@ import { useAppStore } from '@/store'
 
 type Tab = 'courses' | 'documents' | 'collections' | 'library'
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'courses', label: 'Môn học' },
   { id: 'documents', label: 'Tài liệu' },
+  { id: 'courses', label: 'Môn học' },
   { id: 'collections', label: 'Bộ sưu tập' },
   { id: 'library', label: 'Kho của tôi' }
 ]
 
-// /documents — "Môn học & Tài liệu": danh mục môn, kho tài liệu chung, kho cá nhân (?tab=documents|collections|library)
+// /documents — "Môn học & Tài liệu": danh mục môn, kho tài liệu chung, kho cá nhân (?tab=courses|collections|library; mặc định Tài liệu)
 export default function CoursesPage() {
   return (
     <Suspense fallback={<CourseListSkeleton />}>
@@ -34,8 +34,8 @@ function CoursesHub() {
   const pathname = usePathname()
   const params = useSearchParams()
   const setCreateDocumentOpen = useAppStore((s) => s.setCreateDocumentOpen)
-  const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'courses') as Tab
-  const setTab = (next: Tab) => router.replace(next === 'courses' ? pathname : `${pathname}?tab=${next}`, { scroll: false })
+  const tab = (TABS.find((t) => t.id === params.get('tab'))?.id ?? 'documents') as Tab
+  const setTab = (next: Tab) => router.replace(next === 'documents' ? pathname : `${pathname}?tab=${next}`, { scroll: false })
 
   return (
     <>
@@ -50,8 +50,8 @@ function CoursesHub() {
       </div>
 
       <div className="pt-2">
-        {tab === 'courses' && <CourseCatalog />}
         {tab === 'documents' && <DocumentsBrowse />}
+        {tab === 'courses' && <CourseCatalog />}
         {tab === 'collections' && <CollectionsPanel />}
         {tab === 'library' && <LibraryPanel />}
       </div>

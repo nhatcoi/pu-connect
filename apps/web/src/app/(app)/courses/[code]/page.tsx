@@ -56,7 +56,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
       <div className="py-24 text-center space-y-3 text-muted-foreground">
         <BookOpen className="h-10 w-10 mx-auto opacity-30 text-primary" />
         <p className="text-sm font-medium">Không tìm thấy học phần {courseCode}</p>
-        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/documents')}>
+        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/documents?tab=courses')}>
           Xem danh mục môn học
         </Button>
       </div>
@@ -73,7 +73,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="text-[13px] text-muted-foreground">
-          <Link href="/documents" className="hover:text-foreground hover:underline">
+          <Link href="/documents?tab=courses" className="hover:text-foreground hover:underline">
             Môn học & Tài liệu
           </Link>
           <span className="mx-1.5">/</span>
