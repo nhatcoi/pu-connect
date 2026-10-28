@@ -11,7 +11,7 @@ SELECT id AS uid FROM users WHERE username = :'username' \gset
 \endif
 
 \echo '\n== 1. Hồ sơ & cờ cá nhân hóa =='
-SELECT username, display_name, major, class_name, interests, skills,
+SELECT username, display_name, (SELECT name FROM interest_fields WHERE id = interest_field_id) AS interest_field, interests, skills,
        COALESCE((privacy_settings->>'personalization')::boolean, TRUE) AS personalization,
        interests_updated_at,
        interests_updated_at < NOW() - INTERVAL '6 hours' AS stale,

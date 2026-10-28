@@ -15,6 +15,17 @@ import type { Persona, PostType, Reaction, SeedComment, SeedPost } from './types
 
 const SEED_EMAIL_DOMAIN = 'seed.pu-connector.test' // TLD .test: không bao giờ gửi được email thật
 const SLUG_PREFIX = 'seed-'
+// Mã khoa trong persona ⇒ mã lĩnh vực quan tâm (danh mục seed ở units-simplify-upgrade.sql)
+const FIELD_OF_FACULTY: Record<string, string> = {
+  FIT: 'school-it',
+  FCS: 'school-it',
+  FEE: 'school-eng',
+  FAE: 'school-eng',
+  FAS: 'school-eng',
+  FBA: 'school-econ',
+  FEL: 'school-languages',
+  FMS: 'school-health'
+}
 const VN_OFFSET_MS = 7 * 3600_000
 const DAY_MS = 86_400_000
 // Dấu vân tay 100 tài khoản mẫu cũ (seed-users.sql): domain + hash mật khẩu dùng chung
@@ -78,13 +89,12 @@ async function upsertPersonas(client: PoolClient, now: number): Promise<Map<stri
     const joinedAt = now - p.joinedDaysAgo * DAY_MS
     const res = await client.query(
       `INSERT INTO users (email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at,
-                          auth_provider, school, faculty, major, class_name, academic_year, student_id, bio, skills, interests,
+                          auth_provider, university_id, interest_field_id, student_id, bio, skills, interests,
                           location, avatar_url, banner_url, is_verified, verified_at, created_at, last_seen_at)
-       VALUES ($1, $2, $3, $4, $5, 'active', TRUE, TRUE, $6, 'local', 'Đại học Phenikaa', $7, $8, $9, $10, $11, $12, $13, $14,
-               $15, $16, $17, $18, CASE WHEN $18 THEN $6::timestamptz END, $6, $19)
+       VALUES ($1, $2, $3, $4, $5, 'active', TRUE, TRUE, $6, 'local', (SELECT id FROM universities WHERE code = 'phenikaa'), (SELECT id FROM interest_fields WHERE code = $7), $8, $9, $10, $11,
+               $12, $13, $14, $15, CASE WHEN $15 THEN $6::timestamptz END, $6, $16)
        ON CONFLICT (username) DO UPDATE SET
-         display_name = EXCLUDED.display_name, role = EXCLUDED.role, faculty = EXCLUDED.faculty, major = EXCLUDED.major,
-         class_name = EXCLUDED.class_name, academic_year = EXCLUDED.academic_year, student_id = EXCLUDED.student_id,
+         display_name = EXCLUDED.display_name, role = EXCLUDED.role, interest_field_id = EXCLUDED.interest_field_id, student_id = EXCLUDED.student_id,
          bio = EXCLUDED.bio, skills = EXCLUDED.skills, interests = EXCLUDED.interests, location = EXCLUDED.location,
          avatar_url = EXCLUDED.avatar_url, banner_url = EXCLUDED.banner_url, is_verified = EXCLUDED.is_verified,
          password_hash = COALESCE(EXCLUDED.password_hash, users.password_hash), updated_at = NOW()
@@ -96,10 +106,7 @@ async function upsertPersonas(client: PoolClient, now: number): Promise<Map<stri
         p.displayName,
         p.role,
         new Date(joinedAt),
-        p.faculty,
-        p.major,
-        p.className ?? null,
-        p.academicYear ?? null,
+        FIELD_OF_FACULTY[p.faculty] ?? null,
         p.studentId ?? null,
         p.bio,
         p.skills,

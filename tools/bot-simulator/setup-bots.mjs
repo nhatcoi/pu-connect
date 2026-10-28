@@ -10,6 +10,8 @@ import { logger } from './lib/logger.mjs'
 const dir = path.dirname(fileURLToPath(import.meta.url))
 const personas = JSON.parse(fs.readFileSync(path.join(dir, 'personas.json'), 'utf8'))
 const SAFE_ROLES = new Set(['student', 'lecturer', 'ta'])
+// Persona ghi mã khoa cũ (hoặc tên viện) ⇒ mã lĩnh vực quan tâm; không khớp ⇒ Công nghệ thông tin
+const FIELD_OF_FACULTY = { FIT: 'school-it', FCS: 'school-it', FEE: 'school-eng', FAE: 'school-eng', FAS: 'school-eng', FBA: 'school-econ', FEL: 'school-languages', FMS: 'school-health' }
 
 async function setup() {
   logger.info('Kết nối database để chuẩn bị tài khoản bot...', databaseUrl.replace(/:[^:@]+@/, ':***@'))
@@ -19,8 +21,8 @@ async function setup() {
     for (const p of personas) {
       const passwordHash = await bcrypt.hash(process.env.BOT_PASSWORD || p.password, 10)
       const { rows } = await pool.query(
-        `INSERT INTO users (id, email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at, faculty, bio, is_bot, created_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), $6, $7, true, NOW())
+        `INSERT INTO users (id, email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at, interest_field_id, bio, is_bot, created_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), (SELECT id FROM interest_fields WHERE code = $6), $7, true, NOW())
          ON CONFLICT (username) DO UPDATE SET
            password_hash = EXCLUDED.password_hash,
            display_name = EXCLUDED.display_name,
@@ -29,7 +31,7 @@ async function setup() {
            email_verified = true,
            is_bot = true
          RETURNING id`,
-        [`${p.username}@seed.pu-connector.test`, p.username, passwordHash, p.displayName, SAFE_ROLES.has(p.role) ? p.role : 'student', p.faculty || 'FIT', p.tone || '']
+        [`${p.username}@seed.pu-connector.test`, p.username, passwordHash, p.displayName, SAFE_ROLES.has(p.role) ? p.role : 'student', FIELD_OF_FACULTY[p.faculty] ?? 'school-it', p.tone || '']
       )
       // Hồ sơ quyền mặc định: mọi quyền tắt, admin bật trong Admin → Bot
       await pool.query(`INSERT INTO bot_profiles (user_id) VALUES ($1) ON CONFLICT DO NOTHING`, [rows[0].id])

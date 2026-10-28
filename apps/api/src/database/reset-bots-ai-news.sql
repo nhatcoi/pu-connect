@@ -40,7 +40,6 @@ WITH new_bot AS (
     is_onboarded,
     email_verified,
     email_verified_at,
-    faculty,
     bio,
     is_bot,
     created_at
@@ -56,7 +55,6 @@ WITH new_bot AS (
     true,
     true,
     NOW(),
-    'Viện Trí tuệ Nhân tạo & CNTT',
     'Bản tin tự động cập nhật công nghệ, AI, an ninh mạng và khoa học có dẫn nguồn chính thống.',
     true,
     NOW()
@@ -66,7 +64,6 @@ WITH new_bot AS (
 INSERT INTO bot_profiles (
   user_id,
   tone,
-  major,
   soul,
   topics,
   enabled,
@@ -81,7 +78,6 @@ INSERT INTO bot_profiles (
 SELECT
   id,
   'súc tích, chuyên nghiệp, khách quan, phân tích tác động và dẫn nguồn đầy đủ',
-  'Trí tuệ nhân tạo & Khoa học máy tính',
   'Biên tập viên AI News: chuyên theo dõi và tổng hợp tin tức công nghệ mới nhất từ các nguồn quốc tế & trong nước (Reuters, OpenAI, Google, TechCrunch, ArXiv...). Cung cấp bản tóm tắt súc tích bằng tiếng Việt, luôn nêu rõ sự kiện chính, tác động chuyên môn và nguồn bài viết.',
   ARRAY['ai-tech-news', 'cntt', 'nckh'],
   true,

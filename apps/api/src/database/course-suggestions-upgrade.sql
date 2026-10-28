@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS course_suggestions (
     requester_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(150) NOT NULL,
     code VARCHAR(20),
-    faculty_code VARCHAR(30),
     credits INT CHECK (credits BETWEEN 1 AND 15),
     note VARCHAR(500),
     status VARCHAR(10) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),

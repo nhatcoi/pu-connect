@@ -186,7 +186,6 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/moderation-terms-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/moderation-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/user-reports-upgrade.sql
-docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/academic-units-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-models-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-providers-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-llm-upgrade.sql

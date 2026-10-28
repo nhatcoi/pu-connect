@@ -155,12 +155,10 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/moderation-terms-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/moderation-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/user-reports-upgrade.sql
-docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/academic-units-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-models-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-providers-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-llm-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/trash-upgrade.sql
-docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/academic-units-schools-only.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-services-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/news-crawler-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/documents-library-upgrade.sql
@@ -171,6 +169,15 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/units-simplify-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/interest-fields-multi-upgrade.sql
 
+# Bước 2 đơn vị: xóa hẳn khoa / ngành / lớp / khóa cũ. Sao lưu cả DB trước khi xóa (chỉ khi còn bảng cũ), giữ 5 bản gần nhất
+if [ -n "$(docker exec pu_postgres psql -U pu_user -d pu_connector_db -tAc "SELECT to_regclass('faculties')")" ]; then
+  mkdir -p /var/backups/pu-connector
+  BACKUP=/var/backups/pu-connector/pre-legacy-units-drop-$(date +%Y%m%d-%H%M%S).dump
+  docker exec pu_postgres pg_dump -U pu_user -Fc pu_connector_db > "$BACKUP" || { echo "Sao lưu thất bại — dừng, chưa xóa gì."; rm -f "$BACKUP"; exit 1; }
+  echo "Đã sao lưu DB trước khi xóa bảng cũ: $BACKUP ($(du -h "$BACKUP" | cut -f1))"
+  ls -1t /var/backups/pu-connector/pre-legacy-units-drop-*.dump | tail -n +6 | xargs -r rm -f
+fi
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/legacy-units-drop-upgrade.sql
 # Bot Simulator: mật khẩu bot ngẫu nhiên trong .env (không dùng mật khẩu mặc định trong repo), tạo tài khoản bot lần đầu
 grep -q '^BOT_PASSWORD=' .env || echo "BOT_PASSWORD=$(openssl rand -hex 12)" >> .env
 grep -q '^BOT_INGEST_TOKEN=' .env || echo "BOT_INGEST_TOKEN=$(openssl rand -hex 24)" >> .env  # tool crawl đẩy bài qua POST /api/bots/ingest

@@ -4,7 +4,7 @@
 -- Người dùng chọn "Khác" + nhập tên ⇒ unit_requests (pending) ⇒ admin duyệt ⇒ cập nhật người dùng.
 -- BƯỚC 1 (không phá hủy): chỉ thêm bảng/cột + chuyển dữ liệu. Cột/bảng cũ (faculties, users.faculty/major/class_name/
 -- academic_year/unit_id, academic_units) giữ nguyên, code không còn đọc/ghi; DROP ở bước 2 sau khi xác nhận.
--- Chạy sau academic-units-upgrade.sql, academic-units-schools-only.sql, search-upgrade.sql (immutable_unaccent)
+-- Chạy sau search-upgrade.sql (immutable_unaccent). Bước 2 (legacy-units-drop-upgrade.sql) đã xóa cột / bảng cũ ⇒ DB mới không có gì để chuyển
 -- ==========================================================
 
 CREATE TABLE IF NOT EXISTS universities (
@@ -84,6 +84,11 @@ DECLARE
     i INT;
 BEGIN
     IF EXISTS (SELECT 1 FROM migration_marks WHERE name = 'units-simplify-v1') THEN
+        RETURN;
+    END IF;
+    -- DB mới (schema không còn khoa / ngành / lớp cũ) ⇒ không có dữ liệu để chuyển
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'unit_id') THEN
+        INSERT INTO migration_marks (name) VALUES ('units-simplify-v1');
         RETURN;
     END IF;
 

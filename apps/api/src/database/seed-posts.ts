@@ -4,15 +4,6 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL || 'postgresql://pu_user:pu_password@localhost:5432/pu_connector_db'
 })
 
-interface FacultyData {
-  code: string
-  name: string
-  short_name: string
-  description: string
-  dean_name: string
-  office_location: string
-}
-
 interface CourseData {
   code: string
   name: string
@@ -22,72 +13,19 @@ interface CourseData {
   rating_avg: number
 }
 
-const facultiesData: FacultyData[] = [
-  {
-    code: 'FIT',
-    name: 'Khoa Công nghệ Thông tin',
-    short_name: 'FIT',
-    description: 'Đào tạo kỹ sư phần mềm, an toàn thông tin và hệ thống thông tin.',
-    dean_name: 'TS. Nguyễn Văn Hà',
-    office_location: 'Tòa A2 - P.401'
-  },
-  {
-    code: 'FCS',
-    name: 'Khoa Khoa học Máy tính & Trí tuệ Nhân tạo',
-    short_name: 'FCS',
-    description: 'Nghiên cứu và đào tạo chuyên sâu về AI, Data Science và LLM.',
-    dean_name: 'PGS.TS Trần Thị Thu',
-    office_location: 'Tòa A2 - P.405'
-  },
-  {
-    code: 'FEE',
-    name: 'Khoa Điện - Điện tử & Tự động hóa',
-    short_name: 'FEE',
-    description: 'Đào tạo kỹ thuật điện tử, viễn thông, IoT và điều khiển robot.',
-    dean_name: 'TS. Lê Quang Thắng',
-    office_location: 'Tòa A3 - P.202'
-  },
-  {
-    code: 'FAE',
-    name: 'Khoa Kỹ thuật Ô tô & Năng lượng',
-    short_name: 'FAE',
-    description: 'Kỹ thuật ô tô, xe điện EV và xe tự hành Phenikaa-X.',
-    dean_name: 'TS. Hoàng Văn Nam',
-    office_location: 'Tòa A4 - P.101'
-  },
-  {
-    code: 'FBA',
-    name: 'Khoa Kinh tế & Quản trị Kinh doanh',
-    short_name: 'FBA',
-    description: 'Đào tạo quản trị kinh doanh, marketing số, logistics và tài chính ngân hàng.',
-    dean_name: 'PGS.TS Đặng Thị Loan',
-    office_location: 'Tòa A1 - P.502'
-  },
-  {
-    code: 'FEL',
-    name: 'Khoa Ngôn ngữ & Ngoại ngữ',
-    short_name: 'FEL',
-    description: 'Đào tạo ngôn ngữ Anh, Trung Quốc, Hàn Quốc và biên phiên dịch.',
-    dean_name: 'TS. Lê Thanh Mai',
-    office_location: 'Tòa A1 - P.304'
-  },
-  {
-    code: 'FAS',
-    name: 'Khoa Khoa học & Kỹ thuật Vật liệu',
-    short_name: 'FAS',
-    description: 'Nghiên cứu vật liệu nano tiên tiến, bán dẫn và pin mặt trời.',
-    dean_name: 'GS.TS Bùi Đức Thành',
-    office_location: 'Tòa A3 - P.501'
-  },
-  {
-    code: 'FMS',
-    name: 'Khối ngành Khoa học Sức khỏe & Y Dược',
-    short_name: 'FMS',
-    description: 'Đào tạo Bác sĩ đa khoa, Dược sĩ và Điều dưỡng tại BV ĐH Phenikaa.',
-    dean_name: 'TTND.GS.TS Phạm Quang Đại',
-    office_location: 'Tòa Bệnh viện ĐH Phenikaa'
-  }
-]
+// Mã khoa cũ trong dữ liệu mẫu ⇒ mã lĩnh vực quan tâm (danh mục seed ở units-simplify-upgrade.sql)
+const FIELD_OF_FACULTY: Record<string, string> = {
+  FIT: 'school-it',
+  FCS: 'school-it',
+  FEE: 'school-eng',
+  FAE: 'school-eng',
+  FAS: 'school-eng',
+  FBA: 'school-econ',
+  FEL: 'school-languages',
+  FMS: 'school-health'
+}
+// Ngược lại: lĩnh vực ⇒ mã khoa đại diện (chọn tác giả mẫu theo lĩnh vực)
+const FACULTY_OF_FIELD: Record<string, string> = { 'school-it': 'FIT', 'school-eng': 'FEE', 'school-econ': 'FBA', 'school-languages': 'FEL', 'school-health': 'FMS' }
 
 const coursesData: CourseData[] = [
   {
@@ -361,56 +299,35 @@ function getRandomInt(min: number, max: number): number {
 async function main() {
   console.log('🚀 Starting PU Connect Database Seeding for 280+ Posts...')
 
-  // 1. Seed Faculties
-  console.log('📦 Seeding faculties...')
-  for (const f of facultiesData) {
-    await pool.query(
-      `INSERT INTO faculties (code, name, short_name, description, dean_name, office_location)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       ON CONFLICT (code) DO UPDATE SET
-         name = EXCLUDED.name,
-         short_name = EXCLUDED.short_name,
-         description = EXCLUDED.description,
-         dean_name = EXCLUDED.dean_name,
-         office_location = EXCLUDED.office_location`,
-      [f.code, f.name, f.short_name, f.description, f.dean_name, f.office_location]
-    )
-  }
-
-  // Get Faculty Map
-  const facRes = await pool.query('SELECT id, code FROM faculties')
-  const facultyMap = new Map<string, string>()
-  for (const row of facRes.rows) {
-    facultyMap.set(row.code, row.id)
-  }
-
   // 2. Seed Courses
   console.log('📚 Seeding courses...')
   for (const c of coursesData) {
-    const facId = facultyMap.get(c.faculty_code) || null
     await pool.query(
-      `INSERT INTO courses (code, name, credits, faculty_id, faculty_code, description, rating_avg)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO courses (code, name, credits, interest_field_id, description, rating_avg)
+       VALUES ($1, $2, $3, (SELECT id FROM interest_fields WHERE code = $4), $5, $6)
        ON CONFLICT (code) DO UPDATE SET
          name = EXCLUDED.name,
          credits = EXCLUDED.credits,
-         faculty_id = EXCLUDED.faculty_id,
-         faculty_code = EXCLUDED.faculty_code,
+         interest_field_id = EXCLUDED.interest_field_id,
          description = EXCLUDED.description,
          rating_avg = EXCLUDED.rating_avg`,
-      [c.code, c.name, c.credits, facId, c.faculty_code, c.description, c.rating_avg]
+      [c.code, c.name, c.credits, FIELD_OF_FACULTY[c.faculty_code] ?? null, c.description, c.rating_avg]
     )
   }
 
   // Get Course Map
-  const courseRes = await pool.query('SELECT id, code, faculty_code FROM courses')
+  const facultyOfCourse = new Map(coursesData.map((c) => [c.code, c.faculty_code]))
+  const courseRes = await pool.query('SELECT id, code FROM courses')
   const courseMap = new Map<string, { id: string; faculty_code: string }>()
   for (const row of courseRes.rows) {
-    courseMap.set(row.code, { id: row.id, faculty_code: row.faculty_code })
+    courseMap.set(row.code, { id: row.id, faculty_code: facultyOfCourse.get(row.code) ?? 'FIT' })
   }
 
   // 3. Load Users
-  const userRes = await pool.query('SELECT id, username, display_name, role, faculty, student_id FROM users')
+  const userRes = await pool.query(
+    `SELECT u.id, u.username, u.display_name, u.role, u.student_id, f.code AS field_code
+       FROM users u LEFT JOIN interest_fields f ON f.id = u.interest_field_id`
+  )
   const users = userRes.rows
   if (users.length === 0) {
     console.error('❌ No users found in database! Please run seed-users.sql first.')
@@ -425,7 +342,7 @@ async function main() {
 
   const usersByFaculty: Record<string, typeof users> = {}
   for (const u of users) {
-    const fac = u.faculty || 'FIT'
+    const fac = FACULTY_OF_FIELD[u.field_code] || 'FIT'
     if (!usersByFaculty[fac]) usersByFaculty[fac] = []
     usersByFaculty[fac].push(u)
   }
@@ -1311,7 +1228,6 @@ async function main() {
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log('✅ SEEDING SUMMARY:')
-  console.log(`   🏛️  Faculties: ${facultiesData.length}`)
   console.log(`   📚 Courses:   ${coursesData.length}`)
   console.log(`   👤 Users:     ${users.length}`)
   console.log(`   📝 Posts:     ${postCount}`)

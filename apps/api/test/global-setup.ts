@@ -61,7 +61,6 @@ export const MIGRATIONS = [
   'admin-groups-upgrade.sql',
   'moderation-terms-upgrade.sql',
   'user-reports-upgrade.sql',
-  'academic-units-upgrade.sql',
   'moderation-upgrade.sql',
   'trash-upgrade.sql',
   'documents-library-upgrade.sql',
@@ -72,7 +71,8 @@ export const MIGRATIONS = [
   'post-manage-upgrade.sql',
   'comment-moderation-upgrade.sql',
   'units-simplify-upgrade.sql',
-  'interest-fields-multi-upgrade.sql'
+  'interest-fields-multi-upgrade.sql',
+  'legacy-units-drop-upgrade.sql'
 ]
 
 // Tạo lại DB test sạch + chạy toàn bộ migration (1 lần cho cả lượt test)

@@ -3,7 +3,6 @@
 
 -- Persona của bot (tạo/sửa từ Admin → Bot; daemon đọc từ DB thay vì personas.json)
 ALTER TABLE bot_profiles ADD COLUMN IF NOT EXISTS tone TEXT;
-ALTER TABLE bot_profiles ADD COLUMN IF NOT EXISTS major TEXT;
 
 -- Lệnh có giờ chạy: scheduled_at <= NOW() mới được daemon nhận
 ALTER TABLE bot_commands ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ NOT NULL DEFAULT NOW();

@@ -51,27 +51,12 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
--- 1. Academic Hierarchy
-CREATE TABLE IF NOT EXISTS faculties (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code VARCHAR(20) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    short_name VARCHAR(50),
-    description TEXT,
-    logo_url VARCHAR(500),
-    dean_name VARCHAR(100),
-    office_location VARCHAR(100),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
+-- 1. Môn học (gắn lĩnh vực quan tâm qua courses.interest_field_id — units-simplify-upgrade.sql)
 CREATE TABLE IF NOT EXISTS courses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     code VARCHAR(20) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     credits INT NOT NULL CHECK (credits > 0),
-    faculty_id UUID REFERENCES faculties(id) ON DELETE SET NULL,
-    faculty_code VARCHAR(20),
     description TEXT,
     syllabus_url VARCHAR(500),
     rating_avg NUMERIC(3,2) DEFAULT 5.00,
@@ -89,8 +74,6 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     display_name VARCHAR(100) NOT NULL,
     student_id VARCHAR(20),
-    faculty VARCHAR(50),
-    academic_year VARCHAR(20),
     avatar_url VARCHAR(500),
     bio VARCHAR(250),
     role user_role_enum DEFAULT 'student',
@@ -99,9 +82,6 @@ CREATE TABLE IF NOT EXISTS users (
     is_onboarded BOOLEAN DEFAULT FALSE,
     skills TEXT[] DEFAULT '{}',
     interests TEXT[] DEFAULT '{}',
-    school VARCHAR(100),
-    major VARCHAR(100),
-    class_name VARCHAR(50),
     is_verified BOOLEAN DEFAULT FALSE,
     verified_at TIMESTAMPTZ,
     privacy_settings JSONB DEFAULT '{
@@ -118,9 +98,6 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_school ON users(school);
-CREATE INDEX IF NOT EXISTS idx_users_major ON users(major);
-CREATE INDEX IF NOT EXISTS idx_users_class ON users(class_name);
 CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
 
 -- 2.1. Follows / Social Connections

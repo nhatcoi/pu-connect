@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **78 bảng**, **123 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **87 bảng**, **147 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -24,17 +24,17 @@ erDiagram
   migration_marks {
     string no_fk
   }
-  news_crawler_config {
-    string no_fk
-  }
   search_logs {
     string no_fk
   }
   user_sessions {
     string no_fk
   }
-  academic_units |o--o{ academic_units : "parent_id"
   users |o--o{ admin_audit_logs : "admin_id"
+  users |o--o{ admin_group_members : "assigned_by"
+  admin_groups ||--o{ admin_group_members : "group_id"
+  users ||--o{ admin_group_members : "user_id"
+  users |o--o{ admin_groups : "created_by"
   users ||--o{ admin_saved_views : "admin_id"
   users |o--o{ admin_user_notes : "admin_id"
   users ||--o{ admin_user_notes : "user_id"
@@ -59,15 +59,25 @@ erDiagram
   users ||--o{ ai_tasks : "user_id"
   conversations ||--o{ ai_thread_shares : "conversation_id"
   users ||--o{ ai_thread_shares : "owner_id"
+  users |o--o{ announcements : "created_by"
   users |o--o{ bot_commands : "created_by"
   users |o--o{ bot_control : "updated_by"
   posts |o--o{ bot_feed_items : "post_id"
+  comments ||--o{ bot_job_handled : "comment_id"
+  bot_jobs ||--o{ bot_job_handled : "job_id"
+  bot_jobs ||--o{ bot_job_posts : "job_id"
+  posts |o--o{ bot_job_posts : "post_id"
+  users ||--o{ bot_jobs : "bot_id"
+  users |o--o{ bot_jobs : "created_by"
   users |o--o{ bot_profiles : "updated_by"
   users ||--o{ bot_profiles : "user_id"
   comments ||--o{ comment_documents : "comment_id"
   documents ||--o{ comment_documents : "document_id"
   comments ||--o{ comment_reactions : "comment_id"
   users ||--o{ comment_reactions : "user_id"
+  comments ||--o{ comment_reports : "comment_id"
+  users ||--o{ comment_reports : "reporter_id"
+  users |o--o{ comment_reports : "resolved_by"
   users ||--o{ comments : "author_id"
   comments |o--o{ comments : "parent_id"
   posts ||--o{ comments : "post_id"
@@ -80,8 +90,12 @@ erDiagram
   study_groups |o--o{ conversations : "study_group_id"
   courses ||--o{ course_follows : "course_id"
   users ||--o{ course_follows : "user_id"
-  faculties |o--o{ courses : "faculty_id"
+  users |o--o{ course_lecturers : "assigned_by"
+  courses ||--o{ course_lecturers : "course_id"
+  users ||--o{ course_lecturers : "user_id"
+  interest_fields |o--o{ courses : "interest_field_id"
   courses |o--o{ course_suggestions : "course_id"
+  interest_fields |o--o{ course_suggestions : "interest_field_id"
   users ||--o{ course_suggestions : "requester_id"
   users |o--o{ course_suggestions : "reviewer_id"
   documents ||--o{ document_chunks : "document_id"
@@ -107,8 +121,9 @@ erDiagram
   users |o--o{ messages : "pinned_by"
   messages |o--o{ messages : "reply_to_id"
   users |o--o{ messages : "sender_id"
-  posts |o--o{ news_articles : "post_id"
-  news_sources |o--o{ news_articles : "source_id"
+  users |o--o{ moderation_events : "reviewed_by"
+  users |o--o{ moderation_events : "user_id"
+  users |o--o{ moderation_terms : "created_by"
   users |o--o{ notifications : "actor_id"
   users ||--o{ notifications : "recipient_id"
   documents ||--o{ post_documents : "document_id"
@@ -129,8 +144,6 @@ erDiagram
   courses |o--o{ posts : "course_id"
   users |o--o{ posts : "hidden_by"
   posts ||--o{ post_summaries : "post_id"
-  users ||--o{ profile_views : "profile_id"
-  users ||--o{ profile_views : "viewer_id"
   users ||--o{ push_subscriptions : "user_id"
   posts ||--o{ saved_posts : "post_id"
   users ||--o{ saved_posts : "user_id"
@@ -144,14 +157,22 @@ erDiagram
   study_sets ||--o{ study_items : "set_id"
   users ||--o{ study_sets : "owner_id"
   messages |o--o{ study_sets : "source_message_id"
+  users |o--o{ unit_requests : "reviewed_by"
+  users ||--o{ unit_requests : "user_id"
   users ||--o{ user_blocks : "blocked_id"
   users ||--o{ user_blocks : "blocker_id"
   users ||--o{ user_connectors : "user_id"
   users ||--o{ user_events : "user_id"
   users ||--o{ user_follows : "follower_id"
   users ||--o{ user_follows : "following_id"
+  interest_fields ||--o{ user_interest_fields : "field_id"
+  users ||--o{ user_interest_fields : "user_id"
   users ||--o{ user_interests : "user_id"
-  academic_units |o--o{ users : "unit_id"
+  users ||--o{ user_reports : "reported_id"
+  users ||--o{ user_reports : "reporter_id"
+  users |o--o{ user_reports : "resolved_by"
+  interest_fields |o--o{ users : "interest_field_id"
+  universities |o--o{ users : "university_id"
   users |o--o{ user_sanctions : "admin_id"
   users |o--o{ user_sanctions : "revoked_by"
   users ||--o{ user_sanctions : "user_id"
@@ -169,8 +190,6 @@ erDiagram
     varchar password_hash
     varchar display_name
     varchar student_id
-    varchar faculty
-    varchar academic_year
     varchar avatar_url
     varchar bio
     user_role_enum role
@@ -179,18 +198,15 @@ erDiagram
     boolean is_onboarded
     text_array skills
     text_array interests
-    timestamptz created_at
-    timestamptz updated_at
-    varchar major
-    varchar class_name
     boolean is_verified
     timestamptz verified_at
     jsonb privacy_settings
     varchar location
     varchar website
-    varchar birth_date
+    date birth_date
     varchar banner_url
-    varchar school
+    timestamptz created_at
+    timestamptz updated_at
     varchar google_id
     varchar auth_provider
     boolean email_verified
@@ -198,17 +214,18 @@ erDiagram
     varchar verify_token_hash
     timestamptz verify_token_expires
     timestamptz verify_sent_at
-    varchar account_type
-    jsonb notification_settings
     varchar reset_token_hash
     timestamptz reset_token_expires
     timestamptz reset_sent_at
     timestamptz password_changed_at
+    varchar account_type
+    jsonb notification_settings
     tsvector search_tsv
     timestamptz suspended_at
     varchar suspended_reason
     timestamptz last_seen_at
     timestamptz interests_updated_at
+    jsonb preferences
     timestamptz suspended_until
     timestamptz restricted_at
     timestamptz restricted_until
@@ -216,10 +233,10 @@ erDiagram
     smallint risk_score
     jsonb risk_factors
     timestamptz risk_updated_at
-    jsonb preferences
-    boolean is_bot
     boolean must_reset_password
-    uuid unit_id FK
+    boolean is_bot
+    uuid university_id FK
+    uuid interest_field_id FK
   }
   user_follows {
     uuid follower_id PK,FK
@@ -264,7 +281,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_folders.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_sources.user_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `course_follows.user_id → users`, `course_suggestions.requester_id → users`, `course_suggestions.reviewer_id → users`, `document_collections.owner_id → users`, `document_ratings.user_id → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `users.unit_id → academic_units`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_group_members.assigned_by → users`, `admin_group_members.user_id → users`, `admin_groups.created_by → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_folders.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_sources.user_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `announcements.created_by → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_jobs.bot_id → users`, `bot_jobs.created_by → users`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.user_id → users`, `comment_reports.reporter_id → users`, `comment_reports.resolved_by → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `course_follows.user_id → users`, `course_lecturers.assigned_by → users`, `course_lecturers.user_id → users`, `course_suggestions.requester_id → users`, `course_suggestions.reviewer_id → users`, `document_collections.owner_id → users`, `document_ratings.user_id → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `moderation_events.reviewed_by → users`, `moderation_events.user_id → users`, `moderation_terms.created_by → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `unit_requests.reviewed_by → users`, `unit_requests.user_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interest_fields.user_id → users`, `user_interests.user_id → users`, `user_reports.reported_id → users`, `user_reports.reporter_id → users`, `user_reports.resolved_by → users`, `users.interest_field_id → interest_fields`, `users.university_id → universities`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -369,7 +386,7 @@ erDiagram
   posts ||--o{ saved_posts : "post_id"
 ```
 
-Liên kết ra ngoài nhóm: `bot_feed_items.post_id → posts`, `comment_documents.comment_id → comments`, `comment_reactions.comment_id → comments`, `comments.author_id → users`, `news_articles.post_id → posts`, `post_documents.post_id → posts`, `post_embeddings.post_id → posts`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.community_id → communities`, `posts.course_id → courses`, `posts.hidden_by → users`, `post_summaries.post_id → posts`, `saved_posts.user_id → users`
+Liên kết ra ngoài nhóm: `bot_feed_items.post_id → posts`, `bot_job_handled.comment_id → comments`, `bot_job_posts.post_id → posts`, `comment_documents.comment_id → comments`, `comment_reactions.comment_id → comments`, `comment_reports.comment_id → comments`, `comments.author_id → users`, `post_documents.post_id → posts`, `post_embeddings.post_id → posts`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.community_id → communities`, `posts.course_id → courses`, `posts.hidden_by → users`, `post_summaries.post_id → posts`, `saved_posts.user_id → users`
 
 ## 4. Communities
 
@@ -404,37 +421,47 @@ Liên kết ra ngoài nhóm: `community_members.user_id → users`, `posts.commu
 
 ```mermaid
 erDiagram
-  faculties {
+  universities {
     uuid id PK
     varchar code UK
     varchar name
-    varchar short_name
-    text description
-    varchar logo_url
-    varchar dean_name
-    varchar office_location
-    timestamptz created_at
-    timestamptz updated_at
-  }
-  academic_units {
-    uuid id PK
-    varchar code UK
-    uuid parent_id FK
-    varchar type
-    varchar name
-    varchar short_name
     integer sort_order
     boolean is_active
     timestamptz created_at
     timestamptz updated_at
+  }
+  interest_fields {
+    uuid id PK
+    varchar code UK
+    varchar name
+    integer sort_order
+    boolean is_active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  unit_requests {
+    uuid id PK
+    uuid user_id FK
+    varchar kind
+    varchar name
+    varchar status
+    uuid resolved_id
+    varchar reject_reason
+    uuid reviewed_by FK
+    timestamptz reviewed_at
+    timestamptz created_at
+  }
+  user_interest_fields {
+    uuid user_id PK,FK
+    uuid field_id PK,FK
+    smallint position
+    timestamptz created_at
   }
   courses {
     uuid id PK
     varchar code UK
     varchar name
     integer credits
-    uuid faculty_id FK
-    varchar faculty_code
     text description
     varchar syllabus_url
     numeric rating_avg
@@ -443,6 +470,7 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
     tsvector search_tsv
+    uuid interest_field_id FK
   }
   documents {
     uuid id PK
@@ -522,7 +550,6 @@ erDiagram
     uuid requester_id FK
     varchar name
     varchar code
-    varchar faculty_code
     integer credits
     varchar note
     varchar status
@@ -531,6 +558,7 @@ erDiagram
     uuid course_id FK
     timestamptz created_at
     timestamptz reviewed_at
+    uuid interest_field_id FK
   }
   document_ratings {
     uuid document_id PK,FK
@@ -593,11 +621,11 @@ erDiagram
     text_array tags
     timestamptz created_at
   }
-  academic_units ||--o{ academic_units : "parent_id"
   documents ||--o{ comment_documents : "document_id"
   courses ||--o{ course_follows : "course_id"
-  faculties ||--o{ courses : "faculty_id"
+  interest_fields ||--o{ courses : "interest_field_id"
   courses ||--o{ course_suggestions : "course_id"
+  interest_fields ||--o{ course_suggestions : "interest_field_id"
   documents ||--o{ document_chunks : "document_id"
   document_collections ||--o{ document_collection_items : "collection_id"
   documents ||--o{ document_collection_items : "document_id"
@@ -608,9 +636,10 @@ erDiagram
   documents ||--o{ post_documents : "document_id"
   study_groups ||--o{ study_group_members : "group_id"
   courses ||--o{ study_groups : "course_id"
+  interest_fields ||--o{ user_interest_fields : "field_id"
 ```
 
-Liên kết ra ngoài nhóm: `comment_documents.comment_id → comments`, `conversations.study_group_id → study_groups`, `course_follows.user_id → users`, `course_suggestions.requester_id → users`, `course_suggestions.reviewer_id → users`, `document_collections.owner_id → users`, `document_ratings.user_id → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `post_documents.post_id → posts`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `users.unit_id → academic_units`
+Liên kết ra ngoài nhóm: `comment_documents.comment_id → comments`, `conversations.study_group_id → study_groups`, `course_follows.user_id → users`, `course_lecturers.course_id → courses`, `course_suggestions.requester_id → users`, `course_suggestions.reviewer_id → users`, `document_collections.owner_id → users`, `document_ratings.user_id → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `post_documents.post_id → posts`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `unit_requests.reviewed_by → users`, `unit_requests.user_id → users`, `user_interest_fields.user_id → users`, `users.interest_field_id → interest_fields`, `users.university_id → universities`
 
 ## 6. Personalization
 
@@ -648,6 +677,21 @@ erDiagram
     text target_id
     jsonb details
     timestamptz created_at
+  }
+  admin_group_members {
+    uuid group_id PK,FK
+    uuid user_id PK,FK
+    uuid assigned_by FK
+    timestamptz created_at
+  }
+  admin_groups {
+    uuid id PK
+    varchar name UK
+    varchar description
+    text_array permissions
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
   }
   admin_saved_views {
     bigint id PK
@@ -817,6 +861,22 @@ erDiagram
     timestamptz created_at
     timestamptz updated_at
   }
+  announcements {
+    uuid id PK
+    varchar title
+    text message
+    varchar link
+    jsonb audience
+    boolean send_in_app
+    boolean banner
+    timestamptz banner_until
+    varchar status
+    timestamptz scheduled_at
+    timestamptz sent_at
+    integer recipients_count
+    uuid created_by FK
+    timestamptz created_at
+  }
   bot_activity {
     bigint id PK
     text bot_username
@@ -866,6 +926,35 @@ erDiagram
     text topic
     jsonb verdict
   }
+  bot_job_handled {
+    uuid comment_id PK,FK
+    uuid job_id FK
+    boolean replied
+    boolean reacted
+    text error
+    timestamptz handled_at
+  }
+  bot_job_posts {
+    bigint id PK
+    uuid job_id FK
+    jsonb data
+    character content_hash
+    timestamptz scheduled_at
+    varchar status
+    text error
+    uuid post_id FK
+    timestamptz posted_at
+  }
+  bot_jobs {
+    uuid id PK
+    varchar name
+    uuid bot_id FK
+    boolean auto_reply
+    boolean auto_react
+    varchar status
+    uuid created_by FK
+    timestamptz created_at
+  }
   bot_profiles {
     uuid user_id PK,FK
     boolean enabled
@@ -881,7 +970,6 @@ erDiagram
     uuid updated_by FK
     timestamptz updated_at
     text tone
-    text major
     text soul
   }
   bot_topics {
@@ -894,6 +982,18 @@ erDiagram
   comment_reactions {
     uuid comment_id PK,FK
     uuid user_id PK,FK
+    timestamptz created_at
+  }
+  comment_reports {
+    uuid id PK
+    uuid comment_id FK
+    uuid reporter_id FK
+    varchar reason
+    text details
+    varchar status
+    varchar resolution
+    uuid resolved_by FK
+    timestamptz resolved_at
     timestamptz created_at
   }
   conversation_members {
@@ -921,6 +1021,12 @@ erDiagram
     text ai_summary
     bigint ai_summary_upto
     uuid ai_folder_id FK
+  }
+  course_lecturers {
+    uuid course_id PK,FK
+    uuid user_id PK,FK
+    uuid assigned_by FK
+    timestamptz created_at
   }
   deleted_records {
     bigint id PK
@@ -964,40 +1070,30 @@ erDiagram
     text name PK
     timestamptz applied_at
   }
-  news_articles {
+  moderation_events {
     uuid id PK
-    integer source_id FK
-    text source_name
-    text source_url UK
-    text title
-    text summary
-    text impact
-    text category
-    text status
-    timestamptz published_at
-    uuid post_id FK
-    text posted_by
-    timestamptz posted_at
+    uuid user_id FK
+    varchar surface
+    varchar action
+    smallint tier
+    varchar reason
+    jsonb scores
+    text_array matched_terms
+    text content
+    boolean enforced
+    varchar target_type
+    uuid target_id
+    varchar review_status
+    uuid reviewed_by FK
+    timestamptz reviewed_at
     timestamptz created_at
   }
-  news_crawler_config {
-    integer id PK
-    boolean auto_post
-    boolean telegram_enabled
-    text telegram_bot_token
-    text telegram_chat_id
-    text default_bot
-    text ai_model
-    timestamptz updated_at
-  }
-  news_sources {
-    integer id PK
-    text name
-    text url UK
-    text category
-    boolean enabled
-    timestamptz last_run_at
-    integer items_count
+  moderation_terms {
+    uuid id PK
+    varchar term
+    varchar severity
+    varchar note
+    uuid created_by FK
     timestamptz created_at
   }
   post_embeddings {
@@ -1013,15 +1109,6 @@ erDiagram
     text summary
     varchar model
     timestamptz created_at
-  }
-  profile_views {
-    bigint id PK
-    uuid profile_id FK,UK
-    uuid viewer_id FK,UK
-    timestamp viewed_hour UK
-    integer views
-    timestamptz first_at
-    timestamptz last_at
   }
   push_subscriptions {
     uuid id PK
@@ -1098,6 +1185,18 @@ erDiagram
     timestamptz last_used_at
     varchar last_error
   }
+  user_reports {
+    uuid id PK
+    uuid reported_id FK
+    uuid reporter_id FK
+    varchar reason
+    text details
+    varchar status
+    varchar resolution
+    uuid resolved_by FK
+    timestamptz resolved_at
+    timestamptz created_at
+  }
   user_sanctions {
     bigint id PK
     uuid user_id FK
@@ -1125,6 +1224,7 @@ erDiagram
     varchar city
     boolean unusual
   }
+  admin_groups ||--o{ admin_group_members : "group_id"
   messages ||--o{ ai_feedback : "message_id"
   messages ||--o{ ai_memories : "source_message_id"
   study_sets ||--o{ ai_memories : "study_set_id"
@@ -1135,6 +1235,8 @@ erDiagram
   conversations ||--o{ ai_tasks : "conversation_id"
   ai_skills ||--o{ ai_tasks : "skill_id"
   conversations ||--o{ ai_thread_shares : "conversation_id"
+  bot_jobs ||--o{ bot_job_handled : "job_id"
+  bot_jobs ||--o{ bot_job_posts : "job_id"
   conversations ||--o{ conversation_members : "conversation_id"
   ai_folders ||--o{ conversations : "ai_folder_id"
   conversations ||--o{ message_mentions : "conversation_id"
@@ -1142,11 +1244,10 @@ erDiagram
   messages ||--o{ message_reactions : "message_id"
   conversations ||--o{ messages : "conversation_id"
   messages ||--o{ messages : "reply_to_id"
-  news_sources ||--o{ news_articles : "source_id"
   study_items ||--o{ study_events : "item_id"
   study_sets ||--o{ study_events : "set_id"
   study_sets ||--o{ study_items : "set_id"
   messages ||--o{ study_sets : "source_message_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_folders.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_sources.user_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_feed_items.post_id → posts`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.comment_id → comments`, `comment_reactions.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `news_articles.post_id → posts`, `post_embeddings.post_id → posts`, `post_summaries.post_id → posts`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `study_events.user_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_group_members.assigned_by → users`, `admin_group_members.user_id → users`, `admin_groups.created_by → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_folders.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_sources.user_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `announcements.created_by → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_feed_items.post_id → posts`, `bot_job_handled.comment_id → comments`, `bot_job_posts.post_id → posts`, `bot_jobs.bot_id → users`, `bot_jobs.created_by → users`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.comment_id → comments`, `comment_reactions.user_id → users`, `comment_reports.comment_id → comments`, `comment_reports.reporter_id → users`, `comment_reports.resolved_by → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `conversations.study_group_id → study_groups`, `course_lecturers.assigned_by → users`, `course_lecturers.course_id → courses`, `course_lecturers.user_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `moderation_events.reviewed_by → users`, `moderation_events.user_id → users`, `moderation_terms.created_by → users`, `post_embeddings.post_id → posts`, `post_summaries.post_id → posts`, `push_subscriptions.user_id → users`, `study_events.user_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_reports.reported_id → users`, `user_reports.reporter_id → users`, `user_reports.resolved_by → users`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`

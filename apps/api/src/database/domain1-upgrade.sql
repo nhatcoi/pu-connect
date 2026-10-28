@@ -2,9 +2,6 @@
 -- Bổ sung Chuyên ngành, Lớp sinh hoạt, Xác thực tích xanh và Cài đặt riêng tư
 
 -- 1. Bổ sung các cột mới vào bảng users
-ALTER TABLE users ADD COLUMN IF NOT EXISTS school VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS major VARCHAR(100);
-ALTER TABLE users ADD COLUMN IF NOT EXISTS class_name VARCHAR(50);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS privacy_settings JSONB DEFAULT '{
@@ -19,9 +16,6 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS banner_url VARCHAR(500);
 
 -- 2. Đánh chỉ mục tối ưu tìm kiếm theo sinh viên
-CREATE INDEX IF NOT EXISTS idx_users_school ON users(school);
-CREATE INDEX IF NOT EXISTS idx_users_major ON users(major);
-CREATE INDEX IF NOT EXISTS idx_users_class ON users(class_name);
 CREATE INDEX IF NOT EXISTS idx_users_is_verified ON users(is_verified);
 
 -- Lưu ý: tích xanh KHÔNG cấp ở đây nữa (migration này chạy mỗi lần deploy).

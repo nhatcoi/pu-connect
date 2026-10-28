@@ -9,7 +9,6 @@ CREATE INDEX IF NOT EXISTS idx_users_human_last_seen ON users (last_seen_at DESC
 CREATE INDEX IF NOT EXISTS idx_users_human_reputation ON users (reputation_points DESC) WHERE account_type = 'human';
 CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);
 CREATE INDEX IF NOT EXISTS idx_users_suspended ON users (suspended_at DESC) WHERE status = 'suspended';
-CREATE INDEX IF NOT EXISTS idx_users_faculty ON users (faculty);
 
 -- 2. Tìm kiếm email / mã SV không dấu (trigram; tên + username đã có idx_users_name_trgm)
 CREATE INDEX IF NOT EXISTS idx_users_email_trgm ON users USING gin (lower(email) gin_trgm_ops);
