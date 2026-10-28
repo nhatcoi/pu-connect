@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PU Connector Documentation — Tài liệu Kỹ thuật Hệ thống</title>
+    <meta name="description" content="Tài liệu kiến trúc, đặc tả API, sơ đồ hệ thống và hướng dẫn phát triển PU Connector — Mạng xã hội học thuật Phenikaa University." />
+    <link rel="icon" type="image/svg+xml" href="/brand/pu-mark.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Áp theme trước khi render (tránh nháy màu)
+      ;(function () {
+        try {
+          var t = localStorage.getItem('puc-docs-theme') || 'system'
+          var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) document.documentElement.classList.add('dark')
+        } catch (e) {}
+      })()
+    </script>
+  </head>
+  <body class="antialiased bg-background text-foreground selection:bg-primary selection:text-primary-foreground min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

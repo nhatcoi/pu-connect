@@ -40,7 +40,7 @@ dist
 apps/web/cache
 
 # Temporary & artifacts
-index.html
+/index.html
 *.skill
 
 # IDE & tool configs
