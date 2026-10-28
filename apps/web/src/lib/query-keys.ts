@@ -36,6 +36,11 @@ export const queryKeys = {
   // Kho tài liệu: kho chung (trang Tài liệu), chi tiết, kho cá nhân (gốc 'library' ⇒ lưu / bỏ lưu làm mới chung)
   documentBrowse: (filters: Record<string, string | undefined>) => ['document-browse', filters] as const,
   documentDetail: (id: string) => ['document-detail', id] as const,
+  coursePath: (course: string) => ['course-path', course.toUpperCase()] as const,
+  collectionsAll: ['collections'] as const,
+  collections: (scope: string) => ['collections', 'list', scope] as const,
+  collection: (id: string) => ['collections', 'detail', id] as const,
+  collectionMembership: (documentId: string) => ['collections', 'membership', documentId] as const,
   libraryAll: ['library'] as const,
   library: (scope: string, folder?: string, q?: string) => ['library', 'items', scope, folder ?? null, q ?? ''] as const,
   libraryFolders: ['library', 'folders'] as const,

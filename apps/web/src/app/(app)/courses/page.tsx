@@ -8,17 +8,19 @@ import { Button } from '@/components/ui/button'
 import { CourseCatalog } from '@/components/courses/course-catalog'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
 import { DocumentsBrowse } from '@/components/documents/documents-browse'
+import { CollectionsPanel } from '@/components/documents/collections-panel'
 import { LibraryPanel } from '@/components/documents/library-panel'
 import { useAppStore } from '@/store'
 
-type Tab = 'courses' | 'documents' | 'library'
+type Tab = 'courses' | 'documents' | 'collections' | 'library'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'courses', label: 'Môn học' },
   { id: 'documents', label: 'Tài liệu' },
+  { id: 'collections', label: 'Bộ sưu tập' },
   { id: 'library', label: 'Kho của tôi' }
 ]
 
-// /courses — "Môn học & Tài liệu": danh mục môn, kho tài liệu chung, kho cá nhân (?tab=documents|library)
+// /courses — "Môn học & Tài liệu": danh mục môn, kho tài liệu chung, kho cá nhân (?tab=documents|collections|library)
 export default function CoursesPage() {
   return (
     <Suspense fallback={<CourseListSkeleton />}>
@@ -50,6 +52,7 @@ function CoursesHub() {
       <div className="pt-2">
         {tab === 'courses' && <CourseCatalog />}
         {tab === 'documents' && <DocumentsBrowse />}
+        {tab === 'collections' && <CollectionsPanel />}
         {tab === 'library' && <LibraryPanel />}
       </div>
     </>

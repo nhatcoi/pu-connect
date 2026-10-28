@@ -9,8 +9,9 @@ import { cn } from '@/lib/utils'
 import { DocumentThumbnail } from './document-thumbnail'
 import { formatDocSize } from './document-format'
 import { SaveDocumentButton } from './save-document-button'
+import { RatingBadge } from './star-rating'
 
-type CardDocument = AttachedDocument & { ownerName?: string; saveCount?: number }
+type CardDocument = AttachedDocument & { ownerName?: string; saveCount?: number; ratingAvg?: number; ratingCount?: number }
 
 // Thẻ tài liệu kiểu kệ sách: ảnh trang đầu, loại + môn, tên, lượt tải / lưu. Bấm ⇒ trang chi tiết
 export function DocumentCard({ document: doc, className }: { document: CardDocument; className?: string }) {
@@ -27,6 +28,7 @@ export function DocumentCard({ document: doc, className }: { document: CardDocum
           <p className="mt-auto flex items-center gap-2.5 pt-1 text-[11px] text-muted-foreground">
             {doc.academicYear && <span>{doc.academicYear}</span>}
             {formatDocSize(doc.fileSize) && <span>{formatDocSize(doc.fileSize)}</span>}
+            <RatingBadge avg={doc.ratingAvg ?? 0} count={doc.ratingCount ?? 0} className="text-[11px]" />
             <span className="ml-auto inline-flex items-center gap-0.5">
               <Download className="h-3 w-3" /> {doc.downloadCount}
             </span>

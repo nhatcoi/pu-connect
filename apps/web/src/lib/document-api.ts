@@ -1,6 +1,12 @@
 import type {
   AttachedDocument,
   ClassifyDocumentInput,
+  CollectionMembership,
+  CoursePath,
+  DocumentCollection,
+  DocumentCollectionDetail,
+  DocumentCollectionInput,
+  DocumentRatingResult,
   DocumentDetail,
   DocumentListPage,
   DocumentSuggestion,
@@ -133,4 +139,47 @@ export async function renameLibraryFolder(id: string, name: string): Promise<voi
 
 export async function deleteLibraryFolder(id: string): Promise<void> {
   await apiClient(`/library/folders/${id}`, { method: 'DELETE' })
+}
+
+// ── Đánh giá, lộ trình môn, bộ sưu tập ──
+export async function rateDocument(id: string, rating: number): Promise<DocumentRatingResult> {
+  return (await apiClient<Envelope<DocumentRatingResult>>(`/documents/${id}/rating`, { method: 'PUT', body: JSON.stringify({ rating }) })).data
+}
+
+export async function unrateDocument(id: string): Promise<DocumentRatingResult> {
+  return (await apiClient<Envelope<DocumentRatingResult>>(`/documents/${id}/rating`, { method: 'DELETE' })).data
+}
+
+export async function getCoursePath(course: string): Promise<CoursePath> {
+  return (await apiClient<Envelope<CoursePath>>(`/documents/course-path${qs({ course })}`)).data
+}
+
+export type CollectionScope = 'mine' | 'public'
+
+export async function listCollections(scope: CollectionScope, cursor?: string | null): Promise<{ data: DocumentCollection[]; nextCursor: string | null }> {
+  return (await apiClient<Envelope<{ data: DocumentCollection[]; nextCursor: string | null }>>(`/collections${qs({ scope, cursor: cursor ?? undefined })}`)).data
+}
+
+export async function getCollection(id: string): Promise<DocumentCollectionDetail> {
+  return (await apiClient<Envelope<DocumentCollectionDetail>>(`/collections/${id}`)).data
+}
+
+export async function collectionMembership(documentId: string): Promise<CollectionMembership[]> {
+  return (await apiClient<Envelope<CollectionMembership[]>>(`/collections/membership${qs({ documentId })}`)).data
+}
+
+export async function createCollection(body: DocumentCollectionInput): Promise<DocumentCollection> {
+  return (await apiClient<Envelope<DocumentCollection>>('/collections', { method: 'POST', body: JSON.stringify(body) })).data
+}
+
+export async function updateCollection(id: string, body: DocumentCollectionInput): Promise<DocumentCollection> {
+  return (await apiClient<Envelope<DocumentCollection>>(`/collections/${id}`, { method: 'PATCH', body: JSON.stringify(body) })).data
+}
+
+export async function deleteCollection(id: string): Promise<void> {
+  await apiClient(`/collections/${id}`, { method: 'DELETE' })
+}
+
+export async function setCollectionDocument(id: string, documentId: string, add: boolean): Promise<void> {
+  await apiClient(`/collections/${id}/documents/${documentId}`, { method: add ? 'PUT' : 'DELETE' })
 }

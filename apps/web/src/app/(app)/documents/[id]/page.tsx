@@ -14,11 +14,15 @@ import { PageAside } from '@/components/layout/page-aside'
 import { PreviewBody } from '@/components/viewer/preview-body'
 import { CourseSelect } from '@/components/documents/course-select'
 import { DocumentRow } from '@/components/documents/document-row'
+import { AddToCollection } from '@/components/documents/add-to-collection'
 import { SaveDocumentButton } from '@/components/documents/save-document-button'
+import { RatingBadge, StarInput } from '@/components/documents/star-rating'
 import { StudyWithAi } from '@/components/documents/study-with-ai'
 import { docExt, docMetaLine } from '@/components/documents/document-format'
 import { useCourses } from '@/hooks/use-course'
 import { useDocumentDetail } from '@/hooks/use-document-library'
+import { useRateDocument } from '@/hooks/use-document-community'
+import { useAppStore } from '@/store'
 import { errorMessage } from '@/lib/api-client'
 import { classifyDocument, deleteDocument, openDocument } from '@/lib/document-api'
 import { queryKeys } from '@/lib/query-keys'
@@ -65,6 +69,8 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const user = useAppStore((s) => s.user)
+  const rate = useRateDocument(doc.id)
   const meta = docMetaLine(doc)
   const fileName = doc.originalName || `${doc.title}.${docExt(doc).toLowerCase()}`
 
@@ -122,6 +128,7 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
         {doc.description && <p className="text-sm leading-relaxed text-muted-foreground">{doc.description}</p>}
 
         <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+          <RatingBadge avg={doc.ratingAvg} count={doc.ratingCount} className="text-[11px]" />
           <span className="inline-flex items-center gap-1">
             <Eye className="h-3.5 w-3.5" /> {doc.viewCount} lượt xem
           </span>
@@ -138,6 +145,7 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
             <Download className="h-3.5 w-3.5" /> Tải về
           </Button>
           <SaveDocumentButton documentId={doc.id} withLabel />
+          <AddToCollection documentId={doc.id} />
           <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs" onClick={handleShare}>
             <Share2 className="h-3.5 w-3.5" /> Chia sẻ
           </Button>
@@ -152,6 +160,13 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
             </>
           )}
         </div>
+
+        {!doc.isMine && doc.visibility === 'public' && (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>{doc.myRating ? 'Đánh giá của bạn' : 'Tài liệu này có hữu ích không?'}</span>
+            <StarInput value={doc.myRating} disabled={rate.isPending} onChange={(v) => (user ? rate.mutate(v) : toast.info('Đăng nhập để đánh giá tài liệu'))} />
+          </div>
+        )}
 
         {doc.isMine && editing && <ClassifyForm doc={doc} onDone={() => setEditing(false)} />}
       </div>

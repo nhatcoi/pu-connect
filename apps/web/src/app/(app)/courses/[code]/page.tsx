@@ -8,6 +8,7 @@ import { toast } from 'sonner'
 import { AcademicPostComposer } from '@/components/social/composer/academic-post-composer'
 import { PostCard } from '@/components/social/post-card'
 import { VirtualPostList } from '@/components/social/virtual-post-list'
+import { CoursePath } from '@/components/documents/course-path'
 import { DocumentsBrowse } from '@/components/documents/documents-browse'
 import { StudyGroupCard } from '@/components/social/study-group-card'
 import { SlidingTabs } from '@/components/navigation/sliding-tabs'
@@ -23,7 +24,7 @@ import { CardListSkeleton, CourseHeaderSkeleton } from '@/components/skeletons/c
 import { FeedSkeleton, PostListSkeleton } from '@/components/skeletons/feed-skeleton'
 import { LoadingRegion } from '@/components/ui/skeleton'
 
-type Tab = 'posts' | 'documents' | 'groups'
+type Tab = 'posts' | 'path' | 'documents' | 'groups'
 
 // Trang học phần: thảo luận & hỏi đáp, tài liệu/đề thi, nhóm học theo mã môn
 export default function CoursePage({ params }: { params: Promise<{ code: string }> }) {
@@ -116,6 +117,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
               onChange={setTab}
               items={[
                 { id: 'posts', label: 'Thảo luận & Hỏi đáp' },
+                { id: 'path', label: 'Lộ trình học' },
                 { id: 'documents', label: 'Tài liệu & Đề thi', badge: overview.stats.documentCount || undefined },
                 { id: 'groups', label: 'Nhóm học', badge: c.groups.length || undefined }
               ]}
@@ -131,7 +133,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
                 {c.postsLoading ? (
                   <FeedSkeleton count={2} className="px-2 sm:px-0" />
                 ) : c.posts.length === 0 ? (
-                  <Empty icon={MessagesSquare} title="Chưa có thảo luận nào" hint={`Đặt câu hỏi đầu tiên cho ${course.code}!`} />
+                  <Empty icon={MessagesSquare} title="Chưa có thảo luận nào" hint={`Đặt câu hỏi đầu tiên cho ${course.name}!`} />
                 ) : (
                   <div className="px-2 sm:px-0">
                     <VirtualPostList posts={c.posts} cacheKey={`course:${course.code}`} renderPost={(post) => <PostCard post={post} variant="card" />} />
@@ -147,6 +149,8 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
               </aside>
             </div>
           )}
+
+          {tab === 'path' && <CoursePath courseCode={course.code} onSeeAll={() => setTab('documents')} />}
 
           {tab === 'documents' && <DocumentsBrowse courseCode={course.code} />}
 
@@ -219,6 +223,13 @@ function TopDocuments({ courseCode, onSeeAll, onUpload }: { courseCode: string; 
   )
 }
 
+// Huy hiệu theo số đóng góp (bài + tài liệu) cho môn này
+function contributorTier(n: number) {
+  if (n >= 10) return 'Chuyên gia môn'
+  if (n >= 3) return 'Tích cực'
+  return 'Mới đóng góp'
+}
+
 function Contributors({ users }: { users: { id: string; username: string; displayName: string; avatarUrl?: string | null; contributions: number }[] }) {
   return (
     <section className="rounded-xl border border-border bg-card">
@@ -237,7 +248,10 @@ function Contributors({ users }: { users: { id: string; username: string; displa
                 <p className="truncate text-xs font-semibold group-hover:underline">{u.displayName}</p>
                 <p className="text-[11px] text-muted-foreground">@{u.username}</p>
               </div>
-              <span className="text-[11px] tabular-nums text-muted-foreground">{u.contributions}</span>
+              <span className="flex flex-col items-end">
+                <span className="text-[11px] tabular-nums text-muted-foreground">{u.contributions}</span>
+                <span className="text-[10px] font-semibold text-primary">{contributorTier(u.contributions)}</span>
+              </span>
             </Link>
           ))}
         </div>
