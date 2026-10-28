@@ -118,7 +118,8 @@ export function buildRows({ headers, data }: Pick<Sheet, 'headers' | 'data'>, ma
     .filter((r) => r.some((v) => text(v)))
     .map((r) => {
       const images = list(cell(r, 'images'), /[\n|;]+/)
-      const tags = list(cell(r, 'tags'), /[,\n|;]+/).map((t) => t.replace(/^#/, ''))
+      // API nhận tối đa 10 thẻ: bài sưu tầm hay có nhiều hơn nên giữ 10 thẻ đầu thay vì loại cả dòng
+      const tags = list(cell(r, 'tags'), /[,\n|;]+/).map((t) => t.replace(/^#/, '')).slice(0, 10)
       const options = list(cell(r, 'pollOptions'), /[\n|;]+/)
       return {
         content: text(cell(r, 'content')),
