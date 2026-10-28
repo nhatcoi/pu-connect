@@ -29,6 +29,15 @@ export function useAiSources(threadId?: string) {
     },
     onError
   })
+  // Giữ tệp vào Kho của tôi (tài liệu riêng tư); làm mới các danh sách của Kho
+  const saveToLibrary = useMutation({
+    mutationFn: (id: string) => chatApi.saveAiSourceToLibrary(id),
+    onSuccess: ({ created }) => {
+      void qc.invalidateQueries({ queryKey: queryKeys.libraryAll })
+      toast.success(created ? 'Đã lưu vào Kho của tôi' : 'Tệp này đã có trong Kho của tôi')
+    },
+    onError
+  })
   // Bật / tắt cho N7AI đọc: cập nhật ngay trên danh sách, lỗi thì hoàn lại
   const setInContext = useMutation({
     mutationFn: ({ id, inContext }: { id: string; inContext: boolean }) => chatApi.patchAiSource(id, { inContext }),
@@ -47,7 +56,7 @@ export function useAiSources(threadId?: string) {
     onSuccess: (_, id) => qc.setQueryData<AiSource[]>(key, (list) => (list ?? []).filter((s) => s.id !== id)),
     onError
   })
-  return { sources: query.data ?? [], isPending: query.isPending, add, addCollection, remove, setInContext }
+  return { sources: query.data ?? [], isPending: query.isPending, add, addCollection, saveToLibrary, remove, setInContext }
 }
 
 // Nội dung chữ của tài liệu (văn bản dán, trang web, YouTube)

@@ -12,25 +12,25 @@ import type { SourceAdder } from './use-add-sources'
 
 type Tab = 'collections' | 'saved'
 
-// Thêm tài liệu từ kho: cả bộ sưu tập (của mình hoặc công khai) hoặc tài liệu đã lưu; tệp vẫn nằm ở kho, không sao chép
+// Thêm tài liệu từ Kho của tôi (tab chính) hoặc cả bộ sưu tập (của mình hoặc công khai); tệp vẫn nằm ở kho, không sao chép
 export function DocumentPickerDialog({ open, onOpenChange, adder }: { open: boolean; onOpenChange: (open: boolean) => void; adder: SourceAdder }) {
-  const [tab, setTab] = useState<Tab>('collections')
+  const [tab, setTab] = useState<Tab>('saved')
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg gap-4 p-5">
         <DialogHeader>
-          <DialogTitle className="text-base">Thêm từ kho tài liệu</DialogTitle>
-          <DialogDescription className="text-xs">Chọn bộ sưu tập hoặc tài liệu đã lưu để N7AI đọc cùng bạn.</DialogDescription>
+          <DialogTitle className="text-base">Thêm từ Kho của tôi</DialogTitle>
+          <DialogDescription className="text-xs">Chọn tài liệu trong Kho của tôi hoặc cả bộ sưu tập để N7AI đọc cùng bạn.</DialogDescription>
         </DialogHeader>
         <div className="flex gap-1.5">
-          {(['collections', 'saved'] as const).map((t) => (
+          {(['saved', 'collections'] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setTab(t)}
               className={cn('h-8 cursor-pointer rounded-full px-3 text-xs font-medium transition-colors', tab === t ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground')}
             >
-              {t === 'collections' ? 'Bộ sưu tập' : 'Tài liệu đã lưu'}
+              {t === 'collections' ? 'Bộ sưu tập' : 'Kho của tôi'}
             </button>
           ))}
         </div>

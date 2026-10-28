@@ -143,6 +143,7 @@ export const chatApi = {
   aiSourceContent: (id: string) => unwrap(apiClient<Envelope<{ content: string | null }>>(`/ai/sources/${id}/content`)),
   addAiSource: (input: AiSourceInput) => unwrap(apiClient<Envelope<AiSource>>('/ai/sources', json('POST', input))),
   addAiSourceCollection: (input: AiSourceCollectionInput) => unwrap(apiClient<Envelope<AiSourceCollectionResult>>('/ai/sources/collection', json('POST', input))),
+  saveAiSourceToLibrary: (id: string) => unwrap(apiClient<Envelope<{ documentId: string; created: boolean }>>(`/ai/sources/${id}/to-library`, json('POST'))),
   patchAiSource: (id: string, input: AiSourcePatch) => unwrap(apiClient<Envelope<AiSource>>(`/ai/sources/${id}`, json('PATCH', input))),
   deleteAiSource: (id: string) => apiClient(`/ai/sources/${id}`, json('DELETE')),
   // Chia sẻ công khai qua link (ảnh chụp tới tin cuối)

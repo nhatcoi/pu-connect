@@ -33,6 +33,11 @@ export class AiSourcesController {
     return this.sources.addCollection(requireUserId(req), body)
   }
 
+  @Post(':id/to-library')
+  saveToLibrary(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.sources.saveToLibrary(requireUserId(req), id)
+  }
+
   @Patch(':id')
   patch(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiSourcePatchBodySchema)) body: AiSourcePatch, @Req() req: Request) {
     return this.sources.patch(requireUserId(req), id, body)

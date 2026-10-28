@@ -111,4 +111,21 @@ describe('N7AI sources (e2e)', () => {
     expect(res).toEqual({ added: 1, skipped: 1 }) // tài liệu riêng không thấy; zip chưa đọc được ⇒ bỏ qua
     await agent.post('/api/ai/sources/collection').send({ collectionId: await col('private') }).expect(404) // bộ riêng của người khác
   })
+  it('giữ tệp N7AI vào Kho của tôi: tạo tài liệu riêng tư một lần · văn bản không lưu được · tệp từ kho chỉ lưu tham chiếu', async () => {
+    const user = await createUser(db)
+    const agent = await loginAgent(app, user)
+    const file = (await agent.post('/api/ai/sources').send({ type: 'file', file: { key: `chat/${user.id}/1_abc_de-cuong.pdf`, name: 'de-cuong.pdf', size: 1234, mime: PDF } }).expect(201)).body.data
+
+    const saved = (await agent.post(`/api/ai/sources/${file.id}/to-library`).expect(201)).body.data
+    expect(saved.created).toBe(true)
+    const doc = (await db.query(`SELECT visibility, status, owner_id FROM documents WHERE id = $1`, [saved.documentId])).rows[0]
+    expect(doc).toMatchObject({ visibility: 'private', status: 'published', owner_id: user.id })
+    expect((await db.query(`SELECT 1 FROM library_items WHERE owner_id = $1 AND document_id = $2`, [user.id, saved.documentId])).rowCount).toBe(1)
+    expect((await agent.post(`/api/ai/sources/${file.id}/to-library`).expect(201)).body.data).toEqual({ documentId: saved.documentId, created: false }) // lưu lại ⇒ không trùng
+
+    const text = (await agent.post('/api/ai/sources').send({ type: 'text', content: 'ghi chú' }).expect(201)).body.data
+    await agent.post(`/api/ai/sources/${text.id}/to-library`).expect(400)
+    const other = await loginAgent(app, await createUser(db))
+    await other.post(`/api/ai/sources/${file.id}/to-library`).expect(404)
+  })
 })

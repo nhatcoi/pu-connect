@@ -16,7 +16,7 @@ const toFileInput = (a: Pick<ChatAttachment, 'key' | 'name' | 'size' | 'mime'>) 
 
 // Thêm tài liệu vào 1 cuộc trò chuyện (threadId) hoặc thư viện (bỏ trống): tải tệp lên R2 rồi đăng ký, kèm tiến trình
 export function useAddSources(threadId?: string) {
-  const { sources, isPending, add, addCollection, remove, setInContext } = useAiSources(threadId)
+  const { sources, isPending, add, addCollection, saveToLibrary, remove, setInContext } = useAiSources(threadId)
   const [uploading, setUploading] = useState<UploadingFile[]>([])
   const { mutateAsync } = add
 
@@ -53,7 +53,7 @@ export function useAddSources(threadId?: string) {
   const addCollectionById = addCollection.mutateAsync
   const copyFrom = useCallback((source: AiSource) => (threadId ? mutateAsync({ type: 'copy', threadId, sourceId: source.id }) : Promise.resolve(source)), [mutateAsync, threadId])
 
-  return { sources, isPending, uploading, adding: add.isPending, addFiles, addAttachment, addText, addLink, addDocument, addCollection: addCollectionById, copyFrom, remove: remove.mutate, setInContext: setInContext.mutate }
+  return { sources, isPending, uploading, adding: add.isPending, addFiles, addAttachment, addText, addLink, addDocument, addCollection: addCollectionById, copyFrom, saveToLibrary: saveToLibrary.mutate, remove: remove.mutate, setInContext: setInContext.mutate }
 }
 
 export type SourceAdder = ReturnType<typeof useAddSources>

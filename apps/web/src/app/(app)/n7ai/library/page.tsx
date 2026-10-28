@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import { FolderOpen, Loader2 } from 'lucide-react'
 import type { AiLibraryKind } from '@pu/schemas'
 import { DropZone } from '@/components/chat/composer/drop-zone'
@@ -10,6 +11,7 @@ import { AddSourceMenu } from '@/components/n7ai/sources/add-source-menu'
 import { useAddSources } from '@/components/n7ai/sources/use-add-sources'
 import { N7AiPageHeader } from '@/components/n7ai/n7ai-page-header'
 import { LibraryFiles, LibraryImages, LibraryStudy } from '@/components/n7ai/library/library-items'
+import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAiLibrary } from '@/hooks/chat'
 import { cn } from '@/lib/utils'
@@ -46,7 +48,14 @@ export default function N7AiLibraryPage() {
       <N7AiPageHeader
         title="Thư viện"
         description="Tài liệu, ảnh và học liệu trong các cuộc trò chuyện với N7AI"
-        actions={<AddSourceMenu adder={adder} inThread={false} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button asChild variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs">
+              <Link href="/documents?tab=library">Kho của tôi</Link>
+            </Button>
+            <AddSourceMenu adder={adder} inThread={false} />
+          </div>
+        }
       />
       <div className="flex gap-1.5 px-3 pb-3 sm:px-1" role="tablist">
         {TABS.map((t) => (
@@ -70,7 +79,7 @@ export default function N7AiLibraryPage() {
           <section className="mb-4 space-y-1.5">
             <p className="px-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Đã thêm vào thư viện</p>
             {added.map((s) => (
-              <DocRow key={s.id} entry={entryFromSource(s)} onRemove={() => adder.remove(s.id)} />
+              <DocRow key={s.id} entry={entryFromSource(s)} onRemove={() => adder.remove(s.id)} onSaveToKho={s.kind === 'file' ? () => adder.saveToLibrary(s.id) : undefined} />
             ))}
           </section>
         )}

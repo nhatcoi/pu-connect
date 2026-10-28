@@ -3,6 +3,7 @@ import type { AiSource, AiSourceCollectionInput, AiSourceCollectionResult, AiSou
 import { DatabaseService } from '../../../../database/database.service'
 import { WebReaderService } from '../../../ai/connectors/web-reader.service'
 import { isExtractableMime } from '../../../ai/doc-text'
+import { formatFromMime } from '../../../documents/attached-document.sql'
 import { StorageService } from '../../../storage/storage.service'
 import { AI_SOURCE_TEXT_MAX } from '../../dto/chat.dto'
 import { type SourceText } from './source-context'
@@ -98,6 +99,50 @@ export class AiSourcesService {
       }
     }
     return { added, skipped: docs.rows.length - added }
+  }
+
+  // Giữ tệp của N7AI vào Kho của tôi: tài liệu riêng tư trỏ cùng tệp trên R2 (không sao chép); đã có thì trả lại bản cũ
+  async saveToLibrary(userId: string, id: string): Promise<{ documentId: string; created: boolean }> {
+    const res = await this.db.query(`SELECT kind, title, url, file_key, mime, size, meta FROM ai_sources WHERE id = $1 AND user_id = $2`, [id, userId])
+    const src = res.rows[0]
+    if (!src) throw new NotFoundException('Không tìm thấy tài liệu')
+    if (src.kind !== 'file') throw new BadRequestException('Chỉ lưu được tệp vào Kho. Văn bản, liên kết và video ở lại N7AI.')
+    return this.db.transaction(async (client) => {
+      const known = src.meta?.documentId
+      // Tệp vốn lấy từ kho (công khai hoặc của mình) ⇒ chỉ lưu tham chiếu; không thì tìm bản của mình cùng tệp
+      const existing = await client.query(
+        `SELECT id FROM documents WHERE status = 'published' AND ((id::text = $2 AND (visibility = 'public' OR owner_id = $1)) OR (owner_id = $1 AND file_url = $3)) LIMIT 1`,
+        [userId, known ?? '', src.url]
+      )
+      let documentId: string | undefined = existing.rows[0]?.id
+      const created = !documentId
+      if (!documentId) {
+        const title = src.title.replace(/\.[A-Za-z0-9]{1,8}$/, '').replace(/_+/g, ' ').trim().slice(0, 200) || src.title
+        const fileUrl = await this.copyToDocuments(userId, src)
+        const ins = await client.query(
+          `INSERT INTO documents (owner_id, title, original_name, type, file_url, file_size, mime_type, visibility, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'private', 'published') RETURNING id`,
+          [userId, title, src.title.slice(0, 255), formatFromMime(src.mime), fileUrl, src.size ?? 0, src.mime]
+        )
+        documentId = ins.rows[0].id as string
+        await client.query(`UPDATE ai_sources SET meta = COALESCE(meta, '{}'::jsonb) || jsonb_build_object('documentId', $2::text) WHERE id = $1`, [id, documentId])
+      }
+      await client.query(`INSERT INTO library_items (owner_id, document_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`, [userId, documentId])
+      return { documentId, created }
+    })
+  }
+
+  // Bản của Kho nằm dưới documents/ để xóa cuộc trò chuyện (dọn tệp chat/) không làm mất tài liệu; không chép được ⇒ dùng lại URL cũ
+  private async copyToDocuments(userId: string, src: { url: string; file_key: string; title: string; mime: string }): Promise<string> {
+    try {
+      const object = await this.storage.readObject(src.file_key)
+      if (!object) return src.url
+      const chunks: Buffer[] = []
+      for await (const chunk of object.body) chunks.push(Buffer.from(chunk))
+      return (await this.storage.uploadFile(Buffer.concat(chunks), src.title, src.mime, 'documents', userId)).url
+    } catch {
+      return src.url
+    }
   }
 
   // Bật / tắt tài liệu cho N7AI đọc (không xóa gì)

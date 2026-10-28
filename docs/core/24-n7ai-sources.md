@@ -87,6 +87,7 @@ Bấm tài liệu YouTube ở panel ⇒ trình phát nhúng (`youtube-nocookie`)
 - **Hỏi N7AI** (nút trên trang tài liệu `/documents/[id]` và bộ sưu tập `/collections/[id]`): tạo cuộc trò chuyện mới, thêm tài liệu hoặc cả bộ rồi mở `/n7ai/<id>`. Chưa đăng nhập ⇒ ẩn nút.
 - **Từ kho tài liệu** (menu Thêm tài liệu): tab Bộ sưu tập (của mình + công khai, nút "Thêm cả bộ") và tab Tài liệu đã lưu (chọn nhiều).
 - **Gợi ý mở đầu từ bộ sưu tập**: bộ của mình mới cập nhật gần nhất và có tài liệu ⇒ gợi ý đầu tiên ("Quiz 5 câu ôn tập từ bộ «…»"). `AiSuggestion.collection` có giá trị ⇒ bấm gợi ý thì thêm bộ vào thread hiện tại trước khi điền / gửi câu hỏi.
+- **Kho của tôi và Thư viện N7AI giữ tách** (quyết định 2026-10-28): Kho = tài liệu học tập có môn, chia sẻ được; thư viện N7AI = đồ làm việc tạm (ảnh, ghi chú, link, video). Chỉ nối một chiều: Kho → N7AI (các mục trên, "Từ Kho của tôi" đứng đầu menu và là tab mặc định) và N7AI → Kho bằng nút **Lưu vào Kho** (`POST /ai/sources/:id/to-library`): chỉ tệp; tạo tài liệu riêng tư, **chép** tệp sang `documents/<user>/…` (xóa cuộc trò chuyện dọn `chat/…` không làm mất bản trong Kho; không chép được ⇒ dùng lại URL cũ), ghi `meta.documentId` để lưu lại không trùng. Tệp vốn từ kho chỉ lưu tham chiếu. Văn bản / link / video ở lại N7AI. Trang thư viện có lối tắt **Kho của tôi**.
 - Quyền: tài liệu `status = published` và (`public` hoặc của mình); bộ `public` hoặc của mình. Tệp không phải R2 của hệ thống bị từ chối.
 
 ## Kéo thả

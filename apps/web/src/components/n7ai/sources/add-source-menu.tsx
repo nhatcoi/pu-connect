@@ -38,6 +38,9 @@ export function AddSourceMenu({ adder, inThread, className }: { adder: SourceAdd
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
+          <DropdownMenuItem onSelect={() => setDialog('kho')}>
+            <FolderOpen className="h-4 w-4" /> Từ Kho của tôi
+          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => fileInput.current?.click()}>
             <Upload className="h-4 w-4" /> Tải tệp lên
           </DropdownMenuItem>
@@ -46,9 +49,6 @@ export function AddSourceMenu({ adder, inThread, className }: { adder: SourceAdd
               <Library className="h-4 w-4" /> Từ thư viện
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onSelect={() => setDialog('kho')}>
-            <FolderOpen className="h-4 w-4" /> Từ kho tài liệu
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setDialog('text')}>
             <ClipboardPaste className="h-4 w-4" /> Dán văn bản
