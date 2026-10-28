@@ -12,6 +12,7 @@ import { useQuoteStore } from '../quotes/quote-store'
 import { AiModelPicker } from '../ai/ai-model-picker'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { useQueryClient } from '@tanstack/react-query'
+import { SourceChips } from '@/components/n7ai/sources/source-chips'
 import { attachSuggestionCollection } from '@/components/n7ai/sources/ask-n7ai'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
 import { messagePreview } from '../utils'
@@ -284,6 +285,7 @@ export function Composer({
             onClearResearch={() => setResearch(false)}
           />
         )}
+        {isAi && !editing && <SourceChips threadId={conversationId} />}
         <AttachmentTray files={uploads.files} onRemove={uploads.remove} />
         <div className="flex items-end gap-1.5">
           {!editing && (
