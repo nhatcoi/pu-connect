@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { createHash } from 'crypto'
-import type { AttachedDocument, DocCategory, DocumentDetail, DocumentItem, DocumentListItem, DocumentListPage, DocumentSort, DocumentUploadResult } from '@pu/schemas'
+import type { AttachedDocument, CoursePath, DocCategory, DocumentDetail, DocumentRatingResult, DocumentItem, DocumentListItem, DocumentListPage, DocumentSort, DocumentUploadResult } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { setTrashActor } from '../../database/trash'
 import { RagIndexQueue } from '../ai/rag/rag-index.processor'
@@ -12,9 +12,11 @@ import type { ClassifyDocumentInput } from '@pu/schemas'
 const DRAFT_TTL_HOURS = 24
 const DRAFT_SWEEP_MS = 60 * 60 * 1000
 const BROWSE_PAGE_SIZE = 20
+// Thứ tự "lộ trình" ôn một môn
+const PATH_ORDER: DocCategory[] = ['syllabus', 'textbook', 'lecture_slide', 'exercise', 'midterm_exam', 'final_exam', 'sample_project', 'scientific_paper', 'internship_report', 'other']
 
 // Cột thẻ danh sách kho chung (alias d, c, u = users người đăng)
-const LIST_COLUMNS = `${ATTACHED_DOCUMENT_COLUMNS}, d.owner_id, d.save_count, d.created_at, u.username AS owner_username, u.display_name AS owner_name`
+const LIST_COLUMNS = `${ATTACHED_DOCUMENT_COLUMNS}, d.owner_id, d.save_count, d.rating_avg, d.rating_count, d.created_at, u.username AS owner_username, u.display_name AS owner_name`
 
 export type BrowseQuery = { course?: string; category?: DocCategory; q?: string; sort?: DocumentSort; cursor?: string }
 
@@ -107,7 +109,8 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
   async detail(id: string, viewerId?: string | null): Promise<DocumentDetail> {
     const res = await this.db.query(
       `SELECT ${LIST_COLUMNS}, d.description, d.original_name, d.view_count,
-              EXISTS (SELECT 1 FROM library_items li WHERE li.document_id = d.id AND li.owner_id::text = $2) AS is_saved
+              EXISTS (SELECT 1 FROM library_items li WHERE li.document_id = d.id AND li.owner_id::text = $2) AS is_saved,
+              (SELECT r.rating FROM document_ratings r WHERE r.document_id = d.id AND r.user_id::text = $2) AS my_rating
        FROM documents d LEFT JOIN courses c ON c.id = d.course_id JOIN users u ON u.id = d.owner_id
        WHERE d.id = $1 AND d.status = 'published' AND (d.visibility = 'public' OR d.owner_id::text = $2)`,
       [id, viewerId ?? '']
@@ -143,6 +146,7 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
       viewCount: (row.view_count || 0) + (isMine ? 0 : 1),
       isMine,
       isSaved: !!row.is_saved,
+      myRating: row.my_rating ?? null,
       posts: posts.rows.map((p) => ({
         id: p.id,
         title: p.title ?? null,
@@ -152,6 +156,70 @@ export class DocumentsService implements OnModuleInit, OnModuleDestroy {
       })),
       related: related.rows.map(toListItem)
     }
+  }
+
+  // Lộ trình học của môn: tài liệu trong kho xếp theo thứ tự ôn (mỗi bước 4 tài liệu nổi bật) + đề thi gom theo năm học
+  async coursePath(course: string): Promise<CoursePath> {
+    const ref = course.trim()
+    const where = `d.listed AND (UPPER(c.code) = UPPER($1) OR c.id::text = $1)`
+    const [stepRows, examRows] = await Promise.all([
+      this.db.query(
+        `SELECT * FROM (
+           SELECT ${LIST_COLUMNS}, count(*) OVER (PARTITION BY d.doc_type) AS cat_count,
+                  row_number() OVER (PARTITION BY d.doc_type ORDER BY d.rating_avg DESC, d.download_count + d.save_count * 2 DESC, d.created_at DESC) AS rn
+           FROM documents d JOIN courses c ON c.id = d.course_id JOIN users u ON u.id = d.owner_id
+           WHERE ${where}
+         ) t WHERE rn <= 4 ORDER BY rn`,
+        [ref]
+      ),
+      this.db.query(
+        `SELECT ${LIST_COLUMNS}
+         FROM documents d JOIN courses c ON c.id = d.course_id JOIN users u ON u.id = d.owner_id
+         WHERE ${where} AND d.doc_type IN ('midterm_exam', 'final_exam') AND d.academic_year IS NOT NULL
+         ORDER BY d.academic_year DESC, d.doc_type, d.created_at DESC LIMIT 60`,
+        [ref]
+      )
+    ])
+    const steps = PATH_ORDER.map((category) => {
+      const rows = stepRows.rows.filter((r) => r.doc_type === category)
+      return { category, count: Number(rows[0]?.cat_count) || 0, items: rows.map(toListItem) }
+    }).filter((step) => step.count > 0)
+    const byYear = new Map<string, DocumentListItem[]>()
+    for (const row of examRows.rows) byYear.set(row.academic_year, [...(byYear.get(row.academic_year) ?? []), toListItem(row)])
+    return { steps, exams: [...byYear].map(([academicYear, documents]) => ({ academicYear, documents })) }
+  }
+
+  // Chấm 1–5 sao (đổi được): không tự chấm tài liệu của mình, chỉ chấm tài liệu công khai đã đăng; tính lại trung bình
+  async rate(id: string, userId: string, rating: number): Promise<DocumentRatingResult> {
+    await this.assertRatable(id, userId)
+    await this.db.query(
+      `INSERT INTO document_ratings (document_id, user_id, rating) VALUES ($1, $2, $3)
+       ON CONFLICT (document_id, user_id) DO UPDATE SET rating = EXCLUDED.rating, updated_at = NOW()`,
+      [id, userId, rating]
+    )
+    return this.recomputeRating(id, rating)
+  }
+
+  async unrate(id: string, userId: string): Promise<DocumentRatingResult> {
+    await this.assertRatable(id, userId)
+    await this.db.query(`DELETE FROM document_ratings WHERE document_id = $1 AND user_id = $2`, [id, userId])
+    return this.recomputeRating(id, null)
+  }
+
+  private async assertRatable(id: string, userId: string) {
+    const res = await this.db.query(`SELECT owner_id FROM documents WHERE id = $1 AND status = 'published' AND visibility = 'public'`, [id])
+    if (!res.rows[0]) throw new NotFoundException('Không tìm thấy tài liệu')
+    if (res.rows[0].owner_id === userId) throw new ForbiddenException('Bạn không thể tự đánh giá tài liệu của mình')
+  }
+
+  private async recomputeRating(id: string, myRating: number | null): Promise<DocumentRatingResult> {
+    const res = await this.db.query(
+      `UPDATE documents d SET rating_count = s.n, rating_avg = s.a
+       FROM (SELECT count(*)::int AS n, COALESCE(round(avg(rating), 2), 0) AS a FROM document_ratings WHERE document_id = $1) s
+       WHERE d.id = $1 RETURNING d.rating_count, d.rating_avg`,
+      [id]
+    )
+    return { ratingAvg: Number(res.rows[0].rating_avg) || 0, ratingCount: res.rows[0].rating_count || 0, myRating }
   }
 
   // Chủ tài liệu xóa tài liệu đã đăng: gỡ khỏi bài / bình luận / kho của mọi người (bản ghi vào thùng rác 30 ngày)
@@ -344,6 +412,8 @@ function toListItem(row: any): DocumentListItem {
     ownerUsername: row.owner_username,
     ownerName: row.owner_name,
     saveCount: row.save_count || 0,
+    ratingAvg: Number(row.rating_avg) || 0,
+    ratingCount: row.rating_count || 0,
     createdAt: new Date(row.created_at).toISOString()
   }
 }

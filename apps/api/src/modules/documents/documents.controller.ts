@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import type { Request } from 'express'
 import 'multer'
@@ -16,6 +16,9 @@ import {
   ClassifyDocumentSchema,
   type CreateDocumentBody,
   CreateDocumentBodySchema,
+  CoursePathQuerySchema,
+  type RateDocumentBody,
+  RateDocumentSchema,
   type DocumentStudyDraftBody,
   DocumentStudyDraftSchema,
   WriteDocumentPostSchema
@@ -56,6 +59,25 @@ export class DocumentsController {
   @UseGuards(AuthenticatedGuard)
   async writePost(@Body(new ZodValidationPipe(WriteDocumentPostSchema)) body: WriteDocumentPostInput, @Req() req: Request) {
     return this.documentAi.writePost(requireUserId(req), body)
+  }
+
+  // Lộ trình học của môn: tài liệu theo thứ tự ôn + đề thi theo năm học — khai báo trước ':id'
+  @Get('course-path')
+  async coursePath(@Query(new ZodValidationPipe(CoursePathQuerySchema)) query: { course: string }) {
+    return this.documentsService.coursePath(query.course)
+  }
+
+  // Chấm sao tài liệu (đổi được) / bỏ chấm
+  @Put(':id/rating')
+  @UseGuards(AuthenticatedGuard)
+  async rate(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(RateDocumentSchema)) body: RateDocumentBody, @Req() req: Request) {
+    return this.documentsService.rate(id, requireUserId(req), body.rating)
+  }
+
+  @Delete(':id/rating')
+  @UseGuards(AuthenticatedGuard)
+  async unrate(@Param('id', ParseUUIDPipe) id: string, @Req() req: Request) {
+    return this.documentsService.unrate(id, requireUserId(req))
   }
 
   @Get(':id/detail')

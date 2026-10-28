@@ -67,6 +67,7 @@ export const MIGRATIONS = [
   'document-library-personal-upgrade.sql',
   'course-follows-upgrade.sql',
   'course-suggestions-upgrade.sql',
+  'document-community-upgrade.sql',
   'post-manage-upgrade.sql'
 ]
 

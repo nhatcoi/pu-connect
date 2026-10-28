@@ -18,7 +18,7 @@ const DOMAINS = {
   'Identity & Social graph': ['users', 'user_follows', 'user_sessions', 'mentions', 'notifications'],
   'Feed & Q&A': ['posts', 'comments', 'post_reactions', 'saved_posts', 'post_reports', 'post_polls', 'post_poll_options', 'post_poll_votes'],
   Communities: ['communities', 'community_members'],
-  Academic: ['faculties', 'academic_units', 'courses', 'documents', 'document_chunks', 'post_documents', 'comment_documents', 'library_items', 'library_folders', 'course_follows', 'course_suggestions', 'study_groups', 'study_group_members', 'campus_events'],
+  Academic: ['faculties', 'academic_units', 'courses', 'documents', 'document_chunks', 'post_documents', 'comment_documents', 'library_items', 'library_folders', 'course_follows', 'course_suggestions', 'document_ratings', 'document_collections', 'document_collection_items', 'study_groups', 'study_group_members', 'campus_events'],
   Personalization: ['user_events', 'user_interests']
 }
 

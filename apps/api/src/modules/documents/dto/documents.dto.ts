@@ -91,3 +91,24 @@ export type BrowseDocumentsQuery = z.infer<typeof BrowseDocumentsSchema>
 // POST /documents/:id/study-draft
 export const DocumentStudyDraftSchema = z.object({ kind: z.enum(['flashcards', 'quiz']) })
 export type DocumentStudyDraftBody = z.infer<typeof DocumentStudyDraftSchema>
+
+// PUT /documents/:id/rating
+export const RateDocumentSchema = z.object({ rating: z.number().int().min(1).max(5) })
+export type RateDocumentBody = z.infer<typeof RateDocumentSchema>
+
+// GET /documents/course-path?course=
+export const CoursePathQuerySchema = z.object({ course: z.string().trim().min(1).max(40) })
+
+// ── Bộ sưu tập ──
+export const CollectionBodySchema = z.object({
+  title: z.string().trim().min(1, { message: 'Tên bộ sưu tập không được để trống' }).max(120),
+  description: z.string().trim().max(500).nullish(),
+  visibility: z.enum(['public', 'private']).default('public')
+})
+export type CollectionBody = z.infer<typeof CollectionBodySchema>
+
+export const CollectionListQuerySchema = z.object({
+  scope: z.enum(['mine', 'public']).default('public'),
+  cursor: z.string().regex(/^\d{1,5}$/).optional()
+})
+export const CollectionMembershipQuerySchema = z.object({ documentId: z.string().uuid() })

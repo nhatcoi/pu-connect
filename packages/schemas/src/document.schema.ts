@@ -162,6 +162,9 @@ export interface DocumentListItem extends AttachedDocument {
   ownerUsername: string
   ownerName: string
   saveCount: number
+  // Đánh giá sao trung bình (0 khi chưa có) + số lượt
+  ratingAvg: number
+  ratingCount: number
   createdAt: string
 }
 
@@ -177,6 +180,8 @@ export interface DocumentDetail extends DocumentListItem {
   viewCount: number
   isMine: boolean
   isSaved: boolean
+  // Số sao mình đã chấm (null = chưa chấm)
+  myRating: number | null
   // Bài viết công khai có đính kèm tài liệu này (mới nhất trước)
   posts: { id: string; title: string | null; excerpt: string; authorName: string; createdAt: string }[]
   related: DocumentListItem[]
@@ -186,4 +191,59 @@ export interface DocumentDetail extends DocumentListItem {
 export interface DocumentSummary {
   documentId: string
   summary: string
+}
+
+// PUT /documents/:id/rating { rating: 1–5 } / DELETE: kết quả sau khi tính lại
+export interface DocumentRatingResult {
+  ratingAvg: number
+  ratingCount: number
+  myRating: number | null
+}
+
+// ── Bộ sưu tập tài liệu ──
+export interface DocumentCollection {
+  id: string
+  title: string
+  description: string | null
+  visibility: 'public' | 'private'
+  ownerId: string
+  ownerName: string
+  ownerUsername: string
+  isMine: boolean
+  itemCount: number
+  // Tối đa 3 tài liệu đầu để vẽ ảnh bìa
+  covers: AttachedDocument[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface DocumentCollectionDetail extends DocumentCollection {
+  documents: DocumentListItem[]
+}
+
+// POST/PATCH /collections
+export interface DocumentCollectionInput {
+  title: string
+  description?: string | null
+  visibility: 'public' | 'private'
+}
+
+// GET /collections/mine?documentId=: bộ của mình + đã chứa tài liệu đó chưa (menu "Thêm vào bộ sưu tập")
+export interface CollectionMembership {
+  id: string
+  title: string
+  visibility: 'public' | 'private'
+  hasDocument: boolean
+}
+
+// ── Lộ trình học của môn: tài liệu xếp theo thứ tự ôn (đề cương → giáo trình → slide → bài tập → đề thi) ──
+export interface CoursePathStep {
+  category: DocCategory
+  count: number
+  items: DocumentListItem[]
+}
+export interface CoursePath {
+  steps: CoursePathStep[]
+  // Đề giữa kỳ / cuối kỳ gom theo năm học (mới trước)
+  exams: { academicYear: string; documents: DocumentListItem[] }[]
 }
