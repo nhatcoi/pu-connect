@@ -1,14 +1,15 @@
 'use client'
 
 import React, { useRef, useState } from 'react'
-import { ClipboardPaste, Library, Link2, Loader2, Plus, Upload } from 'lucide-react'
+import { ClipboardPaste, FolderOpen, Library, Link2, Loader2, Plus, Upload } from 'lucide-react'
 import { SOURCE_ACCEPT } from '@/components/chat/composer/attachment-files'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { DocumentPickerDialog } from './document-picker-dialog'
 import { AddLinkDialog, AddTextDialog, LibraryPickerDialog } from './source-dialogs'
 import type { SourceAdder } from './use-add-sources'
 
-type Dialog = 'text' | 'link' | 'library' | null
+type Dialog = 'text' | 'link' | 'library' | 'kho' | null
 
 // Nút "Thêm tài liệu": tải tệp lên · từ thư viện (chỉ trong cuộc trò chuyện) · dán văn bản · liên kết web / YouTube
 export function AddSourceMenu({ adder, inThread, className }: { adder: SourceAdder; inThread: boolean; className?: string }) {
@@ -45,6 +46,9 @@ export function AddSourceMenu({ adder, inThread, className }: { adder: SourceAdd
               <Library className="h-4 w-4" /> Từ thư viện
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem onSelect={() => setDialog('kho')}>
+            <FolderOpen className="h-4 w-4" /> Từ kho tài liệu
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onSelect={() => setDialog('text')}>
             <ClipboardPaste className="h-4 w-4" /> Dán văn bản
@@ -56,6 +60,7 @@ export function AddSourceMenu({ adder, inThread, className }: { adder: SourceAdd
       </DropdownMenu>
       <AddTextDialog open={dialog === 'text'} onOpenChange={close} adder={adder} />
       <AddLinkDialog open={dialog === 'link'} onOpenChange={close} adder={adder} />
+      {dialog === 'kho' && <DocumentPickerDialog open onOpenChange={close} adder={adder} />}
       {/* Chỉ dựng khi mở: hộp thoại này tải thư viện */}
       {inThread && dialog === 'library' && <LibraryPickerDialog open onOpenChange={close} adder={adder} />}
     </>

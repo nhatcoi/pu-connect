@@ -107,6 +107,25 @@ describe('Cá nhân hóa (e2e)', () => {
     await agentAdmin.get('/api/admin/users/00000000-0000-0000-0000-000000000000/insight').expect(404)
   })
 
+  it('gợi ý từ bộ sưu tập của mình: đứng đầu, kèm id bộ; bộ rỗng hoặc của người khác thì không', async () => {
+    const owner = await createUser(db)
+    const other = await createUser(db)
+    const agent = await loginAgent(app, owner)
+    const otherAgent = await loginAgent(app, other)
+    const empty = (await db.query(`INSERT INTO document_collections (owner_id, title) VALUES ($1, 'Bộ rỗng') RETURNING id`, [owner.id])).rows[0].id
+    expect((await agent.get('/api/ai/suggestions?mode=quiz').expect(200)).body.data.items.some((i: { collection?: unknown }) => i.collection)).toBe(false)
+
+    const doc = (await db.query(`INSERT INTO documents (owner_id, title, file_url, status) VALUES ($1, 'GT1', 'https://x/y.pdf', 'published') RETURNING id`, [owner.id])).rows[0].id
+    const col = (await db.query(`INSERT INTO document_collections (owner_id, title) VALUES ($1, 'Ôn thi Giải tích') RETURNING id`, [owner.id])).rows[0].id
+    await db.query(`INSERT INTO document_collection_items (collection_id, document_id) VALUES ($1, $2)`, [col, doc])
+
+    const first = (await agent.get('/api/ai/suggestions?mode=quiz').expect(200)).body.data.items[0]
+    expect(first).toMatchObject({ mode: 'quiz', collection: { id: col, title: 'Ôn thi Giải tích' } })
+    expect(first.text).toContain('Ôn thi Giải tích')
+    expect(first.collection.id).not.toBe(empty)
+    expect((await otherAgent.get('/api/ai/suggestions?mode=quiz').expect(200)).body.data.items.some((i: { collection?: unknown }) => i.collection)).toBe(false)
+  })
+
   it('từ chối sự kiện không hợp lệ', async () => {
     const a = await createUser(db)
     const agentA = await loginAgent(app, a)

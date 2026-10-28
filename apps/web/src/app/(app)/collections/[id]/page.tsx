@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Switch } from '@/components/ui/switch'
+import { AskN7aiButton } from '@/components/n7ai/sources/ask-n7ai'
 import { DocumentCard } from '@/components/documents/document-card'
 import { useCollection, useCollectionActions } from '@/hooks/use-document-community'
 import { formatRelativeTime } from '@/lib/utils'
@@ -116,6 +117,7 @@ function CollectionView({ collection: c }: { collection: DocumentCollectionDetai
           >
             <Share2 className="h-3.5 w-3.5" /> Chia sẻ
           </Button>
+          {c.documents.length > 0 && <AskN7aiButton target={{ type: 'collection', collectionId: c.id }} label="Hỏi N7AI về bộ này" />}
           {c.isMine && (
             <>
               <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs" onClick={() => setEditing((v) => !v)}>

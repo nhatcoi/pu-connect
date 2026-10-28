@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils'
 import { useQuoteStore } from '../quotes/quote-store'
 import { AiModelPicker } from '../ai/ai-model-picker'
 import { AI_MODE_META } from '../ai/ai-modes'
+import { useQueryClient } from '@tanstack/react-query'
+import { attachSuggestionCollection } from '@/components/n7ai/sources/ask-n7ai'
 import { AiSuggestionPanel } from '../ai/ai-suggestion-panel'
 import { messagePreview } from '../utils'
 import { AiModeBar } from './ai-mode-bar'
@@ -213,9 +215,11 @@ export function Composer({
     typing.stop()
   }
 
+  const queryClient = useQueryClient()
   // Bấm gợi ý trong bảng ⇒ gửi ngay theo chế độ của gợi ý
-  const pickSuggestion = (s: AiSuggestion) => {
+  const pickSuggestion = async (s: AiSuggestion) => {
     trackSuggestionClick('panel', s)
+    await attachSuggestionCollection(queryClient, conversationId, s.collection)
     onSend({ content: s.text, aiMode: s.mode })
     setPanelOpen(false)
   }

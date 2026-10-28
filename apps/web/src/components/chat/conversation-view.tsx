@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AiMode, AiSuggestion } from '@pu/schemas'
@@ -10,6 +11,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PageAside } from '@/components/layout/page-aside'
 import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { chatApi, setActiveConversation, trackSuggestionClick, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
+import { attachSuggestionCollection } from '@/components/n7ai/sources/ask-n7ai'
 import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { useAppStore } from '@/store'
 import { AiWelcome } from './ai/ai-welcome'
@@ -51,6 +53,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
     return () => setActiveConversation(null)
   }, [id])
 
+  const queryClient = useQueryClient()
   const started = chat.messages.length > 0
   useEffect(() => {
     if (started) onStarted?.()
@@ -104,6 +107,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
   const pickStarter = (s: AiSuggestion) => {
     trackSuggestionClick('starter', s)
     setAiMode(s.mode)
+    void attachSuggestionCollection(queryClient, id, s.collection) // gợi ý từ bộ sưu tập ⇒ N7AI đọc bộ đó
     composer.current?.prefill(s.text)
   }
   const sendFollowUp = (text: string) => {

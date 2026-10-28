@@ -29,6 +29,7 @@ export interface AiSuggestion {
   mode: AiMode
   text: string
   topic: { kind: InterestKind; key: string } | null // null = gợi ý mặc định
+  collection?: { id: string; title: string } // gợi ý từ bộ sưu tập của mình: bấm ⇒ thêm bộ vào cuộc trò chuyện
 }
 
 export interface AiSuggestionsResponse {

@@ -709,7 +709,8 @@ Migration `personalization-upgrade.sql`:
 
 `điểm = Σ trọng số × 0.5^(tuổi_ngày / 14)` (nửa đời 14 ngày, chỉ xét 180 ngày). Tính lại: worker `personalization` (BullMQ job scheduler) mỗi giờ cho người hoạt động trong 24h có hồ sơ cũ > 1h (≤ 500 người/lượt); hoặc ngay khi xin gợi ý mà hồ sơ cũ > 6h.
 
-**Gợi ý N7AI** — `GET /api/ai/suggestions?mode=` → `{ personalized, items: [{ mode, text, topic }] }`: top **môn học** (bỏ trùng, ≤ 3) × mẫu câu theo chế độ (`ai-suggestions.templates.ts`); "Hỏi đáp" trộn Giải thích / Quiz / Flashcard / Lộ trình (ít môn thì dùng lại môn hàng đầu cho nhiều chế độ); thiếu thì bù gợi ý mặc định. Thẻ bài viết (`#anuong`…) và từ khóa tìm kiếm vẫn nằm trong hồ sơ để xếp bảng tin nhưng **không** thành gợi ý học: chúng là tín hiệu xã hội, ghép vào mẫu câu cho ra "Giải thích anuong". Web cache 10 phút/chế độ.
+**Gợi ý N7AI** — `GET /api/ai/suggestions?mode=` → `{ personalized, items: [{ mode, text, topic, collection? }] }`: top **môn học** (bỏ trùng, ≤ 3) × mẫu câu theo chế độ (`ai-suggestions.templates.ts`); "Hỏi đáp" trộn Giải thích / Quiz / Flashcard / Lộ trình (ít môn thì dùng lại môn hàng đầu cho nhiều chế độ); thiếu thì bù gợi ý mặc định. Thẻ bài viết (`#anuong`…) và từ khóa tìm kiếm vẫn nằm trong hồ sơ để xếp bảng tin nhưng **không** thành gợi ý học: chúng là tín hiệu xã hội, ghép vào mẫu câu cho ra "Giải thích anuong". Web cache 10 phút/chế độ.
+- Bộ sưu tập: bộ của mình mới cập nhật gần nhất (có ≥ 1 tài liệu) thành gợi ý đầu tiên, kèm `collection: {id, title}`; bấm ⇒ bộ được thêm vào cuộc trò chuyện (xem `24-n7ai-sources.md`).
 - Màn trống: thẻ gợi ý đổi theo chip chế độ đang chọn; bấm ⇒ điền sẵn để sửa.
 - Đang có tin: chọn chế độ ⇒ bảng gợi ý trên ô soạn (2 hàng chip), bấm ⇒ gửi ngay.
 - Bấm gợi ý ghi `ai_suggestion_click` ⇒ chủ đề đó mạnh lên (vòng phản hồi).

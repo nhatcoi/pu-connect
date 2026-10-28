@@ -8,7 +8,7 @@ Một cuộc trò chuyện N7AI (hoặc thư viện) có **tài liệu** để N
 
 | Loại | Cách thêm | Lưu |
 |---|---|---|
-| `file` | Tải lên, kéo thả, từ thư viện | Tệp trên R2 (`chat/<user>/…`), dòng `ai_sources` giữ `file_key` |
+| `file` | Tải lên, kéo thả, từ thư viện, từ kho tài liệu | Tệp trên R2 (`chat/<user>/…`), dòng `ai_sources` giữ `file_key`. Tệp từ kho (`documents/…`) không sao chép: `meta.documentId` trỏ về tài liệu gốc |
 | `text` | Dán văn bản (≤ 100.000 ký tự) | `content` |
 | `url` | Link trang web công khai | Chữ đã trích (≤ 100.000 ký tự) |
 | `youtube` | Link video có phụ đề | Phụ đề, gom đoạn ~30 giây kèm mốc `[mm:ss]` |
@@ -21,7 +21,8 @@ Một cuộc trò chuyện N7AI (hoặc thư viện) có **tài liệu** để N
 |---|---|---|
 | GET | `/ai/sources?threadId=` | Bỏ `threadId` ⇒ thư viện; thread không phải của mình ⇒ 404 |
 | GET | `/ai/sources/:id/content` | Chữ của `text` / `url` / `youtube` |
-| POST | `/ai/sources` | `{type:'file', file:{key,name,size,mime}}` · `{type:'text', title?, content}` · `{type:'link', url}` · `{type:'copy', threadId, sourceId}`; thêm `threadId` ⇒ vào thread, không có ⇒ thư viện |
+| POST | `/ai/sources/collection` | `{threadId?, collectionId}`: thêm cả bộ sưu tập (công khai hoặc của mình); trả `{added, skipped}`, bỏ qua tài liệu trùng / chưa đọc được / vượt giới hạn |
+| POST | `/ai/sources` | `{type:'file', file:{key,name,size,mime}}` · `{type:'text', title?, content}` · `{type:'link', url}` · `{type:'copy', threadId, sourceId}` · `{type:'document', documentId}` (tài liệu công khai hoặc của mình, đúng định dạng N7AI đọc được); thêm `threadId` ⇒ vào thread, không có ⇒ thư viện |
 | PATCH | `/ai/sources/:id` | `{inContext: boolean}`: tắt / bật cho N7AI đọc (không xóa); không phải của mình ⇒ 404 |
 | DELETE | `/ai/sources/:id` | Chỉ xóa dòng tài liệu, không xóa tệp trên R2 |
 
@@ -77,9 +78,16 @@ Bấm tài liệu YouTube ở panel ⇒ trình phát nhúng (`youtube-nocookie`)
 
 ## Giao diện
 
-- Panel phải, tab **Tài liệu**: danh sách = tài liệu đã thêm + tệp đã gửi trong tin nhắn; nút **Thêm tài liệu** (tải tệp · từ thư viện · dán văn bản · link web / YouTube); tài liệu đã thêm có nút bỏ. Bấm tệp ⇒ trình xem tệp; bấm tài liệu chữ ⇒ trình xem chữ (YouTube có mốc thời gian, mở trang gốc).
+- Panel phải, tab **Tài liệu**: danh sách = tài liệu đã thêm + tệp đã gửi trong tin nhắn; nút **Thêm tài liệu** (tải tệp · từ thư viện · từ kho tài liệu · dán văn bản · link web / YouTube); tài liệu đã thêm có nút bỏ. Bấm tệp ⇒ trình xem tệp; bấm tài liệu chữ ⇒ trình xem chữ (YouTube có mốc thời gian, mở trang gốc).
 - Tab **Công cụ**: chọn nguồn là cả cuộc trò chuyện hoặc một tài liệu bất kỳ.
-- Thư viện (`/n7ai/library`): nút **Thêm tài liệu** (không có "từ thư viện"), mục "Đã thêm vào thư viện".
+- Thư viện (`/n7ai/library`): nút **Thêm tài liệu** (không có "từ thư viện", có "từ kho tài liệu"), mục "Đã thêm vào thư viện".
+
+## Nối với kho tài liệu và bộ sưu tập
+
+- **Hỏi N7AI** (nút trên trang tài liệu `/documents/[id]` và bộ sưu tập `/collections/[id]`): tạo cuộc trò chuyện mới, thêm tài liệu hoặc cả bộ rồi mở `/n7ai/<id>`. Chưa đăng nhập ⇒ ẩn nút.
+- **Từ kho tài liệu** (menu Thêm tài liệu): tab Bộ sưu tập (của mình + công khai, nút "Thêm cả bộ") và tab Tài liệu đã lưu (chọn nhiều).
+- **Gợi ý mở đầu từ bộ sưu tập**: bộ của mình mới cập nhật gần nhất và có tài liệu ⇒ gợi ý đầu tiên ("Quiz 5 câu ôn tập từ bộ «…»"). `AiSuggestion.collection` có giá trị ⇒ bấm gợi ý thì thêm bộ vào thread hiện tại trước khi điền / gửi câu hỏi.
+- Quyền: tài liệu `status = published` và (`public` hoặc của mình); bộ `public` hoặc của mình. Tệp không phải R2 của hệ thống bị từ chối.
 
 ## Kéo thả
 

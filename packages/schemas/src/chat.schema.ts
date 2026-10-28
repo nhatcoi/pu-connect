@@ -329,6 +329,7 @@ export interface AiSourceMeta {
   auto?: boolean // phụ đề tự động (không phải do người làm video)
   author?: string
   seconds?: number // độ dài video
+  documentId?: string // tệp lấy từ kho tài liệu / bộ sưu tập
 }
 export interface AiSource {
   id: string
@@ -356,9 +357,17 @@ export const AiSourceInputSchema = z.discriminatedUnion('type', [
     content: z.string().trim().min(1, { message: 'Dán nội dung cần học' }).max(AI_SOURCE_TEXT_MAX, { message: 'Văn bản quá dài (tối đa 100.000 ký tự)' })
   }),
   z.object({ type: z.literal('link'), threadId: sourceThread, url: z.string().trim().url({ message: 'Nhập liên kết hợp lệ' }).max(2000) }),
-  z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() }) // thêm tài liệu thư viện vào cuộc trò chuyện
+  z.object({ type: z.literal('copy'), threadId: z.string().uuid(), sourceId: z.string().uuid() }), // thêm tài liệu thư viện vào cuộc trò chuyện
+  z.object({ type: z.literal('document'), threadId: sourceThread, documentId: z.string().uuid() }) // tài liệu trong kho (công khai hoặc của mình)
 ])
 export type AiSourceInput = z.infer<typeof AiSourceInputSchema>
+// Thêm cả bộ sưu tập: mỗi tài liệu đọc được thành một nguồn
+export const AiSourceCollectionSchema = z.object({ threadId: sourceThread, collectionId: z.string().uuid() })
+export type AiSourceCollectionInput = z.infer<typeof AiSourceCollectionSchema>
+export interface AiSourceCollectionResult {
+  added: number
+  skipped: number // trùng, định dạng chưa đọc được, hoặc vượt giới hạn
+}
 export const AiSourcePatchSchema = z.object({ inContext: z.boolean() })
 export type AiSourcePatch = z.infer<typeof AiSourcePatchSchema>
 // Lọc danh sách thread: 'all' (tìm kiếm) · 'root' (chưa vào thư mục) · id thư mục

@@ -15,6 +15,7 @@ import { PreviewBody } from '@/components/viewer/preview-body'
 import { CourseSelect } from '@/components/documents/course-select'
 import { DocumentRow } from '@/components/documents/document-row'
 import { AddToCollection } from '@/components/documents/add-to-collection'
+import { AskN7aiButton } from '@/components/n7ai/sources/ask-n7ai'
 import { SaveDocumentButton } from '@/components/documents/save-document-button'
 import { RatingBadge, StarInput } from '@/components/documents/star-rating'
 import { StudyWithAi } from '@/components/documents/study-with-ai'
@@ -145,6 +146,7 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
             <Download className="h-3.5 w-3.5" /> Tải về
           </Button>
           <SaveDocumentButton documentId={doc.id} withLabel />
+          <AskN7aiButton target={{ type: 'document', documentId: doc.id }} />
           <AddToCollection documentId={doc.id} />
           <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs" onClick={handleShare}>
             <Share2 className="h-3.5 w-3.5" /> Chia sẻ
