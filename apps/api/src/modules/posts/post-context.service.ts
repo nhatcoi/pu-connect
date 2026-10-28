@@ -48,7 +48,7 @@ export class PostContextService {
     )
     const p = post.rows[0]
     if (!p) return null
-    const blocked = `AND NOT ${blockExistsSql('$3::uuid', 'c.author_id')}`
+    const blocked = `AND c.hidden_at IS NULL AND NOT ${blockExistsSql('$3::uuid', 'c.author_id')}`
 
     const thread = await this.db.query(
       `WITH RECURSIVE up AS (

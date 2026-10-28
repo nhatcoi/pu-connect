@@ -55,7 +55,7 @@ export class PostThreadToolsService {
           const res = await this.db.query(
             `SELECT CASE WHEN c.is_anonymous THEN 'Ẩn danh' ELSE u.display_name END AS author, c.content, c.likes_count, c.is_solution, c.parent_id IS NOT NULL AS is_reply
              FROM comments c JOIN users u ON u.id = c.author_id
-             WHERE c.post_id = $1 AND NOT ${blockExistsSql('$2::uuid', 'c.author_id')}
+             WHERE c.post_id = $1 AND c.hidden_at IS NULL AND NOT ${blockExistsSql('$2::uuid', 'c.author_id')}
                AND NOT EXISTS (SELECT 1 FROM unnest($3::text[]) w WHERE NOT (immutable_unaccent(lower(c.content)) LIKE '%' || immutable_unaccent(w) || '%'))
              ORDER BY c.is_solution DESC, c.likes_count DESC, c.created_at DESC LIMIT $4`,
             [postId, askerId, terms, limit]

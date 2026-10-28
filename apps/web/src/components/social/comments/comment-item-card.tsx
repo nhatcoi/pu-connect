@@ -10,7 +10,7 @@ import { PostMediaGallery } from '../post-media-gallery'
 import { ReportPostDialog } from '../report-post-dialog'
 import { CommentComposer } from './comment-composer'
 import { PostDocumentList } from '../post-document-list'
-import { Heart, MessageSquare, CheckCircle2, Trash2, Check, Pencil, Flag } from 'lucide-react'
+import { Heart, MessageSquare, CheckCircle2, Trash2, Check, Pencil, Flag, Clock, ShieldX } from 'lucide-react'
 import { cn, formatRelativeTime } from '@/lib/utils'
 import type { CommentItem, MentionCandidate } from '@pu/schemas'
 import { useQueryClient } from '@tanstack/react-query'
@@ -54,6 +54,8 @@ export function CommentItemCard({
   const authorInitials = (comment.author?.displayName || comment.author?.username || 'PU').slice(0, 2).toUpperCase()
 
   const isMyComment = comment.isMine || currentUserId === comment.authorId
+  // Bình luận đang chờ admin duyệt / bị từ chối: chỉ tác giả thấy, mờ đi và chưa tương tác được
+  const moderation = comment.moderationStatus
 
   return (
     <div
@@ -61,9 +63,17 @@ export function CommentItemCard({
       className={cn(
         'group relative rounded-xl transition-all duration-150 p-3 space-y-2 scroll-mt-28',
         isHighlighted && 'ring-2 ring-brand-orange/60 bg-brand-orange/5',
+        moderation && 'border border-dashed border-border bg-muted/30',
         comment.isSolution ? 'bg-emerald-500/5 border border-emerald-500/30' : 'hover:bg-muted/30 border border-transparent hover:border-border/50'
       )}
     >
+      {moderation && (
+        <div className={cn('flex items-center gap-1.5 text-xs font-semibold', moderation === 'pending' ? 'text-muted-foreground' : 'text-destructive')}>
+          {moderation === 'pending' ? <Clock className="h-3.5 w-3.5" /> : <ShieldX className="h-3.5 w-3.5" />}
+          {moderation === 'pending' ? 'Đang chờ quản trị viên duyệt, hiện chỉ mình bạn thấy' : 'Không được duyệt vì vi phạm quy tắc cộng đồng, chỉ mình bạn thấy'}
+        </div>
+      )}
+
       {/* Solution Banner */}
       {comment.isSolution && (
         <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 pb-1">
@@ -115,7 +125,7 @@ export function CommentItemCard({
 
         {/* Top-right Actions: Solution Toggle or Delete */}
         <div className="flex items-center gap-1">
-          {isPostAuthor && isQaPost && onAcceptSolution && (
+          {isPostAuthor && isQaPost && onAcceptSolution && !moderation && (
             <Button
               variant="outline"
               size="sm"
@@ -133,7 +143,7 @@ export function CommentItemCard({
           )}
 
           {/* Màn cảm ứng không có hover ⇒ luôn hiện; desktop hiện khi rê chuột / focus */}
-          {isMyComment && onEditComment && !isEditing && (
+          {isMyComment && onEditComment && !isEditing && !moderation && (
             <button
               type="button"
               onClick={() => setIsEditing(true)}
@@ -172,7 +182,7 @@ export function CommentItemCard({
       </div>
 
       {/* Comment Body */}
-      <div className="pl-9 space-y-2">
+      <div className={cn('pl-9 space-y-2', moderation && 'opacity-60')}>
         {isEditing && onEditComment ? (
           <CommentComposer
             mode="edit"
@@ -195,7 +205,7 @@ export function CommentItemCard({
         {!!comment.documents?.length && <PostDocumentList documents={comment.documents} compact />}
 
         {/* Actions bar: Like, Reply */}
-        <div className="flex items-center gap-4 pt-1 text-xs text-muted-foreground">
+        <div className={cn('flex items-center gap-4 pt-1 text-xs text-muted-foreground', moderation && 'hidden')}>
           <button
             type="button"
             onClick={() => onLikeToggle(comment.id)}

@@ -30,6 +30,8 @@ export const CommentItemSchema = z.object({
   updatedAt: z.string().optional(),
   // Lần sửa gần nhất (null = chưa sửa)
   editedAt: z.string().nullable().optional(),
+  // Kiểm duyệt tự động: chỉ có với tác giả (người khác không thấy bình luận này)
+  moderationStatus: z.enum(['pending', 'rejected']).optional(),
   author: z.object({
     id: z.string(),
     username: z.string(),

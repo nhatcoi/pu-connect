@@ -57,7 +57,7 @@ export class AdminTrashService {
       }
       // Khôi phục bài/bình luận ⇒ tính lại bộ đếm
       await client.query(
-        `UPDATE posts p SET comments_count = (SELECT COUNT(*)::int FROM comments c WHERE c.post_id = p.id)
+        `UPDATE posts p SET comments_count = (SELECT COUNT(*)::int FROM comments c WHERE c.post_id = p.id AND c.hidden_at IS NULL)
          WHERE p.id IN (SELECT (data->>'id')::uuid FROM deleted_records WHERE batch = $1 AND table_name = 'posts'
                         UNION SELECT (data->>'post_id')::uuid FROM deleted_records WHERE batch = $1 AND table_name = 'comments')`,
         [batch]

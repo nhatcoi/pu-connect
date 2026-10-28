@@ -98,7 +98,7 @@ export class BotAccountsService {
       await client.query(
         `UPDATE posts p SET
            likes_count = (SELECT COUNT(*) FROM post_reactions r WHERE r.post_id = p.id),
-           comments_count = (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id)
+           comments_count = (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id AND c.hidden_at IS NULL)
          WHERE p.id = ANY($1::uuid[])`,
         [touched.rows.map((r) => r.post_id)]
       )

@@ -11,6 +11,7 @@ import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './
 import { ModerationService } from '../moderation/moderation.service'
 import { PostDocumentsService } from '../documents/post-documents.service'
 import { fieldNameSql } from '../units/unit-sql'
+import { commentShownSql, HELD_REASON_PREFIX, REJECTED_REASON } from './comment-access.sql'
 
 export interface CommentsResult {
   data: CommentItem[]
@@ -38,8 +39,9 @@ export class CommentsService {
     const safeLimit = Math.min(50, Math.max(1, limit))
     const safeOffset = Math.max(0, offset)
 
-    // Ẩn bình luận (và nhánh trả lời) của người có quan hệ chặn với mình
-    const visible = (alias: string, viewer: string) => `(${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, `${alias}.author_id`)})`
+    // Ẩn bình luận (và nhánh trả lời) của người có quan hệ chặn với mình, và bình luận đang chờ duyệt của người khác
+    const visible = (alias: string, viewer: string) =>
+      `(${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, `${alias}.author_id`)}) AND ${commentShownSql(alias, viewer)}`
     const countRes = await this.db.query(
       `SELECT COUNT(*)::int AS total, COUNT(*) FILTER (WHERE c.parent_id IS NULL)::int AS roots
        FROM comments c WHERE c.post_id = $1 AND ${visible('c', '$2')}`,
@@ -98,9 +100,10 @@ export class CommentsService {
     let postAuthorId: string | null = null
     let parentAuthorId: string | null = null
     const anonymous = !!data.isAnonymous
-    // Bình luận chưa có cơ chế ẩn ⇒ chỉ chặn từ cấm; flag/hold chỉ ghi log để admin xem
+    // block ⇒ từ chối; flag/hold ⇒ lưu nhưng chờ admin duyệt (chỉ tác giả thấy, chưa đếm, chưa báo ai)
     const verdict = await this.moderation.check({ text: data.content, userId: authorId, surface: 'comment' })
     if (verdict.action === 'block') throw new BadRequestException('Nội dung chứa ngôn từ không phù hợp với quy tắc cộng đồng')
+    const held = verdict.action === 'hold' || verdict.action === 'flag'
     const created = await this.db.transaction(async (client) => {
       // 1. Check if post exists with row-level lock
       const postRes = await client.query(`SELECT id, author_id FROM posts WHERE id = $1 LIMIT 1 FOR UPDATE`, [data.postId])
@@ -148,10 +151,10 @@ export class CommentsService {
 
       // 3. Insert comment
       const insertRes = await client.query(
-        `INSERT INTO comments (post_id, author_id, parent_id, content, is_anonymous)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO comments (post_id, author_id, parent_id, content, is_anonymous, hidden_at, hidden_reason)
+         VALUES ($1, $2, $3, $4, $5, CASE WHEN $6::boolean THEN NOW() END, $7)
          RETURNING *`,
-        [data.postId, authorId, rootId, data.content, anonymous]
+        [data.postId, authorId, rootId, data.content, anonymous, held, held ? `${HELD_REASON_PREFIX} ${verdict.reason}` : null]
       )
 
       const commentRow = insertRes.rows[0]
@@ -164,8 +167,8 @@ export class CommentsService {
       // 3.1. Ghi @mention trong cùng transaction
       mentioned = await this.mentions.record(client, 'comment', commentRow.id, authorId, data.content)
 
-      // 4. Atomically update post comments count
-      await client.query(`UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`, [data.postId])
+      // 4. Atomically update post comments count (bình luận chờ duyệt chưa đếm)
+      if (!held) await client.query(`UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`, [data.postId])
 
       this.logger.log(`[CommentCreated] User ${authorId} commented on post ${data.postId}.`)
 
@@ -185,6 +188,7 @@ export class CommentsService {
         createdAt: commentRow.created_at.toISOString(),
         updatedAt: commentRow.updated_at ? commentRow.updated_at.toISOString() : undefined,
         editedAt: null,
+        moderationStatus: held ? ('pending' as const) : undefined,
         author: anonymous
           ? anonymousAuthor()
           : {
@@ -199,7 +203,19 @@ export class CommentsService {
       }
     })
 
-    // Thông báo sau khi commit; mỗi người chỉ nhận 1 loại: reply > mention > post_comment
+    void this.moderation.attachTarget(verdict.eventId, 'comment', created.id)
+    // Chờ duyệt: chưa báo ai (chủ bài, người được trả lời, @mention) cho tới khi admin duyệt
+    if (held) return created
+    this.notifyCreated(created, { authorId, anonymous, postAuthorId, parentAuthorId, mentioned })
+    return created
+  }
+
+  // Thông báo sau khi commit; mỗi người chỉ nhận 1 loại: reply > mention > post_comment
+  private notifyCreated(
+    created: Pick<CommentItem, 'id' | 'postId' | 'content'>,
+    ctx: { authorId: string; anonymous: boolean; postAuthorId: string | null; parentAuthorId: string | null; mentioned: MentionedUser[] }
+  ): void {
+    const { authorId, anonymous, postAuthorId, parentAuthorId, mentioned } = ctx
     const link = `/post/${created.postId}?comment=${created.id}`
     const quote = snippet(created.content)
     const events: NotifyInput[] = []
@@ -240,7 +256,6 @@ export class CommentsService {
     }
     // Ẩn danh: mọi thông báo phát sinh không nêu người gửi
     void this.notifications.dispatch(anonymous ? events.map(anonymizeNotification) : events)
-    return created
   }
 
   async acceptSolution(commentId: string, currentUserId: string): Promise<{ isSolution: boolean; message: string }> {
@@ -345,11 +360,15 @@ export class CommentsService {
   // Sửa nội dung + ghi mention mới trong cùng transaction
   async update(commentId: string, currentUserId: string, content: string): Promise<{ id: string; content: string; editedAt: string }> {
     let mentioned: MentionedUser[] = []
+    // Sửa cũng phải qua kiểm duyệt: từ cấm nặng bị từ chối (không để lách bằng cách đăng sạch rồi sửa)
+    const verdict = await this.moderation.check({ text: content, userId: currentUserId, surface: 'comment' })
+    if (verdict.action === 'block') throw new BadRequestException('Nội dung chứa ngôn từ không phù hợp với quy tắc cộng đồng')
     const updated = await this.db.transaction(async (client) => {
-      const res = await client.query(`SELECT post_id, author_id, is_anonymous FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`, [commentId])
+      const res = await client.query(`SELECT post_id, author_id, is_anonymous, hidden_at FROM comments WHERE id = $1 LIMIT 1 FOR UPDATE`, [commentId])
       const row = res.rows[0]
       if (!row) throw new NotFoundException('Không tìm thấy bình luận')
       if (row.author_id !== currentUserId) throw new ForbiddenException('Bạn chỉ sửa được bình luận của mình')
+      if (row.hidden_at) throw new ForbiddenException('Bình luận đang chờ duyệt, chưa thể chỉnh sửa')
 
       const upd = await client.query(
         `UPDATE comments SET content = $2, edited_at = NOW(), updated_at = NOW()
@@ -407,19 +426,96 @@ export class CommentsService {
       // ON DELETE CASCADE xóa cả phản hồi ⇒ trừ đúng số dòng bị xóa
       const removed = await client.query(
         `WITH RECURSIVE thread AS (
-           SELECT id FROM comments WHERE id = $1
+           SELECT id, hidden_at FROM comments WHERE id = $1
            UNION ALL
-           SELECT c.id FROM comments c JOIN thread t ON c.parent_id = t.id
+           SELECT c.id, c.hidden_at FROM comments c JOIN thread t ON c.parent_id = t.id
          )
-         SELECT COUNT(*)::int AS c FROM thread`,
+         SELECT COUNT(*) FILTER (WHERE hidden_at IS NULL)::int AS c FROM thread`,
         [commentId]
       )
       await setTrashActor(client, currentUserId)
       await client.query(`DELETE FROM comments WHERE id = $1`, [commentId])
-      await client.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - $2) WHERE id = $1`, [comment.post_id, removed.rows[0]?.c || 1])
+      await client.query(`UPDATE posts SET comments_count = GREATEST(0, comments_count - $2) WHERE id = $1`, [comment.post_id, removed.rows[0]?.c ?? 0])
 
       return true
     })
+  }
+
+  /**
+   * Admin duyệt bình luận đang chờ: hiện lại, tính vào comments_count và báo các bên đã bị hoãn
+   * (chủ bài, người được trả lời, @mention) cùng tác giả. Trả về false nếu bình luận không còn chờ duyệt.
+   */
+  async approveHeld(commentId: string): Promise<boolean> {
+    const released = await this.db.transaction(async (client) => {
+      const res = await client.query(
+        `UPDATE comments SET hidden_at = NULL, hidden_reason = NULL
+         WHERE id = $1 AND hidden_at IS NOT NULL AND hidden_reason LIKE $2
+         RETURNING id, post_id, author_id, parent_id, content, is_anonymous`,
+        [commentId, `${HELD_REASON_PREFIX}%`]
+      )
+      const row = res.rows[0]
+      if (!row) return null
+      await client.query(`UPDATE posts SET comments_count = comments_count + 1 WHERE id = $1`, [row.post_id])
+      const post = await client.query(`SELECT author_id FROM posts WHERE id = $1`, [row.post_id])
+      // parent_id luôn là bình luận gốc của nhánh ⇒ báo tác giả gốc (không còn biết chính xác người được trả lời)
+      const parent = row.parent_id ? await client.query(`SELECT author_id FROM comments WHERE id = $1`, [row.parent_id]) : null
+      const mentions = await client.query(
+        `SELECT u.id, u.username, u.account_type FROM mentions m JOIN users u ON u.id = m.mentioned_user_id
+         WHERE m.source_type = 'comment' AND m.source_id = $1`,
+        [commentId]
+      )
+      return {
+        row,
+        postAuthorId: (post.rows[0]?.author_id as string | undefined) ?? null,
+        parentAuthorId: (parent?.rows[0]?.author_id as string | undefined) ?? null,
+        mentioned: mentions.rows.map((m): MentionedUser => ({ id: m.id, username: m.username, accountType: m.account_type }))
+      }
+    })
+    if (!released) return false
+
+    const { row, postAuthorId, parentAuthorId, mentioned } = released
+    this.notifyCreated(
+      { id: row.id, postId: row.post_id, content: row.content },
+      { authorId: row.author_id, anonymous: !!row.is_anonymous, postAuthorId, parentAuthorId, mentioned }
+    )
+    void this.notifications.dispatch([
+      {
+        type: 'account_notice',
+        recipientId: row.author_id,
+        actorId: null,
+        verb: 'Bình luận của bạn đã được quản trị viên duyệt và hiển thị',
+        message: snippet(row.content),
+        entityType: 'post',
+        entityId: row.post_id,
+        link: `/post/${row.post_id}?comment=${row.id}`
+      }
+    ])
+    return true
+  }
+
+  /** Admin xác nhận vi phạm: bình luận vẫn ẩn với mọi người, tác giả thấy trạng thái "bị từ chối". */
+  async rejectHeld(commentId: string): Promise<boolean> {
+    const res = await this.db.query(
+      `UPDATE comments SET hidden_reason = $3
+       WHERE id = $1 AND hidden_at IS NOT NULL AND hidden_reason LIKE $2
+       RETURNING author_id, post_id, content`,
+      [commentId, `${HELD_REASON_PREFIX}%`, REJECTED_REASON]
+    )
+    const row = res.rows[0]
+    if (!row) return false
+    void this.notifications.dispatch([
+      {
+        type: 'account_notice',
+        recipientId: row.author_id,
+        actorId: null,
+        verb: 'Bình luận của bạn không được duyệt vì vi phạm quy tắc cộng đồng',
+        message: snippet(row.content),
+        entityType: 'post',
+        entityId: row.post_id,
+        link: `/post/${row.post_id}`
+      }
+    ])
+    return true
   }
 
   // Bình luận ẩn danh: che tác giả với mọi người; isMine cho chủ bình luận tự nhận ra
@@ -440,6 +536,7 @@ export class CommentsService {
       createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : undefined,
       editedAt: row.edited_at ? new Date(row.edited_at).toISOString() : null,
+      moderationStatus: row.hidden_at ? (row.hidden_reason === REJECTED_REASON ? 'rejected' : 'pending') : undefined,
       author: anonymous
         ? anonymousAuthor()
         : {

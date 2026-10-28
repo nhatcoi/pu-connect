@@ -57,10 +57,11 @@ flowchart LR
 | Điều kiện | Hành động | Với bài | Với bình luận |
 |---|---|---|---|
 | Tầng 1 mức nặng (`lồn`, `địt mẹ`, `l0n`, `đ.ị.t`...) | `block` | Từ chối 400, không tạo bài | Từ chối 400 |
-| p(hate) ≥ 0.6 | `hold` | Lưu, ẩn bằng `hidden_at`, không báo mention/follower | Chỉ ghi log (chưa có cơ chế ẩn) |
-| p(offense)+p(hate) ≥ 0.7, hoặc tầng 1 mức vừa / nhẹ nhắm người | `flag` | Đăng + ghi log | Đăng + ghi log |
+| p(hate) ≥ 0.6 | `hold` | Lưu, ẩn bằng `hidden_at`, không báo mention/follower | Lưu, ẩn bằng `comments.hidden_at` (xem bên dưới) |
+| p(offense)+p(hate) ≥ 0.7, hoặc tầng 1 mức vừa / nhẹ nhắm người | `flag` | Lưu, ẩn chờ duyệt như `hold` | Lưu, ẩn chờ duyệt như `hold` |
 | Còn lại | `allow` | Đăng | Đăng |
 
+- **Bình luận chờ duyệt** (`flag`/`hold`): ghi `comments.hidden_at` + `hidden_reason = 'auto-moderation:<lý do>'`. Chỉ tác giả thấy (UI mờ, nhãn "đang chờ quản trị viên duyệt", chưa thích / trả lời / sửa được); không tính vào `posts.comments_count`; chưa báo chủ bài, người được trả lời, @mention. Admin → Kiểm duyệt → Tự động: *Bác cờ* (`dismissed`) ⇒ hiện lại, đếm +1, gửi các thông báo bị hoãn và báo tác giả; *Xác nhận* (`confirmed`) ⇒ `hidden_reason = 'moderation-rejected'`, tác giả thấy "không được duyệt" và được báo. Sửa bình luận cũng bị kiểm tra từ cấm nặng.
 - Model lỗi hoặc chưa nạp được: chỉ dùng tầng 1, bài vẫn đăng (fail-open ở tầng 2).
 - Tầng 1 đã chặn thì không chạy model.
 - Chửi thân mật không nhắm ai ("đm mệt quá") bị `flag`, không chặn.

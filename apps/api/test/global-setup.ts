@@ -70,6 +70,7 @@ export const MIGRATIONS = [
   'course-suggestions-upgrade.sql',
   'document-community-upgrade.sql',
   'post-manage-upgrade.sql',
+  'comment-moderation-upgrade.sql',
   'units-simplify-upgrade.sql',
   'interest-fields-multi-upgrade.sql'
 ]

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common'
 import type { AdminBulkResult, AdminModerationEvent, AdminPage } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
 import { writeAudit } from '../admin-audit'
+import { CommentsService } from '../../posts/comments.service'
 
 export interface ModerationEventsQuery {
   status: 'pending' | 'reviewed'
@@ -15,7 +16,10 @@ export interface ModerationEventsQuery {
 // Nhật ký kiểm duyệt tự động: nội dung bị chặn (block) hoặc ẩn chờ duyệt (hold) và các cờ nghi vấn
 @Injectable()
 export class AdminModerationEventsService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly comments: CommentsService
+  ) {}
 
   async list(q: ModerationEventsQuery): Promise<AdminPage<AdminModerationEvent>> {
     const params: unknown[] = []
@@ -30,8 +34,8 @@ export class AdminModerationEventsService {
     const res = await this.db.query(
       `SELECT e.id, e.surface, e.action, e.tier, e.reason, e.scores, e.matched_terms, e.content, e.enforced, e.target_type, e.target_id,
               e.review_status, e.created_at, u.id AS uid, u.username, u.display_name, u.avatar_url,
-              (e.target_type = 'post' AND p.hidden_at IS NOT NULL) AS target_hidden
-       ${from.replace('WHERE', `LEFT JOIN posts p ON e.target_type = 'post' AND p.id = e.target_id WHERE`)}
+              ((e.target_type = 'post' AND p.hidden_at IS NOT NULL) OR (e.target_type = 'comment' AND cm.hidden_at IS NOT NULL)) AS target_hidden
+       ${from.replace('WHERE', `LEFT JOIN posts p ON e.target_type = 'post' AND p.id = e.target_id LEFT JOIN comments cm ON e.target_type = 'comment' AND cm.id = e.target_id WHERE`)}
        ORDER BY e.created_at DESC, e.id LIMIT $${limit} OFFSET $${offset}`,
       params
     )
@@ -63,11 +67,13 @@ export class AdminModerationEventsService {
 
   /**
    * confirmed: đồng ý với hệ thống (giữ nguyên chặn/ẩn).
-   * dismissed: hệ thống sai ⇒ bài đang bị ẩn tự động được hiện lại (nội dung bị chặn không tạo bài nên không khôi phục được). Bài bị gắn cờ cũng đang ẩn nên được hiện lại.
+   * dismissed: hệ thống sai ⇒ bài / bình luận đang bị ẩn tự động được hiện lại (bình luận còn được báo cho các bên bị hoãn); nội dung bị chặn không được lưu nên không khôi phục được.
+   * confirmed: bình luận chuyển sang "bị từ chối" (tác giả được báo), bài giữ nguyên ẩn.
    */
   async review(adminId: string, ids: string[], resolution: 'confirmed' | 'dismissed'): Promise<AdminBulkResult> {
     const unique = [...new Set(ids)]
-    return this.db.transaction(async (client) => {
+    const comments: string[] = []
+    const result = await this.db.transaction(async (client) => {
       const res = await client.query(
         `UPDATE moderation_events SET review_status = $3, reviewed_by = $2, reviewed_at = NOW()
          WHERE id = ANY($1::uuid[]) AND review_status = 'pending' RETURNING id, target_type, target_id, action`,
@@ -79,9 +85,16 @@ export class AdminModerationEventsService {
           const up = await client.query(`UPDATE posts SET hidden_at = NULL, hidden_reason = NULL WHERE id = $1 AND hidden_reason LIKE 'auto-moderation:%'`, [r.target_id])
           restored += up.rowCount ?? 0
         }
+        if (r.action !== 'block' && r.target_type === 'comment' && r.target_id) comments.push(r.target_id)
         await writeAudit(client, adminId, { action: `moderation_event.${resolution}`, targetType: 'system', targetId: r.id, details: { eventAction: r.action } })
       }
       return { affected: res.rowCount ?? 0, skipped: unique.length - (res.rowCount ?? 0), restored } as AdminBulkResult
     })
+    // Bình luận: hiện lại + báo (hoặc từ chối) sau khi transaction nhật ký đã commit
+    for (const id of comments) {
+      const ok = resolution === 'dismissed' ? await this.comments.approveHeld(id) : await this.comments.rejectHeld(id)
+      if (ok && resolution === 'dismissed') result.restored = (result.restored ?? 0) + 1
+    }
+    return result
   }
 }

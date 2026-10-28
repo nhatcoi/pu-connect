@@ -3,7 +3,7 @@
 > ⚙️ **File tự sinh** bởi `pnpm docs:erd` (`scripts/gen-erd.mjs`) từ database thật. **Không sửa tay.**
 > Chạy lại sau mỗi migration. Nguồn: `information_schema` + `pg_constraint`.
 
-Tổng: **73 bảng**, **113 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
+Tổng: **78 bảng**, **123 khóa ngoại**. Ký hiệu: `PK` khóa chính · `FK` khóa ngoại · `UK` unique · `||` bắt buộc · `|o` có thể NULL.
 
 ## 1. Tổng quan quan hệ
 
@@ -78,8 +78,18 @@ erDiagram
   ai_folders |o--o{ conversations : "ai_folder_id"
   users |o--o{ conversations : "created_by"
   study_groups |o--o{ conversations : "study_group_id"
+  courses ||--o{ course_follows : "course_id"
+  users ||--o{ course_follows : "user_id"
   faculties |o--o{ courses : "faculty_id"
+  courses |o--o{ course_suggestions : "course_id"
+  users ||--o{ course_suggestions : "requester_id"
+  users |o--o{ course_suggestions : "reviewer_id"
   documents ||--o{ document_chunks : "document_id"
+  document_collections ||--o{ document_collection_items : "collection_id"
+  documents ||--o{ document_collection_items : "document_id"
+  users ||--o{ document_collections : "owner_id"
+  documents ||--o{ document_ratings : "document_id"
+  users ||--o{ document_ratings : "user_id"
   courses |o--o{ documents : "course_id"
   users ||--o{ documents : "owner_id"
   users ||--o{ library_folders : "owner_id"
@@ -254,7 +264,7 @@ erDiagram
   users ||--o{ user_follows : "following_id"
 ```
 
-Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_folders.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_sources.user_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `users.unit_id → academic_units`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
+Liên kết ra ngoài nhóm: `admin_audit_logs.admin_id → users`, `admin_saved_views.admin_id → users`, `admin_user_notes.admin_id → users`, `admin_user_notes.user_id → users`, `ai_feedback.user_id → users`, `ai_folders.user_id → users`, `ai_memories.user_id → users`, `ai_runs.bot_id → users`, `ai_runs.requester_id → users`, `ai_settings.user_id → users`, `ai_skills.owner_id → users`, `ai_sources.user_id → users`, `ai_support_tickets.user_id → users`, `ai_tasks.user_id → users`, `ai_thread_shares.owner_id → users`, `bot_commands.created_by → users`, `bot_control.updated_by → users`, `bot_profiles.updated_by → users`, `bot_profiles.user_id → users`, `comment_reactions.user_id → users`, `comments.author_id → users`, `community_members.user_id → users`, `conversation_members.user_id → users`, `conversations.created_by → users`, `course_follows.user_id → users`, `course_suggestions.requester_id → users`, `course_suggestions.reviewer_id → users`, `document_collections.owner_id → users`, `document_ratings.user_id → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `message_mentions.user_id → users`, `message_reactions.user_id → users`, `messages.pinned_by → users`, `messages.sender_id → users`, `post_poll_votes.user_id → users`, `post_reactions.user_id → users`, `post_reports.reporter_id → users`, `post_reports.resolved_by → users`, `posts.author_id → users`, `posts.hidden_by → users`, `profile_views.profile_id → users`, `profile_views.viewer_id → users`, `push_subscriptions.user_id → users`, `saved_posts.user_id → users`, `study_events.user_id → users`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `study_sets.owner_id → users`, `user_blocks.blocked_id → users`, `user_blocks.blocker_id → users`, `user_connectors.user_id → users`, `user_events.user_id → users`, `user_interests.user_id → users`, `users.unit_id → academic_units`, `user_sanctions.admin_id → users`, `user_sanctions.revoked_by → users`, `user_sanctions.user_id → users`, `user_security_events.user_id → users`
 
 ## 3. Feed & Q&A
 
@@ -300,6 +310,8 @@ erDiagram
     timestamptz updated_at
     timestamptz edited_at
     boolean is_anonymous
+    timestamptz hidden_at
+    text hidden_reason
   }
   post_reactions {
     uuid post_id PK,FK
@@ -463,6 +475,7 @@ erDiagram
     varchar original_name
     varchar academic_year
     integer save_count
+    integer rating_count
   }
   document_chunks {
     uuid id PK
@@ -498,6 +511,47 @@ erDiagram
     uuid owner_id FK
     varchar name
     timestamptz created_at
+  }
+  course_follows {
+    uuid user_id PK,FK
+    uuid course_id PK,FK
+    timestamptz created_at
+  }
+  course_suggestions {
+    uuid id PK
+    uuid requester_id FK
+    varchar name
+    varchar code
+    varchar faculty_code
+    integer credits
+    varchar note
+    varchar status
+    varchar review_note
+    uuid reviewer_id FK
+    uuid course_id FK
+    timestamptz created_at
+    timestamptz reviewed_at
+  }
+  document_ratings {
+    uuid document_id PK,FK
+    uuid user_id PK,FK
+    smallint rating
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  document_collections {
+    uuid id PK
+    uuid owner_id FK
+    varchar title
+    varchar description
+    varchar visibility
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  document_collection_items {
+    uuid collection_id PK,FK
+    uuid document_id PK,FK
+    timestamptz added_at
   }
   study_groups {
     uuid id PK
@@ -541,8 +595,13 @@ erDiagram
   }
   academic_units ||--o{ academic_units : "parent_id"
   documents ||--o{ comment_documents : "document_id"
+  courses ||--o{ course_follows : "course_id"
   faculties ||--o{ courses : "faculty_id"
+  courses ||--o{ course_suggestions : "course_id"
   documents ||--o{ document_chunks : "document_id"
+  document_collections ||--o{ document_collection_items : "collection_id"
+  documents ||--o{ document_collection_items : "document_id"
+  documents ||--o{ document_ratings : "document_id"
   courses ||--o{ documents : "course_id"
   documents ||--o{ library_items : "document_id"
   library_folders ||--o{ library_items : "folder_id"
@@ -551,7 +610,7 @@ erDiagram
   courses ||--o{ study_groups : "course_id"
 ```
 
-Liên kết ra ngoài nhóm: `comment_documents.comment_id → comments`, `conversations.study_group_id → study_groups`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `post_documents.post_id → posts`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `users.unit_id → academic_units`
+Liên kết ra ngoài nhóm: `comment_documents.comment_id → comments`, `conversations.study_group_id → study_groups`, `course_follows.user_id → users`, `course_suggestions.requester_id → users`, `course_suggestions.reviewer_id → users`, `document_collections.owner_id → users`, `document_ratings.user_id → users`, `documents.owner_id → users`, `library_folders.owner_id → users`, `library_items.owner_id → users`, `post_documents.post_id → posts`, `posts.course_id → courses`, `study_group_members.user_id → users`, `study_groups.leader_id → users`, `users.unit_id → academic_units`
 
 ## 6. Personalization
 

@@ -25,7 +25,7 @@ export function featuredCommentsSql(): string {
     WITH cand AS (
       SELECT c.id, c.post_id, c.author_id, c.content, c.created_at, c.is_solution, c.is_anonymous,
              COALESCE(c.likes_count, 0) AS likes_count,
-             (SELECT COUNT(*) FROM comments r WHERE r.parent_id = c.id AND ${visible('r')})::int AS replies_count,
+             (SELECT COUNT(*) FROM comments r WHERE r.parent_id = c.id AND r.hidden_at IS NULL AND ${visible('r')})::int AS replies_count,
              -- Relevance: tỉ lệ từ (unaccent) của bình luận xuất hiện trong search_tsv của bài
              COALESCE((
                SELECT AVG((lx = ANY(tsvector_to_array(p.search_tsv)))::int)
@@ -33,7 +33,7 @@ export function featuredCommentsSql(): string {
              ), 0)::float AS relevance
       FROM comments c
       JOIN posts p ON p.id = c.post_id
-      WHERE c.post_id = ANY($1::uuid[]) AND c.parent_id IS NULL AND ${visible('c')}
+      WHERE c.post_id = ANY($1::uuid[]) AND c.parent_id IS NULL AND c.hidden_at IS NULL AND ${visible('c')}
     ), scored AS (
       SELECT cand.*,
              (likes_count + ${replyWeight} * replies_count)::float AS engagement,

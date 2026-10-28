@@ -171,7 +171,7 @@ export class AdminService {
       await setTrashActor(client, adminId)
       await client.query(`DELETE FROM comments WHERE id = $1`, [commentId])
       await client.query(
-        `UPDATE posts SET comments_count = (SELECT COUNT(*)::int FROM comments WHERE post_id = $1) WHERE id = $1`,
+        `UPDATE posts SET comments_count = (SELECT COUNT(*)::int FROM comments WHERE post_id = $1 AND hidden_at IS NULL) WHERE id = $1`,
         [postId]
       )
       await this.audit(client, adminId, {
@@ -526,7 +526,7 @@ export class AdminService {
       const postIds = [...new Set(res.rows.map((r) => r.post_id))]
       if (postIds.length) {
         await client.query(
-          `UPDATE posts p SET comments_count = (SELECT COUNT(*)::int FROM comments c WHERE c.post_id = p.id) WHERE p.id = ANY($1::uuid[])`,
+          `UPDATE posts p SET comments_count = (SELECT COUNT(*)::int FROM comments c WHERE c.post_id = p.id AND c.hidden_at IS NULL) WHERE p.id = ANY($1::uuid[])`,
           [postIds]
         )
       }

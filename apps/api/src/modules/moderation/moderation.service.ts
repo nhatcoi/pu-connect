@@ -129,14 +129,14 @@ export class ModerationService {
           type: 'account_notice',
           recipientId: a.id,
           actorId: null,
-          verb: input.surface === 'post' ? `${what} bị ẩn chờ duyệt (${action === 'hold' ? 'nghi thù ghét' : 'gắn cờ'})` : `${what} bị gắn cờ`,
+          verb: `${what} bị ẩn chờ duyệt (${action === 'hold' ? 'nghi thù ghét' : 'gắn cờ'})`,
           message: `${who}: ${snippet}. Xem tại Admin → Kiểm duyệt → Tự động.`
         })),
         {
           type: 'account_notice',
           recipientId: input.userId,
           actorId: null,
-          verb: input.surface === 'post' ? `Bài viết của bạn đang chờ quản trị viên duyệt vì có thể vi phạm quy tắc cộng đồng` : `${what[0].toUpperCase()}${what.slice(1)} của bạn đã được gắn cờ để quản trị viên xem lại`,
+          verb: input.surface === 'post' ? `Bài viết của bạn đang chờ quản trị viên duyệt vì có thể vi phạm quy tắc cộng đồng` : `${what[0].toUpperCase()}${what.slice(1)} của bạn đang chờ quản trị viên duyệt, tạm thời chỉ mình bạn thấy`,
           message: snippet
         }
       ])
