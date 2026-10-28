@@ -7,10 +7,8 @@ import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/l
 import { SavedViews } from '@/components/list/saved-views'
 import { UnitsSection } from '@/features/units/units-panel'
 import { FieldSelect } from '@/features/units/field-select'
-import { useUnitRequests } from '@/features/units/use-units'
 import { CourseEditDialog } from '@/features/courses/course-edit-dialog'
 import { CourseImportDialog } from '@/features/courses/course-import-dialog'
-import { SuggestionsSection } from '@/features/courses/suggestions-section'
 import { useHashQuery } from '@/hooks/use-hash-query'
 import {
   Badge,
@@ -36,7 +34,7 @@ import {
 } from '@/components/ui'
 import { ListFooter, ListSearch, ParamSelect, useListState, usePaged, type ListState } from '@/components/list/list-kit'
 
-type Sub = 'courses' | 'suggestions' | 'documents' | 'communities' | 'units'
+type Sub = 'courses' | 'documents' | 'communities' | 'units'
 
 const DOC_TYPE_LABELS: Record<string, string> = {
   midterm_exam: 'Đề giữa kỳ',
@@ -58,11 +56,10 @@ const COMMUNITY_TYPE_LABELS: Record<string, string> = {
 
 export function AcademicTab({ permissions }: { permissions: AdminPermission[] }) {
   const [params, set] = useHashQuery()
-  const tab = (['courses', 'suggestions', 'documents', 'communities', 'units'].includes(params.tab) ? params.tab : 'courses') as Sub
+  const tab = (['courses', 'documents', 'communities', 'units'].includes(params.tab) ? params.tab : 'courses') as Sub
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const canManage = permissions.includes('academic:manage')
-  const pendingUnits = useUnitRequests('pending').data?.length ?? 0
 
   return (
     <>
@@ -89,16 +86,14 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
             onChange={(t) => set({ tab: t === 'courses' ? undefined : t }, { replace: true })}
             items={[
               { id: 'courses', label: 'Học phần' },
-              { id: 'suggestions', label: 'Đề xuất môn' },
               { id: 'documents', label: 'Tài liệu' },
               { id: 'communities', label: 'Cộng đồng' },
-              { id: 'units', label: pendingUnits ? `Đơn vị (${pendingUnits})` : 'Đơn vị' }
+              { id: 'units', label: 'Đơn vị' }
             ]}
           />
         }
       />
       {tab === 'courses' && <CoursesSection canManage={canManage} />}
-      {tab === 'suggestions' && <SuggestionsSection canManage={canManage} />}
       {tab === 'documents' && <DocumentsSection canManage={canManage} />}
       {tab === 'communities' && <CommunitiesSection />}
       {tab === 'units' && <UnitsSection canManage={canManage} />}

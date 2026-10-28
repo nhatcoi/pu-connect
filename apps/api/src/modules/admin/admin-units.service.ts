@@ -177,7 +177,7 @@ export class AdminUnitsService {
     return { unitId: result.unitId, users: result.userIds.length }
   }
 
-  // Từ chối: người dùng giữ nguyên trạng thái "chưa chọn" (không còn là "Khác")
+  // Từ chối: giữ dòng yêu cầu (status rejected) ⇒ hồ sơ người dùng vẫn hiển thị "Khác" cho tới khi họ chọn lại
   async rejectRequest(adminId: string, requestId: string, reason?: string): Promise<void> {
     const req = await this.db.transaction(async (client) => {
       const res = await client.query(
@@ -194,7 +194,9 @@ export class AdminUnitsService {
       recipientId: req.user_id,
       actorId: null,
       verb: `Chưa thể thêm ${KIND_LABEL[req.kind]} "${req.name}"`,
-      message: reason ? `Lý do: ${reason}. Bạn có thể chọn một mục có sẵn trong hồ sơ.` : 'Bạn có thể chọn một mục có sẵn trong hồ sơ.'
+      message: reason
+        ? `Lý do: ${reason}. Hồ sơ của bạn vẫn hiển thị là "Khác"; bạn có thể chọn một mục có sẵn.`
+        : 'Hồ sơ của bạn vẫn hiển thị là "Khác"; bạn có thể chọn một mục có sẵn.'
     })
   }
 

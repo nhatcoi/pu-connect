@@ -1,13 +1,13 @@
 import React, { useState } from 'react'
-import { Check, GitMerge, MoreHorizontal, Pencil, Plus, Power, Trash2, X } from 'lucide-react'
+import { GitMerge, MoreHorizontal, Pencil, Plus, Power, Trash2 } from 'lucide-react'
 import type { AdminUnit, AdminUnitRequest, UnitKind } from '@pu/schemas'
 import { cn, formatNumber } from '@/lib/api'
 import { Badge, Button, Card, ConfirmDialog, Dialog, EmptyState, ErrorState, Field, Input, LoadingRows, Menu, MenuItem, MenuSeparator, Select } from '@/components/ui'
-import { KIND_LABEL, useAdminUnits, useUnitActions, useUnitRequests } from './use-units'
+import { KIND_LABEL, useAdminUnits, useUnitActions } from './use-units'
 
 type Actions = ReturnType<typeof useUnitActions>
 
-// Học thuật › Đơn vị: hàng chờ duyệt ("Khác" người dùng tự nhập) + danh mục trường / lĩnh vực quan tâm
+// Học thuật › Đơn vị: danh mục trường / lĩnh vực quan tâm (hàng chờ duyệt nằm ở trang Đề xuất)
 export function UnitsSection({ canManage }: { canManage: boolean }) {
   const { data, isPending, isError, error } = useAdminUnits()
   const actions = useUnitActions(() => setEdit(null))
@@ -20,7 +20,6 @@ export function UnitsSection({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="space-y-5">
-      <RequestsCard canManage={canManage} data={data} actions={actions} />
       <div className="grid gap-5 lg:grid-cols-2">
         {(['university', 'field'] as const).map((kind) => (
           <CatalogCard
@@ -129,56 +128,7 @@ function CatalogCard({
   )
 }
 
-// Hàng chờ: người dùng chọn "Khác" + nhập tên. Duyệt ⇒ tạo mục mới (hoặc gộp vào mục có sẵn) và cập nhật người dùng
-function RequestsCard({ canManage, data, actions }: { canManage: boolean; data: { universities: AdminUnit[]; fields: AdminUnit[] }; actions: Actions }) {
-  const { data: requests = [], isPending } = useUnitRequests('pending')
-  const [target, setTarget] = useState<AdminUnitRequest | null>(null)
-  const [rejecting, setRejecting] = useState<AdminUnitRequest | null>(null)
-
-  if (isPending) return null
-  return (
-    <div>
-      <div className="mb-2 flex items-center gap-2">
-        <h3 className="text-sm font-semibold text-foreground">Chờ duyệt</h3>
-        <Badge tone={requests.length ? 'warning' : 'neutral'}>{requests.length}</Badge>
-        <span className="text-xs text-muted-foreground">Người dùng chọn &quot;Khác&quot; và tự nhập tên; trong lúc chờ họ hiển thị là &quot;Khác&quot;.</span>
-      </div>
-      {requests.length === 0 ? (
-        <Card className="px-3 py-4 text-sm text-muted-foreground">Không có yêu cầu nào đang chờ.</Card>
-      ) : (
-        <Card className="divide-y divide-border">
-          {requests.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2.5">
-              <Badge tone={r.kind === 'university' ? 'primary' : 'orange'}>{r.kind === 'university' ? 'Trường' : 'Lĩnh vực'}</Badge>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-foreground">{r.name}</span>
-                <span className="block truncate text-xs text-muted-foreground">
-                  @{r.user.username}
-                  {r.sameNameCount > 1 && ` · +${r.sameNameCount - 1} người khác cùng tên`}
-                  {r.suggestion && ` · giống "${r.suggestion.name}"`}
-                </span>
-              </span>
-              {canManage && (
-                <div className="flex gap-1.5">
-                  <Button size="sm" variant="primary" onClick={() => setTarget(r)}>
-                    <Check /> Duyệt
-                  </Button>
-                  <Button size="sm" onClick={() => setRejecting(r)}>
-                    <X /> Từ chối
-                  </Button>
-                </div>
-              )}
-            </div>
-          ))}
-        </Card>
-      )}
-      <ApproveDialog request={target} data={data} onClose={() => setTarget(null)} actions={actions} />
-      <RejectDialog request={rejecting} onClose={() => setRejecting(null)} actions={actions} />
-    </div>
-  )
-}
-
-function ApproveDialog({
+export function UnitRequestApproveDialog({
   request,
   data,
   onClose,
@@ -252,7 +202,7 @@ function ApproveDialog({
   )
 }
 
-function RejectDialog({ request, onClose, actions }: { request: AdminUnitRequest | null; onClose: () => void; actions: Actions }) {
+export function UnitRequestRejectDialog({ request, onClose, actions }: { request: AdminUnitRequest | null; onClose: () => void; actions: Actions }) {
   const [reason, setReason] = useState('')
   return (
     <Dialog
@@ -275,7 +225,7 @@ function RejectDialog({ request, onClose, actions }: { request: AdminUnitRequest
         </>
       }
     >
-      <p className="mb-3 text-sm text-muted-foreground">Người dùng sẽ trở về trạng thái chưa chọn và nhận thông báo kèm lý do.</p>
+      <p className="mb-3 text-sm text-muted-foreground">Người dùng nhận thông báo kèm lý do; hồ sơ của họ vẫn hiển thị là "Khác" cho tới khi họ chọn lại.</p>
       <Field label="Lý do (tùy chọn)">
         <Input value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} placeholder="Vd. Trùng với mục có sẵn, tên không rõ nghĩa" />
       </Field>

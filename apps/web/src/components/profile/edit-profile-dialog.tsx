@@ -18,8 +18,10 @@ interface EditProfileDialogProps {
     bio?: string | null
     universityId?: string | null
     universityRequest?: string | null
+    universityRequestStatus?: 'pending' | 'rejected' | null
     interestFieldId?: string | null
     interestFieldRequest?: string | null
+    interestFieldRequestStatus?: 'pending' | 'rejected' | null
     avatarUrl?: string | null
     bannerUrl?: string | null
     location?: string | null

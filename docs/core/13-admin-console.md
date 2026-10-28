@@ -18,7 +18,8 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — vai trò `admin`
 | — thao tác admin trên người này | tab **Kiểm duyệt** |
 | — ghi chú nội bộ (người dùng không thấy) | tab **Ghi chú** |
 | Đặt lại mật khẩu cho người dùng | menu **⋯** của hồ sơ / thanh thao tác hàng loạt (biểu tượng chìa khóa) › *Gửi link đặt lại mật khẩu* hoặc *Bắt đổi mật khẩu* |
-| Trường đại học + lĩnh vực quan tâm: duyệt "Khác" người dùng nhập, thêm, đổi tên, tắt, gộp, xóa | **Học thuật** › tab **Đơn vị** |
+| Duyệt / từ chối đề xuất của người dùng (trường, lĩnh vực, môn học) | **Đề xuất** (menu riêng) |
+| Danh mục trường đại học + lĩnh vực quan tâm: thêm, đổi tên, tắt, gộp, xóa | **Học thuật** › tab **Đơn vị** |
 | Khóa nhanh | nút **Khóa** đầu hồ sơ (hộp Xử phạt chọn sẵn *Khóa*, chọn thời hạn) |
 | Học phần: thêm, sửa, gán giảng viên, gộp môn trùng, xóa môn trống, nhập Excel/CSV/JSON (bấm hàng để sửa); tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
 | Telemetry, phản hồi, ticket, skill, danh mục model N7AI | **N7AI** |
@@ -35,7 +36,7 @@ Mọi bộ lọc, trang, tab, hồ sơ đang mở đều nằm trên URL (`#/use
 ## Trường đại học & lĩnh vực quan tâm
 
 - Chỉ hai loại đơn vị: bảng `universities` (có sẵn Phenikaa) và `interest_fields` (lĩnh vực quan tâm). Không còn khoa / ngành / khóa / lớp. Người dùng chọn ở form sửa hồ sơ; `GET /api/units` trả danh mục công khai.
-- **"Khác"**: người dùng chọn "Khác" và nhập tên ⇒ `unit_requests` (`pending`), hồ sơ tạm hiện "Khác". **Học thuật › Đơn vị › Chờ duyệt**: *Duyệt* (tạo mục mới, sửa chính tả được, hoặc gộp vào mục có sẵn) ⇒ cập nhật hồ sơ **mọi người đã gửi cùng tên** (không phân biệt hoa thường / dấu) và gửi thông báo; *Từ chối* (kèm lý do) ⇒ người dùng về chưa chọn. Số yêu cầu chờ hiện trên menu **Học thuật** (`pendingUnitRequests`).
+- **"Khác"**: người dùng chọn "Khác" và nhập tên ⇒ `unit_requests` (`pending`), hồ sơ tạm hiện "Khác". Duyệt ở menu **Đề xuất** (gộp cả đề xuất môn học): *Duyệt* (tạo mục mới, sửa chính tả được, hoặc gộp vào mục có sẵn) ⇒ cập nhật hồ sơ **mọi người đã gửi cùng tên** (không phân biệt hoa thường / dấu) và gửi thông báo; *Từ chối* (kèm lý do) ⇒ yêu cầu `rejected`, hồ sơ người dùng **vẫn là "Khác"**. Số đề xuất chờ hiện trên menu **Đề xuất** (`pendingUnitRequests` + `pendingCourseSuggestions`). Quy tắc chung: [03](./03-profile-and-academic-graph.md).
 - Hai danh mục: đổi tên (hiện ngay trên hồ sơ), tắt (không còn trong danh sách chọn), **gộp** (chuyển người dùng + môn học sang mục đích), xóa (chỉ khi trống). Ghi nhật ký `unit.*` / `unit_request.*`.
 - Môn học gắn theo lĩnh vực (`courses.interest_field_id`; nhập Excel dùng cột `field` = tên lĩnh vực). Thông báo hệ thống nhắm theo `universityIds` / `fieldIds`. Danh sách người dùng có bộ lọc Trường và Lĩnh vực.
 - Migration `units-simplify-upgrade.sql` (bước 1, không phá hủy): tạo bảng, chuyển dữ liệu một lần (đánh dấu `units-simplify-v1`) — trường thành viên cũ ⇒ lĩnh vực, mã khoa cũ ⇒ lĩnh vực của người dùng / môn học, trường tự nhập cũ ⇒ hàng chờ duyệt; hủy lịch gửi / tắt banner của thông báo nhắm theo đơn vị / khóa cũ.

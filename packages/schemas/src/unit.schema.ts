@@ -31,12 +31,15 @@ export interface UnitChoiceInput {
 // Phần đơn vị trong hồ sơ người dùng
 export interface UserUnits {
   universityId: string | null
-  university: string | null // tên trường; "Khác" khi đang chờ duyệt
+  university: string | null // tên trường; "Khác" khi đang chờ duyệt / bị từ chối
   interestFieldId: string | null
-  interestField: string | null // tên lĩnh vực; "Khác" khi đang chờ duyệt
+  interestField: string | null // tên lĩnh vực; "Khác" khi đang chờ duyệt / bị từ chối
   // Tên đã gửi chờ duyệt (chỉ chủ hồ sơ thấy) để điền sẵn lại form
   universityRequest?: string | null
   interestFieldRequest?: string | null
+  // pending = chờ duyệt · rejected = admin từ chối (hồ sơ vẫn là "Khác" cho tới khi người dùng chọn lại)
+  universityRequestStatus?: 'pending' | 'rejected' | null
+  interestFieldRequestStatus?: 'pending' | 'rejected' | null
 }
 
 // Admin: danh mục + số người dùng / môn học

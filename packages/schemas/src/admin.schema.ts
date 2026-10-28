@@ -205,6 +205,7 @@ export interface AdminStats {
   pendingReports: number
   pendingModeration: number
   pendingUnitRequests: number // đơn vị (trường / lĩnh vực) người dùng nhập tay chờ duyệt
+  pendingCourseSuggestions: number // môn học người dùng đề xuất chờ duyệt
   reportedPosts: number
   hiddenPosts: number
   totalPosts: number

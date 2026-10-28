@@ -62,6 +62,12 @@ Tài liệu này định nghĩa các quy tắc cốt lõi bắt buộc mà toàn
 
 ---
 
+### Dữ liệu "có đề xuất" (trường, lĩnh vực, môn học…) — quy tắc bắt buộc
+Mọi ô chọn mà danh mục do admin quản lý và người dùng có thể thiếu mục phải theo cùng một cách (chi tiết: [`docs/core/03-profile-and-academic-graph.md`](docs/core/03-profile-and-academic-graph.md#dữ-liệu-có-đề-xuất-quy-tắc-chung)):
+1. **UI**: dùng `SuggestPickerDialog` (`components/common/suggest-picker.tsx`), không dùng `<select>` / popover riêng. Hộp luôn có ô tìm (bỏ dấu), danh sách **A–Z** nhóm theo chữ cái, dòng **"Khác — đề xuất …"** ghim trên cùng ⇒ form đề xuất.
+2. **Dữ liệu người dùng**: "Khác" ⇒ giá trị của người dùng hiển thị là **"Khác"** (kèm tên đã gửi cho chính họ). **Duyệt** ⇒ cập nhật đúng theo đề xuất + thông báo. **Từ chối** ⇒ giữ yêu cầu `rejected`, giá trị người dùng **vẫn là "Khác"** cho tới khi họ chọn lại; lưu lại đúng tên đã bị từ chối không gửi lại.
+3. **Admin**: mọi đề xuất duyệt ở một nơi — trang **Đề xuất** (`features/suggestions/suggestions-page.tsx`), không rải trong từng tab. Loại đề xuất mới ⇒ thêm vào trang này + cộng vào badge menu (`AdminStats`).
+
 ## 🗄️ 4. Backend, Database & Native PostgreSQL
 
 - **Tham khảo Skill:** [`.agents/skills/backend-db-architecture/SKILL.md`](.agents/skills/backend-db-architecture/SKILL.md).

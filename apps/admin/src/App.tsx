@@ -8,6 +8,7 @@ import {
   Flag,
   History,
   LayoutDashboard,
+  Lightbulb,
   Loader2,
   LogOut,
   Megaphone,
@@ -34,12 +35,13 @@ import { ModerationTab } from '@/tabs/moderation-tab'
 import { UsersPage } from '@/features/users/users-page'
 import { AiOpsTab } from '@/tabs/ai-ops-tab'
 import { AcademicTab } from '@/tabs/academic-tab'
+import { SuggestionsPage } from '@/features/suggestions/suggestions-page'
 import { BotsPage } from '@/features/bots/bots-page'
 import { AnnouncementsPage } from '@/features/announcements/announcements-page'
 import { GroupsPage } from '@/features/groups/groups-page'
 import { AuditLogsTab, SearchAnalyticsTab } from '@/tabs/system-ops-tab'
 
-export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'ai' | 'search' | 'broadcast' | 'bots' | 'audit' | 'roles'
+export type NavId = 'dashboard' | 'moderation' | 'users' | 'academic' | 'suggestions' | 'ai' | 'search' | 'broadcast' | 'bots' | 'audit' | 'roles'
 
 interface NavItem {
   id: NavId
@@ -49,7 +51,7 @@ interface NavItem {
   badge?: number
 }
 
-const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'ai', 'search', 'broadcast', 'bots', 'audit', 'roles']
+const NAV_IDS: NavId[] = ['dashboard', 'moderation', 'users', 'academic', 'suggestions', 'ai', 'search', 'broadcast', 'bots', 'audit', 'roles']
 
 // Điều hướng theo hash (#/users) — giữ trang khi F5
 function readHash(): NavId {
@@ -151,7 +153,14 @@ export function App() {
     {
       label: 'Nội dung',
       items: [
-        { id: 'academic', label: 'Học thuật', icon: BookOpen, perm: 'academic:read', badge: stats.data?.pendingUnitRequests || undefined },
+        { id: 'academic', label: 'Học thuật', icon: BookOpen, perm: 'academic:read' },
+        {
+          id: 'suggestions',
+          label: 'Đề xuất',
+          icon: Lightbulb,
+          perm: 'academic:read',
+          badge: (stats.data?.pendingUnitRequests ?? 0) + (stats.data?.pendingCourseSuggestions ?? 0) || undefined
+        },
         { id: 'ai', label: 'N7AI', icon: Bot, perm: 'ai:read', badge: stats.data?.openSupportTickets }
       ]
     },
@@ -325,6 +334,7 @@ export function App() {
             {current === 'moderation' && <ModerationTab permissions={perms} pendingCount={stats.data?.pendingReports} autoCount={stats.data?.pendingModeration} />}
             {current === 'users' && <UsersPage currentUserId={session.user.id} />}
             {current === 'academic' && <AcademicTab permissions={perms} />}
+            {current === 'suggestions' && <SuggestionsPage canManage={can('academic:manage')} />}
             {current === 'ai' && <AiOpsTab permissions={perms} openTickets={stats.data?.openSupportTickets} />}
             {current === 'search' && <SearchAnalyticsTab />}
             {current === 'broadcast' && <AnnouncementsPage />}

@@ -82,7 +82,7 @@ describe('Units (e2e)', () => {
     expect(await profile(await loginAgent(app, other), other.username)).toMatchObject({ interestFieldId: null })
   })
 
-  it('admin từ chối ⇒ người dùng về chưa chọn; gộp vào mục có sẵn; môn học gắn lĩnh vực', async () => {
+  it('admin từ chối ⇒ người dùng vẫn là "Khác" (không gửi lại tên cũ); gộp vào mục có sẵn; môn học gắn lĩnh vực', async () => {
     const user = await createUser(db)
     const admin = await createUser(db, { role: 'admin' })
     const agent = await loginAgent(app, user)
@@ -93,9 +93,15 @@ describe('Units (e2e)', () => {
     await agent.patch('/api/users/profile').send({ interestFieldOther: `Từ chối ${tag}` }).expect(200)
     const rejectReq = ((await adminAgent.get('/api/admin/unit-requests').expect(200)).body.data as AdminUnitRequest[]).find((r) => r.user.id === user.id)!
     await adminAgent.post(`/api/admin/unit-requests/${rejectReq.id}/reject`).send({ reason: 'Không rõ nghĩa' }).expect(200)
-    expect(await profile(agent, user.username)).toMatchObject({ interestFieldId: null, interestField: null })
+    expect(await profile(agent, user.username)).toMatchObject({ interestFieldId: null, interestField: 'Khác', interestFieldRequest: `Từ chối ${tag}`, interestFieldRequestStatus: 'rejected' })
+    // Lưu hồ sơ lại với đúng tên đã bị từ chối ⇒ không tạo yêu cầu mới
+    await agent.patch('/api/users/profile').send({ interestFieldOther: `Từ chối ${tag}` }).expect(200)
+    expect((await adminAgent.get('/api/admin/unit-requests?status=pending').expect(200)).body.data.some((r: AdminUnitRequest) => r.user.id === user.id)).toBe(false)
+    expect(await profile(agent, user.username)).toMatchObject({ interestField: 'Khác', interestFieldRequestStatus: 'rejected' })
 
+    // Đổi sang tên khác ⇒ yêu cầu mới thay dòng bị từ chối
     await agent.patch('/api/users/profile').send({ interestFieldOther: `Gộp ${tag}` }).expect(200)
+    expect((await db.query(`SELECT status FROM unit_requests WHERE user_id = $1 AND kind = 'field'`, [user.id])).rows).toEqual([{ status: 'pending' }])
     const mergeReq = ((await adminAgent.get('/api/admin/unit-requests').expect(200)).body.data as AdminUnitRequest[]).find((r) => r.user.id === user.id)!
     await adminAgent.post(`/api/admin/unit-requests/${mergeReq.id}/approve`).send({ name: 'x', existingId: existing.id }).expect(400)
     await adminAgent.post(`/api/admin/unit-requests/${mergeReq.id}/approve`).send({ existingId: existing.id }).expect(200)

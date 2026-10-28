@@ -45,10 +45,17 @@ export class UnitRequestsService {
 
     await client.query(`UPDATE users SET ${userColumn} = $2, updated_at = NOW() WHERE id = $1`, [userId, chosen])
     if (chosen || !name) {
-      // Đã chọn từ danh mục / bỏ chọn ⇒ hủy yêu cầu đang chờ
-      await client.query(`DELETE FROM unit_requests WHERE user_id = $1 AND kind = $2 AND status = 'pending'`, [userId, kind])
+      // Đã chọn từ danh mục / bỏ chọn ⇒ bỏ "Khác" hiện hành (đang chờ hoặc đã bị từ chối)
+      await client.query(`DELETE FROM unit_requests WHERE user_id = $1 AND kind = $2 AND status <> 'approved'`, [userId, kind])
       return
     }
+    // Lưu lại hồ sơ mà vẫn giữ đúng tên đã bị từ chối ⇒ không gửi lại (tránh vòng lặp duyệt / từ chối)
+    const rejected = await client.query(
+      `SELECT 1 FROM unit_requests WHERE user_id = $1 AND kind = $2 AND status = 'rejected' AND ${foldSql('name')} = ${foldSql('$3::text')}`,
+      [userId, kind, name]
+    )
+    if (rejected.rowCount) return
+    await client.query(`DELETE FROM unit_requests WHERE user_id = $1 AND kind = $2 AND status = 'rejected'`, [userId, kind])
     await client.query(
       `INSERT INTO unit_requests (user_id, kind, name) VALUES ($1, $2, $3)
        ON CONFLICT (user_id, kind) WHERE status = 'pending' DO UPDATE SET name = EXCLUDED.name, created_at = NOW()`,
@@ -56,7 +63,7 @@ export class UnitRequestsService {
     )
   }
 
-  // Tên đã gửi chờ duyệt của một người (điền lại form)
+  // Tên "Khác" hiện hành (chờ duyệt) của một người (điền lại form)
   async pendingNames(userId: string): Promise<{ university: string | null; field: string | null }> {
     const res = await this.db.query(`SELECT kind, name FROM unit_requests WHERE user_id = $1 AND status = 'pending'`, [userId])
     const byKind = new Map<string, string>(res.rows.map((r) => [r.kind, r.name]))

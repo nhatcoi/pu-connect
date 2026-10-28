@@ -15,18 +15,24 @@ export const fieldNameSql = (alias = 'u') => `(SELECT x.name FROM interest_field
 // So khớp tên không phân biệt hoa thường / dấu (cùng biểu thức với unique index uq_universities_name…)
 export const foldSql = (expr: string) => `lower(immutable_unaccent(btrim(${expr})))`
 
+// Yêu cầu "Khác" hiện hành của người dùng (chờ duyệt hoặc bị từ chối; mỗi loại tối đa 1 dòng — xem UnitRequestsService.applyChoice)
+const requestColumn = (alias: string, kind: UnitKind, col: 'name' | 'status') =>
+  `(SELECT r.${col} FROM unit_requests r WHERE r.user_id = ${alias}.id AND r.kind = '${kind}' AND r.status <> 'approved' LIMIT 1)`
+
 // Đơn vị của người dùng trong một câu SELECT (subquery, không cần JOIN ⇒ dùng được cả khi câu lệnh không đặt bí danh):
 //   SELECT ..., ${USER_UNIT_COLUMNS('u')} FROM users u  — đọc kết quả bằng mapUserUnits(row)
 export const USER_UNIT_COLUMNS = (alias = 'u') => `
   ${alias}.university_id, ${alias}.interest_field_id,
   (SELECT x.name FROM universities x WHERE x.id = ${alias}.university_id) AS university_name,
   (SELECT x.name FROM interest_fields x WHERE x.id = ${alias}.interest_field_id) AS interest_field_name,
-  (SELECT r.name FROM unit_requests r WHERE r.user_id = ${alias}.id AND r.kind = 'university' AND r.status = 'pending') AS university_request,
-  (SELECT r.name FROM unit_requests r WHERE r.user_id = ${alias}.id AND r.kind = 'field' AND r.status = 'pending') AS interest_field_request`
+  ${requestColumn(alias, 'university', 'name')} AS university_request,
+  ${requestColumn(alias, 'university', 'status')} AS university_request_status,
+  ${requestColumn(alias, 'field', 'name')} AS interest_field_request,
+  ${requestColumn(alias, 'field', 'status')} AS interest_field_request_status`
 
 const OTHER_LABEL = 'Khác'
 
-// Chờ duyệt ⇒ hiển thị "Khác"; tên đã gửi chỉ trả cho chủ hồ sơ (điền lại form)
+// Chờ duyệt / bị từ chối ⇒ hiển thị "Khác"; tên đã gửi + trạng thái chỉ trả cho chủ hồ sơ (điền lại form)
 export function mapUserUnits(row: Record<string, any>, isOwner = false): UserUnits {
   const units: UserUnits = {
     universityId: row.university_id ?? null,
@@ -37,6 +43,8 @@ export function mapUserUnits(row: Record<string, any>, isOwner = false): UserUni
   if (isOwner) {
     units.universityRequest = row.university_request ?? null
     units.interestFieldRequest = row.interest_field_request ?? null
+    units.universityRequestStatus = row.university_request_status ?? null
+    units.interestFieldRequestStatus = row.interest_field_request_status ?? null
   }
   return units
 }

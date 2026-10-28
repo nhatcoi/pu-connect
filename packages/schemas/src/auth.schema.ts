@@ -78,6 +78,8 @@ export const UserProfileSchema = z.object({
   interestField: z.string().nullable().optional(), // "Khác" khi đang chờ duyệt
   universityRequest: z.string().nullable().optional(), // tên đã gửi chờ duyệt (chỉ chủ hồ sơ)
   interestFieldRequest: z.string().nullable().optional(),
+  universityRequestStatus: z.enum(['pending', 'rejected']).nullable().optional(),
+  interestFieldRequestStatus: z.enum(['pending', 'rejected']).nullable().optional(),
   avatarUrl: z.string().url().optional().nullable(),
   bannerUrl: z.string().optional().nullable(),
   location: z.string().max(100).optional().nullable(),

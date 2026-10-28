@@ -36,6 +36,12 @@ export class UserType {
   @Field(() => String, { nullable: true, description: 'Tên lĩnh vực đã gửi chờ duyệt (chỉ chủ hồ sơ)' })
   interestFieldRequest?: string | null
 
+  @Field(() => String, { nullable: true, description: 'pending | rejected (chỉ chủ hồ sơ)' })
+  universityRequestStatus?: string | null
+
+  @Field(() => String, { nullable: true, description: 'pending | rejected (chỉ chủ hồ sơ)' })
+  interestFieldRequestStatus?: string | null
+
   @Field(() => String, { nullable: true })
   avatarUrl?: string | null
 

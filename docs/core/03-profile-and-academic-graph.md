@@ -10,7 +10,7 @@ Hồ sơ cá nhân trên PU Connect được chuẩn hóa để phản ánh đ�
 * **Định danh cơ bản:** `id (UUID)`, `email (edu mail)`, `username`, `display_name`, `avatar_url`, `bio`.
 * **Cây định danh học thuật:**
   * `student_id`: Mã số sinh viên (ví dụ: `22010123`).
-  * `university_id` → `universities`: trường đại học (có sẵn Phenikaa; email trường tự chọn). Chọn **"Khác"** + nhập tên ⇒ bản ghi `unit_requests` chờ admin duyệt; trong lúc chờ hồ sơ hiện **"Khác"**.
+  * `university_id` → `universities`: trường đại học (có sẵn Phenikaa; email trường tự chọn). Chọn **"Khác"** + nhập tên ⇒ bản ghi `unit_requests` chờ admin duyệt; trong lúc chờ (và cả khi bị từ chối) hồ sơ hiện **"Khác"**.
   * `interest_field_id` → `interest_fields`: **lĩnh vực quan tâm** (Công nghệ thông tin, Kỹ thuật, Kinh tế, Ngoại ngữ – KHXH, Y – Dược, Công nghệ số liên ngành, Du lịch…; admin thêm được). Cùng cơ chế "Khác" + duyệt. Môn học (`courses.interest_field_id`) và tài liệu (qua môn) gắn theo lĩnh vực này.
   * **Không còn** khoa / ngành / khóa / lớp: quá chi tiết nên người dùng ngại điền (2026-10-28). Cột cũ `faculty`, `major`, `class_name`, `academic_year`, `school`, `unit_id` và bảng `faculties`, `academic_units` còn trong DB nhưng code không đọc/ghi (bước 2 sẽ DROP sau khi xác nhận).
   * `role`: Phân quyền RBAC (`student`, `lecturer`, `ta`, `club_lead`, `admin`).
@@ -20,6 +20,16 @@ Hồ sơ cá nhân trên PU Connect được chuẩn hóa để phản ánh đ�
   * `reputation_points (INT)`: Tổng điểm uy tín tích lũy từ đóng góp học thuật.
 
 ---
+
+### 1.2. Dữ liệu có đề xuất (quy tắc chung)
+
+Áp dụng cho trường đại học, lĩnh vực quan tâm và môn học (và mọi danh mục tương tự thêm sau):
+
+* **Hộp chọn chung** `SuggestPickerDialog` (`components/common/suggest-picker.tsx`): ô tìm bỏ dấu, danh sách **A–Z** nhóm theo chữ cái đầu, dòng **"Khác — đề xuất …"** ghim đầu danh sách. Chọn "Khác" ⇒ form đề xuất (trường đầu là tên, điền sẵn từ ô tìm; môn học có thêm lĩnh vực + ghi chú). Dùng ở form sửa hồ sơ (`unit-selector.tsx`), chọn môn khi phân loại tài liệu (`CourseSelect`) và nút *Đề xuất môn học* ở trang Môn học (`startInSuggest`).
+* **Nơi lưu**: trường / lĩnh vực ⇒ `unit_requests` (`kind` university | field; mỗi người tối đa **một** dòng chưa duyệt cho mỗi loại, trạng thái `pending` hoặc `rejected`); môn học ⇒ `course_suggestions`.
+* **Trạng thái hồ sơ**: đề xuất chờ duyệt **hoặc bị từ chối** ⇒ `university` / `interestField` hiển thị **"Khác"**; chủ hồ sơ còn nhận tên đã gửi và `*RequestStatus` (`pending` | `rejected`) để điền lại form.
+* **Admin duyệt** (trang **Đề xuất**): duyệt ⇒ tạo mục mới hoặc gộp vào mục có sẵn, cập nhật hồ sơ mọi người gửi cùng tên và thông báo; môn học ⇒ tạo môn thật. **Từ chối** (kèm lý do) ⇒ dòng yêu cầu thành `rejected`, hồ sơ người dùng **vẫn là "Khác"**; họ chọn mục có sẵn hoặc đổi sang tên khác (tạo yêu cầu mới thay dòng cũ) mới thoát trạng thái này. Lưu hồ sơ với đúng tên đã bị từ chối **không** gửi lại.
+* Thêm loại đề xuất mới: dùng lại hộp chọn + thêm một loại vào trang Đề xuất bên admin và cộng vào badge menu (`AdminStats`).
 
 ## 2. Hệ Thống Theo Dõi & Mạng Lưới Kết Nối (`user_follows`)
 

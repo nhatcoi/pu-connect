@@ -9,7 +9,8 @@ import { useCourses } from '@/hooks/use-course'
 import { useFollowedCourseIds } from '@/hooks/use-course-follow'
 import { cn } from '@/lib/utils'
 import { CourseTable } from './course-table'
-import { SuggestCourseDialog } from './suggest-course-dialog'
+import { SuggestPickerDialog } from '@/components/common/suggest-picker'
+import { useCourseSuggestConfig } from './use-course-suggest-config'
 import { buildFields } from './course-fields'
 
 type Sort = 'hot' | 'docs' | 'name'
@@ -39,6 +40,7 @@ export function CourseCatalog() {
   const [sort, setSort] = useState<Sort>('name')
   const [onlyFollowed, setOnlyFollowed] = useState(false)
   const [suggestOpen, setSuggestOpen] = useState(false)
+  const suggestConfig = useCourseSuggestConfig(suggestOpen)
 
   const fields = useMemo(() => buildFields(courses), [courses])
   const followed = useMemo(() => new Set(followedIds), [followedIds])
@@ -101,7 +103,7 @@ export function CourseCatalog() {
           <CourseTable courses={filtered} followedIds={followed} />
         </div>
       )}
-      <SuggestCourseDialog open={suggestOpen} onOpenChange={setSuggestOpen} />
+      <SuggestPickerDialog open={suggestOpen} onOpenChange={setSuggestOpen} title="Đề xuất môn học" options={[]} suggest={suggestConfig} startInSuggest />
     </div>
   )
 }
