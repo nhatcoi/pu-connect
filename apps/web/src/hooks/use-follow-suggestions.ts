@@ -38,12 +38,10 @@ export function suggestionReasonText(s: FollowSuggestion): string {
       const rest = s.mutualCount - 1
       return first ? `${first}${rest > 0 ? ` và ${rest} người khác` : ''} đang theo dõi` : `${s.mutualCount} người bạn theo dõi cũng theo dõi`
     }
-    case 'same_class':
-      return `Cùng lớp ${s.className}`
     case 'shared_interests':
       return `Cùng quan tâm ${s.sharedTags.join(', ')}`
-    case 'same_faculty':
-      return `Cùng khoa ${s.faculty}`
+    case 'same_field':
+      return `Cùng lĩnh vực ${s.interestField}`
     default:
       return 'Nổi bật trong trường'
   }

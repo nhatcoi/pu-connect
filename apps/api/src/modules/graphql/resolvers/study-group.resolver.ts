@@ -2,6 +2,7 @@ import { Resolver, Query, Mutation, Args, ID, Context } from '@nestjs/graphql'
 import { StudyGroupType } from '../types/study-group.type'
 import { DatabaseService } from '../../../database/database.service'
 import { UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common'
+import { fieldNameSql } from '../../units/unit-sql'
 
 @Resolver(() => StudyGroupType)
 export class StudyGroupResolver {
@@ -20,7 +21,7 @@ export class StudyGroupResolver {
       SELECT sg.*,
              u.id as leader_id, u.email as leader_email, u.username as leader_username,
              u.display_name as leader_display_name, u.avatar_url as leader_avatar_url,
-             u.role as leader_role, u.faculty as leader_faculty, u.reputation_points as leader_reputation_points,
+             u.role as leader_role, ${fieldNameSql('u')} as leader_interest_field, u.reputation_points as leader_reputation_points,
              u.created_at as leader_created_at
     `
     const params: any[] = []
@@ -80,7 +81,7 @@ export class StudyGroupResolver {
         displayName: row.leader_display_name || '',
         avatarUrl: row.leader_avatar_url || null,
         role: row.leader_role || 'student',
-        faculty: row.leader_faculty || null,
+        interestField: row.leader_interest_field || null,
         reputationPoints: row.leader_reputation_points || 100,
         createdAt: row.leader_created_at ? new Date(row.leader_created_at).toISOString() : ''
       }

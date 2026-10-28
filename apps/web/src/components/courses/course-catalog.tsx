@@ -10,7 +10,7 @@ import { useFollowedCourseIds } from '@/hooks/use-course-follow'
 import { cn } from '@/lib/utils'
 import { CourseTable } from './course-table'
 import { SuggestCourseDialog } from './suggest-course-dialog'
-import { buildFaculties } from './course-faculty'
+import { buildFields } from './course-fields'
 
 type Sort = 'hot' | 'docs' | 'name'
 
@@ -30,25 +30,25 @@ const compare: Record<Sort, (a: Course, b: Course) => number> = {
   docs: (a, b) => b.documentCount - a.documentCount || a.name.localeCompare(b.name, 'vi')
 }
 
-// Tab "Môn học": bảng phẳng, tìm / lọc khoa / sắp xếp / chỉ môn đang theo dõi
+// Tab "Môn học": bảng phẳng, tìm / lọc lĩnh vực / sắp xếp / chỉ môn đang theo dõi
 export function CourseCatalog() {
   const { data: courses = [], isPending } = useCourses()
   const { data: followedIds = [] } = useFollowedCourseIds()
   const [q, setQ] = useState('')
-  const [facultyId, setFacultyId] = useState('')
+  const [fieldId, setFieldId] = useState('')
   const [sort, setSort] = useState<Sort>('name')
   const [onlyFollowed, setOnlyFollowed] = useState(false)
   const [suggestOpen, setSuggestOpen] = useState(false)
 
-  const faculties = useMemo(() => buildFaculties(courses), [courses])
+  const fields = useMemo(() => buildFields(courses), [courses])
   const followed = useMemo(() => new Set(followedIds), [followedIds])
 
   const filtered = useMemo(() => {
     const needle = normalize(q.trim())
     return courses
-      .filter((c) => (!facultyId || c.departmentId === facultyId) && (!onlyFollowed || followed.has(c.id)) && (!needle || normalize(`${c.name} ${c.code}`).includes(needle)))
+      .filter((c) => (!fieldId || c.fieldId === fieldId) && (!onlyFollowed || followed.has(c.id)) && (!needle || normalize(`${c.name} ${c.code}`).includes(needle)))
       .sort(compare[sort])
-  }, [courses, q, facultyId, onlyFollowed, followed, sort])
+  }, [courses, q, fieldId, onlyFollowed, followed, sort])
 
   if (isPending) return <CourseListSkeleton />
 
@@ -59,9 +59,9 @@ export function CourseCatalog() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm theo tên hoặc mã môn (vd. giải tích, IT101)" className="h-9 rounded-lg pl-9 text-sm" />
         </div>
-        <select aria-label="Khoa" value={facultyId} onChange={(e) => setFacultyId(e.target.value)} className={cn(SELECT, 'max-w-60')}>
-          <option value="">Tất cả khoa</option>
-          {faculties.map((f) => (
+        <select aria-label="Lĩnh vực" value={fieldId} onChange={(e) => setFieldId(e.target.value)} className={cn(SELECT, 'max-w-60')}>
+          <option value="">Tất cả lĩnh vực</option>
+          {fields.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name} ({f.count})
             </option>
@@ -95,7 +95,7 @@ export function CourseCatalog() {
       </p>
 
       {filtered.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted-foreground">{onlyFollowed && !q && !facultyId ? 'Bạn chưa theo dõi môn nào. Bấm ngôi sao ở đầu dòng để theo dõi.' : 'Không tìm thấy môn học phù hợp.'}</p>
+        <p className="py-16 text-center text-sm text-muted-foreground">{onlyFollowed && !q && !fieldId ? 'Bạn chưa theo dõi môn nào. Bấm ngôi sao ở đầu dòng để theo dõi.' : 'Không tìm thấy môn học phù hợp.'}</p>
       ) : (
         <div className="px-2 sm:px-0">
           <CourseTable courses={filtered} followedIds={followed} />

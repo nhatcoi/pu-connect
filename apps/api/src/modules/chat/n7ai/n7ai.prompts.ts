@@ -67,11 +67,8 @@ ${facts.map((f) => `- ${f}`).join('\n')}
 // Hồ sơ học: thông tin học vụ (hồ sơ PU) + điều người học tự viết ở Cài đặt N7AI › Hồ sơ học (dữ liệu, không vượt quy tắc trên)
 export interface LearnerContext {
   name: string | null
-  school: string | null
-  faculty: string | null
-  major: string | null
-  className: string | null
-  academicYear: string | null
+  university: string | null
+  interestField: string | null
   goal: string | null
   about: string | null
   style: string | null
@@ -80,11 +77,8 @@ export interface LearnerContext {
 export function learnerPrompt(l: LearnerContext): string {
   const academic = [
     l.name && `Tên: ${l.name}`,
-    l.school && `Trường: ${l.school}`,
-    l.faculty && `Khoa: ${l.faculty}`,
-    l.major && `Ngành: ${l.major}`,
-    l.className && `Lớp: ${l.className}`,
-    l.academicYear && `Khóa: ${l.academicYear}`
+    l.university && `Trường: ${l.university}`,
+    l.interestField && `Lĩnh vực quan tâm: ${l.interestField}`
   ].filter(Boolean)
   const own = [l.goal && `Mục tiêu học: ${l.goal}`, l.about && `Người học tự giới thiệu: ${l.about}`, l.style && `Cách người học muốn được trả lời: ${l.style}`].filter(
     Boolean

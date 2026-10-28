@@ -6,7 +6,6 @@ import type { Course } from '@pu/schemas'
 import { Star } from 'lucide-react'
 import { useToggleFollowCourse } from '@/hooks/use-course-follow'
 import { cn } from '@/lib/utils'
-import { shortFacultyName } from './course-faculty'
 
 // Cột: sao · môn (tên + mã) · khoa · tín chỉ · tài liệu · thảo luận
 const COLS = 'grid grid-cols-[2rem_minmax(0,1fr)_3rem_3.5rem_3.5rem] sm:grid-cols-[2rem_minmax(0,1fr)_minmax(0,14rem)_3.5rem_4.5rem_4.5rem] items-center gap-x-3'
@@ -48,7 +47,7 @@ export function CourseTable({ courses, followedIds }: { courses: Course[]; follo
             <span className="pointer-events-none min-w-0">
               <span className="block truncate text-[13px] font-semibold text-foreground">{c.name}</span>
             </span>
-            <span className="pointer-events-none hidden truncate text-muted-foreground sm:block">{shortFacultyName(c.departmentName)}</span>
+            <span className="pointer-events-none hidden truncate text-muted-foreground sm:block">{c.fieldName}</span>
             <span className="pointer-events-none text-right tabular-nums text-muted-foreground">{c.credits}</span>
             <span className={cn('pointer-events-none text-right tabular-nums', c.documentCount ? 'text-foreground' : 'text-muted-foreground/60')}>{c.documentCount}</span>
             <span className={cn('pointer-events-none hidden text-right tabular-nums sm:block', c.postCount ? 'text-foreground' : 'text-muted-foreground/60')}>{c.postCount}</span>

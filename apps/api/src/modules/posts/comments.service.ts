@@ -10,6 +10,7 @@ import type { ReportCommentBody } from './dto/comment.dto'
 import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './anonymity'
 import { ModerationService } from '../moderation/moderation.service'
 import { PostDocumentsService } from '../documents/post-documents.service'
+import { fieldNameSql } from '../units/unit-sql'
 
 export interface CommentsResult {
   data: CommentItem[]
@@ -65,7 +66,7 @@ export class CommentsService {
        SELECT c.*,
               u.id as author_user_id, u.email as author_email, u.username as author_username,
               u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-              u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+              u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
               ${likedSql} as is_liked_by_me
        FROM comments c
        JOIN thread t ON t.id = c.id
@@ -137,7 +138,7 @@ export class CommentsService {
       if (anonymous) await assertAnonymousQuota(client, 'comments', authorId)
 
       // 2. Fetch author details
-      const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
+      const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, ${fieldNameSql('users')} AS interest_field, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
         authorId
       ])
       if (userRes.rows.length === 0) {
@@ -192,7 +193,7 @@ export class CommentsService {
               displayName: author.display_name,
               avatarUrl: author.avatar_url,
               role: author.role,
-              faculty: author.faculty,
+              interestField: author.interest_field,
               reputationPoints: author.reputation_points || 0
             }
       }
@@ -447,7 +448,7 @@ export class CommentsService {
             displayName: row.author_display_name || 'Sinh viên Phenikaa',
             avatarUrl: row.author_avatar_url || null,
             role: row.author_role || 'student',
-            faculty: row.author_faculty || null,
+            interestField: row.author_interest_field || null,
             reputationPoints: row.author_reputation_points || 100
           }
     }

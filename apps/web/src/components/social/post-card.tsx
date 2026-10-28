@@ -22,7 +22,6 @@ import {
   BookOpen,
   Users,
   GraduationCap,
-  Building2,
   BarChart2,
   UserPlus,
   UserMinus,
@@ -67,40 +66,17 @@ import { patchPostEverywhere, removePostEverywhere, patchAuthorFollowed, invalid
 import { useDwellTracking } from '@/hooks/use-dwell-tracking'
 import { PostDocumentList } from './post-document-list'
 
-// Helper: Convert UUID / raw faculty code into human-readable label
-function getCleanCourseBadge(post: PostItem): { label: string; isFaculty: boolean; href?: string } | null {
+// Helper: nhãn học phần của bài (UUID thô thì không hiện)
+function getCleanCourseBadge(post: PostItem): { label: string; href?: string } | null {
   // Bài gắn học phần ⇒ link sang trang học phần
   if (post.courseCode) {
-    return { label: post.courseName || post.courseCode, isFaculty: false, href: `/courses/${encodeURIComponent(post.courseCode)}` }
+    return { label: post.courseName || post.courseCode, href: `/courses/${encodeURIComponent(post.courseCode)}` }
   }
 
   if (post.courseId) {
     const raw = post.courseId.trim()
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-    if (uuidRegex.test(raw)) {
-      return null
-    }
-
-    const FACULTY_MAP: Record<string, string> = {
-      FIT: 'Khoa Công nghệ Thông tin',
-      FEE: 'Khoa Điện - Điện tử',
-      FAE: 'Khoa Kỹ thuật Ô tô',
-      FMS: 'Khoa Y Dược',
-      FEL: 'Khoa Ngôn ngữ Anh',
-      FAS: 'Khoa Vật liệu & Công nghệ cao'
-    }
-
-    if (FACULTY_MAP[raw.toUpperCase()]) {
-      return {
-        label: raw.toUpperCase(),
-        isFaculty: true
-      }
-    }
-
-    return {
-      label: raw,
-      isFaculty: false
-    }
+    return uuidRegex.test(raw) ? null : { label: raw }
   }
 
   return null
@@ -542,7 +518,7 @@ export function PostCard({
 
                 {courseBadge && !courseBadge.href && (
                   <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground max-w-[120px] truncate">
-                    {courseBadge.isFaculty ? <Building2 className="h-3 w-3 shrink-0" /> : <GraduationCap className="h-3 w-3 shrink-0" />}
+                    <GraduationCap className="h-3 w-3 shrink-0" />
                     <span className="truncate">{courseBadge.label}</span>
                   </span>
                 )}

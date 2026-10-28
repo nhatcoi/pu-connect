@@ -138,7 +138,7 @@ export const AdminCourseInputSchema = z.object({
     .regex(/^[A-Z0-9_-]+$/, 'Mã môn chỉ gồm chữ in hoa, số, gạch ngang/dưới'),
   name: z.string().trim().min(3, 'Tên môn tối thiểu 3 ký tự').max(150),
   credits: z.number().int().min(1).max(15).default(3),
-  facultyCode: z.string().trim().min(1, 'Chọn mã khoa/viện').max(30),
+  fieldId: z.string().uuid().nullable().optional(), // lĩnh vực quan tâm của môn
   description: z.string().trim().max(2000).optional().nullable(),
   syllabusUrl: z.string().trim().max(500).optional().nullable()
 })
@@ -147,8 +147,8 @@ export type AdminCourseInput = z.infer<typeof AdminCourseInputSchema>
 // Thông báo hệ thống: đối tượng, hẹn giờ, banner
 export interface AdminAnnouncementAudience {
   roles?: AdminUserRole[]
-  unitIds?: string[]
-  years?: string[]
+  universityIds?: string[]
+  fieldIds?: string[]
 }
 
 export interface AdminAnnouncement {
@@ -204,6 +204,7 @@ export interface AdminSessionInfo {
 export interface AdminStats {
   pendingReports: number
   pendingModeration: number
+  pendingUnitRequests: number // đơn vị (trường / lĩnh vực) người dùng nhập tay chờ duyệt
   reportedPosts: number
   hiddenPosts: number
   totalPosts: number
@@ -307,7 +308,8 @@ export interface AdminUserRow {
   status: string
   isVerified: boolean
   studentId: string | null
-  faculty: string | null
+  university: string | null
+  interestField: string | null
   reputationPoints: number
   suspendedAt: string | null
   suspendedReason: string | null
@@ -375,8 +377,8 @@ export interface AdminUserQuery {
   auth?: AdminAuthProvider
   activity?: AdminUserActivity
   joined?: AdminUserJoined
-  faculty?: string
-  unit?: string
+  university?: string // id
+  field?: string // id
   reported?: 'yes'
   risk?: 'high' | 'medium'
   sort?: AdminUserSort
@@ -424,7 +426,7 @@ export interface AdminUserSummary {
   reported: number
   dormant: number
   byRole: Partial<Record<AdminUserRole, number>>
-  faculties: { faculty: string; count: number }[]
+  fields: { id: string; name: string; count: number }[]
 }
 
 export interface AdminUserNote {
@@ -438,9 +440,6 @@ export interface AdminUserNote {
 export interface AdminUserDetail {
   user: AdminUserRow & {
     bio: string | null
-    major: string | null
-    className: string | null
-    academicYear: string | null
     verifiedAt: string | null
   }
   stats: {
@@ -556,7 +555,8 @@ export interface AdminCourseRow {
   code: string
   name: string
   credits: number
-  facultyCode: string | null
+  fieldId: string | null
+  fieldName: string | null
   description: string | null
   syllabusUrl: string | null
   documentCount: number

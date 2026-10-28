@@ -151,7 +151,7 @@ export function App() {
     {
       label: 'Nội dung',
       items: [
-        { id: 'academic', label: 'Học thuật', icon: BookOpen, perm: 'academic:read' },
+        { id: 'academic', label: 'Học thuật', icon: BookOpen, perm: 'academic:read', badge: stats.data?.pendingUnitRequests || undefined },
         { id: 'ai', label: 'N7AI', icon: Bot, perm: 'ai:read', badge: stats.data?.openSupportTickets }
       ]
     },

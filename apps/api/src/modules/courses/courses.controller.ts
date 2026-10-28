@@ -16,8 +16,8 @@ export class CoursesController {
   ) {}
 
   @Get()
-  async findAll(@Query('department') department?: string) {
-    return this.coursesService.findAll(department)
+  async findAll(@Query('field') field?: string) {
+    return this.coursesService.findAll(field)
   }
 
   // Phải đứng trước ':id'

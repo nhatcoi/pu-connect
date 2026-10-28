@@ -167,11 +167,8 @@ describe('N7AI agent tools (e2e)', () => {
     expect(
       learnerPrompt({
         name: 'An',
-        school: null,
-        faculty: null,
-        major: 'CNTT',
-        className: null,
-        academicYear: 'K17',
+        university: null,
+        interestField: 'CNTT',
         goal: 'IELTS 6.5',
         about: null,
         style: null

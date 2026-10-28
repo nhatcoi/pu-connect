@@ -52,9 +52,9 @@ describe('Course suggestions (e2e)', () => {
     expect(ok.requester.username).toBe(user.username)
 
     const code = `DY${tag.toUpperCase()}`
-    const approved = (await adminAgent.post(`/api/admin/courses/suggestions/${ok.id}/approve`).send({ code, name: ok.name, credits: 3, facultyCode: 'CNTT' }).expect(200)).body.data
+    const approved = (await adminAgent.post(`/api/admin/courses/suggestions/${ok.id}/approve`).send({ code, name: ok.name, credits: 3 }).expect(200)).body.data
     expect((await db.query(`SELECT name FROM courses WHERE id = $1`, [approved.courseId])).rows[0].name).toBe(`Duyệt ${tag}`)
-    await adminAgent.post(`/api/admin/courses/suggestions/${ok.id}/approve`).send({ code: `${code}X`, name: ok.name, credits: 3, facultyCode: 'CNTT' }).expect(409)
+    await adminAgent.post(`/api/admin/courses/suggestions/${ok.id}/approve`).send({ code: `${code}X`, name: ok.name, credits: 3 }).expect(409)
 
     await adminAgent.post(`/api/admin/courses/suggestions/${no.id}/reject`).send({ note: '' }).expect(400)
     await adminAgent.post(`/api/admin/courses/suggestions/${no.id}/reject`).send({ note: 'Trùng với môn có sẵn' }).expect(200)

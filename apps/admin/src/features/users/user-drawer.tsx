@@ -249,8 +249,8 @@ function Overview({ d, onInsight }: { d: AdminUserDetail; onInsight?: (id: strin
       <dl className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-2.5 text-sm">
         <Info label="Email">{u.email}</Info>
         <Info label="Mã SV">{u.studentId}</Info>
-        <Info label="Khoa">{u.faculty}</Info>
-        <Info label="Ngành / lớp">{[u.major, u.className].filter(Boolean).join(' · ')}</Info>
+        <Info label="Trường">{u.university}</Info>
+        <Info label="Lĩnh vực quan tâm">{u.interestField}</Info>
         <Info label="Uy tín">{formatNumber(u.reputationPoints)}</Info>
         <Info label="Đăng nhập bằng">
           <span className="flex gap-1.5">

@@ -93,7 +93,7 @@ export const AdminCourseBodySchema = z.object({
     .regex(/^[A-Z0-9_-]+$/, 'Mã môn chỉ gồm chữ in hoa, số, gạch ngang/dưới'),
   name: z.string().trim().min(3, 'Tên môn tối thiểu 3 ký tự').max(150),
   credits: z.number().int().min(1).max(15).default(3),
-  facultyCode: z.string().trim().min(1, 'Chọn mã khoa/viện').max(30),
+  fieldId: z.string().uuid().nullable().optional(), // lĩnh vực quan tâm của môn
   description: z.string().trim().max(2000).optional().nullable(),
   syllabusUrl: z.string().trim().max(500).optional().nullable()
 })
@@ -110,8 +110,8 @@ export const AdminUserQuerySchema = z.object({
   auth: optEnum(['password', 'google'] as const),
   activity: optEnum(['online', '24h', '7d', '30d', 'dormant', 'never'] as const),
   joined: optEnum(['24h', '7d', '30d', '90d'] as const),
-  faculty: z.string().trim().max(50).optional(),
-  unit: z.string().uuid().optional(), // đơn vị trong cây học thuật (gồm đơn vị con)
+  university: z.string().uuid().optional(),
+  field: z.string().uuid().optional(), // lĩnh vực quan tâm
   reported: optEnum(['yes'] as const),
   risk: optEnum(['high', 'medium'] as const),
   sort: optEnum(['created', 'last_seen', 'reputation', 'posts', 'reports', 'name', 'risk'] as const).default('created'),

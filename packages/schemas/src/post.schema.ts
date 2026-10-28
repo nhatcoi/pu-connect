@@ -7,7 +7,7 @@ export type PostType = z.infer<typeof PostTypeEnum>
 export const PostVisibilityEnum = z.enum(['public', 'followers', 'private'])
 export type PostVisibility = z.infer<typeof PostVisibilityEnum>
 
-export const TargetAudienceEnum = z.enum(['everyone', 'faculty', 'course_members', 'followers'])
+export const TargetAudienceEnum = z.enum(['everyone', 'field', 'course_members', 'followers'])
 export type TargetAudience = z.infer<typeof TargetAudienceEnum>
 
 export const PollOptionSchema = z.object({
@@ -36,7 +36,6 @@ export const CreatePostSchema = z.object({
   content: z.string().min(1, { message: 'Nội dung bài viết không được để trống' }),
   postType: PostTypeEnum.default('general'),
   courseId: z.string().optional(),
-  facultyCode: z.string().optional(),
   targetAudience: TargetAudienceEnum.default('everyone'),
   tags: z.array(z.string()).default([]),
   attachedDocumentIds: z.array(z.string()).default([]),
@@ -107,7 +106,7 @@ export const PostItemSchema = z.object({
     displayName: z.string(),
     avatarUrl: z.string().nullable().optional(),
     role: z.string().optional(),
-    faculty: z.string().nullable().optional(),
+    interestField: z.string().nullable().optional(),
     reputationPoints: z.number().optional()
   }),
   title: z.string().optional(),
@@ -119,7 +118,6 @@ export const PostItemSchema = z.object({
   communityId: z.string().nullable().optional(),
   communitySlug: z.string().nullable().optional(),
   communityName: z.string().nullable().optional(),
-  facultyCode: z.string().nullable().optional(),
   targetAudience: TargetAudienceEnum.default('everyone'),
   visibility: PostVisibilityEnum.default('public'),
   // Có giá trị = bài đang lưu trữ (chỉ tác giả thấy)

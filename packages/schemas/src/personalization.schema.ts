@@ -51,8 +51,7 @@ export interface UserInsight {
     username: string
     displayName: string
     avatarUrl: string | null
-    major: string | null
-    className: string | null
+    interestField: string | null
     interests: string[]
     skills: string[]
     lastSeenAt: string | null

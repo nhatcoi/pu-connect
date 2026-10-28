@@ -204,7 +204,7 @@ export class AdminListsService {
     const search = q.q?.trim()
     const conds = [
       search && `(${searchCondition(p, search, { tsv: 'search_tsv' }) ?? 'FALSE'} OR lower(code) LIKE ${p.add(`${likeEscape(search.toLowerCase())}%`)})`,
-      q.faculty && `faculty_code = ${p.add(q.faculty)}`
+      q.field && `interest_field_id IN (SELECT id FROM interest_fields WHERE name = ${p.add(q.field)})`
     ]
     const sort = { posts: 'post_count', documents: 'document_count', code: 'code', recent: 'created_at' }[q.sort]
     const [page, facets] = await Promise.all([
@@ -212,7 +212,7 @@ export class AdminListsService {
         params: p,
         page: q.page,
         pageSize: q.pageSize,
-        select: `id, code, name, credits, faculty_code, description, syllabus_url, document_count, post_count, rating_avg, created_at`,
+        select: `id, code, name, credits, interest_field_id, (SELECT x.name FROM interest_fields x WHERE x.id = courses.interest_field_id) AS field_name, description, syllabus_url, document_count, post_count, rating_avg, created_at`,
         from: `courses ${whereOf(conds)}`,
         order: orderBy(sort, q.dir, 'id'),
         map: (row): AdminCourseRow => ({
@@ -220,7 +220,8 @@ export class AdminListsService {
           code: row.code,
           name: row.name,
           credits: row.credits ?? 3,
-          facultyCode: row.faculty_code,
+          fieldId: row.interest_field_id,
+          fieldName: row.field_name,
           description: row.description,
           syllabusUrl: row.syllabus_url,
           documentCount: row.document_count ?? 0,
@@ -229,9 +230,9 @@ export class AdminListsService {
           createdAt: iso(row.created_at) as string
         })
       }),
-      this.facet(`SELECT faculty_code AS value, COUNT(*)::int AS count FROM courses WHERE faculty_code IS NOT NULL GROUP BY 1 ORDER BY 2 DESC, 1`)
+      this.facet(`SELECT f.name AS value, COUNT(*)::int AS count FROM courses c JOIN interest_fields f ON f.id = c.interest_field_id GROUP BY 1 ORDER BY 2 DESC, 1`)
     ])
-    return { ...page, facets: { faculty: facets } }
+    return { ...page, facets: { field: facets } }
   }
 
   async documents(q: DocumentsQuery): Promise<AdminPage<AdminDocumentRow>> {

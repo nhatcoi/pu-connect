@@ -8,7 +8,7 @@ import type { TargetAudience } from '@pu/schemas'
 interface ComposerAudienceMenuProps {
   value: TargetAudience
   onChange: (audience: TargetAudience) => void
-  facultyCode?: string
+  fieldName?: string
   courseCode?: string
 }
 
@@ -18,10 +18,10 @@ export const AUDIENCE_CONFIG: Record<TargetAudience, { label: string; icon: Reac
     icon: Globe2,
     description: 'Bất kỳ sinh viên, giảng viên nào trong trường'
   },
-  faculty: {
-    label: 'Cùng Khoa / Viện',
+  field: {
+    label: 'Cùng lĩnh vực quan tâm',
     icon: Building2,
-    description: 'Chỉ các bạn sinh viên và giảng viên thuộc cùng Khoa/Viện'
+    description: 'Chỉ các bạn sinh viên và giảng viên cùng lĩnh vực quan tâm'
   },
   course_members: {
     label: 'Cùng học phần',
@@ -35,7 +35,7 @@ export const AUDIENCE_CONFIG: Record<TargetAudience, { label: string; icon: Reac
   }
 }
 
-export function ComposerAudienceMenu({ value, onChange, facultyCode, courseCode }: ComposerAudienceMenuProps) {
+export function ComposerAudienceMenu({ value, onChange, fieldName, courseCode }: ComposerAudienceMenuProps) {
   const current = AUDIENCE_CONFIG[value] || AUDIENCE_CONFIG.everyone
   const Icon = current.icon
 
@@ -69,8 +69,8 @@ export function ComposerAudienceMenu({ value, onChange, facultyCode, courseCode 
                   {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
                 </div>
                 <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
-                  {key === 'faculty' && facultyCode
-                    ? `Chỉ thành viên thuộc Khoa ${facultyCode}`
+                  {key === 'field' && fieldName
+                    ? `Chỉ thành viên quan tâm ${fieldName}`
                     : key === 'course_members' && courseCode
                       ? `Chỉ thành viên môn ${courseCode}`
                       : item.description}

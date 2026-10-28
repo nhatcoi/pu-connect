@@ -2,12 +2,12 @@ import { z } from 'zod'
 
 const ROLES = ['student', 'lecturer', 'ta', 'club_lead', 'admin'] as const
 
-// Rỗng = mọi thành viên; roles/unitIds/years kết hợp bằng AND, các giá trị trong cùng một mảng bằng OR
+// Rỗng = mọi thành viên; roles/universityIds/fieldIds kết hợp bằng AND, các giá trị trong cùng một mảng bằng OR
 export const AnnouncementAudienceSchema = z
   .object({
     roles: z.array(z.enum(ROLES)).max(5).optional(),
-    unitIds: z.array(z.string().uuid()).max(50).optional(),
-    years: z.array(z.string().trim().min(1).max(20)).max(20).optional()
+    universityIds: z.array(z.string().uuid()).max(50).optional(),
+    fieldIds: z.array(z.string().uuid()).max(50).optional()
   })
   .strict()
 

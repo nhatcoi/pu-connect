@@ -15,8 +15,6 @@ export const RegisterBodySchema = z.object({
   // bcrypt chỉ dùng 72 byte đầu
   password: z.string().min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' }).max(72, { message: 'Mật khẩu tối đa 72 ký tự' }),
   studentId: z.string().optional(),
-  faculty: z.string().optional(),
-  academicYear: z.string().optional()
 })
 
 type _InSync = z.infer<typeof RegisterBodySchema> extends RegisterInput ? (RegisterInput extends z.infer<typeof RegisterBodySchema> ? true : never) : never

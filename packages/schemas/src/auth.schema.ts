@@ -12,9 +12,7 @@ export const RegisterSchema = z.object({
   displayName: z.string().trim().min(1, { message: 'Vui lòng nhập họ tên' }).max(50, { message: 'Họ tên tối đa 50 ký tự' }),
   // bcrypt chỉ dùng 72 byte đầu
   password: z.string().min(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' }).max(72, { message: 'Mật khẩu tối đa 72 ký tự' }),
-  studentId: z.string().optional(),
-  faculty: z.string().optional(),
-  academicYear: z.string().optional()
+  studentId: z.string().optional()
 })
 
 export const LoginSchema = z.object({
@@ -22,14 +20,17 @@ export const LoginSchema = z.object({
   password: z.string().min(1, { message: 'Vui lòng nhập mật khẩu' })
 })
 
+// Chọn đơn vị: *Id = từ danh mục; *Other = "Khác" + tên tự nhập (chờ admin duyệt); cả hai trống = bỏ chọn
+const UnitChoiceFields = {
+  universityId: z.string().uuid().optional().nullable(),
+  universityOther: z.string().trim().max(200).optional().nullable(),
+  interestFieldId: z.string().uuid().optional().nullable(),
+  interestFieldOther: z.string().trim().max(200).optional().nullable()
+}
+
 export const OnboardingSchema = z.object({
   studentId: z.string().min(2, { message: 'Vui lòng nhập Mã sinh viên hoặc Mã cán bộ' }),
-  school: z.string().optional().nullable(),
-  faculty: z.string().optional().nullable(),
-  major: z.string().optional().nullable(),
-  unitId: z.string().uuid().optional().nullable(), // đơn vị chọn từ cây học thuật (null = nhập tay)
-  className: z.string().optional().nullable(),
-  academicYear: z.string().min(2, { message: 'Vui lòng chọn Khóa học / Niên khóa' }),
+  ...UnitChoiceFields,
   courses: z.array(z.string()).default([]),
   skills: z.array(z.string()).default([]),
   bio: z.string().max(250).optional(),
@@ -71,11 +72,12 @@ export const UserProfileSchema = z.object({
   username: z.string(),
   displayName: z.string(),
   studentId: z.string().optional().nullable(),
-  school: z.string().max(100).optional().nullable(),
-  faculty: z.string().optional().nullable(),
-  academicYear: z.string().optional().nullable(), // e.g. "K16", "K17"
-  major: z.string().optional().nullable(),
-  className: z.string().optional().nullable(),
+  universityId: z.string().nullable().optional(),
+  university: z.string().nullable().optional(), // "Khác" khi đang chờ duyệt
+  interestFieldId: z.string().nullable().optional(),
+  interestField: z.string().nullable().optional(), // "Khác" khi đang chờ duyệt
+  universityRequest: z.string().nullable().optional(), // tên đã gửi chờ duyệt (chỉ chủ hồ sơ)
+  interestFieldRequest: z.string().nullable().optional(),
   avatarUrl: z.string().url().optional().nullable(),
   bannerUrl: z.string().optional().nullable(),
   location: z.string().max(100).optional().nullable(),
@@ -114,12 +116,7 @@ export const UpdateProfileSchema = z.object({
   bio: z.string().max(250).optional().nullable(),
   avatarUrl: z.string().optional().nullable(),
   bannerUrl: z.string().optional().nullable(),
-  school: z.string().max(100).optional().nullable(),
-  faculty: z.string().max(100).optional().nullable(),
-  major: z.string().max(100).optional().nullable(),
-  unitId: z.string().uuid().optional().nullable(), // đơn vị chọn từ cây học thuật (null = nhập tay)
-  academicYear: z.string().max(20).optional().nullable(),
-  className: z.string().max(50).optional().nullable(),
+  ...UnitChoiceFields,
   location: z.string().max(100).optional().nullable(),
   website: z.string().max(255).optional().nullable(),
   birthDate: z.string().max(50).optional().nullable(),

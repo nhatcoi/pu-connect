@@ -22,7 +22,7 @@ import { CommunitiesAside } from '@/components/communities/communities-aside'
 const CATEGORIES = [
   { id: 'all', label: 'Tất cả' },
   { id: 'campus', label: '🏛️ Đại sảnh' },
-  { id: 'faculty', label: '🎓 Khoa / Viện' },
+  { id: 'faculty', label: '🎓 Lĩnh vực' },
   { id: 'academic', label: '📚 Học thuật & Đồ án' },
   { id: 'life', label: '🏡 Đời sống & Nhà trọ' },
   { id: 'club', label: '⚽ Câu lạc bộ' }

@@ -58,7 +58,7 @@ export function BotAccountsCard({ data }: { data: AdminBotOverview }) {
                     </p>
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Badge tone="neutral">{ROLE_LABEL[b.role] ?? b.role}</Badge>
-                      {b.faculty && <span>{b.faculty}</span>}
+                      {b.interestField && <span>{b.interestField}</span>}
                     </div>
                   </Td>
                   <Td className="hidden max-w-xs md:table-cell">

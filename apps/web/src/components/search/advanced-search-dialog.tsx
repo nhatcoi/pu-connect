@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { useFacultyOptions } from '@/hooks/use-academic-units'
+import { useFieldOptions } from '@/hooks/use-units'
 import { Input } from '@/components/ui/input'
 import { SlidersHorizontal } from 'lucide-react'
 
@@ -14,16 +14,16 @@ interface AdvancedSearchDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initialQuery?: string
-  initialFaculty?: string
+  initialField?: string
 }
 
 
-export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', initialFaculty = 'ALL' }: AdvancedSearchDialogProps) {
+export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', initialField = 'ALL' }: AdvancedSearchDialogProps) {
   const router = useRouter()
-  const faculties = useFacultyOptions('Tất cả trường')
+  const fields = useFieldOptions('Tất cả lĩnh vực')
   const [exactWords, setExactWords] = useState(initialQuery)
   const [tag, setTag] = useState('')
-  const [faculty, setFaculty] = useState(initialFaculty)
+  const [field, setField] = useState(initialField)
   const [searchType, setSearchType] = useState<SearchType>('all')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -36,11 +36,11 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
 
     if (!q) return
 
-    const facultyParam = faculty !== 'ALL' ? `&faculty=${encodeURIComponent(faculty)}` : ''
+    const fieldParam = field !== 'ALL' ? `&field=${encodeURIComponent(field)}` : ''
     const typeParam = searchType !== 'all' ? `&type=${searchType}` : ''
 
     onOpenChange(false)
-    router.push(`/search?q=${encodeURIComponent(q)}${typeParam}${facultyParam}`)
+    router.push(`/search?q=${encodeURIComponent(q)}${typeParam}${fieldParam}`)
   }
 
   return (
@@ -71,16 +71,16 @@ export function AdvancedSearchDialog({ open, onOpenChange, initialQuery = '', in
             <Input value={tag} onChange={(e) => setTag(e.target.value)} placeholder="ví dụ: #IT101, #DoAnTotNghiep, #KHMT" className="rounded-xl h-10 text-xs" />
           </div>
 
-          {/* Faculty select */}
+          {/* Lĩnh vực quan tâm */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Trường đào tạo</label>
+            <label className="text-xs font-semibold text-foreground">Lĩnh vực quan tâm</label>
             <select
-              value={faculty}
-              onChange={(e) => setFaculty(e.target.value)}
+              value={field}
+              onChange={(e) => setField(e.target.value)}
               className="w-full h-10 rounded-xl border border-input bg-background px-3 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              {faculties.map((fac) => (
-                <option key={fac.code} value={fac.code}>
+              {fields.map((fac) => (
+                <option key={fac.id} value={fac.id}>
                   {fac.name}
                 </option>
               ))}

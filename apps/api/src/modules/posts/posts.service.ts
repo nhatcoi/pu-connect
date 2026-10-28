@@ -13,6 +13,7 @@ import { anonymousAuthor, anonymizeNotification, assertAnonymousQuota } from './
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { ModerationService } from '../moderation/moderation.service'
 import type { AttachedDocument, CreatePostInput, PostItem, UpdatePostInput, ReportPostInput, PollData, FeaturedComment, ProfileActivityType } from '@pu/schemas'
+import { fieldNameSql } from '../units/unit-sql'
 
 export interface FeedResult {
   data: PostItem[]
@@ -149,7 +150,7 @@ export class PostsService {
       SELECT p.*,
              u.id as author_user_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+             u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
              c.code as course_code, c.name as course_name,
              comm.slug as community_slug, comm.name as community_name,
              ${scoreSelect} as recommendation_score
@@ -295,7 +296,7 @@ export class PostsService {
       SELECT p.*,
              u.id as author_user_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+             u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
              c.code as course_code, c.name as course_name,
              comm.slug as community_slug, comm.name as community_name
     `
@@ -331,7 +332,7 @@ export class PostsService {
     const held = verdict.action === 'hold' || verdict.action === 'flag'
     const created = await this.db.transaction(async (client) => {
       // 1. Resolve author details
-      const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, faculty, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
+      const userRes = await client.query(`SELECT id, username, display_name, avatar_url, role, ${fieldNameSql('users')} AS interest_field, reputation_points FROM users WHERE id = $1 LIMIT 1`, [
         authorId
       ])
 
@@ -475,7 +476,7 @@ export class PostsService {
               displayName: authorUser.display_name,
               avatarUrl: authorUser.avatar_url,
               role: authorUser.role,
-              faculty: authorUser.faculty,
+              interestField: authorUser.interest_field,
               reputationPoints: authorUser.reputation_points
             },
         isAnonymous: anonymous,
@@ -489,7 +490,6 @@ export class PostsService {
         communityId: communityUuid,
         communitySlug,
         communityName,
-        facultyCode: anonymous ? null : authorUser.faculty,
         targetAudience: data.targetAudience || 'everyone',
         isPinned: false,
         pendingReview: held,
@@ -965,7 +965,7 @@ export class PostsService {
             displayName: row.author_display_name || 'Sinh viên Phenikaa',
             avatarUrl: row.author_avatar_url || null,
             role: row.author_role || 'student',
-            faculty: row.author_faculty || null,
+            interestField: row.author_interest_field || null,
             reputationPoints: row.author_reputation_points || 100
           },
       isAnonymous: anonymous,
@@ -979,7 +979,6 @@ export class PostsService {
       communityId: row.community_id || null,
       communitySlug: row.community_slug || null,
       communityName: row.community_name || null,
-      facultyCode: row.faculty_code || (anonymous ? null : row.author_faculty) || null,
       targetAudience: 'everyone',
       visibility: VISIBILITIES.includes(row.visibility) ? row.visibility : 'public',
       archivedAt: row.archived_at ? new Date(row.archived_at).toISOString() : null,

@@ -5,6 +5,7 @@ import { CreateCommentInput } from '../dto/create-comment.input'
 import { DatabaseService } from '../../../database/database.service'
 import { setTrashActor } from '../../../database/trash'
 import { UnauthorizedException, NotFoundException } from '@nestjs/common'
+import { fieldNameSql } from '../../units/unit-sql'
 
 @Resolver(() => CommentType)
 export class CommentResolver {
@@ -16,7 +17,7 @@ export class CommentResolver {
       SELECT c.*,
              u.id as author_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+             u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
              u.created_at as author_created_at
       FROM comments c
       JOIN users u ON c.author_id = u.id
@@ -42,7 +43,7 @@ export class CommentResolver {
         displayName: row.author_display_name || 'Sinh viên Phenikaa',
         avatarUrl: row.author_avatar_url || null,
         role: row.author_role || 'student',
-        faculty: row.author_faculty || null,
+        interestField: row.author_interest_field || null,
         reputationPoints: row.author_reputation_points || 100,
         createdAt: row.author_created_at ? new Date(row.author_created_at).toISOString() : ''
       }

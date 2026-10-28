@@ -17,7 +17,7 @@ import type {
 import { adminApi, ROLE_SHORT } from '@/lib/api'
 
 // Khóa bộ lọc gửi lên API (khớp AdminUserQuerySchema)
-export const FILTER_KEYS = ['q', 'role', 'status', 'verified', 'auth', 'activity', 'joined', 'faculty', 'unit', 'reported', 'risk'] as const
+export const FILTER_KEYS = ['q', 'role', 'status', 'verified', 'auth', 'activity', 'joined', 'university', 'field', 'reported', 'risk'] as const
 export const QUERY_KEYS = [...FILTER_KEYS, 'sort', 'dir', 'page', 'pageSize'] as const
 export type FilterKey = (typeof FILTER_KEYS)[number]
 export type Params = Record<string, string>

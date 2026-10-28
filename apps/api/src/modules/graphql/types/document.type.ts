@@ -28,9 +28,6 @@ export class DocumentType {
   fileSize?: string
 
   @Field({ nullable: true })
-  faculty?: string
-
-  @Field({ nullable: true })
   courseCode?: string
 
   @Field(() => Int)

@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react'
 import { Sparkles } from 'lucide-react'
 import { BOT_ROLES, type AdminBotAccount, type AdminBotAccountInput, type BotRole } from '@pu/schemas'
 import { Badge, Button, Dialog, Field, Input, Select, Textarea } from '@/components/ui'
+import { useAdminUnits } from '@/features/units/use-units'
 
 const ROLE_LABEL: Record<BotRole, string> = { student: 'Sinh viên', lecturer: 'Giảng viên', ta: 'Trợ giảng' }
-const EMPTY: AdminBotAccountInput = { username: '', displayName: '', role: 'student', faculty: 'FIT', bio: '', tone: '', major: '', soul: '' }
+const EMPTY: AdminBotAccountInput = { username: '', displayName: '', role: 'student', interestFieldId: null, bio: '', tone: '', soul: '' }
 
 interface PersonaPreset {
   label: string
@@ -19,8 +20,6 @@ const PRESETS: PersonaPreset[] = [
     data: {
       displayName: 'Minh Anh IT',
       role: 'student',
-      faculty: 'FIT',
-      major: 'Công nghệ thông tin',
       bio: 'Sinh viên năm 3 CNTT Phenikaa, thích lập trình, cơ sở dữ liệu và chia sẻ tài liệu học tập.',
       soul: 'Sinh viên năm 3 năng động, đam mê công nghệ. Hay chia sẻ kinh nghiệm học tập, mẹo giải thuật, đề thi các môn CNTT. Văn phong trẻ trung, tích cực, ham học hỏi.',
       tone: 'thân thiện, năng động, hài hước nhẹ'
@@ -32,8 +31,6 @@ const PRESETS: PersonaPreset[] = [
     data: {
       displayName: 'ThS. Hoàng Nam',
       role: 'lecturer',
-      faculty: 'FIT',
-      major: 'Kỹ thuật phần mềm',
       bio: 'Giảng viên khoa CNTT, phụ trách môn Cơ sở dữ liệu và Kiến trúc phần mềm.',
       soul: 'Giảng viên tận tâm, phong cách chuẩn mực học thuật. Hay chia sẻ tài liệu hữu ích, định hướng nghề nghiệp và giải đáp khúc mắc cho sinh viên một cách súc tích.',
       tone: 'chuẩn mực, ân cần, khích lệ sinh viên'
@@ -45,8 +42,6 @@ const PRESETS: PersonaPreset[] = [
     data: {
       displayName: 'Đức Huy TA',
       role: 'ta',
-      faculty: 'FIT',
-      major: 'Trí tuệ nhân tạo',
       bio: 'Trợ giảng môn Toán rời rạc & Cấu trúc dữ liệu, hỗ trợ giải đáp bài tập.',
       soul: 'Trợ giảng nhiệt tình, kiên nhẫn. Hay đưa ra gợi ý giải bài tập từng bước, giải thích khái niệm trừu tượng thành ví dụ thực tế dễ hiểu.',
       tone: 'nhiệt tình, kiên nhẫn, rõ ràng'
@@ -58,8 +53,6 @@ const PRESETS: PersonaPreset[] = [
     data: {
       displayName: 'Hương Giang',
       role: 'student',
-      faculty: 'Kinh tế & Kinh doanh',
-      major: 'Marketing',
       bio: 'Sinh viên Marketing Gen Z, đam mê sự kiện, CLB và kết nối bạn bè tại Phenikaa.',
       soul: 'Sinh viên hòa đồng, thích chia sẻ về đời sống học đường, kinh nghiệm tham gia CLB, địa điểm học tập chill và góc nhìn sáng tạo.',
       tone: 'trẻ trung, tươi sáng, truyền cảm hứng'
@@ -82,6 +75,7 @@ export function BotAccountDialog({
   onSave: (v: AdminBotAccountInput) => void
 }) {
   const [draft, setDraft] = useState<AdminBotAccountInput>(EMPTY)
+  const { data: units } = useAdminUnits()
 
   useEffect(() => {
     if (open) {
@@ -91,10 +85,9 @@ export function BotAccountDialog({
               username: bot.username,
               displayName: bot.displayName,
               role: bot.role,
-              faculty: bot.faculty ?? '',
+              interestFieldId: bot.interestFieldId,
               bio: bot.bio,
               tone: bot.tone,
-              major: bot.major,
               soul: bot.soul
             }
           : EMPTY
@@ -104,7 +97,7 @@ export function BotAccountDialog({
 
   if (!open) return null
   const set = <K extends keyof AdminBotAccountInput>(k: K, v: AdminBotAccountInput[K]) => setDraft({ ...draft, [k]: v })
-  const valid = draft.displayName.trim().length >= 2 && draft.faculty.trim().length > 0 && (!!bot || /^[a-z0-9._]{3,30}$/.test(draft.username))
+  const valid = draft.displayName.trim().length >= 2 && (!!bot || /^[a-z0-9._]{3,30}$/.test(draft.username))
 
   const applyPreset = (preset: PersonaPreset) => {
     const randomSuffix = Math.floor(10 + Math.random() * 90)
@@ -191,12 +184,15 @@ export function BotAccountDialog({
             </Select>
           </Field>
 
-          <Field label="Khoa">
-            <Input value={draft.faculty} onChange={(e) => set('faculty', e.target.value)} maxLength={50} placeholder="FIT" />
-          </Field>
-
-          <Field label="Chuyên ngành">
-            <Input value={draft.major ?? ''} onChange={(e) => set('major', e.target.value)} maxLength={80} placeholder="Công nghệ thông tin" />
+          <Field label="Lĩnh vực quan tâm">
+            <Select value={draft.interestFieldId ?? ''} onChange={(e) => set('interestFieldId', e.target.value || null)}>
+              <option value="">Chưa chọn</option>
+              {(units?.fields ?? []).map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </Select>
           </Field>
 
           <Field label="Giọng văn (Tone)">

@@ -19,7 +19,6 @@ export function PrivacySection() {
       <SettingsGroup label="Thông tin trên hồ sơ">
         <SwitchRow {...bind('showEmail')} label="Hiện email" description="Mọi người xem được địa chỉ email trên hồ sơ của bạn" />
         <SwitchRow {...bind('showStudentId')} label="Hiện mã sinh viên" description="Giúp bạn bè và giảng viên dễ nhận ra bạn" />
-        <SwitchRow {...bind('showClass')} label="Hiện lớp sinh hoạt" description="Tên lớp chính quy, ví dụ K16-CNTT1" />
       </SettingsGroup>
 
       <SettingsGroup label="Ai thấy bạn">

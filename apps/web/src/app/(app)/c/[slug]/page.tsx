@@ -148,7 +148,7 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
                   </Badge>
                   <Badge variant="outline" className="text-[11px] capitalize font-medium border-0 bg-muted/60">
                     {community.communityType === 'campus' && '🏛️ Đại sảnh'}
-                    {community.communityType === 'faculty' && '🎓 Khoa / Viện'}
+                    {community.communityType === 'faculty' && '🎓 Lĩnh vực'}
                     {community.communityType === 'academic' && '📚 Học thuật'}
                     {community.communityType === 'life' && '🏡 Đời sống'}
                     {community.communityType === 'club' && '⚽ Câu lạc bộ'}

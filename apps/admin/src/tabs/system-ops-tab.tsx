@@ -79,6 +79,12 @@ export const ACTION_LABELS: Record<string, string> = {
   'moderation_term.import': 'Nhập từ cấm',
   'moderation_event.confirmed': 'Xác nhận kiểm duyệt tự động',
   'moderation_event.dismissed': 'Bỏ qua kiểm duyệt tự động',
+  'unit.create': 'Thêm trường / lĩnh vực',
+  'unit.update': 'Sửa trường / lĩnh vực',
+  'unit.merge': 'Gộp trường / lĩnh vực',
+  'unit.delete': 'Xóa trường / lĩnh vực',
+  'unit_request.approve': 'Duyệt trường / lĩnh vực người dùng nhập',
+  'unit_request.reject': 'Từ chối trường / lĩnh vực người dùng nhập',
   'announcement.create': 'Tạo thông báo hệ thống',
   'announcement.cancel': 'Hủy thông báo hệ thống',
   'bot.account_create': 'Tạo bot',
@@ -201,6 +207,8 @@ const TARGET_LABELS: Record<string, string> = {
   document: 'Tài liệu',
   ai_ticket: 'Yêu cầu N7AI',
   ai_skill: 'Skill',
+  unit: 'Trường / lĩnh vực',
+  unit_request: 'Yêu cầu trường / lĩnh vực',
   system: 'Hệ thống'
 }
 

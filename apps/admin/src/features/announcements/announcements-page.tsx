@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell, Megaphone, Send, X } from 'lucide-react'
 import { toast } from 'sonner'
@@ -6,7 +6,7 @@ import { USER_ROLES, type AdminAnnouncement, type AdminAnnouncementAudience, typ
 import { adminApi, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { Badge, Button, Card, Checkbox, ConfirmDialog, EmptyState, Field, Input, LoadingRows, PageHeader, Textarea } from '@/components/ui'
-import { flattenUnits, useAdminUnits } from '@/features/units/use-units'
+import { useAdminUnits } from '@/features/units/use-units'
 
 const KEY = ['admin', 'announcements']
 const STATUS: Record<AdminAnnouncement['status'], { label: string; tone: 'warning' | 'success' | 'neutral' }> = {
@@ -15,7 +15,7 @@ const STATUS: Record<AdminAnnouncement['status'], { label: string; tone: 'warnin
   cancelled: { label: 'Đã hủy', tone: 'neutral' }
 }
 
-const EMPTY = { title: '', message: '', link: '', sendInApp: true, banner: false, bannerUntil: '', scheduledAt: '', years: '' }
+const EMPTY = { title: '', message: '', link: '', sendInApp: true, banner: false, bannerUntil: '', scheduledAt: '' }
 
 // datetime-local ("2026-10-21T08:30", giờ máy admin) → ISO
 const toIso = (v: string) => (v ? new Date(v).toISOString() : null)
@@ -24,8 +24,8 @@ const toggle = <T,>(list: T[], v: T) => (list.includes(v) ? list.filter((x) => x
 function describeAudience(a: AdminAnnouncementAudience, unitName: (id: string) => string) {
   const parts = [
     a.roles?.length ? a.roles.map((r) => ROLE_SHORT[r] ?? r).join(', ') : '',
-    a.unitIds?.length ? a.unitIds.map(unitName).join(', ') : '',
-    a.years?.length ? `Khóa ${a.years.join(', ')}` : ''
+    a.universityIds?.length ? a.universityIds.map(unitName).join(', ') : '',
+    a.fieldIds?.length ? a.fieldIds.map(unitName).join(', ') : ''
   ].filter(Boolean)
   return parts.length ? parts.join(' · ') : 'Tất cả thành viên'
 }
@@ -34,17 +34,16 @@ export function AnnouncementsPage() {
   const qc = useQueryClient()
   const [form, setForm] = useState(EMPTY)
   const [roles, setRoles] = useState<string[]>([])
-  const [unitIds, setUnitIds] = useState<string[]>([])
+  const [universityIds, setUniversityIds] = useState<string[]>([])
+  const [fieldIds, setFieldIds] = useState<string[]>([])
   const [cancelId, setCancelId] = useState<string | null>(null)
   const units = useAdminUnits()
-  const nodes = useMemo(() => flattenUnits(units.data ?? []), [units.data])
-  const unitName = (id: string) => units.data?.find((u) => u.id === id)?.shortName || units.data?.find((u) => u.id === id)?.name || id.slice(0, 8)
+  const unitName = (id: string) => [...(units.data?.universities ?? []), ...(units.data?.fields ?? [])].find((u) => u.id === id)?.name || id.slice(0, 8)
 
-  const years = form.years.split(/[,\s]+/).filter(Boolean)
   const audience: AdminAnnouncementAudience = {
     ...(roles.length && { roles: roles as AdminAnnouncementAudience['roles'] }),
-    ...(unitIds.length && { unitIds }),
-    ...(years.length && { years })
+    ...(universityIds.length && { universityIds }),
+    ...(fieldIds.length && { fieldIds })
   }
   const debounced = useDebounced(JSON.stringify(audience), 400)
   const preview = useQuery({
@@ -61,7 +60,8 @@ export function AnnouncementsPage() {
       toast.success(form.scheduledAt ? 'Đã hẹn giờ gửi' : 'Đã gửi thông báo')
       setForm(EMPTY)
       setRoles([])
-      setUnitIds([])
+      setUniversityIds([])
+      setFieldIds([])
       void qc.invalidateQueries({ queryKey: KEY })
     },
     onError: (err: Error) => toast.error(err.message)
@@ -92,7 +92,7 @@ export function AnnouncementsPage() {
 
   return (
     <>
-      <PageHeader title="Thông báo" description="Gửi thông báo trong ứng dụng hoặc đặt banner toàn trang, theo vai trò, đơn vị, khóa; có thể hẹn giờ." />
+      <PageHeader title="Thông báo" description="Gửi thông báo trong ứng dụng hoặc đặt banner toàn trang, theo vai trò, trường, lĩnh vực quan tâm; có thể hẹn giờ." />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <form onSubmit={submit} className="space-y-4 p-5">
@@ -115,20 +115,24 @@ export function AnnouncementsPage() {
                   </label>
                 ))}
               </div>
-              <Field label="Khóa" hint="Cách nhau bằng dấu phẩy, VD: K17, K18">
-                <Input value={form.years} onChange={(e) => setForm({ ...form, years: e.target.value })} placeholder="Giá trị trong hồ sơ, VD: K17" />
-              </Field>
-              <div className="space-y-1">
-                <span className="text-sm font-medium">Đơn vị (gồm cả đơn vị con)</span>
-                <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
-                  {nodes.map(({ unit, depth }) => (
-                    <label key={unit.id} className="flex items-center gap-1.5 text-sm" style={{ paddingLeft: depth * 16 }}>
-                      <Checkbox checked={unitIds.includes(unit.id)} onChange={() => setUnitIds(toggle(unitIds, unit.id))} label={unit.name} /> {unit.name}
-                    </label>
-                  ))}
-                  {nodes.length === 0 && <p className="text-xs text-muted-foreground">Chưa có đơn vị.</p>}
+              {(
+                [
+                  { title: 'Trường đại học', items: units.data?.universities ?? [], selected: universityIds, set: setUniversityIds },
+                  { title: 'Lĩnh vực quan tâm', items: units.data?.fields ?? [], selected: fieldIds, set: setFieldIds }
+                ] as const
+              ).map((g) => (
+                <div key={g.title} className="space-y-1">
+                  <span className="text-sm font-medium">{g.title}</span>
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+                    {g.items.map((unit) => (
+                      <label key={unit.id} className="flex items-center gap-1.5 text-sm">
+                        <Checkbox checked={g.selected.includes(unit.id)} onChange={() => g.set(toggle([...g.selected], unit.id))} label={unit.name} /> {unit.name}
+                      </label>
+                    ))}
+                    {g.items.length === 0 && <p className="text-xs text-muted-foreground">Chưa có mục nào.</p>}
+                  </div>
                 </div>
-              </div>
+              ))}
               <p className="text-xs text-muted-foreground">
                 Sẽ gửi tới <strong className="text-foreground">{preview.data ? formatNumber(preview.data.count) : '…'}</strong> người.
               </p>

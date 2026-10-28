@@ -3,9 +3,9 @@ import { DatabaseService } from '../../database/database.service'
 import { parseQuery, type ParsedQuery } from './search-query'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import { anonymousAuthor } from '../posts/anonymity'
-import { userFacultySql } from '../academic-units/faculty-filter.sql'
 import type { SearchQueryInput, SearchResult, Course, DocumentItem, PostItem, UserSummary, StudyGroup } from '@pu/schemas'
 import { postListedSql } from '../posts/post-access.sql'
+import { fieldNameSql } from '../units/unit-sql'
 
 type Queryable = { query: (sql: string, params?: any[]) => Promise<{ rows: any[] }> }
 type Mode = 'fts' | 'fuzzy'
@@ -43,7 +43,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   async search(queryInput: SearchQueryInput, currentUserId?: string): Promise<SearchResult> {
-    const { q, type = 'all', faculty, limit = 20, offset = 0 } = queryInput
+    const { q, type = 'all', field, limit = 20, offset = 0 } = queryInput
     const parsed = parseQuery(q)
     const all = type === 'all'
 
@@ -56,11 +56,11 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
     // Chỉ có ký tự đặc biệt ⇒ không có gì để tìm
     if (!parsed.isEmpty) {
       ;[courses, documents, posts, users, groups] = await Promise.all([
-        all || type === 'courses' ? this.searchCourses(parsed, faculty, all ? 4 : limit, offset) : [],
-        all || type === 'documents' ? this.searchDocuments(parsed, faculty, all ? 5 : limit, offset, currentUserId) : [],
-        all || type === 'posts' ? this.searchPosts(parsed, faculty, all ? 6 : limit, offset, currentUserId) : [],
-        all || type === 'users' ? this.searchUsers(parsed, faculty, all ? 4 : limit, offset, currentUserId) : [],
-        all || type === 'groups' ? this.searchGroups(parsed, faculty, all ? 4 : limit, offset) : []
+        all || type === 'courses' ? this.searchCourses(parsed, field, all ? 4 : limit, offset) : [],
+        all || type === 'documents' ? this.searchDocuments(parsed, field, all ? 5 : limit, offset, currentUserId) : [],
+        all || type === 'posts' ? this.searchPosts(parsed, field, all ? 6 : limit, offset, currentUserId) : [],
+        all || type === 'users' ? this.searchUsers(parsed, field, all ? 4 : limit, offset, currentUserId) : [],
+        all || type === 'groups' ? this.searchGroups(parsed, field, all ? 4 : limit, offset) : []
       ])
     }
 
@@ -147,19 +147,19 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 1. Học phần ──────────────────────────────────────────────────
-  private searchCourses(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number): Promise<Course[]> {
+  private searchCourses(q: ParsedQuery, field: string | undefined, limit: number, offset: number): Promise<Course[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('c', `immutable_unaccent(lower(c.name))`, undefined, q, mode)
       if (!m) return []
       const params = this.baseParams(q)
       let sql = `
-        SELECT c.*, f.name as faculty_name
+        SELECT c.*, f.name as field_name
         FROM courses c
-        LEFT JOIN faculties f ON c.faculty_id = f.id
+        LEFT JOIN interest_fields f ON c.interest_field_id = f.id
         WHERE ${m.where}`
-      if (faculty) {
-        params.push(faculty)
-        sql += ` AND (c.faculty_code = $${params.length} OR f.code = $${params.length})`
+      if (field) {
+        params.push(field)
+        sql += ` AND c.interest_field_id = $${params.length}::uuid`
       }
       params.push(lim, off)
       sql += `
@@ -174,8 +174,8 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         code: row.code,
         name: row.name,
         credits: row.credits,
-        departmentId: row.faculty_id || row.faculty_code || 'FIT',
-        departmentName: row.faculty_name || row.faculty_code,
+        fieldId: row.interest_field_id || null,
+        fieldName: row.field_name || null,
         description: row.description || '',
         rating: parseFloat(row.rating_avg) || 5.0,
         documentCount: row.document_count || 0,
@@ -185,7 +185,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 2. Tài liệu & đề thi ─────────────────────────────────────────
-  private searchDocuments(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<DocumentItem[]> {
+  private searchDocuments(q: ParsedQuery, field: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<DocumentItem[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('d', `immutable_unaccent(lower(d.title))`, 'd.tags', q, mode)
       if (!m) return []
@@ -203,9 +203,10 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         LEFT JOIN courses c ON d.course_id = c.id
         WHERE ${m.where}
           AND (d.visibility = 'public' OR d.owner_id = ${viewer}::uuid)`
-      if (faculty) {
-        params.push(faculty)
-        sql += ` AND (c.faculty_code = $${params.length} OR ${userFacultySql(params, faculty)})`
+      // Tài liệu thuộc lĩnh vực của môn
+      if (field) {
+        params.push(field)
+        sql += ` AND c.interest_field_id = $${params.length}::uuid`
       }
       params.push(lim, off)
       sql += `
@@ -243,7 +244,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 3. Bài viết & hỏi đáp ────────────────────────────────────────
-  private searchPosts(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<PostItem[]> {
+  private searchPosts(q: ParsedQuery, field: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<PostItem[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('p', `immutable_unaccent(lower(p.title))`, 'p.tags', q, mode)
       if (!m) return []
@@ -254,7 +255,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         SELECT p.*,
                u.id as author_user_id, u.email as author_email, u.username as author_username,
                u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-               u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+               u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
                c.code as course_code, c.name as course_name,
                (${currentUserId ? `EXISTS(SELECT 1 FROM post_reactions pr WHERE pr.post_id = p.id AND pr.user_id = ${viewer}::uuid)` : 'FALSE'}) as is_liked_by_me
         FROM posts p
@@ -264,11 +265,10 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
           AND p.hidden_at IS NULL
           AND ${postListedSql(`${viewer}::uuid`)}
           AND (${viewer}::uuid IS NULL OR NOT ${blockExistsSql(`${viewer}::uuid`, 'p.author_id')})`
-      if (faculty) {
-        params.push(faculty)
-        const courseParam = `$${params.length}`
-        // Bài ẩn danh không lọc theo khoa tác giả (lộ khoa của người viết)
-        sql += ` AND ((NOT p.is_anonymous AND ${userFacultySql(params, faculty)}) OR c.faculty_code = ${courseParam})`
+      if (field) {
+        params.push(field)
+        // Bài ẩn danh không lọc theo lĩnh vực tác giả (lộ lĩnh vực của người viết)
+        sql += ` AND ((NOT p.is_anonymous AND u.interest_field_id = $${params.length}::uuid) OR c.interest_field_id = $${params.length}::uuid)`
       }
       params.push(lim, off)
       // Phổ biến + mới (bán rã 90 ngày) + câu hỏi đã có lời giải được cộng nhẹ
@@ -309,7 +309,6 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
       courseId: row.course_id,
       courseCode: row.course_code || null,
       courseName: row.course_name || null,
-      facultyCode: row.is_anonymous ? null : row.author_faculty || null,
       targetAudience: 'everyone',
       isResolved: row.is_resolved || false,
       tags: row.tags || [],
@@ -325,7 +324,7 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
   }
 
   // ── 4. Người dùng ────────────────────────────────────────────────
-  private searchUsers(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<UserSummary[]> {
+  private searchUsers(q: ParsedQuery, field: string | undefined, limit: number, offset: number, currentUserId?: string): Promise<UserSummary[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('u', `immutable_unaccent(lower(u.display_name || ' ' || u.username))`, '(u.skills || u.interests)', q, mode)
       if (!m) return []
@@ -335,13 +334,16 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
       const viewer = `$${params.length}`
       // Chỉ tài khoản hoạt động; bot (@n7ai) tìm được, tài khoản hệ thống thì không
       let sql = `
-        SELECT u.id, u.username, u.display_name, u.avatar_url, u.faculty, u.role,
-               u.reputation_points, u.academic_year,
+        SELECT u.id, u.username, u.display_name, u.avatar_url, ${fieldNameSql('u')} as interest_field, u.role,
+               u.reputation_points,
                (${currentUserId ? `EXISTS(SELECT 1 FROM user_follows uf WHERE uf.follower_id = ${viewer}::uuid AND uf.following_id = u.id)` : 'FALSE'}) as is_followed_by_me
         FROM users u
         WHERE ${m.where}
           AND u.status = 'active' AND u.account_type IN ('human', 'bot')`
-      if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
+      if (field) {
+        params.push(field)
+        sql += ` AND u.interest_field_id = $${params.length}::uuid`
+      }
       params.push(lim, off)
       // Username khớp hệt/tiền tố được ưu tiên; người có uy tín & đã xác thực nhỉnh hơn
       sql += `
@@ -357,17 +359,16 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         username: row.username,
         displayName: row.display_name,
         avatarUrl: row.avatar_url || null,
-        faculty: row.faculty || null,
+        interestField: row.interest_field || null,
         role: row.role || 'student',
         reputationPoints: row.reputation_points || 100,
-        academicYear: row.academic_year || null,
         isFollowedByMe: !!row.is_followed_by_me
       }))
     })
   }
 
   // ── 5. Nhóm đồ án (PBL) ──────────────────────────────────────────
-  private searchGroups(q: ParsedQuery, faculty: string | undefined, limit: number, offset: number): Promise<StudyGroup[]> {
+  private searchGroups(q: ParsedQuery, field: string | undefined, limit: number, offset: number): Promise<StudyGroup[]> {
     return this.twoPhase(q, limit, offset, async (mode, lim, off, db) => {
       const m = this.match('g', `immutable_unaccent(lower(g.name))`, 'g.tech_stack', q, mode)
       if (!m) return []
@@ -379,7 +380,10 @@ export class SearchService implements OnModuleInit, OnModuleDestroy {
         FROM study_groups g
         JOIN users u ON g.leader_id = u.id
         WHERE ${m.where}`
-      if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
+      if (field) {
+        params.push(field)
+        sql += ` AND g.leader_id IN (SELECT id FROM users WHERE interest_field_id = $${params.length}::uuid)`
+      }
       params.push(lim, off)
       // Nhóm đang tuyển được ưu tiên
       sql += `

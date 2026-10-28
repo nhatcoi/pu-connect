@@ -18,12 +18,12 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — vai trò `admin`
 | — thao tác admin trên người này | tab **Kiểm duyệt** |
 | — ghi chú nội bộ (người dùng không thấy) | tab **Ghi chú** |
 | Đặt lại mật khẩu cho người dùng | menu **⋯** của hồ sơ / thanh thao tác hàng loạt (biểu tượng chìa khóa) › *Gửi link đặt lại mật khẩu* hoặc *Bắt đổi mật khẩu* |
-| Cây đơn vị (trường / khoa / ngành, viện, trung tâm): thêm, sửa, sắp xếp, gộp | **Học thuật** › tab **Đơn vị** |
+| Trường đại học + lĩnh vực quan tâm: duyệt "Khác" người dùng nhập, thêm, đổi tên, tắt, gộp, xóa | **Học thuật** › tab **Đơn vị** |
 | Khóa nhanh | nút **Khóa** đầu hồ sơ (hộp Xử phạt chọn sẵn *Khóa*, chọn thời hạn) |
 | Học phần: thêm, sửa, gán giảng viên, gộp môn trùng, xóa môn trống, nhập Excel/CSV/JSON (bấm hàng để sửa); tài liệu (đã / chưa vào N7AI), cộng đồng | **Học thuật** |
 | Telemetry, phản hồi, ticket, skill, danh mục model N7AI | **N7AI** |
 | Từ khóa tìm nhiều / không có kết quả | **Tìm kiếm** |
-| Thông báo hệ thống: nhắm theo vai trò / đơn vị / khóa, hẹn giờ, banner đầu trang web, lịch sử và hủy | **Thông báo** |
+| Thông báo hệ thống: nhắm theo vai trò / trường / lĩnh vực quan tâm, hẹn giờ, banner đầu trang web, lịch sử và hủy | **Thông báo** |
 | Nhóm quyền: gộp quyền chi tiết rồi gán cho người dùng (kiểm duyệt viên, biên tập học thuật…) để họ vào cổng không cần vai trò admin | **Nhóm quyền** |
 | Nhập bài sưu tầm (Excel/JSON), job đăng bài của bot, bot tự trả lời/thả tim | **Bot** |
 | Admin đã làm gì (không sửa được) | **Nhật ký › Thao tác quản trị** |
@@ -32,13 +32,13 @@ Cổng quản trị Static SPA (`apps/admin`, Vite + React) — vai trò `admin`
 
 Mọi bộ lọc, trang, tab, hồ sơ đang mở đều nằm trên URL (`#/users?risk=high&user=<id>`) ⇒ gửi link là mở đúng màn hình.
 
-## Đơn vị học thuật (trường → khoa → ngành)
+## Trường đại học & lĩnh vực quan tâm
 
-- Bảng `academic_units` (không còn hằng số trong code). Người dùng chọn đơn vị ở form sửa hồ sơ; `users.unit_id` lưu đơn vị cụ thể nhất, cột chữ `school` / `faculty` / `major` suy ra từ cây. **Khoa hiển thị bằng tên viết tắt** (CNTT, KHMT, QTKD…) thay các mã cũ FIT / FCS / FBA.
-- **Học thuật › Đơn vị**: thêm / sửa tên và tên viết tắt / sắp xếp (lên, xuống) / tắt (không còn trong danh sách chọn) / **gộp** (chuyển người dùng + đơn vị con sang đơn vị đích) / xóa (chỉ khi trống). Đổi tên hay tên viết tắt tự cập nhật hồ sơ mọi người trong nhánh. Mỗi thao tác ghi nhật ký (`academic_unit.*`).
-- Danh sách người dùng có bộ lọc **Đơn vị** (chọn khoa ⇒ gồm cả các ngành).
-- Migration `academic-units-upgrade.sql` chạy mỗi lần deploy: seed (không ghi đè), gán `unit_id` cho người dùng chưa có (khớp ngành > khoa > mã cũ > trường) và đồng bộ lại cột chữ. Người dùng ghi trường khác / nhập tay giữ nguyên, `unit_id` rỗng.
-- Chưa đổi: `courses.faculty_code`, `posts.faculty_code` vẫn là mã khoa riêng của học phần / bài viết.
+- Chỉ hai loại đơn vị: bảng `universities` (có sẵn Phenikaa) và `interest_fields` (lĩnh vực quan tâm). Không còn khoa / ngành / khóa / lớp. Người dùng chọn ở form sửa hồ sơ; `GET /api/units` trả danh mục công khai.
+- **"Khác"**: người dùng chọn "Khác" và nhập tên ⇒ `unit_requests` (`pending`), hồ sơ tạm hiện "Khác". **Học thuật › Đơn vị › Chờ duyệt**: *Duyệt* (tạo mục mới, sửa chính tả được, hoặc gộp vào mục có sẵn) ⇒ cập nhật hồ sơ **mọi người đã gửi cùng tên** (không phân biệt hoa thường / dấu) và gửi thông báo; *Từ chối* (kèm lý do) ⇒ người dùng về chưa chọn. Số yêu cầu chờ hiện trên menu **Học thuật** (`pendingUnitRequests`).
+- Hai danh mục: đổi tên (hiện ngay trên hồ sơ), tắt (không còn trong danh sách chọn), **gộp** (chuyển người dùng + môn học sang mục đích), xóa (chỉ khi trống). Ghi nhật ký `unit.*` / `unit_request.*`.
+- Môn học gắn theo lĩnh vực (`courses.interest_field_id`; nhập Excel dùng cột `field` = tên lĩnh vực). Thông báo hệ thống nhắm theo `universityIds` / `fieldIds`. Danh sách người dùng có bộ lọc Trường và Lĩnh vực.
+- Migration `units-simplify-upgrade.sql` (bước 1, không phá hủy): tạo bảng, chuyển dữ liệu một lần (đánh dấu `units-simplify-v1`) — trường thành viên cũ ⇒ lĩnh vực, mã khoa cũ ⇒ lĩnh vực của người dùng / môn học, trường tự nhập cũ ⇒ hàng chờ duyệt; hủy lịch gửi / tắt banner của thông báo nhắm theo đơn vị / khóa cũ.
 
 ## Xử phạt
 

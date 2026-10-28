@@ -11,6 +11,7 @@ import type { BlockState } from '@pu/schemas'
 import { blockExistsSql, blockStateSql } from '../../blocks/blocks.sql'
 import { ProfileAccessService } from '../../users/profile-access.service'
 import { postListedSql } from '../../posts/post-access.sql'
+import { fieldNameSql, mapUserUnits, USER_UNIT_COLUMNS } from '../../units/unit-sql'
 
 @Resolver(() => UserType)
 export class UserResolver {
@@ -27,8 +28,8 @@ export class UserResolver {
     @Context() context: any
   ): Promise<UserType | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, display_name, student_id, school, faculty, academic_year, major, class_name, is_verified, avatar_url, bio, role,
-              reputation_points, created_at, banner_url, location, website, to_char(birth_date, 'YYYY-MM-DD') AS birth_date
+      `SELECT id, email, username, display_name, student_id, is_verified, avatar_url, bio, role,
+              reputation_points, created_at, banner_url, location, website, to_char(birth_date, 'YYYY-MM-DD') AS birth_date, ${USER_UNIT_COLUMNS('users')}
        FROM users
        WHERE username = $1 LIMIT 1`,
       [username.toLowerCase().trim()]
@@ -41,7 +42,6 @@ export class UserResolver {
     const row = res.rows[0]
     const user: UserType = {
       ...this.mapRowToUser(row, true),
-      school: row.school || null,
       bannerUrl: row.banner_url || null,
       location: row.location || null,
       website: row.website || null,
@@ -63,9 +63,9 @@ export class UserResolver {
     }
     return {
       ...user,
+      ...mapUserUnits(row, !!isOwner),
       email: isOwner || privacy.showEmail ? user.email : '',
       studentId: isOwner || privacy.showStudentId ? user.studentId : null,
-      className: isOwner || privacy.showClass ? user.className : null,
       isContentLocked: access.locked,
       activityTabs: access.activityTabs,
       access
@@ -84,8 +84,7 @@ export class UserResolver {
     const currentUserId = context?.req?.user?.id || context?.req?.session?.passport?.user?.id
 
     let sql = `
-      SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
-             u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
+      SELECT u.id, u.email, u.username, u.display_name, u.student_id, ${USER_UNIT_COLUMNS('u')}, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
       FROM users u
       WHERE u.account_type = 'human'
     `
@@ -108,8 +107,7 @@ export class UserResolver {
   @Query(() => [UserType], { name: 'userFollowers' })
   async getUserFollowers(@Args('userId', { type: () => ID }) userId: string): Promise<UserType[]> {
     const res = await this.db.query(
-      `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
-              u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
+      `SELECT u.id, u.email, u.username, u.display_name, u.student_id, ${USER_UNIT_COLUMNS('u')}, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
        FROM users u
        JOIN user_follows uf ON u.id = uf.follower_id
        WHERE uf.following_id = $1
@@ -123,8 +121,7 @@ export class UserResolver {
   @Query(() => [UserType], { name: 'userFollowing' })
   async getUserFollowing(@Args('userId', { type: () => ID }) userId: string): Promise<UserType[]> {
     const res = await this.db.query(
-      `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.faculty,
-              u.academic_year, u.major, u.class_name, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
+      `SELECT u.id, u.email, u.username, u.display_name, u.student_id, ${USER_UNIT_COLUMNS('u')}, u.is_verified, u.avatar_url, u.bio, u.role, u.reputation_points, u.created_at
        FROM users u
        JOIN user_follows uf ON u.id = uf.following_id
        WHERE uf.follower_id = $1
@@ -230,7 +227,7 @@ export class UserResolver {
       `SELECT p.*,
               u.id as author_id, u.email as author_email, u.username as author_username,
               u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-              u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+              u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
               u.created_at as author_created_at
        FROM posts p
        JOIN users u ON p.author_id = u.id
@@ -284,7 +281,6 @@ export class UserResolver {
       type: row.type,
       fileUrl: row.file_url,
       fileSize: row.file_size,
-      faculty: row.faculty,
       courseCode: row.course_code,
       tags: row.tags || [],
       downloadCount: row.download_count || 0,
@@ -354,10 +350,8 @@ export class UserResolver {
       username: row.username,
       displayName: row.display_name,
       studentId: withPrivate ? row.student_id : null,
-      faculty: row.faculty,
-      academicYear: row.academic_year,
-      major: row.major || null,
-      className: withPrivate ? row.class_name || null : null,
+      university: mapUserUnits(row).university,
+      interestField: mapUserUnits(row).interestField,
       isVerified: !!row.is_verified,
       avatarUrl: row.avatar_url,
       bio: row.bio,

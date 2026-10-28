@@ -7,7 +7,8 @@ export const toSuggestion = (r: any): CourseSuggestion => ({
   id: r.id,
   name: r.name,
   code: r.code,
-  facultyCode: r.faculty_code,
+  fieldId: r.interest_field_id,
+  fieldName: r.field_name ?? null,
   credits: r.credits,
   note: r.note,
   status: r.status,
@@ -23,7 +24,7 @@ export class CourseSuggestionsService {
   constructor(private readonly db: DatabaseService) {}
 
   async mine(userId: string): Promise<CourseSuggestion[]> {
-    const res = await this.db.query(`SELECT * FROM course_suggestions WHERE requester_id = $1 ORDER BY created_at DESC LIMIT 50`, [userId])
+    const res = await this.db.query(`SELECT s.*, f.name AS field_name FROM course_suggestions s LEFT JOIN interest_fields f ON f.id = s.interest_field_id WHERE s.requester_id = $1 ORDER BY s.created_at DESC LIMIT 50`, [userId])
     return res.rows.map(toSuggestion)
   }
 
@@ -38,8 +39,8 @@ export class CourseSuggestionsService {
       if (pending.rows.some((r) => r.same)) throw new ConflictException('Bạn đã đề xuất môn này, đang chờ duyệt')
       if (pending.rows.length >= MAX_PENDING_SUGGESTIONS) throw new BadRequestException(`Bạn đang có ${MAX_PENDING_SUGGESTIONS} đề xuất chờ duyệt, đợi admin xử lý trước nhé`)
       const res = await client.query(
-        `INSERT INTO course_suggestions (requester_id, name, code, faculty_code, credits, note) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [userId, body.name, code, body.facultyCode || null, body.credits ?? null, body.note || null]
+        `INSERT INTO course_suggestions (requester_id, name, code, interest_field_id, credits, note) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [userId, body.name, code, body.fieldId || null, body.credits ?? null, body.note || null]
       )
       return toSuggestion(res.rows[0])
     })

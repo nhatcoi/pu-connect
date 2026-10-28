@@ -10,8 +10,9 @@ Hồ sơ cá nhân trên PU Connection được chuẩn hóa để phản ánh �
 * **Định danh cơ bản:** `id (UUID)`, `email (edu mail)`, `username`, `display_name`, `avatar_url`, `bio`.
 * **Cây định danh học thuật:**
   * `student_id`: Mã số sinh viên (ví dụ: `22010123`).
-  * `school` / `unit_id`: Trường thành viên (cây `academic_units`, hiện chỉ có cấp trường: CNTT, Kỹ thuật, Kinh tế, NN&KHXH, Y Dược, CNSLN, Du lịch).
-  * `faculty`, `major`, `academic_year`, `class_name`: giữ trong DB nhưng **tạm ẩn** khỏi hồ sơ, form chỉnh sửa và thẻ hoàn thiện hồ sơ (2026-10-27); khoa/ngành/viện/trung tâm thêm lại sau qua Admin → Đơn vị học thuật.
+  * `university_id` → `universities`: trường đại học (có sẵn Phenikaa; email trường tự chọn). Chọn **"Khác"** + nhập tên ⇒ bản ghi `unit_requests` chờ admin duyệt; trong lúc chờ hồ sơ hiện **"Khác"**.
+  * `interest_field_id` → `interest_fields`: **lĩnh vực quan tâm** (Công nghệ thông tin, Kỹ thuật, Kinh tế, Ngoại ngữ – KHXH, Y – Dược, Công nghệ số liên ngành, Du lịch…; admin thêm được). Cùng cơ chế "Khác" + duyệt. Môn học (`courses.interest_field_id`) và tài liệu (qua môn) gắn theo lĩnh vực này.
+  * **Không còn** khoa / ngành / khóa / lớp: quá chi tiết nên người dùng ngại điền (2026-10-28). Cột cũ `faculty`, `major`, `class_name`, `academic_year`, `school`, `unit_id` và bảng `faculties`, `academic_units` còn trong DB nhưng code không đọc/ghi (bước 2 sẽ DROP sau khi xác nhận).
   * `role`: Phân quyền RBAC (`student`, `lecturer`, `ta`, `club_lead`, `admin`).
 * **Hồ sơ năng lực & Sở thích:**
   * `skills (TEXT[])`: Mảng kỹ năng chuyên môn (`React Native`, `NestJS`, `Python AI`, `PostgreSQL`...).

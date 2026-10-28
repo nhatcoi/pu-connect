@@ -16,7 +16,8 @@ import { resolveFeaturePreferences } from '../users/dto/preferences.dto'
 import * as bcrypt from 'bcryptjs'
 import { createHash, randomBytes } from 'crypto'
 import { ConfigService } from '@nestjs/config'
-import { findUnitNames } from '../academic-units/unit-names'
+import { UnitRequestsService } from '../units/unit-requests.service'
+import { DEFAULT_UNIVERSITY_ID_SQL, mapUserUnits, USER_UNIT_COLUMNS } from '../units/unit-sql'
 import { MailService } from './mail.service'
 import { inferStudentInfoFromEmail, isPhenikaaEmail } from './email-profile.util'
 import { isReservedUsername } from './reserved-usernames'
@@ -49,16 +50,16 @@ export class AuthService {
     private readonly db: DatabaseService,
     private readonly mail: MailService,
     private readonly config: ConfigService,
-    private readonly notifications: NotificationsService
+    private readonly notifications: NotificationsService,
+    private readonly unitRequests: UnitRequestsService
   ) {}
 
   async validateUser(emailOrUsername: string, password: string): Promise<UserProfile | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, password_hash, must_reset_password, display_name, student_id, school, faculty, academic_year,
-              major, class_name, is_verified, verified_at, privacy_settings, preferences,
+      `SELECT id, email, username, password_hash, must_reset_password, display_name, student_id, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
               avatar_url, bio, role, ${EFFECTIVE_STATUS}, reputation_points, is_onboarded, email_verified, skills, interests, created_at,
-              ${SANCTION_COLUMNS}
+              ${SANCTION_COLUMNS}, ${USER_UNIT_COLUMNS('users')}
        FROM users
        WHERE (email = $1 OR username = $1) AND account_type = 'human' LIMIT 1`,
       [emailOrUsername.toLowerCase().trim()]
@@ -89,11 +90,10 @@ export class AuthService {
 
   async findById(id: string): Promise<UserProfile | null> {
     const res = await this.db.query(
-      `SELECT id, email, username, display_name, student_id, school, faculty, academic_year,
-              major, class_name, is_verified, verified_at, privacy_settings, preferences,
+      `SELECT id, email, username, display_name, student_id, is_verified, verified_at, privacy_settings, preferences,
               location, website, birth_date,
               avatar_url, bio, role, ${EFFECTIVE_STATUS}, reputation_points, is_onboarded, email_verified, skills, interests, created_at,
-              ${SANCTION_COLUMNS}
+              ${SANCTION_COLUMNS}, ${USER_UNIT_COLUMNS('users')}
        FROM users
        WHERE id = $1 LIMIT 1`,
       [id]
@@ -131,25 +131,21 @@ export class AuthService {
 
     const insertRes = await this.db.query(
       `INSERT INTO users (
-        email, username, password_hash, display_name, student_id, faculty, academic_year, avatar_url, role, reputation_points, is_onboarded, is_verified, verified_at
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 0, TRUE, FALSE, NULL)
-       RETURNING id, email, username, display_name, student_id, faculty, academic_year,
-                 major, class_name, is_verified, verified_at, privacy_settings, preferences,
-                 avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at`,
+        email, username, password_hash, display_name, student_id, avatar_url, role, reputation_points, is_onboarded, is_verified, verified_at, university_id
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, 0, TRUE, FALSE, NULL, ${isPhenikaaEmail(emailLower) ? DEFAULT_UNIVERSITY_ID_SQL : 'NULL'})
+       RETURNING id`,
       [
         emailLower,
         usernameLower,
         passwordHash,
         data.displayName.trim(),
         data.studentId || inferred.studentId || null,
-        data.faculty || null,
-        data.academicYear || inferred.academicYear || null,
         `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(usernameLower)}`,
         'student'
       ]
     )
 
-    const user = this.mapUserRowToProfile(insertRes.rows[0])
+    const user = (await this.findById(insertRes.rows[0].id)) as UserProfile
     // Gửi email xác thực; lỗi gửi mail không làm hỏng việc đăng ký (người dùng có thể gửi lại)
     await this.sendVerification(user.id, user.email, user.displayName).catch((err) =>
       this.logger.error(`Gửi email xác thực thất bại (${user.email}): ${err?.message}`)
@@ -368,9 +364,9 @@ export class AuthService {
 
     const insertRes = await this.db.query(
       `INSERT INTO users (email, username, password_hash, display_name, avatar_url, role, reputation_points,
-                          is_onboarded, is_verified, verified_at, google_id, auth_provider, student_id, academic_year,
-                          email_verified, email_verified_at)
-       VALUES ($1, $2, NULL, $3, $4, 'student', 0, TRUE, $5, $6, $7, 'google', $8, $9, TRUE, NOW())
+                          is_onboarded, is_verified, verified_at, google_id, auth_provider, student_id,
+                          email_verified, email_verified_at, university_id)
+       VALUES ($1, $2, NULL, $3, $4, 'student', 0, TRUE, $5, $6, $7, 'google', $8, TRUE, NOW(), ${isPhenikaa ? DEFAULT_UNIVERSITY_ID_SQL : 'NULL'})
        RETURNING id`,
       [
         email,
@@ -380,8 +376,7 @@ export class AuthService {
         isPhenikaa,
         isPhenikaa ? new Date() : null,
         profile.googleId,
-        inferred.studentId || null,
-        inferred.academicYear || null
+        inferred.studentId || null
       ]
     )
     return (await this.findById(insertRes.rows[0].id)) as UserProfile
@@ -397,44 +392,21 @@ export class AuthService {
     const interests = Array.from(new Set([...(data.courses || [])]))
     const skills = Array.from(new Set([...(data.skills || [])]))
 
-    // Đơn vị chọn từ cây học thuật ⇒ trường / khoa / ngành suy ra từ cây
-    const unitId = typeof data.unitId === 'string' ? data.unitId : null
-    const unit = unitId ? await findUnitNames(this.db, unitId) : null
-
-    // Update user profile (loại bỏ điểm thưởng gamification)
-    const updateRes = await this.db.query(
-      `UPDATE users
-       SET student_id = COALESCE($1, student_id),
-           school = COALESCE($2, school),
-           faculty = COALESCE($3, faculty),
-           major = COALESCE($4, major),
-           class_name = COALESCE($5, class_name),
-           academic_year = COALESCE($6, academic_year),
-           bio = COALESCE($7, bio),
-           skills = $8,
-           interests = $9,
-           unit_id = CASE WHEN $11::uuid IS NOT NULL THEN $11::uuid ELSE unit_id END,
-           is_onboarded = TRUE,
-           updated_at = NOW()
-       WHERE id = $10
-       RETURNING id, email, username, display_name, student_id, school, faculty, academic_year,
-                 major, class_name, is_verified, verified_at, privacy_settings, preferences,
-                 location, website, birth_date,
-                 avatar_url, bio, role, status, reputation_points, is_onboarded, email_verified, skills, interests, created_at`,
-      [
-        data.studentId || null,
-        unit ? unit.school : data.school || null,
-        unit ? unit.faculty : data.faculty || null,
-        unit ? (unit.major ?? data.major ?? null) : data.major || null,
-        data.className || null,
-        data.academicYear || null,
-        data.bio || null,
-        skills,
-        interests,
-        userId,
-        unit ? unitId : null
-      ]
-    )
+    // Hồ sơ onboarding + trường / lĩnh vực quan tâm ("Khác" ⇒ chờ admin duyệt) lưu cùng một transaction
+    await this.db.transaction(async (client) => {
+      await this.unitRequests.applyChoice(client, userId, data)
+      await client.query(
+        `UPDATE users
+         SET student_id = COALESCE($1, student_id),
+             bio = COALESCE($2, bio),
+             skills = $3,
+             interests = $4,
+             is_onboarded = TRUE,
+             updated_at = NOW()
+         WHERE id = $5`,
+        [data.studentId || null, data.bio || null, skills, interests, userId]
+      )
+    })
 
     // Insert follow relationships if provided
     if (data.followUserIds && data.followUserIds.length > 0) {
@@ -456,7 +428,7 @@ export class AuthService {
     }
 
     this.logger.log(`User ${userId} completed onboarding successfully`)
-    return this.mapUserRowToProfile(updateRes.rows[0])
+    return (await this.findById(userId)) as UserProfile
   }
 
   private mapUserRowToProfile(row: any): UserProfile {
@@ -466,11 +438,7 @@ export class AuthService {
       username: row.username,
       displayName: row.display_name,
       studentId: row.student_id,
-      school: row.school || null,
-      faculty: row.faculty,
-      academicYear: row.academic_year,
-      major: row.major || null,
-      className: row.class_name || null,
+      ...mapUserUnits(row, true),
       isVerified: !!row.is_verified,
       verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
       privacySettings: resolvePrivacySettings(row.privacy_settings),

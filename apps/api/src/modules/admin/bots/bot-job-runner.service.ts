@@ -130,14 +130,14 @@ export class BotJobRunner implements OnModuleInit, OnModuleDestroy {
     if (count.rows[0].n >= MAX_REPLIES_PER_POST) return false
 
     const bot = await this.db.query(
-      `SELECT u.display_name, u.role, u.faculty, u.bio, p.tone, p.major, p.soul FROM users u LEFT JOIN bot_profiles p ON p.user_id = u.id WHERE u.id = $1`,
+      `SELECT u.display_name, u.role, (SELECT x.name FROM interest_fields x WHERE x.id = u.interest_field_id) AS interest_field, u.bio, p.tone, p.soul FROM users u LEFT JOIN bot_profiles p ON p.user_id = u.id WHERE u.id = $1`,
       [c.bot_id]
     )
     const b = bot.rows[0]
     if (!b) return false
     const role = b.role === 'lecturer' ? 'Giảng viên' : b.role === 'ta' ? 'Trợ giảng' : 'Sinh viên'
     const system = [
-      `Bạn là "${b.display_name}" (${role}${b.faculty ? `, khoa ${b.faculty}` : ''}${b.major ? `, ngành ${b.major}` : ''}) trên mạng xã hội sinh viên Đại học Phenikaa.`,
+      `Bạn là "${b.display_name}" (${role}${b.interest_field ? `, quan tâm ${b.interest_field}` : ''}) trên mạng xã hội sinh viên Đại học Phenikaa.`,
       b.bio && `Giới thiệu: ${b.bio}`,
       b.tone && `Giọng điệu: ${b.tone}`,
       b.soul && `Tính cách & phong cách: ${b.soul}`,

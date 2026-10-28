@@ -9,13 +9,13 @@ import { toast } from 'sonner'
 export interface SearchSettings {
   hideSensitive: boolean
   removeBlocked: boolean
-  prioritizeFaculty: boolean
+  prioritizeField: boolean
 }
 
 const DEFAULT_SETTINGS: SearchSettings = {
   hideSensitive: true,
   removeBlocked: true,
-  prioritizeFaculty: true
+  prioritizeField: true
 }
 
 const SEARCH_SETTINGS_KEY = 'pu_search_settings'
@@ -101,20 +101,20 @@ export function SearchSettingsDialog({ open, onOpenChange }: SearchSettingsDialo
             </div>
           </div>
 
-          {/* Option 3: Prioritize your faculty */}
-          <div onClick={() => handleToggle('prioritizeFaculty')} className="flex items-start justify-between gap-4 cursor-pointer select-none group">
+          {/* Option 3: Prioritize your interest field */}
+          <div onClick={() => handleToggle('prioritizeField')} className="flex items-start justify-between gap-4 cursor-pointer select-none group">
             <div className="space-y-1">
-              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Ưu tiên kết quả cùng Khoa / Viện của bạn</h4>
+              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">Ưu tiên kết quả cùng lĩnh vực quan tâm của bạn</h4>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Tự động đưa các học phần, đề thi và bài thảo luận thuộc Khoa / Viện của bạn lên vị trí ưu tiên.
+                Tự động đưa các học phần, đề thi và bài thảo luận thuộc lĩnh vực quan tâm của bạn lên vị trí ưu tiên.
               </p>
             </div>
             <div
               className={`h-5 w-5 rounded border flex items-center justify-center transition-colors shrink-0 mt-0.5 ${
-                settings.prioritizeFaculty ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/50 bg-background'
+                settings.prioritizeField ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/50 bg-background'
               }`}
             >
-              {settings.prioritizeFaculty && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+              {settings.prioritizeField && <Check className="h-3.5 w-3.5 stroke-[3]" />}
             </div>
           </div>
         </div>

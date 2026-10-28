@@ -21,6 +21,8 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { type AuditEntry, writeAudit } from './admin-audit'
 import { effectivePermissions } from './admin-permissions'
 
+// Tên lĩnh vực của môn vừa ghi (dùng trong RETURNING)
+const FIELD_NAME_OF_COURSE = `(SELECT x.name FROM interest_fields x WHERE x.id = courses.interest_field_id)`
 
 @Injectable()
 export class AdminService {
@@ -59,6 +61,7 @@ export class AdminService {
         SELECT
           (SELECT COUNT(*) FROM post_reports WHERE status = 'pending')::int AS pending_reports,
           (SELECT COUNT(*) FROM moderation_events WHERE review_status = 'pending' AND action <> 'block')::int AS pending_moderation,
+          (SELECT COUNT(*) FROM unit_requests WHERE status = 'pending')::int AS pending_unit_requests,
           (SELECT COUNT(DISTINCT post_id) FROM post_reports WHERE status = 'pending')::int AS reported_posts,
           (SELECT COUNT(*) FROM posts WHERE hidden_at IS NOT NULL)::int AS hidden_posts,
           (SELECT COUNT(*) FROM posts)::int AS total_posts,
@@ -90,6 +93,7 @@ export class AdminService {
     return {
       pendingReports: r.pending_reports,
       pendingModeration: r.pending_moderation,
+      pendingUnitRequests: r.pending_unit_requests,
       reportedPosts: r.reported_posts,
       hiddenPosts: r.hidden_posts,
       totalPosts: r.total_posts,
@@ -316,19 +320,15 @@ export class AdminService {
       const exists = await client.query(`SELECT 1 FROM courses WHERE UPPER(code) = $1`, [input.code.toUpperCase()])
       if (exists.rows.length > 0) throw new ConflictException(`Mã môn học ${input.code} đã tồn tại`)
 
-      const fac = await client.query(`SELECT id FROM faculties WHERE UPPER(code) = $1 LIMIT 1`, [input.facultyCode.toUpperCase()])
-      const facultyId = fac.rows[0]?.id ?? null
-
       const res = await client.query(
-        `INSERT INTO courses (code, name, credits, faculty_id, faculty_code, description, syllabus_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, code, name, credits, faculty_code, description, syllabus_url, document_count, post_count, rating_avg, created_at`,
+        `INSERT INTO courses (code, name, credits, interest_field_id, description, syllabus_url)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, code, name, credits, interest_field_id, ${FIELD_NAME_OF_COURSE} AS field_name, description, syllabus_url, document_count, post_count, rating_avg, created_at`,
         [
           input.code.toUpperCase(),
           input.name,
           input.credits,
-          facultyId,
-          input.facultyCode.toUpperCase(),
+          input.fieldId ?? null,
           input.description || null,
           input.syllabusUrl || null
         ]
@@ -345,7 +345,8 @@ export class AdminService {
         code: row.code,
         name: row.name,
         credits: row.credits ?? 3,
-        facultyCode: row.faculty_code,
+        fieldId: row.interest_field_id,
+        fieldName: row.field_name,
         description: row.description,
         syllabusUrl: row.syllabus_url,
         documentCount: row.document_count ?? 0,
@@ -358,22 +359,18 @@ export class AdminService {
 
   async updateCourse(adminId: string, courseId: string, input: AdminCourseInput): Promise<AdminCourseRow> {
     return this.db.transaction(async (client) => {
-      const fac = await client.query(`SELECT id FROM faculties WHERE UPPER(code) = $1 LIMIT 1`, [input.facultyCode.toUpperCase()])
-      const facultyId = fac.rows[0]?.id ?? null
-
       const res = await client.query(
         `UPDATE courses
-         SET code = $2, name = $3, credits = $4, faculty_id = $5, faculty_code = $6,
-             description = $7, syllabus_url = $8, updated_at = NOW()
+         SET code = $2, name = $3, credits = $4, interest_field_id = $5,
+             description = $6, syllabus_url = $7, updated_at = NOW()
          WHERE id = $1
-         RETURNING id, code, name, credits, faculty_code, description, syllabus_url, document_count, post_count, rating_avg, created_at`,
+         RETURNING id, code, name, credits, interest_field_id, ${FIELD_NAME_OF_COURSE} AS field_name, description, syllabus_url, document_count, post_count, rating_avg, created_at`,
         [
           courseId,
           input.code.toUpperCase(),
           input.name,
           input.credits,
-          facultyId,
-          input.facultyCode.toUpperCase(),
+          input.fieldId ?? null,
           input.description || null,
           input.syllabusUrl || null
         ]
@@ -391,7 +388,8 @@ export class AdminService {
         code: row.code,
         name: row.name,
         credits: row.credits ?? 3,
-        facultyCode: row.faculty_code,
+        fieldId: row.interest_field_id,
+        fieldName: row.field_name,
         description: row.description,
         syllabusUrl: row.syllabus_url,
         documentCount: row.document_count ?? 0,

@@ -186,8 +186,8 @@ export function PostAnalyticsDialog({ post, open, onOpenChange }: PostAnalyticsD
               <span>Độ phủ học thuật (Academic Reach)</span>
             </div>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Bài viết đã được thuật toán phân phối ưu tiên tới sinh viên cùng{' '}
-              <strong className="text-foreground">{post.facultyCode || post.author?.faculty || 'Khoa Công nghệ Thông tin'}</strong>
+              Bài viết đã được thuật toán phân phối ưu tiên tới sinh viên cùng lĩnh vực{' '}
+              <strong className="text-foreground">{post.author?.interestField || 'quan tâm'}</strong>
               {post.courseName ? ` và học phần ${post.courseName}` : ''}.
             </p>
           </div>

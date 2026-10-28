@@ -203,7 +203,7 @@ export class PucToolsService {
       posts: library ? previews('post') : undefined,
       users: publicOnly
         ? undefined
-        : found?.users.map((u) => ({ name: u.displayName, username: u.username, faculty: u.faculty ?? undefined, href: `/${u.username}` })),
+        : found?.users.map((u) => ({ name: u.displayName, username: u.username, interestField: u.interestField ?? undefined, href: `/${u.username}` })),
       groups: publicOnly
         ? undefined
         : found?.groups.map((g) => ({

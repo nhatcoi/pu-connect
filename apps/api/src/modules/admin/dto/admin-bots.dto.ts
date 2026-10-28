@@ -11,10 +11,9 @@ export const BotAccountCreateSchema = z.object({
   username: z.string().trim().regex(/^[a-z0-9._]{3,30}$/, 'username: chữ thường, số, dấu chấm/gạch dưới (3–30 ký tự)'),
   displayName: z.string().trim().min(2).max(60),
   role: z.enum(BOT_ROLES_RUNTIME),
-  faculty: z.string().trim().min(1).max(50),
+  interestFieldId: z.string().uuid().nullable().optional(),
   bio: z.string().trim().max(300).optional(),
   tone: z.string().trim().max(300).optional(),
-  major: z.string().trim().max(80).optional(),
   soul: z.string().trim().max(2000).optional()
 })
 

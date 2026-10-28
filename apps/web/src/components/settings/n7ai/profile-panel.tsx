@@ -18,15 +18,15 @@ const FIELDS: { key: keyof AiLearnerProfile; label: string; placeholder: string 
   { key: 'style', label: 'N7AI nên trả lời thế nào?', placeholder: 'Vd. Ngắn gọn, có ví dụ code, giải thích thuật ngữ bằng tiếng Anh' }
 ]
 
-// Hồ sơ học: điều N7AI luôn biết khi trả lời trong thread riêng (kèm ngành / khóa từ hồ sơ PU); không dùng trong nhóm chat
+// Hồ sơ học: điều N7AI luôn biết khi trả lời trong thread riêng (kèm trường / lĩnh vực quan tâm từ hồ sơ PU); không dùng trong nhóm chat
 export function ProfilePanel() {
   const { settings, isLoading } = useAiSettings()
   const user = useAppStore((s) => s.user)
-  const academic = [user?.major, user?.faculty, user?.school, user?.className, user?.academicYear].filter(Boolean).join(' · ')
+  const academic = [user?.interestField, user?.university].filter(Boolean).join(' · ')
 
   return (
     <>
-      <SettingsGroup label="Từ hồ sơ PU" hint="N7AI tự dùng ngành, khoa, lớp, khóa trong hồ sơ của bạn.">
+      <SettingsGroup label="Từ hồ sơ PU" hint="N7AI tự dùng trường và lĩnh vực quan tâm trong hồ sơ của bạn.">
         <p className="py-2.5 text-[13px]">
           {academic || 'Chưa có thông tin học vụ.'}{' '}
           {user?.username && (

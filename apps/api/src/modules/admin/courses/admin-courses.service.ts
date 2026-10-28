@@ -7,6 +7,9 @@ import { CourseRowSchema, type CourseImport, type SuggestionApprove } from './ad
 
 type FkRef = { tbl: string; col: string }
 
+// Bỏ dấu + thường hóa để so tên lĩnh vực
+const foldName = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').replace(/\s+/g, ' ').trim().toLowerCase()
+
 // Học phần: giảng viên phụ trách, gộp môn trùng, xóa môn trống, nhập hàng loạt
 @Injectable()
 export class AdminCoursesService {
@@ -26,7 +29,8 @@ export class AdminCoursesService {
   // Đề xuất môn học theo trạng thái (mới nhất trước)
   async suggestions(status: string): Promise<AdminCourseSuggestion[]> {
     const res = await this.db.query(
-      `SELECT s.*, u.username, u.display_name FROM course_suggestions s JOIN users u ON u.id = s.requester_id
+      `SELECT s.*, f.name AS field_name, u.username, u.display_name FROM course_suggestions s JOIN users u ON u.id = s.requester_id
+       LEFT JOIN interest_fields f ON f.id = s.interest_field_id
        WHERE s.status = $1 ORDER BY s.created_at DESC LIMIT 200`,
       [status]
     )
@@ -40,11 +44,12 @@ export class AdminCoursesService {
       if (!sug) throw new NotFoundException('Đề xuất không tồn tại')
       if (sug.status !== 'pending') throw new ConflictException('Đề xuất này đã được xử lý')
       if ((await client.query(`SELECT 1 FROM courses WHERE upper(code) = $1`, [input.code])).rows.length) throw new ConflictException(`Mã môn ${input.code} đã tồn tại`)
-      const fac = await client.query(`SELECT id FROM faculties WHERE upper(code) = $1 LIMIT 1`, [input.facultyCode.toUpperCase()])
-      const course = await client.query(
-        `INSERT INTO courses (code, name, credits, faculty_id, faculty_code) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-        [input.code, input.name, input.credits, fac.rows[0]?.id ?? null, input.facultyCode.toUpperCase()]
-      )
+      const course = await client.query(`INSERT INTO courses (code, name, credits, interest_field_id) VALUES ($1, $2, $3, $4) RETURNING id`, [
+        input.code,
+        input.name,
+        input.credits,
+        input.fieldId ?? null
+      ])
       const courseId = course.rows[0].id as string
       await client.query(`UPDATE course_suggestions SET status = 'approved', reviewer_id = $2, course_id = $3, reviewed_at = NOW() WHERE id = $1`, [id, adminId, courseId])
       await writeAudit(client, adminId, { action: 'course.suggestion.approve', targetType: 'course', targetId: courseId, details: { suggestionId: id, code: input.code } })
@@ -155,6 +160,24 @@ export class AdminCoursesService {
       seen.add(parsed.data.code)
       valid.push(parsed.data)
     })
+    // Cột "lĩnh vực": khớp tên (không phân biệt hoa thường / dấu) với danh mục; sai tên ⇒ báo lỗi dòng
+    const fieldByName = new Map<string, string>(
+      (await this.db.query(`SELECT id, name FROM interest_fields WHERE is_active`)).rows.map((r) => [foldName(r.name), r.id])
+    )
+    const fieldOf = new Map<string, string | null>()
+    for (let i = valid.length - 1; i >= 0; i--) {
+      const v = valid[i]
+      if (!v.field?.trim()) {
+        fieldOf.set(v.code, null)
+        continue
+      }
+      const id = fieldByName.get(foldName(v.field))
+      if (id) fieldOf.set(v.code, id)
+      else {
+        errors.push({ row: input.rows.findIndex((r) => String((r as { code?: unknown }).code ?? '').trim().toUpperCase() === v.code) + 1, message: `Lĩnh vực "${v.field}" không có trong danh mục` })
+        valid.splice(i, 1)
+      }
+    }
     const existing = new Set(
       (await this.db.query(`SELECT code FROM courses WHERE code = ANY($1::text[])`, [valid.map((v) => v.code)])).rows.map((r) => r.code as string)
     )
@@ -165,11 +188,11 @@ export class AdminCoursesService {
     await this.db.transaction(async (client) => {
       for (const v of valid) {
         await client.query(
-          `INSERT INTO courses (code, name, credits, faculty_id, faculty_code, description, syllabus_url)
-           VALUES ($1, $2, $3, (SELECT id FROM faculties WHERE UPPER(code) = $4 LIMIT 1), $4, $5, $6)
-           ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, credits = EXCLUDED.credits, faculty_id = EXCLUDED.faculty_id,
-             faculty_code = EXCLUDED.faculty_code, description = EXCLUDED.description, syllabus_url = EXCLUDED.syllabus_url, updated_at = NOW()`,
-          [v.code, v.name, v.credits, v.facultyCode.toUpperCase(), v.description || null, v.syllabusUrl || null]
+          `INSERT INTO courses (code, name, credits, interest_field_id, description, syllabus_url)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, credits = EXCLUDED.credits, interest_field_id = EXCLUDED.interest_field_id,
+             description = EXCLUDED.description, syllabus_url = EXCLUDED.syllabus_url, updated_at = NOW()`,
+          [v.code, v.name, v.credits, fieldOf.get(v.code) ?? null, v.description || null, v.syllabusUrl || null]
         )
       }
       await writeAudit(client, adminId, { action: 'course.import', targetType: 'course', targetId: 'bulk', details: { created, updated: result.updated } })

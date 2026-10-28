@@ -401,16 +401,14 @@ ${convBlock.trim()}` : '') : '') +
 
   // Hồ sơ học vụ (users) + hồ sơ học tự viết (ai_settings) — chỉ thread riêng
   private async loadLearner(userId: string, settings: AiSettings): Promise<LearnerContext | null> {
-    const res = await this.db.query(`SELECT display_name, school, faculty, major, class_name, academic_year FROM users WHERE id = $1`, [userId])
+    const res = await this.db.query(`SELECT u.display_name, (SELECT x.name FROM universities x WHERE x.id = u.university_id) AS university,
+            (SELECT x.name FROM interest_fields x WHERE x.id = u.interest_field_id) AS interest_field FROM users u WHERE u.id = $1`, [userId])
     const u = res.rows[0]
     if (!u) return null
     return {
       name: u.display_name,
-      school: u.school,
-      faculty: u.faculty,
-      major: u.major,
-      className: u.class_name,
-      academicYear: u.academic_year,
+      university: u.university,
+      interestField: u.interest_field,
       ...settings.profile
     }
   }

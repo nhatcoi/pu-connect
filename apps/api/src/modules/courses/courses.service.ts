@@ -11,17 +11,17 @@ const LIVE_COUNTS = `
 export class CoursesService {
   constructor(private readonly db: DatabaseService) {}
 
-  async findAll(departmentId?: string): Promise<Course[]> {
+  async findAll(fieldId?: string): Promise<Course[]> {
     let sql = `
-      SELECT c.*, f.name as department_name, ${LIVE_COUNTS}
+      SELECT c.*, f.name as field_name, ${LIVE_COUNTS}
       FROM courses c
-      LEFT JOIN faculties f ON c.faculty_id = f.id
+      LEFT JOIN interest_fields f ON c.interest_field_id = f.id
       WHERE 1=1
     `
     const params: any[] = []
-    if (departmentId) {
-      params.push(departmentId)
-      sql += ` AND (c.faculty_code = $1 OR c.faculty_id::text = $1)`
+    if (fieldId) {
+      params.push(fieldId)
+      sql += ` AND c.interest_field_id::text = $1`
     }
     sql += ` ORDER BY c.rating_avg DESC, c.code ASC`
 
@@ -53,9 +53,9 @@ export class CoursesService {
 
   async findOne(id: string): Promise<Course> {
     const res = await this.db.query(
-      `SELECT c.*, f.name as department_name, ${LIVE_COUNTS}
+      `SELECT c.*, f.name as field_name, ${LIVE_COUNTS}
        FROM courses c
-       LEFT JOIN faculties f ON c.faculty_id = f.id
+       LEFT JOIN interest_fields f ON c.interest_field_id = f.id
        WHERE c.id::text = $1 OR c.code ILIKE $1 LIMIT 1`,
       [id]
     )
@@ -115,10 +115,10 @@ export class CoursesService {
 
   async create(data: CreateCourseInput): Promise<Course> {
     const res = await this.db.query(
-      `INSERT INTO courses (code, name, credits, faculty_code, description, rating_avg)
+      `INSERT INTO courses (code, name, credits, interest_field_id, description, rating_avg)
        VALUES ($1, $2, $3, $4, $5, 5.0)
        RETURNING *`,
-      [data.code.toUpperCase().trim(), data.name.trim(), data.credits, data.departmentId || null, data.description || '']
+      [data.code.toUpperCase().trim(), data.name.trim(), data.credits, data.fieldId || null, data.description || '']
     )
     return this.mapRowToCourse(res.rows[0])
   }
@@ -129,8 +129,8 @@ export class CoursesService {
       code: row.code,
       name: row.name,
       credits: row.credits,
-      departmentId: row.faculty_code || 'FIT',
-      departmentName: row.department_name || row.faculty_code || 'Khoa CNTT',
+      fieldId: row.interest_field_id || null,
+      fieldName: row.field_name || null,
       semester: 'Học kỳ hiện tại',
       description: row.description || '',
       documentCount: row.live_document_count ?? row.document_count ?? 0,

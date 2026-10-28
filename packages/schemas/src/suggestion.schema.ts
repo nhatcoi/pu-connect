@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 // Lý do gợi ý theo dõi (ưu tiên từ trên xuống)
-export const FollowSuggestionReasonSchema = z.enum(['follows_you', 'mutual', 'same_class', 'shared_interests', 'same_faculty', 'popular'])
+export const FollowSuggestionReasonSchema = z.enum(['follows_you', 'mutual', 'shared_interests', 'same_field', 'popular'])
 
 export const FollowSuggestionSchema = z.object({
   id: z.string(),
@@ -10,8 +10,7 @@ export const FollowSuggestionSchema = z.object({
   avatarUrl: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),
   role: z.string(),
-  faculty: z.string().nullable().optional(),
-  className: z.string().nullable().optional(),
+  interestField: z.string().nullable().optional(),
   isVerified: z.boolean(),
   reason: FollowSuggestionReasonSchema,
   // Người mình theo dõi cũng theo dõi họ (tối đa 3 để hiện avatar)

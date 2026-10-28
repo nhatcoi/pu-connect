@@ -49,7 +49,8 @@ const RESTRICTED = `(u.restricted_at IS NOT NULL AND (u.restricted_until IS NULL
 
 const ROW_COLUMNS = `u.id, u.username, u.display_name, u.email, u.avatar_url, u.role,
   CASE WHEN u.status = 'suspended' AND u.suspended_until IS NOT NULL AND u.suspended_until <= NOW() THEN 'active' ELSE u.status::text END AS status,
-  u.is_verified, u.student_id, u.faculty, u.reputation_points, u.suspended_at, u.suspended_reason, u.suspended_until,
+  u.is_verified, u.student_id, (SELECT x.name FROM universities x WHERE x.id = u.university_id) AS university,
+  (SELECT x.name FROM interest_fields x WHERE x.id = u.interest_field_id) AS interest_field, u.reputation_points, u.suspended_at, u.suspended_reason, u.suspended_until,
   ${RESTRICTED} AS is_restricted, u.restricted_until, u.restricted_reason, u.risk_score, u.risk_factors,
   u.last_seen_at, u.created_at, (u.password_hash IS NOT NULL) AS has_password, (u.google_id IS NOT NULL) AS has_google`
 
@@ -87,7 +88,8 @@ function mapUserRow(row: Row): AdminUserRow {
     status: row.status,
     isVerified: !!row.is_verified,
     studentId: row.student_id,
-    faculty: row.faculty,
+    university: row.university,
+    interestField: row.interest_field,
     reputationPoints: row.reputation_points ?? 0,
     suspendedAt: iso(row.suspended_at),
     suspendedReason: row.suspended_reason,
@@ -144,13 +146,8 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
     if (f.verified) where.push(f.verified === 'yes' ? `u.is_verified` : `NOT COALESCE(u.is_verified, FALSE)`)
     if (f.auth === 'google') where.push(`u.google_id IS NOT NULL`)
     if (f.auth === 'password') where.push(`u.password_hash IS NOT NULL`)
-    if (f.faculty) where.push(`u.faculty = ${p(f.faculty)}`)
-    // Đơn vị đã chọn + toàn bộ đơn vị con (chọn khoa ⇒ gồm các ngành)
-    if (f.unit) {
-      where.push(
-        `u.unit_id IN (WITH RECURSIVE sub(id) AS (SELECT ${p(f.unit)}::uuid UNION ALL SELECT c.id FROM academic_units c JOIN sub s ON c.parent_id = s.id) SELECT id FROM sub)`
-      )
-    }
+    if (f.university) where.push(`u.university_id = ${p(f.university)}::uuid`)
+    if (f.field) where.push(`u.interest_field_id = ${p(f.field)}::uuid`)
     if (f.risk === 'high') where.push('u.risk_score >= 50')
     if (f.risk === 'medium') where.push('u.risk_score BETWEEN 25 AND 49')
     if (f.reported) where.push(`EXISTS (SELECT 1 FROM post_reports r JOIN posts p ON p.id = r.post_id WHERE p.author_id = u.id)`)
@@ -209,7 +206,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
 
   // Số liệu phân khúc (1 lần quét users với FILTER)
   async summary(): Promise<AdminUserSummary> {
-    const [agg, roles, faculties] = await Promise.all([
+    const [agg, roles, fields] = await Promise.all([
       this.db.query(`
         SELECT COUNT(*)::int AS total,
           COUNT(*) FILTER (WHERE last_seen_at > NOW() - ${ONLINE_WINDOW})::int AS online,
@@ -224,8 +221,8 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
         FROM users WHERE account_type = 'human'`),
       this.db.query(`SELECT role, COUNT(*)::int AS n FROM users WHERE account_type = 'human' GROUP BY role`),
       this.db.query(
-        `SELECT faculty, COUNT(*)::int AS n FROM users WHERE account_type = 'human' AND faculty IS NOT NULL AND faculty <> ''
-         GROUP BY faculty ORDER BY n DESC, faculty LIMIT 30`
+        `SELECT f.id, f.name, COUNT(*)::int AS n FROM users u JOIN interest_fields f ON f.id = u.interest_field_id
+         WHERE u.account_type = 'human' GROUP BY f.id, f.name ORDER BY n DESC, f.name LIMIT 30`
       )
     ])
     const a = agg.rows[0]
@@ -241,14 +238,14 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
       reported: a.reported,
       dormant: a.dormant,
       byRole: Object.fromEntries(roles.rows.map((r) => [r.role, r.n])),
-      faculties: faculties.rows.map((r) => ({ faculty: r.faculty, count: r.n }))
+      fields: fields.rows.map((r) => ({ id: r.id, name: r.name, count: r.n }))
     }
   }
 
   // Hồ sơ đầy đủ cho ngăn chi tiết
   async detail(userId: string): Promise<AdminUserDetail> {
     const userRes = await this.db.query(
-      `SELECT ${ROW_COLUMNS}, u.bio, u.major, u.class_name, u.academic_year, u.verified_at, pc.post_count, rc.report_count
+      `SELECT ${ROW_COLUMNS}, u.bio, u.verified_at, pc.post_count, rc.report_count
        FROM users u ${COUNT_LATERAL}
        WHERE u.id = $1 AND u.account_type = 'human'`,
       [userId]
@@ -291,9 +288,6 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
       user: {
         ...mapUserRow(row),
         bio: row.bio,
-        major: row.major,
-        className: row.class_name,
-        academicYear: row.academic_year,
         verifiedAt: iso(row.verified_at)
       },
       stats: {
@@ -516,7 +510,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
        ${where} ORDER BY u.created_at DESC LIMIT 10000`,
       params
     )
-    const head = ['username', 'display_name', 'email', 'role', 'status', 'verified', 'student_id', 'faculty', 'reputation', 'posts', 'reports', 'last_seen_at', 'created_at']
+    const head = ['username', 'display_name', 'email', 'role', 'status', 'verified', 'student_id', 'university', 'interest_field', 'reputation', 'posts', 'reports', 'last_seen_at', 'created_at']
     const esc = (v: unknown) => {
       const t = v == null ? '' : String(v)
       // Chặn CSV injection (=, +, -, @ ở đầu ô)
@@ -524,7 +518,7 @@ export class AdminUsersService implements OnModuleInit, OnModuleDestroy {
       return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
     }
     const lines = res.rows.map((r) =>
-      [r.username, r.display_name, r.email, r.role, r.status, r.is_verified, r.student_id, r.faculty, r.reputation_points, r.post_count, r.report_count, iso(r.last_seen_at), iso(r.created_at)]
+      [r.username, r.display_name, r.email, r.role, r.status, r.is_verified, r.student_id, r.university, r.interest_field, r.reputation_points, r.post_count, r.report_count, iso(r.last_seen_at), iso(r.created_at)]
         .map(esc)
         .join(',')
     )

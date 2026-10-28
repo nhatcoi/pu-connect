@@ -11,7 +11,7 @@ export class SearchController {
   async search(
     @Query('q') q: string,
     @Query('type') type: SearchType = 'all',
-    @Query('faculty') faculty?: string,
+    @Query('field') field?: string,
     @Query('limit') limit = '20',
     @Query('offset') offset = '0',
     @Req() req?: Request
@@ -28,7 +28,8 @@ export class SearchController {
       {
         q: q.trim(),
         type,
-        faculty: faculty && faculty !== 'ALL' ? faculty : undefined,
+        // id lĩnh vực quan tâm; giá trị không phải uuid (vd 'ALL') ⇒ không lọc
+        field: field && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(field) ? field : undefined,
         limit: parsedLimit,
         offset: parsedOffset
       },

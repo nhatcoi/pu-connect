@@ -6,6 +6,7 @@ import { DatabaseService } from '../../../database/database.service'
 import { UnauthorizedException } from '@nestjs/common'
 import { hotScoreSql } from '../../posts/feed-ranking.sql'
 import { postListedSql, postOpenableSql } from '../../posts/post-access.sql'
+import { fieldNameSql } from '../../units/unit-sql'
 
 @Resolver(() => PostType)
 export class FeedResolver {
@@ -24,7 +25,7 @@ export class FeedResolver {
       SELECT p.*,
              u.id as author_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+             u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
              u.created_at as author_created_at
     `
     const params: any[] = []
@@ -66,7 +67,7 @@ export class FeedResolver {
       SELECT p.*,
              u.id as author_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+             u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
              u.created_at as author_created_at
     `
     const params: any[] = [id]
@@ -165,7 +166,7 @@ export class FeedResolver {
         displayName: row.author_display_name || 'Sinh viên Phenikaa',
         avatarUrl: row.author_avatar_url || null,
         role: row.author_role || 'student',
-        faculty: row.author_faculty || null,
+        interestField: row.author_interest_field || null,
         reputationPoints: row.author_reputation_points || 100,
         createdAt: row.author_created_at ? new Date(row.author_created_at).toISOString() : ''
       }

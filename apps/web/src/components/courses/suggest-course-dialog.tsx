@@ -1,34 +1,33 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useCourses } from '@/hooks/use-course'
+import { useUnits } from '@/hooks/use-units'
 import { useMyCourseSuggestions, useSuggestCourse } from '@/hooks/use-course-suggestions'
 import { errorMessage } from '@/lib/api-client'
 import { formatRelativeTime } from '@/lib/utils'
-import { buildFaculties } from './course-faculty'
 
 const STATUS_LABEL = { pending: 'Chờ duyệt', approved: 'Đã duyệt', rejected: 'Từ chối' } as const
 const FIELD = 'w-full rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-primary'
 
 // Đề xuất môn học còn thiếu: admin duyệt mới thành môn thật
 export function SuggestCourseDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { data: courses = [] } = useCourses()
-  const faculties = useMemo(() => buildFaculties(courses), [courses])
+  const { data: units } = useUnits()
+  const fields = units?.fields ?? []
   const { data: mine = [] } = useMyCourseSuggestions(open)
   const suggest = useSuggestCourse()
   const [name, setName] = useState('')
-  const [facultyCode, setFacultyCode] = useState('')
+  const [fieldId, setFieldId] = useState('')
   const [note, setNote] = useState('')
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     suggest.mutate(
-      { name: name.trim(), facultyCode: facultyCode || undefined, note: note.trim() || undefined },
+      { name: name.trim(), fieldId: fieldId || undefined, note: note.trim() || undefined },
       {
         onSuccess: () => {
           toast.success('Đã gửi đề xuất, admin sẽ xem xét')
@@ -54,10 +53,10 @@ export function SuggestCourseDialog({ open, onOpenChange }: { open: boolean; onO
             <Input required minLength={3} maxLength={150} value={name} onChange={(e) => setName(e.target.value)} placeholder="Vd. An toàn thông tin" className="text-xs" />
           </div>
           <div>
-            <label className="mb-1 block font-semibold">Khoa (nếu biết)</label>
-            <select value={facultyCode} onChange={(e) => setFacultyCode(e.target.value)} className={FIELD}>
+            <label className="mb-1 block font-semibold">Lĩnh vực (nếu biết)</label>
+            <select value={fieldId} onChange={(e) => setFieldId(e.target.value)} className={FIELD}>
               <option value="">Chưa rõ</option>
-              {faculties.map((f) => (
+              {fields.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
                 </option>

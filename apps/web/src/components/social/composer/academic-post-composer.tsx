@@ -381,7 +381,6 @@ export function AcademicPostComposer({ onPostCreated, defaultCommunityId, defaul
         courseId: selectedCourseId || undefined,
         communityId: defaultCommunityId,
         communitySlug: defaultCommunitySlug,
-        facultyCode: user?.faculty || undefined,
         targetAudience,
         tags: allTags,
         mediaUrls: uploadedMediaUrls,

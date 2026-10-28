@@ -6,7 +6,7 @@ export type CommunitySort = 'hot' | 'new' | 'top'
 
 export const queryKeys = {
   me: ['me'] as const,
-  academicUnits: ['academic-units'] as const,
+  units: ['units'] as const,
   feed: (feedType: FeedType, tag?: string | null) => ['feed', feedType, tag ?? null] as const,
   feedAll: ['feed'] as const,
   post: (id: string) => ['post', id] as const,
@@ -23,7 +23,7 @@ export const queryKeys = {
   suggestedUsers: (limit: number) => ['suggested-users', limit] as const,
   // Modal khám phá: khóa riêng ⇒ không tự tải lại (người vừa theo dõi không biến mất giữa chừng)
   followSuggestions: (limit: number) => ['follow-suggestions', limit] as const,
-  search: (q: string, type: string, faculty?: string | null) => ['search', q, type, faculty ?? null] as const,
+  search: (q: string, type: string, field?: string | null) => ['search', q, type, field ?? null] as const,
   mentionSuggest: (q: string, postId: string | null) => ['mention-suggest', q.toLowerCase(), postId] as const,
   notifications: (filter: string) => ['notifications', filter] as const,
   courses: ['courses'] as const,

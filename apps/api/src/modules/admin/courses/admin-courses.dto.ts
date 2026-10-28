@@ -11,7 +11,7 @@ export const CourseRowSchema = z.object({
     .regex(/^[A-Z0-9_-]+$/, 'Mã môn chỉ gồm chữ in hoa, số, gạch ngang/dưới'),
   name: z.string().trim().min(3, 'Tên môn tối thiểu 3 ký tự').max(150),
   credits: z.coerce.number().int().min(1).max(15).default(3),
-  facultyCode: z.string().trim().min(1, 'Thiếu mã khoa/viện').max(30),
+  field: z.string().trim().max(200).optional().nullable(), // tên lĩnh vực (cột Excel); để trống = chưa phân loại
   description: z.string().trim().max(2000).optional().nullable(),
   syllabusUrl: z.string().trim().max(500).optional().nullable()
 })
@@ -27,8 +27,8 @@ export const CourseMergeSchema = z.object({ intoId: z.string().uuid() }).strict(
 export const CourseLecturersSchema = z.object({ userIds: z.array(z.string().uuid()).max(50) }).strict()
 export const LecturerSearchSchema = z.object({ q: z.string().trim().max(60).optional() })
 
-// Duyệt đề xuất: admin chốt mã / khoa / tín chỉ (cùng quy tắc tạo môn); từ chối cần lý do
-export const SuggestionApproveSchema = CourseRowSchema.pick({ code: true, name: true, credits: true, facultyCode: true }).strict()
+// Duyệt đề xuất: admin chốt mã / lĩnh vực / tín chỉ (cùng quy tắc tạo môn); từ chối cần lý do
+export const SuggestionApproveSchema = CourseRowSchema.pick({ code: true, name: true, credits: true }).extend({ fieldId: z.string().uuid().nullable().optional() }).strict()
 export const SuggestionRejectSchema = z.object({ note: z.string().trim().min(3, 'Nhập lý do từ chối').max(500) }).strict()
 export const SuggestionListSchema = z.object({ status: z.enum(['pending', 'approved', 'rejected']).default('pending') })
 

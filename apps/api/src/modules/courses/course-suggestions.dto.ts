@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Người dùng gợi ý môn còn thiếu: chỉ cần tên; mã, khoa, tín chỉ để admin chốt khi duyệt
+// Người dùng gợi ý môn còn thiếu: chỉ cần tên; mã, lĩnh vực, tín chỉ để admin chốt khi duyệt
 export const CourseSuggestionSchema = z
   .object({
     name: z.string().trim().min(3, 'Tên môn tối thiểu 3 ký tự').max(150),
@@ -11,7 +11,7 @@ export const CourseSuggestionSchema = z
       .max(20)
       .regex(/^[A-Z0-9_-]*$/, 'Mã môn chỉ gồm chữ in hoa, số, gạch ngang/dưới')
       .optional(),
-    facultyCode: z.string().trim().max(30).optional(),
+    fieldId: z.string().uuid().optional(),
     credits: z.number().int().min(1).max(15).optional(),
     note: z.string().trim().max(500).optional()
   })

@@ -24,7 +24,7 @@ export class UserInsightService {
   async get(userId: string): Promise<UserInsight> {
     const [user, interests, signals, eventCounts, events, questions] = await Promise.all([
       this.db.query(
-        `SELECT id, username, display_name, avatar_url, major, class_name, interests, skills, last_seen_at,
+        `SELECT id, username, display_name, avatar_url, (SELECT x.name FROM interest_fields x WHERE x.id = u.interest_field_id) AS interest_field, interests, skills, last_seen_at,
                 interests_updated_at, ${personalizationOnSql('u')} AS personalization,
                 (interests_updated_at IS NULL OR interests_updated_at < NOW() - INTERVAL '${PROFILE_TTL_HOURS} hours') AS stale
          FROM users u WHERE id = $1 AND account_type = 'human'`,
@@ -74,8 +74,7 @@ export class UserInsightService {
         username: u.username,
         displayName: u.display_name,
         avatarUrl: u.avatar_url,
-        major: u.major,
-        className: u.class_name,
+        interestField: u.interest_field,
         interests: u.interests ?? [],
         skills: u.skills ?? [],
         lastSeenAt: iso(u.last_seen_at)

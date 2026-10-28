@@ -7,20 +7,15 @@ import type { AnnouncementAudience, AnnouncementCreate } from './announcements.d
 const TICK_MS = 30_000
 const MAX_SCHEDULE_DAYS = 365
 
-// Người dùng u khớp đối tượng a.audience (JSONB): rỗng = mọi người; đơn vị gồm cả đơn vị con
+// Người dùng u khớp đối tượng a.audience (JSONB): rỗng = mọi người; trường / lĩnh vực quan tâm chọn theo id
 const MATCH = `
   u.account_type = 'human' AND u.status = 'active'
   AND (COALESCE(jsonb_array_length(a.audience->'roles'), 0) = 0
        OR u.role::text IN (SELECT jsonb_array_elements_text(a.audience->'roles')))
-  AND (COALESCE(jsonb_array_length(a.audience->'years'), 0) = 0
-       OR u.academic_year IN (SELECT jsonb_array_elements_text(a.audience->'years')))
-  AND (COALESCE(jsonb_array_length(a.audience->'unitIds'), 0) = 0
-       OR u.unit_id IN (
-         WITH RECURSIVE t AS (
-           SELECT x::uuid AS id FROM jsonb_array_elements_text(a.audience->'unitIds') x
-           UNION ALL
-           SELECT c.id FROM academic_units c JOIN t ON c.parent_id = t.id
-         ) SELECT id FROM t))`
+  AND (COALESCE(jsonb_array_length(a.audience->'universityIds'), 0) = 0
+       OR u.university_id::text IN (SELECT jsonb_array_elements_text(a.audience->'universityIds')))
+  AND (COALESCE(jsonb_array_length(a.audience->'fieldIds'), 0) = 0
+       OR u.interest_field_id::text IN (SELECT jsonb_array_elements_text(a.audience->'fieldIds')))`
 
 const iso = (v: unknown) => (v ? new Date(v as string).toISOString() : null)
 
@@ -125,7 +120,7 @@ export class AnnouncementsService implements OnModuleInit, OnModuleDestroy {
     const res = await this.db.query(
       `SELECT a.id, a.title, a.message, a.link FROM announcements a
        WHERE a.banner AND a.status = 'sent' AND (a.banner_until IS NULL OR a.banner_until > NOW())
-         AND (COALESCE(jsonb_array_length(a.audience->'roles'), 0) + COALESCE(jsonb_array_length(a.audience->'years'), 0) + COALESCE(jsonb_array_length(a.audience->'unitIds'), 0) = 0
+         AND (COALESCE(jsonb_array_length(a.audience->'roles'), 0) + COALESCE(jsonb_array_length(a.audience->'universityIds'), 0) + COALESCE(jsonb_array_length(a.audience->'fieldIds'), 0) = 0
               OR EXISTS (SELECT 1 FROM users u WHERE u.id = $1::uuid AND ${MATCH}))
        ORDER BY a.sent_at DESC LIMIT 3`,
       [userId]

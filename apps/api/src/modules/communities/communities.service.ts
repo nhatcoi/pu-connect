@@ -3,6 +3,7 @@ import { DatabaseService } from '../../database/database.service'
 import { blockExistsSql } from '../blocks/blocks.sql'
 import type { Community, CommunityRule } from '@pu/schemas'
 import { postListedSql } from '../posts/post-access.sql'
+import { fieldNameSql } from '../units/unit-sql'
 
 export interface CommunityPostsResult {
   community: Community
@@ -161,7 +162,7 @@ export class CommunitiesService {
       SELECT p.*,
              u.id as author_user_id, u.email as author_email, u.username as author_username,
              u.display_name as author_display_name, u.avatar_url as author_avatar_url,
-             u.role as author_role, u.faculty as author_faculty, u.reputation_points as author_reputation_points,
+             u.role as author_role, ${fieldNameSql('u')} as author_interest_field, u.reputation_points as author_reputation_points,
              c.code as course_code, c.name as course_name,
              comm.slug as community_slug, comm.name as community_name
     `
@@ -198,7 +199,7 @@ export class CommunitiesService {
         displayName: row.author_display_name,
         avatarUrl: row.author_avatar_url,
         role: row.author_role,
-        faculty: row.author_faculty,
+        interestField: row.author_interest_field,
         reputationPoints: row.author_reputation_points
       },
       title: row.title,
@@ -210,8 +211,7 @@ export class CommunitiesService {
       communityId: row.community_id,
       communitySlug: row.community_slug || community.slug,
       communityName: row.community_name || community.name,
-      facultyCode: row.author_faculty,
-      targetAudience: row.visibility === 'public' ? 'everyone' : 'faculty',
+      targetAudience: row.visibility === 'public' ? 'everyone' : 'followers',
       isPinned: !!row.is_pinned,
       isResolved: !!row.is_resolved,
       tags: row.tags || [],

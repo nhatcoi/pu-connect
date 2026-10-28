@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { useAdminUnits, flattenUnits } from '@/features/units/use-units'
+import { useAdminUnits } from '@/features/units/use-units'
 import { BadgeCheck, BadgeX, Download, Gavel, KeyRound, LockOpen, LogOut, Mail, ShieldCheck, SlidersHorizontal, UserCog, Users, X } from 'lucide-react'
 import { USER_ROLES, type AdminUserRow, type AdminUserSort, type AdminUserSummary, type SanctionKind } from '@pu/schemas'
 import { apiUrl, cn, formatCompact, formatNumber, formatRelativeTime, ROLE_SHORT } from '@/lib/api'
@@ -125,7 +125,7 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                     Người dùng
                   </SortTh>
                   <Th>Vai trò</Th>
-                  <Th className="hidden xl:table-cell">Khoa</Th>
+                  <Th className="hidden xl:table-cell">Trường · Lĩnh vực</Th>
                   <SortTh
                     id="reputation"
                     sort={sort}
@@ -174,7 +174,7 @@ export function UsersPage({ currentUserId }: { currentUserId: string }) {
                     <td className="px-4 py-2.5">
                       <RoleStatus u={u} />
                     </td>
-                    <td className="hidden px-4 py-2.5 text-muted-foreground xl:table-cell">{u.faculty || '—'}</td>
+                    <td className="hidden px-4 py-2.5 text-muted-foreground xl:table-cell">{[u.university, u.interestField].filter(Boolean).join(' · ') || '—'}</td>
                     <td className="hidden px-4 py-2.5 text-right tabular-nums lg:table-cell">{formatNumber(u.reputationPoints)}</td>
                     <td className="hidden px-4 py-2.5 text-right tabular-nums lg:table-cell">{formatNumber(u.postCount)}</td>
                     <td className={cn('px-4 py-2.5 text-right tabular-nums', u.reportCount > 0 ? 'font-semibold text-warning' : 'text-muted-foreground')}>
@@ -435,11 +435,10 @@ function Toolbar({
 
   const popoverKeys = ['status', 'risk', 'verified', 'activity', 'joined', 'auth', 'reported'] as const
   const activeChips = FILTER_KEYS.filter((k) => k !== 'q' && params[k])
-  const advancedCount = [...popoverKeys, 'unit' as const].filter((k) => params[k]).length
+  const advancedCount = [...popoverKeys, 'university' as const, 'field' as const].filter((k) => params[k]).length
 
   const { data: unitList } = useAdminUnits()
-  const unitOptions = useMemo(() => flattenUnits(unitList ?? []).filter((n) => n.unit.userTotal > 0 || n.unit.id === params.unit), [unitList, params.unit])
-  const unitName = (id: string) => unitList?.find((u) => u.id === id)?.name ?? id
+  const unitName = (id: string) => [...(unitList?.universities ?? []), ...(unitList?.fields ?? [])].find((u) => u.id === id)?.name ?? id
 
   return (
     <div className="mb-3 space-y-2.5">
@@ -494,19 +493,26 @@ function Toolbar({
                 </div>
               )
             })}
-            {unitOptions.length > 0 && (
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-muted-foreground">Đơn vị (gồm đơn vị con)</p>
-                <Select value={params.unit ?? ''} onChange={(e) => setParams({ unit: e.target.value })}>
-                  <option value="">Mọi đơn vị</option>
-                  {unitOptions.map(({ unit: u, depth }) => (
-                    <option key={u.id} value={u.id}>
-                      {'— '.repeat(depth)}
-                      {u.shortName || u.name} ({u.userTotal})
-                    </option>
-                  ))}
-                </Select>
-              </div>
+            {(
+              [
+                { key: 'university', title: 'Trường đại học', all: 'Mọi trường', items: unitList?.universities ?? [] },
+                { key: 'field', title: 'Lĩnh vực quan tâm', all: 'Mọi lĩnh vực', items: unitList?.fields ?? [] }
+              ] as const
+            ).map(
+              (g) =>
+                g.items.length > 0 && (
+                  <div key={g.key}>
+                    <p className="mb-1.5 text-xs font-medium text-muted-foreground">{g.title}</p>
+                    <Select value={params[g.key] ?? ''} onChange={(e) => setParams({ [g.key]: e.target.value })}>
+                      <option value="">{g.all}</option>
+                      {g.items.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} ({u.userCount})
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                )
             )}
           </div>
         </Menu>
@@ -519,8 +525,8 @@ function Toolbar({
           {activeChips.map((k) => (
             <FilterChip
               key={k}
-              label={k === 'role' ? 'Vai trò' : k === 'faculty' ? 'Khoa' : k === 'unit' ? 'Đơn vị' : (FILTER_OPTIONS[k as FilterKey]?.label ?? k)}
-              value={k === 'role' ? (ROLE_SHORT[params[k]] ?? params[k]) : k === 'faculty' ? params[k] : k === 'unit' ? unitName(params[k]) : filterValueLabel(k, params[k])}
+              label={k === 'role' ? 'Vai trò' : k === 'university' ? 'Trường' : k === 'field' ? 'Lĩnh vực' : (FILTER_OPTIONS[k as FilterKey]?.label ?? k)}
+              value={k === 'role' ? (ROLE_SHORT[params[k]] ?? params[k]) : k === 'university' || k === 'field' ? unitName(params[k]) : filterValueLabel(k, params[k])}
               onRemove={() => setParams({ [k]: undefined })}
             />
           ))}

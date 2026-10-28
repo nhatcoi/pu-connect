@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { X, Camera, Image as ImageIcon, ChevronRight, Loader2, Check, RotateCcw, Palette } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { AcademicUnitSelector } from './academic-unit-selector'
+import { initialUnitChoice, UnitSelector, unitChoicePayload, type UnitChoice } from './unit-selector'
 import { errorMessage } from '@/lib/api-client'
 
 interface EditProfileDialogProps {
@@ -16,11 +16,10 @@ interface EditProfileDialogProps {
   initialData: {
     displayName: string
     bio?: string | null
-    school?: string | null
-    faculty?: string | null
-    major?: string | null
-    academicYear?: string | null
-    className?: string | null
+    universityId?: string | null
+    universityRequest?: string | null
+    interestFieldId?: string | null
+    interestFieldRequest?: string | null
     avatarUrl?: string | null
     bannerUrl?: string | null
     location?: string | null
@@ -73,13 +72,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
   // State form fields
   const [displayName, setDisplayName] = useState(initialData.displayName || '')
   const [bio, setBio] = useState(initialData.bio || '')
-  const [school, setSchool] = useState(initialData.school || '')
-  const [faculty, setFaculty] = useState(initialData.faculty || '')
-  const [major, setMajor] = useState(initialData.major || '')
-  const [academicYear, setAcademicYear] = useState(initialData.academicYear || '')
-  const [className, setClassName] = useState(initialData.className || '')
-  // Đơn vị chọn từ cây học thuật: undefined = không đổi, string = đơn vị mới, null = nhập tay / xóa
-  const [unitId, setUnitId] = useState<string | null | undefined>(undefined)
+  const [units, setUnits] = useState<UnitChoice>(() => initialUnitChoice(initialData))
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl || '')
   const [bannerUrl, setBannerUrl] = useState(initialData.bannerUrl || '')
   const [location, setLocation] = useState(initialData.location || '')
@@ -106,12 +99,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
       const initialData = initialRef.current
       setDisplayName(initialData.displayName || '')
       setBio(initialData.bio || '')
-      setSchool(initialData.school || '')
-      setFaculty(initialData.faculty || '')
-      setMajor(initialData.major || '')
-      setAcademicYear(initialData.academicYear || '')
-      setClassName(initialData.className || '')
-      setUnitId(undefined)
+      setUnits(initialUnitChoice(initialData))
       setAvatarUrl(initialData.avatarUrl || '')
       setBannerUrl(initialData.bannerUrl || '')
       setLocation(initialData.location || '')
@@ -214,12 +202,7 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
         body: JSON.stringify({
           displayName: displayName.trim(),
           bio: bio.trim() || null,
-          school: school.trim() || null,
-          faculty: faculty.trim() || null,
-          major: major.trim() || null,
-          academicYear: academicYear.trim() || null,
-          className: className.trim() || null,
-          ...(unitId !== undefined ? { unitId } : {}),
+          ...unitChoicePayload(units),
           avatarUrl: avatarUrl.trim() || null,
           bannerUrl: bannerUrl ? bannerUrl.trim() : null,
           location: location.trim() || null,
@@ -475,22 +458,8 @@ export function EditProfileDialog({ open, onOpenChange, initialData, onSuccess }
               />
             </div>
 
-            {/* 5. Cây Đơn vị đào tạo chuẩn hóa (School • Faculty • Major • Cohort • Class) */}
-            <AcademicUnitSelector
-              school={school}
-              faculty={faculty}
-              major={major}
-              academicYear={academicYear}
-              className={className}
-              onChange={(values) => {
-                setSchool(values.school || '')
-                setFaculty(values.faculty || '')
-                setMajor(values.major || '')
-                setAcademicYear(values.academicYear || '')
-                setClassName(values.className || '')
-                if (values.unitId !== undefined) setUnitId(values.unitId)
-              }}
-            />
+            {/* 5. Trường đại học + lĩnh vực quan tâm ("Khác" ⇒ nhập tên, chờ admin duyệt) */}
+            <UnitSelector value={units} onChange={setUnits} />
 
             {/* 5. Hàng Birth Date (Theme Adaptive & Tương Tác Chọn Ngày) */}
             <Collapsible

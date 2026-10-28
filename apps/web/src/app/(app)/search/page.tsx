@@ -18,7 +18,7 @@ import { SearchOptionsSheet } from '@/components/search/search-options-sheet'
 import { AdvancedSearchDialog } from '@/components/search/advanced-search-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { useFacultyOptions } from '@/hooks/use-academic-units'
+import { useFieldOptions } from '@/hooks/use-units'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { apiClient } from '@/lib/api-client'
 import type { SearchResult, SearchType, Course, UserSummary } from '@pu/schemas'
@@ -98,13 +98,13 @@ const ACADEMIC_STORIES = [
 function SearchContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const faculties = useFacultyOptions('Tất cả trường')
+  const fields = useFieldOptions('Tất cả lĩnh vực')
   const queryParam = searchParams.get('q') || ''
   const activeType = (searchParams.get('type') as SearchType) || 'all'
-  const facultyParam = searchParams.get('faculty') || 'ALL'
+  const fieldParam = searchParams.get('field') || 'ALL'
 
   const [inputQuery, setInputQuery] = useState(queryParam)
-  const [selectedFaculty, setSelectedFaculty] = useState(facultyParam)
+  const [selectedField, setSelectedField] = useState(fieldParam)
   const [exploreSubTab, setExploreSubTab] = useState<'explore' | 'trending' | 'courses' | 'documents' | 'groups'>('explore')
 
   // Dialog & Sheet States
@@ -120,11 +120,11 @@ function SearchContent() {
   // Kết quả cache theo (từ khóa, loại, khoa) 5 phút: quay lại trang search hiện ngay
   const trimmedQuery = queryParam.trim()
   const { data: searchResult = null, isLoading } = useQuery({
-    queryKey: queryKeys.search(trimmedQuery, activeType, selectedFaculty),
+    queryKey: queryKeys.search(trimmedQuery, activeType, selectedField),
     queryFn: async () => {
-      const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${encodeURIComponent(selectedFaculty)}` : ''
+      const fieldQuery = selectedField !== 'ALL' ? `&field=${encodeURIComponent(selectedField)}` : ''
       const res = await apiClient<{ success: boolean; data: SearchResult }>(
-        `/search?q=${encodeURIComponent(trimmedQuery)}&type=${activeType}${facultyQuery}&limit=30`
+        `/search?q=${encodeURIComponent(trimmedQuery)}&type=${activeType}${fieldQuery}&limit=30`
       )
       return res.data
     },
@@ -149,19 +149,19 @@ function SearchContent() {
       router.push('/search')
       return
     }
-    const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${encodeURIComponent(selectedFaculty)}` : ''
-    router.push(`/search?q=${encodeURIComponent(inputQuery.trim())}&type=${activeType}${facultyQuery}`)
+    const fieldQuery = selectedField !== 'ALL' ? `&field=${encodeURIComponent(selectedField)}` : ''
+    router.push(`/search?q=${encodeURIComponent(inputQuery.trim())}&type=${activeType}${fieldQuery}`)
   }
 
   const handleTabChange = (type: SearchType) => {
-    const facultyQuery = selectedFaculty !== 'ALL' ? `&faculty=${encodeURIComponent(selectedFaculty)}` : ''
-    router.push(`/search?q=${encodeURIComponent(queryParam)}&type=${type}${facultyQuery}`)
+    const fieldQuery = selectedField !== 'ALL' ? `&field=${encodeURIComponent(selectedField)}` : ''
+    router.push(`/search?q=${encodeURIComponent(queryParam)}&type=${type}${fieldQuery}`)
   }
 
-  const handleFacultyChange = (code: string) => {
-    setSelectedFaculty(code)
-    const facultyQuery = code !== 'ALL' ? `&faculty=${encodeURIComponent(code)}` : ''
-    router.push(`/search?q=${encodeURIComponent(queryParam)}&type=${activeType}${facultyQuery}`)
+  const handleFieldChange = (id: string) => {
+    setSelectedField(id)
+    const fieldQuery = id !== 'ALL' ? `&field=${encodeURIComponent(id)}` : ''
+    router.push(`/search?q=${encodeURIComponent(queryParam)}&type=${activeType}${fieldQuery}`)
   }
 
   const handleTrendingClick = (tag: string) => {
@@ -183,7 +183,7 @@ function SearchContent() {
         onOpenFilters={() => setIsAdvancedOpen(true)}
         onOpenAdvanced={() => setIsAdvancedOpen(true)}
       />
-      <AdvancedSearchDialog open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen} initialQuery={inputQuery} initialFaculty={selectedFaculty} />
+      <AdvancedSearchDialog open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen} initialQuery={inputQuery} initialField={selectedField} />
 
       {/* ── A. SEARCH TOP BAR & CATEGORY TABS ── */}
       <div className="sticky top-0 md:top-14 z-30 mb-2.5 bg-surface/90 backdrop-blur-md px-2 sm:px-0 py-2">
@@ -496,37 +496,27 @@ function SearchContent() {
         </div>
       )}
       <PageAside>
-        {/* Faculty Filter Card */}
+        {/* Lọc theo lĩnh vực quan tâm */}
         <Card className="border-0 bg-card shadow-none rounded-xl">
           <CardHeader className="pb-1">
             <div className="flex items-center gap-2 text-xs font-bold text-foreground">
               <Filter className="h-4 w-4 text-primary" />
-              <span>Lọc theo trường</span>
+              <span>Lọc theo lĩnh vực</span>
             </div>
           </CardHeader>
           <CardContent className="p-2 space-y-0.5">
-            {faculties.map((fac) => {
-              const isSelected = selectedFaculty === fac.code
+            {fields.map((fac) => {
+              const isSelected = selectedField === fac.id
               return (
                 <button
-                  key={fac.code}
-                  onClick={() => handleFacultyChange(fac.code)}
+                  key={fac.id}
+                  onClick={() => handleFieldChange(fac.id)}
                   className={cn(
                     'w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-colors cursor-pointer text-left',
                     isSelected ? 'bg-primary/10 text-primary font-semibold' : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                   )}
                 >
                   <span className="truncate">{fac.name}</span>
-                  {fac.code !== 'ALL' && (
-                    <span
-                      className={cn(
-                        'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ml-2 shrink-0',
-                        isSelected ? 'bg-primary/15 text-primary' : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {fac.code}
-                    </span>
-                  )}
                 </button>
               )
             })}

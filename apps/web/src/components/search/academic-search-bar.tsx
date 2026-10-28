@@ -254,7 +254,7 @@ export function AcademicSearchBar({ className, initialQuery = '', autoFocus = fa
                             <span className="font-semibold text-foreground">{u.displayName}</span>
                             <span className="text-[11px] text-muted-foreground">@{u.username}</span>
                           </div>
-                          <span className="text-[10px] text-muted-foreground">{u.faculty || 'PU'}</span>
+                          <span className="text-[10px] text-muted-foreground">{u.interestField || 'PU'}</span>
                         </div>
                       ))}
                     </div>

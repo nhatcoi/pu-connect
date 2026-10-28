@@ -18,14 +18,23 @@ export class UserType {
   @Field(() => String, { nullable: true })
   studentId?: string | null
 
-  @Field(() => String, { nullable: true })
-  school?: string | null
+  @Field(() => String, { nullable: true, description: '"Khác" khi đang chờ admin duyệt' })
+  university?: string | null
+
+  @Field(() => String, { nullable: true, description: 'Lĩnh vực quan tâm; "Khác" khi đang chờ admin duyệt' })
+  interestField?: string | null
 
   @Field(() => String, { nullable: true })
-  faculty?: string | null
+  universityId?: string | null
 
   @Field(() => String, { nullable: true })
-  academicYear?: string | null
+  interestFieldId?: string | null
+
+  @Field(() => String, { nullable: true, description: 'Tên trường đã gửi chờ duyệt (chỉ chủ hồ sơ)' })
+  universityRequest?: string | null
+
+  @Field(() => String, { nullable: true, description: 'Tên lĩnh vực đã gửi chờ duyệt (chỉ chủ hồ sơ)' })
+  interestFieldRequest?: string | null
 
   @Field(() => String, { nullable: true })
   avatarUrl?: string | null
@@ -48,12 +57,6 @@ export class UserType {
 
   @Field()
   role: string
-
-  @Field(() => String, { nullable: true })
-  major?: string | null
-
-  @Field(() => String, { nullable: true })
-  className?: string | null
 
   @Field(() => Boolean, { defaultValue: false, nullable: true })
   isVerified?: boolean

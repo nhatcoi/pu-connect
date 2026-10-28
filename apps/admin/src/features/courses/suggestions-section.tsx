@@ -4,6 +4,7 @@ import { Check, Lightbulb, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AdminCourseSuggestion, CourseSuggestionStatus } from '@pu/schemas'
 import { adminApi, cn, formatRelativeTime } from '@/lib/api'
+import { FieldSelect } from '@/features/units/field-select'
 import { Badge, Button, ConfirmDialog, Dialog, EmptyState, Field, Input, LoadingRows, Segmented, Table, TBody, Td, Th, THead, Toolbar, Tr } from '@/components/ui'
 
 const STATUS_TONE = { pending: undefined, approved: 'success', rejected: 'danger' } as const
@@ -54,7 +55,7 @@ export function SuggestionsSection({ canManage }: { canManage: boolean }) {
           <THead>
             <Th>Môn đề xuất</Th>
             <Th className="hidden md:table-cell">Người đề xuất</Th>
-            <Th className="hidden sm:table-cell">Khoa</Th>
+            <Th className="hidden sm:table-cell">Lĩnh vực</Th>
             <Th className="hidden lg:table-cell">Gửi lúc</Th>
             <Th>Trạng thái</Th>
             <Th className="w-44" />
@@ -68,7 +69,7 @@ export function SuggestionsSection({ canManage }: { canManage: boolean }) {
                   {s.status === 'rejected' && s.reviewNote && <p className="truncate text-xs text-muted-foreground">Lý do: {s.reviewNote}</p>}
                 </Td>
                 <Td className="hidden text-muted-foreground md:table-cell">@{s.requester.username}</Td>
-                <Td className="hidden text-muted-foreground sm:table-cell">{s.facultyCode || '—'}</Td>
+                <Td className="hidden text-muted-foreground sm:table-cell">{s.fieldName || '—'}</Td>
                 <Td className="hidden text-muted-foreground lg:table-cell">{formatRelativeTime(s.createdAt)}</Td>
                 <Td>
                   <Badge tone={STATUS_TONE[s.status]}>{STATUS_LABEL[s.status]}</Badge>
@@ -108,12 +109,12 @@ export function SuggestionsSection({ canManage }: { canManage: boolean }) {
 
 // Admin chốt thông tin môn trước khi tạo
 function ApproveDialog({ suggestion, onClose, onDone }: { suggestion: AdminCourseSuggestion | null; onClose: () => void; onDone: () => void }) {
-  const [form, setForm] = useState({ code: '', name: '', credits: 3, facultyCode: '' })
+  const [form, setForm] = useState({ code: '', name: '', credits: 3, fieldId: null as string | null })
   const [seen, setSeen] = useState<string | null>(null)
   // Mở đề xuất mới ⇒ điền sẵn từ đề xuất
   if (suggestion && suggestion.id !== seen) {
     setSeen(suggestion.id)
-    setForm({ code: suggestion.code ?? '', name: suggestion.name, credits: suggestion.credits ?? 3, facultyCode: suggestion.facultyCode ?? '' })
+    setForm({ code: suggestion.code ?? '', name: suggestion.name, credits: suggestion.credits ?? 3, fieldId: suggestion.fieldId })
   }
   const approve = useMutation({
     mutationFn: () => adminApi.post(`/admin/courses/suggestions/${suggestion!.id}/approve`, form),
@@ -151,8 +152,8 @@ function ApproveDialog({ suggestion, onClose, onDone }: { suggestion: AdminCours
           <Field label="Mã môn">
             <Input required autoFocus value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="IT302" />
           </Field>
-          <Field label="Khoa">
-            <Input required value={form.facultyCode} onChange={(e) => setForm({ ...form, facultyCode: e.target.value })} placeholder="CNTT" />
+          <Field label="Lĩnh vực">
+            <FieldSelect value={form.fieldId} onChange={(fieldId) => setForm({ ...form, fieldId })} />
           </Field>
           <Field label="Tín chỉ">
             <Input type="number" min={1} max={15} value={form.credits} onChange={(e) => setForm({ ...form, credits: Number(e.target.value) || 3 })} />

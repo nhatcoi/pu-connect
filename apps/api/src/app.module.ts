@@ -23,7 +23,7 @@ import { BlocksModule } from './modules/blocks/blocks.module'
 import { PresenceModule } from './modules/presence/presence.module'
 import { PersonalizationModule } from './modules/personalization/personalization.module'
 import { StudyToolsModule } from './modules/study-tools/study-tools.module'
-import { AcademicUnitsModule } from './modules/academic-units/academic-units.module'
+import { UnitsModule } from './modules/units/units.module'
 
 @Module({
   imports: [
@@ -61,7 +61,7 @@ import { AcademicUnitsModule } from './modules/academic-units/academic-units.mod
     PresenceModule,
     PersonalizationModule,
     StudyToolsModule,
-    AcademicUnitsModule
+    UnitsModule
   ]
 })
 export class AppModule {}

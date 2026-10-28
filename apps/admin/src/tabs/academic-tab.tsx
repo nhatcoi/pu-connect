@@ -6,6 +6,8 @@ import type { AdminCommunityRow, AdminCourseInput, AdminCourseRow, AdminDocument
 import { adminApi, cn, formatBytes, formatNumber, formatRelativeTime } from '@/lib/api'
 import { SavedViews } from '@/components/list/saved-views'
 import { UnitsSection } from '@/features/units/units-panel'
+import { FieldSelect } from '@/features/units/field-select'
+import { useUnitRequests } from '@/features/units/use-units'
 import { CourseEditDialog } from '@/features/courses/course-edit-dialog'
 import { CourseImportDialog } from '@/features/courses/course-import-dialog'
 import { SuggestionsSection } from '@/features/courses/suggestions-section'
@@ -48,7 +50,7 @@ const DOC_TYPE_LABELS: Record<string, string> = {
 
 const COMMUNITY_TYPE_LABELS: Record<string, string> = {
   campus: 'Toàn trường',
-  faculty: 'Khoa',
+  faculty: 'Lĩnh vực',
   academic: 'Học thuật',
   life: 'Đời sống',
   club: 'CLB'
@@ -60,6 +62,7 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
   const [createOpen, setCreateOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const canManage = permissions.includes('academic:manage')
+  const pendingUnits = useUnitRequests('pending').data?.length ?? 0
 
   return (
     <>
@@ -89,7 +92,7 @@ export function AcademicTab({ permissions }: { permissions: AdminPermission[] })
               { id: 'suggestions', label: 'Đề xuất môn' },
               { id: 'documents', label: 'Tài liệu' },
               { id: 'communities', label: 'Cộng đồng' },
-              { id: 'units', label: 'Đơn vị' }
+              { id: 'units', label: pendingUnits ? `Đơn vị (${pendingUnits})` : 'Đơn vị' }
             ]}
           />
         }
@@ -128,7 +131,7 @@ function Total({ n, unit }: { n?: number; unit: string }) {
 function CoursesSection({ canManage }: { canManage: boolean }) {
   const [editing, setEditing] = useState<AdminCourseRow | null>(null)
   const state = useListState({ sort: 'posts' })
-  const list = usePaged<AdminCourseRow>('courses', '/admin/courses', state.params, ['q', 'faculty'])
+  const list = usePaged<AdminCourseRow>('courses', '/admin/courses', state.params, ['q', 'field'])
   const rows = list.data?.items ?? []
 
   return (
@@ -137,9 +140,9 @@ function CoursesSection({ canManage }: { canManage: boolean }) {
         <ListSearch state={state} placeholder="Mã môn, tên môn (không dấu)" />
         <ParamSelect
           state={state}
-          name="faculty"
-          all="Mọi khoa"
-          options={(list.data?.facets?.faculty ?? []).map((f) => ({ value: f.value, label: f.value, count: f.count }))}
+          name="field"
+          all="Mọi lĩnh vực"
+          options={(list.data?.facets?.field ?? []).map((f) => ({ value: f.value, label: f.value, count: f.count }))}
           className="w-40"
         />
         <Total n={list.data?.total} unit="học phần" />
@@ -156,7 +159,7 @@ function CoursesSection({ canManage }: { canManage: boolean }) {
                 Mã
               </Sort>
               <Th>Tên học phần</Th>
-              <Th className="hidden md:table-cell">Khoa</Th>
+              <Th className="hidden md:table-cell">Lĩnh vực</Th>
               <Th className="hidden text-right sm:table-cell">Tín chỉ</Th>
               <Sort state={state} id="documents" align="right">
                 Tài liệu
@@ -176,7 +179,7 @@ function CoursesSection({ canManage }: { canManage: boolean }) {
                     <p className="truncate font-medium text-foreground">{c.name}</p>
                     {c.description && <p className="truncate text-xs text-muted-foreground">{c.description}</p>}
                   </Td>
-                  <Td className="hidden text-muted-foreground md:table-cell">{c.facultyCode || '—'}</Td>
+                  <Td className="hidden text-muted-foreground md:table-cell">{c.fieldName || '—'}</Td>
                   <Td className="hidden text-right tabular-nums sm:table-cell">{c.credits}</Td>
                   <Td className="text-right tabular-nums">{formatNumber(c.documentCount)}</Td>
                   <Td className="hidden text-right tabular-nums sm:table-cell">{formatNumber(c.postCount)}</Td>
@@ -193,7 +196,7 @@ function CoursesSection({ canManage }: { canManage: boolean }) {
   )
 }
 
-const EMPTY_COURSE: AdminCourseInput = { code: '', name: '', credits: 3, facultyCode: '', description: '', syllabusUrl: '' }
+const EMPTY_COURSE: AdminCourseInput = { code: '', name: '', credits: 3, fieldId: null, description: '', syllabusUrl: '' }
 
 function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [form, setForm] = useState<AdminCourseInput>(EMPTY_COURSE)
@@ -235,8 +238,8 @@ function CreateCourseDialog({ open, onClose }: { open: boolean; onClose: () => v
           <Field label="Mã môn">
             <Input required autoFocus value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="IT302" />
           </Field>
-          <Field label="Khoa">
-            <Input required value={form.facultyCode} onChange={(e) => setForm({ ...form, facultyCode: e.target.value })} placeholder="CNTT" />
+          <Field label="Lĩnh vực">
+            <FieldSelect value={form.fieldId} onChange={(fieldId) => setForm({ ...form, fieldId })} />
           </Field>
           <Field label="Tín chỉ">
             <Input

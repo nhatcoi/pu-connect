@@ -15,7 +15,7 @@ interface UserListItem {
   username: string
   avatarUrl?: string | null
   role: string
-  faculty?: string | null
+  interestField?: string | null
   reputationPoints: number
   isFollowedByMe?: boolean
 }
@@ -36,7 +36,7 @@ const GET_FOLLOWERS_QUERY = `
       username
       avatarUrl
       role
-      faculty
+      interestField
       reputationPoints
       isFollowedByMe
     }
@@ -51,7 +51,7 @@ const GET_FOLLOWING_QUERY = `
       username
       avatarUrl
       role
-      faculty
+      interestField
       reputationPoints
       isFollowedByMe
     }

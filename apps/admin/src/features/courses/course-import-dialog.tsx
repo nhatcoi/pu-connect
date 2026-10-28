@@ -8,16 +8,16 @@ import type { AdminCourseImportResult } from '@pu/schemas'
 import { adminApi } from '@/lib/api'
 import { Badge, Button, Dialog } from '@/components/ui'
 
-const FIELDS = ['code', 'name', 'credits', 'facultyCode', 'description', 'syllabusUrl'] as const
+const FIELDS = ['code', 'name', 'credits', 'field', 'description', 'syllabusUrl'] as const
 const ALIASES: Record<(typeof FIELDS)[number], string[]> = {
   code: ['code', 'ma', 'mamon', 'mahocphan', 'mahp'],
   name: ['name', 'ten', 'tenmon', 'tenhocphan'],
   credits: ['credits', 'tinchi', 'sotinchi', 'tc'],
-  facultyCode: ['facultycode', 'faculty', 'khoa', 'makhoa', 'vien'],
+  field: ['field', 'linhvuc', 'tenlinhvuc', 'linhvucquantam'],
   description: ['description', 'mota'],
   syllabusUrl: ['syllabusurl', 'syllabus', 'decuong', 'linkdecuong']
 }
-const SAMPLE = [['IT302', 'Trí tuệ nhân tạo', 3, 'CNTT', 'Giới thiệu học máy cơ bản', '']]
+const SAMPLE = [['IT302', 'Trí tuệ nhân tạo', 3, 'Công nghệ thông tin', 'Giới thiệu học máy cơ bản', '']]
 
 const fold = (s: unknown) =>
   String(s ?? '')
@@ -38,7 +38,7 @@ async function readRows(file: File): Promise<Record<string, unknown>[]> {
   if (!head?.length) throw new Error('File trống')
   const col = (f: (typeof FIELDS)[number]) => head.findIndex((h) => ALIASES[f].includes(fold(h)))
   const idx = Object.fromEntries(FIELDS.map((f) => [f, col(f)])) as Record<(typeof FIELDS)[number], number>
-  if (idx.code < 0 || idx.name < 0 || idx.facultyCode < 0) throw new Error('Thiếu cột bắt buộc: mã môn, tên môn, khoa')
+  if (idx.code < 0 || idx.name < 0) throw new Error('Thiếu cột bắt buộc: mã môn, tên môn')
   return data
     .filter((r) => r.some((v) => String(v ?? '').trim()))
     .map((r) => Object.fromEntries(FIELDS.map((f) => [f, idx[f] >= 0 ? (r[idx[f]] ?? undefined) : undefined])))
@@ -107,7 +107,7 @@ export function CourseImportDialog({ open, onClose }: { open: boolean; onClose: 
     >
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Cột: <code>code</code>, <code>name</code>, <code>facultyCode</code> (bắt buộc), <code>credits</code>, <code>description</code>, <code>syllabusUrl</code>. Mã môn đã có thì cập nhật, chưa có thì tạo mới. Tối đa 500 dòng.
+          Cột: <code>code</code>, <code>name</code>, <code>field</code> (tên lĩnh vực, tùy chọn), <code>credits</code>, <code>description</code>, <code>syllabusUrl</code>. Mã môn đã có thì cập nhật, chưa có thì tạo mới. Tối đa 500 dòng.
         </p>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => input.current?.click()}>

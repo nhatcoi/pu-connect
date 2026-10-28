@@ -6,12 +6,13 @@ import type { AdminCourseInput, AdminCourseLecturer, AdminCourseRow, AdminPage }
 import { adminApi } from '@/lib/api'
 import { useDebounced } from '@/hooks/use-debounced'
 import { Avatar, Button, ConfirmDialog, Dialog, Field, Input, Textarea } from '@/components/ui'
+import { FieldSelect } from '@/features/units/field-select'
 
 const toInput = (c: AdminCourseRow): AdminCourseInput => ({
   code: c.code,
   name: c.name,
   credits: c.credits,
-  facultyCode: c.facultyCode ?? '',
+  fieldId: c.fieldId,
   description: c.description ?? '',
   syllabusUrl: c.syllabusUrl ?? ''
 })
@@ -111,8 +112,8 @@ export function CourseEditDialog({ course, onClose }: { course: AdminCourseRow |
             <Field label="Mã môn">
               <Input required value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} />
             </Field>
-            <Field label="Khoa">
-              <Input required value={form.facultyCode} onChange={(e) => setForm({ ...form, facultyCode: e.target.value })} />
+            <Field label="Lĩnh vực">
+              <FieldSelect value={form.fieldId} onChange={(fieldId) => setForm({ ...form, fieldId })} />
             </Field>
             <Field label="Tín chỉ">
               <Input type="number" min={1} max={15} value={form.credits} onChange={(e) => setForm({ ...form, credits: Number(e.target.value) || 3 })} />

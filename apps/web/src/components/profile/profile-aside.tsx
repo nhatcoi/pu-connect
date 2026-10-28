@@ -33,10 +33,16 @@ export function ProfileAside({ profile, isOwner }: ProfileAsideProps) {
               {profile.isVerified && <ShieldCheck className="h-3.5 w-3.5 text-primary" />}
             </span>
           </div>
-          {profile.school && (
+          {profile.university && (
             <div className="flex items-center justify-between py-1">
               <span className="text-muted-foreground">Trường</span>
-              <span className="font-medium text-foreground text-right truncate max-w-[150px]">{profile.school}</span>
+              <span className="font-medium text-foreground text-right truncate max-w-[150px]">{profile.university}</span>
+            </div>
+          )}
+          {profile.interestField && (
+            <div className="flex items-center justify-between py-1">
+              <span className="text-muted-foreground">Lĩnh vực</span>
+              <span className="font-medium text-foreground text-right truncate max-w-[150px]">{profile.interestField}</span>
             </div>
           )}
         </div>

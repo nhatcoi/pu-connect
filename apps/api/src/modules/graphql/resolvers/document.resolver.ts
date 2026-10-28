@@ -1,7 +1,7 @@
-import { userFacultySql } from '../../academic-units/faculty-filter.sql'
 import { Resolver, Query, Args } from '@nestjs/graphql'
 import { DocumentType } from '../types/document.type'
 import { DatabaseService } from '../../../database/database.service'
+import { fieldNameSql } from '../../units/unit-sql'
 
 @Resolver(() => DocumentType)
 export class DocumentResolver {
@@ -9,7 +9,6 @@ export class DocumentResolver {
 
   @Query(() => [DocumentType], { name: 'documents' })
   async getDocuments(
-    @Args('faculty', { type: () => String, nullable: true }) faculty?: string,
     @Args('courseCode', { type: () => String, nullable: true }) courseCode?: string,
     @Args('type', { type: () => String, nullable: true }) type?: string
   ): Promise<DocumentType[]> {
@@ -18,7 +17,7 @@ export class DocumentResolver {
              d.owner_id as uploader_id, c.code as course_code,
              u.id as user_id, u.username as user_username,
              u.display_name as user_display_name, u.avatar_url as user_avatar_url,
-             u.role as user_role, u.faculty as user_faculty, u.reputation_points as user_reputation_points,
+             u.role as user_role, ${fieldNameSql('u')} as user_interest_field, u.reputation_points as user_reputation_points,
              u.created_at as user_created_at
       FROM documents d
       JOIN users u ON d.owner_id = u.id
@@ -27,7 +26,6 @@ export class DocumentResolver {
     `
     const params: any[] = []
 
-    if (faculty) sql += ` AND ${userFacultySql(params, faculty)}`
     if (courseCode) {
       params.push(courseCode)
       sql += ` AND d.course_id = (SELECT id FROM courses WHERE code ILIKE $${params.length} LIMIT 1)`
@@ -50,7 +48,6 @@ export class DocumentResolver {
       type: row.type || 'pdf',
       fileUrl: row.file_url,
       fileSize: `${((row.file_size || 1024000) / (1024 * 1024)).toFixed(1)} MB`,
-      faculty: row.user_faculty,
       courseCode: row.course_code ?? null,
       tags: row.tags || [],
       downloadCount: row.download_count || 0,
@@ -65,7 +62,7 @@ export class DocumentResolver {
         displayName: row.user_display_name || '',
         avatarUrl: row.user_avatar_url || null,
         role: row.user_role || 'student',
-        faculty: row.user_faculty || null,
+        interestField: row.user_interest_field || null,
         reputationPoints: row.user_reputation_points || 100,
         createdAt: row.user_created_at ? new Date(row.user_created_at).toISOString() : ''
       }

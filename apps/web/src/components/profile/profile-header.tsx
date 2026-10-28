@@ -72,11 +72,10 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
         initialData={{
           displayName: profile.displayName,
           bio: profile.bio,
-          school: profile.school,
-          faculty: profile.faculty,
-          major: profile.major,
-          academicYear: profile.academicYear,
-          className: profile.className,
+          universityId: profile.universityId,
+          universityRequest: profile.universityRequest,
+          interestFieldId: profile.interestFieldId,
+          interestFieldRequest: profile.interestFieldRequest,
           avatarUrl: profile.avatarUrl,
           bannerUrl: profile.bannerUrl,
           location: profile.location,
@@ -214,10 +213,16 @@ export function ProfileHeader({ profile, onRefetch }: ProfileHeaderProps) {
               </div>
             )}
 
-            {profile.school && (
+            {profile.university && (
               <div className="flex items-center gap-1 font-medium text-foreground/85">
                 <School className="h-3.5 w-3.5 text-primary" />
-                <span>{profile.school}</span>
+                <span>{profile.university}</span>
+              </div>
+            )}
+            {profile.interestField && (
+              <div className="flex items-center gap-1 font-medium text-foreground/85">
+                <GraduationCap className="h-3.5 w-3.5 text-primary" />
+                <span>{profile.interestField}</span>
               </div>
             )}
           </div>

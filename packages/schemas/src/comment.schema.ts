@@ -36,7 +36,7 @@ export const CommentItemSchema = z.object({
     displayName: z.string(),
     avatarUrl: z.string().nullable().optional(),
     role: z.string().optional(),
-    faculty: z.string().nullable().optional(),
+    interestField: z.string().nullable().optional(),
     reputationPoints: z.number().optional()
   })
 })

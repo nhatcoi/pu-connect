@@ -40,7 +40,7 @@ export const CommentsQuerySchema = z.object({
 export const CoursesQuerySchema = z.object({
   ...paging,
   q: text(),
-  faculty: text(30),
+  field: text(200), // tên lĩnh vực
   sort: opt(['posts', 'documents', 'code', 'recent'] as const).default('posts')
 })
 

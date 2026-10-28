@@ -69,8 +69,8 @@ function InsightContent({ d }: { d: UserInsight }) {
   return (
     <div className="space-y-6 text-sm">
       <dl className="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2">
-        <dt className="text-muted-foreground">Ngành / lớp</dt>
-        <dd className="text-foreground">{[d.user.major, d.user.className].filter(Boolean).join(' · ') || '—'}</dd>
+        <dt className="text-muted-foreground">Lĩnh vực</dt>
+        <dd className="text-foreground">{d.user.interestField || '—'}</dd>
         <dt className="text-muted-foreground">Sở thích</dt>
         <dd className="text-foreground">{d.user.interests.join(', ') || '—'}</dd>
         <dt className="text-muted-foreground">Kỹ năng</dt>

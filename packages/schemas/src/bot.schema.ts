@@ -9,17 +9,17 @@ export interface AdminBotAccount {
   username: string
   displayName: string
   role: BotRole
-  faculty: string | null
+  interestFieldId: string | null
+  interestField: string | null
   bio: string
   tone: string
-  major: string
   soul: string
   jobsCount: number
   postsCount: number
 }
 
 // Tạo/sửa tài khoản bot (mật khẩu do hệ thống cấp, không nhập từ UI)
-export type AdminBotAccountInput = { username: string; displayName: string; role: BotRole; faculty: string; bio?: string; tone?: string; major?: string; soul?: string }
+export type AdminBotAccountInput = { username: string; displayName: string; role: BotRole; interestFieldId?: string | null; bio?: string; tone?: string; soul?: string }
 export type AdminBotAccountUpdate = Partial<Omit<AdminBotAccountInput, 'username'>>
 
 export type BotJobStatus = 'active' | 'paused'

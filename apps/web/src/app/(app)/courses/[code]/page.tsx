@@ -56,7 +56,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
       <div className="py-24 text-center space-y-3 text-muted-foreground">
         <BookOpen className="h-10 w-10 mx-auto opacity-30 text-primary" />
         <p className="text-sm font-medium">Không tìm thấy học phần {courseCode}</p>
-        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/courses')}>
+        <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/documents')}>
           Xem danh mục môn học
         </Button>
       </div>
@@ -73,7 +73,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <p className="text-[13px] text-muted-foreground">
-          <Link href="/courses" className="hover:text-foreground hover:underline">
+          <Link href="/documents" className="hover:text-foreground hover:underline">
             Môn học & Tài liệu
           </Link>
           <span className="mx-1.5">/</span>
@@ -93,7 +93,7 @@ export default function CoursePage({ params }: { params: Promise<{ code: string 
               <div className="min-w-0 space-y-1">
                 <h2 className="text-xl font-bold tracking-tight">{course.name}</h2>
                 <p className="text-sm text-muted-foreground">
-                  {course.credits} tín chỉ · {course.departmentName}
+                  {course.credits} tín chỉ{course.fieldName ? ` · ${course.fieldName}` : ''}
                 </p>
                 {course.description && <p className="max-w-2xl pt-1 text-sm leading-relaxed text-muted-foreground">{course.description}</p>}
                 <p className="pt-1 text-xs text-muted-foreground">

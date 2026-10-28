@@ -13,7 +13,7 @@ export class BotAccountsService {
 
   async list(): Promise<AdminBotAccount[]> {
     const res = await this.db.query(
-      `SELECT u.id, u.username, u.display_name, u.role, u.faculty, u.bio, p.tone, p.major, p.soul,
+      `SELECT u.id, u.username, u.display_name, u.role, u.interest_field_id, (SELECT x.name FROM interest_fields x WHERE x.id = u.interest_field_id) AS interest_field, u.bio, p.tone, p.soul,
               (SELECT COUNT(*) FROM bot_jobs j WHERE j.bot_id = u.id)::int AS jobs_count,
               (SELECT COUNT(*) FROM posts x WHERE x.author_id = u.id)::int AS posts_count
        FROM users u LEFT JOIN bot_profiles p ON p.user_id = u.id
@@ -24,10 +24,10 @@ export class BotAccountsService {
       username: r.username,
       displayName: r.display_name,
       role: r.role,
-      faculty: r.faculty,
+      interestFieldId: r.interest_field_id,
+      interestField: r.interest_field,
       bio: r.bio ?? '',
       tone: r.tone ?? '',
-      major: r.major ?? '',
       soul: r.soul ?? '',
       jobsCount: r.jobs_count,
       postsCount: r.posts_count
@@ -48,14 +48,13 @@ export class BotAccountsService {
       const taken = await client.query(`SELECT 1 FROM users WHERE username = $1 OR email = $2`, [input.username, `${input.username}@seed.pu-connector.test`])
       if (taken.rowCount) throw new ConflictException('Username đã tồn tại')
       const user = await client.query(
-        `INSERT INTO users (id, email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at, faculty, bio, is_bot, created_at)
+        `INSERT INTO users (id, email, username, password_hash, display_name, role, status, is_onboarded, email_verified, email_verified_at, interest_field_id, bio, is_bot, created_at)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'active', true, true, NOW(), $6, $7, true, NOW()) RETURNING id`,
-        [`${input.username}@seed.pu-connector.test`, input.username, hash, input.displayName, input.role, input.faculty, input.bio ?? '']
+        [`${input.username}@seed.pu-connector.test`, input.username, hash, input.displayName, input.role, input.interestFieldId ?? null, input.bio ?? '']
       )
-      await client.query(`INSERT INTO bot_profiles (user_id, tone, major, soul, updated_by) VALUES ($1, $2, $3, $4, $5)`, [
+      await client.query(`INSERT INTO bot_profiles (user_id, tone, soul, updated_by) VALUES ($1, $2, $3, $4)`, [
         user.rows[0].id,
         input.tone ?? '',
-        input.major ?? '',
         input.soul ?? '',
         adminId
       ])
@@ -66,16 +65,16 @@ export class BotAccountsService {
   async update(adminId: string, username: string, input: AdminBotAccountUpdate) {
     await this.db.transaction(async (client) => {
       const bot = await client.query(
-        `UPDATE users SET display_name = COALESCE($2, display_name), role = COALESCE($3::user_role_enum, role), faculty = COALESCE($4, faculty), bio = COALESCE($5, bio)
+        `UPDATE users SET display_name = COALESCE($2, display_name), role = COALESCE($3::user_role_enum, role), interest_field_id = COALESCE($4::uuid, interest_field_id), bio = COALESCE($5, bio)
          WHERE username = $1 AND is_bot RETURNING id`,
-        [username, input.displayName ?? null, input.role ?? null, input.faculty ?? null, input.bio ?? null]
+        [username, input.displayName ?? null, input.role ?? null, input.interestFieldId ?? null, input.bio ?? null]
       )
       if (!bot.rowCount) throw new NotFoundException('Không phải bot')
       await client.query(
-        `INSERT INTO bot_profiles (user_id, tone, major, soul, updated_by) VALUES ($1, COALESCE($2, ''), COALESCE($3, ''), COALESCE($4, ''), $5)
+        `INSERT INTO bot_profiles (user_id, tone, soul, updated_by) VALUES ($1, COALESCE($2, ''), COALESCE($3, ''), $4)
          ON CONFLICT (user_id) DO UPDATE SET
-           tone = COALESCE($2, bot_profiles.tone), major = COALESCE($3, bot_profiles.major), soul = COALESCE($4, bot_profiles.soul), updated_by = $5, updated_at = NOW()`,
-        [bot.rows[0].id, input.tone ?? null, input.major ?? null, input.soul ?? null, adminId]
+           tone = COALESCE($2, bot_profiles.tone), soul = COALESCE($3, bot_profiles.soul), updated_by = $4, updated_at = NOW()`,
+        [bot.rows[0].id, input.tone ?? null, input.soul ?? null, adminId]
       )
       await writeAudit(client, adminId, { action: 'bot.account_update', targetType: 'bot', targetId: username, details: { ...input } })
     })

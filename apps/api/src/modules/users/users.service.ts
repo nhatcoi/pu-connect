@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Logger } from '@nestjs/common'
 import { DatabaseService } from '../../database/database.service'
 import type { UserProfile, UpdateProfileInput, UpdatePrivacySettingsInput, PrivacySettings, FeaturePreferences } from '@pu/schemas'
-import { findUnitNames } from '../academic-units/unit-names'
+import { UnitRequestsService } from '../units/unit-requests.service'
+import { mapUserUnits, USER_UNIT_COLUMNS } from '../units/unit-sql'
 import { UserEventsService } from '../personalization/user-events.service'
 import { resolvePrivacySettings } from './dto/privacy.dto'
 import { resolveFeaturePreferences, type UpdatePreferencesInput } from './dto/preferences.dto'
@@ -12,7 +13,8 @@ export class UsersService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly userEvents: UserEventsService
+    private readonly userEvents: UserEventsService,
+    private readonly unitRequests: UnitRequestsService
   ) {}
 
   // Báo cáo người dùng: không tự báo cáo, không trùng khi báo cáo cũ còn chờ
@@ -33,12 +35,12 @@ export class UsersService {
    */
   async getProfileByUsername(username: string, viewerId?: string): Promise<UserProfile> {
     const res = await this.db.query(
-      `SELECT id, email, username, display_name, student_id, school, faculty, academic_year,
-              major, class_name, is_verified, verified_at, privacy_settings,
-              location, website, birth_date,
-              avatar_url, banner_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at
-       FROM users
-       WHERE username = $1 LIMIT 1`,
+      `SELECT u.id, u.email, u.username, u.display_name, u.student_id, u.is_verified, u.verified_at, u.privacy_settings,
+              u.location, u.website, u.birth_date,
+              u.avatar_url, u.banner_url, u.bio, u.role, u.status, u.reputation_points, u.is_onboarded, u.skills, u.interests, u.created_at,
+              ${USER_UNIT_COLUMNS('u')}
+       FROM users u
+       WHERE u.username = $1 LIMIT 1`,
       [username.toLowerCase().trim()]
     )
 
@@ -56,11 +58,7 @@ export class UsersService {
       username: row.username,
       displayName: row.display_name,
       studentId: isOwner || privacy.showStudentId ? row.student_id : null,
-      school: row.school || null,
-      faculty: row.faculty || null,
-      academicYear: row.academic_year || null,
-      major: row.major || null,
-      className: isOwner || privacy.showClass ? row.class_name : null,
+      ...mapUserUnits(row, !!isOwner),
       location: row.location || null,
       website: row.website || null,
       birthDate: row.birth_date || null,
@@ -80,7 +78,7 @@ export class UsersService {
   }
 
   /**
-   * Cập nhật hồ sơ sinh viên (Display Name, Bio, Major, Class, Skills, Interests, Avatar)
+   * Cập nhật hồ sơ (tên, tiểu sử, trường, lĩnh vực quan tâm, kỹ năng, sở thích, ảnh)
    */
   async updateProfile(userId: string, data: UpdateProfileInput): Promise<UserProfile> {
     // Chỉ nhận ảnh https hoặc đường dẫn nội bộ (chặn blob:/data:/javascript:)
@@ -112,47 +110,6 @@ export class UsersService {
       values.push(data.bannerUrl)
       setClauses.push(`banner_url = $${values.length}`)
     }
-    // Đơn vị học thuật: chọn từ cây ⇒ trường / khoa / ngành suy ra từ cây; nhập tay ⇒ unit_id = NULL
-    // Academic unit: picked from the tree ⇒ names derive from it; typed by hand ⇒ unit_id cleared
-    const manual = (v: string | null | undefined) => (v ? v.trim() : null)
-    if (typeof data.unitId === 'string') {
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.unitId)) throw new BadRequestException('Đơn vị không hợp lệ')
-      const names = await findUnitNames(this.db, data.unitId)
-      if (!names) throw new BadRequestException('Đơn vị không tồn tại hoặc đã bị tắt')
-      values.push(data.unitId, names.school, names.faculty, names.major ?? manual(data.major))
-      setClauses.push(`unit_id = $${values.length - 3}`, `school = $${values.length - 2}`, `faculty = $${values.length - 1}`, `major = $${values.length}`)
-    } else {
-      if (data.school !== undefined) {
-        values.push(manual(data.school))
-        setClauses.push(`school = $${values.length}`)
-      }
-      if (data.faculty !== undefined) {
-        values.push(manual(data.faculty))
-        setClauses.push(`faculty = $${values.length}`)
-      }
-      if (data.major !== undefined) {
-        values.push(manual(data.major))
-        setClauses.push(`major = $${values.length}`)
-      }
-      // Chữ đổi so với hiện tại (hoặc unitId = null) ⇒ không còn khớp đơn vị nào
-      if (data.unitId === null) {
-        setClauses.push(`unit_id = NULL`)
-      } else if (data.school !== undefined || data.faculty !== undefined || data.major !== undefined) {
-        const cmp = ['school', 'faculty', 'major'].map((c) => {
-          const idx = setClauses.findIndex((s) => s.startsWith(`${c} = $`))
-          return idx < 0 ? 'TRUE' : `${c} IS NOT DISTINCT FROM ${setClauses[idx].split('= ')[1]}`
-        })
-        setClauses.push(`unit_id = CASE WHEN ${cmp.join(' AND ')} THEN unit_id ELSE NULL END`)
-      }
-    }
-    if (data.academicYear !== undefined) {
-      values.push(data.academicYear ? data.academicYear.trim() : null)
-      setClauses.push(`academic_year = $${values.length}`)
-    }
-    if (data.className !== undefined) {
-      values.push(data.className ? data.className.trim() : null)
-      setClauses.push(`class_name = $${values.length}`)
-    }
     if (data.location !== undefined) {
       values.push(data.location ? data.location.trim() : null)
       setClauses.push(`location = $${values.length}`)
@@ -174,58 +131,22 @@ export class UsersService {
       setClauses.push(`interests = $${values.length}`)
     }
 
-    if (setClauses.length === 0) {
+    const hasUnitChoice = [data.universityId, data.universityOther, data.interestFieldId, data.interestFieldOther].some((v) => v !== undefined)
+    if (setClauses.length === 0 && !hasUnitChoice) {
       throw new BadRequestException('Không có trường nào để cập nhật')
     }
 
-    setClauses.push(`updated_at = NOW()`)
-    values.push(userId)
-
-    const sql = `
-      UPDATE users
-      SET ${setClauses.join(', ')}
-      WHERE id = $${values.length}
-      RETURNING id, email, username, display_name, student_id, school, faculty, academic_year,
-                major, class_name, is_verified, verified_at, privacy_settings,
-                location, website, birth_date,
-                avatar_url, banner_url, bio, role, status, reputation_points, is_onboarded, skills, interests, created_at
-    `
-
-    const res = await this.db.query(sql, values)
-    if (res.rows.length === 0) {
-      throw new NotFoundException('Người dùng không tồn tại')
-    }
-
-    const row = res.rows[0]
+    // Hồ sơ + lựa chọn trường / lĩnh vực ("Khác" ⇒ yêu cầu chờ duyệt) lưu cùng một transaction
+    const username = await this.db.transaction(async (client) => {
+      if (hasUnitChoice) await this.unitRequests.applyChoice(client, userId, data)
+      setClauses.push(`updated_at = NOW()`)
+      values.push(userId)
+      const res = await client.query(`UPDATE users SET ${setClauses.join(', ')} WHERE id = $${values.length} RETURNING username`, values)
+      if (res.rows.length === 0) throw new NotFoundException('Người dùng không tồn tại')
+      return res.rows[0].username as string
+    })
     this.logger.log(`User ${userId} updated profile successfully`)
-
-    return {
-      id: row.id,
-      email: row.email,
-      username: row.username,
-      displayName: row.display_name,
-      studentId: row.student_id,
-      school: row.school || null,
-      faculty: row.faculty || null,
-      academicYear: row.academic_year || null,
-      major: row.major || null,
-      className: row.class_name || null,
-      location: row.location || null,
-      website: row.website || null,
-      birthDate: row.birth_date || null,
-      isVerified: !!row.is_verified,
-      verifiedAt: row.verified_at ? new Date(row.verified_at).toISOString() : null,
-      privacySettings: resolvePrivacySettings(row.privacy_settings),
-      avatarUrl: row.avatar_url,
-      bannerUrl: row.banner_url || null,
-      bio: row.bio,
-      role: row.role,
-      reputationPoints: row.reputation_points || 0,
-      isOnboarded: !!row.is_onboarded,
-      skills: row.skills || [],
-      interests: row.interests || [],
-      createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString()
-    }
+    return this.getProfileByUsername(username, userId)
   }
 
   /**

@@ -3,8 +3,8 @@ import { DatabaseService } from '../../database/database.service'
 import { TRASH_RETENTION_DAYS } from '../../database/trash'
 import { writeAudit } from './admin-audit'
 
-const RESTORABLE = ['posts', 'comments', 'documents', 'study_sets', 'academic_units'] as const
-const TITLE_COL: Record<string, string> = { posts: 'title', comments: 'content', documents: 'title', study_sets: 'title', academic_units: 'name' }
+const RESTORABLE = ['posts', 'comments', 'documents', 'study_sets'] as const
+const TITLE_COL: Record<string, string> = { posts: 'title', comments: 'content', documents: 'title', study_sets: 'title' }
 
 // Thùng rác: khôi phục dữ liệu bị xóa (bản sao do trigger trash_row lưu), giữ TRASH_RETENTION_DAYS ngày
 @Injectable()

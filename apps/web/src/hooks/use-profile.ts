@@ -9,15 +9,16 @@ export interface UserProfileData {
   username: string
   email: string
   studentId?: string | null
-  school?: string | null
-  faculty?: string | null
-  academicYear?: string | null
+  university?: string | null
+  interestField?: string | null
+  universityId?: string | null
+  interestFieldId?: string | null
+  universityRequest?: string | null
+  interestFieldRequest?: string | null
   avatarUrl?: string | null
   bannerUrl?: string | null
   bio?: string | null
   role: string
-  major?: string | null
-  className?: string | null
   location?: string | null
   website?: string | null
   birthDate?: string | null
@@ -45,9 +46,12 @@ const GET_USER_PROFILE_QUERY = `
       username
       email
       studentId
-      school
-      faculty
-      academicYear
+      university
+      interestField
+      universityId
+      interestFieldId
+      universityRequest
+      interestFieldRequest
       avatarUrl
       bannerUrl
       bio
@@ -55,8 +59,6 @@ const GET_USER_PROFILE_QUERY = `
       website
       birthDate
       role
-      major
-      className
       isVerified
       reputationPoints
       followersCount
@@ -87,7 +89,7 @@ const GET_USER_PROFILE_QUERY = `
           displayName
           username
           avatarUrl
-          faculty
+          interestField
           role
           reputationPoints
         }
@@ -101,7 +103,6 @@ const GET_USER_PROFILE_QUERY = `
         type
         fileUrl
         fileSize
-        faculty
         courseCode
         tags
         downloadCount
@@ -113,7 +114,7 @@ const GET_USER_PROFILE_QUERY = `
           displayName
           username
           avatarUrl
-          faculty
+          interestField
           role
           reputationPoints
         }

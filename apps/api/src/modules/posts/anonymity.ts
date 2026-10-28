@@ -6,9 +6,9 @@ export const ANONYMOUS_AUTHOR = { id: 'anonymous', username: 'an-danh', displayN
 export const ANONYMOUS_DAILY_LIMIT = { posts: 3, comments: 20 } as const
 
 // Tác giả giả cho bài / bình luận ẩn danh (không để lộ role, khoa, điểm uy tín)
-// Placeholder author: no role / faculty / reputation leaks
+// Placeholder author: no role / interest field / reputation leaks
 export function anonymousAuthor() {
-  return { ...ANONYMOUS_AUTHOR, role: 'student', faculty: null, reputationPoints: 0 }
+  return { ...ANONYMOUS_AUTHOR, role: 'student', interestField: null, reputationPoints: 0 }
 }
 
 // Sự kiện thông báo do hành động ẩn danh: không nêu actor, không gộp nhóm (gộp theo actor sẽ lộ người)
