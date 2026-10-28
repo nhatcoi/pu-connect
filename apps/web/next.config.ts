@@ -20,6 +20,8 @@ const nextConfig: NextConfig = {
     // /home và trang onboarding cũ /get-started chuyển thẳng về bảng tin mặc định /
     return [
       { source: '/home', destination: '/', permanent: false },
+      // Trang Môn học & Tài liệu chuyển từ /courses sang /documents (giữ query ?tab=); /courses/:code vẫn là trang môn
+      { source: '/courses', destination: '/documents', permanent: true },
       { source: '/get-started', destination: '/', permanent: false },
       // Đổi tên PU AI → N7AI: link cũ /puai*, /settings/puai*, /c/puai, /puai (hồ sơ bot) vẫn mở được
       { source: '/settings/puai', destination: '/n7ai/settings', permanent: true },

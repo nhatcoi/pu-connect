@@ -231,7 +231,7 @@ export function Header() {
                 <DropdownMenuItem onClick={() => router.push('/?tab=bookmarks')} className="text-xs rounded-xl cursor-pointer">
                   <Bookmark className="mr-2 h-4 w-4 text-amber-500" /> Bài viết đã lưu
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push('/courses')} className="text-xs rounded-xl cursor-pointer">
+                <DropdownMenuItem onClick={() => router.push('/documents')} className="text-xs rounded-xl cursor-pointer">
                   <GraduationCap className="mr-2 h-4 w-4 text-primary" /> Môn học & Đề thi
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

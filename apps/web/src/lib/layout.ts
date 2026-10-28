@@ -24,7 +24,7 @@ export const isFullWidthPath = (pathname: string) =>
   pathname.startsWith('/n7ai/') ||
   pathname === '/notifications' ||
   pathname.startsWith('/notifications/') ||
-  pathname === '/courses' ||
+  pathname === '/documents' ||
   pathname.startsWith('/courses/') ||
   pathname.startsWith('/collections/')
 

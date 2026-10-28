@@ -125,7 +125,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   1. **Micro Cross-fade chuyển trang (`animate-in fade-in-50 duration-200`)**: Thay vì giật nảy hay dùng hiệu ứng trượt toàn trang gây mỏi mắt, khung App ([`app-layout.tsx`](apps/web/src/components/layout/app-layout.tsx)) bọc nội dung giữa `<main>` trong container có hiệu ứng chuyển cảnh mờ dần siêu tốc (200ms) theo từng `pathname`, giữ nguyên cố định 100% Header và Sidebar (Zero CLS).
   2. **Chuẩn hóa cột phải theo ngữ cảnh từng phân hệ (Contextual PageAside)**: Loại bỏ triệt để tình trạng hiển thị tràn lan cột "Gợi ý theo dõi" ở mọi nơi:
      - **Bảng tin (`/`)**: Duy trì cột `RightSidebar` (Gợi ý bạn bè, xu hướng và hoàn thiện hồ sơ) - đúng mục đích kết nối sinh viên.
-     - **Học phần (`/courses`)**: ẩn cột phải, bảng môn phẳng ở cột giữa rộng (xem mục Trang Môn học & Tài liệu).
+     - **Học phần (`/documents`)**: ẩn cột phải, bảng môn phẳng ở cột giữa rộng (xem mục Trang Môn học & Tài liệu).
      - **Cộng đồng (`/communities`)**: Sử dụng [`CommunitiesAside`](apps/web/src/components/communities/communities-aside.tsx) hiển thị danh sách cộng đồng của sinh viên (đã tham gia), cộng đồng nổi bật và bộ quy chuẩn văn hóa học đường Phenikaa.
      - **Hồ sơ cá nhân (`/[username]`)**: Sử dụng [`ProfileAside`](apps/web/src/components/profile/profile-aside.tsx) hiển thị hồ sơ học thuật (Khoa/Viện, Chuyên ngành, Khóa), thống kê đóng góp và tài liệu tiêu biểu.
      - **Thông báo (`/notifications`)**: Chuyển sang chế độ toàn cột rộng (`WIDE_MAIN_WIDTH` qua [`isFullWidthPath`](apps/web/src/lib/layout.ts)) giúp không gian đọc thông báo, tin nhắn và mention thoáng đãng, loại bỏ hoàn toàn cột thừa.

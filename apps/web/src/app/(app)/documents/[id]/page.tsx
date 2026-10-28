@@ -54,7 +54,7 @@ export default function DocumentPage({ params }: { params: Promise<{ id: string 
         <div className="py-24 text-center space-y-3 text-muted-foreground">
           <FileQuestion className="h-10 w-10 mx-auto opacity-30 text-primary" />
           <p className="text-sm font-medium">Tài liệu không tồn tại hoặc bạn không có quyền xem</p>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/courses?tab=documents')}>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/documents?tab=documents')}>
             Xem kho tài liệu
           </Button>
         </div>
@@ -85,7 +85,7 @@ function DocumentView({ doc }: { doc: DocumentDetail }) {
       await deleteDocument(doc.id)
       toast.success('Đã xóa tài liệu')
       void queryClient.invalidateQueries({ queryKey: queryKeys.libraryAll })
-      router.replace('/courses?tab=library')
+      router.replace('/documents?tab=library')
     } catch (err) {
       toast.error(errorMessage(err, 'Không xóa được tài liệu'))
     }

@@ -58,7 +58,7 @@ export function DocumentsDiscover({ onSeeAll }: { onSeeAll: (target: DiscoverSee
               <h2 className="text-[15px] font-bold tracking-tight">Bộ sưu tập nổi bật</h2>
               <p className="text-xs text-muted-foreground">Tài liệu được bạn bè gom theo chủ đề ôn tập</p>
             </div>
-            <Link href="/courses?tab=collections" className="text-xs font-semibold text-primary hover:underline">
+            <Link href="/documents?tab=collections" className="text-xs font-semibold text-primary hover:underline">
               Xem tất cả
             </Link>
           </div>

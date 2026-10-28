@@ -65,7 +65,7 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
     { id: 'feed' as const, path: '/', label: 'Bảng tin', icon: Home },
     { id: 'search' as const, path: '/search', label: 'Khám phá', icon: Search },
     { id: 'communities' as const, path: '/communities', label: 'Cộng đồng', icon: Compass },
-    { id: 'courses' as const, path: '/courses', label: 'Tài liệu', icon: GraduationCap },
+    { id: 'courses' as const, path: '/documents', label: 'Tài liệu', icon: GraduationCap },
     { id: 'tools' as const, path: '/tools', label: 'Công cụ', icon: Wrench },
     {
       id: 'messages' as const,
@@ -106,7 +106,9 @@ export function Sidebar({ currentTab, onTabChange, compact = false }: SidebarPro
             // Trang con (/courses/IT101, /messages/abc) vẫn sáng mục cha
             const isActive = currentTab
               ? currentTab === item.id
-              : pathname === item.path || (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`))
+              : pathname === item.path ||
+                (item.path !== '/' && item.path.length > 1 && pathname.startsWith(`${item.path}/`)) ||
+                (item.id === 'courses' && (pathname.startsWith('/courses/') || pathname.startsWith('/collections/')))
 
             const buttonClass = cn(
               'group flex items-center h-11 rounded-full transition-colors cursor-pointer select-none overflow-hidden w-full',

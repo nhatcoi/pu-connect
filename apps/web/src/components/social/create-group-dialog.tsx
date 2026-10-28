@@ -73,7 +73,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base font-bold text-foreground">
             <Users className="h-4 w-4 text-primary" />
-            Tạo nhóm đồ án và PBL mới
+            Tạo nhóm
           </DialogTitle>
         </DialogHeader>
 
@@ -81,7 +81,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
           <div>
             <label className="font-semibold block mb-1 text-foreground">Tên nhóm</label>
             <Input
-              placeholder="Ví dụ: Nhóm làm Đồ án PBL3: App Phenikaa"
+              placeholder="Ví dụ: Nhóm làm app Phenikaa"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-background text-foreground"
@@ -114,7 +114,7 @@ export function CreateGroupDialog({ open, onOpenChange, onSuccess }: CreateGroup
           <div>
             <label className="font-semibold block mb-1 text-foreground">Chủ đề và đề tài</label>
             <Input
-              placeholder="Ví dụ: PBL3 Đồ án Phần mềm, Ôn thi cuối kỳ..."
+              placeholder="Ví dụ: Đồ án phần mềm, Ôn thi cuối kỳ..."
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
               className="bg-background text-foreground"

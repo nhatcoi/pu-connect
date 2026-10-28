@@ -53,7 +53,7 @@ Nút kẹp giấy ở ô bình luận ⇒ tệp tải lên ngay thành bản nh�
 
 ## Kho cá nhân (đợt 3)
 
-`/courses?tab=library` — "Kho của tôi":
+`/documents?tab=library` — "Kho của tôi":
 - **Đã lưu**: tài liệu lưu từ bài, bình luận, kho môn học, trang chi tiết (nút lưu `POST /library`, bỏ `DELETE /library/:documentId`, `GET /library/ids` để đánh dấu nút) + tệp riêng tải thẳng lên (`POST /library/upload`: tài liệu `published` riêng tư, không hết hạn như bản nháp).
 - **Tôi đã đăng**: mọi tài liệu mình sở hữu đã đăng (`GET /library?scope=mine`).
 - Thư mục: `GET/POST /library/folders`, `PATCH/DELETE /library/folders/:id` (xóa thư mục ⇒ tài liệu về "Chưa phân thư mục"); chuyển tài liệu `PATCH /library/:documentId { folderId }`.
@@ -61,7 +61,7 @@ Nút kẹp giấy ở ô bình luận ⇒ tệp tải lên ngay thành bản nh�
 
 ## Kho môn học & trang Tài liệu (đợt 4)
 
-- Nav **Môn học** → `/courses` "Môn học & Tài liệu", 3 tab: **Môn học** (danh mục) · **Tài liệu** (`?tab=documents`) · **Kho của tôi** (`?tab=library`).
+- Nav **Tài liệu** → `/documents` (cũ `/courses` redirect 308) "Môn học & Tài liệu", 3 tab: **Môn học** (danh mục) · **Tài liệu** (`?tab=documents`) · **Kho của tôi** (`?tab=library`).
 - Tab Tài liệu ⇒ `GET /documents/browse?course&category&q&sort=popular|newest&cursor` (chỉ `listed`, 20 / trang, offset). "Nhiều lượt tải" xếp theo `download_count + 2 × save_count`. Tab Tài liệu của trang môn dùng cùng danh sách, cố định môn.
 - Tab Tài liệu của trang môn và số đếm tài liệu của môn chỉ tính tài liệu `listed`.
 - Nút "Chia sẻ tài liệu": tải tệp thật lên rồi `POST /documents` với môn + loại bắt buộc (gắn sẵn môn nếu mở từ trang môn).

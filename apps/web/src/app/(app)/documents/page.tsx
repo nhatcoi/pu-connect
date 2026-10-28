@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'library', label: 'Kho của tôi' }
 ]
 
-// /courses — "Môn học & Tài liệu": danh mục môn, kho tài liệu chung, kho cá nhân (?tab=documents|collections|library)
+// /documents — "Môn học & Tài liệu": danh mục môn, kho tài liệu chung, kho cá nhân (?tab=documents|collections|library)
 export default function CoursesPage() {
   return (
     <Suspense fallback={<CourseListSkeleton />}>

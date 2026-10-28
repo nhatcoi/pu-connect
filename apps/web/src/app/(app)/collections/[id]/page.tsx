@@ -38,7 +38,7 @@ export default function CollectionPage({ params }: { params: Promise<{ id: strin
         <div className="py-24 text-center space-y-3 text-muted-foreground">
           <FileQuestion className="h-10 w-10 mx-auto opacity-30 text-primary" />
           <p className="text-sm font-medium">Bộ sưu tập không tồn tại hoặc là bộ riêng tư</p>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/courses?tab=collections')}>
+          <Button variant="outline" size="sm" className="rounded-full" onClick={() => router.push('/documents?tab=collections')}>
             Xem các bộ sưu tập
           </Button>
         </div>
@@ -73,7 +73,7 @@ function CollectionView({ collection: c }: { collection: DocumentCollectionDetai
     try {
       await remove.mutateAsync(c.id)
       toast.success('Đã xóa bộ sưu tập')
-      router.replace('/courses?tab=collections')
+      router.replace('/documents?tab=collections')
     } catch {
       // lỗi đã báo qua toast của mutation
     }

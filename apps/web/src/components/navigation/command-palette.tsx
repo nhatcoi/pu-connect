@@ -72,7 +72,7 @@ export function CommandPalette({ open, onOpenChange, onSelectTab }: CommandPalet
                 className="flex items-center gap-2 rounded-md px-2 py-1.5 cursor-pointer text-foreground hover:bg-muted"
               >
                 <Users className="h-4 w-4 text-accent" />
-                <span>Tạo nhóm ghép đồ án PBL</span>
+                <span>Tạo nhóm</span>
               </Command.Item>
             </Command.Group>
 

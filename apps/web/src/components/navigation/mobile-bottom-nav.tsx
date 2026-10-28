@@ -48,8 +48,8 @@ export function MobileBottomNav() {
       id: 'courses',
       label: 'Tài liệu',
       icon: GraduationCap,
-      path: '/courses',
-      isActive: pathname === '/courses' || pathname.startsWith('/courses/')
+      path: '/documents',
+      isActive: pathname === '/documents' || pathname.startsWith('/documents/') || pathname.startsWith('/courses/') || pathname.startsWith('/collections/')
     },
     ...(FEATURES.categoryShortcuts
       ? [
