@@ -80,7 +80,7 @@ Bấm tài liệu YouTube ở panel ⇒ trình phát nhúng (`youtube-nocookie`)
 
 - Panel phải, tab **Tài liệu**: danh sách = tài liệu đã thêm + tệp đã gửi trong tin nhắn; nút **Thêm tài liệu** (tải tệp · từ thư viện · từ kho tài liệu · dán văn bản · link web / YouTube); tài liệu đã thêm có nút bỏ. Bấm tệp ⇒ trình xem tệp; bấm tài liệu chữ ⇒ trình xem chữ (YouTube có mốc thời gian, mở trang gốc).
 - Tab **Công cụ**: chọn nguồn là cả cuộc trò chuyện hoặc một tài liệu bất kỳ.
-- Thư viện (`/n7ai/library`): nút **Thêm tài liệu** (không có "từ thư viện", có "từ kho tài liệu"), mục "Đã thêm vào thư viện".
+- Thư viện (`/n7ai/library`): **một danh sách thống nhất** (`library-model.ts`: tài liệu đã thêm + tệp / ảnh đã gửi trong chat + học liệu quiz / flashcard), lọc theo loại (Tất cả · Tài liệu · Ảnh · Liên kết · Video · Ghi chú · Học liệu, kèm số lượng, loại trống thì ẩn), ô tìm theo tên, đổi kiểu xem **danh sách** (Tên · Loại · Hoạt động) hoặc **thẻ** (ô xem trước lớn; kiểu xem nhớ trong `localStorage`). Mỗi mục có menu ⋯: Mở · Mở cuộc trò chuyện · Lưu vào Kho của tôi · Gỡ khỏi thư viện. Nút **Thêm tài liệu** (có "từ Kho của tôi"), lối tắt **Kho của tôi**, kéo thả tệp vào trang.
 
 ## Nối với kho tài liệu và bộ sưu tập
 

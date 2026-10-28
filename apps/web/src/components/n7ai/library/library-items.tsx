@@ -1,14 +1,13 @@
 'use client'
 
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
 import Link from 'next/link'
 import { Layers, ListChecks } from 'lucide-react'
-import type { AiLibraryItem, ChatAttachment } from '@pu/schemas'
+import type { AiLibraryItem } from '@pu/schemas'
 import { AppCollapsible } from '@/components/ui/collapsible'
 import { FlashcardDeck } from '@/components/chat/ai/flashcard-deck'
 import { QuizCard } from '@/components/chat/ai/quiz-card'
 import { splitStudyBlocks, type FlashcardData, type QuizData } from '@/components/chat/ai/study-blocks'
-import { FileCard, ImageLightbox } from '@/components/chat/thread/attachment-view'
 import { n7aiThreadHref } from '@/lib/n7ai-routes'
 import { formatRelativeTime } from '@/lib/utils'
 
@@ -23,43 +22,6 @@ function SourceLink({ item }: { item: AiLibraryItem }) {
     >
       {item.threadTitle || UNTITLED} · {formatRelativeTime(item.createdAt)}
     </Link>
-  )
-}
-
-// Ảnh: lưới, bấm ⇒ xem lớn (lướt qua mọi ảnh đã tải)
-export function LibraryImages({ items }: { items: AiLibraryItem[] }) {
-  const [open, setOpen] = useState<number | null>(null)
-  const images: ChatAttachment[] = useMemo(() => items.flatMap((i) => i.attachments), [items])
-  return (
-    <>
-      <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-xl sm:grid-cols-4">
-        {images.map((img, i) => (
-          <button key={img.key} onClick={() => setOpen(i)} className="aspect-square bg-muted cursor-zoom-in">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={img.url} alt={img.name} loading="lazy" className="h-full w-full object-cover" />
-          </button>
-        ))}
-      </div>
-      {open !== null && <ImageLightbox images={images} index={open} onIndex={setOpen} />}
-    </>
-  )
-}
-
-// Tệp: thẻ tệp + nguồn
-export function LibraryFiles({ items }: { items: AiLibraryItem[] }) {
-  return (
-    <div className="space-y-2">
-      {items.flatMap((item) =>
-        item.attachments.map((f) => (
-          <div key={f.key} className="space-y-1 rounded-xl bg-card p-2">
-            <FileCard file={f} className="w-full" />
-            <div className="px-1">
-              <SourceLink item={item} />
-            </div>
-          </div>
-        ))
-      )}
-    </div>
   )
 }
 
