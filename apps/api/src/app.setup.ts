@@ -15,6 +15,9 @@ export function configureApp(app: NestExpressApplication): NestExpressApplicatio
   // Global prefix
   app.setGlobalPrefix('api')
 
+  // Mặc định body-parser chỉ nhận 100kb: job đăng bài nhập cả trăm bài từ file cần rộng hơn
+  app.useBodyParser('json', { limit: '5mb' })
+
   // CORS có credentials: chỉ origin của app (APP_URL / CORS_ORIGINS / localhost khi dev)
   app.enableCors({
     origin: (origin, callback) => callback(null, isAllowedOrigin(origin)),
