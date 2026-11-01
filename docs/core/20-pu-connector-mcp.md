@@ -15,7 +15,7 @@ The consent page uses one fixed production callback, no arbitrary redirect URLs.
 
 ## MCP execution
 
-`PuConnectorMcpService` contributes tools to the existing `McpAgentService` only when selected. It opens no network connection for greetings; the first actual call initializes an authenticated Streamable HTTP MCP client at `PKA_CONNECTOR_URL/api/ai/pu-connector/mcp`. Each reply has its own client; every call rechecks the local grant. Groups do not receive this private connector.
+`PuConnectorMcpService` contributes tools to the existing `N7AgentService` only when selected. It opens no network connection for greetings; the first actual call initializes an authenticated Streamable HTTP MCP client at `PKA_CONNECTOR_URL/api/ai/pu-connector/mcp`. Each reply has its own client; every call rechecks the local grant. Groups do not receive this private connector.
 
 | Tool | Data |
 | --- | --- |

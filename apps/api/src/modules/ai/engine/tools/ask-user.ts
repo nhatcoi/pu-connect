@@ -2,7 +2,7 @@
  * N7AI Agent Engine — Ask User Tool & Draft Preview
  * Xử lý công cụ tương tác Socratic (ask_user) và tạm dừng lượt.
  */
-import type { JsonRecord, ToolResult } from '../native/types'
+import type { JsonRecord } from '../native/types'
 import { record } from '../native/types'
 
 const text = (value: unknown) =>
@@ -75,13 +75,40 @@ export function askPayload(args: JsonRecord): { questions: AskUserQuestion[] } {
   return { questions }
 }
 
-export function executeAskUser(args: JsonRecord): ToolResult {
-  const payload = askPayload(args)
-  return {
-    content: JSON.stringify({ status: 'paused', questions: payload.questions }),
-    success: true,
-    pause: payload as unknown as JsonRecord,
-    terminate: false
+export const ASK_USER_SCHEMA = {
+  type: 'function' as const,
+  function: {
+    name: 'ask_user',
+    description:
+      'Hỏi người học để làm rõ hoặc chọn hướng đi khi thiếu thông tin thật sự chặn việc làm tiếp. Hỏi gộp mọi câu trong MỘT lệnh (tối đa 4 câu, mỗi câu 2–6 lựa chọn). Lượt sẽ dừng chờ câu trả lời.',
+    parameters: {
+      type: 'object',
+      properties: {
+        questions: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: { type: 'string' },
+              prompt: { type: 'string', description: 'Câu hỏi hoặc lời dẫn' },
+              header: { type: 'string', description: 'Tiêu đề ngắn (≤ 24 ký tự)' },
+              options: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: { label: { type: 'string' }, description: { type: 'string' } },
+                  required: ['label']
+                }
+              },
+              multi_select: { type: 'boolean' },
+              allow_free_text: { type: 'boolean' },
+              placeholder: { type: 'string' }
+            },
+            required: ['prompt', 'options']
+          }
+        }
+      },
+      required: ['questions']
+    }
   }
 }
-

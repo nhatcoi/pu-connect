@@ -1,4 +1,4 @@
-import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
+import { N7AgentService } from '../src/modules/ai/engine/n7-agent.service'
 import { GoogleMcpService } from '../src/modules/ai/connectors/google-mcp.service'
 import { stubLlm } from './helpers'
 
@@ -38,7 +38,7 @@ describe('Agent gateway streamed arguments', () => {
       })
     } as unknown as GoogleMcpService
     const llm = stubLlm(create)
-    const result = await new McpAgentService(llm, mcp).stream([], 'fixture-account', ['google_drive'], () => undefined)
+    const result = await new N7AgentService(llm, mcp).stream([], 'fixture-account', ['google_drive'], () => undefined)
     expect(result.finishReason).toBe('stop')
     expect(result.timings.rounds).toBe(2)
     expect(result.calls[0].ok).toBe(true)

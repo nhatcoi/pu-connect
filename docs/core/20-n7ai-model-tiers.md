@@ -16,7 +16,7 @@ Implemented: 2026-10-19. Mức model là tên model trên gateway chính (tunnel
 
 - Lưu theo người dùng: `ai_settings.ai_model` (migration `ai-model-upgrade.sql`, mặc định `n7ai-fast`); `GET/PATCH /api/ai/settings` có trường `aiModel` (tên lạ ⇒ 400). Đồng bộ mọi thiết bị.
 - Dùng cho thread riêng và tác vụ tự động. Nhóm chat (không có cài đặt riêng) luôn `n7ai-fast`.
-- `McpAgentService.stream(..., { model })` → `LlmService.chat(params, { model })`; `ai_runs.model` ghi mức đã dùng.
+- `N7AgentService.stream(..., { model })` → `LlmService.chat(params, { model })`; `ai_runs.model` ghi mức đã dùng.
 - Quota: `max(Research ? 2 : 1, chi phí mức)` (`ai/ai-models.ts`).
 - Fallback: gateway chính lỗi ⇒ gateway dự phòng dùng **một** model chung `AI_FALLBACK_MODEL` (chưa theo mức; xem [`18`](./18-agent-harness-performance.md)).
 - **Danh mục do admin quản lý (2026-10-20)**: bảng `ai_models` (migration `ai-models-upgrade.sql`; `id` = tên model trên gateway, `label`, `hint`, `cost`, `visible`, `enabled`, `is_default`, `sort_order`; đúng 1 mặc định) thay hằng số trong code. Ba mức trên được seed (`ON CONFLICT DO NOTHING`). `AiModelCatalogService` (`ai/ai-model-catalog.service.ts`) cache 30 giây, admin ghi xong thì làm mới ngay.

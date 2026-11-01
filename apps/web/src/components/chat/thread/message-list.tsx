@@ -23,6 +23,7 @@ interface MessageListProps {
   onRetry: (m: UiMessage) => void
   handlers: MessageHandlers
   onFollowUp?: (text: string) => void // N7AI: bấm câu hỏi gợi ý tiếp theo
+  onAskUserSelect?: (answer: string) => void // N7AI: chọn đáp án ở thẻ ask_user (câu trả lời mới nhất)
 }
 
 // Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", neo đáy (mở ở tin mới nhất), cuộn lên tải tin cũ
@@ -38,7 +39,8 @@ export function MessageList({
   onJump,
   onRetry,
   handlers,
-  onFollowUp
+  onFollowUp,
+  onAskUserSelect
 }: MessageListProps) {
   const listRef = useRef<HTMLDivElement>(null)
   const [highlight, setHighlight] = useState<string | null>(null)
@@ -146,6 +148,7 @@ export function MessageList({
                 onJumpTo={onJump}
                 onRetry={onRetry}
                 handlers={handlers}
+                onAskUserSelect={m.id === latest?.id && latest.status === 'done' ? onAskUserSelect : undefined}
               />
             )}
           </React.Fragment>

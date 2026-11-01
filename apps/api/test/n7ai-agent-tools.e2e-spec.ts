@@ -2,7 +2,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express'
 import type { AiStep } from '@pu/schemas'
 import type { DatabaseService } from '../src/database/database.service'
 import { AiRetrieval } from '../src/modules/ai/ai.retrieval'
-import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
+import { N7AgentService } from '../src/modules/ai/engine/n7-agent.service'
 import { AiProgress } from '../src/modules/chat/n7ai/agent/ai-progress'
 import { parseActionLines, safeAppHref, toActions } from '../src/modules/chat/n7ai/agent/ai-actions'
 import { HistoryToolsService } from '../src/modules/chat/n7ai/agent/history-tools.service'
@@ -89,22 +89,24 @@ describe('N7AI agent tools (e2e)', () => {
     const user = await createUser(db)
     const leader = await createUser(db)
     const code = `AG${Date.now() % 100000}`
-    await db.query(`INSERT INTO courses (code, name, credits) VALUES ($1, 'Giải tích agent', 3)`, [code])
+    // Từ khóa riêng của test: tìm kiếm khớp BẤT KỲ từ nên dữ liệu còn sót từ suite khác (vd. "Giải tích") không được lọt vào kết quả
+    const tag = `zq${Date.now()}`
+    await db.query(`INSERT INTO courses (code, name, credits) VALUES ($1, 'Giải tích ${tag}', 3)`, [code])
     const group = (
       await db.query(
-        `INSERT INTO study_groups (leader_id, course_code, course_name, name, topic, description) VALUES ($1, $2, 'Giải tích agent', 'Nhóm ôn Giải tích agent', 'Ôn thi', 'Ôn cuối kỳ') RETURNING id`,
+        `INSERT INTO study_groups (leader_id, course_code, course_name, name, topic, description) VALUES ($1, $2, 'Giải tích ${tag}', 'Nhóm ôn Giải tích ${tag}', 'Ôn thi', 'Ôn cuối kỳ') RETURNING id`,
         [leader.id, code]
       )
     ).rows[0].id
     await db.query(`INSERT INTO study_group_members (group_id, user_id, role) VALUES ($1, $2, 'leader')`, [group, leader.id])
     const slug = `agent-${Date.now()}`
-    await db.query(`INSERT INTO communities (slug, name, description) VALUES ($1, 'CLB Giải tích agent', 'Cộng đồng ôn toán')`, [slug])
+    await db.query(`INSERT INTO communities (slug, name, description) VALUES ($1, 'CLB Giải tích ${tag}', 'Cộng đồng ôn toán')`, [slug])
 
     const session = app.get(PucToolsService).open(user.id)
-    const groups = JSON.parse(await session.call('puc__search', { query: 'Giải tích agent', type: 'groups' })).data.groups
+    const groups = JSON.parse(await session.call('puc__search', { query: tag, type: 'groups' })).data.groups
     expect(groups).toEqual([expect.objectContaining({ id: group, status: 'recruiting', href: `/courses/${code}` })])
-    const communities = JSON.parse(await session.call('puc__search', { query: 'giai tich agent', type: 'communities' })).data.communities
-    expect(communities).toEqual([expect.objectContaining({ name: 'CLB Giải tích agent', href: `/c/${slug}` })])
+    const communities = JSON.parse(await session.call('puc__search', { query: tag, type: 'communities' })).data.communities
+    expect(communities).toEqual([expect.objectContaining({ name: `CLB Giải tích ${tag}`, href: `/c/${slug}` })])
     const help = JSON.parse(await session.call('puc__app_help', { topic: 'ôn flashcard' })).data
     expect(help[0]).toMatchObject({ feature: 'Công cụ học tập', href: '/tools' })
 
@@ -265,7 +267,7 @@ describe('N7AI agent tools (e2e)', () => {
     const run = (failFirst: boolean, partial = '') => {
       calls = 0
       const out: string[] = []
-      const agent = new McpAgentService(llm(failFirst, partial) as never, mcp as never)
+      const agent = new N7AgentService(llm(failFirst, partial) as never, mcp as never)
       return agent.stream([{ role: 'user', content: 'hi' }], 'u', [], (t) => out.push(t)).then((r) => ({ ...r, out: out.join(''), calls }))
     }
     const retried = await run(true)

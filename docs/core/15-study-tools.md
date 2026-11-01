@@ -60,7 +60,7 @@ Thread N7AI riêng luôn có các tool `my_study__create_flashcards`, `my_study_
 3. Xong lượt: `N7AiService` chèn khối ```` ```flashcards ```` chuẩn (từ dữ liệu đã kiểm) vào cuối tin + `meta.studySet`. Web dựng bộ thẻ tương tác, Thư viện › Học liệu và thread chia sẻ dùng lại khối này.
 4. Dự phòng: model không gọi tool mà tự viết khối ⇒ `saveFromReply` đọc khối đầu tiên như trước.
 
-Tham số 1 lượt gọi tool tối đa 48 000 ký tự (`MAX_CALL_ARGS`, `mcp-agent.service.ts`) để chở đủ 60 thẻ kèm phiên âm, ví dụ.
+Tham số 1 lượt gọi tool tối đa 48 000 ký tự (`MAX_CALL_ARGS`, `engine/native/copy.ts`) để chở đủ 60 thẻ kèm phiên âm, ví dụ.
 
 Prompt nội dung (8–12 thẻ khi chỉ nêu chủ đề, giữ đủ danh sách người dùng đưa, tối đa 60; từ vựng ngoại ngữ ⇒ mẫu `vocab` + `lang` + phiên âm + ví dụ) nằm ở `ai.instructions` của từng loại.
 

@@ -150,6 +150,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           onJumpHandled={clearJump}
           onJump={jump}
           onRetry={chat.retry}
+          onAskUserSelect={isAi ? (answer) => chat.send({ content: answer, aiMode }) : undefined}
           handlers={handlers}
           onFollowUp={isAi ? sendFollowUp : undefined}
         />

@@ -65,7 +65,7 @@ export function AiMessageBody({ message: m, onAskUserSelect }: { message: AiBody
         )
       )}
       {askUser?.questions && (
-        <AskUserCard questions={askUser.questions} onSelectOption={(ans) => onAskUserSelect?.(ans)} disabled={m.status === 'streaming'} />
+        <AskUserCard questions={askUser.questions} onSelectOption={(ans) => onAskUserSelect?.(ans)} disabled={m.status === 'streaming' || !onAskUserSelect} />
       )}
       {m.meta?.studySet && m.status === 'done' && <SavedToTools set={m.meta.studySet} />}
       {m.meta?.actions && m.meta.actions.length > 0 && m.status === 'done' && <AiActions actions={m.meta.actions} />}

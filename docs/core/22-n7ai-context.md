@@ -12,7 +12,7 @@ Implemented: 2026-10-20. Mặc định model nền là `n7ai-fast` (`AI_MODEL`, 
 ## Cách hoạt động
 
 - `ai/context/context-budget.ts`: `clip`, `fitLines` (ngân sách ký tự theo thứ tự ưu tiên), `dataText` (vô hiệu thẻ `</post>`, `</conversation>`… giả trong nội dung người dùng để dữ liệu không đóng khối bao quanh).
-- Bình luận: `posts/post-context.service.ts` (`PostContextService.load`, `postBlock`), `posts/post-thread-tools.service.ts`; `PostAiService.replyToComment` chạy `McpAgentService.stream` thay vì một lượt `llm.complete` (không connector Google, tối đa 4 vòng / 8 lệnh như mặc định).
+- Bình luận: `posts/post-context.service.ts` (`PostContextService.load`, `postBlock`), `posts/post-thread-tools.service.ts`; `PostAiService.replyToComment` chạy `N7AgentService.stream` thay vì một lượt `llm.complete` (không connector Google, tối đa 4 vòng / 8 lệnh như mặc định).
 - Chat: `chat/n7ai/context/conversation-context.service.ts` (khối `<conversation>`, ghép vào system prompt cạnh `GROUP_PROMPT`), `conversation-tools.service.ts` (`chat__earlier`). `GROUP_HISTORY_LIMIT` 12 → 30, mỗi tin cắt 1200 ký tự.
 - `PostsModule` import `ChatModule` (xuất `PucToolsService`) để bình luận dùng chung tool tìm kiếm công khai.
 - Prompt: `COMMENT_PROMPT` (`ai/ai.prompts.ts`) và `GROUP_PROMPT` (`chat/n7ai/n7ai.prompts.ts`) hướng dẫn thứ tự hiểu: xác định yêu cầu chính → suy bối cảnh học thuật → chỉ tra tool khi thiếu → dựa lời giải sẵn có → không đoán danh tính ẩn danh.

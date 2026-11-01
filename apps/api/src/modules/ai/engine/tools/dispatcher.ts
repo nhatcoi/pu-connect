@@ -1,151 +1,128 @@
 /**
- * N7AI Agent Engine — Tool Dispatcher
- * Điều phối thực thi công cụ: batching công cụ chỉ đọc, chạy tuần tự công cụ ghi, cache bộ đệm và xử lý tạm dừng ask_user.
+ * Agent engine — điều phối một lô tool call của một vòng:
+ * lọc đối số riêng tư, bỏ lệnh trùng, giới hạn số lệnh / vòng, từ chối lô bị cắt, xử lý ask_user.
  */
-import type { Emit, JsonRecord, ToolCall, ToolResult, ToolSpec } from '../native/types'
-import { executeAskUser } from './ask-user'
+import { MAX_TOOL_CALLS_PER_ROUND } from '../native/copy'
+import type { AskUserPause, EngineCopy, Emit, JsonRecord, ToolCall, ToolExecutor } from '../native/types'
+import { record } from '../native/types'
+import { askPayload } from './ask-user'
+
+export const ASK_USER = 'ask_user'
+
+const toolError = (message: string) => JSON.stringify({ error: message })
+
+const canonical = (value: unknown): string => {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as JsonRecord)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(value)
+}
+
+export interface DispatchOutcome {
+  /** Kết quả theo ĐÚNG thứ tự lệnh gọi (để ghép với tool_call_id) */
+  results: Map<string, string>
+  pause: AskUserPause | null
+  /** Tên các tool đã chạy thật (để hook chính sách) */
+  executed: string[]
+}
 
 export class ToolDispatcher {
   readonly calls: { name: string; ok: boolean }[] = []
-  readonly executedSources: JsonRecord[] = []
-  private readonly cache = new Map<string, Promise<ToolResult>>()
-  private readonly toolMap = new Map<string, ToolSpec>()
-  private pausedPayload: JsonRecord | null = null
+  pausePayload: AskUserPause | null = null
 
   constructor(
-    tools: ToolSpec[],
+    private readonly execute: ToolExecutor,
     private readonly emit: Emit,
     private readonly signal: AbortSignal,
-    private readonly onResult: (call: ToolCall, output: ToolResult) => Promise<void>
-  ) {
-    for (const tool of tools) {
-      this.toolMap.set(tool.schema.function.name, tool)
-    }
-  }
+    private readonly copy: EngineCopy
+  ) {}
 
   get isPaused(): boolean {
-    return this.pausedPayload !== null
+    return this.pausePayload !== null
   }
 
-  get pausePayload(): JsonRecord | null {
-    return this.pausedPayload
-  }
-
-  async dispatch(pending: ToolCall[]): Promise<{ pause: boolean }> {
+  /** `rejection` khác rỗng ⇒ không chạy lệnh nào (lô bị cắt), trả lỗi cho từng lệnh */
+  async run(pending: ToolCall[], rejection = ''): Promise<DispatchOutcome> {
     this.signal.throwIfAborted()
-    let hasPause = false
-
-    // Chia nhóm các công cụ để batching (read-only chạy song song tối đa 3, write chạy tuần tự)
-    for (let index = 0; index < pending.length; ) {
-      this.signal.throwIfAborted()
-      const first = pending[index++]
-      const firstSpec = this.toolMap.get(first.name)
-      const chunk = [first]
-
-      if (firstSpec?.readOnly) {
-        while (index < pending.length && chunk.length < 3) {
-          const next = pending[index]
-          if (this.toolMap.get(next.name)?.readOnly) {
-            chunk.push(pending[index++])
-          } else {
-            break
-          }
-        }
-      }
-
-      const results = await Promise.all(chunk.map((call) => this.runSingle(call)))
-      for (let i = 0; i < chunk.length; i++) {
-        const call = chunk[i]
-        const res = results[i]
-        await this.onResult(call, res)
-        if (res.pause) {
-          this.pausedPayload = res.pause
-          hasPause = true
-        }
-        if (res.sources?.length) {
-          this.executedSources.push(...res.sources)
-        }
-      }
-
-      if (hasPause) break
+    const results = new Map<string, string>()
+    const executed: string[] = []
+    if (rejection) {
+      for (const call of pending) results.set(call.id, toolError(rejection))
+      return { results, pause: null, executed }
     }
 
-    return { pause: hasPause }
-  }
-
-  private async runSingle(call: ToolCall): Promise<ToolResult> {
-    const summary = { name: call.name, ok: false }
-    this.calls.push(summary)
-
-    await this.emit({
-      type: 'tool_call',
-      content: `Đang chạy công cụ: ${call.name}`,
-      metadata: { id: call.id, toolName: call.name, status: 'running' }
-    })
-
-    let args: JsonRecord = {}
-    try {
-      args = JSON.parse(call.arguments || '{}')
-    } catch {
-      args = {}
-    }
-
-    // Xử lý riêng công cụ tương tác ask_user
-    if (call.name === 'ask_user') {
+    const run: ToolCall[] = []
+    const seen = new Map<string, string>()
+    const duplicates: Array<{ call: ToolCall; of: string }> = []
+    let ask: ToolCall | null = null
+    for (const [index, call] of pending.entries()) {
+      if (index >= MAX_TOOL_CALLS_PER_ROUND) {
+        results.set(call.id, toolError(this.copy.toolLimit))
+        continue
+      }
+      // Trường bắt đầu bằng "_" là của máy chủ: model không được tự đặt
+      let args: JsonRecord = {}
+      let valid = true
       try {
-        const askResult = executeAskUser(args)
-        summary.ok = true
-        await this.emit({
-          type: 'ask_user',
-          content: 'N7AI cần thêm thông tin để tiếp tục',
-          metadata: { questions: (askResult.pause as any)?.questions }
-        })
-        return askResult
-      } catch (err: any) {
-        return { content: `Lỗi ask_user: ${err?.message}`, success: false }
+        args = record(JSON.parse(call.arguments || '{}'))
+      } catch {
+        valid = false
       }
+      if (!valid) {
+        results.set(call.id, toolError('Đối số của công cụ phải là một đối tượng JSON hợp lệ'))
+        continue
+      }
+      const clean = Object.fromEntries(Object.entries(args).filter(([k]) => !k.startsWith('_')))
+      const normalized: ToolCall = { ...call, arguments: JSON.stringify(clean) }
+      if (call.name === ASK_USER) {
+        ask = ask ?? normalized
+        if (ask !== normalized) results.set(call.id, toolError('Chỉ hỏi người dùng một lần mỗi vòng; gộp mọi câu hỏi vào một lệnh ask_user'))
+        continue
+      }
+      const key = `${call.name}:${canonical(clean)}`
+      const dup = seen.get(key)
+      if (dup) {
+        duplicates.push({ call, of: dup })
+        continue
+      }
+      seen.set(key, call.id)
+      run.push(normalized)
     }
 
-    const spec = this.toolMap.get(call.name)
-    if (!spec || !spec.handler) {
-      return {
-        content: `Công cụ ${call.name} không khả dụng trong lượt này.`,
-        success: false
-      }
-    }
-
-    const isReadOnly = Boolean(spec.readOnly)
-    const cacheKey = `${call.name}:${JSON.stringify(args)}`
-
-    let task = isReadOnly ? this.cache.get(cacheKey) : undefined
-    if (!task) {
-      task = (async () => {
+    if (run.length) {
+      const outputs = await this.execute(run, true)
+      run.forEach((call, i) => {
+        const result = outputs[i] ?? toolError('Công cụ không trả kết quả')
+        results.set(call.id, result)
+        executed.push(call.name)
+        let ok = true
         try {
-          const raw = await spec.handler!(args, this.signal)
-          if (typeof raw === 'string') {
-            return { content: raw, success: true }
-          }
-          return raw
-        } catch (err: any) {
-          return { content: `Lỗi thực thi công cụ: ${err?.message}`, success: false }
+          const parsed = JSON.parse(result) as { error?: unknown; isError?: boolean }
+          ok = !parsed.error && !parsed.isError
+        } catch {
+          ok = true
         }
-      })()
+        this.calls.push({ name: call.name, ok })
+      })
+    }
+    for (const { call, of } of duplicates) results.set(call.id, results.get(of) ?? toolError(this.copy.toolDuplicate))
 
-      if (isReadOnly) {
-        this.cache.set(cacheKey, task)
+    if (ask) {
+      try {
+        const payload = askPayload(record(JSON.parse(ask.arguments)))
+        this.pausePayload = payload as unknown as AskUserPause
+        results.set(ask.id, JSON.stringify({ status: 'paused', note: 'Đã gửi câu hỏi cho người dùng; chờ câu trả lời của họ.' }))
+        this.calls.push({ name: ASK_USER, ok: true })
+        await this.emit({ type: 'ask_user', content: '', metadata: { questions: payload.questions } })
+      } catch (err) {
+        results.set(ask.id, toolError(`ask_user không hợp lệ: ${err instanceof Error ? err.message : String(err)}`))
+        this.calls.push({ name: ASK_USER, ok: false })
       }
     }
-
-    const res = await task
-    summary.ok = res.success
-
-    await this.emit({
-      type: 'tool_result',
-      content: res.success ? `Hoàn thành: ${call.name}` : `Lỗi: ${call.name}`,
-      metadata: { id: call.id, toolName: call.name, status: res.success ? 'done' : 'error', success: res.success }
-    })
-
-    return res
+    return { results, pause: this.pausePayload, executed }
   }
 }
-

@@ -42,7 +42,7 @@ export async function loginAgent(app: NestExpressApplication, user: TestUser) {
   return agent
 }
 
-// LlmService tối giản cho test tự dựng McpAgentService: chat() thật chạy trên một provider giả, không DB / mạng
+// LlmService tối giản cho test tự dựng N7AgentService: chat() thật chạy trên một provider giả, không DB / mạng
 export function stubLlm(create: unknown): LlmService {
   const client = { chat: { completions: { create } } }
   return {

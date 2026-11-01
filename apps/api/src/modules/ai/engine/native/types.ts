@@ -1,9 +1,7 @@
 /**
- * N7AI Agent Engine — Types & Definitions
- * Các kiểu dữ liệu cốt lõi cho Session, Events, và Tool Execution.
+ * Agent engine — kiểu dữ liệu cốt lõi cho phiên, sự kiện, vòng gọi model và công cụ.
  */
 import type { LoopConfig, LoopState } from '../core/contracts'
-import { validateConfig } from '../core/contracts'
 
 export type JsonRecord = Record<string, unknown>
 
@@ -17,7 +15,6 @@ export interface Message extends JsonRecord {
   }>
   tool_call_id?: string
   reasoning_content?: string
-  _context_snapshot?: string
 }
 
 export interface ToolCall {
@@ -31,90 +28,104 @@ export interface ToolSchema {
   function: {
     name: string
     description?: string
-    parameters: JsonRecord
+    parameters?: JsonRecord
   }
 }
 
-export interface ToolSpec {
-  schema: ToolSchema
-  sensitive?: string[]
-  native?: boolean
-  readOnly?: boolean
-  handler?: (args: JsonRecord, signal: AbortSignal) => Promise<string | ToolResult>
+/** Lời nhắc hệ thống chèn vào hội thoại ở từng tình huống (cấu hình được; có mặc định tiếng Việt). */
+export interface EngineCopy {
+  settle: string
+  finish: string
+  continueTruncated: string
+  continueReasoning: string
+  emptyNudge: string
+  toolBatchTruncated: string
+  toolLimit: string
+  toolDuplicate: string
+  toolsClosed: string
+  contextShortened: string
+  userSentWhileWorking: string
+}
+
+/** Thực thi một lô tool call; trả kết quả (chuỗi JSON) đúng thứ tự gọi. `enabled=false` ⇒ từ chối mọi call. */
+export type ToolExecutor = (calls: ToolCall[], enabled: boolean) => Promise<string[]>
+
+/** Móc chính sách của capability: chạy khi model muốn kết thúc (không còn tool call). */
+export interface LoopPolicy {
+  /** Trả về chỉ dẫn ⇒ chưa cho kết thúc, model phải làm tiếp theo chỉ dẫn (tối đa một lần / lượt). */
+  checkFinish?: (text: string) => string | null
+  /** Sau mỗi lô tool: true ⇒ kết thúc lượt ngay (vd. tool chốt kết quả). */
+  afterTools?: (names: string[]) => { terminate: boolean }
 }
 
 export interface ContextSeed {
   system: string
   history: Message[]
-  snapshots?: Record<string, string>
   user: Message
+  /** Cửa sổ ngữ cảnh ước lượng (token) dùng để cắt tỉa; mặc định 100k */
   contextWindow?: number
-  outputTokens?: number
+  /** Giới hạn token đầu ra cho MỖI vòng (gồm cả token suy nghĩ) */
+  outputTokens: number
   model?: string
-  route?: JsonRecord
 }
 
 export interface N7AgentInput {
   config: LoopConfig
   seed: ContextSeed
-  tools: ToolSpec[]
-  sessionId: string
-  userId: string
-  deferOutput?: boolean
-  copy?: Record<string, string>
+  /** Schema tool gửi cho model (kể cả ask_user); dạng hàm ⇒ đọc lại mỗi vòng (nguồn tool mở lười: danh mục lộ ra giữa lượt) */
+  tools: ToolSchema[] | (() => ToolSchema[])
+  execute: ToolExecutor
+  copy?: Partial<EngineCopy>
+  policy?: LoopPolicy
+  sessionId?: string
+  /** Gọi đầu mỗi vòng (trừ vòng đầu): tin người dùng gửi thêm khi agent đang làm việc ⇒ đưa vào ngữ cảnh vòng sau */
+  drainInputs?: () => Promise<string[]>
 }
 
 export interface EngineEvent {
-  type: 'thinking' | 'progress' | 'content' | 'tool_call' | 'tool_result' | 'ask_user' | 'study_card' | 'done' | 'error'
+  type: 'thinking' | 'content' | 'progress' | 'ask_user'
   content: string
   metadata?: JsonRecord
 }
 
 export type Emit = (event: EngineEvent) => Promise<void> | void
 
+export interface Usage {
+  prompt_tokens: number
+  completion_tokens: number
+}
+
 export interface Round {
   text: string
   reasoning: string
   toolCalls: ToolCall[]
-  usage: { prompt_tokens: number; completion_tokens: number }
+  usage: Usage
+  /** true ⇒ gateway không trả usage, số liệu là ước lượng */
+  usageEstimated: boolean
   finishReason: string
-  trace?: JsonRecord
+  /** Chờ chunk đầu tiên (gồm suy nghĩ ẩn) và thời gian stream sau đó, ms */
+  waitMs: number
+  streamMs: number
 }
 
-export interface ToolResult {
-  content: string
-  success: boolean
-  metadata?: JsonRecord
-  sources?: JsonRecord[]
-  pause?: JsonRecord | null
-  terminate?: boolean
+export interface AskUserPause {
+  questions: unknown[]
 }
 
 export interface N7AgentResult {
   state: LoopState
+  /** Chữ hiển thị cho người dùng (đã nối các đoạn "tiếp tục") */
   response: string
+  /** Suy nghĩ của model gom lại (hiện ở khối "Xem quá trình") */
   reasoning: string
   completed: boolean
-  sources: JsonRecord[]
-  usage: { prompt_tokens: number; completion_tokens: number }
-  toolCalls: { name: string; ok: boolean }[]
-  pausePayload?: JsonRecord | null
+  finishReason: string
+  usage: Usage
+  rounds: number
+  askUser: AskUserPause | null
+  timings: { modelWaitMs: number; modelStreamMs: number }
 }
 
 export function record(value: unknown): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonRecord) : {}
-}
-
-export function validateAgentInput(input: unknown): N7AgentInput {
-  if (!input || typeof input !== 'object') throw new Error('Missing agent input')
-  const i = input as Record<string, unknown>
-  return {
-    ...i,
-    config: validateConfig(i.config),
-    seed: (i.seed as ContextSeed) || { system: '', history: [], user: { role: 'user', content: '' } },
-    tools: Array.isArray(i.tools) ? (i.tools as ToolSpec[]) : [],
-    sessionId: String(i.sessionId || ''),
-    userId: String(i.userId || ''),
-    copy: (i.copy as Record<string, string>) || {}
-  } as N7AgentInput
 }

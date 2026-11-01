@@ -5,7 +5,8 @@ import { stripN7AiMention } from '../../ai/ai.constants'
 import { contextBlock, type Retrieved, type Source } from '../../ai/ai.retrieval'
 import { AgentSources } from '../../ai/agent-sources'
 import { RetrievalToolsService } from '../../ai/retrieval-tools.service'
-import { McpAgentService, McpModelError } from '../../ai/mcp-agent.service'
+import { N7AgentService } from '../../ai/engine/n7-agent.service'
+import { McpModelError } from '../../ai/engine/errors'
 import { DEFAULT_AI_MODEL } from '../../ai/ai-models'
 import { clip } from '../../ai/context/context-budget'
 import { LlmService, RESEARCH_COST, RESEARCH_TASK, type LlmMessage as Msg } from '../../ai/llm.service'
@@ -22,6 +23,7 @@ import { HistoryToolsService } from './agent/history-tools.service'
 import { PresentationToolsService } from './agent/presentation-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
 import { ConversationContextService } from './context/conversation-context.service'
+import { MemoryToolsService } from './agent/memory-tools.service'
 import { ConversationToolsService } from './context/conversation-tools.service'
 import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
 import { AiMemoriesService } from './ai-memories.service'
@@ -54,7 +56,14 @@ type Trigger = {
   connectors: AiConnectorId[] | undefined
 }
 
-export type ReplyOutcome = 'done' | 'skipped' | 'error' // skipped = hết lượt hôm nay
+export type ReplyOutcome = 'done' | 'skipped' | 'error' // skipped = hết lượt hôm nay, hoặc tin đã gộp vào lượt đang trả lời
+
+// Lượt trả lời đang chạy của một hội thoại: nhận tin người dùng gửi thêm (chỉ thread riêng)
+interface LiveReply {
+  requesterId: string
+  private: boolean
+  pending: { id: string; text: string }[]
+}
 
 // Nguồn hiện được ở "Nguồn tham khảo" (có trang / liên kết); nhóm học, khóa học, thread thì không
 type CitableType = ChatCitation['ref']['type']
@@ -74,11 +83,12 @@ export function citationsOf(sources: Source[], cited: number[]): ChatCitation[] 
 @Injectable()
 export class N7AiService {
   private readonly logger = new Logger(N7AiService.name)
+  private readonly live = new Map<string, LiveReply>()
 
   constructor(
     private readonly core: ChatCoreService,
     private readonly llm: LlmService,
-    private readonly agent: McpAgentService,
+    private readonly engine: N7AgentService,
     private readonly retrievalTools: RetrievalToolsService,
     private readonly chatPush: ChatPushService,
     private readonly refs: ChatRefsService,
@@ -94,6 +104,7 @@ export class N7AiService {
     private readonly presentationTools: PresentationToolsService,
     private readonly conversationContext: ConversationContextService,
     private readonly conversationTools: ConversationToolsService,
+    private readonly memoryTools: MemoryToolsService,
     private readonly sources: AiSourcesService
   ) {}
 
@@ -114,21 +125,52 @@ export class N7AiService {
 
   // Trả lời tin vừa gửi (không ném lỗi ra ngoài); kết quả dùng cho tác vụ tự động (đếm lỗi, bỏ qua khi hết lượt)
   async reply(conversationId: string, requesterId: string, triggerId: string): Promise<ReplyOutcome> {
+    // Thread riêng đang trả lời mà người dùng gửi thêm tin text thuần ⇒ đưa vào lượt đang chạy (vòng kế tiếp đọc), không mở lượt song song
+    const running = this.live.get(conversationId)
+    if (running?.private && running.requesterId === requesterId) {
+      const text = await this.injectableText(triggerId, requesterId)
+      if (text !== null) {
+        running.pending.push({ id: triggerId, text })
+        return 'skipped'
+      }
+    }
+    const live: LiveReply = { requesterId, private: false, pending: [] }
+    this.live.set(conversationId, live)
+    let outcome: ReplyOutcome
     try {
-      return await this.runReply(conversationId, requesterId, triggerId)
+      outcome = await this.runReply(conversationId, requesterId, triggerId, live)
     } catch (err: any) {
       this.logger.error(`N7AI lỗi (conv ${conversationId}): ${err?.message}`)
-      return 'error'
+      outcome = 'error'
+    } finally {
+      this.live.delete(conversationId)
     }
+    // Tin tới sau vòng đọc cuối của lượt ⇒ trả lời riêng, không để rơi
+    const late = live.pending.splice(0)
+    return late.length ? this.reply(conversationId, requesterId, late[late.length - 1].id) : outcome
   }
 
-  private async runReply(conversationId: string, requesterId: string, triggerId: string): Promise<ReplyOutcome> {
+  // Tin chỉ có chữ (không tệp, đoạn trích, ngữ cảnh gắn kèm, skill, research) mới chèn được vào lượt đang chạy
+  private async injectableText(messageId: string, requesterId: string): Promise<string | null> {
+    const res = await this.db.query(
+      `SELECT content, attachments, meta FROM messages WHERE id = $1 AND sender_id = $2 AND kind = 'text' AND deleted_at IS NULL`,
+      [messageId, requesterId]
+    )
+    const r = res.rows[0]
+    if (!r || !String(r.content ?? '').trim() || (Array.isArray(r.attachments) && r.attachments.length)) return null
+    const meta: ChatMessageMeta = r.meta || {}
+    if (meta.refs?.length || meta.quotes?.length || meta.skill || meta.research || (meta.aiMode && meta.aiMode !== 'ask')) return null
+    return String(r.content).trim().slice(0, 4000)
+  }
+
+  private async runReply(conversationId: string, requesterId: string, triggerId: string, live: LiveReply): Promise<ReplyOutcome> {
     const botId = await this.llm.getBotId()
     const started = Date.now()
     const trigger = await this.loadTrigger(triggerId)
     if (!trigger || trigger.senderId !== requesterId) return 'error'
     // Nhóm / chat cá nhân (direct): người khác cùng đọc câu trả lời ⇒ không dùng dữ liệu riêng của người hỏi (chỉ nội dung công khai)
     const inGroup = trigger.type !== 'ai'
+    live.private = !inGroup
     // Nhóm chat: không dùng cài đặt / dữ liệu riêng của người hỏi
     const settings = inGroup ? null : await this.settings.get(trigger.senderId)
     const replyTo = inGroup ? trigger.id : null
@@ -199,24 +241,29 @@ export class N7AiService {
         ...(inGroup ? [] : [this.retrievalTools.open(requesterId, connectors, catalog, trigger.research)]),
         // Nhóm / chat cá nhân: đọc ngược tin cũ của chính hội thoại này khi người gọi hỏi tới
         ...(inGroup ? [this.conversationTools.open(conversationId, requesterId, trigger.id)] : []),
+        // Bộ nhớ dài hạn: tool tra thêm khi người học bật bộ nhớ (thread riêng)
+        ...(!inGroup && settings?.memoryEnabled ? [this.memoryTools.open(requesterId)] : []),
         ...(creator ? [creator] : []),
         slideCreator,
         ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []),
         ...(connectors.includes('my_chats') ? [this.historyTools.open(requesterId, conversationId)] : [])
       ]
       const preparationMs = Date.now() - started
-      const { finishReason, usage, timings } = await this.agent.stream(
-        messages,
-        requesterId,
-        connectors,
-        (delta) => {
-          const shown = splitter.push(delta)
-          if (shown) emit(shown)
-        },
-        (toolSteps) => progress.setTools(toolSteps),
-        local,
-        { research: trigger.research, model }
-      )
+      const onDelta = (delta: string) => {
+        const shown = splitter.push(delta)
+        if (shown) emit(shown)
+      }
+      // Vòng agent 2 pha (thăm dò → tổng hợp, tự phục hồi, capability theo chế độ học); nhóm chat không có ask_user vì nhiều người cùng đọc
+      const run = await this.engine.stream(messages, requesterId, connectors, onDelta, (toolSteps) => progress.setTools(toolSteps), local, {
+        research: trigger.research,
+        model,
+        aiMode: trigger.aiMode,
+        askUser: !inGroup,
+        drainInputs: async () => live.pending.splice(0).map((p) => p.text)
+      })
+      const { finishReason, usage, timings } = run
+      const reasoning = run.reasoning.trim().slice(0, 12_000)
+      const askUser = run.askUser
 
       const { rest, text: answer, followUps, memories, cited, actions: drafts } = splitter.finish()
       if (rest) emit(rest)
@@ -227,7 +274,9 @@ export class N7AiService {
 
       let text = answer.trim()
       if (!text) {
-        if (slideAttachment) {
+        if (askUser) {
+          text = (askUser.questions as { prompt?: string }[]).map((q) => q.prompt).filter(Boolean).join('\n')
+        } else if (slideAttachment) {
           text = 'Đã tạo thành công bộ slide thuyết trình theo yêu cầu của bạn. Bạn có thể xem trước hoặc tải về tệp đính kèm ở trên.'
         } else if (created) {
           text = 'Đã tạo thành công bộ học liệu cho bạn.'
@@ -260,7 +309,9 @@ export class N7AiService {
         citations.length ? citations : null,
         'done',
         {
-          ...(finishReason === 'length' || finishReason === 'content_filter' || !followUps.length ? {} : { followUps }),
+          ...(finishReason === 'length' || finishReason === 'content_filter' || askUser || !followUps.length ? {} : { followUps }),
+          ...(reasoning ? { reasoning } : {}),
+          ...(askUser ? { askUser: askUser as NonNullable<ChatMessageMeta['askUser']> } : {}),
           ...(remembered.length ? { memoryUpdated: remembered } : {}),
           ...(studySet ? { studySet } : {}),
           ...(progress.steps.length ? { steps: progress.steps } : {}),
@@ -360,7 +411,6 @@ ${convBlock.trim()}` : '') : '') +
       (inGroup ? '' : FOLLOWUP_PROMPT + (memoryOn ? MEMORY_PROMPT : '') + ACTIONS_PROMPT) +
       SOURCES_PROMPT
 
-    if (profile.length) progress.note('memory', 'memory', 'Nhớ lại điều đã biết về bạn', `${profile.length} mục`)
     const files = trigger.attachments ?? []
     if (files.length) progress.start('files', 'files', 'Đọc tệp đính kèm', files.map((a) => a.name).join(', '))
     const { parts, notes } = await attachmentParts(trigger.attachments)
@@ -477,7 +527,7 @@ ${convBlock.trim()}` : '') : '') +
     text: string,
     blocks: ChatCitation[] | null,
     status: 'done' | 'error',
-    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs' | 'timings'> = {},
+    extraMeta: Pick<ChatMessageMeta, 'followUps' | 'memoryUpdated' | 'studySet' | 'steps' | 'actions' | 'durationMs' | 'timings' | 'reasoning' | 'askUser'> = {},
     attachments?: ChatAttachment[] | null
   ) {
     // Gợi ý tiếp theo / bộ nhớ vừa cập nhật gộp vào meta (giữ aiMode sẵn có)

@@ -314,7 +314,7 @@ sequenceDiagram
   actor U as Người hỏi
   participant A as N7AiService
   participant R as PUC / nguồn tools (RagSearch · AiRetrieval)
-  participant L as McpAgentService / Model
+  participant L as N7AgentService / Model
   participant C as GoogleMcpService
   participant G as workspace-mcp (localhost) → Google APIs
   U->>A: Câu hỏi + connector được bật

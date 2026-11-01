@@ -3,7 +3,7 @@ import type { AiStep } from '@pu/schemas'
 import type { DatabaseService } from '../src/database/database.service'
 import { GoogleOAuthService } from '../src/modules/ai/connectors/google-oauth.service'
 import { GoogleMcpService } from '../src/modules/ai/connectors/google-mcp.service'
-import { McpAgentService } from '../src/modules/ai/mcp-agent.service'
+import { N7AgentService } from '../src/modules/ai/engine/n7-agent.service'
 import { N7AiService } from '../src/modules/chat/n7ai/n7ai.service'
 import { createTestApp, createUser, loginAgent, stubLlm, stubProviders } from './helpers'
 
@@ -223,7 +223,7 @@ describe('Google MCP connectors', () => {
         })()
       )
     )
-    const loop = new McpAgentService(
+    const loop = new N7AgentService(
       stubLlm(create),
       app.get(GoogleMcpService)
     )
@@ -264,10 +264,10 @@ describe('Google MCP connectors', () => {
       [conv.id, owner.id, JSON.stringify({ connectors: ['google_gmail', 'google_calendar'] })]
     )
     const restoreLlm = stubProviders(app, {})
-    const spy = jest.spyOn(app.get(McpAgentService), 'stream').mockImplementation(async (_messages, _userId, connectors, emit) => {
+    const spy = jest.spyOn(app.get(N7AgentService), 'stream').mockImplementation(async (_messages, _userId, connectors, emit) => {
       expect(connectors).toEqual([])
       emit('Trả lời trong nhóm')
-      return { usage: { prompt_tokens: 1, completion_tokens: 1 }, finishReason: 'stop', calls: [], steps: [] }
+      return { usage: { prompt_tokens: 1, completion_tokens: 1 }, finishReason: 'stop', calls: [], steps: [], reasoning: '', askUser: null, rounds: 1, timings: {} as never }
     })
     try {
       expect(await app.get(N7AiService).reply(conv.id, owner.id, String(trigger.rows[0].id))).toBe('done')
@@ -318,7 +318,7 @@ describe('Google MCP connectors', () => {
         else yield { choices: [{ delta: { content: 'Đã đọc lịch' }, finish_reason: 'stop' }] }
       })()
     })
-    const loop = new McpAgentService(
+    const loop = new N7AgentService(
       stubLlm(create),
       app.get(GoogleMcpService)
     )
@@ -366,8 +366,9 @@ describe('Google MCP connectors', () => {
       })
     } as unknown as GoogleMcpService
     const llm = stubLlm(create)
-    const result = await new McpAgentService(llm, mcp).stream([{ role: 'user', content: 'Search' }], 'account', ['google_drive'], () => undefined)
-    expect(rounds).toBe(4)
+    const result = await new N7AgentService(llm, mcp).stream([{ role: 'user', content: 'Search' }], 'account', ['google_drive'], () => undefined)
+    // 3 vòng thăm dò (chạy tool) + 1 vòng tổng hợp + 1 vòng chốt: model cứ gọi tool dù đã đóng ⇒ công cụ không chạy thêm, không còn chữ ⇒ 'length'
+    expect(rounds).toBe(5)
     expect(call).toHaveBeenCalledTimes(3)
     expect(result.finishReason).toBe('length')
     expect(close).toHaveBeenCalledTimes(1)
@@ -387,7 +388,7 @@ describe('Google MCP connectors', () => {
     const llm = stubLlm(async () => {
       throw { status: 400 }
     })
-    await expect(new McpAgentService(llm, mcp).stream([], 'account', ['google_drive'], () => undefined)).rejects.toThrow('tool calling')
+    await expect(new N7AgentService(llm, mcp).stream([], 'account', ['google_drive'], () => undefined)).rejects.toThrow('tool calling')
     expect(close).toHaveBeenCalledTimes(1)
   })
 })

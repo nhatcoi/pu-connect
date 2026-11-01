@@ -1,12 +1,13 @@
 /**
- * N7AI Agent Engine — Conversation Context & Token Budget
- * Quản lý lịch sử hội thoại, tính toán token budget, cắt tỉa an toàn không làm hỏng tool calls.
+ * Agent engine — lịch sử hội thoại của một lượt và chiếu theo ngân sách ngữ cảnh.
+ * Cắt tỉa theo NHÓM (user → trả lời → tool) để không bao giờ để lại tool call mồ côi.
  */
-import type { ContextSeed, JsonRecord, Message, Round, ToolSpec } from '../native/types'
+import type { ContextSeed, JsonRecord, Message, Round } from '../native/types'
 
-const SNIPPED = '[Kết quả công cụ trước đó đã được lược bớt để vừa giới hạn context window. Gọi lại công cụ nếu cần thiết.]'
+export const SNIPPED = '[Kết quả công cụ trước đó đã được lược bớt để vừa giới hạn ngữ cảnh. Gọi lại công cụ nếu cần.]'
+const DEFAULT_WINDOW = 100_000
 
-/** Ước lượng token thô (tránh nạp tokenizer nặng vào runtime): ASCII ~ 3 ký tự / token, Tiếng Việt/Unicode ~ 1-2 ký tự / token */
+/** Ước lượng token thô (không nạp tokenizer): ASCII ≈ 3 ký tự / token, ký tự Unicode (tiếng Việt…) ≈ 1,5 token */
 export function estimateText(text: string): number {
   let ascii = 0
   let other = 0
@@ -19,7 +20,7 @@ export function estimateText(text: string): number {
 
 export function estimateValue(value: unknown): number {
   if (typeof value === 'string') return estimateText(value)
-  if (Array.isArray(value)) return value.reduce((sum, x) => sum + estimateValue(x), 0)
+  if (Array.isArray(value)) return value.reduce((sum: number, x) => sum + estimateValue(x), 0)
   if (value && typeof value === 'object') {
     const x = value as JsonRecord
     if (['image_url', 'input_image', 'image'].includes(String(x.type))) return 1024
@@ -28,105 +29,74 @@ export function estimateValue(value: unknown): number {
   return value == null ? 0 : 1
 }
 
+const messageTokens = (m: Message) => estimateValue(m.content) + estimateValue(m.tool_calls) + 4
+
 export class Conversation {
   readonly messages: Message[]
+  /** Chỉ số tin người dùng của lượt hiện tại: mọi thứ trước đó là lịch sử */
   readonly turnStart: number
-  private lastBudget: JsonRecord = {}
 
   constructor(readonly seed: ContextSeed) {
-    this.messages = [{ role: 'system', content: seed.system }, ...seed.history]
+    this.messages = [{ role: 'system', content: seed.system }, ...seed.history.map((m) => structuredClone(m))]
     this.turnStart = this.messages.length
-
-    // Thêm các context snapshot nếu có thay đổi
-    if (seed.snapshots) {
-      for (const [name, value] of Object.entries(seed.snapshots)) {
-        this.messages.push({
-          role: 'user',
-          content: value,
-          _context_snapshot: name
-        })
-      }
-    }
-
     this.messages.push(structuredClone(seed.user))
   }
 
+  /** Chỉ dẫn gắn vào cuối tin người dùng gần nhất (hoặc thêm tin mới) để model đọc ở vòng kế */
   appendInstruction(text: string): void {
     const last = this.messages.at(-1)
-    if (last?.role === 'user' && typeof last.content === 'string') {
-      last.content = `${last.content.trimEnd()}\n\n${text}`
-    } else {
-      this.messages.push({ role: 'user', content: text })
-    }
+    if (last?.role === 'user' && typeof last.content === 'string') last.content = `${last.content.trimEnd()}\n\n${text}`
+    else this.messages.push({ role: 'user', content: text })
   }
 
+  /** Vòng rỗng (không chữ, không tool) không đưa vào lịch sử: nhiều gateway từ chối tin assistant rỗng */
   appendAssistant(round: Round): void {
+    if (!round.text && !round.toolCalls.length) return
     const message: Message = { role: 'assistant', content: round.text || null }
     if (round.toolCalls.length) {
-      message.tool_calls = round.toolCalls.map((c) => ({
-        id: c.id,
-        type: 'function',
-        function: { name: c.name, arguments: c.arguments }
-      }))
-    }
-    if (round.reasoning) {
-      message.reasoning_content = round.reasoning
+      message.tool_calls = round.toolCalls.map((c) => ({ id: c.id, type: 'function', function: { name: c.name, arguments: c.arguments } }))
     }
     this.messages.push(message)
   }
 
-  beginTools(calls: { id: string; name: string }[]): void {
-    this.messages.push(
-      ...calls.map((call) => ({
-        role: 'tool' as const,
-        tool_call_id: call.id,
-        content: ''
-      }))
-    )
+  beginTools(calls: { id: string }[]): void {
+    this.messages.push(...calls.map((call) => ({ role: 'tool', tool_call_id: call.id, content: '' }) as Message))
   }
 
   resolveTool(id: string, content: string): void {
     const match = this.messages.find((m) => m.role === 'tool' && m.tool_call_id === id)
-    if (match) {
-      match.content = content
-    } else {
-      this.messages.push({ role: 'tool', tool_call_id: id, content })
-    }
+    if (match) match.content = content
+    else this.messages.push({ role: 'tool', tool_call_id: id, content })
   }
 
-  /**
-   * Chiếu và cắt tỉa tin nhắn cũ nếu vượt quá context window
-   * Đảm bảo luôn giữ system message đầu tiên và user message mới nhất.
-   */
-  project(_tools: ToolSpec[]): { messages: Message[]; snipped: boolean } {
-    const limit = this.seed.contextWindow || 32_000
+  /** Bản gửi model: nếu vượt cửa sổ thì lược kết quả tool cũ, rồi bỏ cả nhóm lịch sử cũ nhất */
+  project(): { messages: Message[]; snipped: boolean } {
+    const limit = this.seed.contextWindow || DEFAULT_WINDOW
     const out = structuredClone(this.messages)
     let snipped = false
+    const total = () => out.reduce((n, m) => n + messageTokens(m), 0)
 
-    const totalEstimate = () => out.reduce((n, m) => n + estimateValue(m.content), 0)
-
-    // Nếu quá dài, lược bớt nội dung của các tool messages cũ trước
-    if (totalEstimate() > limit) {
-      for (let i = 0; i < this.turnStart; i++) {
-        if (out[i].role === 'tool' && typeof out[i].content === 'string' && (out[i].content as string).length > 200) {
-          out[i].content = SNIPPED
+    if (total() > limit) {
+      for (let i = 1; i < out.length && total() > limit; i++) {
+        const m = out[i]
+        if (m.role === 'tool' && typeof m.content === 'string' && m.content.length > 200 && m.content !== SNIPPED) {
+          m.content = SNIPPED
           snipped = true
-          if (totalEstimate() <= limit) break
         }
       }
     }
 
-    // Nếu vẫn quá dài, bỏ dần các cặp tin nhắn cũ (sau system)
-    while (totalEstimate() > limit && out.length > 3) {
-      const firstNonSystem = out.findIndex((m) => m.role !== 'system')
-      if (firstNonSystem >= 0 && firstNonSystem < out.length - 2) {
-        out.splice(firstNonSystem, 1)
-        snipped = true
-      } else {
-        break
-      }
+    // Bỏ nguyên nhóm lịch sử cũ nhất (từ một tin user tới trước tin user kế); luôn giữ system + lượt hiện tại
+    let currentStart = out.length - (this.messages.length - this.turnStart)
+    while (total() > limit) {
+      const first = out.findIndex((m, i) => i >= 1 && m.role === 'user')
+      if (first < 0 || first >= currentStart) break
+      let next = out.findIndex((m, i) => i > first && m.role === 'user')
+      if (next < 0 || next > currentStart) next = currentStart
+      out.splice(first, next - first)
+      currentStart -= next - first
+      snipped = true
     }
-
     return { messages: out, snipped }
   }
 
@@ -134,10 +104,7 @@ export class Conversation {
     return structuredClone(this.messages)
   }
 
-  budget(): JsonRecord {
-    return {
-      messageCount: this.messages.length,
-      estimatedTokens: this.messages.reduce((n, m) => n + estimateValue(m.content), 0)
-    }
+  budget(): { messageCount: number; estimatedTokens: number } {
+    return { messageCount: this.messages.length, estimatedTokens: this.messages.reduce((n, m) => n + messageTokens(m), 0) }
   }
 }

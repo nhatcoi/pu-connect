@@ -14,7 +14,7 @@ Ngữ cảnh nhỏ, cần thiết được nạp sẵn; tìm dữ liệu theo y�
 | Giao diện | Tool hoặc dòng đánh dấu có cấu trúc | Bộ flashcard / quiz, nút dẫn đường |
 | Ghi / thay đổi dữ liệu | Đề xuất ⇒ người dùng bấm xác nhận | Tham gia nhóm học |
 
-Tool nội bộ chạy chung vòng `McpAgentService` với Google MCP qua `AgentToolSession` (`ai/agent-tools.ts`). Mỗi lượt chỉ gửi tool của nguồn đang bật. Tham số model đưa vào được kiểm bằng `ai/agent-tool-args.ts` (uuid, enum, giới hạn, escape LIKE), kết quả ≤ 12k ký tự.
+Tool nội bộ chạy chung vòng `N7AgentService` với Google MCP qua `AgentToolSession` (`ai/agent-tools.ts`). Mỗi lượt chỉ gửi tool của nguồn đang bật. Tham số model đưa vào được kiểm bằng `ai/agent-tool-args.ts` (uuid, enum, giới hạn, escape LIKE), kết quả ≤ 12k ký tự.
 
 ## 2. "Hội thoại của tôi" (connector `my_chats`, bật sẵn)
 
@@ -101,7 +101,7 @@ Gateway (`v9`) không stream phần suy nghĩ của model (delta chỉ có `cont
 - Tin xong lưu `meta.steps` + `meta.durationMs` ⇒ thu gọn "Đã xử lý 6.2s · 4 nguồn · 2 công cụ", bấm mở lại timeline.
 - Web `AiSteps`: đang trả lời ⇒ timeline (icon theo nguồn, spinner / ✓ / lỗi) + dòng trạng thái "Đang suy nghĩ / Đang xử lý / Đang viết câu trả lời · 3.4s" (đồng hồ tính từ lúc tạo tin).
 - Khung tin N7AI rộng hơn tin chat thường: cột tối đa `min(94%, 52rem)` (mobile 100%), bong bóng co theo nội dung (câu ngắn gọn gàng, dài thì giãn hết cột).
-- Gateway cắt luồng trước khi có chữ / tool call (`terminated`, socket reset — lỗi "N7AI gặp lỗi" 15:00 ngày 2026-10-19) ⇒ `McpAgentService` thử lại vòng đó 1 lần; đã có chữ thì không thử lại (tránh lặp nội dung).
+- Gateway cắt luồng trước khi có chữ / tool call (`terminated`, socket reset — lỗi "N7AI gặp lỗi" 15:00 ngày 2026-10-19) ⇒ `N7AgentService` (model-round) thử lại vòng đó 1 lần; đã có chữ thì không thử lại (tránh lặp nội dung).
 
 ## 9. Kiểm thử
 

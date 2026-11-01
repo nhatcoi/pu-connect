@@ -32,7 +32,7 @@ One endpoint serves every provider, but each provider keeps its own OAuth grant 
 
 1. Settings or the composer selects connectors. The shared `AiConnectorId` and API DTO include Gmail. Existing authenticated connect/callback/disconnect endpoints support `/ai/connectors/google-gmail/*` through the provider registry.
 2. Chat loads pinned context, then lets the model select internal/Google tools. There is no connector prefetch before the model. `AiRetrieval` is reused by optional source tools and post-comment flows.
-3. `McpAgentService` lazily opens a per-reply `GoogleMcpService` session for the selected Google connectors and merges it with local tool sessions passed by the caller (`AgentToolSession` in `ai/agent-tools.ts`, e.g. "Học tập của tôi" from `StudyAgentToolsService`). Each session brings its own tools, model instructions and step labels (`describe`).
+3. `N7AgentService` lazily opens a per-reply `GoogleMcpService` session for the selected Google connectors and merges it with local tool sessions passed by the caller (`AgentToolSession` in `ai/agent-tools.ts`, e.g. "Học tập của tôi" from `StudyAgentToolsService`). Each session brings its own tools, model instructions and step labels (`describe`).
    Cached account/provider schemas (5-minute TTL, 100 entries) avoid network initialization for unrelated questions. Cold catalogs expose `__discover_tools`; selecting it initializes the SDK and exposes actual tools next round. See [harness policy](./18-agent-harness-performance.md).
    The Google session's MCP client uses the official MCP SDK with Streamable HTTP, initialization, `tools/list` and `tools/call`.
 4. Discovery filters the server-advertised tools against a provider-specific read allowlist. Function schemas are passed to the configured OpenAI-compatible model. Names are mapped to `google_drive__search_drive_files`, etc., then translated back to the original MCP tool name when executed.
@@ -41,7 +41,7 @@ One endpoint serves every provider, but each provider keeps its own OAuth grant 
 
 ## Progress (tiến trình suy nghĩ)
 
-- Before and after each executed tool call, `McpAgentService` calls `onSteps` with the full step list; `N7AiService` emits socket `message.progress` `{ conversationId, messageId, steps }` to the conversation members.
+- Before and after each executed tool call, `N7AgentService` calls `onSteps` with the full step list; `N7AiService` emits socket `message.progress` `{ conversationId, messageId, steps }` to the conversation members.
 - `AiStep = { id, provider, label, detail?, status: running | done | error }`. `label` is a Vietnamese description per tool (`describeToolCall` in `google-mcp.providers.ts`), `detail` is only the search query, date range or message count from the model's arguments, never data returned by Google.
 - The final message stores `meta.steps`. The web `AiSteps` component shows the live list (connector icon, spinner / check / error) while streaming and a collapsed "Đã dùng N bước" toggle afterwards. Public share pages do not include steps.
 

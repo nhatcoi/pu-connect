@@ -36,6 +36,7 @@ interface BubbleProps {
   onJumpTo: (id: string) => void
   onRetry: (m: UiMessage) => void
   handlers: MessageHandlers
+  onAskUserSelect?: (answer: string) => void // chỉ truyền cho câu trả lời N7AI mới nhất
 }
 
 export function MessageBubble({
@@ -49,7 +50,8 @@ export function MessageBubble({
   highlighted,
   onJumpTo,
   onRetry,
-  handlers
+  handlers,
+  onAskUserSelect
 }: BubbleProps) {
   const [actionsOpen, setActionsOpen] = useState(false)
   const [reactionsOpen, setReactionsOpen] = useState(false)
@@ -139,7 +141,7 @@ export function MessageBubble({
                   <p className="italic text-muted-foreground text-sm">Tin nhắn đã thu hồi</p>
                 ) : (
                   <>
-                    <AiMessageBody message={m} />
+                    <AiMessageBody message={m} onAskUserSelect={onAskUserSelect} />
                     {interactive && !m.deleted && (
                       <AssistantActionsBar
                         message={m}

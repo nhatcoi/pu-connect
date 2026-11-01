@@ -7,7 +7,7 @@ import { blockExistsSql } from '../blocks/blocks.sql'
 import { N7AI_MENTION } from '../ai/ai.constants'
 import { AgentSources } from '../ai/agent-sources'
 import { LlmService, type LlmMessage } from '../ai/llm.service'
-import { McpAgentService } from '../ai/mcp-agent.service'
+import { N7AgentService } from '../ai/engine/n7-agent.service'
 import { PucToolsService } from '../chat/n7ai/agent/puc-tools.service'
 import { RealtimeGateway } from '../realtime/realtime.gateway'
 import { CommentsService } from './comments.service'
@@ -26,7 +26,7 @@ export class PostAiService {
   constructor(
     private readonly db: DatabaseService,
     private readonly llm: LlmService,
-    private readonly agent: McpAgentService,
+    private readonly agent: N7AgentService,
     private readonly context: PostContextService,
     private readonly threadTools: PostThreadToolsService,
     private readonly pucTools: PucToolsService,

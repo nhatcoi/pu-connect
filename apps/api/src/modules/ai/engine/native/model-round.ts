@@ -1,164 +1,146 @@
 /**
- * N7AI Agent Engine — Model Round
- * Thực thi một vòng gọi LLM streaming, bóc tách thinking và thu thập tool calls.
+ * Agent engine — một vòng gọi model streaming: bóc suy nghĩ, thu tool call, đo usage.
  */
 import type OpenAI from 'openai'
 import type { LlmService } from '../../llm.service'
-import { ThinkFilter } from '../providers/think-filter'
+import { HostFailure } from '../core/contracts'
 import type { Conversation } from '../context/conversation'
-import type { Emit, Round, ToolCall, ToolSpec } from './types'
+import { estimateText } from '../context/conversation'
+import { ThinkFilter } from '../providers/think-filter'
+import { MAX_CALL_ARGS } from './copy'
+import type { Emit, Round, ToolCall, ToolSchema } from './types'
 
 export interface ModelRoundOptions {
-  settling: boolean
-  first: boolean
   model?: string
   signal: AbortSignal
   emit: Emit
   conversation: Conversation
-  tools: ToolSpec[]
+  tools: ToolSchema[]
+  /** false ⇒ vẫn gửi danh sách tool (lịch sử có tool call) nhưng đặt tool_choice = none */
   toolsAllowed: boolean
-  reserveTokens?: number
+  outputTokens: number
+  /** Gỡ thông báo "đã rút gọn ngữ cảnh" */
+  onSnipped?: () => Promise<void> | void
 }
 
-export async function executeModelRound(llm: LlmService, options: ModelRoundOptions): Promise<Round> {
-  const { settling, first: _first, model, signal, emit, conversation, tools, toolsAllowed, reserveTokens = 2048 } = options
+// Luồng / kết nối bị cắt (undici "terminated", socket reset) — khác lỗi model / timeout của lượt. Lần theo chuỗi `cause`: SDK bọc lỗi mạng 2–3 lớp
+const DROP_CODES = new Set(['ECONNRESET', 'UND_ERR_SOCKET', 'EPIPE'])
+export const isStreamDrop = (err: unknown) => {
+  for (let e = err as { message?: string; name?: string; code?: string; cause?: unknown } | null, depth = 0; e && depth < 4; e = e.cause as typeof e, depth++) {
+    if (e.name === 'AbortError' || e.name === 'TimeoutError' || e.name === 'APIConnectionTimeoutError') return false
+    if ((e.code && DROP_CODES.has(e.code)) || /terminated|socket|ECONNRESET|premature close/i.test(e.message ?? '')) return true
+  }
+  return false
+}
 
+export const TOOL_REJECTED_STATUSES = [400, 422]
+
+export async function executeModelRound(llm: LlmService, options: ModelRoundOptions): Promise<Round> {
+  const { model, signal, emit, conversation, tools, toolsAllowed, outputTokens } = options
   signal.throwIfAborted()
 
-  // Project conversation and snip if exceeding token budget
-  const projected = conversation.project(tools)
-  if (projected.snipped) {
-    await emit({
-      type: 'progress',
-      content: 'Đã tối ưu ngữ cảnh hội thoại để đảm bảo tốc độ phản hồi.',
-      metadata: { trace_kind: 'warning' }
-    })
-  }
-
-  const toolSchemas: OpenAI.Chat.Completions.ChatCompletionTool[] = toolsAllowed
-    ? tools.map((t) => ({
-        type: 'function',
-        function: {
-          name: t.schema.function.name,
-          description: t.schema.function.description,
-          parameters: t.schema.function.parameters
-        }
-      }))
-    : []
+  const projected = conversation.project()
+  if (projected.snipped) await options.onSnipped?.()
 
   const messages = projected.messages.map((m) => {
-    const out: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
-      role: m.role as any,
-      content: (m.content as any) ?? ''
-    }
-    if (m.tool_calls) (out as any).tool_calls = m.tool_calls
-    if (m.tool_call_id) (out as any).tool_call_id = m.tool_call_id
+    const out: Record<string, unknown> = { role: m.role, content: (m.content as unknown) ?? '' }
+    if (m.tool_calls) out.tool_calls = m.tool_calls
+    if (m.tool_call_id) out.tool_call_id = m.tool_call_id
     return out
-  })
+  }) as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 
-  const requestBody: Omit<OpenAI.Chat.Completions.ChatCompletionCreateParamsStreaming, 'model'> = {
+  const body = {
     messages,
-    stream: true,
+    max_tokens: outputTokens,
+    stream: true as const,
     stream_options: { include_usage: true },
-    ...(toolSchemas.length > 0 ? { tools: toolSchemas } : {}),
-    ...(settling ? { max_tokens: Math.max(reserveTokens, 2048) } : {})
+    ...(tools.length ? { tools: tools as OpenAI.Chat.Completions.ChatCompletionTool[], tool_choice: toolsAllowed ? ('auto' as const) : ('none' as const) } : {})
   }
 
-  const stream = await llm.chat(requestBody, { signal, model })
-
+  const started = Date.now()
+  let firstChunkAt: number | undefined
   const filter = new ThinkFilter()
-  let visibleText = ''
-  let inlineReasoning = ''
-  const pendingCalls = new Map<number, { id: string; name: string; arguments: string }>()
+  let visible = ''
+  let reasoning = ''
   let finishReason = 'stop'
-  const usage = { prompt_tokens: 0, completion_tokens: 0 }
+  let reported: Round['usage'] | null = null
+  const pending = new Map<number, ToolCall>()
+  let retried = false
 
-  for await (const chunk of stream) {
-    signal.throwIfAborted()
+  for (;;) {
+    try {
+      const stream = await llm.chat(body, { signal, model })
+      for await (const chunk of stream) {
+        signal.throwIfAborted()
+        if (chunk.usage) reported = { prompt_tokens: chunk.usage.prompt_tokens ?? 0, completion_tokens: chunk.usage.completion_tokens ?? 0 }
+        const choice = chunk.choices?.[0]
+        if (choice?.finish_reason) finishReason = choice.finish_reason
+        const delta = choice?.delta as (OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta & { reasoning_content?: string; reasoning?: string }) | undefined
+        if (!delta) continue
+        if (firstChunkAt === undefined && (delta.content || delta.tool_calls?.length || (delta as { reasoning_content?: string }).reasoning_content)) firstChunkAt = Date.now()
 
-    if (chunk.usage) {
-      usage.prompt_tokens = chunk.usage.prompt_tokens || usage.prompt_tokens
-      usage.completion_tokens = chunk.usage.completion_tokens || usage.completion_tokens
-    }
-
-    const choice = chunk.choices?.[0]
-    if (choice?.finish_reason) {
-      finishReason = choice.finish_reason
-    }
-
-    const delta = choice?.delta
-    if (!delta) continue
-
-    // 1. Kiểm tra trường reasoning_content (DeepSeek / OpenRouter native reasoning)
-    const nativeReasoning = (delta as any).reasoning_content || (delta as any).reasoning
-    if (typeof nativeReasoning === 'string' && nativeReasoning) {
-      inlineReasoning += nativeReasoning
-      await emit({
-        type: 'thinking',
-        content: nativeReasoning,
-        metadata: { trace_kind: 'native_reasoning' }
-      })
-    }
-
-    // 2. Lọc thẻ inline <think>...</think> nếu có trong delta.content
-    if (typeof delta.content === 'string' && delta.content) {
-      const parts = filter.feed(delta.content, false)
-      for (const [kind, piece] of parts) {
-        if (!piece) continue
-        if (kind === 'thinking') {
-          inlineReasoning += piece
-          await emit({
-            type: 'thinking',
-            content: piece,
-            metadata: { trace_kind: 'inline_think' }
-          })
-        } else {
-          visibleText += piece
-          await emit({
-            type: 'content',
-            content: piece,
-            metadata: { trace_kind: 'llm_chunk' }
-          })
+        const native = delta.reasoning_content || delta.reasoning
+        if (typeof native === 'string' && native) {
+          reasoning += native
+          await emit({ type: 'thinking', content: native })
+        }
+        if (typeof delta.content === 'string' && delta.content) {
+          for (const [kind, piece] of filter.feed(delta.content)) {
+            if (!piece) continue
+            if (kind === 'thinking') {
+              reasoning += piece
+              await emit({ type: 'thinking', content: piece })
+            } else {
+              visible += piece
+              if (visible.length > 64_000) throw new Error('Model output exceeds turn limit')
+              await emit({ type: 'content', content: piece })
+            }
+          }
+        }
+        for (const fragment of delta.tool_calls ?? []) {
+          const index = fragment.index ?? 0
+          const call = pending.get(index) ?? { id: '', name: '', arguments: '' }
+          if (fragment.id) call.id += fragment.id
+          if (fragment.function?.name) call.name += fragment.function.name
+          if (fragment.function?.arguments) call.arguments += fragment.function.arguments
+          if (call.arguments.length > MAX_CALL_ARGS) throw new Error('Tool call exceeds size limit')
+          pending.set(index, call)
         }
       }
-    }
-
-    // 3. Thu thập tool_calls streaming
-    if (Array.isArray(delta.tool_calls)) {
-      for (const tc of delta.tool_calls) {
-        const index = tc.index ?? 0
-        let item = pendingCalls.get(index)
-        if (!item) {
-          item = { id: tc.id || `call_${Date.now()}_${index}`, name: tc.function?.name || '', arguments: '' }
-          pendingCalls.set(index, item)
-        }
-        if (tc.id && !item.id) item.id = tc.id
-        if (tc.function?.name) item.name += tc.function.name
-        if (tc.function?.arguments) item.arguments += tc.function.arguments
+      break
+    } catch (error) {
+      if (signal.aborted) throw error
+      // Gateway đóng luồng trước khi có chữ / tool call ⇒ thử lại đúng một lần, người dùng không thấy lỗi
+      if (!retried && !visible && !reasoning && !pending.size && isStreamDrop(error)) {
+        retried = true
+        continue
       }
+      const status = (error as { status?: number } | null)?.status
+      if (tools.length && status !== undefined && TOOL_REJECTED_STATUSES.includes(status) && !visible && !pending.size) throw error
+      throw new HostFailure(error instanceof Error ? error.message : String(error), 'model-round', visible.length > 0 || pending.size > 0)
     }
   }
 
-  // Xả nốt buffer pending còn lại trong think filter
-  const trailing = filter.feed('', true)
-  for (const [kind, piece] of trailing) {
+  for (const [kind, piece] of filter.feed('', true)) {
     if (!piece) continue
     if (kind === 'thinking') {
-      inlineReasoning += piece
+      reasoning += piece
       await emit({ type: 'thinking', content: piece })
     } else {
-      visibleText += piece
+      visible += piece
       await emit({ type: 'content', content: piece })
     }
   }
 
-  const toolCalls: ToolCall[] = Array.from(pendingCalls.values()).filter((c) => c.name.length > 0)
+  const toolCalls = [...pending.values()]
+    .filter((c) => c.name)
+    .map((c, i) => ({ id: c.id || `call_${Date.now()}_${i}`, name: c.name, arguments: c.arguments.trim() || '{}' }))
 
-  return {
-    text: visibleText,
-    reasoning: inlineReasoning,
-    toolCalls,
-    usage,
-    finishReason: toolCalls.length > 0 ? 'tool_calls' : finishReason
+  const usage = reported ?? {
+    prompt_tokens: conversation.budget().estimatedTokens as number,
+    completion_tokens: estimateText(visible) + estimateText(reasoning) + estimateText(toolCalls.map((c) => c.arguments).join(''))
   }
+  const ended = Date.now()
+  const waitMs = (firstChunkAt ?? ended) - started
+  return { text: visible, reasoning, toolCalls, usage, usageEstimated: !reported, finishReason, waitMs, streamMs: firstChunkAt ? ended - firstChunkAt : 0 }
 }
