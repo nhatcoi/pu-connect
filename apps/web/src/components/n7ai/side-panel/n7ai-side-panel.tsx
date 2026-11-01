@@ -2,17 +2,19 @@
 
 import React, { useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { ChevronLeft, ChevronRight, FileText, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, NotebookPen, Sparkles } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { useSourceView } from '../sources/source-view-store'
 import { cn } from '@/lib/utils'
 import { useN7AiLayout, type N7AiPanelTab } from '../layout/n7ai-layout-store'
 import { PanelDocs } from './panel-docs'
+import { PanelNotes } from './panel-notes'
 import { PanelTools } from './panel-tools'
 
 const TABS: { id: N7AiPanelTab; label: string; icon: typeof FileText }[] = [
   { id: 'docs', label: 'Tài liệu', icon: FileText },
-  { id: 'tools', label: 'Công cụ', icon: Sparkles }
+  { id: 'tools', label: 'Công cụ', icon: Sparkles },
+  { id: 'notes', label: 'Ghi chú', icon: NotebookPen }
 ]
 
 // Bấm thẻ tệp ở bất kỳ đâu trong N7AI ⇒ mở panel ở tab Tài liệu
@@ -85,7 +87,7 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
-      <div className="flex min-h-0 flex-1 flex-col">{tab === 'docs' ? <PanelDocs threadId={threadId} /> : <PanelTools threadId={threadId} />}</div>
+      <div className="flex min-h-0 flex-1 flex-col">{tab === 'docs' ? <PanelDocs threadId={threadId} /> : tab === 'notes' ? <PanelNotes threadId={threadId} /> : <PanelTools threadId={threadId} />}</div>
     </aside>
   )
 }

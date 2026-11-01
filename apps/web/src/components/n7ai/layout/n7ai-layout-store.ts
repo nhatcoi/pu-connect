@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
-export type N7AiPanelTab = 'docs' | 'tools'
+export type N7AiPanelTab = 'docs' | 'tools' | 'notes'
 
 export const SIDEBAR = { min: 220, max: 380, default: 272, rail: 56 }
 export const PANEL_MIN = 340
@@ -49,12 +49,19 @@ interface N7AiLayoutState {
   panelOpen: boolean
   panelWidth: number | null // null ⇒ chia đôi
   panelTab: N7AiPanelTab
+  activeNoteId: string | null
+  openNoteId: string | null // ghi chú đang mở trong trình soạn (không lưu)
+  appendRequest: { id: string; markdown: string; seq: number } | null
   resizing: boolean
   toggleSidebar: () => void
   setSidebarWidth: (width: number) => void
   setPanelOpen: (open: boolean) => void
   setPanelWidth: (width: number | null) => void
   setPanelTab: (tab: N7AiPanelTab) => void
+  setActiveNoteId: (id: string | null) => void
+  setOpenNoteId: (id: string | null) => void
+  requestAppend: (id: string, markdown: string) => void
+  clearAppend: () => void
   setResizing: (resizing: boolean) => void
 }
 
@@ -67,19 +74,26 @@ export const useN7AiLayout = create<N7AiLayoutState>()(
       panelOpen: false,
       panelWidth: null,
       panelTab: 'docs',
+      activeNoteId: null,
+      openNoteId: null,
+      appendRequest: null,
       resizing: false,
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarWidth: (width) => set({ sidebarWidth: clamp(Math.round(width), SIDEBAR.min, SIDEBAR.max) }),
       setPanelOpen: (panelOpen) => set({ panelOpen }),
       setPanelWidth: (width) => set({ panelWidth: width === null ? null : Math.max(PANEL_MIN, Math.round(width)) }),
       setPanelTab: (panelTab) => set({ panelTab }),
+      setActiveNoteId: (activeNoteId) => set({ activeNoteId }),
+      setOpenNoteId: (openNoteId) => set({ openNoteId }),
+      requestAppend: (id, markdown) => set((s) => ({ appendRequest: { id, markdown, seq: (s.appendRequest?.seq ?? 0) + 1 } })),
+      clearAppend: () => set({ appendRequest: null }),
       setResizing: (resizing) => set({ resizing })
     }),
     {
       name: 'pu:n7ai-layout',
       storage: safeStorage,
       skipHydration: true, // nạp sau khi mount ⇒ HTML server và client khớp nhau
-      partialize: ({ sidebarCollapsed, sidebarWidth, panelOpen, panelWidth, panelTab }) => ({ sidebarCollapsed, sidebarWidth, panelOpen, panelWidth, panelTab })
+      partialize: ({ sidebarCollapsed, sidebarWidth, panelOpen, panelWidth, panelTab, activeNoteId }) => ({ sidebarCollapsed, sidebarWidth, panelOpen, panelWidth, panelTab, activeNoteId })
     }
   )
 )

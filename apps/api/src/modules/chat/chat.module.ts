@@ -26,6 +26,8 @@ import { AiFeedbackService } from './n7ai/ai-feedback.service'
 import { AI_MAINTENANCE_QUEUE, AiMaintenanceProcessor } from './n7ai/ai-maintenance.processor'
 import { AiFoldersController } from './n7ai/ai-folders.controller'
 import { AiFoldersService } from './n7ai/ai-folders.service'
+import { AiNotesController } from './n7ai/ai-notes.controller'
+import { AiNotesService } from './n7ai/ai-notes.service'
 import { AiLibraryController } from './n7ai/ai-library.controller'
 import { AiSourcesController } from './n7ai/sources/ai-sources.controller'
 import { AiSourcesService } from './n7ai/sources/ai-sources.service'
@@ -43,7 +45,6 @@ import { AiThreadShareService } from './n7ai/ai-thread-share.service'
 import { AiThreadsController } from './n7ai/ai-threads.controller'
 import { AiThreadsService } from './n7ai/ai-threads.service'
 import { N7AiController } from './n7ai/n7ai.controller'
-import { AiTemporaryService } from './n7ai/ai-temporary.service'
 import { AiSuggestionsService } from './n7ai/ai-suggestions.service'
 import { N7AiService } from './n7ai/n7ai.service'
 import { MessageEmbedService } from './embeds/message-embed.service'
@@ -66,6 +67,7 @@ import { ChatShareService } from './share/chat-share.service'
     N7AiController,
     AiThreadsController,
     AiFoldersController,
+    AiNotesController,
     AiSourcesController,
     AiSharedController,
     AiLibraryController,
@@ -77,7 +79,6 @@ import { ChatShareService } from './share/chat-share.service'
   ],
   providers: [
     ChatCoreService,
-    AiTemporaryService,
     AiSuggestionsService,
     ChatPushService,
     MessageEmbedService,
@@ -96,6 +97,7 @@ import { ChatShareService } from './share/chat-share.service'
     AiMaintenanceProcessor,
     AiThreadsService,
     AiFoldersService,
+    AiNotesService,
     AiSourcesService,
     AiThreadShareService,
     AiLibraryService,

@@ -3,15 +3,14 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, Ghost, Library, Settings, SquarePen, type LucideIcon } from 'lucide-react'
+import { ChevronRight, Library, Settings, SquarePen, type LucideIcon } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
-import { N7AI_HOME, N7AI_LIBRARY, N7AI_TEMPORARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
+import { N7AI_HOME, N7AI_LIBRARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
 import { useN7AiLayout } from './n7ai-layout-store'
 
 const ITEMS: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: N7AI_HOME, label: 'Chat mới', icon: SquarePen, exact: true },
-  { href: N7AI_TEMPORARY, label: 'Chat tạm', icon: Ghost },
   { href: N7AI_LIBRARY, label: 'Thư viện', icon: Library },
   { href: n7aiSettingsHref(), label: 'Cài đặt', icon: Settings }
 ]

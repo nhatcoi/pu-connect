@@ -554,18 +554,6 @@ export interface PresenceUpdateEvent extends PresenceInfo {
   userId: string
 }
 
-// Chat tạm N7AI: không lưu hội thoại / bộ nhớ; lịch sử nằm ở client, mỗi lượt gửi lại toàn bộ (tối đa AI_TEMPORARY_MAX_TURNS tin)
-export const AI_TEMPORARY_MAX_TURNS = 30
-export interface AiTemporaryTurn {
-  role: 'user' | 'assistant'
-  content: string
-}
-export interface AiTemporaryInput {
-  messages: AiTemporaryTurn[]
-  aiMode?: AiMode
-  research?: boolean
-  connectors?: AiConnectorId[]
-}
 export interface AskUserOption {
   label: string
   description?: string | null
@@ -581,20 +569,35 @@ export interface AskUserQuestion {
   placeholder?: string | null
 }
 
-// Sự kiện SSE của POST /ai/temporary/stream
-export type AiTemporaryEvent =
-  | { type: 'thinking'; text: string }
-  | { type: 'progress'; steps: AiStep[] }
-  | { type: 'delta'; text: string }
-  | { type: 'ask_user'; questions: AskUserQuestion[] }
-  | {
-      type: 'done'
-      text: string
-      reasoning?: string
-      followUps: string[]
-      citations: ChatCitation[]
-      steps: AiStep[]
-      durationMs: number
-      askUser?: { questions: AskUserQuestion[] } | null
-    }
-  | { type: 'error'; message: string }
+
+// Ghi chú Markdown của N7AI: cây trang, tự lưu, xuất .md / .docx (docs/core/27-n7ai-notes.md)
+export const AI_NOTE_LIMIT = 200 // ghi chú / người
+export const AI_NOTE_CONTENT_MAX = 200_000
+export interface AiNoteSummary {
+  id: string
+  parentId: string | null
+  conversationId: string | null
+  title: string
+  pinned: boolean
+  position: number
+  updatedAt: string
+}
+export interface AiNote extends AiNoteSummary {
+  content: string
+}
+export const AiNoteCreateSchema = z.object({
+  title: z.string().trim().max(200).optional(),
+  content: z.string().max(AI_NOTE_CONTENT_MAX).optional(),
+  parentId: z.string().uuid().nullable().optional(),
+  conversationId: z.string().uuid().nullable().optional()
+})
+export type AiNoteCreateInput = z.infer<typeof AiNoteCreateSchema>
+export const AiNoteUpdateSchema = z.object({
+  title: z.string().trim().max(200).optional(),
+  content: z.string().max(AI_NOTE_CONTENT_MAX).optional(),
+  pinned: z.boolean().optional(),
+  parentId: z.string().uuid().nullable().optional()
+})
+export type AiNoteUpdateInput = z.infer<typeof AiNoteUpdateSchema>
+export const AiNoteAppendSchema = z.object({ markdown: z.string().trim().min(1).max(AI_NOTE_CONTENT_MAX) })
+export type AiNoteAppendInput = z.infer<typeof AiNoteAppendSchema>

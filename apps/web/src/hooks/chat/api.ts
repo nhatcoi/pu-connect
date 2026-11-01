@@ -3,6 +3,9 @@ import type {
   AiLibraryPage,
   AiFeedbackInput,
   AiFolder,
+  AiNote,
+  AiNoteSummary,
+  AiNoteUpdateInput,
   AiSource,
   AiSourceCollectionInput,
   AiSourceCollectionResult,
@@ -149,6 +152,14 @@ export const chatApi = {
   createAiFolder: (name: string) => unwrap(apiClient<Envelope<AiFolder>>('/ai/folders', json('POST', { name }))),
   renameAiFolder: (id: string, name: string) => unwrap(apiClient<Envelope<AiFolder>>(`/ai/folders/${id}`, json('PATCH', { name }))),
   deleteAiFolder: (id: string) => apiClient(`/ai/folders/${id}`, json('DELETE')),
+  // Ghi chú Markdown
+  aiNotes: () => unwrap(apiClient<Envelope<AiNoteSummary[]>>('/ai/notes')),
+  aiNote: (id: string) => unwrap(apiClient<Envelope<AiNote>>(`/ai/notes/${id}`)),
+  createAiNote: (input: { title?: string; content?: string; parentId?: string | null; conversationId?: string | null }) =>
+    unwrap(apiClient<Envelope<AiNote>>('/ai/notes', json('POST', input))),
+  updateAiNote: (id: string, input: AiNoteUpdateInput) => unwrap(apiClient<Envelope<AiNote>>(`/ai/notes/${id}`, json('PATCH', input))),
+  appendAiNote: (id: string, markdown: string) => unwrap(apiClient<Envelope<AiNote>>(`/ai/notes/${id}/append`, json('POST', { markdown }))),
+  deleteAiNote: (id: string) => apiClient(`/ai/notes/${id}`, json('DELETE')),
   // Tài liệu của cuộc trò chuyện (threadId) hoặc của thư viện (không có threadId)
   aiSources: (threadId?: string) => unwrap(apiClient<Envelope<AiSource[]>>(`/ai/sources${threadId ? `?threadId=${threadId}` : ''}`)),
   aiSourceContent: (id: string) => unwrap(apiClient<Envelope<{ content: string | null }>>(`/ai/sources/${id}/content`)),

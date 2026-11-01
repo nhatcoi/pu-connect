@@ -15,7 +15,7 @@ Implemented: 2026-10-19. Mức model là tên model trên gateway chính (tunnel
 ## Cách hoạt động
 
 - Lưu theo người dùng: `ai_settings.ai_model` (migration `ai-model-upgrade.sql`, mặc định `n7ai-fast`); `GET/PATCH /api/ai/settings` có trường `aiModel` (tên lạ ⇒ 400). Đồng bộ mọi thiết bị.
-- Dùng cho thread riêng, chat tạm và tác vụ tự động. Nhóm chat (không có cài đặt riêng) luôn `n7ai-fast`.
+- Dùng cho thread riêng và tác vụ tự động. Nhóm chat (không có cài đặt riêng) luôn `n7ai-fast`.
 - `McpAgentService.stream(..., { model })` → `LlmService.chat(params, { model })`; `ai_runs.model` ghi mức đã dùng.
 - Quota: `max(Research ? 2 : 1, chi phí mức)` (`ai/ai-models.ts`).
 - Fallback: gateway chính lỗi ⇒ gateway dự phòng dùng **một** model chung `AI_FALLBACK_MODEL` (chưa theo mức; xem [`18`](./18-agent-harness-performance.md)).
@@ -24,7 +24,7 @@ Implemented: 2026-10-19. Mức model là tên model trên gateway chính (tunnel
   - Admin: **N7AI › Model** (`GET/POST admin/ai/models`, `PATCH/DELETE admin/ai/models/:id`; quyền `ai:read` / `ai:manage`; audit `ai_model.create|update|delete`). Không tắt / xóa được model mặc định; xóa model thì người đang chọn chuyển về mặc định, `ai_runs` giữ nguyên tên cũ. Muốn hiện mức Sâu: bật *Hiện trong menu* sau khi gateway chạy được.
 
   - **Không lưu key**: danh mục model chỉ chứa *tên* model; API key và base URL do provider quản lý ([Provider AI](#provider-ai-do-admin-quản-lý)) hoặc `AI_*` trong env.
-- UI: `components/chat/ai/ai-model-picker.tsx` — nút thả xuống ngay trong ô soạn tin, cạnh nút gửi (thread N7AI trong `composer.tsx` và chat tạm), như "Instant" của ChatGPT; chọn xong lưu ngay vào cài đặt.
+- UI: `components/chat/ai/ai-model-picker.tsx` — nút thả xuống ngay trong ô soạn tin, cạnh nút gửi (thread N7AI trong `composer.tsx`), như "Instant" của ChatGPT; chọn xong lưu ngay vào cài đặt.
 - Các việc nền (bình luận, tóm tắt, soạn skill/bộ thẻ) vẫn dùng `AI_MODEL` (mặc định `n7ai-fast` từ 2026-10-20; ngữ cảnh từng nơi: [`22`](./22-n7ai-context.md)).
 
 ## Provider AI do admin quản lý

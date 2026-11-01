@@ -65,6 +65,8 @@ export const queryKeys = {
   aiThreadsAll: ['ai-threads'] as const,
   aiThreads: (q: string, folder: AiThreadFolderFilter) => ['ai-threads', q.trim().toLowerCase(), folder] as const,
   aiFolders: ['ai-folders'] as const,
+  aiNotes: ['ai-notes'] as const,
+  aiNote: (id: string) => ['ai-notes', id] as const,
   aiDraftThread: ['ai-draft-thread'] as const,
   aiThreadShare: (id: string) => ['ai-thread-share', id] as const,
   aiSourcesAll: ['ai-sources'] as const,

@@ -20,7 +20,6 @@
 | [**`14-google-mcp-connectors.md`**](./14-google-mcp-connectors.md) | Google MCP client + server tự host `workspace-mcp`: Drive, Calendar, Gmail; vòng lặp tool calling, OAuth, quyền chỉ đọc và cấu hình. | ✅ Đã triển khai |
 | [**`16-n7ai-agent-tools.md`**](./16-n7ai-agent-tools.md) | N7AI agent: tool hội thoại cũ (`my_chats`), tool PU Connect (tìm kiếm + hướng dẫn app), nút dẫn đường / tham gia nhóm có xác nhận, hồ sơ học, ghim bộ nhớ; nguyên tắc chọn prompt / prefetch / tool. | ✅ Đã triển khai |
 | [**`18-agent-harness-performance.md`**](./18-agent-harness-performance.md) | Model chọn tìm nguồn; tìm PUC theo lô, search/read, cache và chạy song song chỉ đọc, MCP lazy, ngân sách và thời gian từng giai đoạn. | ✅ Đã triển khai |
-| [**`19-n7ai-temporary-chat.md`**](./19-n7ai-temporary-chat.md) | Chat tạm N7AI: stateless SSE, không lưu hội thoại / bộ nhớ, chỉ tool đọc, vẫn tính quota. | ✅ Đã triển khai |
 | [**`20-n7ai-model-tiers.md`**](./20-n7ai-model-tiers.md) | Mức model N7AI (n7ai-fast mặc định · n7ai-perfect · n7ai-deep ẩn), lưu theo người dùng, quota theo mức. | ✅ Đã triển khai |
 | [**`17-rag-hybrid-search.md`**](./17-rag-hybrid-search.md) | RAG N7AI: trích nội dung tài liệu (document_chunks), embedding bài viết/tài liệu bằng Ollama qwen3-embedding trên Mac mini (reverse SSH tunnel), tìm kết hợp full-text + vector (RRF), worker BullMQ, eval tự động. | ✅ Đã triển khai |
 | [**`13-admin-console.md`**](./13-admin-console.md) | Cổng quản trị (chỉ admin): xem gì ở đâu, xử phạt theo bậc, điểm rủi ro, nhật ký bảo mật, lượt xem hồ sơ, quyền riêng tư & vận hành. | ✅ Đã triển khai |
@@ -31,6 +30,7 @@
 | [**`24-n7ai-sources.md`**](./24-n7ai-sources.md) | Tài liệu của cuộc trò chuyện N7AI (tệp, văn bản dán, link web, YouTube), N7AI đọc PowerPoint / Excel, kéo thả tệp. | ✅ Đã triển khai |
 | [**`25-document-library.md`**](./25-document-library.md) | Kho tài liệu: tệp đính kèm bài viết / bình luận thành tài liệu thật, phân loại (N7AI gợi ý), kho môn học, kho cá nhân, trang Môn học & Tài liệu, trang chi tiết. | ✅ Đợt 1–4 |
 | [**`26-community-management.md`**](./26-community-management.md) | Tạo cộng đồng (chờ admin duyệt), chủ / điều hành viên, sửa giới thiệu, quản lý thành viên, ẩn bài vi phạm, màn hình duyệt của admin. | ✅ |
+| [**`27-n7ai-notes.md`**](./27-n7ai-notes.md) | Ghi chú Markdown N7AI: tab Ghi chú, cây trang, tự lưu, xuất Markdown / Word, thêm từ tin nhắn. | ✅ Đã triển khai (giai đoạn 1) |
 
 ---
 

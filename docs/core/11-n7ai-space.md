@@ -24,7 +24,6 @@
 |---|---|
 | `/n7ai` | Chat mới (màn chào + gợi ý), `useAiDraftThread` |
 | `/n7ai/[id]` | 1 thread; `?m=<messageId>` cuộn tới tin |
-| `/n7ai/temporary` | Chat tạm — không lưu lịch sử / bộ nhớ ([`19`](./19-n7ai-temporary-chat.md)) |
 | `/n7ai/library` | Tab Tài liệu · Ảnh · Học liệu (cuộn vô hạn; bấm tệp ⇒ xem ở panel bên phải, [`23`](./23-n7ai-folders.md); quiz/flashcard mở ra ôn ngay) |
 | `/n7ai/settings` · `/n7ai/settings/[item]` | Các panel ở [`10`](./10-n7ai-settings.md) |
 

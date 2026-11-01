@@ -39,6 +39,7 @@ export const MIGRATIONS = [
   'profile-views-upgrade.sql',
   'ai-thread-share-upgrade.sql',
   'ai-folders-upgrade.sql',
+  'ai-notes-upgrade.sql',
   'ai-sources-upgrade.sql',
   'comment-reactions-upgrade.sql',
   'study-tools-upgrade.sql',

@@ -3,16 +3,15 @@
 import React from 'react'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
-import { ArrowLeft, ChevronLeft, Ghost, Library, Settings, SquarePen, type LucideIcon } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, Library, Settings, SquarePen, type LucideIcon } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { AiThreadList } from '@/components/chat/ai/ai-thread-list'
-import { N7AI_HOME, N7AI_LIBRARY, N7AI_TEMPORARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
+import { N7AI_HOME, N7AI_LIBRARY, n7aiSettingsHref } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
 import { useN7AiLayout } from './layout/n7ai-layout-store'
 import { N7AiProfileMenu } from './n7ai-profile-menu'
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: N7AI_TEMPORARY, label: 'Chat tạm', icon: Ghost },
   { href: N7AI_LIBRARY, label: 'Thư viện', icon: Library },
   { href: n7aiSettingsHref(), label: 'Cài đặt', icon: Settings }
 ]

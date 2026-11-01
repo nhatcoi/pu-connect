@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, Copy, Loader2, RotateCcw, Square, Trash2, Volume2, X } from 'lucide-react'
+import { Check, Copy, Loader2, NotebookPen, RotateCcw, Square, Trash2, Volume2, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { useAddToNote } from '@/hooks/chat/use-ai-notes'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { UsageFooter } from './usage-footer'
 import { estimateMessageUsage } from './usage-summary'
@@ -22,6 +24,7 @@ export function AssistantActionsBar({ message: m, onRetry, onDelete }: Assistant
       <div className="flex shrink-0 items-center gap-0.5">
         <CopyActionButton content={content} />
         <PlayAudioButton content={content} />
+        {content.trim() && m.status === 'done' && <AddToNoteButton content={content} conversationId={m.conversationId} />}
         {onRetry && (
           <TooltipProvider delayDuration={200}>
             <Tooltip>
@@ -243,6 +246,36 @@ function DeleteActionButton({ onDelete }: { onDelete: () => void }) {
         </TooltipTrigger>
         <TooltipContent side="top">
           <span className="text-xs">Xóa tin</span>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+}
+
+function AddToNoteButton({ content, conversationId }: { content: string; conversationId: string }) {
+  const addToNote = useAddToNote()
+  const [busy, setBusy] = useState(false)
+  return (
+    <TooltipProvider delayDuration={200}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setBusy(true)
+              addToNote(content, conversationId)
+                .catch((e: Error) => toast.error(e.message || 'Không thêm được vào ghi chú'))
+                .finally(() => setBusy(false))
+            }}
+            aria-label="Thêm vào ghi chú"
+            className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground/80 transition-colors hover:bg-muted/60 hover:text-foreground disabled:opacity-50"
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <NotebookPen size={14} strokeWidth={1.7} />}
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <span className="text-xs">Thêm vào ghi chú</span>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
