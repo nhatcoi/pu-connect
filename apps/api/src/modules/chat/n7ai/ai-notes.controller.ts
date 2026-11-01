@@ -1,16 +1,10 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
 import type { Request, Response } from 'express'
-import {
-  AiNoteAppendSchema,
-  AiNoteCreateSchema,
-  AiNoteUpdateSchema,
-  type AiNoteAppendInput,
-  type AiNoteCreateInput,
-  type AiNoteUpdateInput
-} from '@pu/schemas'
+import type { AiNoteAppendInput, AiNoteCreateInput, AiNoteUpdateInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
+import { AiNoteAppendSchema, AiNoteCreateSchema, AiNoteUpdateSchema } from '../dto/chat.dto'
 import { noteFileName, noteToDocx } from './ai-notes-export'
 import { AiNotesService } from './ai-notes.service'
 

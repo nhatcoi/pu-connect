@@ -571,8 +571,7 @@ export interface AskUserQuestion {
 
 
 // Ghi chú Markdown của N7AI: cây trang, tự lưu, xuất .md / .docx (docs/core/27-n7ai-notes.md)
-export const AI_NOTE_LIMIT = 200 // ghi chú / người
-export const AI_NOTE_CONTENT_MAX = 200_000
+// Zod nằm ở apps/api/src/modules/chat/dto/chat.dto.ts (API chỉ import kiểu từ @pu/schemas, không nạp runtime)
 export interface AiNoteSummary {
   id: string
   parentId: string | null
@@ -585,19 +584,18 @@ export interface AiNoteSummary {
 export interface AiNote extends AiNoteSummary {
   content: string
 }
-export const AiNoteCreateSchema = z.object({
-  title: z.string().trim().max(200).optional(),
-  content: z.string().max(AI_NOTE_CONTENT_MAX).optional(),
-  parentId: z.string().uuid().nullable().optional(),
-  conversationId: z.string().uuid().nullable().optional()
-})
-export type AiNoteCreateInput = z.infer<typeof AiNoteCreateSchema>
-export const AiNoteUpdateSchema = z.object({
-  title: z.string().trim().max(200).optional(),
-  content: z.string().max(AI_NOTE_CONTENT_MAX).optional(),
-  pinned: z.boolean().optional(),
-  parentId: z.string().uuid().nullable().optional()
-})
-export type AiNoteUpdateInput = z.infer<typeof AiNoteUpdateSchema>
-export const AiNoteAppendSchema = z.object({ markdown: z.string().trim().min(1).max(AI_NOTE_CONTENT_MAX) })
-export type AiNoteAppendInput = z.infer<typeof AiNoteAppendSchema>
+export interface AiNoteCreateInput {
+  title?: string
+  content?: string
+  parentId?: string | null
+  conversationId?: string | null
+}
+export interface AiNoteUpdateInput {
+  title?: string
+  content?: string
+  pinned?: boolean
+  parentId?: string | null
+}
+export interface AiNoteAppendInput {
+  markdown: string
+}

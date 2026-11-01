@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type {
   AiFolderInput,
+  AiNoteCreateInput,
+  AiNoteUpdateInput,
   AiSourceInput,
   AiSkillInput,
   AiThreadMoveInput,
@@ -232,3 +234,23 @@ const _source: AiSourceInput = {} as z.infer<typeof AiSourceBodySchema>
 const _skill: AiSkillInput = {} as z.infer<typeof AiSkillBodySchema>
 const _share: z.infer<typeof SharePostBodySchema> = {} as SharePostInput // API không strict ⇒ kiểm chiều ngược
 void [_send, _edit, _group, _update, _settings, _thread, _move, _folder, _source, _skill, _share]
+
+// Ghi chú Markdown N7AI (docs/core/27-n7ai-notes.md)
+export const AI_NOTE_LIMIT = 200 // ghi chú / người
+export const AI_NOTE_CONTENT_MAX = 200_000
+export const AiNoteCreateSchema = z.object({
+  title: z.string().trim().max(200).optional(),
+  content: z.string().max(AI_NOTE_CONTENT_MAX).optional(),
+  parentId: z.string().uuid().nullable().optional(),
+  conversationId: z.string().uuid().nullable().optional()
+})
+export const AiNoteUpdateSchema = z.object({
+  title: z.string().trim().max(200).optional(),
+  content: z.string().max(AI_NOTE_CONTENT_MAX).optional(),
+  pinned: z.boolean().optional(),
+  parentId: z.string().uuid().nullable().optional()
+})
+export const AiNoteAppendSchema = z.object({ markdown: z.string().trim().min(1).max(AI_NOTE_CONTENT_MAX) })
+const _noteCreate: AiNoteCreateInput = {} as z.infer<typeof AiNoteCreateSchema>
+const _noteUpdate: AiNoteUpdateInput = {} as z.infer<typeof AiNoteUpdateSchema>
+void [_noteCreate, _noteUpdate]

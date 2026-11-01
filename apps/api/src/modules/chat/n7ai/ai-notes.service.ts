@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { AI_NOTE_CONTENT_MAX, AI_NOTE_LIMIT, type AiNote, type AiNoteCreateInput, type AiNoteSummary, type AiNoteUpdateInput } from '@pu/schemas'
+import type { AiNote, AiNoteCreateInput, AiNoteSummary, AiNoteUpdateInput } from '@pu/schemas'
 import { DatabaseService } from '../../../database/database.service'
+import { AI_NOTE_CONTENT_MAX, AI_NOTE_LIMIT } from '../dto/chat.dto'
 
 const SUMMARY_COLS = 'id, parent_id, conversation_id, title, pinned, position, updated_at'
 
