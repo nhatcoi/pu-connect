@@ -44,6 +44,7 @@ import { AiThreadsController } from './n7ai/ai-threads.controller'
 import { AiThreadsService } from './n7ai/ai-threads.service'
 import { N7AiController } from './n7ai/n7ai.controller'
 import { AiTemporaryService } from './n7ai/ai-temporary.service'
+import { AiSuggestionsService } from './n7ai/ai-suggestions.service'
 import { N7AiService } from './n7ai/n7ai.service'
 import { MessageEmbedService } from './embeds/message-embed.service'
 import { ChatRefsController } from './refs/chat-refs.controller'
@@ -77,6 +78,7 @@ import { ChatShareService } from './share/chat-share.service'
   providers: [
     ChatCoreService,
     AiTemporaryService,
+    AiSuggestionsService,
     ChatPushService,
     MessageEmbedService,
     ChatPushProcessor,

@@ -46,7 +46,8 @@ describe('Admin AI providers', () => {
   const names = async () => (await service.list()).items.map((p) => p.name)
 
   it('thêm / đổi thứ tự / sửa / xóa; key mã hóa và không bao giờ trả ra', async () => {
-    expect(await service.list()).toMatchObject({ source: 'env', items: [] })
+    // Không có provider trong DB và không có cấu hình env ⇒ source 'database' (chỉ báo 'env' khi env có provider, xem ca cuối)
+    expect(await service.list()).toMatchObject({ source: 'database', items: [], env: [] })
 
     await service.create(adminId, { name: 'A', baseUrl: URL_A, apiKey: 'sk-secret-AAAA1111' })
     await service.create(adminId, { name: 'B', baseUrl: URL_B, apiKey: 'sk-secret-BBBB2222', modelOverride: 'backup' })
@@ -77,7 +78,7 @@ describe('Admin AI providers', () => {
     await service.remove(adminId, a.id)
     await expect(service.remove(adminId, a.id)).rejects.toThrow('không tồn tại')
     await service.remove(adminId, b.id)
-    expect((await service.list()).source).toBe('env') // hết provider ⇒ về env
+    expect((await service.list()).source).toBe('database') // hết provider và không có env
 
     const audit = await db.query(`SELECT action, details FROM admin_audit_logs WHERE target_type = 'ai_provider'`)
     expect(audit.rows.map((r) => r.action)).toEqual(expect.arrayContaining(['ai_provider.create', 'ai_provider.move', 'ai_provider.update', 'ai_provider.delete']))
@@ -123,5 +124,10 @@ describe('Admin AI providers', () => {
     }
     expect(AiProviderPatchBodySchema.safeParse({}).success).toBe(false)
     expect(AiProviderPatchBodySchema.safeParse({ modelOverride: null }).success).toBe(true)
+  })
+  it('DB không có provider bật nhưng có cấu hình env ⇒ list() báo source = env', async () => {
+    const config = { get: (k: string) => ({ SESSION_SECRET: SECRET, AI_API_KEY: 'sk-env-key-0000', AI_BASE_URL: 'https://env.example.com' } as Record<string, string>)[k] } as unknown as ConfigService
+    const withEnv = new AdminAiProvidersService(db, config, new AiProviderRegistry(db, config))
+    expect(await withEnv.list()).toMatchObject({ source: 'env', items: [] })
   })
 })

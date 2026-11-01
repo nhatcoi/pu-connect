@@ -151,7 +151,7 @@ export function MessageList({
           </React.Fragment>
         )
       })}
-      {followUps.length > 0 && onFollowUp && <AiFollowUps items={followUps} onPick={onFollowUp} />}
+      {conversation?.type !== 'ai' && followUps.length > 0 && onFollowUp && <AiFollowUps items={followUps} onPick={onFollowUp} />}
     </div>
   )
 }

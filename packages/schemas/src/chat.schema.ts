@@ -7,8 +7,25 @@ import type { BlockState } from './block.schema'
 export const CHAT_MAX_ATTACHMENTS = 10
 export const CHAT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
 
-// Chế độ học của N7AI: đổi chỉ dẫn hệ thống + cách hiển thị câu trả lời
-export const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
+// Chế độ học của N7AI (DeepTutor Capabilities): đổi chỉ dẫn hệ thống + cách xử lý lượt trò chuyện
+export const AI_MODES = [
+  'ask',
+  'explain',
+  'quiz',
+  'flashcards',
+  'summarize',
+  'plan',
+  'solve',
+  'deep_solve',
+  'ask_questions',
+  'deep_question',
+  'deep_research',
+  'research',
+  'visualize',
+  'video_lesson',
+  'audio_overview',
+  'math_animator'
+] as const
 export type AiMode = (typeof AI_MODES)[number]
 
 // Ngữ cảnh gắn vào tin (chip trên ô soạn): server kiểm quyền rồi mới lưu meta.refs
@@ -200,6 +217,8 @@ export interface ChatMessageMeta {
   steps?: AiStep[] // N7AI: tiến trình (đọc tệp / bộ nhớ, tìm nguồn, gọi tool) — hiện khi đang trả lời, thu gọn khi xong
   durationMs?: number // N7AI: thời gian xử lý (nhận câu hỏi → xong)
   timings?: AiRunTimings // Stage durations; tool/model intervals can overlap with MCP initialization
+  reasoning?: string // N7AI: Luồng suy luận logic (Thinking Accordion)
+  askUser?: { questions: AskUserQuestion[] } | null // N7AI: Câu hỏi / lựa chọn phản biện Socratic khi pause
   studySet?: ChatStudySetRef // bộ flashcard / quiz trong tin đã tự lưu vào Công cụ
   actions?: AiAction[] // N7AI: nút dẫn tới trang trong app / hành động cần người dùng xác nhận
   sharedPost?: ChatSharedPost // tin chia sẻ bài viết (thẻ xem trước)
@@ -547,9 +566,35 @@ export interface AiTemporaryInput {
   research?: boolean
   connectors?: AiConnectorId[]
 }
+export interface AskUserOption {
+  label: string
+  description?: string | null
+}
+
+export interface AskUserQuestion {
+  id: string
+  prompt: string
+  header?: string | null
+  options: AskUserOption[]
+  multi_select?: boolean
+  allow_free_text?: boolean
+  placeholder?: string | null
+}
+
 // Sự kiện SSE của POST /ai/temporary/stream
 export type AiTemporaryEvent =
+  | { type: 'thinking'; text: string }
   | { type: 'progress'; steps: AiStep[] }
   | { type: 'delta'; text: string }
-  | { type: 'done'; text: string; followUps: string[]; citations: ChatCitation[]; steps: AiStep[]; durationMs: number }
+  | { type: 'ask_user'; questions: AskUserQuestion[] }
+  | {
+      type: 'done'
+      text: string
+      reasoning?: string
+      followUps: string[]
+      citations: ChatCitation[]
+      steps: AiStep[]
+      durationMs: number
+      askUser?: { questions: AskUserQuestion[] } | null
+    }
   | { type: 'error'; message: string }

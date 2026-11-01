@@ -14,7 +14,24 @@ import type {
 } from '@pu/schemas'
 
 // @pu/schemas là mã TS nguồn ⇒ API khai báo lại schema runtime ở đây (xem auth/dto/register.dto.ts)
-const AI_MODES = ['ask', 'explain', 'quiz', 'flashcards', 'summarize', 'plan'] as const
+export const AI_MODES = [
+  'ask',
+  'explain',
+  'quiz',
+  'flashcards',
+  'summarize',
+  'plan',
+  'solve',
+  'deep_solve',
+  'ask_questions',
+  'deep_question',
+  'deep_research',
+  'research',
+  'visualize',
+  'video_lesson',
+  'audio_overview',
+  'math_animator'
+] as const
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
 export const CHAT_REF_TYPES = ['course', 'document', 'post', 'thread', 'study_set'] as const
 export const AI_CONNECTORS = [

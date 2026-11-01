@@ -195,7 +195,7 @@ export function DropdownMenuContent({
   arrowPadding,
   sticky,
   hideWhenDetached,
-  transition = { duration: 0.2 },
+  transition = { duration: 0.1, ease: [0.16, 1, 0.3, 1] },
   style,
   container,
   ...props
@@ -228,9 +228,9 @@ export function DropdownMenuContent({
             <motion.div
               key="dropdown-menu-content"
               data-slot="dropdown-menu-content"
-              initial={{ opacity: 0, scale: 0.95 }}
+              initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
+              exit={{ opacity: 0, scale: 0.97 }}
               transition={transition}
               style={{ willChange: 'opacity, transform', ...style }}
               {...props}

@@ -10,6 +10,7 @@ import { PuConnectorMcpService } from './connectors/pu-connector-mcp.service'
 import { PuConnectorController } from './connectors/pu-connector.controller'
 import { GoogleMcpService } from './connectors/google-mcp.service'
 import { McpAgentService } from './mcp-agent.service'
+import { N7AgentService } from './engine/n7-agent.service'
 import { RetrievalToolsService } from './retrieval-tools.service'
 import { GoogleOAuthService } from './connectors/google-oauth.service'
 import { SemanticScholarService } from './connectors/semantic-scholar.service'
@@ -41,6 +42,7 @@ import { RagSearchService } from './rag/rag-search.service'
     PuConnectorMcpService,
     GoogleMcpService,
     McpAgentService,
+    N7AgentService,
     RetrievalToolsService,
     SemanticScholarService,
     WebReaderService,
@@ -62,6 +64,7 @@ import { RagSearchService } from './rag/rag-search.service'
     GoogleOAuthService,
     GoogleMcpService,
     McpAgentService,
+    N7AgentService,
     RetrievalToolsService,
     SemanticScholarService,
     WebReaderService,

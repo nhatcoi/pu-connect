@@ -152,6 +152,7 @@ export class RagIndexService {
 
   // Đoạn chưa có embedding / model khác / input đổi (đổi tiêu đề tài liệu); input hỏng ⇒ đánh dấu, không chặn cả lô
   private async embedChunks(): Promise<number> {
+    await this.embedding.currentModel()
     const rows = (
       await this.db.query(
         `SELECT c.id, ${CHUNK_TEXT_SQL} AS text FROM document_chunks c JOIN documents d ON d.id = c.document_id
@@ -174,6 +175,7 @@ export class RagIndexService {
 
   // Bài viết chưa có embedding / đã sửa (hash lệch) / model khác
   private async embedPosts(): Promise<number> {
+    await this.embedding.currentModel()
     const rows = (
       await this.db.query(
         `SELECT p.id, t.text, md5(t.text) AS hash

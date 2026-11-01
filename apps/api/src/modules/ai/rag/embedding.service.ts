@@ -42,8 +42,27 @@ export class EmbeddingService {
     return true
   }
 
+  // Model đang dùng theo cấu hình gần nhất đã đọc (cập nhật mỗi lần gọi embedQuery / embedEach / currentModel)
   get model(): string {
     return this.cachedModel || DEFAULT_MODEL
+  }
+
+  // Đọc lại cấu hình rồi trả model hiện hành: gọi trước khi dùng `model` ở nơi chưa gọi embed (vd. chọn đoạn cần embed lại)
+  async currentModel(): Promise<string> {
+    return (await this.resolveConf()).model
+  }
+
+  private async resolveConf() {
+    const conf = this.aiServices
+      ? await this.aiServices.getEmbedding()
+      : {
+          enabled: !!this.config.get('EMBED_BASE_URL'),
+          baseUrl: (this.config.get<string>('EMBED_BASE_URL') || '').replace(/\/+$/, ''),
+          apiKey: this.config.get<string>('EMBED_API_KEY'),
+          model: this.config.get<string>('EMBED_MODEL') || DEFAULT_MODEL
+        }
+    this.cachedModel = conf.model || DEFAULT_MODEL
+    return conf
   }
 
   constructor(
@@ -59,14 +78,7 @@ export class EmbeddingService {
   // Câu hỏi ⇒ vector; null khi không dùng được (nơi gọi lùi về full-text)
   async embedQuery(text: string): Promise<number[] | null> {
     if (!this.available) return null
-    const conf = this.aiServices
-      ? await this.aiServices.getEmbedding()
-      : {
-          enabled: !!this.config.get('EMBED_BASE_URL'),
-          baseUrl: (this.config.get<string>('EMBED_BASE_URL') || '').replace(/\/+$/, ''),
-          apiKey: this.config.get<string>('EMBED_API_KEY'),
-          model: this.config.get<string>('EMBED_MODEL') || DEFAULT_MODEL
-        }
+    const conf = await this.resolveConf()
 
     if (!conf.enabled || !conf.baseUrl) return null
     const input = queryPrefix(conf.model) + text.trim().slice(0, 2000)
@@ -88,14 +100,7 @@ export class EmbeddingService {
   // mục nào cũng lỗi ⇒ lỗi ở server, không phải dữ liệu
   async embedEach(texts: string[]): Promise<(number[] | null)[]> {
     if (!this.available) throw new Error('Embedding server unavailable')
-    const conf = this.aiServices
-      ? await this.aiServices.getEmbedding()
-      : {
-          enabled: !!this.config.get('EMBED_BASE_URL'),
-          baseUrl: (this.config.get<string>('EMBED_BASE_URL') || '').replace(/\/+$/, ''),
-          apiKey: this.config.get<string>('EMBED_API_KEY'),
-          model: this.config.get<string>('EMBED_MODEL') || DEFAULT_MODEL
-        }
+    const conf = await this.resolveConf()
 
     if (!conf.enabled || !conf.baseUrl) throw new Error('Embedding server disabled')
 

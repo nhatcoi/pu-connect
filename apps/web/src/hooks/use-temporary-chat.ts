@@ -1,17 +1,19 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AI_TEMPORARY_MAX_TURNS, type AiMode, type AiStep, type ChatCitation } from '@pu/schemas'
+import { AI_TEMPORARY_MAX_TURNS, type AiMode, type AiStep, type AskUserQuestion, type ChatCitation } from '@pu/schemas'
 import { streamTemporaryChat } from '@/lib/n7ai-temporary'
 
 export interface TemporaryTurn {
   id: number
   role: 'user' | 'assistant'
   content: string
+  reasoning?: string
   status: 'streaming' | 'done' | 'error'
   steps: AiStep[]
   citations: ChatCitation[]
   followUps: string[]
+  askUser?: { questions: AskUserQuestion[] } | null
   startedAt: string
   durationMs?: number
 }
@@ -56,11 +58,29 @@ export function useTemporaryChat() {
         await streamTemporaryChat(
           { messages: [...history, { role: 'user', content: text }], aiMode },
           (e) => {
-            if (e.type === 'progress') patchLast({ steps: e.steps })
-            else if (e.type === 'delta') patchLast({ content: turnsRef.current[turnsRef.current.length - 1].content + e.text })
-            else if (e.type === 'done')
-              patchLast({ content: e.text, status: 'done', steps: e.steps, citations: e.citations, followUps: e.followUps, durationMs: e.durationMs })
-            else patchLast({ content: e.message, status: 'error' })
+            if (e.type === 'thinking') {
+              const cur = turnsRef.current[turnsRef.current.length - 1]
+              patchLast({ reasoning: (cur?.reasoning || '') + e.text })
+            } else if (e.type === 'ask_user') {
+              patchLast({ askUser: { questions: e.questions } })
+            } else if (e.type === 'progress') {
+              patchLast({ steps: e.steps })
+            } else if (e.type === 'delta') {
+              patchLast({ content: turnsRef.current[turnsRef.current.length - 1].content + e.text })
+            } else if (e.type === 'done') {
+              patchLast({
+                content: e.text,
+                reasoning: e.reasoning || turnsRef.current[turnsRef.current.length - 1]?.reasoning,
+                status: 'done',
+                steps: e.steps,
+                citations: e.citations,
+                followUps: e.followUps,
+                durationMs: e.durationMs,
+                askUser: e.askUser
+              })
+            } else {
+              patchLast({ content: e.message, status: 'error' })
+            }
           },
           controller.signal
         )

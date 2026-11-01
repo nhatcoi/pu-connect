@@ -68,7 +68,7 @@ export function PlusMenu(props: Props) {
           {props.aiTools && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <Wand2 /> Skills
+                <Wand2 /> Kỹ năng
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-60">
                 {skills?.length ? (
@@ -81,11 +81,11 @@ export function PlusMenu(props: Props) {
                     </DropdownMenuItem>
                   ))
                 ) : (
-                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Chưa có skill nào</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">Chưa có kỹ năng nào</DropdownMenuLabel>
                 )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onSelect={props.onManageSkills}>
-                  <Settings2 /> Quản lý skill
+                  <Settings2 /> Quản lý kỹ năng
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
@@ -94,7 +94,7 @@ export function PlusMenu(props: Props) {
           {props.connectorsEnabled && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <Plug /> Connectors
+                <Plug /> Kết nối
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-64">
                 {connectors?.map((c) => {

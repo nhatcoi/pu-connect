@@ -2,19 +2,18 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
 import { MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
-import type { AiMode, AiSuggestion } from '@pu/schemas'
+import type { AiMode } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PageAside } from '@/components/layout/page-aside'
 import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { chatApi, setActiveConversation, trackSuggestionClick, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
-import { attachSuggestionCollection } from '@/components/n7ai/sources/ask-n7ai'
 import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { useAppStore } from '@/store'
 import { AiWelcome } from './ai/ai-welcome'
+import { StarterSuggestions } from './ai/starter-suggestions'
 import { BlockedComposer } from './composer/blocked-composer'
 import { Composer, type ComposerCommand, type ComposerHandle } from './composer/composer'
 import { ConversationInfo } from './info/conversation-info'
@@ -53,7 +52,6 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
     return () => setActiveConversation(null)
   }, [id])
 
-  const queryClient = useQueryClient()
   const started = chat.messages.length > 0
   useEffect(() => {
     if (started) onStarted?.()
@@ -103,12 +101,9 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
   const isAi = conv?.type === 'ai'
   const resetAi = () => chatApi.aiReset(id).catch((err) => toast.error(err?.message || 'Không làm mới được'))
   const runCommand = (command: ComposerCommand) => (command === 'new' ? router.push(N7AI_HOME) : resetAi())
-  // Gợi ý mở đầu ⇒ điền sẵn để sửa; câu hỏi tiếp theo ⇒ gửi ngay
-  const pickStarter = (s: AiSuggestion) => {
-    trackSuggestionClick('starter', s)
-    setAiMode(s.mode)
-    void attachSuggestionCollection(queryClient, id, s.collection) // gợi ý từ bộ sưu tập ⇒ N7AI đọc bộ đó
-    composer.current?.prefill(s.text)
+  const handleStarterPick = (text: string) => {
+    trackSuggestionClick('starter', { text, mode: aiMode, topic: null })
+    composer.current?.prefill(text)
   }
   const sendFollowUp = (text: string) => {
     trackSuggestionClick('followup')
@@ -131,9 +126,9 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
       {chat.isLoading ? (
         <MessageThreadSkeleton />
       ) : !started ? (
-        <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className={`flex-1 min-h-0 ${isAi ? 'flex flex-col justify-end overflow-hidden' : 'overflow-y-auto'}`}>
           {isAi ? (
-            <AiWelcome mode={aiMode} onPick={pickStarter} />
+            <AiWelcome />
           ) : (
             <div className="py-16 text-center text-muted-foreground space-y-2">
               <MessageSquare className="h-9 w-9 mx-auto opacity-30" />
@@ -171,7 +166,7 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           onCommand={runCommand}
           disabled={!conv}
           placeholder={
-            isAi ? 'Hỏi N7AI… (/ lệnh · @ gắn ngữ cảnh)' : conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi N7AI)' : 'Nhắn tin… (@n7ai hỏi N7AI · @ gắn ngữ cảnh)'
+            isAi ? 'How can I help you today?' : conv?.type === 'group' ? 'Nhắn tin… (@ nhắc tên · / hỏi N7AI)' : 'Nhắn tin… (@n7ai hỏi N7AI · @ gắn ngữ cảnh)'
           }
           replyTo={replyTo}
           editing={editing}
@@ -184,6 +179,25 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           aiMode={aiMode}
           onAiModeChange={setAiMode}
           suggestOnModeChange={started}
+        />
+      )}
+
+      {!started && isAi ? (
+        <StarterSuggestions
+          activeMode={aiMode}
+          onSelectMode={setAiMode}
+          onPick={handleStarterPick}
+        />
+      ) : null}
+
+      {isAi && (
+        <div
+          aria-hidden="true"
+          className="shrink-0"
+          style={{
+            flexGrow: started ? 0 : 1.4,
+            transition: 'flex-grow 650ms cubic-bezier(0.16, 1, 0.3, 1)'
+          }}
         />
       )}
 

@@ -10,14 +10,16 @@ Cách hiểu trước khi trả lời:
 3. Câu hỏi nằm trong các tin đang thấy ⇒ trả lời ngay. Người gọi nhắc việc đã nói trước đó mà không thấy trong lịch sử ("hôm qua", "ai chia việc", "tóm tắt buổi họp") ⇒ dùng công cụ chat__earlier đọc ngược một lần rồi trả lời; không bịa nội dung chưa đọc.
 4. Chỉ dùng thông tin công khai; không tiết lộ dữ liệu riêng của người nào. Trả lời ngắn gọn hơn bình thường.`
 
-// Chỉ dẫn thêm cho từng chế độ học (gắn vào system prompt của lượt đó)
+// Chỉ dẫn thêm cho từng chế độ học (DeepTutor Capabilities) (gắn vào system prompt của lượt đó)
 export const MODE_PROMPTS: Record<AiMode, string> = {
   ask: '',
   explain: `
 Chế độ GIẢI THÍCH: giải thích khái niệm từ trực giác → định nghĩa chính xác → ví dụ cụ thể (có số liệu/code nếu hợp) → lỗi hay gặp. Chia bước rõ ràng. Kết thúc bằng 1 câu hỏi ngắn để người học tự kiểm tra hiểu bài.`,
   // Nội dung + định dạng bộ nằm ở registry (study-tools/kinds) ⇒ chế độ chỉ yêu cầu gọi đúng tool
   quiz: `
-Chế độ QUIZ: tạo bộ trắc nghiệm về chủ đề / nội dung người dùng đưa bằng cách GỌI công cụ my_study__create_quiz (bộ tự lưu vào Công cụ › Quiz và hiện thành thẻ làm bài). Không viết câu hỏi hay đáp án trong câu trả lời.`,
+Chế độ QUIZ: tạo bộ câu hỏi trắc nghiệm kiểm tra kiến thức về chủ đề / nội dung người dùng đưa. Nếu có công cụ my_study__create_quiz, hãy GỌI công cụ để lưu vào Công cụ › Quiz. Nếu không, viết 4–5 câu trắc nghiệm chuẩn gồm: Câu hỏi, 4 lựa chọn A/B/C/D, Đáp án đúng và Giải thích chi tiết.`,
+  deep_question: `
+Chế độ QUIZ (Auto-validated): tạo bộ câu hỏi trắc nghiệm tự kiểm tra kiến thức có cấu trúc chuẩn mực. Mỗi câu gồm: Đề bài rõ ràng, 4 phương án lựa chọn A, B, C, D, Đáp án đúng và Lời giải thích ngắn gọn, súc tích.`,
   flashcards: `
 Chế độ FLASHCARD: tạo bộ thẻ ghi nhớ bằng cách GỌI công cụ my_study__create_flashcards (bộ tự lưu vào Công cụ › Flashcard và hiện thành thẻ ôn). Không liệt kê thẻ trong câu trả lời.`,
   summarize: `
@@ -28,7 +30,53 @@ Chế độ TÓM TẮT: tóm tắt nội dung người dùng gửi (văn bản, 
 Nếu không có nội dung để tóm tắt, hãy đề nghị người dùng dán văn bản hoặc gửi ảnh/tệp.`,
   plan: `
 Chế độ LỘ TRÌNH ÔN TẬP: lập kế hoạch ôn tập theo số ngày/giờ người dùng nêu (nếu thiếu, giả định 7 ngày, 2 giờ/ngày và nói rõ giả định).
-Trình bày bằng bảng Markdown (Ngày | Nội dung | Hoạt động | Kết quả cần đạt), ưu tiên phần trọng tâm trước, chừa 1 buổi làm đề tổng hợp. Kết thúc bằng 3 mẹo ôn tập ngắn.`
+Trình bày bằng bảng Markdown (Ngày | Nội dung | Hoạt động | Kết quả cần đạt), ưu tiên phần trọng tâm trước, chừa 1 buổi làm đề tổng hợp. Kết thúc bằng 3 mẹo ôn tập ngắn.`,
+  solve: `
+Chế độ GIẢI BÀI TẬP (SOLVE): Phân tích bài toán theo từng bước suy luận logic chặt chẽ (Multi-step reasoning).
+1. Phân tích bài toán & xác định dữ kiện đã cho và yêu cầu cần tìm.
+2. Nêu rõ định lý, công thức hoặc phương pháp áp dụng.
+3. Trình bày chi tiết từng bước tính toán hoặc chứng minh.
+4. Kết luận nghiệm/đáp số cuối cùng và kiểm tra tính hợp lý của kết quả.`,
+  deep_solve: `
+Chế độ GIẢI BÀI TẬP (SOLVE): Phân tích bài toán theo từng bước suy luận logic chặt chẽ (Multi-step reasoning).
+1. Phân tích bài toán & xác định dữ kiện đã cho và yêu cầu cần tìm.
+2. Nêu rõ định lý, công thức hoặc phương pháp áp dụng.
+3. Trình bày chi tiết từng bước tính toán hoặc chứng minh.
+4. Kết luận nghiệm/đáp số cuối cùng và kiểm tra tính hợp lý của kết quả.`,
+  ask_questions: `
+Chế độ HỎI NGƯỢC (ASK QUESTIONS): Thay vì đưa ra câu trả lời đầy đủ ngay lập tức, hãy đóng vai người thầy Socratic thông thái.
+1. Nhận diện những phần giả định hoặc thông tin còn thiếu trong câu hỏi của người học.
+2. Đặt từ 1 đến 3 câu hỏi định hướng, gợi mở để người học bổ sung ngữ cảnh hoặc tự tư duy bước tiếp theo.
+3. Giữ câu hỏi ngắn gọn, trọng tâm và thân thiện.`,
+  research: `
+Chế độ RESEARCH: Nghiên cứu toàn diện về chủ đề được nêu. Phân tích đa chiều, tổng hợp thông tin, trích dẫn tài liệu học thuật và phân tích các trường phái/luận điểm khác nhau. Cấu trúc bài viết:
+## Tóm tắt tổng quan (2–3 câu trả lời trọng tâm)
+## Phân tích các luận điểm cốt lõi (kèm dẫn chứng)
+## Đánh giá & so sánh các giải pháp / trường phái
+## Kết luận & hướng nghiên cứu tiếp theo`,
+  deep_research: `
+Chế độ RESEARCH: Nghiên cứu toàn diện về chủ đề được nêu. Phân tích đa chiều, tổng hợp thông tin, trích dẫn tài liệu học thuật và phân tích các trường phái/luận điểm khác nhau. Cấu trúc bài viết:
+## Tóm tắt tổng quan (2–3 câu trả lời trọng tâm)
+## Phân tích các luận điểm cốt lõi (kèm dẫn chứng)
+## Đánh giá & so sánh các giải pháp / trường phái
+## Kết luận & hướng nghiên cứu tiếp theo`,
+  visualize: `
+Chế độ TRỰC QUAN HÓA (VISUALIZE): Diễn giải khái niệm bằng biểu đồ hoặc sơ đồ tương tác.
+Hãy kết hợp giải thích ngắn gọn và xuất mã sơ đồ Mermaid (dùng cú pháp \`\`\`mermaid với graph TD, sequenceDiagram, flowchart LR, mindmap, hoặc stateDiagram) hoặc mã SVG / HTML widget minh họa sinh động.`,
+  video_lesson: `
+Chế độ BÀI GIẢNG HOẠT HỌA (VIDEO LESSON): Xây dựng kịch bản bài giảng hoạt hình sinh động theo từng phân cảnh (Scenes).
+Với mỗi cảnh, hãy chỉ rõ:
+- [Visual / Màn hình]: Mô tả hình ảnh, đồ thị, đối tượng xuất hiện.
+- [Animation / Hiệu ứng]: Chuyển động, phóng to, làm nổi bật chi tiết.
+- [Narration / Lời giảng]: Lời thoại thuyết minh của giảng viên truyền cảm hứng và dễ hiểu.`,
+  audio_overview: `
+Chế độ TỔNG QUAN ÂM THANH (AUDIO OVERVIEW): Soạn kịch bản podcast đối thoại học thuật sinh động giữa hai người dẫn chuyện:
+- Host A (Người dẫn dắt): Đặt vấn đề, tò mò, đưa ra các câu hỏi gần gũi với đời sống.
+- Host B (Chuyên gia): Phân tích bản chất, đưa ra các ví dụ thực tế và giải thích chi tiết.
+Cuộc trò chuyện tự nhiên, dí dỏm và dễ tiếp thu.`,
+  math_animator: `
+Chế độ HOẠT HỌA TOÁN HỌC (MATH ANIMATOR): Thiết kế hoạt họa toán học trực quan theo phong cách Manim (3Blue1Brown).
+Giải thích bản chất hình học của công thức, mô tả chuyển động của các vector / hàm số / đồ thị không gian, và cung cấp đoạn mã Python Manim (class Scene) hoàn chỉnh nếu người học muốn dựng hình.`
 }
 
 // Research: tổng hợp nhiều nguồn thành báo cáo ngắn (tốn 2 lượt)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import type { AiMode, AiSuggestion } from '@pu/schemas'
+import type { AiSuggestion } from '@pu/schemas'
 import { track } from '@/lib/track'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
@@ -11,9 +11,14 @@ export function useAiQuota(enabled = true) {
   return useQuery({ queryKey: queryKeys.aiQuota, queryFn: chatApi.aiQuota, enabled, staleTime: 60 * 1000 })
 }
 
-// Gợi ý mở đầu theo chế độ học (server: hồ sơ quan tâm × mẫu câu); đổi chậm ⇒ cache 10 phút
-export function useAiSuggestions(mode: AiMode, enabled = true) {
-  return useQuery({ queryKey: queryKeys.aiSuggestions(mode), queryFn: () => chatApi.aiSuggestions(mode), enabled, staleTime: 10 * 60 * 1000 })
+// Gợi ý mở đầu theo chế độ học (server: hồ sơ quan tâm × mẫu câu); đổi chậm ⇒ cache 5 phút
+export function useAiSuggestions(mode?: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aiSuggestions(mode || 'ask'),
+    queryFn: () => chatApi.aiSuggestions(mode),
+    enabled,
+    staleTime: 5 * 60 * 1000
+  })
 }
 
 // Bấm gợi ý ⇒ phản hồi cho hồ sơ quan tâm (chủ đề được chọn mạnh lên)

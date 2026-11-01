@@ -28,7 +28,7 @@ export function AiSuggestionPanel({ mode, onPick, onClose }: { mode: AiMode; onP
       <div className="grid grid-rows-2 grid-flow-col auto-cols-max gap-1.5 overflow-x-auto no-scrollbar">
         {isPending
           ? Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-8 w-48 rounded-full" />)
-          : data?.items.map((s) => (
+          : data?.items?.map((s) => (
               <button
                 key={s.text}
                 type="button"

@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'http'
 import type { AddressInfo } from 'net'
 import type { NestExpressApplication } from '@nestjs/platform-express'
-import type { DatabaseService } from '../src/database/database.service'
+import { DatabaseService } from '../src/database/database.service'
 import { AiRetrieval, toTsQuery } from '../src/modules/ai/ai.retrieval'
 import * as docText from '../src/modules/ai/doc-text'
 import { EMBED_DIM } from '../src/modules/ai/rag/embedding.service'
@@ -53,6 +53,7 @@ describe('RAG: index tài liệu + tìm kết hợp full-text/vector (e2e)', () 
   let app: NestExpressApplication
   let db: DatabaseService
   let server: Server
+  let saved: { service: string; base_url: string; model: string }[] = []
   let base: string
   const requests: string[] = []
 
@@ -91,11 +92,19 @@ describe('RAG: index tài liệu + tìm kết hợp full-text/vector (e2e)', () 
     process.env.R2_PUBLIC_URL = base
     process.env.OCR_BASE_URL = `${base}/v1`
     process.env.OCR_MODEL = 'fake-vision'
+    // Cấu hình embedding / OCR nằm trong bảng ai_services (ưu tiên hơn env) ⇒ trỏ về server giả trước khi dựng app, trả lại giá trị cũ khi xong
+    const setup = new DatabaseService()
+    saved = (await setup.query(`SELECT service, base_url, model FROM ai_services WHERE service IN ('embedding','ocr')`)).rows
+    for (const [service, model] of [['embedding', 'fake-embed'], ['ocr', 'fake-vision']]) {
+      await setup.query(`UPDATE ai_services SET base_url = $1, model = $2, enabled = TRUE WHERE service = $3`, [`${base}/v1`, model, service])
+    }
+    await setup.onModuleDestroy()
     ;({ app, db } = await createTestApp())
     // Worker nền (lịch quét) chạy song song với sweep() gọi tay ⇒ tắt để kết quả xác định
     await app.get(RagIndexProcessor).worker.close()
   })
   afterAll(async () => {
+    for (const s of saved) await db.query(`UPDATE ai_services SET base_url = $1, model = $2 WHERE service = $3`, [s.base_url, s.model, s.service])
     await app.close()
     await new Promise((resolve) => server.close(resolve))
     delete process.env.EMBED_BASE_URL
@@ -300,7 +309,7 @@ describe('RAG: index tài liệu + tìm kết hợp full-text/vector (e2e)', () 
     expect(text).not.toContain('§¹i')
 
     // Gọi model vision: ảnh base64 trong message, model OCR riêng
-    expect(await (ocr as unknown as { image: (b: string, m: string) => Promise<string> }).image('AAAA', 'image/png')).toBe(OCR_TEXT)
+    expect(await (ocr as unknown as { image: (url: string, key: string | undefined, model: string, b64: string, mime: string) => Promise<string> }).image(`${base}/v1`, undefined, 'fake-vision', 'AAAA', 'image/png')).toBe(OCR_TEXT)
     expect(requests).toContain('POST /v1/chat/completions')
   })
 

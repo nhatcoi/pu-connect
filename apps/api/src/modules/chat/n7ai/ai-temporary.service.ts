@@ -5,6 +5,7 @@ import { SYSTEM_PROMPT } from '../../ai/ai.prompts'
 import { DEFAULT_AI_MODEL } from '../../ai/ai-models'
 import { LlmService, RESEARCH_COST, RESEARCH_TASK, type LlmMessage } from '../../ai/llm.service'
 import { McpAgentService, McpModelError } from '../../ai/mcp-agent.service'
+import { N7AgentService } from '../../ai/engine/n7-agent.service'
 import { RetrievalToolsService } from '../../ai/retrieval-tools.service'
 import { AiProgress } from './agent/ai-progress'
 import { PucToolsService } from './agent/puc-tools.service'
@@ -24,6 +25,7 @@ export class AiTemporaryService {
   constructor(
     private readonly llm: LlmService,
     private readonly agent: McpAgentService,
+    private readonly n7Agent: N7AgentService,
     private readonly settings: AiSettingsService,
     private readonly pucTools: PucToolsService,
     private readonly retrievalTools: RetrievalToolsService
@@ -59,33 +61,53 @@ export class AiTemporaryService {
       const local = [this.pucTools.open(userId, connectors, catalog, false), this.retrievalTools.open(userId, connectors, catalog, research)]
       const splitter = new FollowUpSplitter()
       const emit = (text: string) => text && send({ type: 'delta', text })
-      const { finishReason, usage } = await this.agent.stream(
-        messages,
-        userId,
-        connectors,
-        (delta) => emit(splitter.push(delta)),
-        (toolSteps) => progress.setTools(toolSteps),
-        local,
-        { research, model }
+
+      const timeoutSignal = AbortSignal.timeout(research ? 120_000 : 90_000)
+
+      const result = await this.n7Agent.run(
+        {
+          messages,
+          userId,
+          sessionId: `temp_${userId}_${Date.now()}`,
+          connectors,
+          localTools: local,
+          model,
+          research,
+          signal: timeoutSignal
+        },
+        async (event) => {
+          if (event.type === 'thinking') {
+            send({ type: 'thinking', text: event.content })
+          } else if (event.type === 'content') {
+            const pushed = splitter.push(event.content)
+            emit(pushed)
+          } else if (event.type === 'progress') {
+            // Cập nhật trạng thái tiến trình
+          } else if (event.type === 'ask_user') {
+            send({ type: 'ask_user', questions: (event.metadata as any)?.questions || [] })
+          }
+        }
       )
+
       const { rest, text: answer, followUps, cited } = splitter.finish()
       emit(rest)
       let text = answer.trim()
-      if (!text || finishReason === 'content_filter') {
+      if (!text) {
         text = 'Xin lỗi, mình không thể trả lời câu hỏi này.'
-      } else if (finishReason === 'length') {
-        text += '\n\n_(Câu trả lời bị cắt do quá dài — hãy hỏi cụ thể hơn.)_'
       }
+
       const citations: ChatCitation[] = citationsOf(catalog.sources, cited)
       send({
         type: 'done',
         text,
-        followUps: finishReason === 'length' || finishReason === 'content_filter' ? [] : followUps,
+        reasoning: result.reasoning || undefined,
+        followUps,
         citations,
         steps: progress.steps,
-        durationMs: Date.now() - started
+        durationMs: Date.now() - started,
+        askUser: result.pausePayload ? { questions: (result.pausePayload as any).questions } : null
       })
-      await this.llm.finishRun(runId, { usage, startedAt: started })
+      await this.llm.finishRun(runId, { usage: result.usage, startedAt: started })
     } catch (err) {
       this.logger.warn(`Chat tạm lỗi: ${(err as Error)?.message}`)
       await this.llm.failRun(runId, err, started)

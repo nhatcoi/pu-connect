@@ -46,7 +46,7 @@ export function DialogPortal(props: DialogPortalProps) {
 
 export type DialogOverlayProps = Omit<React.ComponentProps<typeof DialogPrimitive.Overlay>, 'forceMount' | 'asChild'> & HTMLMotionProps<'div'>
 
-export function DialogOverlay({ transition = { duration: 0.2, ease: 'easeInOut' }, ...props }: DialogOverlayProps) {
+export function DialogOverlay({ transition = { duration: 0.1, ease: 'easeOut' }, ...props }: DialogOverlayProps) {
   return (
     <DialogPrimitive.Overlay data-slot="dialog-overlay" asChild forceMount>
       <motion.div
@@ -75,7 +75,7 @@ export function DialogContent({
   onEscapeKeyDown,
   onPointerDownOutside,
   onInteractOutside,
-  transition = { type: 'tween', duration: 0.15, ease: 'easeOut' },
+  transition = { type: 'tween', duration: 0.1, ease: [0.16, 1, 0.3, 1] },
   ...props
 }: DialogContentProps) {
 

@@ -1,10 +1,16 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono, Lora } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 
 const inter = Inter({
   variable: '--font-sans',
+  subsets: ['vietnamese', 'latin'],
+  display: 'swap'
+})
+
+const lora = Lora({
+  variable: '--font-serif',
   subsets: ['vietnamese', 'latin'],
   display: 'swap'
 })
@@ -22,7 +28,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${lora.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.21/dist/katex.min.css" crossOrigin="anonymous" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />

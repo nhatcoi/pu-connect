@@ -29,7 +29,7 @@ export function AiModelPicker({ className }: { className?: string }) {
           <ChevronDown className="h-3 w-3 text-muted-foreground" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="end" className="w-60">
+      <DropdownMenuContent side="bottom" align="end" className="w-60">
         {options.map((m) => (
           <DropdownMenuItem key={m.id} onSelect={() => m.id !== current.id && update.mutate({ aiModel: m.id })} className="items-start">
             <span className="min-w-0 flex-1">

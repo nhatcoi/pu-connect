@@ -3,7 +3,7 @@ import { join } from 'path'
 import { Client } from 'pg'
 import { TEST_DATABASE_URL } from './env'
 
-// Thứ tự migration: giữ khớp với scripts/deploy.sh
+// Thứ tự migration: giữ khớp với scripts/deploy.sh (bỏ seed và n7ai-rename-upgrade: chỉ đổi tên dữ liệu cũ, DB test trống)
 export const MIGRATIONS = [
   'schema.sql',
   'domain1-upgrade.sql',
@@ -36,6 +36,7 @@ export const MIGRATIONS = [
   'admin-lists-upgrade.sql',
   'admin-sanctions-upgrade.sql',
   'admin-security-upgrade.sql',
+  'profile-views-upgrade.sql',
   'ai-thread-share-upgrade.sql',
   'ai-folders-upgrade.sql',
   'ai-sources-upgrade.sql',
@@ -63,6 +64,8 @@ export const MIGRATIONS = [
   'user-reports-upgrade.sql',
   'moderation-upgrade.sql',
   'trash-upgrade.sql',
+  'ai-services-upgrade.sql',
+  'news-crawler-upgrade.sql',
   'documents-library-upgrade.sql',
   'document-library-personal-upgrade.sql',
   'course-follows-upgrade.sql',

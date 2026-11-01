@@ -10,7 +10,7 @@ import { isLinkOnly } from '@/lib/message-links'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/store'
 import { AiMessageBody } from '../ai/ai-message-body'
-import { AiMessageFooter } from '../ai/ai-message-footer'
+import { AssistantActionsBar } from '../ai/assistant-actions-bar'
 import { AI_MODE_META } from '../ai/ai-modes'
 import { messagePreview, timeOf } from '../utils'
 import { AttachmentView } from './attachment-view'
@@ -38,7 +38,19 @@ interface BubbleProps {
   handlers: MessageHandlers
 }
 
-export function MessageBubble({ message: m, mine, myId, continued, showAvatar, showName, seenLabel, highlighted, onJumpTo, onRetry, handlers }: BubbleProps) {
+export function MessageBubble({
+  message: m,
+  mine,
+  myId,
+  continued,
+  showAvatar,
+  showName,
+  seenLabel,
+  highlighted,
+  onJumpTo,
+  onRetry,
+  handlers
+}: BubbleProps) {
   const [actionsOpen, setActionsOpen] = useState(false)
   const [reactionsOpen, setReactionsOpen] = useState(false)
   const myUsername = useAppStore((s) => s.user?.username)
@@ -50,13 +62,20 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
   const mode = m.meta?.aiMode
 
   return (
-    <div id={`msg-${m.id}`} className={cn('group flex gap-2 scroll-mt-24', mine ? 'flex-row-reverse' : 'flex-row', continued ? 'mt-0.5' : 'mt-3')}>
-      {showAvatar && !mine && (
+    <div
+      id={`msg-${m.id}`}
+      className={cn(
+        'group flex gap-2 scroll-mt-24',
+        mine ? 'flex-row-reverse' : 'flex-row',
+        continued ? 'mt-0.5' : isAi && !mine ? 'mt-5' : 'mt-3'
+      )}
+    >
+      {/* Trong DeepTutor, assistant message không có avatar bên lề để nội dung dàn rộng thoáng */}
+      {showAvatar && !mine && !isAi && (
         <div className="w-7 shrink-0 self-end">
           {!continued &&
             m.sender &&
             (m.sender.isBot ? (
-              // Bot @n7ai: logo N7AI
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
                 <N7AiMark className="h-[70%] w-[70%]" />
               </span>
@@ -75,11 +94,22 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
       <div
         className={cn(
           'flex flex-col min-w-0',
-          isAi && !mine ? 'max-w-full flex-1 sm:max-w-[min(94%,52rem)]' : 'max-w-[85%] sm:max-w-[78%]',
+          isAi && !mine ? 'w-full max-w-full sm:max-w-[min(98%,56rem)] flex-1' : 'max-w-[85%] sm:max-w-[78%]',
           mine ? 'items-end' : 'items-start'
         )}
       >
-        {showName && !continued && m.sender && <span className="text-[11px] text-muted-foreground px-3 mb-0.5">{m.sender.displayName}</span>}
+        {/* Nhãn chế độ phía trên tin nhắn của người dùng giống DeepTutor (Chat / Ask Questions / Solve...) */}
+        {mine && isAi && (
+          <div className="flex justify-end pr-1 mb-1">
+            <span className="text-[10.5px] font-medium tracking-wide text-muted-foreground select-none">
+              {mode ? AI_MODE_META[mode]?.label || 'Chat' : 'Chat'}
+            </span>
+          </div>
+        )}
+
+        {showName && !continued && m.sender && !isAi && (
+          <span className="text-[11px] text-muted-foreground px-3 mb-0.5">{m.sender.displayName}</span>
+        )}
 
         {m.replyTo && !m.deleted && (
           <button
@@ -101,49 +131,67 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
             {m.attachments && m.attachments.length > 0 && !m.deleted && <AttachmentView attachments={m.attachments} mine={mine} />}
             {m.meta?.sharedPost && !m.deleted && <SharedPostCard post={m.meta.sharedPost} mine={mine} />}
             {!!m.meta?.quotes?.length && !m.deleted && <MessageQuotes quotes={m.meta.quotes} threadId={m.conversationId} mine={mine} />}
-            {(hasText || m.deleted || (isAi && !m.attachments)) && (
-              <div
-                className={cn(
-                  'relative rounded-2xl px-3.5 py-2 text-sm break-words transition-shadow',
-                  // N7AI: co theo nội dung (câu ngắn gọn gàng), dài thì giãn tới hết cột
-                  isAi && !mine && 'w-fit max-w-full',
-                  m.deleted
-                    ? 'bg-transparent border border-dashed text-muted-foreground italic'
-                    : mine
-                      ? 'bg-primary text-primary-foreground whitespace-pre-wrap'
-                      : isAi
-                        ? 'bg-card'
-                        : 'bg-muted/80 text-foreground whitespace-pre-wrap',
-                  !m.deleted && (mine ? (continued ? 'rounded-tr-md' : 'rounded-br-md') : continued ? 'rounded-tl-md' : 'rounded-bl-md'),
-                  m.status === 'failed' && 'opacity-60',
-                  highlighted && 'ring-2 ring-amber-400'
-                )}
-              >
-                {mode && !m.deleted && (
-                  <span
-                    className={cn(
-                      'mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide',
-                      mine ? 'text-primary-foreground/80' : 'text-primary'
-                    )}
-                  >
-                    {React.createElement(AI_MODE_META[mode].icon, { className: 'h-3 w-3' })} {AI_MODE_META[mode].label}
-                  </span>
-                )}
-                {!m.deleted && <MessageAiBadges meta={m.meta} mine={mine} />}
+
+            {isAi && !mine ? (
+              // Assistant Message trong N7AI: không đóng khung hộp thô, layout unboxed tinh gọn DeepTutor
+              <div className={cn('w-full min-w-0 text-foreground break-words', highlighted && 'ring-2 ring-amber-400 rounded-lg')}>
                 {m.deleted ? (
-                  'Tin nhắn đã thu hồi'
-                ) : isAi ? (
-                  <AiMessageBody message={m} />
+                  <p className="italic text-muted-foreground text-sm">Tin nhắn đã thu hồi</p>
                 ) : (
-                  <MessageText content={m.content} meta={m.meta} mine={mine} myUsername={myUsername} />
+                  <>
+                    <AiMessageBody message={m} />
+                    {interactive && !m.deleted && (
+                      <AssistantActionsBar
+                        message={m}
+                        onRetry={() => onRetry(m)}
+                        onDelete={() => handlers.onDelete(m)}
+                      />
+                    )}
+                  </>
                 )}
               </div>
+            ) : (
+              // User Message & Non-AI Messages
+              (hasText || m.deleted || (isAi && !m.attachments)) && (
+                <div
+                  className={cn(
+                    'relative break-words transition-shadow',
+                    m.deleted
+                      ? 'rounded-2xl px-3.5 py-2 text-sm bg-transparent border border-dashed text-muted-foreground italic'
+                      : mine
+                        ? isAi
+                          ? 'rounded-2xl bg-secondary dark:bg-[#27272a] text-foreground px-4 py-2.5 text-[14px] leading-relaxed shadow-xs whitespace-pre-wrap'
+                          : 'rounded-2xl bg-primary text-primary-foreground whitespace-pre-wrap px-3.5 py-2 text-sm'
+                        : 'rounded-2xl bg-muted/80 text-foreground whitespace-pre-wrap px-3.5 py-2 text-sm',
+                    !m.deleted && (mine ? (continued ? 'rounded-tr-md' : 'rounded-br-md') : continued ? 'rounded-tl-md' : 'rounded-bl-md'),
+                    m.status === 'failed' && 'opacity-60',
+                    highlighted && 'ring-2 ring-amber-400'
+                  )}
+                >
+                  {mode && !m.deleted && !isAi && (
+                    <span
+                      className={cn(
+                        'mb-1 mr-2 inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide',
+                        mine ? 'text-primary-foreground/80' : 'text-primary'
+                      )}
+                    >
+                      {React.createElement(AI_MODE_META[mode].icon, { className: 'h-3 w-3' })} {AI_MODE_META[mode].label}
+                    </span>
+                  )}
+                  {!m.deleted && <MessageAiBadges meta={m.meta} mine={mine} />}
+                  {m.deleted ? (
+                    'Tin nhắn đã thu hồi'
+                  ) : (
+                    <MessageText content={m.content} meta={m.meta} mine={mine} myUsername={myUsername} />
+                  )}
+                </div>
+              )
             )}
+
             {m.meta?.embeds?.[0] && !m.deleted && <MessageEmbedCard embed={m.meta.embeds[0]} mine={mine} />}
             {!m.deleted && <MessageRefs meta={m.meta} mine={mine} />}
-            {isAi && !m.deleted && m.status === 'done' && interactive && <AiMessageFooter messageId={m.id} meta={m.meta} />}
           </div>
-          {interactive && <MessageActions message={m} mine={mine} visible={actionsOpen} handlers={handlers} />}
+          {interactive && !isAi && <MessageActions message={m} mine={mine} visible={actionsOpen} handlers={handlers} />}
         </div>
 
         {m.reactions.length > 0 && !m.deleted && (
@@ -172,22 +220,25 @@ export function MessageBubble({ message: m, mine, myId, continued, showAvatar, s
           </div>
         )}
 
-        <span className="text-[10px] text-muted-foreground px-2 mt-0.5 flex items-center gap-1">
-          {m.pinnedAt && <Pin className="h-2.5 w-2.5 text-amber-500" />}
-          {m.status === 'sending' ? (
-            'Đang gửi…'
-          ) : m.status === 'failed' ? (
-            <button onClick={() => onRetry(m)} className="text-destructive inline-flex items-center gap-1 cursor-pointer">
-              <RotateCcw className="h-3 w-3" /> Gửi lỗi · thử lại
-            </button>
-          ) : (
-            <>
-              {timeOf(m.createdAt)}
-              {m.editedAt && !m.deleted && ' · đã sửa'}
-              {seenLabel && ` · ${seenLabel}`}
-            </>
-          )}
-        </span>
+        {/* Ẩn timestamp dưới cùng đối với tin nhắn Assistant vì đã có trạng thái Done · Xs ở trên */}
+        {(!isAi || mine) && (
+          <span className="text-[10px] text-muted-foreground px-2 mt-0.5 flex items-center gap-1">
+            {m.pinnedAt && <Pin className="h-2.5 w-2.5 text-amber-500" />}
+            {m.status === 'sending' ? (
+              'Đang gửi…'
+            ) : m.status === 'failed' ? (
+              <button onClick={() => onRetry(m)} className="text-destructive inline-flex items-center gap-1 cursor-pointer">
+                <RotateCcw className="h-3 w-3" /> Gửi lỗi · thử lại
+              </button>
+            ) : (
+              <>
+                {timeOf(m.createdAt)}
+                {m.editedAt && !m.deleted && ' · đã sửa'}
+                {seenLabel && ` · ${seenLabel}`}
+              </>
+            )}
+          </span>
+        )}
       </div>
     </div>
   )

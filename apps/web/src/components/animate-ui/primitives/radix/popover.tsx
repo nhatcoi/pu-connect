@@ -63,7 +63,7 @@ export function PopoverContent({
   arrowPadding,
   sticky,
   hideWhenDetached,
-  transition = { type: 'spring', stiffness: 350, damping: 28 },
+  transition = { duration: 0.1, ease: [0.16, 1, 0.3, 1] },
   ...props
 }: PopoverContentProps) {
   return (
@@ -90,9 +90,9 @@ export function PopoverContent({
       <motion.div
         key="popover-content"
         data-slot="popover-content"
-        initial={{ opacity: 0, scale: 0.92, y: 4 }}
+        initial={{ opacity: 0, scale: 0.97, y: 3 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92, y: 4 }}
+        exit={{ opacity: 0, scale: 0.97, y: 2 }}
         transition={transition}
         {...props}
       />

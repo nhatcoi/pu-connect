@@ -32,7 +32,7 @@ import type {
   ChatRefSuggestion,
   ChatQuote,
   ChatRefType,
-  AiSuggestionsResponse,
+  AiSuggestion,
   ChatAttachment,
   ChatMember,
   ChatMessage,
@@ -78,6 +78,16 @@ const qs = (params: Record<string, string | number | null | undefined>) =>
 // Cập nhật cài đặt N7AI từng phần; hồ sơ học cũng từng trường (null / '' ⇒ xóa)
 export type AiSettingsPatch = Partial<Omit<AiSettings, 'profile'>> & { profile?: Partial<AiLearnerProfile> }
 
+export interface DynamicSuggestionItem {
+  label: string
+  prompt: string
+}
+
+export interface DynamicSuggestionsPayload {
+  suggestions: DynamicSuggestionItem[]
+  items?: AiSuggestion[]
+}
+
 export const chatApi = {
   list: (filter: ConversationFilter, cursor: string | null, limit = 20) =>
     unwrap(apiClient<Envelope<ConversationsPage>>(`/conversations?filter=${filter}&limit=${limit}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)),
@@ -118,7 +128,8 @@ export const chatApi = {
 
   aiModels: () => unwrap(apiClient<Envelope<AiModelOption[]>>('/ai/models')),
   aiQuota: () => unwrap(apiClient<Envelope<AiQuota>>('/ai/quota')),
-  aiSuggestions: (mode: AiMode) => unwrap(apiClient<Envelope<AiSuggestionsResponse>>(`/ai/suggestions?mode=${mode}`)),
+  aiSuggestions: (mode?: string) => unwrap(apiClient<Envelope<DynamicSuggestionsPayload>>(`/ai/ideas?mode=${mode || ''}`)),
+  aiRefreshSuggestions: (mode?: string) => unwrap(apiClient<Envelope<DynamicSuggestionsPayload>>('/ai/ideas/refresh', json('POST', { mode }))),
   presence: () => unwrap(apiClient<Envelope<PresenceMap>>('/presence')),
   aiReset: (id: string) => unwrap(apiClient<Envelope<ChatMessage>>(`/ai/conversations/${id}/reset`, json('POST'))),
   aiConnectors: () => unwrap(apiClient<Envelope<AiConnectorInfo[]>>('/ai/connectors')),
