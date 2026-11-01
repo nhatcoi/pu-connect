@@ -1,7 +1,6 @@
 /**
  * N7AI Agent Engine — N7AgentSession
  * Triển khai LoopHost để điều phối vòng lặp Agent với Conversation Context, ThinkFilter và ToolDispatcher.
- * Kế thừa trực tiếp từ DeepTutor (packages/chat-engine/src/native/session.ts).
  */
 import type { LoopHost, LoopState, Operation, Operations } from '../core/contracts'
 import { runLoop } from '../core/run-loop'

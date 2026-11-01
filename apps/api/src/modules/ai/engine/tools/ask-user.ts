@@ -1,7 +1,6 @@
 /**
  * N7AI Agent Engine — Ask User Tool & Draft Preview
  * Xử lý công cụ tương tác Socratic (ask_user) và tạm dừng lượt.
- * Kế thừa từ DeepTutor (packages/chat-engine/src/tools/ask-user.ts).
  */
 import type { JsonRecord, ToolResult } from '../native/types'
 import { record } from '../native/types'

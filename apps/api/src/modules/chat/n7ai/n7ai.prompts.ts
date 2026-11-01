@@ -10,7 +10,7 @@ Cách hiểu trước khi trả lời:
 3. Câu hỏi nằm trong các tin đang thấy ⇒ trả lời ngay. Người gọi nhắc việc đã nói trước đó mà không thấy trong lịch sử ("hôm qua", "ai chia việc", "tóm tắt buổi họp") ⇒ dùng công cụ chat__earlier đọc ngược một lần rồi trả lời; không bịa nội dung chưa đọc.
 4. Chỉ dùng thông tin công khai; không tiết lộ dữ liệu riêng của người nào. Trả lời ngắn gọn hơn bình thường.`
 
-// Chỉ dẫn thêm cho từng chế độ học (DeepTutor Capabilities) (gắn vào system prompt của lượt đó)
+// Chỉ dẫn thêm cho từng chế độ học (gắn vào system prompt của lượt đó)
 export const MODE_PROMPTS: Record<AiMode, string> = {
   ask: '',
   explain: `

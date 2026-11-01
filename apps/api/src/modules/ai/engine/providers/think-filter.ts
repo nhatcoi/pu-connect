@@ -1,7 +1,6 @@
 /**
  * N7AI Agent Engine — Think Filter
  * Tách biệt các thẻ <think>...</think> inline kể cả khi thẻ bị bẻ vụn qua các delta stream.
- * Kế thừa trực tiếp từ DeepTutor (packages/chat-engine/src/providers/think-filter.ts).
  */
 export class ThinkFilter {
   private pending = ''

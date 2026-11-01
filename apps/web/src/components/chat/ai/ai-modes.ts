@@ -22,8 +22,8 @@ export interface ModeMetaItem {
   hint: string
 }
 
-/** 8 DeepTutor authoritative capability modes shown in the Mode menu */
-export const DEEPTUTOR_CAPABILITIES: readonly ModeMetaItem[] = [
+/** 8 authoritative capability modes shown in the Mode menu */
+export const N7AI_CAPABILITIES: readonly ModeMetaItem[] = [
   {
     id: 'deep_solve',
     label: 'Giải bài',
@@ -115,7 +115,7 @@ export const AI_MODE_META: Record<AiMode, ModeMetaItem> = {
     placeholder: 'Chủ đề muốn tự kiểm tra, vd. "Chuẩn hóa CSDL"',
     hint: '5 câu trắc nghiệm có chấm điểm'
   },
-  deep_question: DEEPTUTOR_CAPABILITIES[2],
+  deep_question: N7AI_CAPABILITIES[2],
   flashcards: {
     id: 'flashcards',
     label: 'Flashcard',
@@ -140,15 +140,15 @@ export const AI_MODE_META: Record<AiMode, ModeMetaItem> = {
     placeholder: 'Môn + thời gian, vd. "Giải tích 2, thi sau 10 ngày"',
     hint: 'Kế hoạch theo ngày'
   },
-  solve: DEEPTUTOR_CAPABILITIES[0],
-  deep_solve: DEEPTUTOR_CAPABILITIES[0],
-  ask_questions: DEEPTUTOR_CAPABILITIES[1],
-  research: DEEPTUTOR_CAPABILITIES[3],
-  deep_research: DEEPTUTOR_CAPABILITIES[3],
-  visualize: DEEPTUTOR_CAPABILITIES[4],
-  video_lesson: DEEPTUTOR_CAPABILITIES[5],
-  audio_overview: DEEPTUTOR_CAPABILITIES[6],
-  math_animator: DEEPTUTOR_CAPABILITIES[7]
+  solve: N7AI_CAPABILITIES[0],
+  deep_solve: N7AI_CAPABILITIES[0],
+  ask_questions: N7AI_CAPABILITIES[1],
+  research: N7AI_CAPABILITIES[3],
+  deep_research: N7AI_CAPABILITIES[3],
+  visualize: N7AI_CAPABILITIES[4],
+  video_lesson: N7AI_CAPABILITIES[5],
+  audio_overview: N7AI_CAPABILITIES[6],
+  math_animator: N7AI_CAPABILITIES[7]
 }
 
 export const AI_MODE_ORDER: AiMode[] = [

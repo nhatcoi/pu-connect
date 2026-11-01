@@ -1,6 +1,5 @@
 /**
  * N7AI Agent Engine — Core Contracts
- * Kế thừa kiến trúc DeepTutor TypeScript chat engine.
  * Scheduler sở hữu bộ đếm và quyết định chuyển pha; các ports sở hữu hiệu ứng I/O.
  */
 

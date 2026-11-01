@@ -70,7 +70,7 @@ export function MessageBubble({
         continued ? 'mt-0.5' : isAi && !mine ? 'mt-5' : 'mt-3'
       )}
     >
-      {/* Trong DeepTutor, assistant message không có avatar bên lề để nội dung dàn rộng thoáng */}
+      {/* Assistant message không có avatar bên lề để nội dung dàn rộng thoáng */}
       {showAvatar && !mine && !isAi && (
         <div className="w-7 shrink-0 self-end">
           {!continued &&
@@ -98,7 +98,7 @@ export function MessageBubble({
           mine ? 'items-end' : 'items-start'
         )}
       >
-        {/* Nhãn chế độ phía trên tin nhắn của người dùng giống DeepTutor (Chat / Ask Questions / Solve...) */}
+        {/* Nhãn chế độ phía trên tin nhắn của người dùng (Chat / Ask Questions / Solve...) */}
         {mine && isAi && (
           <div className="flex justify-end pr-1 mb-1">
             <span className="text-[10.5px] font-medium tracking-wide text-muted-foreground select-none">
@@ -133,7 +133,7 @@ export function MessageBubble({
             {!!m.meta?.quotes?.length && !m.deleted && <MessageQuotes quotes={m.meta.quotes} threadId={m.conversationId} mine={mine} />}
 
             {isAi && !mine ? (
-              // Assistant Message trong N7AI: không đóng khung hộp thô, layout unboxed tinh gọn DeepTutor
+              // Assistant Message trong N7AI: không đóng khung hộp thô, layout unboxed tinh gọn
               <div className={cn('w-full min-w-0 text-foreground break-words', highlighted && 'ring-2 ring-amber-400 rounded-lg')}>
                 {m.deleted ? (
                   <p className="italic text-muted-foreground text-sm">Tin nhắn đã thu hồi</p>

@@ -1,7 +1,6 @@
 /**
  * N7AI Agent Engine — Tool Dispatcher
  * Điều phối thực thi công cụ: batching công cụ chỉ đọc, chạy tuần tự công cụ ghi, cache bộ đệm và xử lý tạm dừng ask_user.
- * Kế thừa trực tiếp từ DeepTutor (packages/chat-engine/src/tools/dispatcher.ts).
  */
 import type { Emit, JsonRecord, ToolCall, ToolResult, ToolSpec } from '../native/types'
 import { executeAskUser } from './ask-user'

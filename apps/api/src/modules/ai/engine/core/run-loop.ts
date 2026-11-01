@@ -1,6 +1,5 @@
 /**
  * N7AI Agent Engine — Pure Run Loop Scheduler
- * Kế thừa trực tiếp từ DeepTutor scheduler (packages/chat-engine/src/core/run-loop.ts).
  * Độc lập hoàn toàn với HTTP, storage và providers.
  */
 

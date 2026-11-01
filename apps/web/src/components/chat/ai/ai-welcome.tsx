@@ -3,7 +3,7 @@
 import React from 'react'
 import { N7AiMark } from '@/components/brand/pu-logo'
 
-// Màn hình chào DeepTutor-style: Logo tinh gọn + Tiêu đề Serif editorial trang nhã
+// Màn hình chào N7AI-style: Logo tinh gọn + Tiêu đề Serif editorial trang nhã
 export function AiWelcome() {
   return (
     <div className="flex w-full flex-1 min-h-0 items-end justify-center overflow-hidden pb-8 sm:pb-12 animate-fade-in px-4">

@@ -7,7 +7,7 @@ import type { BlockState } from './block.schema'
 export const CHAT_MAX_ATTACHMENTS = 10
 export const CHAT_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'] as const
 
-// Chế độ học của N7AI (DeepTutor Capabilities): đổi chỉ dẫn hệ thống + cách xử lý lượt trò chuyện
+// Chế độ học của N7AI: đổi chỉ dẫn hệ thống + cách xử lý lượt trò chuyện
 export const AI_MODES = [
   'ask',
   'explain',

@@ -1,7 +1,6 @@
 /**
  * N7AI Agent Engine — Conversation Context & Token Budget
  * Quản lý lịch sử hội thoại, tính toán token budget, cắt tỉa an toàn không làm hỏng tool calls.
- * Kế thừa trực tiếp từ DeepTutor (packages/chat-engine/src/context/conversation.ts).
  */
 import type { ContextSeed, JsonRecord, Message, Round, ToolSpec } from '../native/types'
 

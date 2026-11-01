@@ -1,6 +1,6 @@
 /**
  * N7AI Agent Engine — N7AgentService
- * Dịch vụ điều phối chính chạy các Capabilities và Session theo chuẩn DeepTutor.
+ * Dịch vụ điều phối chính chạy các Capabilities và Session.
  */
 import { Injectable, Logger } from '@nestjs/common'
 import type { AiConnectorId } from '@pu/schemas'
@@ -65,7 +65,7 @@ export class N7AgentService {
       ]
     })
 
-    // Bổ sung tool Socratic ask_user chuẩn DeepTutor
+    // Bổ sung tool Socratic ask_user
     toolSpecs.push({
       schema: {
         type: 'function',

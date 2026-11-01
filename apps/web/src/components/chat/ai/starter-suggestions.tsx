@@ -189,7 +189,7 @@ export function StarterSuggestions({
 
   return (
     <div className="mx-auto w-full max-w-[768px] px-4 pt-3 pb-3 text-center animate-fade-in select-none">
-      {/* 5 DeepTutor Capability guides */}
+      {/* 5 N7AI Capability guides */}
       <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-3 mb-3.5">
         {CAPABILITIES.map((cap) => {
           const Icon = cap.icon

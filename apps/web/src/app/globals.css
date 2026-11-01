@@ -306,7 +306,7 @@
   }
 }
 
-/* ── DeepTutor Tray & Duotone Icons ────────────────────────── */
+/* ── N7AI Tray & Duotone Icons ────────────────────────── */
 .dt-duo {
   fill: currentColor;
   fill-opacity: 0.16;
@@ -315,7 +315,7 @@
   fill: currentColor;
 }
 
-/* ── DeepTutor Tray Folding Reveal ────────────────────────── */
+/* ── N7AI Tray Folding Reveal ────────────────────────── */
 .dt-tray-reveal {
   display: inline-grid;
   grid-template-columns: 1fr;

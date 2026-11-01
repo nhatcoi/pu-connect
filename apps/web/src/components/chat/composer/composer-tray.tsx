@@ -18,7 +18,7 @@ import type { AiConnectorId, AiMode, AiSkill } from '@pu/schemas'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { AI_MODE_META, DEEPTUTOR_CAPABILITIES } from '../ai/ai-modes'
+import { AI_MODE_META, N7AI_CAPABILITIES } from '../ai/ai-modes'
 import { ConnectorHubIcon, SkillDeckIcon } from '../ai/mode-icons'
 import { useAiConnectors, useAiSkills } from '@/hooks/chat'
 
@@ -46,7 +46,7 @@ interface BuiltinSkill {
   inputHint?: string | null
 }
 
-const DEFAULT_DEEPTUTOR_SKILLS: readonly BuiltinSkill[] = [
+const DEFAULT_N7AI_SKILLS: readonly BuiltinSkill[] = [
   {
     id: 'docx',
     name: 'docx',
@@ -65,7 +65,7 @@ const DEFAULT_DEEPTUTOR_SKILLS: readonly BuiltinSkill[] = [
   {
     id: 'skill-creator',
     name: 'skill-creator',
-    description: 'Design and author DeepTutor skills (SKILL.md)'
+    description: 'Design and author N7AI skills (SKILL.md)'
   },
   {
     id: 'xlsx',
@@ -171,7 +171,7 @@ export function ComposerTray({
   }, [serverConnectors])
 
   const allSkills: BuiltinSkill[] = React.useMemo(() => {
-    const list: BuiltinSkill[] = [...DEFAULT_DEEPTUTOR_SKILLS]
+    const list: BuiltinSkill[] = [...DEFAULT_N7AI_SKILLS]
     for (const sk of userSkills) {
       if (!list.some((x) => x.id === sk.id || x.name === sk.name)) {
         list.push({
@@ -189,7 +189,7 @@ export function ComposerTray({
     <div className="flex items-center justify-between gap-2 pt-2 px-1 text-xs select-none relative">
       {/* Left controls: Mode ▾, Skills (Wand2), Connectors (Plug) */}
       <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-        {/* 1. DeepTutor Mode ⌃ Menu */}
+        {/* 1. N7AI Mode ⌃ Menu */}
         <Popover open={openModeMenu} onOpenChange={setOpenModeMenu}>
           <PopoverTrigger asChild>
             <button
@@ -238,7 +238,7 @@ export function ComposerTray({
             className="w-[324px] max-h-[440px] overflow-y-auto p-1.5 rounded-2xl shadow-2xl border border-border/80 bg-popover text-popover-foreground"
           >
             <div className="space-y-0.5">
-              {DEEPTUTOR_CAPABILITIES.map((item) => {
+              {N7AI_CAPABILITIES.map((item) => {
                 const isSelected =
                   mode === item.id ||
                   (item.id === 'deep_solve' && mode === 'solve') ||
@@ -285,7 +285,7 @@ export function ComposerTray({
           </PopoverContent>
         </Popover>
 
-        {/* 2. DeepTutor Skills ⌃ Menu */}
+        {/* 2. N7AI Skills ⌃ Menu */}
         <Popover open={openSkillsMenu} onOpenChange={setOpenSkillsMenu}>
           <PopoverTrigger asChild>
             <button

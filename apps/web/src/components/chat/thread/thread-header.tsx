@@ -78,7 +78,7 @@ export function ThreadHeader({
   const panelOpen = useN7AiLayout((s) => s.panelOpen)
   const setPanelOpen = useN7AiLayout((s) => s.setPanelOpen)
 
-  // Header riêng cho N7AI theo đúng phong cách DeepTutor
+  // Header riêng cho N7AI
   if (isAi && conv && !spaceHref) {
     return (
       <div className="shrink-0 z-20 bg-surface/90 backdrop-blur-md px-3 py-2 flex items-center justify-between border-b border-border/40 h-12">

@@ -1,7 +1,6 @@
 /**
  * N7AI Agent Engine — Model Round
  * Thực thi một vòng gọi LLM streaming, bóc tách thinking và thu thập tool calls.
- * Kế thừa kiến trúc từ DeepTutor (packages/chat-engine/src/native/model-round.ts).
  */
 import type OpenAI from 'openai'
 import type { LlmService } from '../../llm.service'

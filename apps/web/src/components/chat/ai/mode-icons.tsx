@@ -6,7 +6,7 @@ export interface ModeIconProps extends React.SVGProps<SVGSVGElement> {
   className?: string
 }
 
-/** Skills as DeepTutor needs them: a hand of cards, the front one lit. */
+/** Skills as N7AI needs them: a hand of cards, the front one lit. */
 export function SkillDeckIcon({ size = 18, className, ...props }: ModeIconProps) {
   return (
     <svg

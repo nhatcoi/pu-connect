@@ -168,7 +168,7 @@ export class AiSuggestionsService {
   private generatePromptFromTopic(topic: string, mode?: string): SuggestionItem {
     const tLower = topic.toLowerCase()
 
-    // Nhận diện ngữ cảnh môn học / chủ đề để sinh câu hỏi "bước kế tiếp" (DeepTutor jump)
+    // Nhận diện ngữ cảnh môn học / chủ đề để sinh câu hỏi "bước kế tiếp"
     if (tLower.includes('con trỏ') || tLower.includes('pointer') || tLower.includes('c/c++')) {
       return {
         label: 'Phân biệt con trỏ cấp 1, con trỏ cấp 2 và mảng trong C/C++',

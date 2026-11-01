@@ -7,9 +7,9 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
 
 ## 1. Tính Năng Đã Hoàn Thành (Completed Features)
 
-- [x] **Tái cấu trúc UI/UX Chat N7AI Toàn Diện Chuẩn DeepTutor (Active Chat, Actions Bar & Header) (2026-11-01)**:
+- [x] **Tái cấu trúc UI/UX Chat N7AI Toàn Diện (Active Chat, Actions Bar & Header) (2026-11-01)**:
   - **Thanh tác vụ câu trả lời Assistant ([`assistant-actions-bar.tsx`](apps/web/src/components/chat/ai/assistant-actions-bar.tsx))**:
-    - Thay thế hoàn toàn cụm nút Like/Dislike thô sơ bằng Action row tinh tế chuẩn DeepTutor:
+    - Thay thế hoàn toàn cụm nút Like/Dislike thô sơ bằng Action row tinh tế:
       - **Sao chép (`Copy`)**: Copy nội dung câu trả lời, hiển thị tooltip và chuyển sang dấu check xanh (`Check`) trong 1.6s.
       - **Đọc to (`Volume2`)**: Tích hợp Web Speech API (`SpeechSynthesisUtterance`), tự động nhận diện ngôn ngữ Tiếng Việt/Tiếng Anh, nút chuyển thành hình vuông dừng (`Square`) khi đang phát.
       - **Thử lại (`RotateCcw`)**: Nút bấm gọi hàm retry / regenerate câu trả lời cho turn hiện tại.
@@ -22,7 +22,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
     - **Dòng trạng thái đỉnh câu trả lời ([`activity-status.tsx`](apps/web/src/components/chat/ai/activity-status.tsx))**: Vòng tròn chấm hoạt ảnh + `Done · 4s` (hoặc spinner xoay + `Thinking… · 2s` khi đang xử lý).
     - **Loại bỏ hoàn toàn các thẻ chip gợi ý (`AiFollowUps`)** ở cuối câu trả lời theo yêu cầu người dùng (`(bỏ chip)`).
     - **Tin nhắn người dùng (User Message)**: Bổ sung nhãn `Chat` nhỏ gọn góc phải trên bong bóng; bong bóng đổi sang màu tối trung tính (`bg-secondary dark:bg-[#27272a] text-foreground rounded-2xl px-4 py-2.5 text-[14px] leading-relaxed shadow-xs`) thay cho màu xanh chói.
-  - **Header Hội Thoại DeepTutor ([`thread-header.tsx`](apps/web/src/components/chat/thread/thread-header.tsx))**:
+  - **Header Hội Thoại N7AI ([`thread-header.tsx`](apps/web/src/components/chat/thread/thread-header.tsx))**:
     - **Bên trái**: Breadcrumb tối giản: Nút viên thuốc `Chat` (`MessageSquare`) `/` Tiêu đề cuộc trò chuyện (hỗ trợ đổi tên).
     - **Bên phải (4 biểu tượng công cụ)**:
       1. `SlidersHorizontal`: Popover cấu hình mô hình AI (`AiModelPicker`), hạn ngạch sử dụng.
@@ -30,18 +30,18 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
       3. `PanelRight`: Bật/tắt thanh bên tài liệu & nguồn (`useN7AiLayout`).
       4. `MoreHorizontal`: Menu thả xuống các tác vụ hội thoại: Đổi tên, Chủ đề mới (xóa ngữ cảnh), Chia sẻ qua liên kết, Xóa cuộc trò chuyện.
 
-- [x] **Tái thiết kế Giao diện N7AI Chuẩn Hóa DeepTutor (Editorial Typography & Agent Native UX) (2026-10-31)**:
-  - **Màn hình chào & Typography Editorial DeepTutor ([`ai-welcome.tsx`](apps/web/src/components/chat/ai/ai-welcome.tsx))**:
+- [x] **Tái thiết kế Giao diện N7AI Chuẩn Hóa (Editorial Typography & Agent Native UX) (2026-10-31)**:
+  - **Màn hình chào & Typography Editorial N7AI ([`ai-welcome.tsx`](apps/web/src/components/chat/ai/ai-welcome.tsx))**:
     - Loại bỏ hoàn toàn các đoạn văn dài giải thích rườm rà (`"N7AI — trợ lý học tập..."`) và 4 thẻ bài tập lớn/card tĩnh gây thô kệch.
     - Cấu hình font Serif chuẩn quốc tế (`Lora` từ Google Fonts qua `--font-serif` trong Tailwind v4 và [`layout.tsx`](apps/web/src/app/layout.tsx)).
     - Render headline trung tâm sang trọng kết hợp cùng biểu tượng tối giản: `<N7AiMark /> What would you like to learn?` (`font-serif text-3xl sm:text-[40px] font-medium leading-[1.15] tracking-[-0.015em] text-foreground`).
-  - **Khung Soạn Thảo DeepTutor ChatComposer ([`composer.tsx`](apps/web/src/components/chat/composer/composer.tsx))**:
+  - **Khung Soạn Thảo N7AI ChatComposer ([`composer.tsx`](apps/web/src/components/chat/composer/composer.tsx))**:
     - Thiết kế card bo tròn mềm mại (`rounded-2xl sm:rounded-[24px] border border-border/80 bg-card shadow-sm`).
     - Bổ sung vạch xanh chỉ báo thẳng đứng (vertical accent indicator bar) bên cạnh vùng gõ tin nhắn.
     - Hàng tác vụ bên trong tinh gọn: Nút đính kèm `+` ở góc trái; Model Selector (`⚡ Nhanh / Gemini 2.5 Flash ▾`), nút Micro thu âm và nút Gửi tròn (`ArrowUp` `↑`) ở góc phải.
     - Khay tác nhân (`ComposerTray` [`composer-tray.tsx`](apps/web/src/components/chat/composer/composer-tray.tsx)): Tích hợp menu thả xuống `Mode ▾` với biểu tượng `Shapes`, nút thanh trượt tùy chỉnh (Sliders), nút kết nối MCP Plug (`🔌`), cùng chip hạn ngạch sử dụng theo ngày (`ContextBudgetChip` `X/30 lượt`).
   - **Thanh Gợi Ý & Phím Tắt Khả Năng N7AI ([`starter-suggestions.tsx`](apps/web/src/components/chat/ai/starter-suggestions.tsx))**:
-    - 5 nút viên thuốc (Capability Pills) với bộ biểu tượng SVG 16x16 sắc nét trích xuất từ DeepTutor: `💡 Explain`, `√x Solve`, `⊶ Practice`, `🗺️ Plan`, `🔬 Research` ([`starter-icons.tsx`](apps/web/src/components/chat/ai/starter-icons.tsx)).
+    - 5 nút viên thuốc (Capability Pills) với bộ biểu tượng SVG 16x16 sắc nét: `💡 Explain`, `√x Solve`, `⊶ Practice`, `🗺️ Plan`, `🔬 Research` ([`starter-icons.tsx`](apps/web/src/components/chat/ai/starter-icons.tsx)).
     - Dòng gợi ý ý tưởng thông minh xoay vòng: `🧭 Ideas for you: [chủ đề học thuật / lập trình] 🔄` với nút Refresh để đổi nhanh các ý tưởng nghiên cứu, bấm vào điền ngay vào ô soạn thảo.
     - Bố cục căn giữa trang rỗng tự động thu gọn (`flexGrow: started ? 0 : 1.4`) mượt mà ngay khi người dùng gửi tin nhắn đầu tiên.
 
@@ -125,9 +125,9 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
     - Loại bỏ cảnh báo offline của daemon bên ngoài; hiển thị Dashboard trạng thái sẵn sàng trực tiếp trên API cùng các chỉ số: Tổng số bot, Bot đang hoạt động, Tổng bài đăng của bot, Tổng bình luận, Tổng tim.
     - Hỗ trợ bật/tắt bot nhanh (1-click toggle switch) ngay trên danh sách Bot ([`bot-accounts-tab.tsx`](apps/admin/src/features/bots/bot-accounts-tab.tsx)).
 
-- [x] **Tái cấu trúc N7AI theo toàn bộ logic Agent và UI/UX chuẩn DeepTutor (2026-11-01)**:
+- [x] **Tái cấu trúc N7AI theo toàn bộ logic Agent và UI/UX (2026-11-01)**:
   - **Backend Agent Engine (`apps/api/src/modules/ai/engine/`)**:
-    - **Pure RunLoop Scheduler 2 Pha (`run-loop.ts`, `contracts.ts`)**: Kế thừa trực tiếp kiến trúc DeepTutor với hai pha rõ rệt: `Exploration Phase` (thăm dò, gọi tools tra cứu RAG/Web) và `Settlement Phase` (khóa tool mới, cấp token tối thiểu 2.048 để tổng hợp câu trả lời sư phạm).
+    - **Pure RunLoop Scheduler 2 Pha (`run-loop.ts`, `contracts.ts`)**: Gồm hai pha rõ rệt: `Exploration Phase` (thăm dò, gọi tools tra cứu RAG/Web) và `Settlement Phase` (khóa tool mới, cấp token tối thiểu 2.048 để tổng hợp câu trả lời sư phạm).
     - **Resilience Tự Động Phục Hồi**: Tự động phục hồi khi câu trả lời chạm trần token (`continue_truncated`), tự khôi phục khi model trả về rỗng (`recover_empty`) thay vì báo lỗi hoặc cụt câu.
     - **ThinkFilter (`think-filter.ts`)**: Bóc tách thẻ `<think>...</think>` hoặc `reasoning_content` theo thời gian thực mà không làm rò rỉ tag khi bị xé vụn qua các delta stream SSE.
     - **Conversation Context (`conversation.ts`)**: Quản lý lịch sử hội thoại, tính toán token budget, cắt tỉa kết quả tool cũ an toàn (`SNIPPED`) khi vượt context window mà không để lại tool call mồ côi.
@@ -137,7 +137,7 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
   - **Frontend UI/UX (`apps/web`)**:
     - **Thinking Accordion (`thinking-accordion.tsx`)**: Khối suy luận logic gập/mở mượt mà với `motion/react`, hiển thị đồng hồ đếm giây suy nghĩ theo thời gian thực và tự cuộn theo dòng tư duy của AI.
     - **AskUser Interactive Card (`ask-user-card.tsx`)**: Hiển thị các nút trắc nghiệm / lựa chọn phản biện tương tác khi N7AI cần người dùng chọn nhánh học tập, cho phép bấm 1-click để gửi câu trả lời tiếp tục phiên.
-    - **Context Budget Chip (`context-budget-chip.tsx`)**: Huy hiệu đo lường trực quan số lượt hỏi AI còn lại trong ngày theo phong cách DeepTutor trên thanh soạn tin và thanh chế độ học (`AiModeBar`).
+    - **Context Budget Chip (`context-budget-chip.tsx`)**: Huy hiệu đo lường trực quan số lượt hỏi AI còn lại trong ngày trên thanh soạn tin và thanh chế độ học (`AiModeBar`).
     - **Tích hợp vào AiMessageBody & Temporary Chat**: `AiMessageBody` và `temporary-chat.tsx` hiển thị đầy đủ luồng Thinking Accordion, AiSteps, Quiz/Flashcards, và AskUser Card.
   - **Chất lượng mã nguồn**: Đạt chuẩn `AGENTS.md`: 100% `pnpm typecheck` và `pnpm lint` không lỗi, không cảnh báo.
 

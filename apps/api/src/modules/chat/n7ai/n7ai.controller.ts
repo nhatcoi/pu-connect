@@ -28,7 +28,7 @@ export class N7AiController {
     return this.llm.quota(requireUserId(req))
   }
 
-  // Gợi ý ý tưởng học tập động (Ideas for you) theo DeepTutor
+  // Gợi ý ý tưởng học tập động (Ideas for you)
   // Hỗ trợ cả người dùng đăng nhập lẫn khách/chat tạm
   @Get('ideas')
   getIdeas(@Req() req: Request, @Query('mode') mode?: string) {
@@ -40,7 +40,7 @@ export class N7AiController {
     return this.suggestions.refresh(optionalUserId(req), mode)
   }
 
-  // Alias để tương thích DeepTutor API path
+  // Alias để tương thích đường dẫn API cũ
   @Get('suggestions/ideas')
   getSuggestionsIdeas(@Req() req: Request, @Query('mode') mode?: string) {
     return this.suggestions.get(optionalUserId(req), mode)

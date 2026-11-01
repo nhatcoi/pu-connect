@@ -399,7 +399,7 @@ export function Composer({
           />
         </div>
 
-        {/* DeepTutor Internal Actions Row */}
+        {/* N7AI Internal Actions Row */}
         <div className="flex items-center justify-between gap-2 pt-1">
           <div className="flex items-center gap-1.5">
             {!editing && (
@@ -477,7 +477,7 @@ export function Composer({
           </div>
         </div>
 
-        {/* DeepTutor-style Bottom Tray */}
+        {/* Bottom Tray */}
         {isAi && !editing && (
           <ComposerTray
             mode={aiMode}
