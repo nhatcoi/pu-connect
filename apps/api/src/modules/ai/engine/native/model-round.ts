@@ -1,6 +1,7 @@
 /**
  * Agent engine — một vòng gọi model streaming: bóc suy nghĩ, thu tool call, đo usage.
  */
+import { Logger } from '@nestjs/common'
 import type OpenAI from 'openai'
 import type { LlmService } from '../../llm.service'
 import { HostFailure } from '../core/contracts'
@@ -36,6 +37,8 @@ export const isStreamDrop = (err: unknown) => {
 }
 
 export const TOOL_REJECTED_STATUSES = [400, 422]
+
+const logger = new Logger('N7ModelRound')
 
 export async function executeModelRound(llm: LlmService, options: ModelRoundOptions): Promise<Round> {
   const { model, signal, emit, conversation, tools, toolsAllowed, outputTokens } = options
@@ -126,6 +129,7 @@ export async function executeModelRound(llm: LlmService, options: ModelRoundOpti
       const status = (error as { status?: number } | null)?.status
       // Provider không nhận tool_choice ép ⇒ thử lại một lần với tự chọn
       if (forced && status !== undefined && TOOL_REJECTED_STATUSES.includes(status) && !visible && !reasoning && !pending.size) {
+        logger.warn(`tool_choice ép "${options.forceTool}" bị từ chối (${status}), thử lại ở chế độ tự chọn`)
         forced = false
         continue
       }
@@ -154,6 +158,9 @@ export async function executeModelRound(llm: LlmService, options: ModelRoundOpti
     completion_tokens: estimateText(visible) + estimateText(reasoning) + estimateText(toolCalls.map((c) => c.arguments).join(''))
   }
   const ended = Date.now()
+  logger.log(
+    `round tools=${tools.length} choice=${forced ? `force:${options.forceTool}` : toolsAllowed ? 'auto' : 'none'} → finish=${finishReason} calls=[${toolCalls.map((c) => c.name).join(',')}] text=${visible.length} reasoning=${reasoning.length}`
+  )
   const waitMs = (firstChunkAt ?? ended) - started
   return { text: visible, reasoning, toolCalls, usage, usageEstimated: !reported, finishReason, waitMs, streamMs: firstChunkAt ? ended - firstChunkAt : 0 }
 }

@@ -122,7 +122,7 @@ export class QuizSession {
 
   finishNudge(): string | null {
     if (this.created) return null
-    if (!this.plan) return 'Bạn chưa tạo quiz. Gọi quiz_plan (chủ đề, số câu, mức độ) rồi create_quiz; đừng viết câu hỏi ra chữ.'
+    if (!this.plan) return 'Bạn mới viết câu hỏi ra chữ, chưa lưu quiz. Gọi quiz_plan (tiêu đề, số câu, mức độ, chủ đề) rồi gọi create_quiz với chính các câu đã soạn (đủ 4 lựa chọn, answer, explain); không viết lại ra chữ.'
     return `Đã lập kế hoạch nhưng chưa lưu quiz. Gọi create_quiz với đúng ${this.plan.count} câu theo kế hoạch.`
   }
 }

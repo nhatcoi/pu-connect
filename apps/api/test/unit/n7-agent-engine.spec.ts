@@ -455,7 +455,7 @@ describe('N7AI Agent Engine Unit Tests', () => {
 
     it('nhắc khi kết thúc mà chưa lưu quiz; chỉ tính đã lưu khi tool không lỗi', () => {
       const cap = quizCapability()
-      expect(cap.policy?.checkFinish?.('')).toMatch(/chưa tạo quiz/)
+      expect(cap.policy?.checkFinish?.('')).toMatch(/chưa lưu quiz/)
       cap.tools[0].run({ count: 5 })
       expect(cap.policy?.checkFinish?.('')).toMatch(/chưa lưu quiz/)
       cap.observe?.('create_quiz', JSON.stringify({ error: 'lỗi' }))
