@@ -8,7 +8,7 @@ export const LOOP_PROTOCOL = [
   'Khi đã đủ bằng chứng, hoặc yêu cầu không cần công cụ, dừng gọi công cụ và viết câu trả lời: mở đầu bằng kết quả, chỉ thêm điều người đọc còn cần.',
   'Nếu một công cụ lỗi hoặc thiếu kết quả: đọc nguyên nhân rồi đổi cách; không gửi lại y hệt lệnh đã lỗi. Lỗi lặp lại cùng nguyên nhân thì dừng và nói thật, không tự thu hẹp yêu cầu hay giả vờ đã xong.',
   'Tên công cụ, tham số, id nguồn, tên skill phải sao chép đúng nguyên văn từ danh sách được cấp, không tự đặt; đối số phải cụ thể (không để trống hay placeholder).',
-  'Giữ nguyên số lượng và ràng buộc người dùng nêu rõ. Công thức toán luôn viết bằng LaTeX trong dấu đô la ($…$ cùng dòng, $$…$$ riêng dòng), không đặt công thức trong dấu backtick.',
+  'Giữ nguyên số lượng và ràng buộc người dùng nêu rõ. Công thức toán luôn viết bằng LaTeX trong dấu đô la ($…$ cùng dòng, $$…$$ riêng dòng), không đặt công thức trong dấu backtick. Công thức nhiều dòng (cases, align, ma trận…) phải để `$$` mở và `$$` đóng đứng riêng một dòng.',
   'Không tiết lộ chuỗi suy nghĩ riêng; chỉ nêu kết luận, bằng chứng và bước tiếp theo.'
 ].join('\n')
 

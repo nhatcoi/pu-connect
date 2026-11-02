@@ -95,6 +95,18 @@ function CodeBlock({ className, children, ...props }: { className?: string; chil
 }
 
 /**
+ * Công thức khối nhiều dòng mà `$$` dính vào nội dung (`$$\begin{cases}` … `\end{cases}$$`) bị remark-math coi là hàng rào có "meta"
+ * và KHÔNG có dòng đóng ⇒ nuốt cả phần còn lại của câu trả lời (hiện chữ đỏ "undefined"). Tách `$$` ra dòng riêng; công thức một dòng giữ nguyên.
+ */
+export function normalizeDisplayMath(text: string): string {
+  if (!text.includes('$$')) return text
+  return text
+    .split(/(```[\s\S]*?(?:```|$))/g)
+    .map((part) => (part.startsWith('```') ? part : part.replace(/\$\$([\s\S]+?)\$\$/g, (match, body: string) => (body.includes('\n') ? `\n\n$$\n${body.trim()}\n$$\n\n` : match))))
+    .join('')
+}
+
+/**
  * Pre-processes markdown to turn @mentions and #hashtags into markdown links
  */
 function enhanceMentionsAndTags(text: string): string {
@@ -199,7 +211,7 @@ const REHYPE_PLUGINS: Record<'inline' | 'full', Options['rehypePlugins']> = {
 
 // memo: nội dung không đổi thì không render lại (nhiều khối Markdown trong một danh sách tin nhắn)
 export const MarkdownPreview = React.memo(function MarkdownPreview({ content, className, inline = false }: MarkdownPreviewProps) {
-  const processedContent = useMemo(() => (inline ? normalizeInlineMarkdown(content || '') : enhanceMentionsAndTags(content || '')), [content, inline])
+  const processedContent = useMemo(() => (inline ? normalizeInlineMarkdown(content || '') : enhanceMentionsAndTags(normalizeDisplayMath(content || ''))), [content, inline])
   const mode = inline ? 'inline' : 'full'
 
   return (
