@@ -77,6 +77,8 @@ export interface N7AgentInput {
   execute: ToolExecutor
   copy?: Partial<EngineCopy>
   policy?: LoopPolicy
+  /** Vòng đầu của lượt ép model gọi đúng tool này (provider từ chối thì rơi về tự chọn) */
+  openingTool?: string
   sessionId?: string
   /** Gọi đầu mỗi vòng (trừ vòng đầu): tin người dùng gửi thêm khi agent đang làm việc ⇒ đưa vào ngữ cảnh vòng sau */
   drainInputs?: () => Promise<string[]>

@@ -257,6 +257,36 @@ describe('N7AI Agent Engine Unit Tests', () => {
       expect(events.filter((e) => e.type === 'content').map((e) => e.content).join('')).toBe('Xin chào')
     })
 
+    it('openingTool: vòng đầu ép gọi tool đó, các vòng sau tự chọn', async () => {
+      const { llm, requests } = fakeLlm([[tool('c1', 'search')], text('Xong')])
+      await sessionOf(llm, base({ openingTool: 'search' }), []).run()
+      expect(requests[0].tool_choice).toEqual({ type: 'function', function: { name: 'search' } })
+      expect(requests[1].tool_choice).toBe('auto')
+    })
+
+    it('openingTool: provider từ chối tool_choice ép (400) ⇒ thử lại một lần với tự chọn', async () => {
+      const requests: any[] = []
+      const llm = {
+        chat: async (body: any) => {
+          requests.push(structuredClone(body))
+          if (requests.length === 1) throw Object.assign(new Error('tool_choice not supported'), { status: 400 })
+          return (async function* () {
+            for (const c of text('Ổn')) yield c
+          })()
+        }
+      } as unknown as LlmService
+      const r = await sessionOf(llm, base({ openingTool: 'search' }), []).run()
+      expect(requests.map((x) => typeof x.tool_choice)).toEqual(['object', 'string'])
+      expect(requests[1].tool_choice).toBe('auto')
+      expect(r.response).toBe('Ổn')
+    })
+
+    it('openingTool không có trong danh sách tool ⇒ không ép', async () => {
+      const { llm, requests } = fakeLlm([text('Ổn')])
+      await sessionOf(llm, base({ openingTool: 'khong_co' }), []).run()
+      expect(requests[0].tool_choice).toBe('auto')
+    })
+
     it('suy nghĩ ăn hết ngân sách ⇒ nhắc "hành động ngay", rồi có câu trả lời', async () => {
       const spent = [chunk({ reasoning_content: 'nghĩ mãi' }), chunk({}, 'length', { prompt_tokens: 10, completion_tokens: 4096 })]
       const { llm, requests } = fakeLlm([spent, text('Đáp án')])
@@ -382,7 +412,8 @@ describe('N7AI Agent Engine Unit Tests', () => {
     const good = [0, 1, 2, 3, 1].map((a, i) => q(i + 1, a))
     const plan = { title: 't', count: 5, level: 'vừa' as const, topics: [] as string[] }
 
-    it('mode quiz và deep_question dùng capability trắc nghiệm', () => {
+    it('mode quiz và deep_question dùng capability trắc nghiệm, ép quiz_plan ở vòng đầu', () => {
+      expect(capabilityFor('quiz', false)?.openingTool).toBe('quiz_plan')
       expect(capabilityFor('quiz', false)?.id).toBe('quiz')
       expect(capabilityFor('deep_question', false)?.id).toBe('quiz')
     })

@@ -95,7 +95,7 @@ export class N7AgentSession implements LoopHost {
     await this.emit({ type: 'progress', content, metadata: { trace_kind: kind } })
   }
 
-  private async callModel(toolsAllowed: boolean): Promise<Round> {
+  private async callModel(toolsAllowed: boolean, forceTool?: string): Promise<Round> {
     const round = await executeModelRound(this.llm, {
       model: this.input.seed.model,
       signal: this.signal,
@@ -103,6 +103,7 @@ export class N7AgentSession implements LoopHost {
       conversation: this.conversation,
       tools: this.tools(),
       toolsAllowed,
+      forceTool,
       outputTokens: this.input.seed.outputTokens,
       onSnipped: () => this.warn(this.copy.contextShortened, 'context_window_guard')
     })
@@ -132,7 +133,8 @@ export class N7AgentSession implements LoopHost {
         const settling = args.settling === true
         this.settling = settling
         if (this.rounds > 0) await this.takeInputs()
-        const round = await this.callModel(!settling && this.tools().length > 0)
+        const opening = !settling && this.rounds === 0 ? this.input.openingTool : undefined
+        const round = await this.callModel(!settling && this.tools().length > 0, opening)
         this.conversation.appendAssistant(round)
         const truncated = isLength(round.finishReason)
         this.finishReason = truncated ? 'length' : round.finishReason === 'content_filter' ? 'content_filter' : 'stop'

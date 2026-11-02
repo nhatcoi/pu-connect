@@ -151,6 +151,7 @@ export function quizCapability(): LoopCapability {
         run: (args) => session.setPlan(args)
       }
     ],
+    openingTool: 'quiz_plan',
     guard: (name, args) => session.guard(name, args),
     observe: (name, result) => session.observe(name, result),
     policy: { checkFinish: () => session.finishNudge() }

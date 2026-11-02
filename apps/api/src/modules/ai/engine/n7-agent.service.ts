@@ -150,7 +150,7 @@ export class N7AgentService {
 
       const engine = new N7AgentSession(
         this.llm,
-        { config: budgets, seed, tools, execute, policy: capability?.policy, drainInputs: options.drainInputs },
+        { config: budgets, seed, tools, execute, policy: capability?.policy, openingTool: capability?.openingTool, drainInputs: options.drainInputs },
         (event: EngineEvent) => {
           if (event.type === 'content') emit(event.content)
           else if (event.type === 'thinking') options.onThinking?.(event.content)

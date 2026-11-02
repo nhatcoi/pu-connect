@@ -18,6 +18,8 @@ export interface ModelRoundOptions {
   tools: ToolSchema[]
   /** false ⇒ vẫn gửi danh sách tool (lịch sử có tool call) nhưng đặt tool_choice = none */
   toolsAllowed: boolean
+  /** Ép model gọi tool này (chỉ khi toolsAllowed và tool có trong danh sách) */
+  forceTool?: string
   outputTokens: number
   /** Gỡ thông báo "đã rút gọn ngữ cảnh" */
   onSnipped?: () => Promise<void> | void
@@ -49,13 +51,19 @@ export async function executeModelRound(llm: LlmService, options: ModelRoundOpti
     return out
   }) as unknown as OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 
-  const body = {
+  let forced = !!options.forceTool && toolsAllowed && tools.some((t) => t.function.name === options.forceTool)
+  const makeBody = () => ({
     messages,
     max_tokens: outputTokens,
     stream: true as const,
     stream_options: { include_usage: true },
-    ...(tools.length ? { tools: tools as OpenAI.Chat.Completions.ChatCompletionTool[], tool_choice: toolsAllowed ? ('auto' as const) : ('none' as const) } : {})
-  }
+    ...(tools.length
+      ? {
+          tools: tools as OpenAI.Chat.Completions.ChatCompletionTool[],
+          tool_choice: forced ? { type: 'function' as const, function: { name: options.forceTool as string } } : toolsAllowed ? ('auto' as const) : ('none' as const)
+        }
+      : {})
+  })
 
   const started = Date.now()
   let firstChunkAt: number | undefined
@@ -69,7 +77,7 @@ export async function executeModelRound(llm: LlmService, options: ModelRoundOpti
 
   for (;;) {
     try {
-      const stream = await llm.chat(body, { signal, model })
+      const stream = await llm.chat(makeBody(), { signal, model })
       for await (const chunk of stream) {
         signal.throwIfAborted()
         if (chunk.usage) reported = { prompt_tokens: chunk.usage.prompt_tokens ?? 0, completion_tokens: chunk.usage.completion_tokens ?? 0 }
@@ -116,6 +124,11 @@ export async function executeModelRound(llm: LlmService, options: ModelRoundOpti
         continue
       }
       const status = (error as { status?: number } | null)?.status
+      // Provider không nhận tool_choice ép ⇒ thử lại một lần với tự chọn
+      if (forced && status !== undefined && TOOL_REJECTED_STATUSES.includes(status) && !visible && !reasoning && !pending.size) {
+        forced = false
+        continue
+      }
       if (tools.length && status !== undefined && TOOL_REJECTED_STATUSES.includes(status) && !visible && !pending.size) throw error
       throw new HostFailure(error instanceof Error ? error.message : String(error), 'model-round', visible.length > 0 || pending.size > 0)
     }

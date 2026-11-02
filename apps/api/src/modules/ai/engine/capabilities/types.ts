@@ -15,6 +15,8 @@ export interface LoopCapability {
   policy?: LoopPolicy
   budgets?: Partial<LoopConfig>
   /** Chạy trước khi một tool NGOÀI (không thuộc capability) được thực thi: trả chuỗi ⇒ từ chối lệnh với lỗi đó */
+  /** Tool bắt buộc gọi ở vòng đầu của lượt (vd. quiz_plan): model hay viết thẳng ra chữ nếu chỉ nhắc */
+  openingTool?: string
   guard?: (name: string, args: JsonRecord) => string | null
   /** Sau khi tool ngoài chạy xong: capability ghi nhận kết quả (vd. quiz đã được lưu) */
   observe?: (name: string, result: string) => void
