@@ -1,6 +1,6 @@
 /**
  * N7AI Agent Engine — Unit Tests
- * ThinkFilter, Conversation, ask_user, dispatcher, RunLoop scheduler, session (model giả) và capability giải bài.
+ * ThinkFilter, Conversation, ask_user, dispatcher, RunLoop scheduler, session (model giả), capability giải bài và trắc nghiệm.
  */
 import { ThinkFilter } from '../../src/modules/ai/engine/providers/think-filter'
 import { Conversation, SNIPPED, estimateText } from '../../src/modules/ai/engine/context/conversation'
@@ -11,6 +11,8 @@ import type { LoopConfig, LoopHost, Operation, Operations } from '../../src/modu
 import { N7AgentSession, ReasoningBudgetExhausted } from '../../src/modules/ai/engine/native/n7-session'
 import { resolveCopy } from '../../src/modules/ai/engine/native/copy'
 import { solveCapability } from '../../src/modules/ai/engine/capabilities/solve'
+import { capabilityFor } from '../../src/modules/ai/engine/capabilities'
+import { quizCapability, quizIssues } from '../../src/modules/ai/engine/capabilities/quiz'
 import type { EngineEvent, N7AgentInput, ToolCall } from '../../src/modules/ai/engine/native/types'
 import type { LlmService } from '../../src/modules/ai/llm.service'
 
@@ -365,6 +367,60 @@ describe('N7AI Agent Engine Unit Tests', () => {
       expect(first.steps.map((s: { id: string }) => s.id)).toEqual(['s1', 's2'])
       expect(run('solve_replan', { reason: 'lại', steps: ['d'] }).ok).toBe(true)
       expect(run('solve_replan', { reason: 'nữa', steps: ['e'] }).error).toMatch(/hết số lần/)
+    })
+  })
+
+  describe('Capability trắc nghiệm', () => {
+    const SUBJECTS = ['đạo hàm đa thức', 'hàm lượng giác', 'quy tắc thương', 'hệ số góc tiếp tuyến', 'điểm cực trị hàm bậc bốn']
+    const q = (i: number, answer: number, extra: Record<string, unknown> = {}) => ({
+      q: `Tính ${SUBJECTS[(i - 1) % 5]} trong bài số ${i}`,
+      options: [`A${i}`, `Bb${i}`, `Ccc${i}`, `Dddd${i}`].map((o) => `${o} lựa chọn`),
+      answer,
+      explain: 'Vì đúng như vậy.',
+      ...extra
+    })
+    const good = [0, 1, 2, 3, 1].map((a, i) => q(i + 1, a))
+    const plan = { title: 't', count: 5, level: 'vừa' as const, topics: [] as string[] }
+
+    it('mode quiz và deep_question dùng capability trắc nghiệm', () => {
+      expect(capabilityFor('quiz', false)?.id).toBe('quiz')
+      expect(capabilityFor('deep_question', false)?.id).toBe('quiz')
+    })
+
+    it('từ chối create_quiz khi chưa có kế hoạch, kể cả tên có tiền tố connector', () => {
+      const cap = quizCapability()
+      expect(cap.guard?.('create_quiz', { questions: good })).toMatch(/quiz_plan/)
+      expect(cap.guard?.('my_study__create_quiz', { questions: good })).toMatch(/quiz_plan/)
+      expect(cap.guard?.('web_search', {})).toBeNull()
+    })
+
+    it('có kế hoạch: bộ đạt qua; sai chất lượng bị chặn tối đa 3 lần rồi cho qua', () => {
+      const cap = quizCapability()
+      expect(JSON.parse(cap.tools[0].run({ count: 5, topics: ['đạo hàm'] })).ok).toBe(true)
+      expect(cap.guard?.('create_quiz', { questions: good })).toBeNull()
+      for (let i = 0; i < 3; i++) expect(cap.guard?.('create_quiz', { questions: good.slice(0, 3) })).toMatch(/Cần đúng 5 câu/)
+      expect(cap.guard?.('create_quiz', { questions: good.slice(0, 3) })).toBeNull()
+    })
+
+    it('bắt lựa chọn trùng, thiếu giải thích, câu trùng ý và đáp án dồn một vị trí', () => {
+      expect(quizIssues(plan, [0, 0, 0, 0, 1].map((a, i) => q(i + 1, a))).join('|')).toMatch(/dồn vào vị trí A/)
+      const bad = [...good]
+      bad[1] = { ...good[1], options: ['x', 'x', 'y', 'z'], explain: '' }
+      expect(quizIssues(plan, bad).join('|')).toMatch(/trùng nhau[\s\S]*thiếu giải thích|thiếu giải thích[\s\S]*trùng nhau/)
+      const same = [...good]
+      same[3] = { ...good[0] }
+      expect(quizIssues(plan, same).join('|')).toMatch(/trùng ý/)
+    })
+
+    it('nhắc khi kết thúc mà chưa lưu quiz; chỉ tính đã lưu khi tool không lỗi', () => {
+      const cap = quizCapability()
+      expect(cap.policy?.checkFinish?.('')).toMatch(/chưa tạo quiz/)
+      cap.tools[0].run({ count: 5 })
+      expect(cap.policy?.checkFinish?.('')).toMatch(/chưa lưu quiz/)
+      cap.observe?.('create_quiz', JSON.stringify({ error: 'lỗi' }))
+      expect(cap.policy?.checkFinish?.('')).not.toBeNull()
+      cap.observe?.('create_quiz', JSON.stringify({ ok: true }))
+      expect(cap.policy?.checkFinish?.('')).toBeNull()
     })
   })
 })

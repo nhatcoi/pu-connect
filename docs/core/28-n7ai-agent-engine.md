@@ -24,7 +24,7 @@ runReply (n7ai.service.ts)
 | Vòng model | `native/model-round.ts` | Stream, bóc `<think>`, thu tool call, thử lại một lần khi luồng bị cắt, ước lượng usage khi gateway không trả |
 | Ngữ cảnh | `context/conversation.ts` | Chiếu theo cửa sổ: lược kết quả tool cũ rồi bỏ **nguyên nhóm** lịch sử cũ nhất, không để tool mồ côi |
 | Tool | `tools/dispatcher.ts`, `tools/ask-user.ts` | Bỏ lệnh trùng, lọc đối số `_…`, tối đa 15 lệnh / vòng, từ chối lô bị cắt, `ask_user` |
-| Capability | `capabilities/` | `solve`, `ask_questions`, `research` |
+| Capability | `capabilities/` | `solve`, `quiz`, `ask_questions`, `research` |
 | Prompt nền | `prompt/foundation.ts` | Giao thức vòng lặp (một agent, mặc định hành động, hỏi gộp) |
 
 ## Hành vi chống lỗi
@@ -43,6 +43,7 @@ runReply (n7ai.service.ts)
 ## Capability theo chế độ học
 
 - `solve` / `deep_solve`: công cụ `solve_plan`, `solve_finish_step`, `solve_replan` (tối đa 2 lần, giữ bước đã xong); chính sách chặn kết luận khi còn bước chưa xong (một lần / lượt). Bài đơn giản không lập kế hoạch thì không bị chặn.
+- `quiz` / `deep_question` (`capabilities/quiz.ts`): công cụ `quiz_plan` (tiêu đề, số câu, mức độ, chủ đề); hook `guard` từ chối `create_quiz` khi chưa có kế hoạch hoặc bộ câu chưa đạt (sai số câu, lựa chọn trùng, thiếu `explain`, câu trùng ý, đáp án dồn một vị trí hoặc luôn là lựa chọn dài nhất); sửa tối đa 3 lần rồi cho qua; hook `observe` ghi nhận quiz đã lưu; chính sách nhắc một lần nếu kết thúc mà chưa lưu quiz. `guard`/`observe` là móc chung của `LoopCapability` cho tool ngoài capability. Test: `test/unit/n7-agent-engine.spec.ts` (mục "Capability trắc nghiệm").
 - `ask_questions`: ưu tiên `ask_user` với 1–3 câu định hướng.
 - `research` / `deep_research` / cờ research: ngân sách thăm dò 5 vòng và chỉ dẫn đối chiếu nguồn.
 

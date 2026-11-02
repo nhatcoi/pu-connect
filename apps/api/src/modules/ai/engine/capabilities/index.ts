@@ -1,5 +1,6 @@
 import type { AiMode } from '@pu/schemas'
 import type { LoopCapability } from './types'
+import { quizCapability } from './quiz'
 import { solveCapability } from './solve'
 
 export type { CapabilityTool, LoopCapability } from './types'
@@ -19,6 +20,9 @@ export function capabilityFor(mode: AiMode | undefined, research: boolean): Loop
     case 'solve':
     case 'deep_solve':
       return solveCapability()
+    case 'quiz':
+    case 'deep_question':
+      return quizCapability()
     case 'ask_questions':
       return { id: 'ask_questions', block: ASK_QUESTIONS_BLOCK, tools: [] }
     case 'research':

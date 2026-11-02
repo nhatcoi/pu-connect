@@ -19,7 +19,15 @@ import { LOOP_PROTOCOL, composeSystem } from './prompt/foundation'
 import { N7AgentSession, ReasoningBudgetExhausted } from './native/n7-session'
 import { TOOL_REJECTED_STATUSES } from './native/model-round'
 import { ASK_USER_SCHEMA } from './tools/ask-user'
-import type { AskUserPause, ContextSeed, EngineEvent, Message, ToolCall, ToolSchema } from './native/types'
+import { record, type AskUserPause, type ContextSeed, type EngineEvent, type JsonRecord, type Message, type ToolCall, type ToolSchema } from './native/types'
+
+const parseArgs = (raw: string): JsonRecord => {
+  try {
+    return record(JSON.parse(raw || '{}'))
+  } catch {
+    return {}
+  }
+}
 
 // Tài liệu / nguồn dài hơn ngưỡng này ⇒ tóm lược một lần trước vòng đầu để model nắm toàn cục
 const BRIEF_THRESHOLD_CHARS = 24_000
@@ -100,7 +108,12 @@ export class N7AgentService {
         const external: { index: number; call: ToolCall }[] = []
         calls.forEach((call, index) => {
           const mine = own.get(call.name)
-          if (!mine) return void external.push({ index, call })
+          if (!mine) {
+            const refusal = capability?.guard?.(call.name, parseArgs(call.arguments))
+            if (refusal) outputs[index] = JSON.stringify({ error: refusal })
+            else external.push({ index, call })
+            return
+          }
           try {
             outputs[index] = mine.run(JSON.parse(call.arguments || '{}') as Record<string, unknown>)
           } catch {
@@ -109,7 +122,10 @@ export class N7AgentService {
         })
         if (external.length) {
           const results = await runner.batch(external.map((e) => e.call), enabled)
-          external.forEach((e, i) => (outputs[e.index] = results[i]))
+          external.forEach((e, i) => {
+            outputs[e.index] = results[i]
+            capability?.observe?.(e.call.name, results[i])
+          })
         }
         return outputs
       }
