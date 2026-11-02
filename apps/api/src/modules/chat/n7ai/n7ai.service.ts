@@ -24,6 +24,7 @@ import { PresentationToolsService } from './agent/presentation-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
 import { ConversationContextService } from './context/conversation-context.service'
 import { MemoryToolsService } from './agent/memory-tools.service'
+import { SkillToolsService } from './agent/skill-tools.service'
 import { ConversationToolsService } from './context/conversation-tools.service'
 import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
 import { AiMemoriesService } from './ai-memories.service'
@@ -105,6 +106,7 @@ export class N7AiService {
     private readonly conversationContext: ConversationContextService,
     private readonly conversationTools: ConversationToolsService,
     private readonly memoryTools: MemoryToolsService,
+    private readonly skillTools: SkillToolsService,
     private readonly sources: AiSourcesService
   ) {}
 
@@ -236,7 +238,10 @@ export class N7AiService {
       const slideCreator = this.presentationTools.open(requesterId, placeholder.id)
       // Thread riêng: tool về chính PU Connect luôn có; hội thoại cũ / tiến độ học theo connector
       const catalog = new AgentSources(retrieved.sources)
+      // Chưa chọn skill ("Tự động") ⇒ model thấy manifest và tự đọc skill hợp câu hỏi; đã chọn ⇒ chỉ dẫn nạp sẵn ở system prompt
+      const skillSession = inGroup || trigger.skillId ? null : await this.skillTools.open(requesterId).catch(() => null)
       const local = [
+        ...(skillSession ? [skillSession] : []),
         this.pucTools.open(requesterId, inGroup ? ['library'] : connectors, catalog, inGroup),
         ...(inGroup ? [] : [this.retrievalTools.open(requesterId, connectors, catalog, trigger.research)]),
         // Nhóm / chat cá nhân: đọc ngược tin cũ của chính hội thoại này khi người gọi hỏi tới

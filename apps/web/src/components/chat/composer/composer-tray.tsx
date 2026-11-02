@@ -46,49 +46,6 @@ interface BuiltinSkill {
   inputHint?: string | null
 }
 
-const DEFAULT_N7AI_SKILLS: readonly BuiltinSkill[] = [
-  {
-    id: 'docx',
-    name: 'docx',
-    description: 'Read, create, or edit Microsoft Word .docx files'
-  },
-  {
-    id: 'pdf',
-    name: 'pdf',
-    description: 'Read, extract (text/tables), create, merge/split PDF files'
-  },
-  {
-    id: 'pptx',
-    name: 'pptx',
-    description: 'Read, create, or edit PowerPoint .pptx decks'
-  },
-  {
-    id: 'skill-creator',
-    name: 'skill-creator',
-    description: 'Design and author N7AI skills (SKILL.md)'
-  },
-  {
-    id: 'xlsx',
-    name: 'xlsx',
-    description: 'Read, create, or edit Excel spreadsheets (.xlsx)'
-  },
-  {
-    id: 'mindmap',
-    name: 'mindmap',
-    description: 'Tạo sơ đồ tư duy phân nhánh trực quan'
-  },
-  {
-    id: 'latex',
-    name: 'latex',
-    description: 'Soạn công thức Toán và chứng minh định lý'
-  },
-  {
-    id: 'code-tutor',
-    name: 'code-tutor',
-    description: 'Phân tích giải thuật và tối ưu mã nguồn'
-  }
-]
-
 interface ConnectorItem {
   id: AiConnectorId
   name: string
@@ -171,18 +128,10 @@ export function ComposerTray({
   }, [serverConnectors])
 
   const allSkills: BuiltinSkill[] = React.useMemo(() => {
-    const list: BuiltinSkill[] = [...DEFAULT_N7AI_SKILLS]
-    for (const sk of userSkills) {
-      if (!list.some((x) => x.id === sk.id || x.name === sk.name)) {
-        list.push({
-          id: sk.id,
-          name: sk.slug || sk.name,
-          description: sk.description,
-          inputHint: sk.inputHint
-        })
-      }
-    }
-    return list
+    // Skill thật từ server (của mình + skill chính thức); bỏ skill đã tắt
+    return userSkills
+      .filter((sk) => sk.enabled)
+      .map((sk) => ({ id: sk.id, name: sk.slug || sk.name, description: sk.description, inputHint: sk.inputHint }))
   }, [userSkills])
 
   return (

@@ -94,7 +94,25 @@ Khi người dùng yêu cầu tạo slide, bài thuyết trình, hoặc dùng l�
    - Cấu trúc chuẩn: Bìa → Mục lục / Đặt vấn đề → Các phần nội dung chính (kết hợp linh hoạt layout: bullets, two_col so sánh, stats số liệu lớn, table bảng biểu) → Kết luận & Cảm ơn (closing).
    - Tiêu đề slide ngắn gọn (≤ 45 ký tự) để không đè vào logo Phenikaa góc phải trên.
    - Tránh nhồi chữ quá nhiều (tối đa 4-5 gạch đầu dòng mỗi slide).
-3. Sau khi gọi tool thành công: tóm tắt ngắn gọn 1-2 câu về nội dung bộ slide và số lượng slide đã tạo, nhắc người dùng có thể bấm vào thẻ tệp để xem trước trực tiếp trên ứng dụng hoặc tải về máy.$i$, 'Chủ đề bài thuyết trình hoặc đề tài NCKH…')
+3. Sau khi gọi tool thành công: tóm tắt ngắn gọn 1-2 câu về nội dung bộ slide và số lượng slide đã tạo, nhắc người dùng có thể bấm vào thẻ tệp để xem trước trực tiếp trên ứng dụng hoặc tải về máy.$i$, 'Chủ đề bài thuyết trình hoặc đề tài NCKH…'),
+
+  ('mindmap', 'Sơ đồ tư duy', 'Sơ đồ tư duy phân nhánh từ nội dung bài học', $i$Bạn biến nội dung người dùng đưa thành sơ đồ tư duy.
+1. Chủ đề trung tâm 1 dòng, tối đa 6 nhánh chính, mỗi nhánh ≤ 4 ý con, mỗi ý ≤ 8 từ.
+2. Vẽ bằng khối ```mermaid``` kiểu `mindmap` (root((Chủ đề)) rồi thụt lề theo cấp). Không dùng ký tự đặc biệt gây lỗi cú pháp trong nhãn.
+3. Dưới sơ đồ: 2–3 câu nêu mối liên hệ giữa các nhánh.
+Không thêm kiến thức ngoài nội dung người dùng đưa.$i$, 'Chủ đề hoặc dán nội dung bài học…'),
+
+  ('latex', 'Soạn công thức và chứng minh', 'Công thức Toán, chứng minh định lý bằng LaTeX', $i$Bạn soạn công thức Toán và chứng minh định lý.
+- Công thức viết LaTeX: $...$ trong dòng, $$...$$ cho công thức riêng dòng; không dùng ảnh.
+- Chứng minh: nêu giả thiết, kết luận, rồi các bước đánh số, mỗi bước ghi rõ định lý / tính chất đã dùng. Kết thúc bằng ∎.
+- Người dùng chỉ cần công thức thì trả LaTeX thuần trong khối ```latex``` để sao chép.
+Nếu mệnh đề sai hoặc thiếu điều kiện, chỉ ra phản ví dụ thay vì chứng minh sai.$i$, 'Mệnh đề cần chứng minh hoặc công thức cần soạn…'),
+
+  ('skill-creator', 'Tạo skill mới', 'Thiết kế skill (lệnh /slug) cho N7AI', $i$Bạn giúp người dùng thiết kế một skill cho N7AI. Skill là chỉ dẫn lưu sẵn, N7AI đọc khi câu hỏi khớp phần mô tả.
+1. Hỏi lại tối đa 3 điều: skill dùng khi nào, đầu vào là gì, đầu ra mong muốn trông ra sao.
+2. Đề xuất: tên ngắn, lệnh (a-z, 0-9, gạch ngang, 2–40 ký tự), mô tả 1 câu nói rõ KHI NÀO dùng (đây là phần N7AI dựa vào để chọn skill), gợi ý nhập.
+3. Viết chỉ dẫn 400–2000 ký tự: vai trò, các bước, cách trình bày, điều cần tránh. Không viết chỉ dẫn bỏ qua quy tắc an toàn hay làm bài thi hộ.
+4. Nhắc người dùng vào Kỹ năng › Quản lý kỹ năng › Tạo skill để dán nội dung và lưu.$i$, 'Skill bạn muốn tạo để làm gì…')
 ) AS v(slug, name, description, instructions, input_hint)
 WHERE u.username = 'n7ai' AND u.account_type = 'bot'
 ON CONFLICT (owner_id, slug) DO UPDATE

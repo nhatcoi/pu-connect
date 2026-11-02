@@ -5,6 +5,11 @@ import type { Queryable } from '../chat-core.service'
 import { AI_SKILL_LIMIT } from '../dto/chat.dto'
 
 const LIST_COLUMNS = `id, slug, name, description, input_hint, use_count, is_public, install_count, enabled, pinned`
+const VISIBLE_COLUMNS = `s.id, s.slug, s.name, s.description, s.input_hint, s.use_count, s.is_public, s.install_count, s.enabled, s.pinned, (s.owner_id <> $1) AS official`
+// Skill dùng được: của mình + skill chính thức (bot @n7ai, công khai, đang bật) mà mình chưa cài bản riêng
+const VISIBLE_WHERE = `(s.owner_id = $1 OR (s.is_public AND s.enabled AND EXISTS (SELECT 1 FROM users u WHERE u.id = s.owner_id AND u.account_type = 'bot' AND u.status = 'active')
+  AND NOT EXISTS (SELECT 1 FROM ai_skills m WHERE m.owner_id = $1 AND m.source_skill_id = s.id)))`
+const MANIFEST_LIMIT = 40
 const LIBRARY_LIMIT = 30
 
 const mapSkill = (r: any): AiSkill => ({
@@ -17,7 +22,8 @@ const mapSkill = (r: any): AiSkill => ({
   isPublic: r.is_public,
   installCount: r.install_count,
   enabled: r.enabled,
-  pinned: r.pinned
+  pinned: r.pinned,
+  ...(r.official ? { official: true } : {})
 })
 
 // Lệnh còn trống: slug, slug-2 … (giữ ≤ 40 ký tự)
@@ -38,7 +44,8 @@ export class AiSkillsService {
   // Danh sách nhẹ cho menu "/" (không có instructions): ghim → hay dùng
   async list(userId: string): Promise<AiSkill[]> {
     const res = await this.db.query(
-      `SELECT ${LIST_COLUMNS} FROM ai_skills WHERE owner_id = $1 ORDER BY pinned DESC, last_used_at DESC NULLS LAST, created_at DESC`,
+      `SELECT ${VISIBLE_COLUMNS} FROM ai_skills s WHERE ${VISIBLE_WHERE}
+       ORDER BY (s.owner_id <> $1), s.pinned DESC, s.last_used_at DESC NULLS LAST, s.created_at DESC`,
       [userId]
     )
     return res.rows.map(mapSkill)
@@ -51,7 +58,7 @@ export class AiSkillsService {
   }
 
   async get(userId: string, id: string): Promise<AiSkillDetail> {
-    const res = await this.db.query(`SELECT ${LIST_COLUMNS}, instructions FROM ai_skills WHERE id = $1 AND owner_id = $2`, [id, userId])
+    const res = await this.db.query(`SELECT ${VISIBLE_COLUMNS}, s.instructions FROM ai_skills s WHERE s.id = $2 AND ${VISIBLE_WHERE}`, [userId, id])
     if (!res.rows[0]) throw new NotFoundException('Không tìm thấy skill')
     return { ...mapSkill(res.rows[0]), instructions: res.rows[0].instructions }
   }
@@ -158,8 +165,8 @@ export class AiSkillsService {
   async useForMessage(client: Queryable, userId: string, id: string | undefined): Promise<ChatSkillRef | null> {
     if (!id) return null
     const res = await client.query(
-      `UPDATE ai_skills SET use_count = use_count + 1, last_used_at = NOW() WHERE id = $1 AND owner_id = $2 AND enabled RETURNING id, slug, name`,
-      [id, userId]
+      `UPDATE ai_skills s SET use_count = s.use_count + 1, last_used_at = NOW() WHERE s.id = $2 AND s.enabled AND ${VISIBLE_WHERE} RETURNING s.id, s.slug, s.name`,
+      [userId, id]
     )
     if (!res.rows[0]) throw new BadRequestException('Skill không tồn tại')
     return res.rows[0]
@@ -167,7 +174,27 @@ export class AiSkillsService {
 
   // Chỉ dẫn cho N7AI (skill đã bị xóa giữa chừng ⇒ bỏ qua)
   async instructions(userId: string, id: string): Promise<{ name: string; instructions: string } | null> {
-    const res = await this.db.query(`SELECT name, instructions FROM ai_skills WHERE id = $1 AND owner_id = $2`, [id, userId])
+    const res = await this.db.query(`SELECT s.name, s.instructions FROM ai_skills s WHERE s.id = $2 AND ${VISIBLE_WHERE}`, [userId, id])
+    return res.rows[0] ?? null
+  }
+
+  // Manifest cho vòng agent (kiểu DeepTutor): mỗi skill đang bật 1 dòng; nội dung đầy đủ đọc theo nhu cầu qua skill__read
+  async manifest(userId: string): Promise<Array<{ slug: string; name: string; description: string }>> {
+    const res = await this.db.query(
+      `SELECT s.slug, s.name, s.description FROM ai_skills s WHERE s.enabled AND ${VISIBLE_WHERE}
+       ORDER BY (s.owner_id <> $1), s.pinned DESC, s.last_used_at DESC NULLS LAST, s.created_at DESC LIMIT ${MANIFEST_LIMIT}`,
+      [userId]
+    )
+    return res.rows
+  }
+
+  // Đọc đầy đủ theo lệnh (slug); skill của mình che skill chính thức trùng lệnh
+  async readBySlug(userId: string, slug: string): Promise<{ slug: string; name: string; instructions: string } | null> {
+    const res = await this.db.query(
+      `SELECT s.slug, s.name, s.instructions FROM ai_skills s WHERE s.slug = $2 AND s.enabled AND ${VISIBLE_WHERE}
+       ORDER BY (s.owner_id <> $1) LIMIT 1`,
+      [userId, slug]
+    )
     return res.rows[0] ?? null
   }
 
