@@ -120,6 +120,7 @@ export class N7AgentService {
           }
           try {
             outputs[index] = mine.run(JSON.parse(call.arguments || '{}') as Record<string, unknown>)
+            if (outputs[index].startsWith('{"error"')) this.logger.warn(`capability ${capability?.id}: ${call.name} lỗi ${outputs[index].slice(0, 160)} (đối số ${call.arguments.slice(0, 200)})`)
           } catch {
             outputs[index] = JSON.stringify({ error: 'Đối số không hợp lệ' })
           }

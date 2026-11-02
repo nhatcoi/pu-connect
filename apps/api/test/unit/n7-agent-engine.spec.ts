@@ -389,6 +389,17 @@ describe('N7AI Agent Engine Unit Tests', () => {
       expect(cap.policy?.checkFinish?.('xong')).toBeNull()
     })
 
+    it('solve_plan chấp nhận steps dạng chuỗi JSON, danh sách dòng và trường goal/step', () => {
+      const plan = (steps: unknown) => {
+        const cap = solveCapability()
+        return JSON.parse(cap.tools[0].run({ steps } as never))
+      }
+      expect(plan(JSON.stringify([{ title: 'a' }, { title: 'b' }])).remaining).toBe(2)
+      expect(plan('1. Lập hàm Lagrange\n2. Giải hệ').remaining).toBe(2)
+      expect(plan([{ goal: 'x' }, { step: 'y' }, 'z']).remaining).toBe(3)
+      expect(plan([]).error).toMatch(/mảng không rỗng/)
+    })
+
     it('chỉ lập lại kế hoạch tối đa 2 lần và giữ bước đã xong', () => {
       const cap = solveCapability()
       const run = (name: string, args: unknown) => JSON.parse(cap.tools.find((t) => t.schema.function.name === name)!.run(args as never))

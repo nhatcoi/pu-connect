@@ -12,6 +12,20 @@ interface Step {
   result: string
 }
 
+// Model đôi khi gửi steps dạng chuỗi JSON hoặc đặt tên trường khác (goal / step / name): chấp nhận thay vì từ chối cả kế hoạch
+function parseList(raw: string): unknown {
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return raw.split('\n').map((l) => l.replace(/^\s*(?:[-*]|\d+[.)])\s*/, '').trim()).filter(Boolean)
+  }
+}
+const stepTitle = (x: unknown): string => {
+  if (typeof x === 'string') return x.trim()
+  const r = record(x)
+  return String(r.title ?? r.goal ?? r.step ?? r.name ?? r.description ?? '').trim()
+}
+
 const ok = (data: unknown) => JSON.stringify({ ok: true, ...(data as object) })
 const fail = (error: string) => JSON.stringify({ error })
 
@@ -29,10 +43,11 @@ export class SolveSession {
   }
 
   private load(raw: unknown, keepDone: boolean): string | null {
-    if (!Array.isArray(raw) || !raw.length) return 'steps phải là mảng không rỗng'
-    const titles = raw
+    const list = typeof raw === 'string' ? parseList(raw) : raw
+    if (!Array.isArray(list) || !list.length) return 'steps phải là mảng không rỗng'
+    const titles = list
       .slice(0, MAX_STEPS)
-      .map((x) => (typeof x === 'string' ? x : String(record(x).title ?? '')).trim())
+      .map((x) => stepTitle(x))
       .filter(Boolean)
     if (!titles.length) return 'Mỗi bước cần có tiêu đề'
     const kept = keepDone ? this.steps.filter((s) => s.done) : []
