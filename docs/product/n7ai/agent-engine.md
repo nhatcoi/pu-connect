@@ -42,6 +42,8 @@ Mỗi lượt chỉ gửi công cụ của nguồn đang bật. Công cụ đọ
 | Hội thoại của tôi | `my_chats__search_threads`, `my_chats__get_thread` | Tìm lại thread N7AI cũ của chính mình |
 | Học tập | `my_study__create_flashcards`, `my_study__create_quiz` | Tạo bộ học |
 | Bộ nhớ | `memory__search` | Tìm bộ nhớ dài hạn |
+| Tạo tệp | `puc__create_presentation`, `puc__create_document`, `puc__create_pdf_report`, `puc__create_spreadsheet` | Xuất tệp thật (.pptx, .docx, .pdf, .xlsx), đính kèm tin nhắn, xem trước ngay trong app |
+| Kỹ năng | `skill__read` | Đọc chỉ dẫn đầy đủ của 1 skill đang bật khi câu hỏi khớp mô tả (xem [Phiên chat](chat-workspace)) |
 | Hỏi lại | `ask_user` | Tạm dừng, hỏi lựa chọn |
 | Ngữ cảnh nơi gọi | `post__comments`, `chat__earlier` | Đọc thêm bình luận hoặc tin cũ của đúng nơi đang gọi |
 | Web | Đọc trang web, tìm kiếm web | URL trong câu hỏi; tìm web cần khóa Tavily |

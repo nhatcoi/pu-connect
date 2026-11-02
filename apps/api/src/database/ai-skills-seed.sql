@@ -5,6 +5,10 @@
 -- Chuỗi bọc $i$ (chỉ dẫn có LaTeX $$…$$)
 -- ==========================================================
 
+-- Gỡ skill không còn dùng (đã seed ở bản trước, nay thay bằng docx/pdf/xlsx có tool tạo tệp thật)
+DELETE FROM ai_skills s USING users u
+WHERE s.owner_id = u.id AND u.username = 'n7ai' AND u.account_type = 'bot' AND s.slug IN ('mindmap', 'latex');
+
 INSERT INTO ai_skills (owner_id, slug, name, description, instructions, input_hint, is_public)
 SELECT u.id, v.slug, v.name, v.description, v.instructions, v.input_hint, TRUE
 FROM users u
@@ -96,17 +100,27 @@ Khi người dùng yêu cầu tạo slide, bài thuyết trình, hoặc dùng l�
    - Tránh nhồi chữ quá nhiều (tối đa 4-5 gạch đầu dòng mỗi slide).
 3. Sau khi gọi tool thành công: tóm tắt ngắn gọn 1-2 câu về nội dung bộ slide và số lượng slide đã tạo, nhắc người dùng có thể bấm vào thẻ tệp để xem trước trực tiếp trên ứng dụng hoặc tải về máy.$i$, 'Chủ đề bài thuyết trình hoặc đề tài NCKH…'),
 
-  ('mindmap', 'Sơ đồ tư duy', 'Sơ đồ tư duy phân nhánh từ nội dung bài học', $i$Bạn biến nội dung người dùng đưa thành sơ đồ tư duy.
-1. Chủ đề trung tâm 1 dòng, tối đa 6 nhánh chính, mỗi nhánh ≤ 4 ý con, mỗi ý ≤ 8 từ.
-2. Vẽ bằng khối ```mermaid``` kiểu `mindmap` (root((Chủ đề)) rồi thụt lề theo cấp). Không dùng ký tự đặc biệt gây lỗi cú pháp trong nhãn.
-3. Dưới sơ đồ: 2–3 câu nêu mối liên hệ giữa các nhánh.
-Không thêm kiến thức ngoài nội dung người dùng đưa.$i$, 'Chủ đề hoặc dán nội dung bài học…'),
+  ('docx', 'Soạn tài liệu Word', 'Tạo tệp Word (.docx) thật: báo cáo, tiểu luận, công văn', $i$Bạn soạn tài liệu và xuất ra tệp Word (.docx) thật.
+Khi người dùng yêu cầu viết báo cáo, tiểu luận, công văn, hoặc xuất ra file Word:
+1. BẮT BUỘC dùng công cụ `puc__create_document` để tạo tệp thật, không chỉ in nội dung ra khung chat.
+2. Chia nội dung thành các mục có tiêu đề (section), mỗi mục gồm đoạn văn hoặc gạch đầu dòng; dùng bảng khi dữ liệu thực sự dạng bảng.
+3. Văn phong học thuật, mạch lạc; không bịa số liệu hay trích dẫn.
+4. Sau khi tạo xong: báo ngắn gọn 1-2 câu, nhắc người dùng bấm vào thẻ tệp để xem trước hoặc tải về.$i$, 'Đề tài hoặc nội dung cần soạn thành Word…'),
 
-  ('latex', 'Soạn công thức và chứng minh', 'Công thức Toán, chứng minh định lý bằng LaTeX', $i$Bạn soạn công thức Toán và chứng minh định lý.
-- Công thức viết LaTeX: $...$ trong dòng, $$...$$ cho công thức riêng dòng; không dùng ảnh.
-- Chứng minh: nêu giả thiết, kết luận, rồi các bước đánh số, mỗi bước ghi rõ định lý / tính chất đã dùng. Kết thúc bằng ∎.
-- Người dùng chỉ cần công thức thì trả LaTeX thuần trong khối ```latex``` để sao chép.
-Nếu mệnh đề sai hoặc thiếu điều kiện, chỉ ra phản ví dụ thay vì chứng minh sai.$i$, 'Mệnh đề cần chứng minh hoặc công thức cần soạn…'),
+  ('pdf', 'Xuất báo cáo PDF', 'Tạo tệp PDF thật từ nội dung đã soạn', $i$Bạn xuất nội dung ra tệp PDF thật (báo cáo, tờ rơi thông tin, tóm tắt).
+Khi người dùng yêu cầu xuất PDF hoặc "in ra PDF":
+1. BẮT BUỘC dùng công cụ `puc__create_pdf_report` để tạo tệp thật.
+2. Chia nội dung thành mục có tiêu đề, đoạn văn hoặc gạch đầu dòng; dùng bảng cho dữ liệu dạng bảng.
+3. Nội dung cô đọng, tránh đoạn văn quá dài gây tràn trang xấu.
+4. Người dùng chỉ cần đọc PDF đã gửi kèm (không phải tạo mới) thì không dùng skill này.
+5. Sau khi tạo xong: báo ngắn gọn 1-2 câu, nhắc người dùng bấm vào thẻ tệp để xem trước hoặc tải về.$i$, 'Nội dung cần xuất ra PDF…'),
+
+  ('xlsx', 'Lập bảng tính Excel', 'Tạo tệp Excel (.xlsx) thật từ dữ liệu', $i$Bạn chuyển dữ liệu người dùng cung cấp thành tệp Excel (.xlsx) thật.
+Khi người dùng yêu cầu lập bảng, thống kê, lịch học, ngân sách, hoặc xuất ra file Excel:
+1. BẮT BUỘC dùng công cụ `puc__create_spreadsheet` để tạo tệp thật.
+2. Mỗi chủ đề dữ liệu là 1 sheet riêng; dòng đầu là tiêu đề cột.
+3. Không bịa số liệu; dữ liệu người dùng chưa cung cấp thì để trống hoặc hỏi lại.
+4. Sau khi tạo xong: báo ngắn gọn 1-2 câu, nhắc người dùng bấm vào thẻ tệp để xem trước hoặc tải về.$i$, 'Dữ liệu cần lập thành bảng tính…'),
 
   ('skill-creator', 'Tạo skill mới', 'Thiết kế skill (lệnh /slug) cho N7AI', $i$Bạn giúp người dùng thiết kế một skill cho N7AI. Skill là chỉ dẫn lưu sẵn, N7AI đọc khi câu hỏi khớp phần mô tả.
 1. Hỏi lại tối đa 3 điều: skill dùng khi nào, đầu vào là gì, đầu ra mong muốn trông ra sao.

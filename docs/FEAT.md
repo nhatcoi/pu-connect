@@ -51,7 +51,8 @@ Tài liệu theo dõi trạng thái các tính năng đã hoàn thành và kế 
     - Dòng gợi ý ý tưởng thông minh xoay vòng: `🧭 Ideas for you: [chủ đề học thuật / lập trình] 🔄` với nút Refresh để đổi nhanh các ý tưởng nghiên cứu, bấm vào điền ngay vào ô soạn thảo.
     - Bố cục căn giữa trang rỗng tự động thu gọn (`flexGrow: started ? 0 : 1.4`) mượt mà ngay khi người dùng gửi tin nhắn đầu tiên.
 
-- [x] **Kỹ năng N7AI theo logic DeepTutor (2026-11-02)**: chế độ Tự động đưa manifest skill vào vòng agent và tool `skill__read` để đọc chỉ dẫn theo nhu cầu; skill chính thức (`@n7ai`) dùng ngay không cần cài; thay danh sách skill giả ở menu Kỹ năng bằng dữ liệu thật; seed thêm `mindmap`, `latex`, `skill-creator`.
+- [x] **Kỹ năng N7AI theo logic DeepTutor (2026-11-02)**: chế độ Tự động đưa manifest skill vào vòng agent và tool `skill__read` để đọc chỉ dẫn theo nhu cầu; skill chính thức (`@n7ai`) dùng ngay không cần cài; thay danh sách skill giả ở menu Kỹ năng bằng dữ liệu thật; seed thêm `skill-creator`.
+- [x] **Skill docx/pdf/xlsx tạo tệp thật, có xem trước (2026-11-02)**: bỏ `mindmap`, `latex` (chỉ chỉ dẫn, không tool thật). Thêm 3 tool mới `puc__create_document`, `puc__create_pdf_report`, `puc__create_spreadsheet` (NestJS gọi script Python qua `uv run` — `python-docx`, `reportlab` nhúng font DejaVu Serif cho tiếng Việt, `openpyxl`) sinh file thật, đính kèm tin nhắn; preview dùng lại `apps/web` file-preview-panel sẵn có (docx-preview, pdf.js, sheet-view) như pptx. Seed skill `docx`, `pdf`, `xlsx` hướng dẫn model luôn gọi tool thay vì in nội dung ra khung chat.
 - [x] **Cổng Tài liệu Kỹ thuật Hệ thống (`docs-puc.vnhat.dev`) & Cụm FAB Kép Thông Minh (2026-10-23)**:
   - **Triển khai toàn bộ trang tài liệu chuyên biệt ([`apps/docs`](apps/docs))**:
     - Xây dựng ứng dụng Documentation Portal độc lập bằng Vite 6, React 19, TailwindCSS 4, chạy với kiến trúc Static SPA tiêu tốn **0 MB RAM Node.js** trên máy chủ VPS.

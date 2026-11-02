@@ -21,6 +21,9 @@ import { AiProgress } from './agent/ai-progress'
 import { toActions } from './agent/ai-actions'
 import { HistoryToolsService } from './agent/history-tools.service'
 import { PresentationToolsService } from './agent/presentation-tools.service'
+import { DocxToolsService } from './agent/docx-tools.service'
+import { PdfReportToolsService } from './agent/pdf-tools.service'
+import { SpreadsheetToolsService } from './agent/spreadsheet-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
 import { ConversationContextService } from './context/conversation-context.service'
 import { MemoryToolsService } from './agent/memory-tools.service'
@@ -103,6 +106,9 @@ export class N7AiService {
     private readonly historyTools: HistoryToolsService,
     private readonly pucTools: PucToolsService,
     private readonly presentationTools: PresentationToolsService,
+    private readonly docxTools: DocxToolsService,
+    private readonly pdfReportTools: PdfReportToolsService,
+    private readonly spreadsheetTools: SpreadsheetToolsService,
     private readonly conversationContext: ConversationContextService,
     private readonly conversationTools: ConversationToolsService,
     private readonly memoryTools: MemoryToolsService,
@@ -236,6 +242,10 @@ export class N7AiService {
       // Thread riêng: luôn có tool tạo bộ Flashcard / Quiz (registry); tool đọc tiến độ theo connector my_study
       const creator = inGroup ? null : this.studyCreateTools.open(requesterId, placeholder.id)
       const slideCreator = this.presentationTools.open(requesterId, placeholder.id)
+      // Tạo tệp thật (Word, PDF, Excel) — cùng cơ chế với slideCreator, luôn sẵn sàng kể cả trong nhóm
+      const docxCreator = this.docxTools.open(requesterId, placeholder.id)
+      const pdfCreator = this.pdfReportTools.open(requesterId, placeholder.id)
+      const xlsxCreator = this.spreadsheetTools.open(requesterId, placeholder.id)
       // Thread riêng: tool về chính PU Connect luôn có; hội thoại cũ / tiến độ học theo connector
       const catalog = new AgentSources(retrieved.sources)
       // Chưa chọn skill ("Tự động") ⇒ model thấy manifest và tự đọc skill hợp câu hỏi; đã chọn ⇒ chỉ dẫn nạp sẵn ở system prompt
@@ -250,6 +260,9 @@ export class N7AiService {
         ...(!inGroup && settings?.memoryEnabled ? [this.memoryTools.open(requesterId)] : []),
         ...(creator ? [creator] : []),
         slideCreator,
+        docxCreator,
+        pdfCreator,
+        xlsxCreator,
         ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []),
         ...(connectors.includes('my_chats') ? [this.historyTools.open(requesterId, conversationId)] : [])
       ]
