@@ -89,7 +89,7 @@ export class QuizSession {
     return ok({
       status: 'planned',
       plan: this.plan,
-      instruction: `Gọi create_quiz với đúng ${count} câu, mức ${level}${topics.length ? `, phủ đủ các chủ đề: ${topics.join('; ')}` : ''}. Mỗi câu 4 lựa chọn khác nhau, có explain; đáp án đúng trải đều các vị trí và không luôn là lựa chọn dài nhất.`
+      instruction: `Gọi create_quiz (nhớ truyền title) với đúng ${count} câu, mức ${level}${topics.length ? `, phủ đủ các chủ đề: ${topics.join('; ')}` : ''}. Mỗi câu 4 lựa chọn khác nhau, có explain; đáp án đúng trải đều các vị trí và không luôn là lựa chọn dài nhất.`
     })
   }
 
@@ -102,6 +102,12 @@ export class QuizSession {
     if (!issues.length) return null
     this.repairs++
     return `Bộ câu hỏi chưa đạt (lần sửa ${this.repairs}/${MAX_REPAIRS}):\n- ${issues.join('\n- ')}\nSửa rồi gọi lại create_quiz với toàn bộ ${this.plan.count} câu.`
+  }
+
+  /** create_quiz bắt buộc có title; model đã nêu tiêu đề ở quiz_plan nên hay bỏ qua ở lệnh tạo */
+  rewrite(name: string, args: JsonRecord): JsonRecord {
+    if (!isCreateQuiz(name) || !this.plan || text(args.title, 120)) return args
+    return { ...args, title: this.plan.title }
   }
 
   observe(name: string, result: string): void {
@@ -153,6 +159,7 @@ export function quizCapability(): LoopCapability {
     ],
     openingTool: 'quiz_plan',
     guard: (name, args) => session.guard(name, args),
+    rewrite: (name, args) => session.rewrite(name, args),
     observe: (name, result) => session.observe(name, result),
     policy: { checkFinish: () => session.finishNudge() }
   }

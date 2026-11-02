@@ -16,6 +16,19 @@ export function countResults(data: unknown): number | undefined {
   return lists.length ? lists.reduce((n, l) => n + l.length, 0) : undefined
 }
 
+// Lý do ngắn của một lệnh tool thất bại (lỗi + vấn đề đầu tiên) để hiện cạnh bước và để chẩn đoán lần sau
+export function failureDetail(result: string): string | undefined {
+  try {
+    const parsed = JSON.parse(result) as { error?: unknown; issues?: unknown }
+    const error = typeof parsed.error === 'string' ? parsed.error : undefined
+    const issue = Array.isArray(parsed.issues) && typeof parsed.issues[0] === 'string' ? parsed.issues[0] : undefined
+    const joined = [error, issue].filter(Boolean).join(': ')
+    return joined ? joined.slice(0, 140) : undefined
+  } catch {
+    return undefined
+  }
+}
+
 // Stable keys make JSON property order irrelevant. Cache lives only in this account's reply.
 const canonical = (value: unknown): unknown =>
   Array.isArray(value)
@@ -118,6 +131,7 @@ export class AgentToolRunner {
     this.resultChars += result.length
     if (step) {
       step.status = summary.ok ? 'done' : 'error'
+      if (!summary.ok) step.detail = failureDetail(result) ?? step.detail
       step.durationMs = Date.now() - started
       this.publish()
     }

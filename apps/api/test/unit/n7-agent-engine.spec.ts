@@ -12,6 +12,7 @@ import { N7AgentSession, ReasoningBudgetExhausted } from '../../src/modules/ai/e
 import { resolveCopy } from '../../src/modules/ai/engine/native/copy'
 import { solveCapability } from '../../src/modules/ai/engine/capabilities/solve'
 import { capabilityFor } from '../../src/modules/ai/engine/capabilities'
+import { failureDetail } from '../../src/modules/ai/agent-tool-runner'
 import { quizCapability, quizIssues } from '../../src/modules/ai/engine/capabilities/quiz'
 import type { EngineEvent, N7AgentInput, ToolCall } from '../../src/modules/ai/engine/native/types'
 import type { LlmService } from '../../src/modules/ai/llm.service'
@@ -443,6 +444,15 @@ describe('N7AI Agent Engine Unit Tests', () => {
       expect(quizIssues(plan, same).join('|')).toMatch(/trùng ý/)
     })
 
+    it('rewrite: điền title từ kế hoạch khi create_quiz bỏ quên, giữ title model đã đặt', () => {
+      const cap = quizCapability()
+      expect(cap.rewrite?.('create_quiz', { questions: [] })).toEqual({ questions: [] }) // chưa có kế hoạch ⇒ không đụng
+      cap.tools[0].run({ title: 'Đạo hàm cơ bản', count: 5 })
+      expect(cap.rewrite?.('my_study__create_quiz', { questions: [] })).toEqual({ questions: [], title: 'Đạo hàm cơ bản' })
+      expect(cap.rewrite?.('create_quiz', { title: 'Của model', questions: [] })).toEqual({ title: 'Của model', questions: [] })
+      expect(cap.rewrite?.('web_search', {})).toEqual({})
+    })
+
     it('nhắc khi kết thúc mà chưa lưu quiz; chỉ tính đã lưu khi tool không lỗi', () => {
       const cap = quizCapability()
       expect(cap.policy?.checkFinish?.('')).toMatch(/chưa tạo quiz/)
@@ -453,5 +463,14 @@ describe('N7AI Agent Engine Unit Tests', () => {
       cap.observe?.('create_quiz', JSON.stringify({ ok: true }))
       expect(cap.policy?.checkFinish?.('')).toBeNull()
     })
+  })
+})
+
+describe('failureDetail', () => {
+  it('ghép lỗi và vấn đề đầu tiên, cắt gọn; không phải JSON thì bỏ qua', () => {
+    expect(failureDetail(JSON.stringify({ error: 'Tham số không hợp lệ, sửa rồi gọi lại', issues: ['title: Required', 'x'] }))).toBe('Tham số không hợp lệ, sửa rồi gọi lại: title: Required')
+    expect(failureDetail(JSON.stringify({ error: 'a'.repeat(300) }))?.length).toBe(140)
+    expect(failureDetail('không phải json')).toBeUndefined()
+    expect(failureDetail(JSON.stringify({ ok: true }))).toBeUndefined()
   })
 })

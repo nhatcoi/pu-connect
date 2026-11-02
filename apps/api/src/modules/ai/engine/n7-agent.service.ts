@@ -109,9 +109,10 @@ export class N7AgentService {
         calls.forEach((call, index) => {
           const mine = own.get(call.name)
           if (!mine) {
-            const refusal = capability?.guard?.(call.name, parseArgs(call.arguments))
+            const args = parseArgs(call.arguments)
+            const refusal = capability?.guard?.(call.name, args)
             if (refusal) outputs[index] = JSON.stringify({ error: refusal })
-            else external.push({ index, call })
+            else external.push({ index, call: capability?.rewrite ? { ...call, arguments: JSON.stringify(capability.rewrite(call.name, args)) } : call })
             return
           }
           try {
