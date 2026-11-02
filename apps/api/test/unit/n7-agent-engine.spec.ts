@@ -380,6 +380,8 @@ describe('N7AI Agent Engine Unit Tests', () => {
     it('chặn kết luận khi còn bước chưa xong, cho qua khi đã hoàn thành', () => {
       const cap = solveCapability()
       const run = (name: string, args: unknown) => JSON.parse(cap.tools.find((t) => t.schema.function.name === name)!.run(args as never))
+      // mỗi bước là một vòng: ngân sách thăm dò phải đủ cho plan + 8 bước, nếu không vòng chốt đóng tool giữa chừng
+      expect(cap.budgets?.explorationBudget).toBeGreaterThanOrEqual(10)
       expect(cap.policy?.checkFinish?.('xong')).toBeNull() // chưa lập kế hoạch ⇒ bài đơn giản, cho qua
       const planned = run('solve_plan', { steps: [{ title: 'Đặt hàm Lagrange' }, { title: 'Giải hệ' }] })
       expect(planned.remaining).toBe(2)
@@ -397,6 +399,7 @@ describe('N7AI Agent Engine Unit Tests', () => {
       expect(plan(JSON.stringify([{ title: 'a' }, { title: 'b' }])).remaining).toBe(2)
       expect(plan('1. Lập hàm Lagrange\n2. Giải hệ').remaining).toBe(2)
       expect(plan([{ goal: 'x' }, { step: 'y' }, 'z']).remaining).toBe(3)
+      expect(plan([{ reason: 'Thiết lập hàm Lagrange' }, { lạ: 'Giải hệ' }]).remaining).toBe(2) // log live: model gửi khóa reason
       expect(plan([]).error).toMatch(/mảng không rỗng/)
     })
 

@@ -23,7 +23,10 @@ function parseList(raw: string): unknown {
 const stepTitle = (x: unknown): string => {
   if (typeof x === 'string') return x.trim()
   const r = record(x)
-  return String(r.title ?? r.goal ?? r.step ?? r.name ?? r.description ?? '').trim()
+  const named = r.title ?? r.goal ?? r.step ?? r.name ?? r.description ?? r.reason
+  if (named != null) return String(named).trim()
+  // Khóa lạ ⇒ lấy giá trị chuỗi đầu tiên thay vì từ chối cả kế hoạch
+  return String(Object.values(r).find((v) => typeof v === 'string') ?? '').trim()
 }
 
 const ok = (data: unknown) => JSON.stringify({ ok: true, ...(data as object) })
@@ -49,7 +52,7 @@ export class SolveSession {
       .slice(0, MAX_STEPS)
       .map((x) => stepTitle(x))
       .filter(Boolean)
-    if (!titles.length) return 'Mỗi bước cần có tiêu đề'
+    if (!titles.length) return 'Mỗi bước cần trường title (chuỗi mô tả việc cần làm), ví dụ {"title":"Lập hàm Lagrange"}'
     const kept = keepDone ? this.steps.filter((s) => s.done) : []
     this.steps = [...kept, ...titles.map((title, i) => ({ id: `s${kept.length + i + 1}`, title, done: false, result: '' }))]
     return null
@@ -130,6 +133,8 @@ export function solveCapability(): LoopCapability {
       'Không kết luận khi còn bước chưa xong. Bài một bước đơn giản thì giải thẳng, không cần kế hoạch. Câu trả lời cuối trình bày đủ lời giải và kiểm tra lại kết quả.'
     ].join('\n'),
     tools,
+    // Mỗi bước là một vòng solve_finish_step: plan + tối đa 8 bước + 2 lần lập lại; ngân sách mặc định (3 vòng) cạn giữa chừng thì vòng chốt đóng tool
+    budgets: { explorationBudget: 12 },
     policy: {
       checkFinish: () => {
         const left = session.pending()
