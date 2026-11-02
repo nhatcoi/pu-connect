@@ -367,3 +367,33 @@
     transition: none !important;
   }
 }
+
+/* Hình SVG do AI vẽ: lớp chữ / hộp / màu theo sáng-tối (xem svg-block.tsx) */
+.svg-figure svg { max-width: 100%; height: auto; font-family: inherit; }
+.svg-figure svg text { fill: var(--foreground); dominant-baseline: central; }
+.svg-figure svg .t { font-size: 14px; }
+.svg-figure svg .th { font-size: 14px; font-weight: 500; }
+.svg-figure svg .ts { font-size: 12px; fill: var(--muted-foreground); }
+.svg-figure svg .box { fill: var(--muted); stroke: var(--border); stroke-width: 0.8; }
+.svg-figure svg .arr { stroke: var(--muted-foreground); stroke-width: 1.5; fill: none; }
+.svg-figure svg .leader { stroke: var(--muted-foreground); stroke-width: 0.8; stroke-dasharray: 4 3; fill: none; }
+.svg-figure svg [class*='c-'] > rect, .svg-figure svg [class*='c-'] > circle, .svg-figure svg [class*='c-'] > ellipse, .svg-figure svg [class*='c-'] > path, .svg-figure svg [class*='c-'] > polygon { fill: var(--c-fill); stroke: var(--c-stroke); stroke-width: 0.8; }
+.svg-figure svg [class*='c-'] > text { fill: var(--c-text); }
+.svg-figure svg .c-gray { --c-fill: #f1efe8; --c-stroke: #888780; --c-text: #444441; }
+.svg-figure svg .c-blue { --c-fill: #e6f1fb; --c-stroke: #378add; --c-text: #0c447c; }
+.svg-figure svg .c-teal { --c-fill: #e1f5ee; --c-stroke: #1d9e75; --c-text: #085041; }
+.svg-figure svg .c-coral { --c-fill: #faece7; --c-stroke: #d85a30; --c-text: #712b13; }
+.svg-figure svg .c-pink { --c-fill: #fbeaf0; --c-stroke: #d4537e; --c-text: #72243e; }
+.svg-figure svg .c-purple { --c-fill: #eeedfe; --c-stroke: #7f77dd; --c-text: #3c3489; }
+.svg-figure svg .c-green { --c-fill: #eaf3de; --c-stroke: #639922; --c-text: #27500a; }
+.svg-figure svg .c-amber { --c-fill: #faeeda; --c-stroke: #ba7517; --c-text: #633806; }
+.svg-figure svg .c-red { --c-fill: #fcebeb; --c-stroke: #e24b4a; --c-text: #791f1f; }
+.dark .svg-figure svg .c-gray { --c-fill: #2c2c2a; --c-stroke: #888780; --c-text: #d3d1c7; }
+.dark .svg-figure svg .c-blue { --c-fill: #042c53; --c-stroke: #378add; --c-text: #b5d4f4; }
+.dark .svg-figure svg .c-teal { --c-fill: #04342c; --c-stroke: #1d9e75; --c-text: #9fe1cb; }
+.dark .svg-figure svg .c-coral { --c-fill: #4a1b0c; --c-stroke: #d85a30; --c-text: #f5c4b3; }
+.dark .svg-figure svg .c-pink { --c-fill: #4b1528; --c-stroke: #d4537e; --c-text: #f4c0d1; }
+.dark .svg-figure svg .c-purple { --c-fill: #26215c; --c-stroke: #7f77dd; --c-text: #cecbf6; }
+.dark .svg-figure svg .c-green { --c-fill: #173404; --c-stroke: #639922; --c-text: #c0dd97; }
+.dark .svg-figure svg .c-amber { --c-fill: #412402; --c-stroke: #ba7517; --c-text: #fac775; }
+.dark .svg-figure svg .c-red { --c-fill: #501313; --c-stroke: #e24b4a; --c-text: #f7c1c1; }

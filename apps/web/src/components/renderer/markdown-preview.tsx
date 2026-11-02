@@ -13,6 +13,7 @@ import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { Check, Copy } from 'lucide-react'
 import { MermaidBlock } from './mermaid-block'
+import { SvgBlock } from './svg-block'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -59,6 +60,9 @@ function CodeBlock({ className, children, ...props }: { className?: string; chil
 
   if (language === 'mermaid') {
     return <MermaidBlock content={codeContent} />
+  }
+  if (language === 'svg' && /^\s*<svg[\s>]/.test(codeContent) && /<\/svg>\s*$/.test(codeContent)) {
+    return <SvgBlock content={codeContent} />
   }
 
   const handleCopy = async () => {

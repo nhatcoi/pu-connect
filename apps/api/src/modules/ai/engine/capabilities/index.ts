@@ -2,16 +2,15 @@ import type { AiMode } from '@pu/schemas'
 import type { LoopCapability } from './types'
 import { quizCapability } from './quiz'
 import { solveCapability } from './solve'
+import { researchCapability } from './research'
+import { visualizeCapability } from './visualize'
+import { audioOverviewCapability, mathAnimatorCapability, videoLessonCapability } from './media'
 
 export type { CapabilityTool, LoopCapability } from './types'
 
 const ASK_QUESTIONS_BLOCK = [
-  'Chế độ HỎI NGƯỢC: ưu tiên công cụ ask_user. Khi câu hỏi còn giả định hoặc dữ kiện thiếu, gọi ask_user MỘT lần với 1–3 câu định hướng (mỗi câu 2–4 lựa chọn ngắn, cho phép người học tự nhập). Câu mà các lựa chọn không loại trừ nhau (môn, chủ đề, kỹ năng…) PHẢI đặt multi_select=true để người học chọn nhiều) thay vì đoán hay trả lời đầy đủ ngay.',
+  'Chế độ HỎI NGƯỢC: ưu tiên công cụ ask_user. Khi câu hỏi còn giả định hoặc dữ kiện thiếu, gọi ask_user MỘT lần với 1–3 câu định hướng (mỗi câu 2–4 lựa chọn ngắn, cho phép người học tự nhập) thay vì đoán hay trả lời đầy đủ ngay. Câu mà các lựa chọn không loại trừ nhau (môn, chủ đề, kỹ năng…) PHẢI đặt multi_select=true để người học chọn nhiều.',
   'Sau khi nhận câu trả lời của người học, mới đưa lời giải thích hoặc gợi ý bước tiếp theo.'
-].join('\n')
-
-const RESEARCH_BLOCK = [
-  'Chế độ NGHIÊN CỨU: lập các câu hỏi con, tra cứu bằng công cụ theo từng ý (ưu tiên nguồn học thuật), đối chiếu nguồn mâu thuẫn, rồi mới tổng hợp. Mỗi kết luận quan trọng phải có dẫn chứng từ kết quả công cụ.'
 ].join('\n')
 
 /** Capability đi kèm chế độ học của lượt (null ⇒ chỉ dùng vòng lặp chung) */
@@ -27,8 +26,16 @@ export function capabilityFor(mode: AiMode | undefined, research: boolean): Loop
       return { id: 'ask_questions', block: ASK_QUESTIONS_BLOCK, tools: [] }
     case 'research':
     case 'deep_research':
-      return { id: 'research', block: RESEARCH_BLOCK, tools: [], budgets: { explorationBudget: 5 } }
+      return researchCapability()
+    case 'visualize':
+      return visualizeCapability()
+    case 'video_lesson':
+      return videoLessonCapability()
+    case 'audio_overview':
+      return audioOverviewCapability()
+    case 'math_animator':
+      return mathAnimatorCapability()
     default:
-      return research ? { id: 'research', block: RESEARCH_BLOCK, tools: [], budgets: { explorationBudget: 5 } } : null
+      return research ? researchCapability() : null
   }
 }
