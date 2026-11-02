@@ -100,7 +100,7 @@ export const ASK_USER_SCHEMA = {
                   required: ['label']
                 }
               },
-              multi_select: { type: 'boolean' },
+              multi_select: { type: 'boolean', description: 'true = cho chọn NHIỀU đáp án (đặt true khi các lựa chọn không loại trừ nhau, vd: môn cần ôn, chủ đề, kỹ năng). false/bỏ trống = chỉ chọn một (vd: khoảng thời gian, mức độ).' },
               allow_free_text: { type: 'boolean' },
               placeholder: { type: 'string' }
             },

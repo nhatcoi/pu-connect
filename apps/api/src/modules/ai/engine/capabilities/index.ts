@@ -6,7 +6,7 @@ import { solveCapability } from './solve'
 export type { CapabilityTool, LoopCapability } from './types'
 
 const ASK_QUESTIONS_BLOCK = [
-  'Chế độ HỎI NGƯỢC: ưu tiên công cụ ask_user. Khi câu hỏi còn giả định hoặc dữ kiện thiếu, gọi ask_user MỘT lần với 1–3 câu định hướng (mỗi câu 2–4 lựa chọn ngắn, cho phép người học tự nhập) thay vì đoán hay trả lời đầy đủ ngay.',
+  'Chế độ HỎI NGƯỢC: ưu tiên công cụ ask_user. Khi câu hỏi còn giả định hoặc dữ kiện thiếu, gọi ask_user MỘT lần với 1–3 câu định hướng (mỗi câu 2–4 lựa chọn ngắn, cho phép người học tự nhập). Câu mà các lựa chọn không loại trừ nhau (môn, chủ đề, kỹ năng…) PHẢI đặt multi_select=true để người học chọn nhiều) thay vì đoán hay trả lời đầy đủ ngay.',
   'Sau khi nhận câu trả lời của người học, mới đưa lời giải thích hoặc gợi ý bước tiếp theo.'
 ].join('\n')
 
