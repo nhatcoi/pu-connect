@@ -111,7 +111,10 @@ export class N7AgentService {
           if (!mine) {
             const args = parseArgs(call.arguments)
             const refusal = capability?.guard?.(call.name, args)
-            if (refusal) outputs[index] = JSON.stringify({ error: refusal })
+            if (refusal) {
+              this.logger.warn(`capability ${capability?.id} từ chối ${call.name}: ${refusal.replace(/\s+/g, ' ').slice(0, 300)}`)
+              outputs[index] = JSON.stringify({ error: refusal })
+            }
             else external.push({ index, call: capability?.rewrite ? { ...call, arguments: JSON.stringify(capability.rewrite(call.name, args)) } : call })
             return
           }

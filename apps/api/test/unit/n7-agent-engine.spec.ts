@@ -415,6 +415,8 @@ describe('N7AI Agent Engine Unit Tests', () => {
 
     it('mode quiz và deep_question dùng capability trắc nghiệm, ép quiz_plan ở vòng đầu', () => {
       expect(capabilityFor('quiz', false)?.openingTool).toBe('quiz_plan')
+      // quiz_plan + 3 lần sửa + lần lưu phải nằm gọn trong ngân sách thăm dò, nếu không vòng chốt đóng tool và model viết bài ra chữ
+      expect(capabilityFor('quiz', false)?.budgets?.explorationBudget).toBeGreaterThanOrEqual(5)
       expect(capabilityFor('quiz', false)?.id).toBe('quiz')
       expect(capabilityFor('deep_question', false)?.id).toBe('quiz')
     })

@@ -158,6 +158,8 @@ export function quizCapability(): LoopCapability {
       }
     ],
     openingTool: 'quiz_plan',
+    // quiz_plan + tối đa 3 lần sửa + lần lưu: ngân sách mặc định (3 vòng) cạn trước khi lưu ⇒ vòng chốt đóng tool và model viết cả bài ra chữ
+    budgets: { explorationBudget: 7 },
     guard: (name, args) => session.guard(name, args),
     rewrite: (name, args) => session.rewrite(name, args),
     observe: (name, result) => session.observe(name, result),
