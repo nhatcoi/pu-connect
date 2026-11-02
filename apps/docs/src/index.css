@@ -64,7 +64,7 @@
 
 /* Base resets & typography */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 body {
@@ -95,11 +95,12 @@ body {
 .doc-prose {
   color: var(--foreground);
   line-height: 1.75;
+  font-size: 0.975rem;
 }
 
 .doc-prose h1 {
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
   margin-top: 0;
   margin-bottom: 1.25rem;
@@ -160,17 +161,10 @@ body {
 }
 
 .doc-prose blockquote {
-  border-left: 4px solid var(--primary);
-  padding-left: 1rem;
-  margin-left: 0;
-  margin-right: 0;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-  font-style: italic;
+  border-left: 3px solid var(--border);
+  margin: 1rem 0;
   color: var(--muted-foreground);
-  background: var(--muted);
-  padding: 0.75rem 1rem;
-  border-radius: 0 0.5rem 0.5rem 0;
+  padding: 0.25rem 1rem;
 }
 
 .doc-prose hr {
@@ -210,18 +204,18 @@ body {
   font-family: var(--font-mono);
   font-size: 0.85em;
   background: var(--muted);
-  color: var(--brand-orange);
-  padding: 0.2rem 0.4rem;
+  color: var(--foreground);
+  padding: 0.15rem 0.35rem;
   border-radius: 0.375rem;
   border: 1px solid var(--border);
 }
 
 .doc-prose pre {
   margin: 1rem 0;
-  background: #0f172a;
+  background: #0b1020;
   color: #f8fafc;
   padding: 1rem;
-  border-radius: 0.625rem;
+  border-radius: 0.375rem;
   overflow-x: auto;
   font-family: var(--font-mono);
   font-size: 0.85rem;

@@ -2,11 +2,30 @@ import { Marked } from 'marked'
 
 function slugify(text: string): string {
   return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .trim()
     .replace(/[\s_-]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+// Đếm tiêu đề trùng trong một tài liệu để id luôn duy nhất, khớp với build script
+const headingCounts = new Map<string, number>()
+let headingSeq = 0
+
+export function resetHeadingIds() {
+  headingCounts.clear()
+  headingSeq = 0
+}
+
+function uniqueHeadingId(base: string): string {
+  const id = base || `muc-${headingSeq}`
+  const n = headingCounts.get(id) ?? 0
+  headingCounts.set(id, n + 1)
+  return n > 0 ? `${id}-${n}` : id
 }
 
 function escapeHtml(html: string): string {
@@ -25,14 +44,14 @@ function preprocessAlerts(md: string): string {
       const t = type.toLowerCase()
       const cleanContent = content.replace(/^>\s?/gm, '').trim()
       const titles: Record<string, string> = {
-        note: 'GHI CHÚ (NOTE)',
-        important: 'QUAN TRỌNG (IMPORTANT)',
-        tip: 'MẸO & GỢI Ý (TIP)',
-        warning: 'CẢNH BÁO (WARNING)',
-        caution: 'LƯU Ý RỦI RO (CAUTION)'
+        note: 'Ghi chú',
+        important: 'Quan trọng',
+        tip: 'Gợi ý',
+        warning: 'Cảnh báo',
+        caution: 'Lưu ý'
       }
       return `\n<div class="doc-alert doc-alert-${t}">
-  <div class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center gap-1.5 opacity-90">${titles[t] || type}</div>
+  <div class="font-semibold text-xs uppercase tracking-wider mb-1 opacity-80">${titles[t] || type}</div>
   <div class="text-sm leading-relaxed">${cleanContent}</div>
 </div>\n`
     }
@@ -53,11 +72,11 @@ markedInstance.use({
       const safeCode = encodeURIComponent(text)
       const language = lang || 'text'
       return `
-        <div class="code-wrapper relative group my-4 rounded-xl overflow-hidden border border-border bg-[#090d16]">
+        <div class="code-wrapper relative group my-4 rounded-md overflow-hidden border border-border bg-[#0b1020]">
           <div class="flex items-center justify-between px-4 py-2 border-b border-border/40 bg-muted/40 text-xs text-muted-foreground font-mono">
             <span class="font-semibold uppercase tracking-wider text-[11px]">${language}</span>
             <button
-              class="copy-btn px-2.5 py-1 rounded-md bg-card/60 hover:bg-card border border-border/40 text-xs transition-all flex items-center gap-1.5 cursor-pointer text-foreground hover:text-primary active:scale-95"
+              class="copy-btn px-2.5 py-1 rounded border border-border/60 text-xs cursor-pointer text-foreground hover:text-primary"
               data-code="${safeCode}"
             >
               Sao chép
@@ -69,11 +88,8 @@ markedInstance.use({
     },
     heading({ text, depth }: { text: string; depth: number }) {
       const plainText = text.replace(/<[^>]+>/g, '').trim()
-      const id = slugify(plainText)
-      return `<h${depth} id="${id}" class="group relative flex items-center scroll-mt-24">
-        <a href="#${id}" aria-label="Liên kết tới mục ${plainText}" class="absolute -left-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-primary pr-2 font-mono text-sm">#</a>
-        <span>${text}</span>
-      </h${depth}>`
+      const id = uniqueHeadingId(slugify(plainText))
+      return `<h${depth} id="${id}" class="scroll-mt-20"><span>${text}</span></h${depth}>`
     }
   }
 })

@@ -1,9 +1,8 @@
 import React, { useMemo, useEffect, useRef } from 'react'
-import { Clock, FileCode, ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react'
 import type { DocItem } from '../types'
-import { renderMarkdown } from '../lib/markdown'
+import { renderMarkdown, resetHeadingIds } from '../lib/markdown'
 import { MermaidBlock } from './MermaidBlock'
-import { getAdjacentDocs } from '../lib/docs-service'
+import { getAdjacentDocs, getCategories, getDocBySlug } from '../lib/docs-service'
 
 interface DocViewerProps {
   doc: DocItem
@@ -18,169 +17,122 @@ interface ContentChunk {
 export function DocViewer({ doc, onNavigate }: DocViewerProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const { prev, next } = useMemo(() => getAdjacentDocs(doc.slug), [doc.slug])
+  const categoryTitle = useMemo(
+    () => getCategories().find((c) => c.id === doc.categoryId)?.title ?? '',
+    [doc.categoryId]
+  )
 
-  // Phân tích nội dung thành các chunk: Markdown HTML vs Mermaid Block
+  // Tách nội dung thành khối Markdown và khối sơ đồ Mermaid
   const chunks = useMemo<ContentChunk[]>(() => {
-    const raw = doc.content
+    resetHeadingIds()
+    // Tiêu đề h1 đã hiển thị ở phần đầu trang
+    const raw = doc.content.replace(/^\s*#\s+.+\n?/, '')
     const mermaidRegex = /```mermaid\s*\n([\s\S]*?)```/g
     const result: ContentChunk[] = []
     let lastIndex = 0
     let match: RegExpExecArray | null
-
     while ((match = mermaidRegex.exec(raw)) !== null) {
-      const textBefore = raw.substring(lastIndex, match.index)
-      if (textBefore.trim()) {
-        result.push({ type: 'html', content: renderMarkdown(textBefore) })
-      }
+      const before = raw.substring(lastIndex, match.index)
+      if (before.trim()) result.push({ type: 'html', content: renderMarkdown(before) })
       result.push({ type: 'mermaid', content: match[1].trim() })
       lastIndex = mermaidRegex.lastIndex
     }
-
-    const textAfter = raw.substring(lastIndex)
-    if (textAfter.trim()) {
-      result.push({ type: 'html', content: renderMarkdown(textAfter) })
-    }
-
+    const after = raw.substring(lastIndex)
+    if (after.trim()) result.push({ type: 'html', content: renderMarkdown(after) })
     return result
   }, [doc.content])
 
-  // Xử lý sự kiện click nút Copy trong các khối mã
+  // Sao chép mã và điều hướng liên kết nội bộ
   useEffect(() => {
     const el = contentRef.current
     if (!el) return
 
-    const handleCopyClick = (e: MouseEvent) => {
+    const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      const button = target.closest('.copy-btn') as HTMLElement
-      if (!button) return
 
-      const code = decodeURIComponent(button.getAttribute('data-code') || '')
-      if (code) {
-        navigator.clipboard.writeText(code)
-        const originalText = button.innerText
-        button.innerText = 'Đã chép ✓'
-        button.classList.add('text-emerald-500', 'border-emerald-500')
-        setTimeout(() => {
-          button.innerText = originalText
-          button.classList.remove('text-emerald-500', 'border-emerald-500')
-        }, 2000)
+      const copyBtn = target.closest('.copy-btn') as HTMLElement | null
+      if (copyBtn) {
+        const code = decodeURIComponent(copyBtn.getAttribute('data-code') || '')
+        if (code) {
+          navigator.clipboard.writeText(code)
+          const original = copyBtn.innerText
+          copyBtn.innerText = 'Đã chép'
+          setTimeout(() => {
+            copyBtn.innerText = original
+          }, 1600)
+        }
+        return
+      }
+
+      const anchor = target.closest('a') as HTMLAnchorElement | null
+      const href = anchor?.getAttribute('href')
+      if (!anchor || !href || !href.startsWith('#')) return
+      e.preventDefault()
+      const key = decodeURIComponent(href.slice(1))
+      if (getDocBySlug(key)?.slug === key) {
+        onNavigate(key)
+      } else {
+        document.getElementById(key)?.scrollIntoView({ behavior: 'smooth' })
       }
     }
 
-    el.addEventListener('click', handleCopyClick)
-    return () => el.removeEventListener('click', handleCopyClick)
-  }, [doc.slug])
+    el.addEventListener('click', handleClick)
+    return () => el.removeEventListener('click', handleClick)
+  }, [doc.slug, onNavigate])
 
-  // Tính thời gian đọc ước tính
-  const readTimeMinutes = useMemo(() => {
-    const words = doc.content.split(/\s+/).length
-    return Math.max(1, Math.round(words / 200))
-  }, [doc.content])
+  const readTimeMinutes = useMemo(
+    () => Math.max(1, Math.round(doc.content.split(/\s+/).length / 220)),
+    [doc.content]
+  )
 
   return (
-    <article className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      {/* Header tài liệu */}
-      <div className="pb-6 mb-8 border-b border-border">
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
-            {doc.categoryId === 'core'
-              ? 'Kiến trúc Cốt lõi (ADR)'
-              : doc.categoryId === 'diagrams'
-                ? 'Sơ đồ Hệ thống (C4)'
-                : doc.categoryId === 'api-db'
-                  ? 'Đặc tả API & Schema'
-                  : doc.categoryId === 'guides'
-                    ? 'Hướng dẫn Vận hành'
-                    : 'Tổng quan & Bắt đầu'}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3.5 w-3.5" />
-            {readTimeMinutes} phút đọc
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground font-mono">
-            <FileCode className="h-3.5 w-3.5" />
-            docs/{doc.relPath}
-          </span>
-        </div>
+    <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+      <header className="mb-8 border-b border-border pb-6">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {categoryTitle}
+          <span className="mx-2">/</span>
+          {readTimeMinutes} phút đọc
+        </p>
+        <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">{doc.title}</h1>
+      </header>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
-          {doc.title}
-        </h1>
-
-        {doc.summary && (
-          <p className="mt-3 text-sm text-muted-foreground leading-relaxed italic border-l-2 border-primary/50 pl-3">
-            {doc.summary}
-          </p>
+      <div ref={contentRef} className="doc-prose">
+        {chunks.map((chunk, idx) =>
+          chunk.type === 'mermaid' ? (
+            <MermaidBlock key={`mermaid-${idx}`} code={chunk.content} />
+          ) : (
+            <div key={`html-${idx}`} dangerouslySetInnerHTML={{ __html: chunk.content }} />
+          )
         )}
       </div>
 
-      {/* Nội dung bài viết */}
-      <div ref={contentRef} className="doc-prose">
-        {chunks.map((chunk, idx) => {
-          if (chunk.type === 'mermaid') {
-            return <MermaidBlock key={`mermaid-${idx}`} code={chunk.content} />
-          }
-          return <div key={`html-${idx}`} dangerouslySetInnerHTML={{ __html: chunk.content }} />
-        })}
-      </div>
-
-      {/* Điều hướng Trước / Sau */}
-      <div className="mt-14 pt-8 border-t border-border grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <nav className="mt-14 grid grid-cols-1 gap-3 border-t border-border pt-8 sm:grid-cols-2">
         {prev ? (
           <button
-            onClick={() => {
-              onNavigate(prev.slug)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className="group flex flex-col p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all text-left"
+            onClick={() => onNavigate(prev.slug)}
+            className="rounded-md border border-border p-4 text-left transition-colors hover:border-primary cursor-pointer"
           >
-            <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1 group-hover:text-primary transition-colors">
-              <ArrowLeft className="h-3.5 w-3.5" /> Bài trước
-            </span>
-            <span className="font-semibold text-sm text-foreground line-clamp-1">{prev.title}</span>
+            <span className="block text-xs text-muted-foreground">Trước</span>
+            <span className="mt-1 block line-clamp-1 text-sm font-medium text-foreground">{prev.title}</span>
           </button>
         ) : (
           <div />
         )}
-
         {next && (
           <button
-            onClick={() => {
-              onNavigate(next.slug)
-              window.scrollTo({ top: 0, behavior: 'smooth' })
-            }}
-            className="group flex flex-col p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all text-right items-end sm:col-start-2"
+            onClick={() => onNavigate(next.slug)}
+            className="rounded-md border border-border p-4 text-right transition-colors hover:border-primary sm:col-start-2 cursor-pointer"
           >
-            <span className="text-xs text-muted-foreground flex items-center gap-1 mb-1 group-hover:text-primary transition-colors">
-              Bài tiếp theo <ArrowRight className="h-3.5 w-3.5" />
-            </span>
-            <span className="font-semibold text-sm text-foreground line-clamp-1">{next.title}</span>
+            <span className="block text-xs text-muted-foreground">Tiếp</span>
+            <span className="mt-1 block line-clamp-1 text-sm font-medium text-foreground">{next.title}</span>
           </button>
         )}
-      </div>
+      </nav>
 
-      {/* Footer bản quyền & liên kết */}
-      <div className="mt-12 pt-6 border-t border-border/50 flex flex-wrap items-center justify-between text-xs text-muted-foreground gap-4">
-        <div>PU Connect Architecture & Developer Documentation © {new Date().getFullYear()} Phenikaa University</div>
-        <div className="flex items-center gap-4">
-          <a
-            href="https://puc.vnhat.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:text-foreground transition-colors"
-          >
-            Mở PU Connect Web <ExternalLink className="h-3 w-3" />
-          </a>
-          <a
-            href="https://admin-puc.vnhat.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 hover:text-foreground transition-colors"
-          >
-            Admin Console <ExternalLink className="h-3 w-3" />
-          </a>
-        </div>
-      </div>
+      <footer className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6 text-xs text-muted-foreground">
+        <span>PU Connect, Trường Đại học Phenikaa</span>
+        <span className="font-mono">docs/{doc.relPath}</span>
+      </footer>
     </article>
   )
 }

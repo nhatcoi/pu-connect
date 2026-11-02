@@ -1,16 +1,5 @@
 import React, { useState } from 'react'
 import type { DocCategory, DocItem } from '../types'
-import {
-  Rocket,
-  Layers,
-  GitFork,
-  Database,
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  Filter,
-  X
-} from 'lucide-react'
 
 interface SidebarProps {
   categories: DocCategory[]
@@ -21,12 +10,8 @@ interface SidebarProps {
   onCloseMobile?: () => void
 }
 
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  overview: <Rocket className="h-4 w-4 text-sky-500" />,
-  core: <Layers className="h-4 w-4 text-purple-500" />,
-  diagrams: <GitFork className="h-4 w-4 text-amber-500" />,
-  'api-db': <Database className="h-4 w-4 text-emerald-500" />,
-  guides: <BookOpen className="h-4 w-4 text-rose-500" />
+function stripNumbering(title: string) {
+  return title.replace(/^\d+\s*[—–.-]\s*/, '')
 }
 
 export function Sidebar({
@@ -38,138 +23,91 @@ export function Sidebar({
   onCloseMobile
 }: SidebarProps) {
   const [filterText, setFilterText] = useState('')
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
-  const toggleCategory = (catId: string) => {
-    setCollapsedCategories((prev) => ({ ...prev, [catId]: !prev[catId] }))
-  }
+  const term = filterText.trim().toLowerCase()
+  const filtered = docs.filter(
+    (d) => !term || d.title.toLowerCase().includes(term) || d.slug.toLowerCase().includes(term)
+  )
 
-  // Filter docs
-  const filteredDocs = docs.filter((d) => {
-    if (!filterText.trim()) return true
-    const term = filterText.toLowerCase()
-    return d.title.toLowerCase().includes(term) || d.slug.toLowerCase().includes(term)
-  })
-
-  const sidebarContent = (
-    <div className="flex flex-col h-full bg-surface border-r border-border select-none">
-      {/* Mobile Header */}
-      <div className="flex lg:hidden items-center justify-between p-4 border-b border-border">
-        <span className="font-bold text-sm text-foreground">Danh mục Tài liệu</span>
+  const content = (
+    <div className="flex h-full flex-col border-r border-border bg-background">
+      <div className="flex items-center justify-between border-b border-border p-4 lg:hidden">
+        <span className="text-sm font-semibold text-foreground">Danh mục</span>
         {onCloseMobile && (
-          <button onClick={onCloseMobile} className="p-1 rounded-md text-muted-foreground hover:text-foreground">
-            <X className="h-5 w-5" />
+          <button onClick={onCloseMobile} className="text-sm text-muted-foreground hover:text-foreground">
+            Đóng
           </button>
         )}
       </div>
 
-      {/* Quick Filter Input */}
-      <div className="p-3 border-b border-border/60">
-        <div className="relative">
-          <Filter className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
-          <input
-            type="text"
-            value={filterText}
-            onChange={(e) => setFilterText(e.target.value)}
-            placeholder="Lọc tài liệu nhanh..."
-            className="w-full pl-8 pr-3 py-1.5 bg-background rounded-lg text-xs border border-border/80 placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-          {filterText && (
-            <button
-              onClick={() => setFilterText('')}
-              className="absolute right-2 top-2 p-0.5 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
+      <div className="p-3">
+        <input
+          type="text"
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          placeholder="Lọc theo tên"
+          className="w-full rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+        />
       </div>
 
-      {/* Accordion Categories & Docs */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs">
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 pb-8 text-sm">
         {categories.map((cat) => {
-          const categoryDocs = filteredDocs.filter((d) => d.categoryId === cat.id)
-          if (filterText && categoryDocs.length === 0) return null
-
-          const isCollapsed = collapsedCategories[cat.id]
+          const items = filtered.filter((d) => d.categoryId === cat.id)
+          if (items.length === 0) return null
+          const isCollapsed = !term && collapsed[cat.id]
 
           return (
-            <div key={cat.id} className="space-y-1">
-              {/* Category Header */}
+            <section key={cat.id}>
               <button
-                onClick={() => toggleCategory(cat.id)}
-                className="w-full flex items-center justify-between py-1 px-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group cursor-pointer"
+                onClick={() => setCollapsed((p) => ({ ...p, [cat.id]: !p[cat.id] }))}
+                className="flex w-full items-baseline justify-between px-2 py-1 text-left cursor-pointer"
+                aria-expanded={!isCollapsed}
               >
-                <div className="flex items-center gap-2 font-semibold text-xs text-foreground">
-                  {CATEGORY_ICONS[cat.id] || <Layers className="h-4 w-4" />}
-                  <span>{cat.title}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">
-                    ({categoryDocs.length})
-                  </span>
-                </div>
-                <div className="text-muted-foreground group-hover:text-foreground">
-                  {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                </div>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-foreground">{cat.title}</span>
+                <span className="text-[11px] text-muted-foreground">{isCollapsed ? 'Mở' : items.length}</span>
               </button>
-
-              {/* Doc List */}
               {!isCollapsed && (
-                <div className="pl-3 space-y-0.5 border-l border-border/60 ml-2 mt-1">
-                  {categoryDocs.map((doc) => {
-                    const isActive = activeSlug === doc.slug || activeSlug === doc.id
+                <ul className="mt-1 space-y-px">
+                  {items.map((doc) => {
+                    const isActive = activeSlug === doc.slug
                     return (
-                      <button
-                        key={doc.id}
-                        onClick={() => {
-                          onSelect(doc.slug)
-                          if (onCloseMobile) onCloseMobile()
-                        }}
-                        className={`w-full text-left py-1.5 px-2.5 rounded-lg transition-all flex items-center justify-between group cursor-pointer ${
-                          isActive
-                            ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
-                        }`}
-                      >
-                        <span className="line-clamp-1 leading-relaxed text-xs">
-                          {doc.title.replace(/^#\s*/, '')}
-                        </span>
-                        {doc.hasMermaid && (
-                          <span
-                            className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-mono shrink-0 ml-1.5 ${
-                              isActive
-                                ? 'bg-white/20 text-white'
-                                : 'bg-muted text-muted-foreground group-hover:bg-muted-foreground/20'
-                            }`}
-                          >
-                            Mermaid
-                          </span>
-                        )}
-                      </button>
+                      <li key={doc.id}>
+                        <button
+                          onClick={() => {
+                            onSelect(doc.slug)
+                            onCloseMobile?.()
+                          }}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`block w-full rounded-md border-l-2 px-2.5 py-1.5 text-left leading-snug transition-colors cursor-pointer ${
+                            isActive
+                              ? 'border-primary bg-muted font-medium text-foreground'
+                              : 'border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground'
+                          }`}
+                        >
+                          {stripNumbering(doc.title)}
+                        </button>
+                      </li>
                     )
                   })}
-                </div>
+                </ul>
               )}
-            </div>
+            </section>
           )
         })}
-      </div>
+        {filtered.length === 0 && <p className="px-2 text-muted-foreground">Không có tài liệu phù hợp.</p>}
+      </nav>
     </div>
   )
 
   return (
     <>
-      {/* Desktop Fixed Sidebar */}
-      <aside className="w-72 shrink-0 hidden lg:block sticky top-14 h-[calc(100vh-3.5rem)]">
-        {sidebarContent}
-      </aside>
+      <aside className="sticky top-14 hidden h-[calc(100vh-3.5rem)] w-72 shrink-0 lg:block">{content}</aside>
 
-      {/* Mobile Drawer */}
       {isOpenMobile && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={onCloseMobile} />
-          <div className="relative w-80 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
-            {sidebarContent}
-          </div>
+          <div className="fixed inset-0 bg-black/50" onClick={onCloseMobile} />
+          <div className="relative z-10 h-full w-80 max-w-[85vw] shadow-2xl">{content}</div>
         </div>
       )}
     </>

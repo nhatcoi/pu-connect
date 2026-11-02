@@ -9,43 +9,156 @@ const DOCS_DIR = path.resolve(__dirname, '../../../docs')
 const OUTPUT_DIR = path.resolve(__dirname, '../src/data')
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'docs.json')
 
-// Định nghĩa cấu trúc danh mục và thứ tự ưu tiên
+// Nhóm tài liệu theo hệ thống. `order` là danh sách slug theo thứ tự hiển thị.
 const CATEGORIES = [
   {
-    id: 'overview',
-    title: 'Tổng Quan & Bắt Đầu',
-    icon: 'Rocket',
-    badge: 'Khởi đầu'
+    id: 'start',
+    title: 'Giới thiệu',
+    description: 'Tổng quan sản phẩm, vai trò và thuật ngữ',
+    order: ['index', 'product/overview', 'product/roles-permissions', 'product/glossary']
   },
   {
-    id: 'core',
-    title: 'Kiến Trúc Cốt Lõi (ADRs)',
-    icon: 'Layers',
-    badge: 'Core Architecture'
+    id: 'web',
+    title: 'PUC Web',
+    description: 'Mạng xã hội học thuật dành cho người dùng',
+    order: [
+      'product/web/feed-posts',
+      'product/web/comments-qa',
+      'product/web/profile-follow',
+      'product/web/search',
+      'product/web/notifications',
+      'product/web/messaging',
+      'product/web/communities',
+      'product/web/study-groups',
+      'product/web/courses',
+      'product/web/documents',
+      'product/web/study-tools',
+      'product/web/account-settings',
+      'product/web/moderation'
+    ]
   },
   {
-    id: 'diagrams',
-    title: 'Sơ Đồ Hệ Thống (Mermaid)',
-    icon: 'GitFork',
-    badge: 'C4 & Visual'
+    id: 'n7ai',
+    title: 'N7AI',
+    description: 'Trợ lý học tập AI',
+    order: [
+      'product/n7ai/overview',
+      'product/n7ai/chat-workspace',
+      'product/n7ai/learning-modes',
+      'product/n7ai/agent-engine',
+      'product/n7ai/sources-rag',
+      'product/n7ai/notes-memory-tasks',
+      'product/n7ai/connectors',
+      'product/n7ai/models-quota',
+      'product/n7ai/in-app-context'
+    ]
   },
   {
-    id: 'api-db',
-    title: 'API & Cơ Sở Dữ Liệu',
-    icon: 'Database',
-    badge: 'Contracts'
+    id: 'admin',
+    title: 'Admin Console',
+    description: 'Cổng quản trị',
+    order: [
+      'product/admin/overview',
+      'product/admin/users-security',
+      'product/admin/moderation',
+      'product/admin/academic-catalog',
+      'product/admin/ai-operations',
+      'product/admin/bots-news',
+      'product/admin/announcements-groups'
+    ]
   },
   {
-    id: 'guides',
-    title: 'Vận Hành & Hướng Dẫn',
-    icon: 'BookOpen',
-    badge: 'DevOps & Rules'
+    id: 'tech',
+    title: 'Kỹ thuật và vận hành',
+    description: 'Kiến trúc, API, cơ sở dữ liệu, triển khai',
+    order: [
+      'get-started',
+      'architecture',
+      'api-specification',
+      'database-schema',
+      'auth-google',
+      'frontend-guide',
+      'deployment-and-devops',
+      'mobile-expansion',
+      'seed',
+      'content-moderation',
+      'following',
+      'logout',
+      'academic-sharing-and-taxonomy-spec',
+      'diagrams/README',
+      'diagrams/01-system-context',
+      'diagrams/02-containers',
+      'diagrams/03-api-components',
+      'diagrams/04-erd',
+      'diagrams/05-flows',
+      'diagrams/06-deployment',
+      'diagrams/07-web-app'
+    ]
+  },
+  {
+    id: 'adr',
+    title: 'Quyết định kiến trúc (ADR)',
+    description: 'Ghi chép thiết kế chi tiết từng phân hệ',
+    order: ['STUDENT_SOCIAL_NETWORK_MASTER_PLAN', 'core/README', 'core/FEATURE']
+  },
+  {
+    id: 'changelog',
+    title: 'Nhật ký thay đổi',
+    description: 'Danh mục tính năng đã hoàn thành',
+    order: ['FEAT']
   }
 ]
 
-// Hàm làm sạch chuỗi thành slug id
+// Không bao giờ đưa lên site công khai: dữ liệu cá nhân, báo cáo học thuật, tệp nhị phân.
+function isExcluded(relPath) {
+  const p = relPath.replace(/\\/g, '/')
+  if (/\.local\.md$/i.test(p)) return true
+  if (p.startsWith('report/')) return true
+  return false
+}
+
+function categorize(slug) {
+  for (const cat of CATEGORIES) {
+    const idx = cat.order.indexOf(slug)
+    if (idx !== -1) return { categoryId: cat.id, order: idx }
+  }
+  if (slug.startsWith('core/')) {
+    const m = slug.match(/^core\/(\d+)/)
+    return { categoryId: 'adr', order: 10 + (m ? parseInt(m[1], 10) : 90) }
+  }
+  if (slug.startsWith('diagrams/')) return { categoryId: 'tech', order: 60 }
+  if (slug.startsWith('product/web/')) return { categoryId: 'web', order: 90 }
+  if (slug.startsWith('product/n7ai/')) return { categoryId: 'n7ai', order: 90 }
+  if (slug.startsWith('product/admin/')) return { categoryId: 'admin', order: 90 }
+  return { categoryId: 'tech', order: 80 }
+}
+
+// Bỏ emoji và ký hiệu trang trí, giữ nguyên nội dung trong khối mã.
+const DECOR = /[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}✅✔✓❌]/gu
+
+function stripDecor(text) {
+  return text.replace(DECOR, '').replace(/[ \t]+$/gm, '').replace(/\|[ ]{2,}/g, '| ')
+}
+
+function mapOutsideCode(markdown, fn) {
+  const parts = markdown.split(/(```[\s\S]*?```)/g)
+  return parts.map((part, i) => (i % 2 === 1 ? part : fn(part))).join('')
+}
+
+function cleanTitle(text) {
+  return text
+    .replace(DECOR, '')
+    .replace(/\s+/g, ' ')
+    .replace(/^[\s:–—-]+/, '')
+    .trim()
+}
+
 function slugify(text) {
   return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'd')
     .toLowerCase()
     .replace(/[^\w\s-]/g, '')
     .trim()
@@ -53,236 +166,158 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '')
 }
 
-// Bóc tách tiêu đề và trích xuất tóm tắt
-function extractDocMeta(content, filePath, relPath) {
-  const lines = content.split('\n')
-  let title = ''
-  const headings = []
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!title && trimmed.startsWith('# ')) {
-      title = trimmed.replace(/^#\s+/, '').trim()
-    } else if (trimmed.startsWith('## ')) {
-      const headingText = trimmed.replace(/^##\s+/, '').trim()
-      headings.push({
-        level: 2,
-        text: headingText,
-        id: slugify(headingText) || `h2-${headings.length}`
-      })
-    } else if (trimmed.startsWith('### ')) {
-      const headingText = trimmed.replace(/^###\s+/, '').trim()
-      headings.push({
-        level: 3,
-        text: headingText,
-        id: slugify(headingText) || `h3-${headings.length}`
-      })
-    }
-  }
-
-  // Fallback title nếu không có h1
-  if (!title) {
-    title = path.basename(filePath, '.md').replace(/[-_]/g, ' ')
-    title = title.charAt(0).toUpperCase() + title.slice(1)
-  }
-
-  // Làm sạch tóm tắt
-  const plainText = content
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/#+\s+/g, ' ')
-    .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1')
-    .replace(/[*_~>|-]/g, ' ')
-    .replace(/\s+/g, ' ')
+function headingPlainText(raw) {
+  return raw
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[`*]/g, '')
     .trim()
-
-  const summary = plainText.slice(0, 220) + (plainText.length > 220 ? '...' : '')
-
-  return { title, headings, summary, plainText }
 }
 
-// Phân loại tài liệu
-function categorizeDoc(relPath) {
-  const normalized = relPath.replace(/\\/g, '/')
-
-  if (normalized.startsWith('core/')) {
-    return {
-      categoryId: 'core',
-      slug: normalized.replace(/\.md$/, ''),
-      order: getCoreOrder(normalized)
+function extractHeadings(content) {
+  const body = content.replace(/```[\s\S]*?```/g, (m) => m.replace(/[^\n]/g, ''))
+  const headings = []
+  const seen = new Map()
+  let title = ''
+  for (const line of body.split('\n')) {
+    const m = line.match(/^(#{1,3})\s+(.+?)\s*#*\s*$/)
+    if (!m) continue
+    const level = m[1].length
+    const text = cleanTitle(headingPlainText(m[2]))
+    if (!text) continue
+    if (level === 1) {
+      if (!title) title = text
+      continue
     }
+    let id = slugify(text) || `muc-${headings.length}`
+    const n = seen.get(id) || 0
+    seen.set(id, n + 1)
+    if (n > 0) id = `${id}-${n}`
+    headings.push({ level, text, id })
   }
-
-  if (normalized.startsWith('diagrams/')) {
-    return {
-      categoryId: 'diagrams',
-      slug: normalized.replace(/\.md$/, ''),
-      order: getDiagramOrder(normalized)
-    }
-  }
-
-  if (
-    normalized.includes('api-specification') ||
-    normalized.includes('database-schema') ||
-    normalized.includes('auth-google') ||
-    normalized.includes('academic-sharing')
-  ) {
-    return {
-      categoryId: 'api-db',
-      slug: normalized.replace(/\.md$/, ''),
-      order: getApiOrder(normalized)
-    }
-  }
-
-  if (
-    normalized.includes('deployment') ||
-    normalized.includes('frontend-guide') ||
-    normalized.includes('mobile-expansion') ||
-    normalized.includes('seed') ||
-    normalized.includes('ACCOUNTS') ||
-    normalized.includes('following') ||
-    normalized.includes('logout')
-  ) {
-    return {
-      categoryId: 'guides',
-      slug: normalized.replace(/\.md$/, ''),
-      order: getGuideOrder(normalized)
-    }
-  }
-
-  return {
-    categoryId: 'overview',
-    slug: normalized === 'README.md' ? 'index' : normalized.replace(/\.md$/, ''),
-    order: getOverviewOrder(normalized)
-  }
+  return { title, headings }
 }
 
-function getOverviewOrder(file) {
-  if (file === 'README.md') return 1
-  if (file.includes('get-started')) return 2
-  if (file.includes('architecture')) return 3
-  if (file.includes('FEAT')) return 4
-  if (file.includes('MASTER_PLAN')) return 5
-  return 10
-}
-
-function getCoreOrder(file) {
-  if (file === 'core/README.md') return 0
-  const match = file.match(/core\/(\d+)/)
-  return match ? parseInt(match[1], 10) : 99
-}
-
-function getDiagramOrder(file) {
-  if (file === 'diagrams/README.md') return 0
-  const match = file.match(/diagrams\/(\d+)/)
-  return match ? parseInt(match[1], 10) : 99
-}
-
-function getApiOrder(file) {
-  if (file.includes('api-specification')) return 1
-  if (file.includes('database-schema')) return 2
-  if (file.includes('auth-google')) return 3
-  if (file.includes('academic-sharing')) return 4
-  return 10
-}
-
-function getGuideOrder(file) {
-  if (file.includes('deployment')) return 1
-  if (file.includes('frontend-guide')) return 2
-  if (file.includes('mobile-expansion')) return 3
-  if (file.includes('seed')) return 4
-  if (file.includes('ACCOUNTS')) return 5
-  if (file.includes('following')) return 6
-  if (file.includes('logout')) return 7
-  return 10
+// Chuyển liên kết tương đối giữa các tài liệu thành `#slug`; liên kết tới mã nguồn thì bỏ liên kết.
+function rewriteLinks(content, relPath, slugSet) {
+  const dir = path.posix.dirname(relPath.replace(/\\/g, '/'))
+  return mapOutsideCode(content, (text) =>
+    text.replace(/(!?)\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, bang, label, target) => {
+      if (bang) return match
+      if (/^(https?:|mailto:|#)/.test(target)) return match
+      const [rawPath, anchor] = target.split('#')
+      const cleaned = rawPath.replace(/^file:\/\/.*?(\/docs\/)/, '').replace(/\.md$/, '')
+      const candidates = [
+        cleaned,
+        path.posix.normalize(path.posix.join(dir, cleaned)),
+        cleaned === '' ? '' : cleaned.replace(/\/$/, '')
+      ].map((c) => c.replace(/^\.\//, '').replace(/\/README$/, '/README'))
+      for (const c of candidates) {
+        const slug = c === 'README' ? 'index' : c
+        if (slugSet.has(slug)) return `[${label}](#${slug})`
+      }
+      if (rawPath === '' && anchor) return match
+      return label.trim() ? `\`${label.replace(/`/g, '')}\`` : ''
+    })
+  )
 }
 
 function walkDocs(dir, rootDir = dir) {
   let results = []
-  const list = fs.readdirSync(dir)
-
-  for (const file of list) {
+  for (const file of fs.readdirSync(dir)) {
     if (file === '.DS_Store' || file === 'node_modules' || file === '.git') continue
     const fullPath = path.join(dir, file)
     const stat = fs.statSync(fullPath)
-
+    const relPath = path.relative(rootDir, fullPath).replace(/\\/g, '/')
     if (stat.isDirectory()) {
-      // Bỏ qua thư mục report tài liệu word/template đồ án tốt nghiệp
-      if (file === 'report') continue
+      if (isExcluded(relPath + '/')) continue
       results = results.concat(walkDocs(fullPath, rootDir))
-    } else if (file.endsWith('.md')) {
-      const relPath = path.relative(rootDir, fullPath)
+    } else if (file.endsWith('.md') && !isExcluded(relPath)) {
       results.push({ fullPath, relPath })
     }
   }
   return results
 }
 
-function main() {
-  console.log('📚 Đang phân tích tài liệu từ:', DOCS_DIR)
+function summarize(content) {
+  const plain = content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/^#+\s+.*$/gm, ' ')
+    .replace(/\|[-: |]+\|/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_~>|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return plain
+}
 
+function main() {
+  console.log('Đang phân tích tài liệu từ:', DOCS_DIR)
   if (!fs.existsSync(DOCS_DIR)) {
-    console.error('Không tìm thấy thư mục docs!')
+    console.error('Không tìm thấy thư mục docs')
     process.exit(1)
   }
 
   const files = walkDocs(DOCS_DIR)
-  const docs = []
+  const slugOf = (relPath) => {
+    const s = relPath.replace(/\.md$/, '')
+    return s === 'README' ? 'index' : s
+  }
+  const slugSet = new Set(files.map((f) => slugOf(f.relPath)))
 
-  for (const { fullPath, relPath } of files) {
-    const rawContent = fs.readFileSync(fullPath, 'utf8')
-    const { title, headings, summary, plainText } = extractDocMeta(rawContent, fullPath, relPath)
-    const { categoryId, slug, order } = categorizeDoc(relPath)
+  const docs = files.map(({ fullPath, relPath }) => {
+    const slug = slugOf(relPath)
+    const raw = fs.readFileSync(fullPath, 'utf8')
+    let content = mapOutsideCode(raw, stripDecor)
+    content = rewriteLinks(content, relPath, slugSet)
 
-    // Nhận diện sơ đồ Mermaid
-    const hasMermaid = rawContent.includes('```mermaid')
+    let { title: h1, headings } = extractHeadings(content)
+    // Neo trong trang kiểu cũ (có dấu tiếng Việt) chuyển sang id không dấu của tiêu đề
+    const ids = new Set(headings.map((h) => h.id))
+    content = mapOutsideCode(content, (text) =>
+      text.replace(/\]\(#([^)\s]+)\)/g, (m, anchor) => {
+        if (slugSet.has(anchor) || ids.has(anchor)) return m
+        const fixed = slugify(decodeURIComponent(anchor))
+        return ids.has(fixed) ? `](#${fixed})` : m
+      })
+    )
+    const fallback = path.basename(relPath, '.md').replace(/[-_]/g, ' ')
+    const title = h1 || fallback.charAt(0).toUpperCase() + fallback.slice(1)
+    const plain = summarize(content)
+    const { categoryId, order } = categorize(slug)
 
-    docs.push({
+    return {
       id: slug,
       slug,
       relPath,
       title,
       categoryId,
       order,
-      summary,
+      summary: plain.slice(0, 200) + (plain.length > 200 ? '...' : ''),
       headings,
-      hasMermaid,
-      content: rawContent,
-      // Search index tokens: cắt giảm text để dung lượng tối ưu
-      searchSnippet: plainText.slice(0, 600)
-    })
-  }
-
-  // Sắp xếp tài liệu theo Category và Order
-  docs.sort((a, b) => {
-    if (a.categoryId !== b.categoryId) {
-      const catAIndex = CATEGORIES.findIndex((c) => c.id === a.categoryId)
-      const catBIndex = CATEGORIES.findIndex((c) => c.id === b.categoryId)
-      return catAIndex - catBIndex
+      hasMermaid: content.includes('```mermaid'),
+      content,
+      searchSnippet: plain.slice(0, 600)
     }
-    return a.order - b.order
   })
 
-  // Đảm bảo document đầu tiên là index
-  const indexDoc = docs.find((d) => d.slug === 'index')
-  if (indexDoc) {
-    docs.splice(docs.indexOf(indexDoc), 1)
-    docs.unshift(indexDoc)
-  }
+  const catIndex = new Map(CATEGORIES.map((c, i) => [c.id, i]))
+  docs.sort((a, b) => {
+    if (a.categoryId !== b.categoryId) return catIndex.get(a.categoryId) - catIndex.get(b.categoryId)
+    if (a.order !== b.order) return a.order - b.order
+    return a.title.localeCompare(b.title, 'vi')
+  })
 
   const manifest = {
     generatedAt: new Date().toISOString(),
     totalDocs: docs.length,
-    categories: CATEGORIES,
+    categories: CATEGORIES.map(({ id, title, description }) => ({ id, title, description })),
     docs
   }
 
-  if (!fs.existsSync(OUTPUT_DIR)) {
-    fs.mkdirSync(OUTPUT_DIR, { recursive: true })
-  }
-
-  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifest, null, 2), 'utf8')
-  console.log(`✅ Đã sinh thành công dữ liệu cho ${docs.length} tài liệu vào: ${OUTPUT_FILE}`)
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true })
+  fs.writeFileSync(OUTPUT_FILE, JSON.stringify(manifest), 'utf8')
+  console.log(`Đã sinh dữ liệu cho ${docs.length} tài liệu: ${OUTPUT_FILE}`)
 }
 
 main()

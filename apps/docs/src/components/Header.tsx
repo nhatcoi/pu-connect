@@ -1,5 +1,4 @@
 import React from 'react'
-import { Search, Menu, ExternalLink, Sparkles } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 
 interface HeaderProps {
@@ -8,92 +7,60 @@ interface HeaderProps {
   onGoHome: () => void
 }
 
+const LINKS = [
+  { label: 'PUC Web', href: 'https://puc.vnhat.dev' },
+  { label: 'N7AI', href: 'https://puc.vnhat.dev/n7ai' },
+  { label: 'Admin', href: 'https://admin-puc.vnhat.dev' }
+]
+
 export function Header({ onOpenSearch, onToggleMobileMenu, onGoHome }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="w-full flex h-14 items-center justify-between px-4 sm:px-6">
-        {/* Left: Hamburger & Brand */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onToggleMobileMenu}
-            aria-label="Mở danh mục tài liệu"
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted lg:hidden"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
+    <header className="sticky top-0 z-40 w-full border-b border-border bg-background/90 backdrop-blur-md">
+      <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center gap-4 px-4 sm:px-6">
+        <button
+          onClick={onToggleMobileMenu}
+          aria-label="Mở danh mục tài liệu"
+          className="lg:hidden rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          Menu
+        </button>
 
+        <button onClick={onGoHome} className="flex items-center gap-2.5 text-left cursor-pointer">
+          <img src="/brand/pu-mark.svg" alt="" className="h-6 w-6" />
+          <span className="text-sm font-semibold tracking-tight text-foreground">PU Connect</span>
+          <span className="hidden sm:inline text-sm text-muted-foreground">Tài liệu</span>
+        </button>
+
+        <div className="mx-auto hidden w-full max-w-md sm:block">
           <button
-            onClick={onGoHome}
-            className="flex items-center gap-2.5 text-left group cursor-pointer"
+            onClick={onOpenSearch}
+            className="flex w-full items-center justify-between rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <img src="/brand/pu-mark.svg" alt="PU Connect" className="h-7 w-7 transition-transform group-hover:scale-105" />
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm tracking-tight text-foreground">PU Connect</span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-semibold border border-primary/20">
-                Docs
-              </span>
-            </div>
+            <span>Tìm trong tài liệu</span>
+            <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono text-[10px]">Ctrl K</kbd>
           </button>
         </div>
 
-        {/* Center: Search Button (Cmd+K) */}
-        <div className="flex-1 max-w-md mx-4 hidden sm:block">
+        <nav className="ml-auto flex items-center gap-1 text-sm">
           <button
             onClick={onOpenSearch}
-            className="w-full flex items-center justify-between px-3.5 py-1.5 rounded-xl border border-border bg-muted/50 hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-all group"
+            className="sm:hidden rounded-md px-2.5 py-1.5 text-muted-foreground hover:text-foreground"
           >
-            <div className="flex items-center gap-2">
-              <Search className="h-3.5 w-3.5 group-hover:text-primary transition-colors" />
-              <span>Tìm kiếm tài liệu, sơ đồ, API...</span>
-            </div>
-            <kbd className="px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground bg-background border border-border rounded shadow-2xs">
-              ⌘K
-            </kbd>
+            Tìm
           </button>
-        </div>
-
-        {/* Right: Search Mobile + Ecosystem Links + Theme */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <button
-            onClick={onOpenSearch}
-            aria-label="Tìm kiếm"
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted sm:hidden"
-          >
-            <Search className="h-5 w-5" />
-          </button>
-
-          <div className="hidden md:flex items-center gap-2 pr-2 border-r border-border text-xs">
+          {LINKS.map((l) => (
             <a
-              href="https://puc.vnhat.dev"
+              key={l.href}
+              href={l.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-1"
+              className="hidden md:inline rounded-md px-2.5 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
             >
-              <span>PUC Web</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
+              {l.label}
             </a>
-            <a
-              href="https://admin-puc.vnhat.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex items-center gap-1"
-            >
-              <span>Admin</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-            <a
-              href="https://puc.vnhat.dev/n7ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-2.5 py-1 rounded-lg font-medium text-brand-orange hover:bg-brand-orange/10 transition-colors flex items-center gap-1"
-            >
-              <Sparkles className="h-3 w-3" />
-              <span>N7AI</span>
-            </a>
-          </div>
-
+          ))}
           <ThemeToggle />
-        </div>
+        </nav>
       </div>
     </header>
   )

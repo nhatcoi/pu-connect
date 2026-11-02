@@ -12,8 +12,8 @@ export function App() {
 
   // Đọc slug từ URL hash (#overview hoặc #core/01-social-feed-and-posts)
   const getInitialSlug = () => {
-    const hash = window.location.hash.replace(/^#/, '')
-    return hash || 'index'
+    const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''))
+    return hash && getDocBySlug(hash)?.slug === hash ? hash : 'index'
   }
 
   const [activeSlug, setActiveSlug] = useState<string>(getInitialSlug)
@@ -23,8 +23,9 @@ export function App() {
   // Đồng bộ hash URL khi người dùng bấm Back / Forward
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash.replace(/^#/, '')
-      if (hash && hash !== activeSlug) {
+      const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''))
+      // Chỉ đổi trang khi hash là slug tài liệu; hash khác là neo trong trang
+      if (hash && hash !== activeSlug && getDocBySlug(hash)?.slug === hash) {
         setActiveSlug(hash)
       }
     }
@@ -36,7 +37,7 @@ export function App() {
   // Lắng nghe phím tắt Cmd+K / Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setIsSearchOpen(true)
       }
@@ -52,7 +53,7 @@ export function App() {
   const handleSelectDoc = (slug: string) => {
     setActiveSlug(slug)
     window.location.hash = slug
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    window.scrollTo({ top: 0 })
     setIsMobileMenuOpen(false)
   }
 

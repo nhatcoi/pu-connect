@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
 import mermaid from 'mermaid'
-import { Maximize2, Minimize2, Copy, Check, Code, Eye, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
 
 mermaid.initialize({
   startOnLoad: false,
@@ -84,8 +83,7 @@ export function MermaidBlock({ code, title }: MermaidBlockProps) {
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/30 text-xs">
           <div className="flex items-center gap-2">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
-            <span className="font-semibold text-foreground">{title || 'Sơ đồ tương tác (Mermaid)'}</span>
+            <span className="font-semibold text-foreground">{title || 'Sơ đồ'}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <button
@@ -93,24 +91,21 @@ export function MermaidBlock({ code, title }: MermaidBlockProps) {
               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs"
               title={showCode ? 'Xem sơ đồ đồ họa' : 'Xem mã Mermaid'}
             >
-              {showCode ? <Eye className="h-3.5 w-3.5" /> : <Code className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{showCode ? 'Đồ họa' : 'Mã nguồn'}</span>
+              <span className="">{showCode ? 'Đồ họa' : 'Mã nguồn'}</span>
             </button>
             <button
               onClick={handleCopy}
               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs"
               title="Sao chép mã Mermaid"
             >
-              {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-              <span className="hidden sm:inline">{copied ? 'Đã chép' : 'Chép mã'}</span>
+              <span className="">{copied ? 'Đã chép' : 'Chép mã'}</span>
             </button>
             <button
               onClick={() => setIsFullscreen(true)}
               className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-xs"
               title="Phóng to toàn màn hình"
             >
-              <Maximize2 className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Toàn màn hình</span>
+              <span className="">Toàn màn hình</span>
             </button>
           </div>
         </div>
@@ -149,14 +144,14 @@ export function MermaidBlock({ code, title }: MermaidBlockProps) {
         <div className="fixed inset-0 z-50 flex flex-col bg-background/95 backdrop-blur-md p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="flex items-center justify-between pb-4 border-b border-border">
             <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold">{title || 'Sơ đồ hệ thống PU Connect'}</span>
+              <span className="text-sm font-semibold">{title || 'Sơ đồ'}</span>
               <div className="flex items-center gap-1 bg-muted px-2 py-1 rounded-lg text-xs">
                 <button
                   onClick={() => setZoom((z) => Math.max(0.4, z - 0.2))}
                   className="p-1 hover:bg-background rounded"
                   title="Thu nhỏ"
                 >
-                  <ZoomOut className="h-3.5 w-3.5" />
+                  −
                 </button>
                 <span className="px-1.5 font-mono">{Math.round(zoom * 100)}%</span>
                 <button
@@ -164,14 +159,14 @@ export function MermaidBlock({ code, title }: MermaidBlockProps) {
                   className="p-1 hover:bg-background rounded"
                   title="Phóng to"
                 >
-                  <ZoomIn className="h-3.5 w-3.5" />
+                  +
                 </button>
                 <button
                   onClick={() => setZoom(1)}
                   className="p-1 hover:bg-background rounded ml-1"
                   title="Đặt lại zoom"
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
+                  Đặt lại
                 </button>
               </div>
             </div>
@@ -182,7 +177,6 @@ export function MermaidBlock({ code, title }: MermaidBlockProps) {
               }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-xs font-medium transition-colors"
             >
-              <Minimize2 className="h-4 w-4" />
               <span>Đóng</span>
             </button>
           </div>

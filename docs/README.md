@@ -1,38 +1,43 @@
-# 📚 PU Connect — Tài liệu Kỹ thuật (Technical Documentation)
+# PU Connect — Tài liệu sản phẩm
 
-Chào mừng bạn đến với trung tâm tài liệu kỹ thuật của dự án **PU Connect** — Nền tảng Mạng xã hội & Kho chia sẻ tài liệu kỹ thuật thế hệ mới.
+PU Connect là nền tảng mạng xã hội học thuật của Trường Đại học Phenikaa: sinh viên, giảng viên và trợ giảng cùng đăng bài, hỏi đáp, chia sẻ tài liệu, lập nhóm học và học cùng trợ lý AI N7AI. Tài liệu này mô tả sản phẩm theo từng hệ thống và từng module: mục đích, người dùng, tính năng, luồng sử dụng, quy tắc nghiệp vụ, dữ liệu và API.
 
----
+## Ba hệ thống
 
-## 📑 Mục lục tài liệu
+| Hệ thống | Địa chỉ | Dành cho | Nội dung |
+|---|---|---|---|
+| PUC Web | puc.vnhat.dev | Mọi người dùng | Bảng tin, hỏi đáp, cộng đồng, nhóm học, kho tài liệu, nhắn tin, công cụ học tập |
+| N7AI | puc.vnhat.dev/n7ai | Mọi người dùng | Trợ lý học tập: chat, chế độ học, nguồn tài liệu, ghi chú, bộ nhớ, kết nối ngoài |
+| Admin Console | admin-puc.vnhat.dev | Quản trị viên và nhóm quyền | Người dùng, kiểm duyệt, danh mục học thuật, vận hành AI, bot, thông báo hệ thống |
 
-| Tài liệu | Nội dung chính |
-| :--- | :--- |
-| [**🗺️ Sơ Đồ Hệ Thống (Diagrams — đúng theo code đang chạy)**](./diagrams/README.md) | C4 Context/Container/Component, ERD tự sinh (`pnpm docs:erd`), sequence các luồng chính, deployment, route map web. |
-| [**🎓 0. Kế Hoạch 14 Domains Mạng Xã Hội Sinh Viên (Master Plan)**](./STUDENT_SOCIAL_NETWORK_MASTER_PLAN.md) | Đặc tả 14 phân hệ nghiệp vụ, 8 miền kiến trúc, lộ trình 4 giai đoạn và Product Moat. |
-| [**🚀 1. Hướng Dẫn Bắt Đầu & Bản Đồ Nghiệp Vụ (Get Started)**](./get-started.md) | Cài đặt 3 bước, sơ đồ đa giao thức, phân tích logic nghiệp vụ cốt lõi, danh sách tài khoản mẫu. |
-| [**🎯 2. Danh Mục Tính Năng & Lộ Trình (Features & Roadmap)**](./FEAT.md) | Theo dõi trạng thái các tính năng đã hoàn thành và kế hoạch phát triển (Backlog). |
-| [**🏗️ 3. Tổng quan Kiến trúc (Architecture)**](./architecture.md) | Cấu trúc Monorepo, 5 tầng kỹ thuật, 7 phân hệ nghiệp vụ, Hybrid GraphQL + REST. |
-| [**📡 4. Đặc tả API (API Specification)**](./api-specification.md) | Danh sách REST endpoints, tham số Request/Response DTOs, WebSocket Events Gateway. |
-| [**🗄️ 5. Thiết kế Cơ sở dữ liệu (Database Schema)**](./database-schema.md) | Sơ đồ ERD, thiết kế bảng PostgreSQL 16, quan hệ thực thể, pgvector Search. |
-| [**🎨 6. Hướng dẫn Frontend & UI (Frontend Guide)**](./frontend-guide.md) | Quy chuẩn shadcn/ui, Tailwind CSS tokens, tích hợp bộ soạn thảo Tiptap và Zustand slices. |
-| [**📱 7. Hướng dẫn Mở rộng Mobile App (Mobile Expansion)**](./mobile-expansion.md) | Hướng dẫn tích hợp React Native (Expo) + `react-native-reusables`, chia sẻ schemas. |
-| [**🚢 8. Triển khai & DevOps (Deployment & DevOps)**](./deployment-and-devops.md) | Hướng dẫn Docker, cấu hình biến môi trường, Cloudflare R2 Presigned URL, Nginx, CI/CD. |
+## Đọc theo mục tiêu
 
----
+| Bạn muốn | Đọc |
+|---|---|
+| Hiểu sản phẩm làm gì và cho ai | [Tổng quan sản phẩm](product/overview) |
+| Biết vai trò nào được làm gì | [Vai trò và phân quyền](product/roles-permissions) |
+| Tra cứu từ chuyên dùng | [Thuật ngữ](product/glossary) |
+| Dùng hoặc vận hành một module của PUC Web | Mục PUC Web: Bảng tin và bài viết, Bình luận và hỏi đáp, Hồ sơ và theo dõi, Tìm kiếm, Thông báo, Nhắn tin, Cộng đồng, Nhóm học, Môn học, Kho tài liệu, Công cụ học tập, Tài khoản và quyền riêng tư, An toàn nội dung |
+| Dùng hoặc vận hành N7AI | Mục N7AI, bắt đầu từ [Tổng quan N7AI](product/n7ai/overview) |
+| Quản trị hệ thống | Mục Admin Console, bắt đầu từ [Tổng quan Admin](product/admin/overview) |
+| Phát triển, cài đặt, triển khai | Mục Kỹ thuật và vận hành, bắt đầu từ [Bắt đầu nhanh](get-started) |
 
-## ⚡ Bắt đầu nhanh (Quick Start)
+## Cấu trúc tài liệu
 
-```bash
-# 1. Clone repository & cài đặt dependencies
-pnpm install
+Mỗi trang module theo cùng một khung để dễ tra cứu:
 
-# 2. Khởi động toàn bộ dịch vụ (Web + API)
-pnpm dev
+1. Mục đích và người dùng
+2. Tính năng
+3. Luồng sử dụng
+4. Quy tắc nghiệp vụ và giới hạn
+5. Phân quyền
+6. Dữ liệu
+7. API
+8. Giới hạn đã biết
 
-# 3. Build kiểm thử Production
-pnpm build
-```
+## Quy ước
 
-* **Web UI (Next.js):** [http://localhost:3000](http://localhost:3000) (hoặc `http://0.0.0.0:3000`)
-* **API Backend (NestJS):** [http://localhost:4000/api](http://localhost:4000/api)
+- Đường dẫn API tính từ gốc `/api`.
+- Mã vai trò: `student`, `lecturer`, `ta`, `club_lead`, `admin`.
+- Thời gian hiển thị theo múi giờ Việt Nam (UTC+7).
+- Các trang trong mục Kỹ thuật và Lưu trữ quyết định kiến trúc (ADR) là tài liệu cho lập trình viên; phần còn lại là tài liệu sản phẩm.

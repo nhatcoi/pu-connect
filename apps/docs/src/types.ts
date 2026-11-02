@@ -9,7 +9,7 @@ export interface DocItem {
   slug: string
   relPath: string
   title: string
-  categoryId: 'overview' | 'core' | 'diagrams' | 'api-db' | 'guides'
+  categoryId: string
   order: number
   summary: string
   headings: DocHeading[]
@@ -19,10 +19,9 @@ export interface DocItem {
 }
 
 export interface DocCategory {
-  id: 'overview' | 'core' | 'diagrams' | 'api-db' | 'guides'
+  id: string
   title: string
-  icon: string
-  badge: string
+  description: string
 }
 
 export interface DocsManifest {
