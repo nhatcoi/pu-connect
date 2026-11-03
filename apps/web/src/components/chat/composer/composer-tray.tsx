@@ -7,6 +7,7 @@ import {
   Bot,
   Check,
   ChevronDown,
+  Database,
   Plug,
   Plus,
   Shapes,
@@ -14,13 +15,13 @@ import {
   UsersRound,
   Wand2
 } from 'lucide-react'
-import type { AiConnectorId, AiMode, AiSkill } from '@pu/schemas'
+import type { AiConnectorId, AiConnectorInfo, AiMode, AiSkill } from '@pu/schemas'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META, N7AI_CAPABILITIES } from '../ai/ai-modes'
 import { ConnectorHubIcon, SkillDeckIcon } from '../ai/mode-icons'
-import { useAiConnectors, useAiSkills } from '@/hooks/chat'
+import { useAiConnectors, useAiSkills, useConnectorPrefs } from '@/hooks/chat'
 
 interface ComposerTrayProps {
   placement?: 'bottom' | 'top'
@@ -53,12 +54,9 @@ interface ConnectorItem {
   status: 'connected' | 'needs_auth'
 }
 
+// Menu "Kết nối" (icon Plug) chỉ liệt kê connector chạy qua MCP thật (google_*, pu_connector).
+// Nguồn native (library, my_documents, my_study...) đã bật mặc định theo Cài đặt › Trình kết nối, không cần bật/tắt ở đây.
 const CONNECTORS_LIST: readonly ConnectorItem[] = [
-  { id: 'library', name: 'Thư viện số PU (PU Library)', tools: 4, status: 'connected' },
-  { id: 'my_documents', name: 'Tài liệu của tôi (My Documents)', tools: 3, status: 'connected' },
-  { id: 'my_study', name: 'Học tập cá nhân (My Study)', tools: 2, status: 'connected' },
-  { id: 'my_chats', name: 'Lịch sử chat cũ (My Chats)', tools: 2, status: 'connected' },
-  { id: 'web_search', name: 'Tìm kiếm Web (Web Search)', tools: 1, status: 'connected' },
   { id: 'google_drive', name: 'Google Drive', tools: 2, status: 'needs_auth' },
   { id: 'google_calendar', name: 'Google Calendar', tools: 1, status: 'needs_auth' }
 ]
@@ -106,19 +104,29 @@ export function ComposerTray({
   const isAutoConnectors = selectedConnectors.length === 0
   const activeConnectorsCount = selectedConnectors.length
 
+  const [openSourcesMenu, setOpenSourcesMenu] = useState(false)
+
   // Tải danh sách connector & skill từ server
   const { data: serverConnectors } = useAiConnectors()
   const { data: userSkills = [] } = useAiSkills()
+  // Nguồn native (library, my_documents...) bật/tắt mặc định ở ai_settings, đồng bộ mọi thiết bị
+  const { connectors: activeSources, toggle: toggleSource } = useConnectorPrefs()
 
+  const nativeSources: readonly AiConnectorInfo[] = React.useMemo(
+    () => (serverConnectors ?? []).filter((c) => c.protocol === 'native' && c.id !== 'web'),
+    [serverConnectors]
+  )
+
+  // Chỉ connector chạy qua MCP thật (google_*, pu_connector); nguồn native xem useConnectorPrefs / Cài đặt › Trình kết nối
   const allConnectors: readonly ConnectorItem[] = React.useMemo(() => {
     if (serverConnectors && serverConnectors.length > 0) {
       const list: ConnectorItem[] = []
       for (const sc of serverConnectors) {
-        if (sc.id === 'web') continue
+        if (sc.protocol !== 'mcp') continue
         list.push({
           id: sc.id,
           name: sc.name,
-          tools: sc.id === 'library' ? 4 : sc.id === 'my_documents' ? 3 : sc.id === 'web_search' ? 1 : 2,
+          tools: 2,
           status: (sc.connected || !sc.requiresAuth ? 'connected' : 'needs_auth') as 'connected' | 'needs_auth'
         })
       }
@@ -447,7 +455,7 @@ export function ComposerTray({
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-semibold text-foreground leading-tight">Tự động</div>
                     <div className="text-[11.5px] text-muted-foreground truncate leading-tight mt-0.5 max-w-[215px]">
-                      N7AI tự chọn kết nối phù hợp...
+                      N7AI tự chọn dịch vụ MCP phù hợp...
                     </div>
                   </div>
                   {isAutoConnectors && (
@@ -456,6 +464,10 @@ export function ComposerTray({
                     </span>
                   )}
                 </button>
+
+                <div className="px-2.5 pt-1.5 pb-0.5 text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Dịch vụ ngoài qua MCP
+                </div>
 
                 {/* Connector rows */}
                 {allConnectors.map((c) => {
@@ -526,6 +538,68 @@ export function ComposerTray({
                 <Plus size={12} strokeWidth={2} />
                 <span>Thêm kết nối</span>
               </Link>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        {/* 4. Nguồn trong PU Connect (Database) — tool native, không qua MCP */}
+        <Popover open={openSourcesMenu} onOpenChange={setOpenSourcesMenu}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              disabled={disabled}
+              data-fold="true"
+              data-state={openSourcesMenu ? 'open' : 'closed'}
+              title="Nguồn trong PU Connect"
+              aria-label="Nguồn"
+              className="dt-tray-button inline-flex items-center gap-0 px-2 py-1 rounded-lg transition-colors cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            >
+              <Database size={13} strokeWidth={1.8} className="shrink-0" />
+              <TrayReveal>
+                <span className="font-semibold text-foreground">Nguồn</span>
+                <ChevronDown
+                  size={12}
+                  strokeWidth={2}
+                  className={cn('text-muted-foreground transition-transform duration-150', openSourcesMenu && 'rotate-180')}
+                />
+              </TrayReveal>
+            </button>
+          </PopoverTrigger>
+
+          <PopoverContent
+            align="start"
+            side={placement}
+            sideOffset={6}
+            className="w-[300px] p-1.5 rounded-2xl shadow-2xl border border-border bg-popover text-popover-foreground"
+          >
+            <div className="px-2.5 pt-1 pb-1.5 text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">
+              Nguồn trong PU Connect
+            </div>
+            <div className="space-y-0.5 max-h-[280px] overflow-y-auto pr-0.5">
+              {nativeSources.map((s) => {
+                const on = activeSources.includes(s.id)
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => toggleSource(s.id)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer group',
+                      on ? 'bg-accent/80 text-foreground font-medium' : 'hover:bg-accent/60 text-foreground'
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[13px] font-semibold text-foreground leading-tight truncate">{s.name}</div>
+                      <div className="text-[11.5px] text-muted-foreground truncate leading-tight mt-0.5 max-w-[220px]">{s.description}</div>
+                    </div>
+                    {on && (
+                      <span className="w-4 h-4 rounded-full bg-[#e05d38] text-white flex items-center justify-center shrink-0 ml-1">
+                        <Check size={10} strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
             </div>
           </PopoverContent>
         </Popover>
