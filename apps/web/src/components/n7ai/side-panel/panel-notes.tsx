@@ -220,7 +220,7 @@ function NoteView({ id, notes, onToggleTree, onGone }: { id: string; notes: AiNo
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <NoteEditor key={note.id} initial={note.content} onChange={(content) => schedule({ content })} appendRef={appendRef} />
+      <NoteEditor key={note.id} noteId={note.id} initial={note.content} onChange={(content) => schedule({ content })} appendRef={appendRef} />
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent>
           <DialogHeader>

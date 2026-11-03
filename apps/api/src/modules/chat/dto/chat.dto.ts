@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
   AiFolderInput,
+  AiNoteAskInput,
   AiNoteCreateInput,
   AiNoteUpdateInput,
   AiSourceInput,
@@ -16,6 +17,7 @@ import type {
 } from '@pu/schemas'
 
 // @pu/schemas là mã TS nguồn ⇒ API khai báo lại schema runtime ở đây (xem auth/dto/register.dto.ts)
+export const AI_NOTE_ASK_MODES = ['rewrite', 'shorten', 'expand', 'none'] as const
 export const AI_MODES = [
   'ask',
   'explain',
@@ -251,6 +253,16 @@ export const AiNoteUpdateSchema = z.object({
   parentId: z.string().uuid().nullable().optional()
 })
 export const AiNoteAppendSchema = z.object({ markdown: z.string().trim().min(1).max(AI_NOTE_CONTENT_MAX) })
+// Ask n7ai sửa ghi chú: đoạn đã chọn + lệnh (hoặc chỉ chọn chế độ, không gõ lệnh) ⇒ model trả đoạn Markdown đã sửa
+export const AI_NOTE_SELECTION_MAX = 8_000
+export const AI_NOTE_INSTRUCTION_MAX = 400
+export const AiNoteAskSchema = z.object({
+  selection: z.string().trim().min(1, { message: 'Chưa chọn đoạn nào' }).max(AI_NOTE_SELECTION_MAX),
+  instruction: z.string().trim().max(AI_NOTE_INSTRUCTION_MAX).optional(),
+  mode: z.enum(AI_NOTE_ASK_MODES).optional()
+})
+const _noteAsk: Partial<AiNoteAskInput> = {} as z.infer<typeof AiNoteAskSchema>
+void _noteAsk
 const _noteCreate: AiNoteCreateInput = {} as z.infer<typeof AiNoteCreateSchema>
 const _noteUpdate: AiNoteUpdateInput = {} as z.infer<typeof AiNoteUpdateSchema>
 void [_noteCreate, _noteUpdate]

@@ -605,3 +605,14 @@ export interface AiNoteUpdateInput {
 export interface AiNoteAppendInput {
   markdown: string
 }
+export const AI_NOTE_SELECTION_MAX = 8_000
+export const AI_NOTE_ASK_MODES = ['rewrite', 'shorten', 'expand', 'none'] as const
+export type AiNoteAskMode = (typeof AI_NOTE_ASK_MODES)[number]
+export interface AiNoteAskInput {
+  selection: string
+  instruction?: string
+  mode?: AiNoteAskMode
+}
+export interface AiNoteAskResult {
+  text: string
+}

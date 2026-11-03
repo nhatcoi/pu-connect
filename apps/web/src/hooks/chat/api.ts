@@ -4,6 +4,8 @@ import type {
   AiFeedbackInput,
   AiFolder,
   AiNote,
+  AiNoteAskInput,
+  AiNoteAskResult,
   AiNoteSummary,
   AiNoteUpdateInput,
   AiSource,
@@ -160,6 +162,7 @@ export const chatApi = {
   updateAiNote: (id: string, input: AiNoteUpdateInput) => unwrap(apiClient<Envelope<AiNote>>(`/ai/notes/${id}`, json('PATCH', input))),
   appendAiNote: (id: string, markdown: string) => unwrap(apiClient<Envelope<AiNote>>(`/ai/notes/${id}/append`, json('POST', { markdown }))),
   deleteAiNote: (id: string) => apiClient(`/ai/notes/${id}`, json('DELETE')),
+  askAiNote: (id: string, input: AiNoteAskInput) => unwrap(apiClient<Envelope<AiNoteAskResult>>(`/ai/notes/${id}/ask`, json('POST', input))),
   // Tài liệu của cuộc trò chuyện (threadId) hoặc của thư viện (không có threadId)
   aiSources: (threadId?: string) => unwrap(apiClient<Envelope<AiSource[]>>(`/ai/sources${threadId ? `?threadId=${threadId}` : ''}`)),
   aiSourceContent: (id: string) => unwrap(apiClient<Envelope<{ content: string | null }>>(`/ai/sources/${id}/content`)),

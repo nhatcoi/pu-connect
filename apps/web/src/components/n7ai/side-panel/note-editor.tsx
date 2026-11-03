@@ -12,9 +12,21 @@ import { TableHeader } from '@tiptap/extension-table-header'
 import { Markdown } from '@tiptap/markdown'
 import { Bold, Code, Heading1, Heading2, Italic, List, ListOrdered, Quote, Table as TableIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { NoteAskBubble } from './note-ask-bubble'
 
 // Trình soạn Markdown của ghi chú N7AI (tiptap): nội dung ban đầu cố định theo ghi chú (key = id), mọi thay đổi trả về Markdown
-export function NoteEditor({ initial, onChange, appendRef }: { initial: string; onChange: (markdown: string) => void; appendRef?: React.MutableRefObject<((markdown: string) => void) | null> }) {
+// noteId: cho "Ask n7ai" sửa đoạn đang chọn (bubble nổi khi bôi đen)
+export function NoteEditor({
+  initial,
+  onChange,
+  appendRef,
+  noteId
+}: {
+  initial: string
+  onChange: (markdown: string) => void
+  appendRef?: React.MutableRefObject<((markdown: string) => void) | null>
+  noteId: string
+}) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -41,6 +53,7 @@ export function NoteEditor({ initial, onChange, appendRef }: { initial: string; 
     }
   }, [editor, appendRef])
 
+  const scrollRef = React.useRef<HTMLDivElement>(null)
   if (!editor) return null
   const tools: { label: string; icon: typeof Bold; active: boolean; run: () => void }[] = [
     { label: 'Đậm', icon: Bold, active: editor.isActive('bold'), run: () => editor.chain().focus().toggleBold().run() },
@@ -74,8 +87,9 @@ export function NoteEditor({ initial, onChange, appendRef }: { initial: string; 
           </button>
         ))}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-6 pt-4">
+      <div ref={scrollRef} className="relative min-h-0 flex-1 overflow-y-auto px-6 pt-4">
         <EditorContent editor={editor} />
+        <NoteAskBubble editor={editor} noteId={noteId} containerRef={scrollRef} />
       </div>
     </div>
   )

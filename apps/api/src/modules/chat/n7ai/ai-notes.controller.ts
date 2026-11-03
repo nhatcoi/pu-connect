@@ -1,18 +1,22 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common'
 import type { Request, Response } from 'express'
-import type { AiNoteAppendInput, AiNoteCreateInput, AiNoteUpdateInput } from '@pu/schemas'
+import type { AiNoteAppendInput, AiNoteAskInput, AiNoteCreateInput, AiNoteUpdateInput } from '@pu/schemas'
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe'
 import { requireUserId } from '../../../common/http/current-user'
 import { AuthenticatedGuard } from '../../auth/guards/authenticated.guard'
-import { AiNoteAppendSchema, AiNoteCreateSchema, AiNoteUpdateSchema } from '../dto/chat.dto'
+import { AiNoteAppendSchema, AiNoteAskSchema, AiNoteCreateSchema, AiNoteUpdateSchema } from '../dto/chat.dto'
+import { AiNoteEditService } from './ai-note-edit.service'
 import { noteFileName, noteToDocx } from './ai-notes-export'
 import { AiNotesService } from './ai-notes.service'
 
-// Ghi chú Markdown N7AI: danh sách · chi tiết · tạo · sửa (tự lưu) · thêm đoạn · xóa · xuất md / docx
+// Ghi chú Markdown N7AI: danh sách · chi tiết · tạo · sửa (tự lưu) · thêm đoạn · xóa · xuất md / docx · Ask n7ai sửa đoạn chọn
 @Controller('ai/notes')
 @UseGuards(AuthenticatedGuard)
 export class AiNotesController {
-  constructor(private readonly notes: AiNotesService) {}
+  constructor(
+    private readonly notes: AiNotesService,
+    private readonly edit: AiNoteEditService
+  ) {}
 
   @Get()
   list(@Req() req: Request) {
@@ -50,6 +54,14 @@ export class AiNotesController {
   @Post(':id/append')
   append(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiNoteAppendSchema)) body: AiNoteAppendInput, @Req() req: Request) {
     return this.notes.append(requireUserId(req), id, body.markdown)
+  }
+
+  // "Ask n7ai" sửa đoạn đang chọn trong trình soạn: trả đoạn Markdown đã sửa, client tự thay vào (không tự lưu)
+  @Post(':id/ask')
+  async ask(@Param('id', ParseUUIDPipe) id: string, @Body(new ZodValidationPipe(AiNoteAskSchema)) body: AiNoteAskInput, @Req() req: Request) {
+    const userId = requireUserId(req)
+    await this.notes.get(userId, id) // xác nhận ghi chú thuộc về mình trước khi tốn lượt N7AI
+    return this.edit.ask(userId, body)
   }
 
   @Delete(':id')

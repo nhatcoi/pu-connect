@@ -29,6 +29,7 @@ Giới hạn 200 ghi chú / người.
 | POST | `/:id/append` | Nối đoạn Markdown vào cuối (nút "Thêm vào ghi chú") |
 | DELETE | `/:id` | Xóa (kèm trang con) |
 | GET | `/:id/export?format=md\|docx` | Tải tệp; Word dựng bằng `docx` + `marked` (giữ chữ, liên kết, bảng; khối tương tác thành chữ tĩnh) |
+| POST | `/:id/ask` | **Ask n7ai**: `selection` (đoạn đang chọn, ≤ 8.000 ký tự), `instruction` tùy chọn (≤ 400 ký tự), `mode` (`rewrite`\|`shorten`\|`expand`\|`none`) ⇒ `{ text }`. Một lượt gọi thẳng (không agent/tool), không tự lưu — client tự thay vào. Tốn 1 lượt N7AI (`ai-note-edit.service.ts`, trigger `note`). |
 
 ## Web
 
@@ -36,9 +37,11 @@ Giới hạn 200 ghi chú / người.
 - `note-editor.tsx` (tiptap + `@tiptap/markdown`), `note-tree.tsx` (cây trang, thêm trang con).
 - `hooks/chat/use-ai-notes.ts`: TanStack Query (`aiNotes`, `aiNote`), `useAddToNote`.
 - Nút **Thêm vào ghi chú** ở thanh tác vụ câu trả lời N7AI: chèn vào ghi chú đang mở (tại chỗ, tự lưu như gõ tay), hoặc nối vào ghi chú gần nhất, chưa có thì tạo mới.
+- **Ask n7ai** (`note-ask-bubble.tsx`, tham khảo Co-Writer của DeepTutor — đổi "Ask Dito" thành "Ask n7ai"): bôi đen đoạn trong `note-editor.tsx` ⇒ nút nổi "Ask n7ai" tại vị trí chọn (tính bằng `editor.view.coordsAtPos`, neo tuyệt đối trong khung cuộn của trình soạn). Bấm mở hộp lệnh: 3 nút nhanh (Viết lại / Rút gọn / Mở rộng) hoặc gõ yêu cầu tự do; đang chờ model hiện spinner; xong hiện bản xem trước (chữ thường, chưa render Markdown) với **Dùng** (thay vào đúng vùng đã chọn bằng `insertContentAt({from,to}, text, {contentType:'markdown'})`) hoặc **Bỏ qua**. Vị trí chọn (`range`) chụp một lần lúc mở hộp; không theo dõi nếu tài liệu đổi trong lúc chờ (rủi ro chấp nhận được ở quy mô một ghi chú).
+- Khác Co-Writer gốc của DeepTutor: không có chế độ ReAct (RAG/tra web khi sửa), không xem trước dạng diff, không lịch sử thao tác/tool-call, không automark, không suggestion-card ôn tập, không backlink/thread bình luận, không upload asset. Những phần này chưa làm, xem dưới.
 
 ## Chưa làm (giai đoạn sau)
 
-Nút "Hỏi N7AI" ngay trong ghi chú, "Chèn mục yêu thích", outline theo tiêu đề, kéo thả đổi thứ tự trang.
+"Chèn mục yêu thích", outline theo tiêu đề, kéo thả đổi thứ tự trang. Từ Co-Writer DeepTutor (chưa áp dụng): sửa có RAG/tra web, xem trước dạng diff, lịch sử thao tác, automark, suggestion-card ôn tập kiểu spaced-repetition, backlink giữa trang, thread bình luận neo đoạn text, upload asset vào ghi chú.
 
-Test: `apps/api/test/n7ai-notes.e2e-spec.ts`.
+Test: `apps/api/test/n7ai-notes.e2e-spec.ts` (gồm Ask n7ai: sửa đúng đoạn chọn, bỏ hàng rào ```markdown model lỡ bọc, không tự lưu, từ chối đoạn rỗng / ghi chú người khác).

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import type { AiNote, AiNoteSummary, AiNoteUpdateInput } from '@pu/schemas'
+import type { AiNote, AiNoteAskInput, AiNoteSummary, AiNoteUpdateInput } from '@pu/schemas'
 import { useN7AiLayout } from '@/components/n7ai/layout/n7ai-layout-store'
 import { API_BASE_URL } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
@@ -48,6 +48,14 @@ export function useAiNoteMutations() {
     onError
   })
   return { create, update, append, remove }
+}
+
+// Ask n7ai sửa đoạn đang chọn trong trình soạn; kết quả chỉ trả về chữ, không tự lưu (NoteEditor tự thay vào khi người dùng bấm Dùng)
+export function useAiNoteAsk(noteId: string | null) {
+  return useMutation({
+    mutationFn: (input: AiNoteAskInput) => chatApi.askAiNote(noteId as string, input),
+    onError
+  })
 }
 
 // Tải tệp xuất (.md / .docx) kèm cookie phiên
