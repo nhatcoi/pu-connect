@@ -5,6 +5,7 @@ import { notFound, useParams } from 'next/navigation'
 import { N7AiPageHeader } from '@/components/n7ai/n7ai-page-header'
 import { CommunityPanel } from '@/components/settings/n7ai/community-panel'
 import { ConnectorsPanel } from '@/components/settings/n7ai/connectors-panel'
+import { SourcesPanel } from '@/components/settings/n7ai/sources-panel'
 import { MemoryPanel } from '@/components/settings/n7ai/memory-panel'
 import { PrivacyPanel } from '@/components/settings/n7ai/privacy-panel'
 import { ProfilePanel } from '@/components/settings/n7ai/profile-panel'
@@ -19,6 +20,7 @@ const PANELS: Record<string, React.ComponentType> = {
   profile: ProfilePanel,
   skills: SkillsPanel,
   tasks: TasksPanel,
+  sources: SourcesPanel,
   connectors: ConnectorsPanel,
   web: WebPanel,
   memory: MemoryPanel,

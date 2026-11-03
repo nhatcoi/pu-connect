@@ -35,7 +35,10 @@ Drive, Calendar, Gmail chỉ đọc. Với Forms, Sheets, Tasks, chỉ cho phép
 
 ## Bật kết nối
 
-Cài đặt N7AI, mục Trình kết nối (`/n7ai/settings/connectors`), hoặc menu `+` trong ô soạn. Có thể đặt kết nối mặc định cho mọi hội thoại. Kết quả OAuth trả về đúng trang cài đặt này.
+- MCP thật (Google, PU Connect): Cài đặt N7AI › Trình kết nối (`/n7ai/settings/connectors`), hoặc menu "Kết nối" (icon Plug) trong ô soạn. Kết quả OAuth trả về đúng trang cài đặt này.
+- Tool native (Thư viện PU, Tài liệu của tôi...): Cài đặt N7AI › Nguồn (`/n7ai/settings/sources`), hoặc menu "Nguồn" (icon Database) trong ô soạn.
+
+Cả hai đều có thể đặt mặc định cho mọi hội thoại, lưu ở `ai_settings.defaultConnectors`, đồng bộ mọi thiết bị.
 
 ## Google Workspace
 
