@@ -4,21 +4,32 @@
 
 Cho N7AI truy cập nguồn dữ liệu ngoài với sự đồng ý của người dùng: Google Workspace, tài khoản đại học qua PU Connect, và kho bài báo khoa học.
 
+## MCP thật và tool thường
+
+Menu "Kết nối" trong app là khái niệm sản phẩm (nguồn dữ liệu N7AI có thể bật/tắt), không đồng nghĩa với giao thức kỹ thuật MCP (Model Context Protocol). `AiConnectorInfo.protocol` phân biệt rõ 2 nhóm:
+
+| protocol | Gồm | Cơ chế |
+|---|---|---|
+| `mcp` | `google_drive`, `google_calendar`, `google_gmail`, `google_forms`, `google_sheets`, `google_tasks`, `pu_connector` | Client MCP thật (`@modelcontextprotocol/sdk`, `StreamableHTTPClientTransport`) nối tới máy chủ MCP — xem [Google Workspace](#google-workspace) và [PU Connect](#pu-connect-tài-khoản-đại-học) |
+| `native` | `library`, `my_documents`, `my_groups`, `my_study`, `my_chats`, `web`, `web_search`, `semantic_scholar` | Tool function-calling viết trực tiếp trong NestJS (`PucToolsService`, `retrieval-tools.service.ts`, `study-agent-tools.service.ts`, `history-tools.service.ts`, `semantic-scholar.service.ts`), không qua giao thức MCP nào |
+
+UI gắn nhãn "MCP" bên tên kết nối chỉ khi `protocol === 'mcp'` (xem `connectors-panel.tsx`).
+
 ## Danh sách kết nối
 
-| Kết nối | Mã | Xác thực | Quyền | Việc N7AI làm được |
-|---|---|---|---|---|
-| Thư viện PU | mặc định | Không | Đọc | Tìm tài liệu và bài trong PU Connect |
-| Tài liệu của tôi | mặc định | Không | Đọc | Tài liệu riêng đã lập chỉ mục |
-| Nhóm học của tôi | mặc định | Không | Đọc | Nhóm học mình tham gia |
-| Google Drive | `google_drive` | OAuth | `drive.readonly` | Tìm, đọc, liệt kê tệp |
-| Google Calendar | `google_calendar` | OAuth | `calendar.readonly` | Xem lịch, giờ rảnh |
-| Gmail | `google_gmail` | OAuth | `gmail.readonly` | Tìm và đọc thư, nhãn |
-| Google Forms | `google_forms` | OAuth | `forms.body`, `forms.responses.readonly` | Tạo form, xem phản hồi |
-| Google Sheets | `google_sheets` | OAuth | `spreadsheets` | Đọc, tạo bảng, thêm hàng |
-| Google Tasks | `google_tasks` | OAuth | `tasks` | Xem, tạo công việc |
-| PU Connect (tài khoản đại học) | `pu_connector` | PKCE qua tiện ích trình duyệt | 8 công cụ chỉ đọc | Hồ sơ, lịch học và thi, điểm, môn trên Canvas, hạn nộp bài, hoạt động, điểm danh, tệp môn học |
-| Semantic Scholar và arXiv | `semantic_scholar` | Không | Đọc | Tìm bài báo khoa học |
+| Kết nối | Mã | Giao thức | Xác thực | Quyền | Việc N7AI làm được |
+|---|---|---|---|---|---|
+| Thư viện PU | mặc định | native | Không | Đọc | Tìm tài liệu và bài trong PU Connect |
+| Tài liệu của tôi | mặc định | native | Không | Đọc | Tài liệu riêng đã lập chỉ mục |
+| Nhóm học của tôi | mặc định | native | Không | Đọc | Nhóm học mình tham gia |
+| Google Drive | `google_drive` | mcp | OAuth | `drive.readonly` | Tìm, đọc, liệt kê tệp |
+| Google Calendar | `google_calendar` | mcp | OAuth | `calendar.readonly` | Xem lịch, giờ rảnh |
+| Gmail | `google_gmail` | mcp | OAuth | `gmail.readonly` | Tìm và đọc thư, nhãn |
+| Google Forms | `google_forms` | mcp | OAuth | `forms.body`, `forms.responses.readonly` | Tạo form, xem phản hồi |
+| Google Sheets | `google_sheets` | mcp | OAuth | `spreadsheets` | Đọc, tạo bảng, thêm hàng |
+| Google Tasks | `google_tasks` | mcp | OAuth | `tasks` | Xem, tạo công việc |
+| PU Connect (tài khoản đại học) | `pu_connector` | mcp | PKCE qua tiện ích trình duyệt | 8 công cụ chỉ đọc | Hồ sơ, lịch học và thi, điểm, môn trên Canvas, hạn nộp bài, hoạt động, điểm danh, tệp môn học |
+| Semantic Scholar và arXiv | `semantic_scholar` | native | Không | Đọc | Tìm bài báo khoa học |
 
 Drive, Calendar, Gmail chỉ đọc. Với Forms, Sheets, Tasks, chỉ cho phép thao tác tạo và cập nhật an toàn.
 

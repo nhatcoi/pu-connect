@@ -38,6 +38,7 @@ export class AiConnectorsService {
     const available = this.oauth.isConfigured()
     const internal = (c: Static, ok = true): AiConnectorInfo => ({
       ...c,
+      protocol: 'native',
       available: ok,
       requiresAuth: false,
       connected: true,
@@ -55,7 +56,7 @@ export class AiConnectorsService {
       }),
       {
         id: 'pu_connector', name: 'PU Connect', description: 'Lịch học, điểm và deadline từ tài khoản trường',
-        available: true, requiresAuth: true, connected: linked.has('pu_connector'),
+        protocol: 'mcp', available: true, requiresAuth: true, connected: linked.has('pu_connector'),
         account: linked.get('pu_connector')?.account_email ?? null,
         lastUsedAt: linked.get('pu_connector')?.last_used_at ? new Date(linked.get('pu_connector')!.last_used_at!).toISOString() : null,
         lastError: linked.get('pu_connector')?.last_error ?? null
@@ -64,6 +65,7 @@ export class AiConnectorsService {
         const row = linked.get(c.id)
         return {
           ...c,
+          protocol: 'mcp' as const,
           available,
           requiresAuth: true,
           connected: !!row,

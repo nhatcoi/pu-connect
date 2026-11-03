@@ -65,7 +65,12 @@ export function ConnectorsPanel() {
       <div className="flex items-center gap-3">
         <ConnectorIcon id={c.id} className="h-6 w-6" />
         <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-medium">{c.name}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="text-[13px] font-medium">{c.name}</span>
+            {c.protocol === 'mcp' && (
+              <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium leading-none text-muted-foreground">MCP</span>
+            )}
+          </span>
           <span className="block truncate text-xs text-muted-foreground">{c.account ?? c.description}</span>
           {c.lastUsedAt && !c.lastError && <span className="block text-[11px] text-muted-foreground">Dùng {formatRelativeTime(c.lastUsedAt)}</span>}
         </span>

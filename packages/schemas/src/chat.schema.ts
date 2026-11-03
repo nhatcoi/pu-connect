@@ -471,10 +471,15 @@ export interface AiPublicSkill {
   installed: boolean
 }
 
+// 'mcp' = chạy qua Model Context Protocol (@modelcontextprotocol/sdk, StreamableHTTPClientTransport) — google_*, pu_connector
+// 'native' = tool function-calling viết trực tiếp trong NestJS, không qua giao thức MCP nào
+export type AiConnectorProtocol = 'mcp' | 'native'
+
 export interface AiConnectorInfo {
   id: AiConnectorId
   name: string
   description: string
+  protocol: AiConnectorProtocol
   available: boolean // false = server chưa cấu hình
   requiresAuth: boolean // cần kết nối tài khoản ngoài
   connected: boolean
