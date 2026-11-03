@@ -586,6 +586,7 @@ export interface AiNoteSummary {
   pinned: boolean
   position: number
   updatedAt: string
+  preview: string
 }
 export interface AiNote extends AiNoteSummary {
   content: string

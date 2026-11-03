@@ -87,7 +87,8 @@ export function PanelNotes({ threadId }: { threadId?: string }) {
 }
 
 // Một ghi chú đang mở: tiêu đề + nội dung giữ ở local, lưu sau SAVE_DELAY ms; rời ghi chú ⇒ lưu nốt
-function NoteView({ id, notes, onToggleTree, onGone }: { id: string; notes: AiNoteSummary[]; onToggleTree: () => void; onGone: () => void }) {
+// Dùng lại nguyên khối ở trang Notebook rộng (/n7ai/notebook/[id]): cùng logic tự lưu, ⋯ menu, chỉ đổi nghĩa nút "Danh sách trang"
+export function NoteView({ id, notes, onToggleTree, onGone }: { id: string; notes: AiNoteSummary[]; onToggleTree: () => void; onGone: () => void }) {
   const { data: note, isPending } = useAiNote(id)
   const { update, remove } = useAiNoteMutations()
   const [title, setTitle] = useState<string | null>(null)

@@ -3,7 +3,8 @@ import type { AiNote, AiNoteCreateInput, AiNoteSummary, AiNoteUpdateInput } from
 import { DatabaseService } from '../../../database/database.service'
 import { AI_NOTE_CONTENT_MAX, AI_NOTE_LIMIT } from '../dto/chat.dto'
 
-const SUMMARY_COLS = 'id, parent_id, conversation_id, title, pinned, position, updated_at'
+// preview: 180 ký tự đầu (còn nguyên cú pháp Markdown, trang /n7ai/notebook tự bỏ ký hiệu khi hiển thị) — tránh lưới trang gọi riêng từng ghi chú để lấy đoạn xem trước
+const SUMMARY_COLS = "id, parent_id, conversation_id, title, pinned, position, updated_at, left(content, 180) AS preview"
 
 const mapSummary = (r: any): AiNoteSummary => ({
   id: r.id,
@@ -12,7 +13,8 @@ const mapSummary = (r: any): AiNoteSummary => ({
   title: r.title,
   pinned: r.pinned,
   position: r.position,
-  updatedAt: new Date(r.updated_at).toISOString()
+  updatedAt: new Date(r.updated_at).toISOString(),
+  preview: r.preview ?? ''
 })
 const mapNote = (r: any): AiNote => ({ ...mapSummary(r), content: r.content })
 

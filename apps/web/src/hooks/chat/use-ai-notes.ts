@@ -8,7 +8,16 @@ import { API_BASE_URL } from '@/lib/api-client'
 import { queryKeys } from '@/lib/query-keys'
 import { chatApi } from './api'
 
-const toSummary = (n: AiNote): AiNoteSummary => ({ id: n.id, parentId: n.parentId, conversationId: n.conversationId, title: n.title, pinned: n.pinned, position: n.position, updatedAt: n.updatedAt })
+const toSummary = (n: AiNote): AiNoteSummary => ({
+  id: n.id,
+  parentId: n.parentId,
+  conversationId: n.conversationId,
+  title: n.title,
+  pinned: n.pinned,
+  position: n.position,
+  updatedAt: n.updatedAt,
+  preview: n.content.slice(0, 180) // khớp left(content, 180) phía server, cập nhật lạc quan cho lưới /n7ai/notebook
+})
 const onError = (err: Error) => toast.error(err.message || 'Thao tác thất bại')
 
 // Danh sách ghi chú (không kèm nội dung) cho cây trang
