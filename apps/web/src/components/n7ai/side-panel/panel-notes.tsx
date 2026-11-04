@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Check, FileDown, FilePlus2, FileText, FolderInput, Loader2, MoreHorizontal, NotebookPen, PanelLeft, Pin, PinOff, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, FileDown, FilePlus2, FileText, FolderInput, Loader2, MoreHorizontal, NotebookPen, PanelLeft, Pin, PinOff, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { AiNote, AiNoteSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import { useN7AiLayout } from '../layout/n7ai-layout-store'
 import { NoteEditor } from './note-editor'
 import { NoteTree, noteTitle } from './note-tree'
+import { NotePageHead } from '../editor/note-page-head'
 
 const SAVE_DELAY = 700
 
@@ -87,8 +88,20 @@ export function PanelNotes({ threadId }: { threadId?: string }) {
 }
 
 // Một ghi chú đang mở: tiêu đề + nội dung giữ ở local, lưu sau SAVE_DELAY ms; rời ghi chú ⇒ lưu nốt
-// Dùng lại nguyên khối ở trang Notebook rộng (/n7ai/notebook/[id]): cùng logic tự lưu, ⋯ menu, chỉ đổi nghĩa nút "Danh sách trang"
-export function NoteView({ id, notes, onToggleTree, onGone }: { id: string; notes: AiNoteSummary[]; onToggleTree: () => void; onGone: () => void }) {
+// Dùng lại ở trang Notebook rộng (/n7ai/notebook/[id]) và panel bên cạnh chat: tự lưu, ⋯ menu, xuất Word/MD
+export function NoteView({
+  id,
+  notes,
+  mode = 'panel',
+  onToggleTree,
+  onGone
+}: {
+  id: string
+  notes: AiNoteSummary[]
+  mode?: 'panel' | 'fullscreen'
+  onToggleTree: () => void
+  onGone: () => void
+}) {
   const { data: note, isPending } = useAiNote(id)
   const { update, remove } = useAiNoteMutations()
   const [title, setTitle] = useState<string | null>(null)
@@ -97,6 +110,7 @@ export function NoteView({ id, notes, onToggleTree, onGone }: { id: string; note
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const appendRef = useRef<((markdown: string) => void) | null>(null)
+  const titleAreaRef = useRef<HTMLTextAreaElement>(null)
   const setOpenNoteId = useN7AiLayout((s) => s.setOpenNoteId)
   const request = useN7AiLayout((s) => s.appendRequest)
 
@@ -129,6 +143,17 @@ export function NoteView({ id, notes, onToggleTree, onGone }: { id: string; note
     useN7AiLayout.getState().clearAppend()
   }, [request, id, ready])
 
+  const shownTitle = title ?? note?.title ?? ''
+
+  // Tự động căn chỉnh chiều cao textarea tiêu đề cho chế độ toàn trang
+  useEffect(() => {
+    if (mode !== 'fullscreen') return
+    const el = titleAreaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [shownTitle, mode])
+
   const descendants = useMemo(() => {
     const out = new Set<string>([id])
     let grew = true
@@ -152,76 +177,141 @@ export function NoteView({ id, notes, onToggleTree, onGone }: { id: string; note
       </div>
     )
   }
-  const shownTitle = title ?? note.title
+
   const move = (parentId: string | null) => update.mutate({ id, parentId })
   const exportAs = (format: 'md' | 'docx') => {
     flush()
     downloadAiNote(id, format, shownTitle).catch((e: Error) => toast.error(e.message))
   }
+
+  const moreMenu = (
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <button type="button" aria-label="Thêm tùy chọn" className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+          <MoreHorizontal className="h-4 w-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem onSelect={() => update.mutate({ id, pinned: !note.pinned })}>
+          {note.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />} {note.pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
+        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <FolderInput className="mr-2 h-4 w-4" /> Chuyển tới
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="max-h-72 w-52 overflow-y-auto">
+            {note.parentId && <DropdownMenuItem onSelect={() => move(null)}>Gốc (không thuộc trang nào)</DropdownMenuItem>}
+            {notes
+              .filter((n) => !descendants.has(n.id) && n.id !== note.parentId)
+              .map((n) => (
+                <DropdownMenuItem key={n.id} onSelect={() => move(n.id)}>
+                  <FileText className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{noteTitle(n)}</span>
+                </DropdownMenuItem>
+              ))}
+            {!note.parentId && notes.every((n) => descendants.has(n.id)) && <div className="px-2 py-1.5 text-xs text-muted-foreground">Chưa có trang khác</div>}
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => exportAs('md')}>
+          <FileDown className="mr-2 h-4 w-4" /> Xuất Markdown
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => exportAs('docx')}>
+          <FileDown className="mr-2 h-4 w-4" /> Xuất Word
+        </DropdownMenuItem>
+        <p className="px-2 pb-1.5 pt-1 text-[11px] leading-snug text-muted-foreground">Word giữ chữ và liên kết; khối tương tác thành chữ tĩnh.</p>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => setConfirmDelete(true)} className="text-destructive focus:text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" /> Xóa ghi chú
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   return (
     <div className="flex min-w-0 flex-1 flex-col">
-      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border/60 px-2">
-        <button type="button" onClick={onToggleTree} title="Danh sách trang" aria-label="Danh sách trang" className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
-          <PanelLeft className="h-4 w-4" />
-        </button>
-        <input
-          value={shownTitle}
-          onChange={(e) => {
-            setTitle(e.target.value)
-            schedule({ title: e.target.value })
-          }}
-          placeholder="Chưa đặt tên"
-          aria-label="Tiêu đề ghi chú"
-          maxLength={200}
-          className="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
-        />
-        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
-          {saved && !update.isPending ? <Check className="h-3 w-3" /> : <Loader2 className="h-3 w-3 animate-spin" />}
-          {saved && !update.isPending ? 'Đã lưu' : 'Đang lưu…'}
-        </span>
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <button type="button" aria-label="Thêm tùy chọn" className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
-              <MoreHorizontal className="h-4 w-4" />
+      {mode === 'fullscreen' ? (
+        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggleTree}
+              title="Quay lại danh sách Notebook"
+              aria-label="Quay lại danh sách Notebook"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Notebook</span>
             </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem onSelect={() => update.mutate({ id, pinned: !note.pinned })}>
-              {note.pinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />} {note.pinned ? 'Bỏ ghim' : 'Ghim lên đầu'}
-            </DropdownMenuItem>
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <FolderInput className="mr-2 h-4 w-4" /> Chuyển tới
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="max-h-72 w-52 overflow-y-auto">
-                {note.parentId && <DropdownMenuItem onSelect={() => move(null)}>Gốc (không thuộc trang nào)</DropdownMenuItem>}
-                {notes
-                  .filter((n) => !descendants.has(n.id) && n.id !== note.parentId)
-                  .map((n) => (
-                    <DropdownMenuItem key={n.id} onSelect={() => move(n.id)}>
-                      <FileText className="mr-2 h-4 w-4 shrink-0" />
-                      <span className="truncate">{noteTitle(n)}</span>
-                    </DropdownMenuItem>
-                  ))}
-                {!note.parentId && notes.every((n) => descendants.has(n.id)) && <div className="px-2 py-1.5 text-xs text-muted-foreground">Chưa có trang khác</div>}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => exportAs('md')}>
-              <FileDown className="mr-2 h-4 w-4" /> Xuất Markdown
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => exportAs('docx')}>
-              <FileDown className="mr-2 h-4 w-4" /> Xuất Word
-            </DropdownMenuItem>
-            <p className="px-2 pb-1.5 pt-1 text-[11px] leading-snug text-muted-foreground">Word giữ chữ và liên kết; khối tương tác thành chữ tĩnh.</p>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => setConfirmDelete(true)} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Xóa ghi chú
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <NoteEditor key={note.id} noteId={note.id} initial={note.content} onChange={(content) => schedule({ content })} appendRef={appendRef} />
+            <span className="text-xs text-muted-foreground/30">/</span>
+            <span className="max-w-[260px] truncate text-xs font-medium text-foreground">
+              {shownTitle || 'Chưa đặt tên'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
+              {saved && !update.isPending ? <Check className="h-3 w-3 text-emerald-500" /> : <Loader2 className="h-3 w-3 animate-spin" />}
+              {saved && !update.isPending ? 'Đã lưu' : 'Đang lưu…'}
+            </span>
+            {moreMenu}
+          </div>
+        </div>
+      ) : (
+        <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border/60 px-2">
+          <button type="button" onClick={onToggleTree} title="Danh sách trang" aria-label="Danh sách trang" className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground">
+            <PanelLeft className="h-4 w-4" />
+          </button>
+          <input
+            value={shownTitle}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              schedule({ title: e.target.value })
+            }}
+            placeholder="Chưa đặt tên"
+            aria-label="Tiêu đề ghi chú"
+            maxLength={200}
+            className="min-w-0 flex-1 bg-transparent px-1 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
+          />
+          <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
+            {saved && !update.isPending ? <Check className="h-3 w-3 text-emerald-500" /> : <Loader2 className="h-3 w-3 animate-spin" />}
+            {saved && !update.isPending ? 'Đã lưu' : 'Đang lưu…'}
+          </span>
+          {moreMenu}
+        </div>
+      )}
+
+      {mode === 'fullscreen' ? (
+        <div className="flex-1 overflow-y-auto">
+          <div className="dt-note-document mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-6 sm:px-12">
+            <NotePageHead
+              title={shownTitle}
+              onTitle={(newTitle) => {
+                setTitle(newTitle)
+                schedule({ title: newTitle })
+              }}
+            />
+            <div className="flex-1">
+              <NoteEditor
+                key={note.id}
+                noteId={note.id}
+                initial={note.content}
+                onChange={(content) => schedule({ content })}
+                appendRef={appendRef}
+                mode="fullscreen"
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <NoteEditor
+          key={note.id}
+          noteId={note.id}
+          initial={note.content}
+          onChange={(content) => schedule({ content })}
+          appendRef={appendRef}
+          mode="panel"
+        />
+      )}
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent>
           <DialogHeader>
