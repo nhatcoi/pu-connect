@@ -74,8 +74,8 @@ export function NotePageHead({
   useLayoutEffect(() => {
     const el = titleRef.current
     if (!el) return
-    el.style.height = '0px'
-    el.style.height = `${el.scrollHeight}px`
+    el.style.height = 'auto'
+    el.style.height = `${Math.max(el.scrollHeight, 56)}px`
   }, [title])
 
   const openIcons = (open: boolean) => {

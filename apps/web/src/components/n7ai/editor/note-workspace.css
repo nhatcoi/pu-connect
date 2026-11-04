@@ -327,10 +327,10 @@ a.dt-note-crumb:hover {
 }
 .dt-note-head-tools {
   display: flex;
-  gap: 2px;
-  height: 30px;
-  margin: 4px 0 2px -8px;
-  opacity: 0;
+  gap: 6px;
+  height: 32px;
+  margin: 0 0 10px -4px;
+  opacity: 0.85;
   transition: opacity 140ms;
 }
 .dt-note-head-tools:empty {
@@ -363,15 +363,19 @@ a.dt-note-crumb:hover {
   display: block;
   width: 100%;
   resize: none;
-  overflow: hidden;
+  overflow: visible;
   background: transparent;
   outline: none;
-  font-family: var(--font-serif), Georgia, serif;
+  font-family: var(--font-serif), Georgia, Cambria, 'Times New Roman', Times, serif;
   font-size: 38px;
-  font-weight: 600;
-  line-height: 1.22;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
   color: var(--foreground);
+  padding: 6px 0;
+  margin: 4px 0 16px 0;
+  min-height: 56px;
+  border: none;
   text-wrap: pretty;
 }
 .dt-note-page-title::placeholder {

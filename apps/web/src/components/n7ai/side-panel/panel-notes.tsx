@@ -251,17 +251,9 @@ export function NoteView({
               <span>Notebook</span>
             </button>
             <span className="text-xs text-muted-foreground/30">/</span>
-            <input
-              value={shownTitle}
-              onChange={(e) => {
-                setTitle(e.target.value)
-                schedule({ title: e.target.value })
-              }}
-              placeholder="Chưa đặt tên"
-              aria-label="Tiêu đề ghi chú"
-              maxLength={200}
-              className="min-w-0 max-w-[260px] truncate bg-transparent px-1 text-xs font-medium text-foreground outline-none placeholder:text-muted-foreground focus:max-w-none focus:w-72"
-            />
+            <span className="max-w-[280px] truncate text-xs font-medium text-muted-foreground">
+              {shownTitle || 'Chưa đặt tên'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
@@ -297,7 +289,7 @@ export function NoteView({
 
       {mode === 'fullscreen' ? (
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 py-6 sm:px-12">
+          <div className="dt-note-document mx-auto flex min-h-full w-full max-w-4xl flex-col px-6 pt-8 pb-24 sm:px-12">
             <NotePageHead
               title={shownTitle}
               onTitle={(newTitle) => {
@@ -305,7 +297,7 @@ export function NoteView({
                 schedule({ title: newTitle })
               }}
             />
-            <div className="flex-1">
+            <div className="flex-1 mt-2">
               <NoteEditor
                 key={note.id}
                 noteId={note.id}

@@ -49,6 +49,16 @@ import type { BlockPreviewKind } from './block-previews'
 import { useAiNoteAsk } from '@/hooks/chat/use-ai-notes'
 import { toast } from 'sonner'
 
+function unescapeMarkdownEntities(md: string): string {
+  return md
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
+
 export function BlockNoteEditorComponent({
   initialMarkdown,
   onChange,
@@ -80,14 +90,15 @@ export function BlockNoteEditorComponent({
         return
       }
       try {
-        const blocks = await editor.tryParseMarkdownToBlocks(initialMarkdown)
+        const clean = unescapeMarkdownEntities(initialMarkdown)
+        const blocks = await editor.tryParseMarkdownToBlocks(clean)
         if (active && blocks && blocks.length > 0) {
           editor.replaceBlocks(editor.document, blocks)
         }
       } catch (err) {
         console.warn('Error parsing initial markdown to blocks, fallback to paragraphs:', err)
         if (active && initialMarkdown) {
-          const paragraphs = initialMarkdown
+          const paragraphs = unescapeMarkdownEntities(initialMarkdown)
             .split(/\n{2,}/)
             .map((p) => p.trim())
             .filter(Boolean)
