@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
   eslint: { ignoreDuringBuilds: skipChecks },
   reactStrictMode: true,
   transpilePackages: ['@pu/ui', '@pu/schemas'],
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'prosemirror-model': path.resolve(__dirname, 'node_modules/prosemirror-model'),
+      'prosemirror-state': path.resolve(__dirname, 'node_modules/prosemirror-state'),
+      'prosemirror-view': path.resolve(__dirname, 'node_modules/prosemirror-view'),
+      'prosemirror-transform': path.resolve(__dirname, 'node_modules/prosemirror-transform'),
+    }
+    return config
+  },
   experimental: {
     // Giảm RAM lúc build webpack (đổi lại build chậm hơn chút)
     webpackMemoryOptimizations: true,
