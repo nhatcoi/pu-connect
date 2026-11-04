@@ -21,7 +21,6 @@ export default function ToolsPage() {
         <h1 className="text-[15px] font-semibold tracking-tight flex items-center gap-2">
           <Wrench className="h-4 w-4 text-primary" /> Công cụ
         </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">Tự soạn hoặc để N7AI tạo. Flashcard, quiz N7AI tạo trong chat tự lưu ở đây.</p>
       </div>
 
       <div className="px-2 sm:px-0 space-y-5 pb-6">

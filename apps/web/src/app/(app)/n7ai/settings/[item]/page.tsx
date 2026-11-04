@@ -38,7 +38,7 @@ export default function N7AiSettingsItemPage() {
 
   return (
     <>
-      <N7AiPageHeader title={meta.label} description={meta.description} backHref={n7aiSettingsHref()} />
+      <N7AiPageHeader title={meta.label} backHref={n7aiSettingsHref()} />
       <div className="mx-2 rounded-xl bg-card sm:mx-0">
         <Panel />
       </div>

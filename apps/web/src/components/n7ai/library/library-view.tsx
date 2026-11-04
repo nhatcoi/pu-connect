@@ -3,10 +3,11 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { BookmarkPlus, ExternalLink, LayoutGrid, List, MessageSquare, MoreHorizontal, Search, Trash2 } from 'lucide-react'
+import { BookmarkPlus, ExternalLink, Layers, LayoutGrid, List, ListChecks, MessageSquare, MoreHorizontal, Search, Trash2 } from 'lucide-react'
 import { fileExt } from '@/components/chat/utils'
 import { FlashcardDeck } from '@/components/chat/ai/flashcard-deck'
 import { QuizCard } from '@/components/chat/ai/quiz-card'
+import { DocumentThumbnail } from '@/components/documents/document-thumbnail'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { n7aiThreadHref } from '@/lib/n7ai-routes'
@@ -44,18 +45,18 @@ export function LibraryToolbar({
       <div className="flex items-center gap-2">
         <label className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-full bg-card px-3 text-sm focus-within:ring-2 focus-within:ring-primary/30">
           <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-          <input value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Tìm trong thư viện" aria-label="Tìm trong thư viện" className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground" />
+          <input value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Tìm kiếm" aria-label="Tìm kiếm" className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground" />
         </label>
         <div className="flex shrink-0 rounded-full bg-card p-0.5" role="group" aria-label="Kiểu xem">
-          {(['list', 'grid'] as const).map((v) => {
-            const Icon = v === 'list' ? List : LayoutGrid
+          {(['grid', 'list'] as const).map((v) => {
+            const Icon = v === 'grid' ? LayoutGrid : List
             return (
               <button
                 key={v}
                 type="button"
                 onClick={() => onView(v)}
                 aria-pressed={view === v}
-                aria-label={v === 'list' ? 'Xem dạng danh sách' : 'Xem dạng thẻ'}
+                aria-label={v === 'grid' ? 'Xem dạng thẻ (Lưới)' : 'Xem dạng danh sách'}
                 className={cn('flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors', view === v ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground')}
               >
                 <Icon className="h-4 w-4" />
@@ -64,10 +65,9 @@ export function LibraryToolbar({
           })}
         </div>
       </div>
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="tablist" aria-label="Loại">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar" role="tablist" aria-label="Phân loại">
         {FILTERS.map((f) => {
-          const n = counts[f]
-          if (f !== 'all' && f !== filter && !n) return null // loại chưa có gì thì ẩn cho gọn
+          const n = counts[f] ?? 0
           return (
             <button
               key={f}
@@ -86,14 +86,83 @@ export function LibraryToolbar({
   )
 }
 
-// Ô xem trước: ảnh thật, hoặc biểu tượng + đuôi tệp
+function StudyThumbnail({ study, title, className }: { study: NonNullable<LibEntry['study']>; title: string; className?: string }) {
+  if (study.kind === 'quiz') {
+    return (
+      <div className={cn('flex h-full w-full select-none flex-col justify-between bg-gradient-to-br from-indigo-500/10 via-background to-purple-500/10 p-3', className)}>
+        <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
+          <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-500">
+            <ListChecks className="h-3.5 w-3.5" /> QUIZ
+          </span>
+          <span className="rounded-full bg-indigo-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-indigo-600 dark:text-indigo-400">
+            {study.data.questions.length} câu
+          </span>
+        </div>
+        <p className="line-clamp-2 text-[11px] font-semibold leading-tight text-foreground">{title}</p>
+        <div className="space-y-1">
+          <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-background/70 px-2 py-1 text-[9px] text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            <span className="h-1.5 flex-1 rounded bg-muted/80" />
+          </div>
+          <div className="flex items-center gap-1.5 rounded-md border border-border/50 bg-background/70 px-2 py-1 text-[9px] text-muted-foreground">
+            <span className="h-1.5 w-1.5 rounded-full bg-border" />
+            <span className="h-1.5 w-3/4 rounded bg-muted/60" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={cn('flex h-full w-full select-none flex-col justify-between bg-gradient-to-br from-amber-500/10 via-background to-orange-500/10 p-3', className)}>
+      <div className="flex items-center justify-between border-b border-border/40 pb-1.5">
+        <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
+          <Layers className="h-3.5 w-3.5" /> FLASHCARDS
+        </span>
+        <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-semibold text-amber-700 dark:text-amber-300">
+          {study.data.cards.length} thẻ
+        </span>
+      </div>
+      <div className="relative my-auto flex items-center justify-center py-2">
+        <div className="absolute h-12 w-24 -rotate-6 rounded-lg border border-border/60 bg-card/60 shadow-xs" />
+        <div className="absolute h-12 w-24 rotate-3 rounded-lg border border-border/70 bg-card/80 shadow-xs" />
+        <div className="relative flex h-12 w-24 items-center justify-center rounded-lg border border-border bg-card p-1 shadow-sm">
+          <p className="line-clamp-2 text-center text-[10px] font-semibold text-foreground">{title}</p>
+        </div>
+      </div>
+      <div className="text-center text-[9px] text-muted-foreground">Chạm để ôn tập</div>
+    </div>
+  )
+}
+
+// Ô xem trước: ảnh thật, hoặc bìa tài liệu render trang đầu như /documents, hoặc học liệu
 function Thumb({ entry, className }: { entry: LibEntry; className?: string }) {
   const meta = KIND_META[entry.kind]
   const Icon = entry.study ? STUDY_ICON[entry.study.kind] : meta.icon
+
   if (entry.thumb) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={entry.thumb} alt="" loading="lazy" className={cn('object-cover', className)} />
+    return <img src={entry.thumb} alt="" loading="lazy" className={cn('h-full w-full object-cover', className)} />
   }
+
+  if (entry.study) {
+    return <StudyThumbnail study={entry.study} title={entry.title} className={className} />
+  }
+
+  const att = entry.doc?.attachment ?? entry.source?.attachment
+  if (att) {
+    return (
+      <DocumentThumbnail
+        document={{
+          fileUrl: att.url,
+          title: entry.title,
+          mimeType: att.mime
+        }}
+        className={cn('h-full w-full', className)}
+      />
+    )
+  }
+
   const ext = entry.doc?.attachment ? fileExt(entry.doc.attachment.name) : null
   return (
     <span className={cn('flex flex-col items-center justify-center gap-0.5 bg-primary/10 text-primary', className)}>
@@ -174,24 +243,42 @@ function LibraryList({ entries, actions }: { entries: LibEntry[]; actions: Entry
   )
 }
 
-// Dạng thẻ: ô xem trước lớn + tên
+// Dạng thẻ: ô xem trước lớn + tên (chuẩn phong cách giá sách /documents)
 function LibraryGrid({ entries, actions }: { entries: LibEntry[]; actions: EntryActions }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {entries.map((e) => (
-        <div key={e.id} className="group relative overflow-hidden rounded-xl bg-card transition-shadow hover:shadow-md">
-          <button type="button" onClick={() => actions.onOpen(e)} className="block w-full cursor-pointer text-left">
-            <Thumb entry={e} className="aspect-[4/3] w-full [&>svg]:h-8 [&>svg]:w-8 [&>span]:text-xs" />
-            <span className="block px-3 pb-2.5 pt-2">
-              <span className="block truncate text-[13px] font-medium">{e.title}</span>
-              <span className="block truncate text-[11px] text-muted-foreground">
-                {KIND_META[e.kind].label} · {formatRelativeTime(e.at)}
+      {entries.map((e) => {
+        const ext = e.doc?.attachment ? fileExt(e.doc.attachment.name) : null
+        const badgeLabel = e.study
+          ? e.study.kind === 'quiz'
+            ? 'Quiz'
+            : 'Flashcard'
+          : ext
+            ? ext.toUpperCase()
+            : KIND_META[e.kind].label
+
+        return (
+          <div key={e.id} className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md">
+            <button type="button" onClick={() => actions.onOpen(e)} className="flex min-h-0 flex-1 flex-col w-full cursor-pointer text-left">
+              <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border/60 bg-muted/30">
+                <Thumb entry={e} className="h-full w-full" />
+                <span className="absolute left-2 top-2 rounded-md bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold text-foreground shadow-sm backdrop-blur">
+                  {badgeLabel}
+                </span>
+              </div>
+              <span className="flex flex-1 flex-col justify-between p-3">
+                <span className="block line-clamp-2 text-[13px] font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
+                  {e.title}
+                </span>
+                <span className="mt-2 block truncate text-[11px] text-muted-foreground">
+                  {KIND_META[e.kind].label} · {formatRelativeTime(e.at)}
+                </span>
               </span>
-            </span>
-          </button>
-          <EntryMenu entry={e} actions={actions} className="absolute right-1.5 top-1.5 bg-background/80 opacity-0 backdrop-blur focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100" />
-        </div>
-      ))}
+            </button>
+            <EntryMenu entry={e} actions={actions} className="absolute right-1.5 top-1.5 bg-background/85 opacity-0 backdrop-blur focus-visible:opacity-100 group-hover:opacity-100 max-sm:opacity-100 shadow-sm" />
+          </div>
+        )
+      })}
     </div>
   )
 }

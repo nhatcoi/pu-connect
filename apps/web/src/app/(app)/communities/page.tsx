@@ -95,7 +95,6 @@ export default function CommunitiesDirectoryPage() {
               <Compass className="h-4 w-4 text-primary" />
               Cộng Đồng & Diễn Đàn Phenikaa
             </h1>
-            <p className="text-xs text-muted-foreground mt-1">Khám phá và tham gia các tiểu cộng đồng theo khoa, sở thích và đồ án</p>
           </div>
         </div>
         <Button
@@ -114,7 +113,7 @@ export default function CommunitiesDirectoryPage() {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Tìm kiếm theo tên cộng đồng, mô tả hoặc c/slug..."
+            placeholder="Tìm kiếm"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 h-9 rounded-full bg-muted/60 border-transparent text-[13px] focus-visible:ring-primary"

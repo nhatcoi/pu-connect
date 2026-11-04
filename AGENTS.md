@@ -56,6 +56,11 @@ Tài liệu này định nghĩa các quy tắc cốt lõi bắt buộc mà toàn
   - Không để tràn ngang màn hình (`w-full min-w-0 overflow-x-hidden`).
   - Tap target tối thiểu 36px – 44px cho ngón tay.
   - Sử dụng Mobile Bottom Nav ([`MobileBottomNav`](apps/web/src/components/navigation/mobile-bottom-nav.tsx)) và thanh Header Mobile chuẩn 3 slot: Anchor trái, Slot giữa (Search/Logo), Action phải.
+- **Clean UI & Minimalist Copy Standards:**
+  - Eliminate redundant descriptions, unnecessary explanatory subtitles, and verbose empty states (e.g. drop repetitive headers like "Mọi tài liệu, ảnh, liên kết...").
+  - Keep search placeholders concise and direct (use "Tìm kiếm" instead of "Tìm kiếm trong thư viện...").
+  - Default to Grid view for document and media catalogs, with Grid button placed before List in view switchers.
+  - Display clear, compact classification badges on cards (e.g., file extension or category tags) for quick scanning.
 - **Quy ước Toast vs Notification:**
   - **Toast:** Chỉ dùng để xác nhận thao tác chủ động của chính người dùng khi kết quả không tự hiển thị ngay trên UI (sao chép link, lưu, xóa, lỗi mạng). Thao tác đã đổi trạng thái tại chỗ (nút Follow, Like) **không toast thành công**.
   - **Notification:** Dành cho tương tác của người khác với mình (like, reply, mention, follow).

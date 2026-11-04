@@ -39,7 +39,7 @@ export default function SettingsSectionPage() {
 
   return (
     <>
-      <SettingsHeader title={meta.label} description={meta.description} />
+      <SettingsHeader title={meta.label} />
       <Section />
     </>
   )

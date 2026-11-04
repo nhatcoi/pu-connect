@@ -30,7 +30,7 @@ export const KIND_META: Record<LibKind, { label: string; plural: string; icon: L
   note: { label: 'Ghi chú', plural: 'Ghi chú', icon: StickyNote },
   study: { label: 'Học liệu', plural: 'Học liệu', icon: ListChecks }
 }
-export const FILTERS: LibFilter[] = ['all', 'document', 'image', 'link', 'video', 'note', 'study']
+export const FILTERS: LibFilter[] = ['all', 'document', 'study', 'note', 'image', 'link', 'video']
 export const STUDY_ICON = { quiz: ListChecks, flashcards: Layers }
 
 const isImage = (mime: string | undefined) => !!mime?.startsWith('image/')
@@ -39,8 +39,9 @@ const threadOf = (item: AiLibraryItem) => ({ id: item.threadId, title: item.thre
 function fromSource(s: AiSource): LibEntry {
   const doc = entryFromSource(s)
   const image = s.attachment ? isImage(s.attachment.mime) : false
+  const youtubeThumb = s.kind === 'youtube' && s.meta?.videoId ? `https://img.youtube.com/vi/${s.meta.videoId}/hqdefault.jpg` : null
   const kind: LibKind = s.kind === 'file' ? (image ? 'image' : 'document') : s.kind === 'text' ? 'note' : s.kind === 'url' ? 'link' : 'video'
-  return { id: `source:${s.id}`, kind, title: s.title, subtitle: doc.subtitle, at: s.createdAt, thumb: image ? s.attachment!.url : null, doc, source: s, thread: null, study: null }
+  return { id: `source:${s.id}`, kind, title: s.title, subtitle: doc.subtitle, at: s.createdAt, thumb: image ? s.attachment!.url : youtubeThumb, doc, source: s, thread: null, study: null }
 }
 
 function fromAttachment(a: ChatAttachment, item: AiLibraryItem): LibEntry {

@@ -9,7 +9,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'security', label: 'Đăng nhập & Bảo mật', description: 'Thiết bị đang đăng nhập, hoạt động đăng nhập gần đây', icon: MonitorSmartphone },
   { id: 'privacy', label: 'Quyền riêng tư', description: 'Thông tin hiển thị, hồ sơ riêng tư, dữ liệu gợi ý', icon: Lock },
   { id: 'features', label: 'Tính năng', description: 'Bật/tắt tiện ích bảng tin và N7AI', icon: Puzzle },
-  { id: 'n7ai', label: 'N7AI', description: 'Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu', icon: N7AiMark, href: '/n7ai/settings' },
+  { id: 'n7ai', label: 'N7AI', description: 'Trợ lý học tập & công cụ AI', icon: N7AiMark, href: '/n7ai/settings' },
   { id: 'notifications', label: 'Thông báo', description: 'Loại thông báo, trình duyệt, giờ yên tĩnh', icon: Bell },
   { id: 'appearance', label: 'Giao diện', description: 'Chủ đề và chế độ bảng tin mặc định', icon: Palette },
   { id: 'blocked', label: 'Chặn & An toàn', description: 'Tài khoản bạn đã chặn', icon: Ban }

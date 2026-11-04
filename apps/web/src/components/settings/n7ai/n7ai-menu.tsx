@@ -28,10 +28,7 @@ export function N7AiMenu() {
                   className="group flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/40"
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0 text-foreground" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-semibold">{item.label}</span>
-                    <span className="block truncate text-xs text-muted-foreground">{item.description}</span>
-                  </span>
+                  <span className="min-w-0 flex-1 text-[13px] font-semibold text-foreground">{item.label}</span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/70 transition-transform group-hover:translate-x-0.5" />
                 </Link>
               )

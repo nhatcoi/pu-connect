@@ -5,7 +5,7 @@ import { N7AiPageHeader } from '@/components/n7ai/n7ai-page-header'
 export default function N7AiSettingsPage() {
   return (
     <>
-      <N7AiPageHeader title="Cài đặt N7AI" description="Kỹ năng, tác vụ tự động, kết nối, bộ nhớ, dữ liệu" />
+      <N7AiPageHeader title="Cài đặt N7AI" />
       <div className="mx-2 rounded-xl bg-card pt-3 sm:mx-0">
         <N7AiMenu />
       </div>
