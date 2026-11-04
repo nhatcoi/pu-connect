@@ -8,20 +8,26 @@ import {
   Check,
   ChevronDown,
   Database,
+  GraduationCap,
+  Lightbulb,
   Plug,
   Plus,
   Shapes,
+  Sparkles,
   UserRound,
   UsersRound,
-  Wand2
+  Wand2,
+  Zap
 } from 'lucide-react'
+import { toast } from 'sonner'
 import type { AiConnectorId, AiConnectorInfo, AiMode, AiSkill } from '@pu/schemas'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
 import { AI_MODE_META, N7AI_CAPABILITIES } from '../ai/ai-modes'
 import { ConnectorHubIcon, SkillDeckIcon } from '../ai/mode-icons'
-import { useAiConnectors, useAiSkills, useConnectorPrefs } from '@/hooks/chat'
+import { ConnectorIcon } from '@/components/n7ai/connector-icon'
+import { useAiConnectors, useAiSettings, useAiSkills, useConnectorPrefs } from '@/hooks/chat'
 
 interface ComposerTrayProps {
   placement?: 'bottom' | 'top'
@@ -56,9 +62,52 @@ interface ConnectorItem {
 
 // Menu "Kết nối" (icon Plug) chỉ liệt kê connector chạy qua MCP thật (google_*, pu_connector).
 // Nguồn native (library, my_documents, my_study...) đã bật mặc định theo Cài đặt › Trình kết nối, không cần bật/tắt ở đây.
-const CONNECTORS_LIST: readonly ConnectorItem[] = [
-  { id: 'google_drive', name: 'Google Drive', tools: 2, status: 'needs_auth' },
-  { id: 'google_calendar', name: 'Google Calendar', tools: 1, status: 'needs_auth' }
+const CONNECTORS_LIST: readonly ConnectorItem[] = []
+
+export interface ResponseStylePreset {
+  id: string
+  name: string
+  description: string
+  prompt: string | null
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>
+}
+
+export const RESPONSE_STYLES: readonly ResponseStylePreset[] = [
+  {
+    id: 'default',
+    name: 'Mặc định',
+    description: 'Chuẩn mực',
+    prompt: null,
+    icon: Sparkles
+  },
+  {
+    id: 'peer',
+    name: 'Bạn học',
+    description: 'Đồng hành & gợi mở',
+    prompt: 'Bạn học (Peer): Đóng vai người bạn cùng học tò mò, tư duy đồng hành, chia sẻ góc nhìn và thảo luận mở một cách gần gũi, tích cực.',
+    icon: UsersRound
+  },
+  {
+    id: 'research_assistant',
+    name: 'Trợ lý nghiên cứu',
+    description: 'Học thuật & trích dẫn',
+    prompt: 'Trợ lý nghiên cứu: Phong cách học thuật chuẩn mực, tư duy phản biện khắt khe, lập luận dựa trên dữ liệu, bằng chứng và trích dẫn rõ ràng.',
+    icon: GraduationCap
+  },
+  {
+    id: 'teacher',
+    name: 'Gia sư Socratic',
+    description: 'Gợi mở từng bước',
+    prompt: 'Gia sư Socratic: Kiên nhẫn dẫn dắt người học xây dựng kiến thức từ bản chất. Đặt câu hỏi gợi mở theo từng bước nhỏ thay vì đưa ra đáp án ngay, phản hồi ngắn gọn dưới 200 từ.',
+    icon: Lightbulb
+  },
+  {
+    id: 'concise',
+    name: 'Ngắn gọn',
+    description: 'Trực diện & cô đọng',
+    prompt: 'Ngắn gọn & Súc tích: Trả lời trực diện, cô đọng, ưu tiên bullet points, không giải thích rườm rà.',
+    icon: Zap
+  }
 ]
 
 /**
@@ -109,25 +158,43 @@ export function ComposerTray({
   // Tải danh sách connector & skill từ server
   const { data: serverConnectors } = useAiConnectors()
   const { data: userSkills = [] } = useAiSkills()
+  const { settings: aiSettings, update: updateAiSettings } = useAiSettings()
   // Nguồn native (library, my_documents...) bật/tắt mặc định ở ai_settings, đồng bộ mọi thiết bị
   const { connectors: activeSources, toggle: toggleSource } = useConnectorPrefs()
+
+  const currentStylePrompt = aiSettings?.profile?.style?.trim() || null
+
+  const activeStyle = React.useMemo(() => {
+    if (!currentStylePrompt) return RESPONSE_STYLES[0]
+    const matched = RESPONSE_STYLES.find((s) => s.prompt && currentStylePrompt === s.prompt)
+    if (matched) return matched
+    return {
+      id: 'custom',
+      name: 'Tùy chỉnh',
+      description: currentStylePrompt,
+      prompt: currentStylePrompt,
+      icon: UserRound
+    }
+  }, [currentStylePrompt])
 
   const nativeSources: readonly AiConnectorInfo[] = React.useMemo(
     () => (serverConnectors ?? []).filter((c) => c.protocol === 'native' && c.id !== 'web'),
     [serverConnectors]
   )
 
-  // Chỉ connector chạy qua MCP thật (google_*, pu_connector); nguồn native xem useConnectorPrefs / Cài đặt › Trình kết nối
+  // Chỉ connector chạy qua MCP thật (google_*, pu_connector) đã bật/kết nối; nguồn native xem useConnectorPrefs / Cài đặt › Trình kết nối
   const allConnectors: readonly ConnectorItem[] = React.useMemo(() => {
     if (serverConnectors && serverConnectors.length > 0) {
       const list: ConnectorItem[] = []
       for (const sc of serverConnectors) {
         if (sc.protocol !== 'mcp') continue
+        // Nếu bật mới hiện: chỉ hiện connector đã kết nối (hoặc không cần auth)
+        if (sc.requiresAuth && !sc.connected) continue
         list.push({
           id: sc.id,
           name: sc.name,
           tools: 2,
-          status: (sc.connected || !sc.requiresAuth ? 'connected' : 'needs_auth') as 'connected' | 'needs_auth'
+          status: 'connected'
         })
       }
       return list
@@ -407,7 +474,15 @@ export function ComposerTray({
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               )}
             >
-              <Plug size={13} strokeWidth={1.8} className="shrink-0" />
+              {activeConnectorsCount === 1 ? (
+                <ConnectorIcon
+                  id={selectedConnectors[0]}
+                  className="h-3.5 w-3.5 shrink-0 object-contain"
+                  fallback={<Plug size={13} strokeWidth={1.8} className="shrink-0" />}
+                />
+              ) : (
+                <Plug size={13} strokeWidth={1.8} className="shrink-0" />
+              )}
               <TrayReveal>
                 <span className="font-semibold text-foreground">Kết nối</span>
                 <span className="text-muted-foreground text-[11px]">
@@ -485,7 +560,11 @@ export function ComposerTray({
                       )}
                     >
                       <span className="w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-accent/50 text-foreground/80 group-hover:text-primary transition-colors relative">
-                        <Plug size={13} strokeWidth={1.8} className={cn(isSelected && 'text-primary')} />
+                        <ConnectorIcon
+                          id={c.id}
+                          className="h-4 w-4 object-contain"
+                          fallback={<Plug size={13} strokeWidth={1.8} className={cn(isSelected && 'text-primary')} />}
+                        />
                         <span
                           className={cn(
                             'absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full',
@@ -624,14 +703,14 @@ export function ComposerTray({
           </PopoverTrigger>
           <PopoverContent align="end" side={placement} sideOffset={6} className="w-[240px] p-2 text-xs">
             <div className="px-2 py-1 text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Bạn học & Trợ lý phối hợp
+              Phối hợp
             </div>
             <div className="space-y-1 mt-1">
               <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
                 <Bot size={15} className="text-primary shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-xs leading-none">N7AI Solo</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Trợ lý học tập mặc định</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Trợ lý mặc định</p>
                 </div>
                 <Check size={13} className="text-primary" />
               </div>
@@ -639,37 +718,161 @@ export function ComposerTray({
           </PopoverContent>
         </Popover>
 
-        {/* Preferences Default ▾ Menu */}
+        {/* Preferences / Tùy chọn phản hồi (Response style & Who answers) */}
         <Popover open={openPreferencesMenu} onOpenChange={setOpenPreferencesMenu}>
           <PopoverTrigger asChild>
             <button
               type="button"
-              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
+              className={cn(
+                'inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer',
+                activeStyle.id !== 'default'
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+              )}
             >
               <UserRound size={13} strokeWidth={1.8} className="shrink-0" />
               <span>Tùy chọn</span>
-              <span className="text-muted-foreground/60 font-normal">Mặc định</span>
+              <span className={cn('text-[11px]', activeStyle.id !== 'default' ? 'text-primary font-semibold' : 'text-muted-foreground/80')}>
+                {activeStyle.name.split(' ')[0]}
+              </span>
               <ChevronDown
                 size={11}
                 className={cn('opacity-70 -ml-0.5 transition-transform duration-150', openPreferencesMenu && 'rotate-180')}
               />
             </button>
           </PopoverTrigger>
-          <PopoverContent align="end" side={placement} sideOffset={6} className="w-[250px] p-2.5 text-xs space-y-2">
-            <p className="font-semibold text-foreground text-xs">Tùy chọn học tập</p>
-            <div className="space-y-1 text-[11px] text-muted-foreground">
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span>Phong cách câu trả lời</span>
-                <span className="font-medium text-foreground">Trực quan & sâu sắc</span>
+
+          <PopoverContent
+            align="end"
+            side={placement}
+            sideOffset={6}
+            className="w-[310px] max-h-[460px] overflow-y-auto p-2 rounded-2xl shadow-2xl border border-border bg-popover text-popover-foreground space-y-2.5 text-xs"
+          >
+            {/* 1. Response style section */}
+            <div>
+              <div className="px-2 pt-1 pb-1.5 text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">
+                Phong cách phản hồi
               </div>
-              <div className="flex justify-between py-1 border-b border-border/30">
-                <span>Ngôn ngữ trả lời</span>
-                <span className="font-medium text-foreground">Tự động (Tiếng Việt)</span>
+              <div className="space-y-0.5">
+                {RESPONSE_STYLES.map((style) => {
+                  const isSelected = activeStyle.id === style.id
+                  const StyleIcon = style.icon
+                  return (
+                    <button
+                      key={style.id}
+                      type="button"
+                      onClick={() => {
+                        updateAiSettings.mutate(
+                          { profile: { style: style.prompt } },
+                          {
+                            onSuccess: () => {
+                              toast.success(`Đã đổi phong cách: ${style.name}`)
+                            }
+                          }
+                        )
+                        setOpenPreferencesMenu(false)
+                      }}
+                      className={cn(
+                        'w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer group',
+                        isSelected ? 'bg-accent/80 text-foreground font-medium' : 'hover:bg-accent/60 text-foreground'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'w-7 h-7 flex items-center justify-center shrink-0 rounded-lg transition-colors',
+                          isSelected
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-accent/50 text-foreground/80 group-hover:text-primary'
+                        )}
+                      >
+                        <StyleIcon size={14} strokeWidth={1.8} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[12.5px] font-semibold text-foreground leading-tight truncate">
+                          {style.name}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5 max-w-[200px]">
+                          {style.description}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="w-4 h-4 rounded-full bg-[#e05d38] text-white flex items-center justify-center shrink-0 ml-1">
+                          <Check size={10} strokeWidth={3} />
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+
+                {/* Custom style option if user defined custom prompt in Profile settings */}
+                {activeStyle.id === 'custom' && (
+                  <div className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-accent/80 text-foreground font-medium">
+                    <span className="w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-primary/10 text-primary">
+                      <UserRound size={14} strokeWidth={1.8} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[12.5px] font-semibold text-foreground leading-tight">
+                        Tùy chỉnh riêng
+                      </div>
+                      <div className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5 max-w-[200px]">
+                        {activeStyle.description}
+                      </div>
+                    </div>
+                    <span className="w-4 h-4 rounded-full bg-[#e05d38] text-white flex items-center justify-center shrink-0 ml-1">
+                      <Check size={10} strokeWidth={3} />
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="flex justify-between py-1">
-                <span>Bộ nhớ học tập</span>
-                <span className="font-medium text-emerald-600 dark:text-emerald-400">Đang bật</span>
+            </div>
+
+            {/* 2. Who answers section */}
+            <div className="pt-2 border-t border-border/40">
+              <div className="px-2 pt-0.5 pb-1.5 flex items-baseline justify-between">
+                <span className="text-[10.5px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Chế độ phản hồi
+                </span>
               </div>
+              <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-accent/60">
+                <span className="w-7 h-7 flex items-center justify-center shrink-0 rounded-lg bg-primary/10 text-primary">
+                  <Bot size={15} strokeWidth={1.8} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[12.5px] font-semibold text-foreground leading-tight">N7AI Solo</div>
+                  <div className="text-[11px] text-muted-foreground truncate leading-tight mt-0.5">
+                    Trả lời tiêu chuẩn
+                  </div>
+                </div>
+                <span className="w-4 h-4 rounded-full bg-[#e05d38] text-white flex items-center justify-center shrink-0 ml-1">
+                  <Check size={10} strokeWidth={3} />
+                </span>
+              </div>
+              <p className="px-2 pt-1 text-[10.5px] text-muted-foreground/70 italic">
+                Chưa có bạn học hay subagent chuyển giao
+              </p>
+            </div>
+
+            {/* 3. Footer row: Every turn & Personalization link */}
+            <div className="pt-2 border-t border-border/40 px-1 flex justify-between items-center text-xs">
+              <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                <Switch
+                  checked={everyTurn}
+                  onCheckedChange={onToggleEveryTurn}
+                  className="scale-75 origin-left data-[state=checked]:bg-[#e05d38]"
+                />
+                <span className="text-[11.5px] text-muted-foreground hover:text-foreground transition-colors">
+                  Mỗi lượt
+                </span>
+              </label>
+
+              <Link
+                href="/n7ai/settings/profile"
+                onClick={() => setOpenPreferencesMenu(false)}
+                className="inline-flex items-center gap-1 text-[11.5px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              >
+                <span>Cá nhân hóa</span>
+                <ArrowUpRight size={11} strokeWidth={2} />
+              </Link>
             </div>
           </PopoverContent>
         </Popover>
