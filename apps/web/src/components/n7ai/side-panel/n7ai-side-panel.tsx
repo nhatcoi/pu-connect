@@ -1,12 +1,13 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, usePathname } from 'next/navigation'
 import { ChevronLeft, ChevronRight, FileText, NotebookPen, Sparkles } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { useSourceView } from '../sources/source-view-store'
 import { cn } from '@/lib/utils'
 import { useN7AiLayout, type N7AiPanelTab } from '../layout/n7ai-layout-store'
+import { isRightPanelAllowed } from '../n7ai-shell'
 import { PanelDocs } from './panel-docs'
 import { PanelNotes } from './panel-notes'
 import { PanelTools } from './panel-tools'
@@ -31,9 +32,10 @@ export function useOpenPanelOnPreview() {
 
 // Nút mũi tên giữa mép phải khi panel đang thu gọn (desktop)
 export function N7AiPanelToggle() {
+  const pathname = usePathname()
   const open = useN7AiLayout((s) => s.panelOpen)
   const setOpen = useN7AiLayout((s) => s.setPanelOpen)
-  if (open) return null
+  if (open || !isRightPanelAllowed(pathname)) return null
   return (
     <button
       type="button"
@@ -57,11 +59,11 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
       aria-label="Tài liệu và công cụ"
       style={style}
       className={cn(
-        'sticky top-0 h-dvh shrink-0 flex-col border-l border-border/60 bg-surface',
+        'h-[calc(100dvh-1rem)] shrink-0 flex flex-col rounded-2xl border border-border/60 bg-surface shadow-xs overflow-hidden',
         className
       )}
     >
-      <div className="flex h-14 shrink-0 items-center gap-1 border-b border-border/60 px-3" role="tablist">
+      <div className="flex h-13 shrink-0 items-center gap-1 border-b border-border/60 px-3 bg-surface/80 backdrop-blur-xs" role="tablist">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
