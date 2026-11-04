@@ -31,19 +31,5 @@
     "prettier": "^3.5.3",
     "turbo": "^2.4.4",
     "typescript": "^5.8.2"
-  },
-  "pnpm": {
-    "overrides": {
-      "prosemirror-model": "1.25.12",
-      "prosemirror-transform": "1.12.4",
-      "prosemirror-view": "1.42.9",
-      "prosemirror-state": "1.4.4",
-      "prosemirror-keymap": "1.2.3",
-      "prosemirror-history": "1.5.1",
-      "prosemirror-dropcursor": "1.8.4",
-      "prosemirror-gapcursor": "1.4.1",
-      "prosemirror-commands": "1.7.2",
-      "prosemirror-changeset": "2.4.6"
-    }
   }
 }

@@ -24,6 +24,7 @@ import { PresentationToolsService } from './agent/presentation-tools.service'
 import { DocxToolsService } from './agent/docx-tools.service'
 import { PdfReportToolsService } from './agent/pdf-tools.service'
 import { SpreadsheetToolsService } from './agent/spreadsheet-tools.service'
+import { VisionToolsService } from './agent/vision-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
 import { ConversationContextService } from './context/conversation-context.service'
 import { MemoryToolsService } from './agent/memory-tools.service'
@@ -109,6 +110,7 @@ export class N7AiService {
     private readonly docxTools: DocxToolsService,
     private readonly pdfReportTools: PdfReportToolsService,
     private readonly spreadsheetTools: SpreadsheetToolsService,
+    private readonly visionTools: VisionToolsService,
     private readonly conversationContext: ConversationContextService,
     private readonly conversationTools: ConversationToolsService,
     private readonly memoryTools: MemoryToolsService,
@@ -263,6 +265,7 @@ export class N7AiService {
         docxCreator,
         pdfCreator,
         xlsxCreator,
+        this.visionTools.open(requesterId),
         ...(connectors.includes('my_study') ? [this.studyAgentTools.open(requesterId)] : []),
         ...(connectors.includes('my_chats') ? [this.historyTools.open(requesterId, conversationId)] : [])
       ]

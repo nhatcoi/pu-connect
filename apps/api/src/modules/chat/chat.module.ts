@@ -21,6 +21,7 @@ import { PresentationToolsService } from './n7ai/agent/presentation-tools.servic
 import { DocxToolsService } from './n7ai/agent/docx-tools.service'
 import { PdfReportToolsService } from './n7ai/agent/pdf-tools.service'
 import { SpreadsheetToolsService } from './n7ai/agent/spreadsheet-tools.service'
+import { VisionToolsService } from './n7ai/agent/vision-tools.service'
 import { PucToolsService } from './n7ai/agent/puc-tools.service'
 import { ConversationContextService } from './n7ai/context/conversation-context.service'
 import { ConversationToolsService } from './n7ai/context/conversation-tools.service'
@@ -114,6 +115,7 @@ import { ChatShareService } from './share/chat-share.service'
     DocxToolsService,
     PdfReportToolsService,
     SpreadsheetToolsService,
+    VisionToolsService,
     ConversationContextService,
     ConversationToolsService,
     MemoryToolsService,
