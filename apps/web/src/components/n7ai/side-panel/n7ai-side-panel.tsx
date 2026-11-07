@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react'
 import { useParams, usePathname } from 'next/navigation'
-import { ChevronLeft, ChevronRight, FileText, NotebookPen, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileText, NotebookPen, Sparkles, X } from 'lucide-react'
 import { useFilePreview } from '@/components/viewer/file-preview-panel'
 import { useSourceView } from '../sources/source-view-store'
 import { cn } from '@/lib/utils'
@@ -24,7 +24,7 @@ export function useOpenPanelOnPreview() {
   const fileSeq = useFilePreview((s) => s.seq)
   const sourceSeq = useSourceView((s) => s.seq)
   useEffect(() => {
-    if (fileSeq + sourceSeq > 0) useN7AiLayout.setState({ panelOpen: true, panelTab: 'docs' })
+    if (fileSeq + sourceSeq > 0) useN7AiLayout.getState().openPanel('docs')
   }, [fileSeq, sourceSeq])
   // Rời không gian N7AI ⇒ đóng tài liệu chữ đang xem (tệp do useFilePreviewHost đóng)
   useEffect(() => () => useSourceView.getState().close(), [])
@@ -49,7 +49,7 @@ export function N7AiPanelToggle() {
 }
 
 // Panel phải (desktop, độ rộng do khung N7AI đặt): tab Tài liệu (danh sách + xem trước) · tab Công cụ (tạo học liệu từ hội thoại / tài liệu)
-export function N7AiSidePanel({ className, style }: { className?: string; style?: React.CSSProperties }) {
+export function N7AiSidePanel({ className, style, onClose }: { className?: string; style?: React.CSSProperties; onClose?: () => void }) {
   const tab = useN7AiLayout((s) => s.panelTab)
   const setTab = useN7AiLayout((s) => s.setPanelTab)
   const setOpen = useN7AiLayout((s) => s.setPanelOpen)
@@ -81,12 +81,12 @@ export function N7AiSidePanel({ className, style }: { className?: string; style?
         ))}
         <button
           type="button"
-          onClick={() => setOpen(false)}
-          title="Thu gọn panel"
-          aria-label="Thu gọn panel"
+          onClick={() => (onClose ? onClose() : setOpen(false))}
+          title={onClose ? 'Đóng' : 'Thu gọn panel'}
+          aria-label={onClose ? 'Đóng' : 'Thu gọn panel'}
           className="ml-auto flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
-          <ChevronRight className="h-4 w-4" />
+          {onClose ? <X className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
       </div>
       <div className="flex min-h-0 flex-1 flex-col">{tab === 'docs' ? <PanelDocs threadId={threadId} /> : tab === 'notes' ? <PanelNotes threadId={threadId} /> : <PanelTools threadId={threadId} />}</div>

@@ -11,5 +11,5 @@ export default function N7AiThreadPage() {
   const { id } = useParams<{ id: string }>()
   const jump = useSearchParams().get('m')
   const { openNav } = useN7AiNav()
-  return <ConversationView key={id} id={id} backHref={N7AI_HOME} initialJump={jump} onOpenNav={openNav} />
+  return <ConversationView key={id} id={id} aiHint backHref={N7AI_HOME} initialJump={jump} onOpenNav={openNav} />
 }

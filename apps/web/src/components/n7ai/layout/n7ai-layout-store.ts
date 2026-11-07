@@ -47,6 +47,7 @@ interface N7AiLayoutState {
   sidebarCollapsed: boolean
   sidebarWidth: number
   panelOpen: boolean
+  mobilePanelOpen: boolean // điện thoại / máy tính bảng: panel mở dạng toàn màn hình (không lưu)
   panelWidth: number | null // null ⇒ chia đôi
   panelTab: N7AiPanelTab
   activeNoteId: string | null
@@ -56,6 +57,10 @@ interface N7AiLayoutState {
   toggleSidebar: () => void
   setSidebarWidth: (width: number) => void
   setPanelOpen: (open: boolean) => void
+  setMobilePanelOpen: (open: boolean) => void
+  // Mở panel (tab tùy chọn): desktop ⇒ cột phải, màn nhỏ ⇒ toàn màn hình
+  openPanel: (tab?: N7AiPanelTab) => void
+  togglePanel: () => void
   setPanelWidth: (width: number | null) => void
   setPanelTab: (tab: N7AiPanelTab) => void
   setActiveNoteId: (id: string | null) => void
@@ -65,6 +70,9 @@ interface N7AiLayoutState {
   setResizing: (resizing: boolean) => void
 }
 
+// Cột phải chỉ có chỗ từ breakpoint lg (1024px)
+const isDesktop = () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches
+
 // Bố cục không gian N7AI: thanh bên (thu gọn / kéo giãn) + panel phải (mở / kéo giãn / tab); nhớ theo thiết bị
 export const useN7AiLayout = create<N7AiLayoutState>()(
   persist(
@@ -72,6 +80,7 @@ export const useN7AiLayout = create<N7AiLayoutState>()(
       sidebarCollapsed: false,
       sidebarWidth: SIDEBAR.default,
       panelOpen: false,
+      mobilePanelOpen: false,
       panelWidth: null,
       panelTab: 'docs',
       activeNoteId: null,
@@ -81,6 +90,9 @@ export const useN7AiLayout = create<N7AiLayoutState>()(
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setSidebarWidth: (width) => set({ sidebarWidth: clamp(Math.round(width), SIDEBAR.min, SIDEBAR.max) }),
       setPanelOpen: (panelOpen) => set({ panelOpen }),
+      setMobilePanelOpen: (mobilePanelOpen) => set({ mobilePanelOpen }),
+      openPanel: (tab) => set((s) => (isDesktop() ? { panelOpen: true, panelTab: tab ?? s.panelTab } : { mobilePanelOpen: true, panelTab: tab ?? s.panelTab })),
+      togglePanel: () => set((s) => (isDesktop() ? { panelOpen: !s.panelOpen } : { mobilePanelOpen: !s.mobilePanelOpen })),
       setPanelWidth: (width) => set({ panelWidth: width === null ? null : Math.max(PANEL_MIN, Math.round(width)) }),
       setPanelTab: (panelTab) => set({ panelTab }),
       setActiveNoteId: (activeNoteId) => set({ activeNoteId }),

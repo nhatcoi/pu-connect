@@ -1,39 +1,20 @@
 'use client'
 
 import React, { Suspense, useEffect } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowLeft, FileX2 } from 'lucide-react'
 import { FeedSkeleton } from '@/components/skeletons/feed-skeleton'
 import { PostCard } from '@/components/social/post-card'
-import { apiClient } from '@/lib/api-client'
-import { queryKeys } from '@/lib/query-keys'
-import { findCachedPost } from '@/lib/post-cache'
+import { usePostDetail } from '@/hooks/use-post-detail'
 import { trackOnce } from '@/lib/track'
-import type { PostItem } from '@pu/schemas'
 
 // Trang chi tiết bài viết: /post/{id}?comment={commentId} (đích điều hướng của thông báo)
 function PostDetail() {
   const router = useRouter()
   const { id } = useParams<{ id: string }>()
   const highlightCommentId = useSearchParams().get('comment')
-  const queryClient = useQueryClient()
-
-  // Cache ['post', id]; nếu bài đã có trong feed/cộng đồng thì hiện ngay (initialData) rồi làm mới ngầm
-  const {
-    data: post,
-    isPending,
-    isError
-  } = useQuery({
-    queryKey: queryKeys.post(id),
-    queryFn: async () => (await apiClient<{ success: boolean; data: PostItem }>(`/posts/${id}`)).data,
-    initialData: () => findCachedPost(queryClient, id),
-    initialDataUpdatedAt: 0,
-    staleTime: 30 * 1000,
-    enabled: !!id
-  })
-  const status = isPending ? 'loading' : isError || !post ? 'missing' : 'ready'
+  const { post, status } = usePostDetail(id)
   // Mở chi tiết bài ⇒ tín hiệu quan tâm mạnh hơn lướt qua bảng tin
   useEffect(() => {
     if (status === 'ready') trackOnce({ type: 'post_open', targetType: 'post', targetId: id })

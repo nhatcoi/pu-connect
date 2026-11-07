@@ -236,7 +236,7 @@ export function NoteView({
   )
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       {mode === 'fullscreen' ? (
         <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/60 px-4 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
@@ -310,14 +310,16 @@ export function NoteView({
           </div>
         </div>
       ) : (
-        <NoteEditor
-          key={note.id}
-          noteId={note.id}
-          initial={note.content}
-          onChange={(content) => schedule({ content })}
-          appendRef={appendRef}
-          mode="panel"
-        />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <NoteEditor
+            key={note.id}
+            noteId={note.id}
+            initial={note.content}
+            onChange={(content) => schedule({ content })}
+            appendRef={appendRef}
+            mode="panel"
+          />
+        </div>
       )}
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <DialogContent>

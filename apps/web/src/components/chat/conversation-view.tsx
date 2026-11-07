@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MessageSquare } from 'lucide-react'
@@ -8,7 +9,7 @@ import type { AiMode } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { PageAside } from '@/components/layout/page-aside'
-import { MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
+import { AiThreadSkeleton, MessageThreadSkeleton } from '@/components/skeletons/chat-skeleton'
 import { chatApi, setActiveConversation, trackSuggestionClick, useConversation, useMarkRead, useMessages, useTypingLabel, type UiMessage } from '@/hooks/chat'
 import { N7AI_HOME } from '@/lib/n7ai-routes'
 import { useAppStore } from '@/store'
@@ -31,6 +32,8 @@ interface ConversationViewProps {
   initialJump?: string | null
   // Mobile (không gian N7AI): mở ngăn lịch sử
   onOpenNav?: () => void
+  quick?: boolean // N7AI chat nhanh trong Tin nhắn: giao diện gọn, thread riêng
+  aiHint?: boolean // route /n7ai: biết trước là chat AI ⇒ dựng đúng bố cục ngay, không đợi tải thông tin hội thoại
   // Thread rỗng vừa có tin đầu tiên (trang /n7ai ⇒ đổi URL sang /n7ai/[id])
   onStarted?: () => void
   // Thread N7AI chat nhanh trong Tin nhắn ⇒ nút mở ở không gian /n7ai
@@ -38,7 +41,7 @@ interface ConversationViewProps {
 }
 
 // Màn hội thoại: đầu trang + tin ghim + dòng tin + ô soạn; DM / nhóm có thông tin ở cột phải (desktop) / hộp thoại (mobile)
-export function ConversationView({ id, backHref, initialJump = null, onOpenNav, onStarted, spaceHref }: ConversationViewProps) {
+export function ConversationView({ id, backHref, initialJump = null, onOpenNav, onStarted, spaceHref, quick = false, aiHint = false }: ConversationViewProps) {
   const router = useRouter()
   const me = useAppStore((s) => s.user)
   const { data: conv, isError } = useConversation(id)
@@ -53,6 +56,18 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
   }, [id])
 
   const started = chat.messages.length > 0
+  // Nhường 2 khung hình cho trình duyệt vẽ skeleton + animation trước khi dựng danh sách tin nặng (markdown/KaTeX/…) ⇒ mở phiên không khựng
+  const [painted, setPainted] = useState(false)
+  useEffect(() => {
+    let b = 0
+    const a = requestAnimationFrame(() => {
+      b = requestAnimationFrame(() => setPainted(true))
+    })
+    return () => {
+      cancelAnimationFrame(a)
+      cancelAnimationFrame(b)
+    }
+  }, [])
   useEffect(() => {
     if (started) onStarted?.()
   }, [started, onStarted])
@@ -98,17 +113,19 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
     )
   }
 
-  const isAi = conv?.type === 'ai'
+  const isAi = conv ? conv.type === 'ai' : aiHint
   const resetAi = () => chatApi.aiReset(id).catch((err) => toast.error(err?.message || 'Không làm mới được'))
   const runCommand = (command: ComposerCommand) => (command === 'new' ? router.push(N7AI_HOME) : resetAi())
   const handleStarterPick = (text: string) => {
     trackSuggestionClick('starter', { text, mode: aiMode, topic: null })
     composer.current?.prefill(text)
   }
-  const sendFollowUp = (text: string) => {
-    trackSuggestionClick('followup')
-    chat.send({ content: text, aiMode: 'ask' })
-  }
+
+  // Gợi ý câu hỏi tiếp theo của N7AI (từ câu trả lời cuối đã xong) ⇒ hiện mờ trong ô soạn, Tab để điền
+  const nextSuggestion = isAi && latest?.kind === 'ai' && latest.status === 'done' ? latest.meta?.followUps?.[0] : undefined
+
+  // Chat N7AI: cột nội dung 820px nằm giữa, thanh cuộn nằm sát mép ngoài
+  const col = isAi ? 'mx-auto w-full max-w-[820px]' : 'contents'
 
   return (
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
@@ -119,16 +136,21 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
         onInfo={() => setInfoOpen(true)}
         onOpenNav={onOpenNav}
         spaceHref={spaceHref}
+        quick={quick}
         onAiReset={resetAi}
       />
-      <PinnedBanner conversationId={id} onJump={jump} />
+      <div className={col}>
+        <PinnedBanner conversationId={id} onJump={jump} />
+      </div>
 
-      {chat.isLoading ? (
-        <MessageThreadSkeleton />
+      {chat.isLoading || (isAi && started && !painted) ? (
+        isAi ? <AiThreadSkeleton /> : <MessageThreadSkeleton />
       ) : !started ? (
         <div className={`flex-1 min-h-0 ${isAi ? 'flex flex-col justify-end overflow-hidden' : 'overflow-y-auto'}`}>
           {isAi ? (
-            <AiWelcome />
+            <div className={col}>
+              <AiWelcome />
+            </div>
           ) : (
             <div className="py-16 text-center text-muted-foreground space-y-2">
               <MessageSquare className="h-9 w-9 mx-auto opacity-30" />
@@ -141,6 +163,8 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
       ) : (
         <MessageList
           conversation={conv}
+          aiHint={aiHint}
+          columnClass={isAi ? 'mx-auto w-full max-w-[820px]' : undefined}
           messages={chat.messages}
           myId={me?.id}
           hasOlder={chat.hasOlder}
@@ -152,13 +176,16 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           onRetry={chat.retry}
           onAskUserSelect={isAi ? (answer) => chat.send({ content: answer, aiMode }) : undefined}
           handlers={handlers}
-          onFollowUp={isAi ? sendFollowUp : undefined}
         />
       )}
 
       {conv && (conv.blockState ?? 'none') !== 'none' ? (
-        <BlockedComposer conversation={conv} />
+        <div className={col}>
+          <BlockedComposer conversation={conv} />
+        </div>
       ) : (
+        // Mobile, màn chào: ô soạn dock sát đáy, gợi ý nằm ngay trên nó (order); từ sm trở lên giữ bố cục giữa màn hình
+        <div className={cn(col, !started && isAi && 'max-sm:order-3')}>
         <Composer
           key={id} // đổi hội thoại ⇒ chip / nháp không mang sang
           handleRef={composer}
@@ -180,21 +207,27 @@ export function ConversationView({ id, backHref, initialJump = null, onOpenNav, 
           aiMode={aiMode}
           onAiModeChange={setAiMode}
           suggestOnModeChange={started}
+          aiHint={aiHint}
+          simple={quick}
+          suggestion={quick ? undefined : nextSuggestion}
         />
+        </div>
       )}
 
-      {!started && isAi ? (
-        <StarterSuggestions
-          activeMode={aiMode}
-          onSelectMode={setAiMode}
-          onPick={handleStarterPick}
-        />
+      {!started && isAi && !quick ? (
+        <div className={cn(col, 'max-sm:order-2')}>
+          <StarterSuggestions
+            activeMode={aiMode}
+            onSelectMode={setAiMode}
+            onPick={handleStarterPick}
+          />
+        </div>
       ) : null}
 
       {isAi && (
         <div
           aria-hidden="true"
-          className="shrink-0"
+          className="shrink-0 max-sm:hidden"
           style={{
             flexGrow: started ? 0 : 1.4,
             transition: 'flex-grow 650ms cubic-bezier(0.16, 1, 0.3, 1)'

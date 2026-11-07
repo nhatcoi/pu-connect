@@ -13,6 +13,7 @@ import {
   Layers,
   Loader2,
   MessagesSquare,
+  NotebookPen,
   Paperclip,
   Search,
   Users
@@ -34,7 +35,8 @@ const ICONS: Partial<Record<AiStep['provider'], React.ComponentType<{ className?
   web_search: Search,
   refs: AtSign,
   files: Paperclip,
-  memory: Brain
+  memory: Brain,
+  note: NotebookPen
 }
 
 // Biểu tượng nguồn của bước: logo Google (Drive / Lịch / Gmail), logo PU, hoặc icon nguồn nội bộ

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ArrowUp, Loader2, Mic, Pencil, Plug, Reply, Shapes, Wand2, X } from 'lucide-react'
+import { ArrowUp, Loader2, Mic, Paperclip, Pencil, Plug, Reply, Shapes, Wand2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { CHAT_MAX_REFS, type AiConnectorId, type AiMode, type AiSkill, type AiSuggestion, type ChatRef, type ConversationSummary } from '@pu/schemas'
 import { Button } from '@/components/ui/button'
@@ -61,6 +61,9 @@ interface ComposerProps {
   onAiModeChange?: (mode: AiMode) => void
   suggestOnModeChange?: boolean // đã có tin ⇒ chọn chế độ mở bảng gợi ý trên ô soạn
   onCommand?: (command: ComposerCommand) => void // "/new", "/reset" (thread N7AI)
+  simple?: boolean // N7AI chat nhanh (Tin nhắn): chỉ chữ + đính kèm + gửi, không chế độ / skill / connector / gợi ý
+  aiHint?: boolean // biết trước là chat AI khi chưa tải xong thông tin hội thoại
+  suggestion?: string // N7AI: câu hỏi tiếp theo gợi ý ⇒ hiện mờ trong ô trống, Tab để điền
 }
 
 // Ô soạn tin: văn bản + đính kèm (chọn / dán / kéo thả), trả lời, sửa tin
@@ -79,9 +82,12 @@ export function Composer({
   aiMode = 'ask',
   onAiModeChange,
   suggestOnModeChange,
-  onCommand
+  onCommand,
+  aiHint = false,
+  simple = false,
+  suggestion
 }: ComposerProps) {
-  const isAi = conversation?.type === 'ai'
+  const isAi = conversation ? conversation.type === 'ai' : aiHint
   const aiTools = isAi || conversation?.type === 'group' // hỏi được N7AI
   const myId = useAppStore((s) => s.user?.id)
   const [text, setText] = useState('')
@@ -192,6 +198,13 @@ export function Composer({
       el?.setSelectionRange(caret + token.length, caret + token.length)
       picker.sync()
     })
+  }
+
+  const showSuggestion = !simple && !!suggestion && isAi && !editing && !text && !skill && leadTokens.length === 0
+  const acceptSuggestion = () => {
+    if (!suggestion) return
+    setText(suggestion)
+    ref.current?.focus()
   }
 
   React.useImperativeHandle(handleRef, () => ({
@@ -314,10 +327,10 @@ export function Composer({
 
   return (
     <div
-      className="sticky bottom-14 md:bottom-0 z-20 bg-surface/95 backdrop-blur-md px-3 sm:px-1 pt-2 pb-2.5"
+      className="sticky bottom-14 md:bottom-0 z-20 bg-surface/95 backdrop-blur-md px-3 sm:px-1 pt-2 pb-[max(0.625rem,env(safe-area-inset-bottom))]"
     >
       {dragging && <DropHint />}
-      {isAi && !editing && panelOpen && <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />}
+      {isAi && !simple && !editing && panelOpen && <AiSuggestionPanel mode={aiMode} onPick={pickSuggestion} onClose={() => setPanelOpen(false)} />}
       <div className={cn('relative rounded-2xl sm:rounded-[24px] border border-border/80 bg-card shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_24px_-4px_rgba(0,0,0,0.06)] px-3 py-2.5 sm:px-4 sm:py-3 transition-shadow', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-surface')}>
         {picker.open && (
           <PickerPopover
@@ -344,11 +357,17 @@ export function Composer({
             onClearResearch={() => setResearch(false)}
           />
         )}
-        {isAi && !editing && <SourceChips threadId={conversationId} />}
+        {isAi && !simple && !editing && <SourceChips threadId={conversationId} />}
         <AttachmentTray files={uploads.files} onRemove={uploads.remove} />
         
         {/* Input area */}
         <div className="relative w-full">
+          {showSuggestion && (
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 flex min-h-[44px] items-center gap-2 py-1.5 text-sm sm:text-[15px] leading-relaxed text-muted-foreground">
+              <span className="truncate">{suggestion}</span>
+              <kbd className="shrink-0 rounded border border-border bg-muted px-1.5 py-0.5 font-sans text-[10px] font-medium leading-none">Tab</kbd>
+            </div>
+          )}
           {leadTokens.length > 0 && (
             <ComposerLead tokens={leadTokens} onWidth={setLeadWidth} />
           )}
@@ -358,9 +377,11 @@ export function Composer({
             value={text}
             maxLength={4000}
             placeholder={
-              editing
+              showSuggestion
+                ? ''
+                : editing
                 ? placeholder
-                : (skill?.inputHint ?? (isAi ? (aiMode === 'ask' ? 'How can I help you today?' : (AI_MODE_META[aiMode]?.placeholder ?? 'How can I help you today?')) : placeholder))
+                : (skill?.inputHint ?? (isAi ? (simple ? 'Nhắn tin với N7AI' : aiMode === 'ask' ? 'How can I help you today?' : (AI_MODE_META[aiMode]?.placeholder ?? 'How can I help you today?')) : placeholder))
             }
             onPaste={onPaste}
             onChange={(e) => {
@@ -376,6 +397,12 @@ export function Composer({
             aria-activedescendant={picker.open && picker.sections.length ? pickerOptionId(listId, picker.index) : undefined}
             onKeyDown={(e) => {
               if (picker.onKeyDown(e)) return
+              // Tab điền câu hỏi gợi ý (chỉ khi ô trống)
+              if (e.key === 'Tab' && !e.shiftKey && showSuggestion) {
+                e.preventDefault()
+                acceptSuggestion()
+                return
+              }
               // Backspace khi ô nhập rỗng xóa lead token cuối cùng
               if (e.key === 'Backspace' && !text.length && leadTokens.length > 0) {
                 e.preventDefault()
@@ -415,7 +442,18 @@ export function Composer({
                     e.target.value = ''
                   }}
                 />
-                {isAi ? (
+                {simple ? (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => fileInput.current?.click()}
+                    className="p-1.5 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition-colors cursor-pointer"
+                    aria-label="Đính kèm tệp"
+                    title="Đính kèm tệp"
+                  >
+                    <Paperclip size={16} strokeWidth={1.9} />
+                  </button>
+                ) : isAi ? (
                   <ComposerResources
                     disabled={disabled}
                     onUploadFile={() => fileInput.current?.click()}
@@ -446,8 +484,8 @@ export function Composer({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {isAi && !editing && <AiModelPicker />}
-            {isAi && (
+            {isAi && !simple && !editing && <AiModelPicker />}
+            {isAi && !simple && (
               <button
                 type="button"
                 title="Ghi âm giọng nói"
@@ -478,7 +516,7 @@ export function Composer({
         </div>
 
         {/* Bottom Tray */}
-        {isAi && !editing && (
+        {isAi && !simple && !editing && (
           <ComposerTray
             mode={aiMode}
             onModeChange={changeMode}

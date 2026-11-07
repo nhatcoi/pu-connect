@@ -17,9 +17,9 @@ import { useAiLibrary } from '@/hooks/chat'
 const VIEW_KEY = 'n7ai-library-view'
 const readView = (): LibView => {
   try {
-    return localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'list'
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'
   } catch {
-    return 'list'
+    return 'grid'
   }
 }
 
@@ -31,7 +31,7 @@ export default function N7AiLibraryPage() {
   const study = useAiLibrary('study')
   const [filter, setFilter] = useState<LibFilter>('all')
   const [query, setQuery] = useState('')
-  const [view, setView] = useState<LibView>('list')
+  const [view, setView] = useState<LibView>('grid')
   const [studyOpen, setStudyOpen] = useState<LibEntry | null>(null)
   useEffect(() => setView(readView()), [])
   const changeView = (v: LibView) => {
@@ -79,10 +79,9 @@ export default function N7AiLibraryPage() {
   }
 
   return (
-    <DropZone label="Thả để thêm vào thư viện" onFiles={(f) => void adder.addFiles(f)} onAttachment={adder.addAttachment} tall className="pb-6">
+    <DropZone label="Thả để thêm vào thư viện" onFiles={(f) => void adder.addFiles(f)} onAttachment={adder.addAttachment} tall className="h-full min-h-0 overflow-y-auto overscroll-contain pb-6">
       <N7AiPageHeader
         title="Thư viện"
-        description="Mọi tài liệu, ảnh, liên kết và học liệu của bạn ở N7AI"
         actions={
           <div className="flex items-center gap-2">
             <Button asChild variant="ghost" size="sm" className="h-8 rounded-full px-3 text-xs">

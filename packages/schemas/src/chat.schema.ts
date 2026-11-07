@@ -507,7 +507,7 @@ export interface AiQuota {
 // Nguồn tool của bước: connector hoặc 'puc' (tool về chính PU Connect: tìm kiếm, hướng dẫn app — luôn có trong thread riêng)
 export type AiToolProvider = AiConnectorId | 'puc'
 // Nguồn của 1 bước tiến trình: tool / connector truy xuất (library, web…) hoặc bước nội bộ — đọc mục gắn @, tệp đính kèm, bộ nhớ
-export type AiStepSource = AiToolProvider | 'refs' | 'files' | 'memory' | 'skill'
+export type AiStepSource = AiToolProvider | 'refs' | 'files' | 'memory' | 'skill' | 'note'
 export interface AiRunTimings {
   preparationMs?: number
   modelWaitMs: number

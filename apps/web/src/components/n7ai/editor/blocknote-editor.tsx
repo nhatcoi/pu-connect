@@ -16,6 +16,7 @@ import {
   useActiveStyles,
 } from '@blocknote/react'
 import '@blocknote/core/style.css'
+import { figureCodeBlock } from './note-figures'
 import './notes.css'
 import './note-workspace.css'
 
@@ -44,6 +45,7 @@ import {
   Table as TableIcon,
   Underline,
 } from 'lucide-react'
+import { MathInline, protectMath, restoreMath, exportMath } from './note-math'
 import { NoteInsertMenu, type NoteMenuItem } from './note-insert-menu'
 import type { BlockPreviewKind } from './block-previews'
 import { useAiNoteAsk } from '@/hooks/chat/use-ai-notes'
@@ -73,12 +75,16 @@ export function BlockNoteEditorComponent({
   onAskAi?: (prompt: string, selection: string) => void
 }) {
   const ask = useAiNoteAsk(noteId)
-  const [initialBlocks, setInitialBlocks] = useState<PartialBlock[] | null>(null)
   const isLoaded = useRef(false)
   const latestMarkdown = useRef(initialMarkdown)
 
   // Tạo editor instance qua useCreateBlockNote
-  const editor = useCreateBlockNote()
+  const editor = useCreateBlockNote({
+    schema: BlockNoteSchema.create({
+      blockSpecs: { ...defaultBlockSpecs, codeBlock: figureCodeBlock },
+      inlineContentSpecs: { ...defaultInlineContentSpecs, math: MathInline }
+    })
+  })
 
   // Parse markdown ban đầu sang blocks của BlockNote
   useEffect(() => {
@@ -90,8 +96,9 @@ export function BlockNoteEditorComponent({
         return
       }
       try {
-        const clean = unescapeMarkdownEntities(initialMarkdown)
-        const blocks = await editor.tryParseMarkdownToBlocks(clean)
+        const { text, items } = protectMath(unescapeMarkdownEntities(initialMarkdown))
+        const parsed = await editor.tryParseMarkdownToBlocks(text)
+        const blocks = restoreMath(parsed as any[], items) as any[]
         if (active && blocks && blocks.length > 0) {
           editor.replaceBlocks(editor.document, blocks)
         }
@@ -127,7 +134,8 @@ export function BlockNoteEditorComponent({
     if (!appendRef || !editor) return
     appendRef.current = async (md: string) => {
       try {
-        const newBlocks = await editor.tryParseMarkdownToBlocks(md)
+        const prot = protectMath(md)
+        const newBlocks = restoreMath((await editor.tryParseMarkdownToBlocks(prot.text)) as any[], prot.items) as any[]
         if (newBlocks && newBlocks.length > 0) {
           const lastBlock = editor.document[editor.document.length - 1]
           editor.insertBlocks(newBlocks, lastBlock, 'after')
@@ -145,7 +153,7 @@ export function BlockNoteEditorComponent({
   const handleDocChange = useCallback(async () => {
     if (!editor || !isLoaded.current) return
     try {
-      const md = await editor.blocksToMarkdownLossy(editor.document)
+      const md = exportMath(await editor.blocksToMarkdownLossy(editor.document))
       latestMarkdown.current = md
       onChange(md)
     } catch {
@@ -195,7 +203,6 @@ export function BlockNoteEditorComponent({
           ['ai', 'hỏi', 'n7ai', 'gpt'],
           <Sparkles size={18} className="text-primary" />,
           () => {
-            const block = editor.getTextCursorPosition().block
             const text = editor.getSelectedText() || ''
             onAskAi?.('', text)
           },

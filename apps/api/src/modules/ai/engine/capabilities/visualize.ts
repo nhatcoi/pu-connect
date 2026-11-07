@@ -2,7 +2,7 @@ import type { JsonRecord } from '../native/types'
 import type { LoopCapability } from './types'
 import { asList, fail, fences, ok, text, tool } from './util'
 
-export const RENDER_TYPES = ['mermaid', 'svg'] as const
+export const RENDER_TYPES = ['mermaid', 'svg', 'plot', 'chart'] as const
 export type RenderType = (typeof RENDER_TYPES)[number]
 
 const MERMAID_HEADS = ['graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram-v2', 'stateDiagram', 'erDiagram', 'gantt', 'mindmap', 'pie', 'journey', 'timeline', 'xychart-beta', 'quadrantChart']
@@ -15,6 +15,31 @@ export function figureIssues(type: RenderType, answer: string): string[] {
   if (blocks.length > 1) return [`Có ${blocks.length} khối ${type}; chỉ giữ MỘT hình duy nhất (chia vùng bên trong nếu cần).`]
   const code = blocks[0].body
   const out: string[] = []
+
+  if (type === 'chart') {
+    try {
+      const spec = JSON.parse(code) as Record<string, unknown>
+      const hasSeries = Array.isArray(spec.series) && spec.series.length > 0
+      const hasData = Array.isArray(spec.data) ? spec.data.length > 0 : !!spec.data && typeof spec.data === 'object'
+      if (!spec || typeof spec !== 'object' || Array.isArray(spec)) out.push('Khối chart phải là một đối tượng JSON {…}.')
+      else if (!hasSeries && !hasData) out.push('Khối chart cần "series":[{"name","data":[…]}] (kèm "labels") hoặc "data":[{"label","value"}].')
+    } catch {
+      out.push('Khối chart không phải JSON hợp lệ (ngoặc kép cho khóa và chuỗi, không chú thích, không dấu phẩy thừa).')
+    }
+    return out
+  }
+
+  if (type === 'plot') {
+    try {
+      const spec: unknown = JSON.parse(code)
+      if (!spec || typeof spec !== 'object' || Array.isArray(spec)) out.push('Khối plot phải là một đối tượng JSON {…}.')
+      else if (!['functions', 'curves', 'regions', 'polygons', 'segments', 'points', 'texts'].some((k) => Array.isArray((spec as Record<string, unknown>)[k]) && ((spec as Record<string, unknown>)[k] as unknown[]).length))
+        out.push('Khối plot chưa có gì để vẽ: thêm ít nhất một trong functions / curves / regions / polygons / segments / points.')
+    } catch {
+      out.push('Khối plot không phải JSON hợp lệ (dùng ngoặc kép cho khóa và chuỗi, không có chú thích, không dấu phẩy thừa).')
+    }
+    return out
+  }
 
   if (type === 'mermaid') {
     const first = code.split('\n').find((l) => l.trim())?.trim() ?? ''
@@ -42,6 +67,8 @@ export function figureIssues(type: RenderType, answer: string): string[] {
 
 const RULES = [
   'Chế độ TRỰC QUAN HÓA: tạo MỘT hình duy nhất, ngắn gọn, đúng ý người học. Gọi visualize_brief trước (loại hình, thể loại, mô tả, các thành phần), rồi viết hình trong đúng một khối code ở câu trả lời, kèm 1–3 câu giải thích bên ngoài hình.',
+  'chart (biểu đồ số liệu): so sánh / xu hướng / tỉ lệ từ số liệu thật. Viết MỘT khối ```chart chứa JSON {"type":"bar|line|area|pie|donut|scatter","title","xlabel","ylabel","unit","labels":[…],"series":[{"name","data":[…]}],"stacked"}; một chuỗi có thể viết gọn "data":[{"label","value"}]; scatter dùng data là các cặp [x,y]. Chỉ dùng số liệu có thật; số liệu minh họa phải ghi rõ.',
+  'plot (đồ thị / toạ độ): dùng cho đồ thị hàm số, miền nghiệm của hệ bất phương trình, đường thẳng / đường tròn, điểm cực biên, đa giác, hình học giải tích trên mặt phẳng Oxy. Viết MỘT khối ```plot chứa JSON khai báo (title, x, y, xlabel, ylabel, functions, curves, regions, polygons, segments, points, texts); giao diện tự tính toạ độ nên KHÔNG tự quy đổi pixel. Biểu thức dùng x, y, + - * / ^, sin cos tan exp ln sqrt abs pi; miền viết ràng buộc nối bằng dấu phẩy ("x>=0, y>=0, x+y<=4"); đường thẳng / tròn viết phương trình trong curves ("x+y=4", "x^2+y^2=1"). Luôn khai báo "x" và "y" (khoảng hiển thị) khi có điểm / đa giác.',
   'Chọn loại hình: ưu tiên mermaid cho sơ đồ có cấu trúc (flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, erDiagram, gantt, mindmap, pie, timeline, xychart-beta cho biểu đồ số liệu đơn giản); dùng svg khi cần hình minh họa tự do, toạ độ tự chọn (cơ chế, cấu trúc lồng nhau, minh họa trực giác).',
   'Chọn theo ĐỘNG TỪ của người học, không theo chủ đề: "X hoạt động thế nào/hiểu trực giác" → svg minh họa cơ chế; "kiến trúc/gồm những phần nào" → mermaid hoặc svg cấu trúc; "quy trình/các bước" → mermaid flowchart; "so sánh số liệu" → mermaid xychart-beta/pie; "quan hệ/schema" → erDiagram/classDiagram.',
   'Ngân sách độ phức tạp: phụ đề trong hình ≤ 5 từ; tối đa 2–3 màu, màu mang ý nghĩa (nhóm cùng loại cùng màu, xám cho trung tính); một hàng tối đa 4 hộp; từ 6 thành phần trở lên thì vẽ bản tổng quan chỉ có luồng chính và nói người học có thể hỏi sâu từng nhánh. Nhãn viết hoa chữ đầu câu, không Title Case.',
@@ -71,7 +98,7 @@ export class VisualizeSession {
   }
 
   finishNudge(answer: string): string | null {
-    if (!this.type) return 'Chưa chọn loại hình. Gọi visualize_brief (render_type mermaid hoặc svg), rồi viết hình trong một khối code.'
+    if (!this.type) return 'Chưa chọn loại hình. Gọi visualize_brief (render_type mermaid, svg, plot hoặc chart), rồi viết hình trong một khối code.'
     if (this.repairs >= MAX_REPAIRS) return null
     const issues = figureIssues(this.type, answer)
     if (!issues.length) return null
@@ -88,9 +115,9 @@ export function visualizeCapability(): LoopCapability {
     tools: [
       tool(
         'visualize_brief',
-        'Chốt cách vẽ trước khi viết hình: loại hình (mermaid hoặc svg), thể loại, mô tả, các thành phần chính. Gọi một lần ở đầu lượt.',
+        'Chốt cách vẽ trước khi viết hình: loại hình (mermaid, svg, plot hoặc chart), thể loại, mô tả, các thành phần chính. Gọi một lần ở đầu lượt.',
         {
-          render_type: { type: 'string', enum: [...RENDER_TYPES], description: 'mermaid cho sơ đồ có cấu trúc/biểu đồ đơn giản; svg cho minh họa tự do.' },
+          render_type: { type: 'string', enum: [...RENDER_TYPES], description: 'mermaid cho sơ đồ có cấu trúc/biểu đồ đơn giản; svg cho minh họa tự do; plot cho đồ thị hàm số / miền nghiệm / hình học toạ độ; chart cho biểu đồ số liệu (cột, đường, tròn…).' },
           genre: { type: 'string', enum: ['flowchart', 'structural', 'illustrative', 'chart', 'art'], description: 'Hình dùng để làm gì (theo động từ của người học).' },
           description: { type: 'string', description: 'Hình cần thể hiện điều gì.' },
           elements: { type: 'array', items: { type: 'string' }, description: 'Các thành phần chính (tối đa 12).' }

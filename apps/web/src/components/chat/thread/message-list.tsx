@@ -1,11 +1,10 @@
 'use client'
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import type { ConversationSummary } from '@pu/schemas'
 import type { UiMessage } from '@/hooks/chat'
 import { useStickToBottom } from '@/hooks/use-stick-to-bottom'
-import { AiFollowUps } from '../ai/ai-follow-ups'
 import { dayLabel, isContinuation, sameDay } from '../utils'
 import { MessageBubble } from './message-bubble'
 import type { MessageHandlers } from './message-actions'
@@ -22,11 +21,16 @@ interface MessageListProps {
   onJump: (id: string) => void
   onRetry: (m: UiMessage) => void
   handlers: MessageHandlers
-  onFollowUp?: (text: string) => void // N7AI: bấm câu hỏi gợi ý tiếp theo
+  aiHint?: boolean
+  columnClass?: string // N7AI: cột nội dung căn giữa, thanh cuộn nằm mép ngoài
   onAskUserSelect?: (answer: string) => void // N7AI: chọn đáp án ở thẻ ask_user (câu trả lời mới nhất)
 }
 
 // Dòng tin: vạch ngày, gộp tin liên tiếp, tin hệ thống, "Đã xem", neo đáy (mở ở tin mới nhất), cuộn lên tải tin cũ
+// Tin cuối của cụm cùng người (tin kế tiếp khác người / khác ngày / hệ thống / không có)
+const isGroupEnd = (next: UiMessage | undefined, m: UiMessage) =>
+  !next || next.kind === 'system' || !sameDay(m.createdAt, next.createdAt) || !isContinuation(m, next)
+
 export function MessageList({
   conversation,
   messages,
@@ -39,7 +43,8 @@ export function MessageList({
   onJump,
   onRetry,
   handlers,
-  onFollowUp,
+  columnClass,
+  aiHint = false,
   onAskUserSelect
 }: MessageListProps) {
   const listRef = useRef<HTMLDivElement>(null)
@@ -47,15 +52,89 @@ export function MessageList({
   const isGroup = conversation?.type === 'group'
   const latest = messages[messages.length - 1]
   // Chỉ hiện gợi ý dưới câu trả lời AI cuối cùng (đã xong)
-  const followUps = onFollowUp && latest?.kind === 'ai' && latest.status === 'done' ? (latest.meta?.followUps ?? []) : []
 
   // Mở ở tin mới nhất ngay frame đầu; tin mới / AI trả lời dần giữ ở đáy nếu đang ở đáy
   const { stick, release } = useStickToBottom(listRef, latest?.conversationId)
-  // Mình vừa gửi ⇒ luôn về đáy
+  const isAi = conversation ? conversation.type === 'ai' : aiHint
+  // Mình vừa gửi ⇒ thường: về đáy. N7AI: đẩy tin của mình lên đầu khung, chừa khoảng trống phía dưới cho câu trả lời stream
   const mineLatest = latest?.sender?.id === myId ? latest?.clientMsgId || latest?.id : undefined
+  const innerRef = useRef<HTMLDivElement>(null)
+  const spacerRef = useRef<HTMLDivElement>(null)
+  const [anchorKey, setAnchorKey] = useState<string | null>(null)
+  const follow = useRef(false) // câu trả lời đã dài quá khung ⇒ bám theo đáy khi stream
+  const seenMine = useRef<string | undefined>(mineLatest) // lần mở hội thoại không tính là "vừa gửi"
   useLayoutEffect(() => {
-    if (mineLatest) stick()
-  }, [mineLatest, stick])
+    if (!mineLatest || seenMine.current === mineLatest) return
+    seenMine.current = mineLatest
+    if (isAi) {
+      release()
+      follow.current = false
+      setAnchorKey(mineLatest)
+    } else stick()
+  }, [mineLatest, stick, release, isAi])
+  useLayoutEffect(() => {
+    if (!mineLatest || isAi || anchorKey) return
+    stick()
+  }, [mineLatest, isAi, anchorKey, stick])
+
+  const messagesRef = useRef(messages)
+  messagesRef.current = messages
+  const anchorEl = useCallback(() => {
+    const m = anchorKey ? messagesRef.current.find((x) => (x.clientMsgId || x.id) === anchorKey) : undefined
+    return m ? document.getElementById(`msg-${m.id}`) : null
+  }, [anchorKey])
+
+  // Khoảng trống cuối = phần khung còn dư dưới cụm "tin của mình + câu trả lời" ⇒ tin của mình đứng ở đỉnh, câu trả lời lấp dần
+  const layoutSpacer = useCallback(() => {
+    const list = listRef.current
+    const sp = spacerRef.current
+    if (!list || !sp) return
+    const el = anchorKey ? anchorEl() : null
+    if (!el) {
+      sp.style.height = '0px'
+      return
+    }
+    const base = list.getBoundingClientRect().top - list.scrollTop
+    const top = el.getBoundingClientRect().top - base
+    const end = sp.getBoundingClientRect().top - base
+    const h = Math.max(0, list.clientHeight - (end - top) - 8)
+    sp.style.height = `${h}px`
+    if (h === 0 && follow.current) list.scrollTop = list.scrollHeight
+    else if (h === 0 && end - top > list.clientHeight * 0.9) follow.current = true
+  }, [anchorKey, anchorEl])
+
+  useLayoutEffect(() => {
+    layoutSpacer()
+  }, [layoutSpacer, messages])
+  useEffect(() => {
+    const inner = innerRef.current
+    const list = listRef.current
+    if (!inner || !list || !isAi) return
+    const ro = new ResizeObserver(layoutSpacer)
+    ro.observe(inner)
+    ro.observe(list)
+    const stop = () => {
+      follow.current = false
+    }
+    list.addEventListener('wheel', stop, { passive: true })
+    list.addEventListener('touchstart', stop, { passive: true })
+    return () => {
+      ro.disconnect()
+      list.removeEventListener('wheel', stop)
+      list.removeEventListener('touchstart', stop)
+    }
+  }, [layoutSpacer, isAi])
+  // Vừa gửi: cuộn mượt tin của mình lên đỉnh
+  useLayoutEffect(() => {
+    if (!anchorKey) return
+    const list = listRef.current
+    const el = anchorEl()
+    if (!list || !el) return
+    layoutSpacer()
+    const top = el.getBoundingClientRect().top - (list.getBoundingClientRect().top - list.scrollTop) - 8
+    list.scrollTo({ top, behavior: 'smooth' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anchorKey])
 
   // Cuộn gần đầu ⇒ tự tải trang tin cũ hơn; giữ nguyên tin đang nhìn khi chèn phía trên
   const topRef = useRef<HTMLDivElement>(null)
@@ -111,7 +190,8 @@ export function MessageList({
   }
 
   return (
-    <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-1 pt-2 pb-4 overscroll-contain">
+    <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-3 sm:px-1 pt-2 pb-4 overscroll-contain animate-in fade-in-0 slide-in-from-bottom-1 duration-300 ease-out">
+      <div ref={innerRef} className={columnClass}>
       <div ref={topRef} aria-hidden />
       {isLoadingOlder && (
         <div className="flex justify-center pb-2">
@@ -141,6 +221,7 @@ export function MessageList({
                 mine={mine}
                 myId={myId}
                 continued={!newDay && isContinuation(prev, m)}
+                groupEnd={isGroupEnd(messages[i + 1], m)}
                 showAvatar={conversation?.type !== 'direct'}
                 showName={isGroup && !mine}
                 seenLabel={seenFor(m)}
@@ -154,7 +235,8 @@ export function MessageList({
           </React.Fragment>
         )
       })}
-      {conversation?.type !== 'ai' && followUps.length > 0 && onFollowUp && <AiFollowUps items={followUps} onPick={onFollowUp} />}
+      <div ref={spacerRef} aria-hidden />
+      </div>
     </div>
   )
 }

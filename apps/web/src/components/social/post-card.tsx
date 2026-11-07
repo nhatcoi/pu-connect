@@ -12,6 +12,7 @@ import {
   Bookmark,
   FileText,
   MoreHorizontal,
+  Maximize2,
   Copy,
   Send,
   Check,
@@ -102,6 +103,8 @@ interface PostCardProps {
   defaultCommentsOpen?: boolean
   defaultExpanded?: boolean
   highlightCommentId?: string | null
+  // Trong modal mở rộng: cột trái = bài + tệp, cột phải = tương tác + bình luận
+  split?: boolean
 }
 
 // Thu gọn bài dài: hiện ~10 dòng; chỉ thu khi dư ≥ ~3 dòng (tránh "Xem thêm" chỉ để lộ 1 dòng)
@@ -116,7 +119,8 @@ export function PostCard({
   variant = 'flat',
   defaultCommentsOpen = false,
   defaultExpanded = false,
-  highlightCommentId
+  highlightCommentId,
+  split = false
 }: PostCardProps) {
   const pathname = usePathname()
   const [post, setPost] = useState<PostItem>(initialPost)
@@ -390,6 +394,114 @@ export function PostCard({
     )
   }
 
+  const actionsEl = (
+  <div className="flex items-center justify-between pt-2 -ml-2 text-muted-foreground max-w-xl sm:max-w-2xl">
+    {/* 1. Tym (Like) */}
+    <button
+      type="button"
+      onClick={handleLike}
+      className={cn(
+        'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-xs font-medium transition-colors cursor-pointer group',
+        post.isLikedByMe && 'text-rose-500'
+      )}
+      title={post.isLikedByMe ? 'Bỏ thích' : 'Thích bài viết'}
+    >
+      <Heart
+        className={cn('h-4 w-4 transition-transform active:scale-125 group-hover:text-rose-500', post.isLikedByMe && 'fill-current text-rose-500')}
+      />
+      <span className="text-xs">{post.likesCount || 0}</span>
+    </button>
+
+    {/* 2. Bình luận (Comments) */}
+    <button
+      type="button"
+      onClick={() => setIsCommentsOpen((prev) => !prev)}
+      className={cn(
+        'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-sky-500/10 hover:text-sky-500 text-xs font-medium transition-colors cursor-pointer group',
+        isCommentsOpen && 'text-sky-500 font-bold'
+      )}
+      title="Bình luận & Thảo luận"
+    >
+      <MessageCircle className="h-4 w-4 group-hover:text-sky-500" />
+      <span className="text-xs">{post.commentsCount || 0}</span>
+    </button>
+
+    {/* 3. Lưu bài viết (Bookmark) */}
+    <button
+      type="button"
+      onClick={handleBookmark}
+      className={cn(
+        'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-amber-500/10 hover:text-amber-500 text-xs font-medium transition-colors cursor-pointer group',
+        post.isBookmarkedByMe && 'text-amber-500'
+      )}
+      title={post.isBookmarkedByMe ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
+    >
+      <Bookmark
+        className={cn(
+          'h-4 w-4 transition-transform active:scale-125 group-hover:text-amber-500',
+          post.isBookmarkedByMe && 'fill-current text-amber-500'
+        )}
+      />
+    </button>
+
+    {/* 4. Thống kê (ẩn: lượt xem tự tính, chưa tracking) */}
+    {FEATURES.postAnalytics && (
+      <button
+        type="button"
+        onClick={() => setIsAnalyticsOpen(true)}
+        className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-sky-500/10 hover:text-sky-500 text-xs text-muted-foreground transition-colors cursor-pointer group"
+        title="Xem phân tích & số liệu bài viết"
+      >
+        <BarChart2 className="h-4 w-4 group-hover:text-sky-500" />
+        <span className="text-xs">{viewsCount}</span>
+      </button>
+    )}
+
+    {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Hỏi N7AI) */}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-primary/10 hover:text-primary text-xs font-medium text-muted-foreground transition-colors cursor-pointer group"
+          title="Chia sẻ bài viết"
+        >
+          <Share2 className="h-4 w-4 group-hover:text-primary" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52 p-1 rounded-xl shadow-lg border border-border bg-popover">
+        <DropdownMenuItem
+          onClick={handleCopyLink}
+          className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
+        >
+          {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+          <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
+        </DropdownMenuItem>
+
+        {user && (
+          <>
+            <DropdownMenuItem
+              onClick={() => setIsShareChatOpen(true)}
+              className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
+            >
+              <Send className="h-4 w-4 text-muted-foreground" />
+              <span>Gửi qua tin nhắn</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={handleAskN7Ai}
+              className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
+            >
+              <N7AiMark className="h-4 w-4" />
+              <span>Hỏi N7AI về bài này</span>
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  </div>
+  )
+
+  const commentsEl = <PostCommentsSection post={post} isOpen={split || isCommentsOpen} highlightCommentId={highlightCommentId} onCountChange={handleCommentsCount} />
+
   return (
     <>
       <article
@@ -398,15 +510,18 @@ export function PostCard({
         data-track-post={post.id}
         className={cn(
           'text-foreground transition-[color,background-color,box-shadow] duration-200',
-          variant === 'card'
+          split
+            ? 'grid h-full min-h-0 grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] bg-card'
+            : variant === 'card'
             ? 'rounded-xl bg-card px-4 py-3.5 sm:px-5'
             : 'px-4 py-3.5 sm:px-5 sm:py-4 border-b border-border/40 bg-background hover:bg-muted/[0.03]',
           // Focus ring khi mở bình luận (ring không đổi layout → no CLS)
-          isCommentsOpen && (variant === 'card' ? 'ring-1 ring-sky-500/60' : 'ring-1 ring-inset ring-sky-500/60'),
+          !split && isCommentsOpen && (variant === 'card' ? 'ring-1 ring-sky-500/60' : 'ring-1 ring-inset ring-sky-500/60'),
           // Bài đang chờ admin duyệt (kiểm duyệt tự động): chỉ tác giả thấy, làm mờ
           post.pendingReview && 'opacity-60 saturate-50'
         )}
       >
+        <div className={split ? 'min-h-0 overflow-y-auto px-5 py-4 lg:border-r lg:border-border/60' : undefined}>
         {post.pendingReview && (
           <p role="status" className="mb-2 rounded-md bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
             Bài viết đang chờ quản trị viên duyệt, chỉ mình bạn nhìn thấy cho đến khi được duyệt.
@@ -521,6 +636,19 @@ export function PostCard({
                     <GraduationCap className="h-3 w-3 shrink-0" />
                     <span className="truncate">{courseBadge.label}</span>
                   </span>
+                )}
+
+                {/* Mở rộng: modal 2 cột (route chặn /post/[id]); desktop, ngoài trang chi tiết */}
+                {!split && !pathname.startsWith('/post/') && (
+                  <Link
+                    href={`/post/${post.id}`}
+                    scroll={false}
+                    title="Mở rộng"
+                    aria-label="Mở rộng bài viết"
+                    className="hidden lg:inline-flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </Link>
                 )}
 
                 {/* ── Signature 3-Dots Dropdown Menu (Clean, Simple & Essential) ── */}
@@ -744,120 +872,24 @@ export function PostCard({
               </div>
             )}
 
-            {/* ── Actions Footer Row: Tym -> Bình luận -> Lưu -> Thống kê -> Share ── */}
-            <div className="flex items-center justify-between pt-2 -ml-2 text-muted-foreground max-w-xl sm:max-w-2xl">
-              {/* 1. Tym (Like) */}
-              <button
-                type="button"
-                onClick={handleLike}
-                className={cn(
-                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-rose-500/10 hover:text-rose-500 text-xs font-medium transition-colors cursor-pointer group',
-                  post.isLikedByMe && 'text-rose-500'
-                )}
-                title={post.isLikedByMe ? 'Bỏ thích' : 'Thích bài viết'}
-              >
-                <Heart
-                  className={cn('h-4 w-4 transition-transform active:scale-125 group-hover:text-rose-500', post.isLikedByMe && 'fill-current text-rose-500')}
-                />
-                <span className="text-xs">{post.likesCount || 0}</span>
-              </button>
-
-              {/* 2. Bình luận (Comments) */}
-              <button
-                type="button"
-                onClick={() => setIsCommentsOpen((prev) => !prev)}
-                className={cn(
-                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-sky-500/10 hover:text-sky-500 text-xs font-medium transition-colors cursor-pointer group',
-                  isCommentsOpen && 'text-sky-500 font-bold'
-                )}
-                title="Bình luận & Thảo luận"
-              >
-                <MessageCircle className="h-4 w-4 group-hover:text-sky-500" />
-                <span className="text-xs">{post.commentsCount || 0}</span>
-              </button>
-
-              {/* 3. Lưu bài viết (Bookmark) */}
-              <button
-                type="button"
-                onClick={handleBookmark}
-                className={cn(
-                  'flex items-center gap-1.5 py-1 px-2 rounded-full hover:bg-amber-500/10 hover:text-amber-500 text-xs font-medium transition-colors cursor-pointer group',
-                  post.isBookmarkedByMe && 'text-amber-500'
-                )}
-                title={post.isBookmarkedByMe ? 'Bỏ lưu bài viết' : 'Lưu bài viết'}
-              >
-                <Bookmark
-                  className={cn(
-                    'h-4 w-4 transition-transform active:scale-125 group-hover:text-amber-500',
-                    post.isBookmarkedByMe && 'fill-current text-amber-500'
-                  )}
-                />
-              </button>
-
-              {/* 4. Thống kê (ẩn: lượt xem tự tính, chưa tracking) */}
-              {FEATURES.postAnalytics && (
-                <button
-                  type="button"
-                  onClick={() => setIsAnalyticsOpen(true)}
-                  className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-sky-500/10 hover:text-sky-500 text-xs text-muted-foreground transition-colors cursor-pointer group"
-                  title="Xem phân tích & số liệu bài viết"
-                >
-                  <BarChart2 className="h-4 w-4 group-hover:text-sky-500" />
-                  <span className="text-xs">{viewsCount}</span>
-                </button>
-              )}
-
-              {/* 5. Chia sẻ (Share Menu: Copy Link, Gửi tin nhắn, Hỏi N7AI) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-primary/10 hover:text-primary text-xs font-medium text-muted-foreground transition-colors cursor-pointer group"
-                    title="Chia sẻ bài viết"
-                  >
-                    <Share2 className="h-4 w-4 group-hover:text-primary" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52 p-1 rounded-xl shadow-lg border border-border bg-popover">
-                  <DropdownMenuItem
-                    onClick={handleCopyLink}
-                    className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
-                  >
-                    {isCopied ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
-                    <span>{isCopied ? 'Đã sao chép' : 'Sao chép liên kết'}</span>
-                  </DropdownMenuItem>
-
-                  {user && (
-                    <>
-                      <DropdownMenuItem
-                        onClick={() => setIsShareChatOpen(true)}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
-                      >
-                        <Send className="h-4 w-4 text-muted-foreground" />
-                        <span>Gửi qua tin nhắn</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={handleAskN7Ai}
-                        className="flex items-center gap-2.5 px-3 py-2 text-xs cursor-pointer rounded-lg hover:bg-muted font-medium"
-                      >
-                        <N7AiMark className="h-4 w-4" />
-                        <span>Hỏi N7AI về bài này</span>
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {!split && actionsEl}
 
             {/* Bình luận nổi bật (ẩn khi đã mở khu bình luận) */}
-            {!isCommentsOpen && showFeaturedComment && post.featuredComment && (post.commentsCount || 0) > 0 && (
+            {!split && !isCommentsOpen && showFeaturedComment && post.featuredComment && (post.commentsCount || 0) > 0 && (
               <FeaturedCommentPreview comment={post.featuredComment} onOpen={() => setIsCommentsOpen(true)} />
             )}
           </div>
         </div>
+        </div>
 
-        {/* Expandable Comments & Discussion Section */}
-        <PostCommentsSection post={post} isOpen={isCommentsOpen} highlightCommentId={highlightCommentId} onCountChange={handleCommentsCount} />
+        {split ? (
+          <aside className="flex min-h-0 flex-col border-t border-border/60 lg:border-t-0">
+            <div className="shrink-0 border-b border-border/60 px-5 py-1.5">{actionsEl}</div>
+            <div className="min-h-0 flex-1 overflow-y-auto">{commentsEl}</div>
+          </aside>
+        ) : (
+          commentsEl
+        )}
       </article>
 
       {/* Edit Post Dialog */}

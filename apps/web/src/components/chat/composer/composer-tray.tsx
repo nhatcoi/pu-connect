@@ -210,9 +210,9 @@ export function ComposerTray({
   }, [userSkills])
 
   return (
-    <div className="flex items-center justify-between gap-2 pt-2 px-1 text-xs select-none relative">
+    <div className="dt-tray-root flex flex-nowrap items-center justify-between gap-2 pt-2 px-1 text-xs select-none relative">
       {/* Left controls: Mode ▾, Skills (Wand2), Connectors (Plug) */}
-      <div className="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+      <div className="flex min-w-0 items-center gap-1 sm:gap-1.5">
         {/* 1. N7AI Mode ⌃ Menu */}
         <Popover open={openModeMenu} onOpenChange={setOpenModeMenu}>
           <PopoverTrigger asChild>
@@ -685,7 +685,7 @@ export function ComposerTray({
       </div>
 
       {/* Right controls: Partners ▾ & Preferences Default ▾ */}
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {/* Partners ▾ Menu */}
         <Popover open={openPartnersMenu} onOpenChange={setOpenPartnersMenu}>
           <PopoverTrigger asChild>
@@ -694,10 +694,10 @@ export function ComposerTray({
               className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
             >
               <UsersRound size={13} strokeWidth={1.8} className="shrink-0" />
-              <span>Bạn học</span>
+              <span className="dt-narrow-hide">Bạn học</span>
               <ChevronDown
                 size={11}
-                className={cn('opacity-70 -ml-0.5 transition-transform duration-150', openPartnersMenu && 'rotate-180')}
+                className={cn('dt-narrow-hide opacity-70 -ml-0.5 transition-transform duration-150', openPartnersMenu && 'rotate-180')}
               />
             </button>
           </PopoverTrigger>
@@ -731,13 +731,13 @@ export function ComposerTray({
               )}
             >
               <UserRound size={13} strokeWidth={1.8} className="shrink-0" />
-              <span>Tùy chọn</span>
-              <span className={cn('text-[11px]', activeStyle.id !== 'default' ? 'text-primary font-semibold' : 'text-muted-foreground/80')}>
+              <span className="dt-narrow-hide">Tùy chọn</span>
+              <span className={cn('dt-narrow-hide text-[11px]', activeStyle.id !== 'default' ? 'text-primary font-semibold' : 'text-muted-foreground/80')}>
                 {activeStyle.name.split(' ')[0]}
               </span>
               <ChevronDown
                 size={11}
-                className={cn('opacity-70 -ml-0.5 transition-transform duration-150', openPreferencesMenu && 'rotate-180')}
+                className={cn('dt-narrow-hide opacity-70 -ml-0.5 transition-transform duration-150', openPreferencesMenu && 'rotate-180')}
               />
             </button>
           </PopoverTrigger>

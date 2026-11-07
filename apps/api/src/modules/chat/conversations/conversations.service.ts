@@ -113,17 +113,19 @@ export class ConversationsService {
     return this.get(userId, id)
   }
 
-  // Mở N7AI chat nhanh (Tin nhắn / nhắn bot từ hồ sơ): thread gần nhất, chưa có thì tạo
+  // Mở N7AI chat nhanh (Tin nhắn / nhắn bot từ hồ sơ): thread ai_quick riêng, không hiện trong lịch sử /n7ai
   async openAi(userId: string): Promise<ConversationSummary> {
     const res = await this.db.query(LATEST_AI_SQL, [userId])
-    return res.rows[0] ? this.get(userId, res.rows[0].id) : this.createAiThread(userId)
+    if (res.rows[0]) return this.get(userId, res.rows[0].id)
+    const id = await this.db.transaction((client) => this.insertAiConversation(client, userId, null, true))
+    return this.get(userId, id)
   }
 
   // "Chat mới" với N7AI: dùng lại thread chưa có tin (bấm nhiều lần không sinh rác)
   async createAiThread(userId: string): Promise<ConversationSummary> {
     const id = await this.db.transaction(async (client) => {
       const empty = await client.query(
-        `SELECT id FROM conversations WHERE type = 'ai' AND created_by = $1 AND last_message_id IS NULL AND title IS NULL ORDER BY created_at DESC LIMIT 1`,
+        `SELECT id FROM conversations WHERE type = 'ai' AND NOT ai_quick AND created_by = $1 AND last_message_id IS NULL AND title IS NULL ORDER BY created_at DESC LIMIT 1`,
         [userId]
       )
       return (empty.rows[0]?.id as string | undefined) ?? this.insertAiConversation(client, userId, null)
@@ -136,9 +138,9 @@ export class ConversationsService {
     return this.db.transaction((client) => this.insertAiConversation(client, userId, title))
   }
 
-  private async insertAiConversation(client: PoolClient, userId: string, title: string | null): Promise<string> {
+  private async insertAiConversation(client: PoolClient, userId: string, title: string | null, quick = false): Promise<string> {
     const botId = await this.llm.getBotId()
-    const conv = await client.query(`INSERT INTO conversations (type, created_by, title) VALUES ('ai', $1, $2) RETURNING id`, [userId, title])
+    const conv = await client.query(`INSERT INTO conversations (type, created_by, title, ai_quick) VALUES ('ai', $1, $2, $3) RETURNING id`, [userId, title, quick])
     await client.query(`INSERT INTO conversation_members (conversation_id, user_id, role) VALUES ($1, $2, 'owner'), ($1, $3, 'member')`, [
       conv.rows[0].id,
       userId,

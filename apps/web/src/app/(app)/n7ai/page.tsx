@@ -29,5 +29,5 @@ export default function N7AiHomePage() {
     )
   }
   if (!draftId) return <MessageThreadSkeleton />
-  return <ConversationView id={draftId} backHref="/" onOpenNav={openNav} onStarted={onStarted} />
+  return <ConversationView id={draftId} aiHint backHref="/" onOpenNav={openNav} onStarted={onStarted} />
 }

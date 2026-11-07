@@ -1,5 +1,6 @@
 'use client'
 
+import { useEdgeSwipeOpen } from '@/hooks/use-swipe'
 import React, { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sheet } from '@/components/ui/sheet'
@@ -46,7 +47,11 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
 
   const panelAllowed = isRightPanelAllowed(pathname)
   const isPanelOpen = panelOpen && panelAllowed
+  const mobilePanelOpen = useN7AiLayout((s) => s.mobilePanelOpen)
+  const setMobilePanelOpen = useN7AiLayout((s) => s.setMobilePanelOpen)
   const isWide = pathname.startsWith('/n7ai/notebook') || pathname.startsWith('/n7ai/library')
+  // Trang chat: cột 820px do ConversationView tự căn giữa ⇒ thanh cuộn nằm mép ngoài
+  const isChat = !isWide && !pathname.startsWith('/n7ai/settings')
 
   // Tự động đóng panel khi vào trang không được phép xuất hiện (ví dụ notebook, settings)
   useEffect(() => {
@@ -64,7 +69,7 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
       {/* Đang kéo: khóa chọn chữ, iframe không nuốt sự kiện chuột. Thanh bên N7AI giữ cố định không animate khi chuyển route */}
       <div
         className={cn(
-          'flex h-screen md:h-dvh overflow-hidden [--app-header-height:0rem] bg-surface',
+          'flex h-dvh overflow-hidden [--app-header-height:0rem] bg-surface',
           resizing && 'cursor-col-resize select-none [&_iframe]:pointer-events-none'
         )}
       >
@@ -88,7 +93,7 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
           <div
             className={cn(
               'mx-auto w-full h-full min-h-0 flex flex-col',
-              isWide ? 'max-w-none px-0 sm:px-2' : 'max-w-[820px]'
+              isWide ? 'max-w-none px-0 sm:px-2' : isChat ? 'max-w-none' : 'max-w-[820px]'
             )}
           >
             {children}
@@ -114,11 +119,17 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
             !resizing && 'transition-[width] duration-300 ease-out'
           )}
         >
-          {panelMounted && panelAllowed && (
+          {panelMounted && panelAllowed && viewport >= 1024 && (
             <N7AiSidePanel className="flex" style={{ width: panel - 8 }} />
           )}
         </div>
       </div>
+      {/* Màn nhỏ (< lg): panel Tài liệu · Công cụ · Ghi chú mở toàn màn hình */}
+      {mobilePanelOpen && panelAllowed && viewport < 1024 && (
+        <div className="fixed inset-0 z-50 bg-surface animate-in fade-in-0 slide-in-from-right-6 duration-200">
+          <N7AiSidePanel className="h-dvh w-full rounded-none border-0 shadow-none" onClose={() => setMobilePanelOpen(false)} />
+        </div>
+      )}
       <N7AiPanelToggle />
       <N7AiDrawer />
     </N7AiNavProvider>
@@ -127,6 +138,8 @@ export function N7AiShell({ children }: { children: React.ReactNode }) {
 
 function N7AiDrawer() {
   const { open, setOpen } = useN7AiNav()
+  // Vuốt từ mép trái mở ngăn lịch sử (mobile)
+  useEdgeSwipeOpen(() => setOpen(true), !open)
   return (
     <Sheet open={open} onOpenChange={setOpen} title="N7AI">
       <N7AiSidebar />

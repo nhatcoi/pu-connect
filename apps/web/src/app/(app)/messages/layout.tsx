@@ -24,7 +24,13 @@ export default function MessagesLayout({ children }: { children: React.ReactNode
 
   return (
     <MessagesContext.Provider value={{ openNewChat: () => setNewChatOpen(true) }}>
-      <div className="w-full flex h-full max-h-[calc(100vh-3.5rem)] rounded-2xl bg-card/40 border border-border/60 overflow-hidden shadow-xs">
+      <div
+        className={cn(
+          'w-full flex h-full max-h-[calc(100vh-3.5rem)] rounded-2xl bg-card/40 border border-border/60 overflow-hidden shadow-xs',
+          // Mobile, đang mở 1 hội thoại: toàn màn hình, không viền bo / không thanh điều hướng đáy (như Messenger, Zalo)
+          isConversationOpen && 'max-md:fixed max-md:inset-0 max-md:z-[41] max-md:h-dvh max-md:max-h-none max-md:rounded-none max-md:border-0 max-md:bg-background max-md:shadow-none'
+        )}
+      >
         {/* 1. Cột trái: Danh sách hội thoại (full màn hình trên mobile khi chưa chọn chat, cố định 360px-390px trên desktop) */}
         <div
           className={cn(

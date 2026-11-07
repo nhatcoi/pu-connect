@@ -6,8 +6,8 @@ import type { ConversationFilter } from '@pu/schemas'
 export const LIST_RANK = `CASE WHEN c.type = 'ai' THEN 2 WHEN me.pinned_at IS NOT NULL THEN 1 ELSE 0 END`
 export const LIST_SORT_AT = `CASE WHEN c.type <> 'ai' AND me.pinned_at IS NOT NULL THEN me.pinned_at ELSE COALESCE(c.last_message_at, c.created_at) END`
 
-// Thread N7AI gần nhất: có tin trước, rồi hoạt động gần nhất ($1 = người xem)
-export const LATEST_AI_SQL = `SELECT a.id FROM conversations a WHERE a.type = 'ai' AND a.created_by = $1
+// Thread N7AI "chat nhanh" của Tin nhắn (ai_quick, tách khỏi lịch sử /n7ai) gần nhất: có tin trước, rồi hoạt động gần nhất ($1 = người xem)
+export const LATEST_AI_SQL = `SELECT a.id FROM conversations a WHERE a.type = 'ai' AND a.ai_quick AND a.created_by = $1
   ORDER BY (a.last_message_id IS NULL), COALESCE(a.last_message_at, a.created_at) DESC, a.id DESC LIMIT 1`
 
 // Tin nhắn chỉ giữ 1 thread N7AI "chat nhanh" = thread gần nhất (subquery không tương quan ⇒ InitPlan chạy 1 lần)

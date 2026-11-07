@@ -120,7 +120,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               className={cn(
                 'flex-1 w-full min-w-0 transition-[max-width] duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]',
                 hideHeader
-                  ? 'min-h-screen pb-14 md:pb-0'
+                  ? cn('min-h-screen md:pb-0', n7ai ? 'pb-0' : 'pb-14')
                   : compactSidebar
                     ? cn(MESSAGES_WORKSPACE_WIDTH, 'h-[calc(100vh-3.5rem)] min-h-0 overflow-hidden pb-0')
                     : cn(fullWidth ? WIDE_MAIN_WIDTH : MAIN_WIDTH, 'min-h-[calc(100vh-3.5rem)] pb-8')

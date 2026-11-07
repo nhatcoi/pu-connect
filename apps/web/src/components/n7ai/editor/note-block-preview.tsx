@@ -2,12 +2,10 @@
 
 import React from 'react'
 import {
-  ArrowDown,
   BookOpen,
   Check,
   ChevronDown,
   ChevronRight,
-  FileText,
   Lightbulb,
   Sparkles,
 } from 'lucide-react'

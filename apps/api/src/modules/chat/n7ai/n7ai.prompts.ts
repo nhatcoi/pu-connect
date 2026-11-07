@@ -62,7 +62,7 @@ Chế độ RESEARCH: Nghiên cứu toàn diện về chủ đề được nêu.
 ## Kết luận & hướng nghiên cứu tiếp theo`,
   visualize: `
 Chế độ TRỰC QUAN HÓA (VISUALIZE): Diễn giải khái niệm bằng biểu đồ hoặc sơ đồ tương tác.
-Hãy kết hợp giải thích ngắn gọn và xuất mã sơ đồ Mermaid (dùng cú pháp \`\`\`mermaid với graph TD, sequenceDiagram, flowchart LR, mindmap, hoặc stateDiagram) hoặc mã SVG / HTML widget minh họa sinh động.`,
+Hãy kết hợp giải thích ngắn gọn và xuất mã sơ đồ Mermaid (dùng cú pháp \`\`\`mermaid với graph TD, sequenceDiagram, flowchart LR, mindmap, hoặc stateDiagram) hoặc mã SVG minh họa sinh động; đồ thị hàm số / miền nghiệm / hình học toạ độ dùng khối \`\`\`plot (JSON khai báo).`,
   video_lesson: `
 Chế độ BÀI GIẢNG HOẠT HỌA (VIDEO LESSON): Xây dựng kịch bản bài giảng hoạt hình sinh động theo từng phân cảnh (Scenes).
 Với mỗi cảnh, hãy chỉ rõ:

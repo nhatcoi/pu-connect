@@ -63,3 +63,26 @@ export function MediaPanelSkeleton({ kind }: { kind: 'image' | 'file' }) {
     </LoadingRegion>
   )
 }
+
+// Khung chat N7AI đang tải: câu hỏi (phải) + câu trả lời nhiều dòng (full rộng) — cùng bố cục tin thật
+export function AiThreadSkeleton() {
+  const lines = ['w-full', 'w-[92%]', 'w-[97%]', 'w-[70%]']
+  return (
+    <LoadingRegion label="Đang tải cuộc trò chuyện" className="flex-1 min-h-0 overflow-hidden px-3 sm:px-1 pt-4 pb-4">
+      <div className="mx-auto w-full max-w-[820px] space-y-8">
+        {[0, 1].map((n) => (
+          <div key={n} className="space-y-6">
+            <div className="flex justify-end">
+              <Skeleton className={cn('h-9 rounded-2xl', n ? 'w-40' : 'w-56')} />
+            </div>
+            <div className="space-y-2.5">
+              {lines.slice(0, n ? 3 : 4).map((w, i) => (
+                <Skeleton key={i} className={cn('h-3.5', w)} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </LoadingRegion>
+  )
+}

@@ -45,7 +45,7 @@ export class AiThreadsService {
 
   async list(userId: string, query: ListAiThreadsQuery): Promise<AiThreadsPage> {
     const params: unknown[] = [userId, query.limit + 1]
-    const where = [`c.type = 'ai'`, `c.created_by = $1`, `c.last_message_id IS NOT NULL`]
+    const where = [`c.type = 'ai'`, `NOT c.ai_quick`, `c.created_by = $1`, `c.last_message_id IS NOT NULL`]
     if (query.folder === 'root') where.push(`c.ai_folder_id IS NULL`)
     else if (query.folder !== 'all') {
       params.push(query.folder)

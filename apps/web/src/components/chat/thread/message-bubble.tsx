@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { Pin, RotateCcw } from 'lucide-react'
+import { Pin, Reply, RotateCcw } from 'lucide-react'
+import { useSwipeToReply } from '@/hooks/use-swipe'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import type { UiMessage } from '@/hooks/chat'
@@ -29,6 +30,7 @@ interface BubbleProps {
   mine: boolean
   myId?: string
   continued: boolean // nối tiếp tin trước cùng người ⇒ ẩn tên/ảnh
+  groupEnd?: boolean // tin cuối của cụm cùng người ⇒ mới hiện giờ (cụm dài không lặp giờ dưới từng bong bóng)
   showAvatar: boolean // nhóm / AI: hiện ảnh đại diện người khác
   showName: boolean
   seenLabel: string | null
@@ -44,6 +46,7 @@ export function MessageBubble({
   mine,
   myId,
   continued,
+  groupEnd = true,
   showAvatar,
   showName,
   seenLabel,
@@ -62,16 +65,31 @@ export function MessageBubble({
   // Tin chỉ có một URL và đã có thẻ xem trước ⇒ chỉ hiện thẻ (chưa có thẻ ⇒ vẫn hiện link)
   const hasText = !!m.content && !m.deleted && !(m.meta?.embeds?.length && !m.attachments?.length && isLinkOnly(m.content))
   const mode = m.meta?.aiMode
+  const canSwipeReply = interactive && !isAi
+  const swipeRef = useSwipeToReply<HTMLDivElement>(() => handlers.onReply(m), canSwipeReply)
 
   return (
     <div
+      ref={swipeRef}
       id={`msg-${m.id}`}
       className={cn(
-        'group flex gap-2 scroll-mt-24',
+        'group relative flex gap-2 scroll-mt-24',
         mine ? 'flex-row-reverse' : 'flex-row',
         continued ? 'mt-0.5' : isAi && !mine ? 'mt-5' : 'mt-3'
       )}
     >
+      {/* Vuốt phải để trả lời (cảm ứng): icon hiện dần ở mép trái khi hàng trượt */}
+      {canSwipeReply && (
+        <span
+          data-swipe-icon
+          aria-hidden
+          className="pointer-events-none absolute -left-9 top-1/2 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-muted-foreground opacity-0"
+          style={{ transform: 'translateY(-50%) scale(0.6)' }}
+        >
+          <Reply className="h-3.5 w-3.5" />
+        </span>
+      )}
+
       {/* Assistant message không có avatar bên lề để nội dung dàn rộng thoáng */}
       {showAvatar && !mine && !isAi && (
         <div className="w-7 shrink-0 self-end">
@@ -223,7 +241,7 @@ export function MessageBubble({
         )}
 
         {/* Ẩn timestamp dưới cùng đối với tin nhắn Assistant vì đã có trạng thái Done · Xs ở trên */}
-        {(!isAi || mine) && (
+        {(!isAi || mine) && (groupEnd || m.status === 'sending' || m.status === 'failed' || !!m.pinnedAt || !!seenLabel || (!!m.editedAt && !m.deleted)) && (
           <span className="text-[10px] text-muted-foreground px-2 mt-0.5 flex items-center gap-1">
             {m.pinnedAt && <Pin className="h-2.5 w-2.5 text-amber-500" />}
             {m.status === 'sending' ? (

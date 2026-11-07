@@ -13,7 +13,10 @@ import rehypeRaw from 'rehype-raw'
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize'
 import { Check, Copy } from 'lucide-react'
 import { MermaidBlock } from './mermaid-block'
-import { SvgBlock } from './svg-block'
+import { isSvgStart, SvgBlock } from './svg-block'
+import { PlotBlock } from './plot-block'
+import { ChartBlock } from './chart-block'
+import { DataTableBlock } from './data-table-block'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -52,17 +55,51 @@ function normalizeInlineMarkdown(text: string): string {
   return out
 }
 
+function nodeText(node: React.ReactNode): string {
+  if (node == null || typeof node === 'boolean') return ''
+  if (typeof node === 'string' || typeof node === 'number') return String(node)
+  if (Array.isArray(node)) return node.map(nodeText).join('')
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) return nodeText(node.props.children)
+  return ''
+}
+
 function CodeBlock({ className, children, ...props }: { className?: string; children?: React.ReactNode }) {
   const [copied, setCopied] = useState(false)
   const match = /language-(\w+)/.exec(className || '')
   const language = match ? match[1] : ''
-  const codeContent = String(children).replace(/\n$/, '')
+  // rehype-highlight đã biến children thành cây <span> ⇒ phải gom text, String() chỉ ra "[object Object]"
+  const codeContent = nodeText(children).replace(/\n$/, '')
 
+  const rawCode = (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  )
+  // Hình vẽ dần khi còn đang stream (khối code chưa đóng vẫn dựng được một phần)
   if (language === 'mermaid') {
-    return <MermaidBlock content={codeContent} />
+    return <MermaidBlock content={codeContent} code={rawCode} />
   }
-  if (language === 'svg' && /^\s*<svg[\s>]/.test(codeContent) && /<\/svg>\s*$/.test(codeContent)) {
-    return <SvgBlock content={codeContent} />
+  if (language === 'csv' || language === 'tsv') {
+    return <DataTableBlock content={codeContent} code={rawCode} />
+  }
+  if (language === 'chart') {
+    return <ChartBlock content={codeContent} code={rawCode} />
+  }
+  if (language === 'plot') {
+    return <PlotBlock content={codeContent} code={rawCode} />
+  }
+  // AI hay gắn nhãn xml/html/trống cho SVG ⇒ nhận theo nội dung, không theo nhãn
+  if (['', 'svg', 'xml', 'html'].includes(language) && isSvgStart(codeContent)) {
+    return (
+      <SvgBlock
+        content={codeContent}
+        code={
+          <code className={className} {...props}>
+            {children}
+          </code>
+        }
+      />
+    )
   }
 
   const handleCopy = async () => {
@@ -115,11 +152,11 @@ export function normalizeDisplayMath(text: string): string {
  */
 function enhanceMentionsAndTags(text: string): string {
   if (!text) return ''
-  // Don't modify code blocks (``` ... ```)
-  const parts = text.split(/(```[\s\S]*?```)/g)
+  // Không đụng code: khối ``` (kể cả chưa đóng khi đang stream) và `inline code`
+  const parts = text.split(/(```[\s\S]*?(?:```|$)|`[^`\n]*`)/g)
   return parts
-    .map((part) => {
-      if (part.startsWith('```')) return part
+    .map((part, i) => {
+      if (i % 2 === 1) return part
       return (
         part
           // @username -> [@username](/username)

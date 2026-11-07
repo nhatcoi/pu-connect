@@ -28,6 +28,7 @@ import { VisionToolsService } from './agent/vision-tools.service'
 import { PucToolsService } from './agent/puc-tools.service'
 import { ConversationContextService } from './context/conversation-context.service'
 import { MemoryToolsService } from './agent/memory-tools.service'
+import { NoteToolsService } from './agent/note-tools.service'
 import { SkillToolsService } from './agent/skill-tools.service'
 import { ConversationToolsService } from './context/conversation-tools.service'
 import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
@@ -114,6 +115,7 @@ export class N7AiService {
     private readonly conversationContext: ConversationContextService,
     private readonly conversationTools: ConversationToolsService,
     private readonly memoryTools: MemoryToolsService,
+    private readonly noteTools: NoteToolsService,
     private readonly skillTools: SkillToolsService,
     private readonly sources: AiSourcesService
   ) {}
@@ -260,6 +262,8 @@ export class N7AiService {
         ...(inGroup ? [this.conversationTools.open(conversationId, requesterId, trigger.id)] : []),
         // Bộ nhớ dài hạn: tool tra thêm khi người học bật bộ nhớ (thread riêng)
         ...(!inGroup && settings?.memoryEnabled ? [this.memoryTools.open(requesterId)] : []),
+        // Notebook: đọc / tạo / thêm / thay đoạn ghi chú riêng của người hỏi (thread riêng)
+        ...(inGroup ? [] : [this.noteTools.open(requesterId)]),
         ...(creator ? [creator] : []),
         slideCreator,
         docxCreator,

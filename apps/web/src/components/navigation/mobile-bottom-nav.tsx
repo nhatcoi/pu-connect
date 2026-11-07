@@ -3,10 +3,9 @@
 import React from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Home, Search, GraduationCap, FileText, Compass, MessageCircle } from 'lucide-react'
-import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
-import { useScrollDirection } from '@/hooks/use-scroll-direction'
 import { useUnreadMessages } from '@/hooks/chat'
 import { FEATURES } from '@/lib/features'
+import { isN7AiPath } from '@/lib/n7ai-routes'
 import { cn } from '@/lib/utils'
 
 export function MobileBottomNav() {
@@ -14,11 +13,6 @@ export function MobileBottomNav() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const unreadMessages = useUnreadMessages()
-  const { mode } = useFeedViewMode()
-
-  // High-performance scroll state for fade/dimming on scroll
-  const { isHeaderVisible, isScrolling, isAtTop } = useScrollDirection(8)
-  const isDimmed = !(pathname === '/' && mode === 'focus') && !isAtTop && (!isHeaderVisible || isScrolling)
 
   // Tin nhắn ở giữa thanh đáy
   const navItems = [
@@ -71,17 +65,17 @@ export function MobileBottomNav() {
     }
   ]
 
+  // N7AI có thanh điều hướng riêng (ngăn kéo) ⇒ trả lại chiều cao cho chat
+  if (isN7AiPath(pathname)) return null
+  // Đang trong 1 hội thoại (/messages/<id>): chat toàn màn hình, không thanh đáy
+  if (/^\/messages\/[^/]+/.test(pathname)) return null
+
   return (
     <>
-      {/* Sticky Bottom Navigation Bar — Smoothly fades and dims when scrolling */}
+      {/* Thanh điều hướng đáy: luôn hiện, không mờ khi cuộn */}
       <nav
         aria-label="Mobile Navigation"
-        className={cn(
-          'fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/90 px-2 backdrop-blur-md md:hidden transition-all duration-300 ease-in-out',
-          isDimmed
-            ? 'opacity-25 blur-[0.5px] translate-y-1 pointer-events-none hover:opacity-100 hover:pointer-events-auto'
-            : 'opacity-100 blur-none translate-y-0 pointer-events-auto'
-        )}
+        className="fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/90 px-2 backdrop-blur-md md:hidden"
       >
         {navItems.map((item) => {
           const Icon = item.icon

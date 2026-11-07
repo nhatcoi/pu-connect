@@ -14,7 +14,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster
+          position="bottom-center"
+          mobileOffset={{ bottom: 76, left: 12, right: 12 }}
+          offset={{ bottom: 24 }}
+          gap={8}
+          visibleToasts={3}
+          closeButton={false}
+          toastOptions={{ duration: 3200, className: 'pu-toast' }}
+        />
       </QueryClientProvider>
     </ThemeProvider>
   )

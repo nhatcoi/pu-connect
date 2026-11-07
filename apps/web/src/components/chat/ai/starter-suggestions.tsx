@@ -190,7 +190,7 @@ export function StarterSuggestions({
   return (
     <div className="mx-auto w-full max-w-[768px] px-4 pt-3 pb-3 text-center animate-fade-in select-none">
       {/* 5 N7AI Capability guides */}
-      <div className="flex items-center justify-center flex-wrap gap-2 sm:gap-3 mb-3.5">
+      <div className="no-scrollbar -mx-4 mb-3 flex items-center gap-2 overflow-x-auto px-4 max-sm:snap-x sm:mx-0 sm:mb-3.5 sm:flex-wrap sm:justify-center sm:gap-3 sm:overflow-visible sm:px-0">
         {CAPABILITIES.map((cap) => {
           const Icon = cap.icon
           const isSelected =
@@ -206,7 +206,7 @@ export function StarterSuggestions({
               disabled={disabled}
               onClick={() => handlePickCapability(cap)}
               className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-medium transition-all cursor-pointer',
+                'inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 max-sm:min-h-9 max-sm:snap-start rounded-full text-[13px] font-medium transition-all cursor-pointer',
                 isSelected
                   ? 'bg-foreground/10 text-foreground font-semibold shadow-xs ring-1 ring-foreground/20'
                   : 'text-muted-foreground hover:text-foreground hover:bg-foreground/[0.04]'

@@ -55,6 +55,7 @@ interface ThreadHeaderProps {
   onInfo: () => void
   onOpenNav?: () => void
   spaceHref?: string
+  quick?: boolean // N7AI chat nhanh trong Tin nhắn: chỉ giữ nút mở N7AI + chủ đề mới
   onAiReset: () => void
 }
 
@@ -65,6 +66,7 @@ export function ThreadHeader({
   onInfo,
   onOpenNav,
   spaceHref,
+  quick = false,
   onAiReset,
 }: ThreadHeaderProps) {
   const router = useRouter()
@@ -75,11 +77,12 @@ export function ThreadHeader({
   const onlineInGroup = useOnlineCount(conv?.type === 'group' ? conv.members.map((m) => m.id) : [])
   const [sharing, setSharing] = useState(false)
   const threadActions = useAiThreadActions()
-  const panelOpen = useN7AiLayout((s) => s.panelOpen)
-  const setPanelOpen = useN7AiLayout((s) => s.setPanelOpen)
+  const panelOpen = useN7AiLayout((s) => s.panelOpen || s.mobilePanelOpen)
+  const openPanel = useN7AiLayout((s) => s.openPanel)
+  const togglePanel = useN7AiLayout((s) => s.togglePanel)
 
   // Header riêng cho N7AI
-  if (isAi && conv && !spaceHref) {
+  if (isAi && conv && !spaceHref && !quick) {
     return (
       <div className="shrink-0 z-20 bg-surface/90 backdrop-blur-md px-3 py-2 flex items-center justify-between border-b border-border/40 h-12">
         {/* Left: Breadcrumb Chat / Title */}
@@ -139,19 +142,20 @@ export function ThreadHeader({
           </Popover>
 
           {/* 2. NotebookPen: Sổ tay ghi chú / Thư viện */}
-          <Link
-            href="/n7ai/library"
-            title="Sổ tay & học liệu"
-            aria-label="Sổ tay & học liệu"
+          <button
+            type="button"
+            onClick={() => openPanel('notes')}
+            title="Ghi chú"
+            aria-label="Mở ghi chú"
             className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors cursor-pointer"
           >
             <NotebookPen size={16} strokeWidth={1.7} />
-          </Link>
+          </button>
 
           {/* 3. PanelRight: Toggle tài liệu & nguồn */}
           <button
             type="button"
-            onClick={() => setPanelOpen(!panelOpen)}
+            onClick={togglePanel}
             title={panelOpen ? 'Đóng panel tài liệu' : 'Mở panel tài liệu'}
             aria-label="Tài liệu & nguồn"
             aria-pressed={panelOpen}
@@ -231,7 +235,7 @@ export function ThreadHeader({
     typingLabel ??
     (isAi
       ? quota
-        ? `Trợ lý học tập · còn ${Math.max(0, quota.limit - quota.used)}/${quota.limit} lượt hôm nay`
+        ? `${quick ? 'Chat nhanh' : 'Trợ lý học tập'} · còn ${Math.max(0, quota.limit - quota.used)}/${quota.limit} lượt hôm nay`
         : 'Trợ lý học tập'
       : conv?.type === 'group'
         ? `${conv.memberCount} thành viên${onlineInGroup ? ` · ${onlineInGroup} đang hoạt động` : ''}`
@@ -284,7 +288,7 @@ export function ThreadHeader({
         </div>
       </div>
       {isAi && <OpenInN7AiButton />}
-      {isAi && conv.lastMessage && (
+      {isAi && !quick && conv.lastMessage && (
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={() => setSharing(true)} title="Chia sẻ qua link" aria-label="Chia sẻ">
           <Share2 className="h-3.5 w-3.5" />
         </Button>
@@ -303,6 +307,7 @@ export function ThreadHeader({
         </Button>
       )}
       {isAi &&
+        !quick &&
         (spaceHref ? (
           <Button asChild variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" title="Mở trong không gian N7AI">
             <Link href={spaceHref} aria-label="Mở trong không gian N7AI">
@@ -319,7 +324,7 @@ export function ThreadHeader({
             <N7AiPanelButton />
           </>
         ))}
-      {conv && (!isAi || spaceHref) && (
+      {conv && !quick && (!isAi || spaceHref) && (
         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full shrink-0" onClick={onInfo} aria-label="Thông tin hội thoại">
           <Info className="h-4 w-4" />
         </Button>
