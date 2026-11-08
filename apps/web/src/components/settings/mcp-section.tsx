@@ -67,9 +67,9 @@ export function McpSection() {
 
   return (
     <>
-      <SettingsGroup label="Tạo key mới" hint="Key chỉ hiện một lần. Chỉ cấp quyền cần thiết; key lộ thì thu hồi ngay bên dưới.">
+      <SettingsGroup label="Tạo key mới">
         <div className="space-y-3 py-3">
-          <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Tên key (vd: Claude Desktop)" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} placeholder="Tên key" />
           <div className="grid gap-2 sm:grid-cols-2">
             {API_KEY_SCOPE_OPTIONS.map((s) => (
               <label key={s.id} className="flex cursor-pointer items-start gap-2 rounded-lg border border-border/60 p-2.5 text-xs">
@@ -108,21 +108,21 @@ export function McpSection() {
       </SettingsGroup>
 
       {fresh && (
-        <SettingsGroup label="Key của bạn (chỉ hiện lần này)">
+        <SettingsGroup label="Key của bạn" hint="Chỉ hiện một lần, hãy sao chép ngay.">
           <div className="space-y-3 py-3">
             <div className="flex items-center gap-2">
               <code className="min-w-0 flex-1 break-all rounded-md bg-muted px-2.5 py-2 text-[11px]">{fresh}</code>
               <CopyButton text={fresh} />
             </div>
             <div>
-              <p className="pb-1 text-xs font-medium">Claude Code</p>
+              <p className="pb-1 text-xs font-medium">Lệnh</p>
               <div className="flex items-start gap-2">
                 <code className="min-w-0 flex-1 break-all rounded-md bg-muted px-2.5 py-2 text-[11px]">{claudeCode}</code>
                 <CopyButton text={claudeCode} />
               </div>
             </div>
             <div>
-              <p className="pb-1 text-xs font-medium">Cursor / Claude Desktop / client khác (JSON)</p>
+              <p className="pb-1 text-xs font-medium">JSON</p>
               <div className="flex items-start gap-2">
                 <pre className="min-w-0 flex-1 overflow-x-auto rounded-md bg-muted px-2.5 py-2 text-[11px]">{jsonConfig}</pre>
                 <CopyButton text={jsonConfig} />
@@ -132,7 +132,7 @@ export function McpSection() {
         </SettingsGroup>
       )}
 
-      <SettingsGroup label="Key đang dùng" hint={`Endpoint MCP: ${url}`}>
+      <SettingsGroup label="Key đang dùng">
         {isPending ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
