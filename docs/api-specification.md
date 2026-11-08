@@ -406,6 +406,8 @@ Chi tiết: [core/29-api-keys-mcp.md](./core/29-api-keys-mcp.md). Header `Author
 | `POST` | `/api-keys` `{ name, scopes[], expiresInDays? }` | phiên | Tạo key, trả `key` một lần |
 | `DELETE` | `/api-keys/:id` | phiên | Thu hồi |
 | `POST` | `/mcp` | Bearer key | MCP Streamable HTTP |
+| `GET` / `POST` / `DELETE` | `/admin/api-keys`, `/admin/api-keys/logs` | phiên admin, `roles:manage` | Key MCP cho admin (`pka_`, hạn ≤ 30 ngày) |
+| `POST` | `/mcp/admin` | Bearer `pka_` | MCP cho admin, xem core/29 |
 
 ### 6.1. Admin cộng đồng (`/api/admin/communities`, quyền `academic:manage`)
 

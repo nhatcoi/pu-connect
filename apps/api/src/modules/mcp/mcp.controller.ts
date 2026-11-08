@@ -14,7 +14,7 @@ export class McpController {
   @HttpCode(200)
   async handle(@Req() req: Request, @Res() res: Response) {
     const auth = (req as ApiKeyRequest).apiKey
-    if (!auth) {
+    if (!auth || auth.kind !== 'user') {
       res.status(401).json({ jsonrpc: '2.0', error: { code: -32001, message: 'Cần API key: Authorization: Bearer puk_…' }, id: null })
       return
     }

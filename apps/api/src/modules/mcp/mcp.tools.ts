@@ -1,5 +1,4 @@
 import { z, type ZodRawShape } from 'zod'
-import type { ApiKeyScope } from '../api-keys/api-key.scopes'
 
 // Mỗi tool = 1 lời gọi REST nội bộ với chính key của người dùng ⇒ guard, giới hạn tốc độ,
 // kiểm duyệt và quyền xem y như trên web. Tool không tự đụng DB.
@@ -16,7 +15,7 @@ export interface HttpCall {
 
 export interface McpToolDef {
   name: string
-  scope: ApiKeyScope
+  scope: string
   description: string
   input: ZodRawShape
   readOnly?: boolean
@@ -24,14 +23,14 @@ export interface McpToolDef {
   call: (args: any) => HttpCall
 }
 
-const id = z.string().min(1).describe('ID (uuid)')
-const limit = (n = 10) => z.number().int().min(1).max(50).optional().describe(`Số mục (mặc định ${n}, tối đa 50)`)
+export const id = z.string().min(1).describe('ID (uuid)')
+export const limit = (n = 10) => z.number().int().min(1).max(50).optional().describe(`Số mục (mặc định ${n}, tối đa 50)`)
 const offset = z.number().int().min(0).optional().describe('Bỏ qua N mục đầu (phân trang)')
 const DOC_CATEGORIES = ['lecture', 'exam', 'summary', 'exercise', 'book', 'other']
 
-const def = (
+export const def = (
   name: string,
-  scope: ApiKeyScope,
+  scope: string,
   description: string,
   input: ZodRawShape,
   call: McpToolDef['call'],
@@ -220,7 +219,7 @@ export const MCP_TOOLS: McpToolDef[] = [
   def('delete_note', 'ai', 'Xóa ghi chú N7AI.', { id }, (a) => ({ method: 'DELETE', path: `/ai/notes/${enc(a.id)}` }), { destructive: true })
 ]
 
-function enc(v: unknown): string {
+export function enc(v: unknown): string {
   return encodeURIComponent(String(v ?? ''))
 }
 

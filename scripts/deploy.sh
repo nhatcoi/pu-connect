@@ -166,6 +166,7 @@ docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/dat
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/ai-user-quota-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/community-features-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/api-keys-upgrade.sql
+docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/admin-mcp-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/news-crawler-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/documents-library-upgrade.sql
 docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < apps/api/src/database/document-library-personal-upgrade.sql

@@ -753,6 +753,8 @@ ALTER TYPE notification_type_enum ADD VALUE 'community_post';
 ALTER TABLE community_members ADD COLUMN notify BOOLEAN NOT NULL DEFAULT TRUE;     -- chuông thông báo bài mới
 CREATE TABLE community_pins (community_id UUID, post_id UUID, pinned_by UUID, pinned_at TIMESTAMPTZ, PRIMARY KEY (community_id, post_id)); -- tối đa 3/cộng đồng (app)
 CREATE TABLE api_keys (id UUID PRIMARY KEY, user_id UUID NOT NULL REFERENCES users ON DELETE CASCADE, name VARCHAR(80), key_prefix VARCHAR(16), key_hash CHAR(64) UNIQUE, scopes TEXT[], last_used_at TIMESTAMPTZ, expires_at TIMESTAMPTZ, revoked_at TIMESTAMPTZ, created_at TIMESTAMPTZ); -- sha256 của key; key gốc không lưu (api-keys-upgrade.sql)
+-- admin-mcp-upgrade.sql: api_keys.kind ('user'|'admin'), api_keys.ip_allow TEXT[]
+CREATE TABLE api_key_logs (id BIGSERIAL PRIMARY KEY, key_id UUID REFERENCES api_keys ON DELETE CASCADE, user_id UUID REFERENCES users ON DELETE CASCADE, method VARCHAR(8), path VARCHAR(300), status INT, ip VARCHAR(64), created_at TIMESTAMPTZ); -- nhật ký lời gọi bằng key admin
 CREATE TABLE community_documents (community_id UUID, document_id UUID, added_by UUID, added_at TIMESTAMPTZ, PRIMARY KEY (community_id, document_id)); -- trỏ tới documents
 ALTER TABLE conversations ADD COLUMN community_id UUID REFERENCES communities(id) ON DELETE SET NULL;
 CREATE UNIQUE INDEX idx_conversations_community ON conversations (community_id) WHERE community_id IS NOT NULL; -- 1 nhóm chat/cộng đồng

@@ -71,3 +71,35 @@ claude mcp add --transport http puc https://puc.vnhat.dev/api/mcp --header "Auth
 - Mọi thao tác chịu giới hạn tốc độ, kiểm duyệt từ cấm và hạn mức AI như người dùng thường.
 
 Test: `apps/api/test/api-keys-mcp.e2e-spec.ts`. Migration: `api-keys-upgrade.sql`.
+
+---
+
+## MCP cho admin (key `pka_`, endpoint `POST /api/mcp/admin`)
+
+Tách hẳn khỏi key user: key `puk_` không vào được `/api/admin/*` hay `/api/mcp/admin`; key `pka_` không vào được API thường hay `/api/mcp`.
+
+**Tạo key:** Admin console → Cấu hình → API keys (cần quyền `roles:manage`). Hạn mặc định và tối đa **30 ngày**, tùy chọn khóa theo IP. Mọi lời gọi bằng key đều được ghi vào `api_key_logs` (method, đường dẫn, status, IP; không lưu nội dung) và xem ngay trong màn hình tạo key.
+
+**Quyền thực tế** = scope của key ∩ quyền RBAC của chính admin đó (tool gọi lại `/api/admin/*` nên `AdminGuard` vẫn kiểm từng endpoint). Thao tác ghi cũng vào `admin_audit_logs` như thường.
+
+| Scope | Cho phép |
+| --- | --- |
+| `admin_read` | Số liệu, báo cáo, bài, bình luận, người dùng (chi tiết/insight/bảo mật), AI overview, học phần, tài liệu, cộng đồng, nhật ký, vận hành (trends, inbox, health…) |
+| `admin_moderate` | Ẩn/hiện/ghim bài, bỏ qua báo cáo, xóa bình luận, xử lý báo cáo người dùng / tin nhắn, duyệt/từ chối cộng đồng |
+| `admin_users` | Khóa/mở khóa, xử phạt và gỡ xử phạt, xác thực sinh viên, ghi chú nội bộ |
+| `admin_academic` | Tạo/sửa học phần, đổi trạng thái nhóm học |
+
+**Allow-list đường dẫn** (`adminKeyAllows` trong `api-key.scopes.ts`): mọi thứ ngoài danh sách đều 403. Cố ý **loại**: đổi vai trò, thao tác hàng loạt, xóa người dùng/tài liệu/dữ liệu vĩnh viễn, thùng rác, nhà cung cấp & khóa bí mật AI, quản lý key, cài đặt hệ thống, push, xuất CSV người dùng, danh sách phiên đăng nhập.
+
+**Xác nhận:** tool ghi bắt buộc tham số `confirm: true` (client nên hỏi người dùng trước). Tool xóa/khóa gắn `destructiveHint`.
+
+Tool: `admin_stats`, `admin_reports`, `admin_posts`, `admin_users`, `admin_user`, `admin_user_insight`, `admin_audit_logs`, `admin_ops_*`… (đọc); `admin_hide_post`, `admin_delete_comment`, `admin_approve_community`… (kiểm duyệt); `admin_suspend_user`, `admin_sanction_user`, `admin_verify_user`… (người dùng); `admin_create_course`, `admin_update_course`… (học vụ). Danh sách đầy đủ: `modules/mcp/mcp-admin.tools.ts`.
+
+| Method | Endpoint | Quyền | Mô tả |
+| --- | --- | --- | --- |
+| `GET` / `POST` | `/admin/api-keys` | phiên admin, `roles:manage` | Danh sách / tạo key admin `{ name, scopes[], expiresInDays?, ipAllow? }` |
+| `DELETE` | `/admin/api-keys/:id` | như trên | Thu hồi |
+| `GET` | `/admin/api-keys/logs` | như trên | Nhật ký lời gọi gần đây |
+| `POST` | `/mcp/admin` | Bearer `pka_` | MCP Streamable HTTP cho admin |
+
+Migration: `admin-mcp-upgrade.sql` (`api_keys.kind`, `api_keys.ip_allow`, `api_key_logs`). Test: `apps/api/test/admin-mcp.e2e-spec.ts`.

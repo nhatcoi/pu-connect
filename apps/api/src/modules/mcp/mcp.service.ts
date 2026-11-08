@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { MCP_TOOLS, type HttpCall } from './mcp.tools'
+import { MCP_TOOLS, type HttpCall, type McpToolDef } from './mcp.tools'
 
 const MAX_TEXT = 24_000
 const CALL_TIMEOUT_MS = 60_000
@@ -8,10 +8,12 @@ const CALL_TIMEOUT_MS = 60_000
 @Injectable()
 export class McpService {
   // Mỗi request một server (stateless): tool lọc theo scope của key, gọi REST nội bộ bằng chính key đó
-  createServer(opts: { token: string; scopes: string[]; baseUrl: string }): McpServer {
-    const server = new McpServer({ name: 'pu-connect', version: '1.0.0' })
-    const can = (scope: string) => scope === 'read' ? opts.scopes.length > 0 : opts.scopes.includes(scope)
-    for (const tool of MCP_TOOLS) {
+  createServer(opts: { token: string; scopes: string[]; baseUrl: string; tools?: McpToolDef[]; name?: string; readScope?: string }): McpServer {
+    const server = new McpServer({ name: opts.name ?? 'pu-connect', version: '1.0.0' })
+    // Tool đọc mở cho mọi key có ít nhất một scope; tool khác cần đúng scope
+    const readScope = opts.readScope ?? 'read'
+    const can = (scope: string) => (scope === readScope ? opts.scopes.length > 0 : opts.scopes.includes(scope))
+    for (const tool of opts.tools ?? MCP_TOOLS) {
       if (!can(tool.scope)) continue
       ;(server as any).registerTool(
         tool.name,
