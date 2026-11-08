@@ -1,6 +1,6 @@
 # 29. API key & MCP server
 
-Người dùng tạo **API key** có phạm vi (scope) trong **Cài đặt → Kết nối AI (MCP)**, rồi gắn vào Claude Code / Claude Desktop / Cursor… để AI thao tác PU Connect thay mình: tìm kiếm, đọc bài, đăng bài, bình luận, quản lý tài liệu, ghi chú N7AI.
+Người dùng tạo **API key** có phạm vi (scope) trong **Cài đặt → API keys**, rồi gắn vào Claude Code / Claude Desktop / Cursor… để AI thao tác PU Connect thay mình: tìm kiếm, đọc bài, đăng bài, bình luận, quản lý tài liệu, ghi chú N7AI.
 
 ## Kiến trúc
 

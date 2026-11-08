@@ -26,11 +26,11 @@ Vào **Cài đặt** từ ảnh đại diện.
 
 N7AI chỉ đọc dữ liệu từ Google Drive, Gmail hoặc Lịch sau khi bạn cấp quyền ở **Cài đặt N7AI, Kết nối**. Thu hồi quyền cũng ở đó.
 
-## Kết nối AI (MCP)
+## API keys
 
 Dùng PU Connect ngay trong Claude, Cursor… để AI tìm bài, đăng bài, bình luận, quản lý tài liệu thay bạn.
 
-1. Vào **Cài đặt → Kết nối AI (MCP)**, đặt tên key, chọn quyền (Đọc / Đăng & tương tác / Tài liệu / N7AI & ghi chú) và hạn dùng, bấm **Tạo key**.
+1. Vào **Cài đặt → API keys**, đặt tên key, chọn quyền (Đọc / Đăng & tương tác / Tài liệu / N7AI & ghi chú) và hạn dùng, bấm **Tạo key**.
 2. Sao chép key và lệnh/cấu hình hiện ra (chỉ hiện một lần), dán vào ứng dụng AI của bạn.
 3. Key lộ hoặc không dùng nữa: bấm **Thu hồi** ngay.
 

@@ -40,7 +40,7 @@ function CopyButton({ text, label = 'Sao chép' }: { text: string; label?: strin
   )
 }
 
-// Kết nối AI (MCP): tạo API key có phạm vi, copy cấu hình cho Claude / Cursor…
+// API keys: tạo key có phạm vi, copy cấu hình MCP
 export function McpSection() {
   const qc = useQueryClient()
   const { data: keys, isPending } = useQuery({ queryKey: KEYS, queryFn: listApiKeys })
