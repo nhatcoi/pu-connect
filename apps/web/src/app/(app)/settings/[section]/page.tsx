@@ -8,6 +8,7 @@ import { PrivacySection } from '@/components/settings/privacy-section'
 import { FeaturesSection } from '@/components/settings/features-section'
 import { AppearanceSection } from '@/components/settings/appearance-section'
 import { BlockedSection } from '@/components/settings/blocked-section'
+import { McpSection } from '@/components/settings/mcp-section'
 import { SecuritySection } from '@/components/settings/security-section'
 import { NotificationSettingsPanel } from '@/components/notifications/notification-settings-panel'
 import { findSettingsPage, type SettingsPageId } from '@/lib/settings-registry'
@@ -27,6 +28,7 @@ const SECTIONS: Record<SettingsPageId, React.ComponentType> = {
   features: FeaturesSection,
   notifications: NotificationsSection,
   appearance: AppearanceSection,
+  mcp: McpSection,
   blocked: BlockedSection
 }
 

@@ -5,6 +5,9 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
 import { DatabaseService } from './database/database.service'
 import { createSessionMiddleware } from './common/http/session'
 import { isAllowedOrigin } from './common/http/origins'
+import { ApiKeysService } from './modules/api-keys/api-keys.service'
+import { apiKeyMiddleware } from './modules/api-keys/api-key.middleware'
+import { AuthService } from './modules/auth/auth.service'
 
 // Cấu hình HTTP dùng chung cho main.ts và integration test
 // Shared app wiring: prefix, CORS, session, passport, filters
@@ -31,6 +34,10 @@ export function configureApp(app: NestExpressApplication): NestExpressApplicatio
   // Passport Session Initialization
   app.use(passport.initialize())
   app.use(passport.session())
+
+  // Authorization: Bearer puk_… (API key / MCP) ⇒ req.user = chủ key, giới hạn theo scope
+  const authService = app.get(AuthService, { strict: false })
+  app.use(apiKeyMiddleware(app.get(ApiKeysService), (id) => authService.findById(id)))
 
   // Global Filter and Interceptor
   app.useGlobalFilters(new AllExceptionsFilter())

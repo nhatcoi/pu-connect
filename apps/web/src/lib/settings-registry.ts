@@ -1,5 +1,5 @@
 import type React from 'react'
-import { Ban, Bell, Lock, MonitorSmartphone, Palette, Puzzle, UserRound } from 'lucide-react'
+import { Ban, Bell, KeyRound, Lock, MonitorSmartphone, Palette, Puzzle, UserRound } from 'lucide-react'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import type { FeaturePreferenceKey } from '@pu/schemas'
 
@@ -12,6 +12,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'n7ai', label: 'N7AI', description: 'Trợ lý học tập & công cụ AI', icon: N7AiMark, href: '/n7ai/settings' },
   { id: 'notifications', label: 'Thông báo', description: 'Loại thông báo, trình duyệt, giờ yên tĩnh', icon: Bell },
   { id: 'appearance', label: 'Giao diện', description: 'Chủ đề và chế độ bảng tin mặc định', icon: Palette },
+  { id: 'mcp', label: 'Kết nối AI (MCP)', description: 'API key để dùng PU Connect trong Claude, Cursor…', icon: KeyRound },
   { id: 'blocked', label: 'Chặn & An toàn', description: 'Tài khoản bạn đã chặn', icon: Ban }
 ] as const satisfies readonly { id: string; label: string; description: string; icon: React.ComponentType<{ className?: string }>; href?: string }[]
 

@@ -24,6 +24,8 @@ import { PresenceModule } from './modules/presence/presence.module'
 import { PersonalizationModule } from './modules/personalization/personalization.module'
 import { StudyToolsModule } from './modules/study-tools/study-tools.module'
 import { UnitsModule } from './modules/units/units.module'
+import { ApiKeysModule } from './modules/api-keys/api-keys.module'
+import { McpModule } from './modules/mcp/mcp.module'
 
 @Module({
   imports: [
@@ -61,7 +63,9 @@ import { UnitsModule } from './modules/units/units.module'
     PresenceModule,
     PersonalizationModule,
     StudyToolsModule,
-    UnitsModule
+    UnitsModule,
+    ApiKeysModule,
+    McpModule
   ]
 })
 export class AppModule {}

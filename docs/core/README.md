@@ -32,6 +32,7 @@
 | [**`26-community-management.md`**](./26-community-management.md) | Tạo cộng đồng (chờ admin duyệt), chủ / điều hành viên, sửa giới thiệu, quản lý thành viên, ẩn bài vi phạm, màn hình duyệt của admin; bài ghim, tài liệu chung, hỏi N7AI theo nội dung nhóm, nhóm chat, thông báo bài mới. | ✅ |
 | [**`27-n7ai-notes.md`**](./27-n7ai-notes.md) | Ghi chú Markdown N7AI: tab Ghi chú, cây trang, tự lưu, xuất Markdown / Word, thêm từ tin nhắn. | ✅ Đã triển khai (giai đoạn 1) |
 | [**`28-n7ai-agent-engine.md`**](./28-n7ai-agent-engine.md) | Agent engine N7AI: vòng lặp 2 pha, tự phục hồi cụt / rỗng / suy nghĩ ăn ngân sách, `ask_user`, capability theo chế độ học, tin gửi thêm giữa lượt, hợp nhất bộ nhớ. | ✅ Đã triển khai |
+| [**`29-api-keys-mcp.md`**](./29-api-keys-mcp.md) | API key có phạm vi (đọc / đăng / tài liệu / AI) và MCP server `POST /api/mcp`: dùng PU Connect trong Claude, Cursor… |  ✅ |
 
 ---
 

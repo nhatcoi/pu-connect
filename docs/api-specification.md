@@ -396,6 +396,17 @@ Mọi response bọc `{ success, data }` (kể cả `join`: kết quả nằm �
 | `POST` | `/communities/:slug/ask` `{ question }` | thành viên | Hỏi N7AI theo bài viết + tài liệu của cộng đồng ⇒ `{ answer, sources }`; hết lượt ⇒ 429 |
 | `POST` | `/communities/:slug/chat` | thành viên | Mở (tạo lười) nhóm chat của cộng đồng ⇒ `ConversationSummary` |
 
+## 6.0. API key & MCP (`/api-keys`, `/mcp`)
+
+Chi tiết: [core/29-api-keys-mcp.md](./core/29-api-keys-mcp.md). Header `Authorization: Bearer puk_…` thay cookie phiên cho mọi endpoint (theo scope `read`/`write`/`documents`/`ai`).
+
+| Method | Endpoint | Quyền | Mô tả |
+| --- | --- | --- | --- |
+| `GET` | `/api-keys` | phiên | Danh sách key (không có giá trị key) |
+| `POST` | `/api-keys` `{ name, scopes[], expiresInDays? }` | phiên | Tạo key, trả `key` một lần |
+| `DELETE` | `/api-keys/:id` | phiên | Thu hồi |
+| `POST` | `/mcp` | Bearer key | MCP Streamable HTTP |
+
 ### 6.1. Admin cộng đồng (`/api/admin/communities`, quyền `academic:manage`)
 
 | Method | Endpoint | Mô tả |

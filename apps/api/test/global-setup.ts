@@ -68,6 +68,7 @@ export const MIGRATIONS = [
   'ai-services-upgrade.sql',
   'ai-user-quota-upgrade.sql',
   'community-features-upgrade.sql',
+  'api-keys-upgrade.sql',
   'news-crawler-upgrade.sql',
   'documents-library-upgrade.sql',
   'document-library-personal-upgrade.sql',
