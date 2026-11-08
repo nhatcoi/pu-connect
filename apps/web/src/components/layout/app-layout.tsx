@@ -82,7 +82,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard fallback={<AppShellSkeleton immersive={hideHeader} />}>
       <AsideSlotProvider node={asideNode} onCustomChange={onCustomChange}>
-        <div className="min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
+        <div className="pu-nav-offset min-h-screen bg-surface text-foreground selection:bg-primary selection:text-primary-foreground">
           <div
             className={cn(
               'sticky top-0 z-40 w-full transition-all duration-[400ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] overflow-hidden',

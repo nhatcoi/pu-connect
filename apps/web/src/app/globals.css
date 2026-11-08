@@ -548,3 +548,22 @@
 @media (max-width: 640px) {
   .pu-toast[data-sonner-toast] { width: 100%; max-width: none; }
 }
+
+/* Vùng an toàn (tai thỏ / thanh home / màn gập): đệm hai bên + đáy cho thanh điều hướng */
+body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+.pu-bottom-nav { height: calc(3.5rem + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); }
+
+/* Điện thoại / màn gập xoay ngang (thấp): thanh điều hướng thành cột bên trái, nhường chiều cao cho nội dung */
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+  .pu-bottom-nav {
+    top: 0; right: auto; bottom: 0; left: env(safe-area-inset-left);
+    width: 4rem; height: auto;
+    flex-direction: column; justify-content: center; gap: 2px;
+    border-top: 0; border-right: 1px solid var(--border);
+    padding: 0.5rem 0.25rem; padding-bottom: 0.5rem;
+    overflow-y: auto;
+  }
+  .pu-bottom-nav-item { flex: none; width: 100%; min-height: 52px; }
+  .pu-nav-offset { padding-left: 4rem; }
+  .pu-nav-offset main { padding-bottom: 0 !important; }
+}

@@ -75,7 +75,7 @@ export function MobileBottomNav() {
       {/* Thanh điều hướng đáy: luôn hiện, không mờ khi cuộn */}
       <nav
         aria-label="Mobile Navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/90 px-2 backdrop-blur-md md:hidden"
+        className="pu-bottom-nav fixed bottom-0 left-0 right-0 z-40 flex h-14 items-center justify-around border-t border-border bg-background/90 px-2 backdrop-blur-md md:hidden"
       >
         {navItems.map((item) => {
           const Icon = item.icon
@@ -87,7 +87,7 @@ export function MobileBottomNav() {
               type="button"
               onClick={() => router.push(item.path)}
               className={cn(
-                'relative flex flex-1 flex-col items-center justify-center py-1 text-[10px] font-medium transition-colors cursor-pointer',
+                'pu-bottom-nav-item relative flex flex-1 flex-col items-center justify-center py-1 text-[10px] font-medium transition-colors cursor-pointer',
                 isActive ? 'text-foreground font-bold' : 'text-muted-foreground hover:text-foreground'
               )}
             >
