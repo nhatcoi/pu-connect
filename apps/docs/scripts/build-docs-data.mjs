@@ -18,6 +18,28 @@ const CATEGORIES = [
     order: ['index', 'product/overview', 'product/roles-permissions', 'product/glossary']
   },
   {
+    id: 'guide',
+    title: 'Hướng dẫn sử dụng',
+    description: 'Cách dùng từng tính năng, từng bước',
+    order: [
+      'guide/bat-dau',
+      'guide/giao-dien',
+      'guide/dang-bai',
+      'guide/binh-luan-hoi-dap',
+      'guide/tim-kiem-thong-bao',
+      'guide/nhan-tin',
+      'guide/n7ai-bat-dau',
+      'guide/n7ai-che-do-hoc',
+      'guide/n7ai-ghi-chu',
+      'guide/n7ai-nguon-tai-lieu',
+      'guide/thu-vien-tai-lieu',
+      'guide/cong-cu-hoc',
+      'guide/nhom-hoc-cong-dong',
+      'guide/cai-dat-tai-khoan',
+      'guide/su-co-thuong-gap'
+    ]
+  },
+  {
     id: 'web',
     title: 'PUC Web',
     description: 'Mạng xã hội học thuật dành cho người dùng',
@@ -47,6 +69,7 @@ const CATEGORIES = [
       'product/n7ai/learning-modes',
       'product/n7ai/agent-engine',
       'product/n7ai/sources-rag',
+      'product/n7ai/phenikaa-knowledge-base',
       'product/n7ai/notes-memory-tasks',
       'product/n7ai/connectors',
       'product/n7ai/models-quota',
@@ -127,6 +150,7 @@ function categorize(slug) {
     return { categoryId: 'adr', order: 10 + (m ? parseInt(m[1], 10) : 90) }
   }
   if (slug.startsWith('diagrams/')) return { categoryId: 'tech', order: 60 }
+  if (slug.startsWith('guide/')) return { categoryId: 'guide', order: 90 }
   if (slug.startsWith('product/web/')) return { categoryId: 'web', order: 90 }
   if (slug.startsWith('product/n7ai/')) return { categoryId: 'n7ai', order: 90 }
   if (slug.startsWith('product/admin/')) return { categoryId: 'admin', order: 90 }
