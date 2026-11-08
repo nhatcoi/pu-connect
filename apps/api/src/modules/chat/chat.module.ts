@@ -10,6 +10,7 @@ import { ChatCoreService } from './chat-core.service'
 import { ConversationsController } from './conversations/conversations.controller'
 import { ConversationsService } from './conversations/conversations.service'
 import { StudyGroupChatService } from './conversations/study-group-chat.service'
+import { CommunityChatService } from './conversations/community-chat.service'
 import { MessagesController } from './messages/messages.controller'
 import { MessagesService } from './messages/messages.service'
 import { CHAT_PUSH_QUEUE } from './notify/chat-push.constants'
@@ -125,9 +126,10 @@ import { ChatShareService } from './share/chat-share.service'
     N7AiService,
     ConversationsService,
     StudyGroupChatService,
+    CommunityChatService,
     MessagesService,
     ChatShareService
   ],
-  exports: [ConversationsService, StudyGroupChatService, PucToolsService]
+  exports: [ConversationsService, StudyGroupChatService, CommunityChatService, PucToolsService]
 })
 export class ChatModule {}

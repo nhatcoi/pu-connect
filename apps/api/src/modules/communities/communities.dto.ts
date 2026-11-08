@@ -48,3 +48,7 @@ export type MembersQuery = z.infer<typeof MembersQuerySchema>
 export const COMMUNITY_MIN_ACCOUNT_DAYS = 14
 export const COMMUNITY_MIN_POSTS = 5
 export const COMMUNITY_MAX_OWNED = 3
+
+export const AddCommunityDocumentBodySchema = z.object({ documentId: z.string().uuid() }).strict()
+export const CommunityAskBodySchema = z.object({ question: z.string().trim().min(3, 'Câu hỏi quá ngắn').max(500) }).strict()
+export const CommunityNotifyBodySchema = z.object({ enabled: z.boolean() }).strict()

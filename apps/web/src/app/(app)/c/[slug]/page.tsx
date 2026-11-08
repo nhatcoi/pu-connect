@@ -28,17 +28,26 @@ import {
   Compass,
   Settings,
   Hourglass,
-  XCircle
+  XCircle,
+  Bell,
+  BellOff,
+  FileText,
+  MessageCircle,
+  Sparkles
 } from 'lucide-react'
 import { ManageCommunityDialog } from '@/components/communities/manage-community-dialog'
 import { HidePostButton } from '@/components/communities/hide-post-button'
+import { CommunityPins, PinPostButton } from '@/components/communities/community-pins'
+import { CommunityDocuments } from '@/components/communities/community-documents'
+import { CommunityAsk } from '@/components/communities/community-ask'
+import { useCommunityNotify, useOpenCommunityChat } from '@/hooks/use-community-extras'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 export default function CommunityDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'hot' | 'new' | 'top' | 'rules'>('hot')
+  const [activeTab, setActiveTab] = useState<'hot' | 'new' | 'top' | 'rules' | 'docs' | 'ask'>('hot')
   const [manageOpen, setManageOpen] = useState(false)
 
   const { community, posts, sort, setSort, isLoading, isLoadingMore, hasMore, fetchMore, toggleJoin, isJoining, addPost } = useCommunity(slug, 'hot')
@@ -46,6 +55,9 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
   // Chủ và điều hành viên được quản lý; cộng đồng chờ duyệt / bị từ chối chưa nhận bài
   const isManager = community?.userRole === 'owner' || community?.userRole === 'moderator'
   const isActive = community?.status === 'active'
+  const isMember = !!community?.isMember
+  const notify = useCommunityNotify(slug, isMember)
+  const openChat = useOpenCommunityChat(slug)
 
   // Infinite Scroll Sentinel
   const sentinelRef = useRef<HTMLDivElement>(null)
@@ -67,9 +79,9 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
     return () => observer.disconnect()
   }, [hasMore, isLoadingMore, isLoading, fetchMore])
 
-  const handleTabChange = (tab: 'hot' | 'new' | 'top' | 'rules') => {
+  const handleTabChange = (tab: 'hot' | 'new' | 'top' | 'rules' | 'docs' | 'ask') => {
     setActiveTab(tab)
-    if (tab !== 'rules') {
+    if (tab === 'hot' || tab === 'new' || tab === 'top') {
       setSort(tab)
     }
   }
@@ -102,6 +114,25 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
               <Settings className="h-3.5 w-3.5" />
               Quản lý
             </Button>
+          )}
+          {community && isActive && isMember && (
+            <>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                title={notify.enabled ? 'Tắt thông báo bài mới' : 'Bật thông báo bài mới'}
+                aria-label={notify.enabled ? 'Tắt thông báo bài mới' : 'Bật thông báo bài mới'}
+                disabled={notify.toggle.isPending}
+                onClick={() => notify.toggle.mutate(!notify.enabled)}
+              >
+                {notify.enabled ? <Bell className="h-3.5 w-3.5 text-primary" /> : <BellOff className="h-3.5 w-3.5 text-muted-foreground" />}
+              </Button>
+              <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs font-semibold" disabled={openChat.isPending} onClick={() => openChat.mutate()}>
+                {openChat.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageCircle className="h-3.5 w-3.5" />}
+                Chat nhóm
+              </Button>
+            </>
           )}
           <Button variant="outline" size="sm" className="h-8 gap-1.5 rounded-full text-xs font-semibold" onClick={handleShare}>
             <Share2 className="h-3.5 w-3.5" />
@@ -249,12 +280,36 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
                   <ShieldCheck className="h-3.5 w-3.5" />
                   Nội quy ({community.rules?.length || 0})
                 </button>
+                <button
+                  onClick={() => handleTabChange('docs')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer shrink-0',
+                    activeTab === 'docs' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Tài liệu
+                </button>
+                <button
+                  onClick={() => handleTabChange('ask')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-colors cursor-pointer shrink-0',
+                    activeTab === 'ask' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Hỏi N7AI
+                </button>
               </div>
             </div>
           </div>
 
           {/* Tab Content */}
-          {activeTab === 'rules' ? (
+          {activeTab === 'docs' ? (
+            <CommunityDocuments slug={community.slug} isMember={isMember} canManage={isManager} />
+          ) : activeTab === 'ask' ? (
+            <CommunityAsk slug={community.slug} isMember={isMember} />
+          ) : activeTab === 'rules' ? (
             <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card p-4 sm:p-5 space-y-4">
               <div className="flex items-center gap-2 text-primary font-semibold text-[15px]">
                 <ShieldCheck className="h-5 w-5" />
@@ -282,6 +337,8 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
             </div>
           ) : (
             <div>
+              <CommunityPins slug={community.slug} canManage={isManager} />
+
               {/* Post Composer scoped to this community */}
               {isActive && (
                 <div className="mx-2 sm:mx-0 mb-2.5 rounded-xl bg-card px-4 py-3">
@@ -305,6 +362,7 @@ export default function CommunityDetailPage({ params }: { params: Promise<{ slug
                       isManager ? (
                         <div className="relative">
                           <PostCard post={post} variant="card" />
+                          <PinPostButton slug={community.slug} postId={post.id} />
                           <HidePostButton slug={community.slug} postId={post.id} />
                         </div>
                       ) : (

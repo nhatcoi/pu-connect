@@ -748,6 +748,15 @@ CREATE UNIQUE INDEX uq_community_one_owner ON community_members (community_id) W
 CREATE INDEX idx_communities_status ON communities (status, created_at DESC);
 CREATE INDEX idx_communities_created_by ON communities (created_by) WHERE created_by IS NOT NULL;
 
+-- 8.2. Tính năng riêng của cộng đồng (community-features-upgrade.sql)
+ALTER TYPE notification_type_enum ADD VALUE 'community_post';
+ALTER TABLE community_members ADD COLUMN notify BOOLEAN NOT NULL DEFAULT TRUE;     -- chuông thông báo bài mới
+CREATE TABLE community_pins (community_id UUID, post_id UUID, pinned_by UUID, pinned_at TIMESTAMPTZ, PRIMARY KEY (community_id, post_id)); -- tối đa 3/cộng đồng (app)
+CREATE TABLE community_documents (community_id UUID, document_id UUID, added_by UUID, added_at TIMESTAMPTZ, PRIMARY KEY (community_id, document_id)); -- trỏ tới documents
+ALTER TABLE conversations ADD COLUMN community_id UUID REFERENCES communities(id) ON DELETE SET NULL;
+CREATE UNIQUE INDEX idx_conversations_community ON conversations (community_id) WHERE community_id IS NOT NULL; -- 1 nhóm chat/cộng đồng
+-- users.ai_daily_quota INT NULL (ai-user-quota-upgrade.sql): hạn mức N7AI/ngày riêng từng người, NULL = mặc định AI_DAILY_QUOTA
+
 -- 8.2. Đánh giá sao tài liệu (1 lượt / người / tài liệu); documents giữ sẵn trung bình + số lượt
 ALTER TABLE documents ADD COLUMN rating_count INT NOT NULL DEFAULT 0;
 ALTER TABLE documents ADD COLUMN rating_avg NUMERIC(3,2) NOT NULL DEFAULT 0;

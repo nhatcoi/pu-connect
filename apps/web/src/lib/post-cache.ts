@@ -149,6 +149,7 @@ export function findCachedPost(qc: QueryClient, postId: string): PostItem | unde
 // cộng đồng chứa bài, hồ sơ của mình; các danh sách khác làm mới khi mở lại
 export function onPostCreated(qc: QueryClient, post: PostItem, myUsername?: string | null) {
   prependPost(qc, ['feed', 'for_you'], post)
+  prependPost(qc, ['feed', 'latest'], post)
   if (post.postType === 'qa') prependPost(qc, ['feed', 'qa'], post)
   qc.invalidateQueries({ queryKey: ['feed'], refetchType: 'none' })
   if (post.communitySlug) {

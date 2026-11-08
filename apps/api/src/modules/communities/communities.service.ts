@@ -108,6 +108,8 @@ export class CommunitiesService {
       if (isCurrentlyMember) {
         // Leave community
         await client.query(`DELETE FROM community_members WHERE community_id = $1 AND user_id = $2`, [community.id, userId])
+        // Rời cộng đồng ⇒ rời luôn nhóm chat của cộng đồng
+        await client.query(`UPDATE conversation_members SET left_at = NOW() WHERE user_id = $2 AND left_at IS NULL AND conversation_id IN (SELECT id FROM conversations WHERE community_id = $1)`, [community.id, userId])
         const updatedRes = await client.query(
           `UPDATE communities SET members_count = GREATEST(0, members_count - 1), updated_at = NOW() WHERE id = $1 RETURNING members_count`,
           [community.id]

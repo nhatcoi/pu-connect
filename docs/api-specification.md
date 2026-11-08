@@ -386,6 +386,15 @@ Mọi response bọc `{ success, data }` (kể cả `join`: kết quả nằm �
 | `POST` | `/communities/:slug/posts/:postId/hide` `{ reason? }` | owner, moderator | Ẩn bài vi phạm, thông báo tác giả |
 | `DELETE` | `/communities/:slug/posts/:postId/hide` | owner, moderator | Khôi phục (chỉ bài do chủ / điều hành viên ẩn) |
 | `GET` | `/communities/:slug/hidden-posts` | owner, moderator | Bài đã ẩn để khôi phục |
+| `GET` | `/communities/:slug/pins` | khách | Bài ghim (tối đa 3) |
+| `PUT` / `DELETE` | `/communities/:slug/pins/:postId` | owner, moderator | Ghim / bỏ ghim (bài phải thuộc cộng đồng; quá 3 ⇒ 400) |
+| `GET` | `/communities/:slug/documents` | khách | Tài liệu đã chia sẻ trong cộng đồng |
+| `GET` | `/communities/:slug/documents/candidates` | thành viên | Tài liệu công khai của mình chưa chia sẻ |
+| `POST` | `/communities/:slug/documents` `{ documentId }` | thành viên | Chia sẻ tài liệu công khai của mình; đã có ⇒ 409 |
+| `DELETE` | `/communities/:slug/documents/:documentId` | người thêm, owner, moderator | Gỡ khỏi cộng đồng |
+| `GET` / `PUT` | `/communities/:slug/notify` `{ enabled }` | thành viên | Bật / tắt thông báo bài mới |
+| `POST` | `/communities/:slug/ask` `{ question }` | thành viên | Hỏi N7AI theo bài viết + tài liệu của cộng đồng ⇒ `{ answer, sources }`; hết lượt ⇒ 429 |
+| `POST` | `/communities/:slug/chat` | thành viên | Mở (tạo lười) nhóm chat của cộng đồng ⇒ `ConversationSummary` |
 
 ### 6.1. Admin cộng đồng (`/api/admin/communities`, quyền `academic:manage`)
 

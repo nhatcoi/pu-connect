@@ -29,7 +29,7 @@
 | [**`23-n7ai-folders.md`**](./23-n7ai-folders.md) | Thư mục lịch sử N7AI (kéo thả) và panel phải: Tài liệu (xem trước) · Công cụ (tạo học liệu). | ✅ Đã triển khai |
 | [**`24-n7ai-sources.md`**](./24-n7ai-sources.md) | Tài liệu của cuộc trò chuyện N7AI (tệp, văn bản dán, link web, YouTube), N7AI đọc PowerPoint / Excel, kéo thả tệp. | ✅ Đã triển khai |
 | [**`25-document-library.md`**](./25-document-library.md) | Kho tài liệu: tệp đính kèm bài viết / bình luận thành tài liệu thật, phân loại (N7AI gợi ý), kho môn học, kho cá nhân, trang Môn học & Tài liệu, trang chi tiết. | ✅ Đợt 1–4 |
-| [**`26-community-management.md`**](./26-community-management.md) | Tạo cộng đồng (chờ admin duyệt), chủ / điều hành viên, sửa giới thiệu, quản lý thành viên, ẩn bài vi phạm, màn hình duyệt của admin. | ✅ |
+| [**`26-community-management.md`**](./26-community-management.md) | Tạo cộng đồng (chờ admin duyệt), chủ / điều hành viên, sửa giới thiệu, quản lý thành viên, ẩn bài vi phạm, màn hình duyệt của admin; bài ghim, tài liệu chung, hỏi N7AI theo nội dung nhóm, nhóm chat, thông báo bài mới. | ✅ |
 | [**`27-n7ai-notes.md`**](./27-n7ai-notes.md) | Ghi chú Markdown N7AI: tab Ghi chú, cây trang, tự lưu, xuất Markdown / Word, thêm từ tin nhắn. | ✅ Đã triển khai (giai đoạn 1) |
 | [**`28-n7ai-agent-engine.md`**](./28-n7ai-agent-engine.md) | Agent engine N7AI: vòng lặp 2 pha, tự phục hồi cụt / rỗng / suy nghĩ ăn ngân sách, `ask_user`, capability theo chế độ học, tin gửi thêm giữa lượt, hợp nhất bộ nhớ. | ✅ Đã triển khai |
 

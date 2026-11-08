@@ -277,6 +277,9 @@ export class PostsService {
         whereClause += ` AND 1=0`
       }
       orderBy = `ORDER BY p.created_at DESC`
+    } else if (feedType === 'latest') {
+      // Mới nhất: toàn bộ bài công khai theo thời gian, không xếp hạng
+      orderBy = `ORDER BY p.created_at DESC`
     } else if (feedType === 'archived') {
       orderBy = `ORDER BY p.archived_at DESC`
     } else if (feedType === 'qa') {
@@ -523,6 +526,7 @@ export class PostsService {
     void this.notifications.dispatch(anonymous ? mentionEvents.map(anonymizeNotification) : mentionEvents)
     if (!anonymous) void this.signalFollowers(authorId, created.id)
     if (!anonymous) void this.notifyFollowers(authorId, created)
+    if (!anonymous && created.communityId && created.communitySlug) void this.notifyCommunityMembers(authorId, created)
     return created
   }
 
@@ -561,6 +565,32 @@ export class PostsService {
       )
     } catch (err) {
       this.logger.warn(`[FollowedPost] skipped: ${(err as Error).message}`)
+    }
+  }
+
+  // Bài mới trong cộng đồng ⇒ thông báo cho thành viên bật chuông (mặc định bật in-app, không push); gộp "A và N người khác"
+  private async notifyCommunityMembers(authorId: string, post: PostItem): Promise<void> {
+    try {
+      const res = await this.db.query(
+        `SELECT m.user_id FROM community_members m JOIN communities c ON c.id = m.community_id
+          WHERE m.community_id = $1 AND c.status = 'active' AND m.notify AND m.user_id <> $2 LIMIT $3`,
+        [post.communityId, authorId, FOLLOWER_NOTIFY_LIMIT]
+      )
+      await this.notifications.fanOut(
+        res.rows.map((r) => ({
+          type: 'community_post' as const,
+          recipientId: r.user_id as string,
+          actorId: authorId,
+          verb: `đã đăng bài trong ${post.communityName ?? 'cộng đồng'}`,
+          message: snippet(post.title || post.content),
+          entityType: 'post' as const,
+          entityId: post.id,
+          link: `/post/${post.id}`,
+          groupKey: `community:${post.communityId}`
+        }))
+      )
+    } catch (err) {
+      this.logger.warn(`[CommunityPost] skipped: ${(err as Error).message}`)
     }
   }
 

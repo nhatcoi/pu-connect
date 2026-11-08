@@ -11,7 +11,8 @@ export const NOTIFICATION_TYPES = [
   'ai_reply',
   'comment_like',
   'followed_post',
-  'group_member_joined'
+  'group_member_joined',
+  'community_post'
 ] as const
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number]
 
@@ -25,6 +26,7 @@ export const CONFIGURABLE_TYPES: NotificationType[] = [
   'user_follow',
   'followed_post',
   'group_member_joined',
+  'community_post',
   'accepted_solution'
 ]
 

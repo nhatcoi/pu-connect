@@ -87,3 +87,50 @@ export interface CommunityHiddenPost {
   hiddenAt: string
   hiddenReason: string | null
 }
+
+// ── Tính năng riêng của cộng đồng ──
+
+// Bài ghim (gọn: chỉ đủ hiện thẻ + link tới bài)
+export interface CommunityPinnedPost {
+  id: string
+  title: string | null
+  snippet: string
+  authorName: string
+  createdAt: string
+  pinnedAt: string
+}
+
+// Tài liệu chia sẻ trong cộng đồng (trỏ tới tài liệu trong thư viện)
+export interface CommunityDocumentItem {
+  id: string
+  title: string
+  description: string | null
+  docType: string | null
+  mimeType: string
+  fileSize: number
+  ownerName: string
+  addedByMe: boolean
+  addedAt: string
+}
+
+// Tài liệu của chính mình có thể đưa vào cộng đồng
+export interface CommunityDocumentCandidate {
+  id: string
+  title: string
+  mimeType: string
+}
+
+export interface CommunityAskSource {
+  index: number
+  type: 'post' | 'document'
+  id: string
+  title: string
+}
+
+export interface CommunityAskResult {
+  answer: string
+  sources: CommunityAskSource[]
+}
+
+export const COMMUNITY_ASK_MAX = 500
+export const COMMUNITY_PIN_MAX = 3

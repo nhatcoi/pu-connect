@@ -12,7 +12,7 @@ import { useUnreadMessages } from '@/hooks/chat'
 import { useTabAttention } from '@/hooks/use-tab-attention'
 
 export type NotificationType =
-  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'account_notice' | 'ai_reply' | 'comment_like' | 'followed_post' | 'group_member_joined'
+  'post_like' | 'post_comment' | 'comment_reply' | 'user_mention' | 'user_follow' | 'accepted_solution' | 'account_verified' | 'account_notice' | 'ai_reply' | 'comment_like' | 'followed_post' | 'group_member_joined' | 'community_post'
 
 export interface NotificationItem {
   id: string

@@ -21,7 +21,7 @@ import { useFeedViewMode } from '@/hooks/use-feed-view-mode'
 import { FeedModeSwitch } from '@/components/social/feed-mode-switch'
 import { FocusFeed } from '@/components/social/focus-feed'
 
-type HomeFeedTab = 'for_you' | 'following' | 'qa'
+type HomeFeedTab = 'for_you' | 'latest' | 'following' | 'qa'
 
 function HomeContent() {
   const searchParams = useSearchParams()
@@ -47,7 +47,9 @@ function HomeContent() {
   const [activeFeedTab, setActiveFeedTab] = useState<HomeFeedTab>('for_you')
 
   useEffect(() => {
-    if (tabParam === 'following') {
+    if (tabParam === 'latest') {
+      setActiveFeedTab('latest')
+    } else if (tabParam === 'following') {
       setActiveFeedTab('following')
     } else if (tabParam === 'qa') {
       setActiveFeedTab('qa')
@@ -113,6 +115,7 @@ function HomeContent() {
           onItemHover={(id) => prefetchFeed(queryClient, id)}
           items={[
             { id: 'for_you', label: 'Dành cho bạn' },
+            { id: 'latest', label: 'Mới nhất' },
             { id: 'following', label: 'Đang theo dõi' },
             { id: 'qa', label: 'Hỏi đáp' }
           ]}

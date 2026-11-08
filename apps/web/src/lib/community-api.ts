@@ -1,4 +1,10 @@
-import type { Community, CommunityHiddenPost, CommunityMemberItem, CommunityRole, CommunityType, CommunityRule, UpdateCommunityInput } from '@pu/schemas'
+import type {
+  CommunityAskResult,
+  CommunityDocumentCandidate,
+  CommunityDocumentItem,
+  CommunityPinnedPost,
+  Community,
+  CommunityHiddenPost, CommunityMemberItem, CommunityRole, CommunityType, CommunityRule, UpdateCommunityInput } from '@pu/schemas'
 import { apiClient } from './api-client'
 
 type Envelope<T> = { success: boolean; data: T }
@@ -34,3 +40,21 @@ export const unhideCommunityPost = (slug: string, postId: string) => apiClient(`
 // Tham gia / rời cộng đồng (API bọc kết quả trong { success, data })
 export const toggleCommunityJoin = (slug: string) =>
   unwrap(apiClient<Envelope<{ isMember: boolean; membersCount: number; message: string }>>(`/communities/${slug}/join`, json('POST')))
+
+// ── Bài ghim · tài liệu · thông báo · hỏi N7AI ──
+export const listCommunityPins = (slug: string) => unwrap(apiClient<Envelope<CommunityPinnedPost[]>>(`/communities/${slug}/pins`))
+export const pinCommunityPost = (slug: string, postId: string) => apiClient(`/communities/${slug}/pins/${postId}`, json('PUT'))
+export const unpinCommunityPost = (slug: string, postId: string) => apiClient(`/communities/${slug}/pins/${postId}`, json('DELETE'))
+
+export const listCommunityDocuments = (slug: string) => unwrap(apiClient<Envelope<CommunityDocumentItem[]>>(`/communities/${slug}/documents`))
+export const listCommunityDocumentCandidates = (slug: string) =>
+  unwrap(apiClient<Envelope<CommunityDocumentCandidate[]>>(`/communities/${slug}/documents/candidates`))
+export const addCommunityDocument = (slug: string, documentId: string) => apiClient(`/communities/${slug}/documents`, json('POST', { documentId }))
+export const removeCommunityDocument = (slug: string, documentId: string) => apiClient(`/communities/${slug}/documents/${documentId}`, json('DELETE'))
+
+export const getCommunityNotify = (slug: string) => unwrap(apiClient<Envelope<{ enabled: boolean }>>(`/communities/${slug}/notify`))
+export const setCommunityNotify = (slug: string, enabled: boolean) =>
+  unwrap(apiClient<Envelope<{ enabled: boolean }>>(`/communities/${slug}/notify`, json('PUT', { enabled })))
+
+export const askCommunity = (slug: string, question: string) => unwrap(apiClient<Envelope<CommunityAskResult>>(`/communities/${slug}/ask`, json('POST', { question })))
+export const openCommunityChat = (slug: string) => unwrap(apiClient<Envelope<{ id: string }>>(`/communities/${slug}/chat`, json('POST')))

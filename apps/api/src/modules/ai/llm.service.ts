@@ -89,7 +89,10 @@ export class LlmService {
          AND created_at >= date_trunc('day', NOW() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh'`,
       [userId]
     )
-    return { used: res.rows[0].used, limit: this.dailyQuota, enabled: !!this.client }
+    // Hạn mức riêng (users.ai_daily_quota) ưu tiên hơn mặc định chung
+    const own = await this.db.query(`SELECT ai_daily_quota FROM users WHERE id = $1`, [userId])
+    const limit: number = own.rows[0]?.ai_daily_quota ?? this.dailyQuota
+    return { used: res.rows[0].used, limit, enabled: !!this.client }
   }
 
   async hasQuota(userId: string): Promise<boolean> {

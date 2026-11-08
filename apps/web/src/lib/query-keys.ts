@@ -1,7 +1,7 @@
 import type { AiThreadFolderFilter } from '@pu/schemas'
 
 // Khóa cache tập trung: mọi useQuery / invalidate / prefetch dùng chung một nguồn
-export type FeedType = 'for_you' | 'following' | 'qa' | 'courses' | 'explore' | 'bookmarks' | 'archived'
+export type FeedType = 'for_you' | 'latest' | 'following' | 'qa' | 'courses' | 'explore' | 'bookmarks' | 'archived'
 export type CommunitySort = 'hot' | 'new' | 'top'
 
 export const queryKeys = {
@@ -22,6 +22,9 @@ export const queryKeys = {
   communityAll: (slug: string) => ['community', slug] as const,
   communityMembers: (slug: string, q: string) => ['community-members', slug, q] as const,
   communityHidden: (slug: string) => ['community-hidden', slug] as const,
+  communityPins: (slug: string) => ['community-pins', slug] as const,
+  communityDocuments: (slug: string) => ['community-documents', slug] as const,
+  communityNotify: (slug: string) => ['community-notify', slug] as const,
   suggestedUsers: (limit: number) => ['suggested-users', limit] as const,
   // Modal khám phá: khóa riêng ⇒ không tự tải lại (người vừa theo dõi không biến mất giữa chừng)
   followSuggestions: (limit: number) => ['follow-suggestions', limit] as const,

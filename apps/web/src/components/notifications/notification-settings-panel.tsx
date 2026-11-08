@@ -19,7 +19,8 @@ const TYPE_LABELS: Record<string, string> = {
   comment_like: 'Lượt thích bình luận của bạn',
   user_follow: 'Người theo dõi mới',
   followed_post: 'Bài mới từ người bạn theo dõi',
-  group_member_joined: 'Có người tham gia nhóm học của bạn'
+  group_member_joined: 'Có người tham gia nhóm học của bạn',
+  community_post: 'Bài mới trong cộng đồng đã tham gia'
 }
 
 const PUSH_STATUS_TEXT: Record<PushStatus, string> = {

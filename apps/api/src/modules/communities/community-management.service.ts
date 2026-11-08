@@ -127,6 +127,7 @@ export class CommunityManagementService {
       if (targetRole === 'owner') throw new ForbiddenException('Không thể xóa chủ cộng đồng')
       if (targetRole === 'moderator' && actor.role !== 'owner') throw new ForbiddenException('Chỉ chủ cộng đồng xóa được điều hành viên')
       await client.query(`DELETE FROM community_members WHERE community_id = $1 AND user_id = $2`, [actor.id, targetId])
+      await client.query(`UPDATE conversation_members SET left_at = NOW() WHERE user_id = $2 AND left_at IS NULL AND conversation_id IN (SELECT id FROM conversations WHERE community_id = $1)`, [actor.id, targetId])
       const up = await client.query(
         `UPDATE communities SET members_count = GREATEST(0, members_count - 1), updated_at = NOW() WHERE id = $1 RETURNING members_count`,
         [actor.id]

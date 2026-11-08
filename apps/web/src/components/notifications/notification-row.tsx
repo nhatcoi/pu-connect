@@ -22,7 +22,8 @@ const TYPE_ICON: Record<NotificationType, React.ReactNode> = {
   ai_reply: <Sparkles className="h-3 w-3 text-primary" />,
   comment_like: <Heart className="h-3 w-3 text-rose-500 fill-rose-500/30" />,
   followed_post: <FilePlus className="h-3 w-3 text-primary" />,
-  group_member_joined: <Users className="h-3 w-3 text-emerald-600" />
+  group_member_joined: <Users className="h-3 w-3 text-emerald-600" />,
+  community_post: <Users className="h-3 w-3 text-primary" />
 }
 
 interface NotificationRowProps {
