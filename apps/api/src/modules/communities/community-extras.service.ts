@@ -1,9 +1,11 @@
 import { BadRequestException, ConflictException, ForbiddenException, HttpException, HttpStatus, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import type { CommunityAskResult, CommunityAskSource, CommunityDocumentCandidate, CommunityDocumentItem, CommunityPinnedPost, CommunityRole } from '@pu/schemas'
-import { COMMUNITY_PIN_MAX } from '@pu/schemas'
 import { DatabaseService } from '../../database/database.service'
 import { LlmService } from '../ai/llm.service'
 import { toTsQuery } from '../ai/ai.retrieval'
+
+// @pu/schemas chỉ là type phía API (không import giá trị lúc chạy) ⇒ hằng số khai báo lại ở đây, khớp COMMUNITY_PIN_MAX của web
+const COMMUNITY_PIN_MAX = 3
 
 type Ctx = { id: string; name: string; status: string; role: CommunityRole | null }
 
