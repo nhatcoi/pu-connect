@@ -1,69 +1,79 @@
 ---
 name: deploy
-description: Deploy PU Connect to its production VPS using scripts/deploy.sh, monitor the release, and verify Web, Admin, and API health. Use when the user requests deployment, release, or running the deploy script; creating or editing this skill does not authorize deployment.
+description: Deploy PU Connect to its production VPS with the scripts in deploy/ (per component - db, api, web, admin, docs, nginx - or all), monitor the release, verify health, and roll back the web slot. Use when asked to deploy, release, ship, verify, or roll back production.
 ---
 
 # PU Connect Deployment
 
-Use the existing `scripts/deploy.sh` from the repository root. Treat its current contents as the source of truth. Read `docs/diagrams/06-deployment.md` for infrastructure context when needed.
+Deploy with the scripts in `deploy/` (repository root). Read `deploy/README.md` for the command table; treat the scripts as the source of truth. Infrastructure context: `docs/diagrams/06-deployment.md`.
+
+## Choose the component
+
+Deploy only what changed. Every command syncs the working tree, takes the VPS deploy lock, then does its own part.
+
+| Changed | Run |
+| --- | --- |
+| `apps/web` | `pnpm run deploy:web` |
+| `apps/api`, no new SQL | `pnpm run deploy:api` |
+| new `*.sql` migration | `pnpm run deploy:db`, then `deploy:api` if the code uses it |
+| `apps/admin` | `pnpm run deploy:admin` |
+| `apps/docs` or `docs/` | `pnpm run deploy:docs` |
+| `packages/schemas` | `deploy:api`, `deploy:web`, `deploy:admin` |
+| several areas, or unsure | `pnpm run deploy:vps` (all, in order: db, api, admin, docs, nginx, web, verify; `--skip db,docs` skips parts) |
+
+Also: `deploy:nginx` (Nginx only), `deploy:verify` and `deploy:status` (read-only), `deploy:rollback` (web only).
 
 ## Scope and preparation
 
-- An explicit request to deploy authorizes running the script. Reuse authorization already given for the current release; do not ask for confirmation again without a concrete scope change.
-- Read the script and `git status --short` before execution. It deploys the **working directory**, including uncommitted and untracked files, through `rsync --delete`; it does not deploy a Git commit.
-- Check whether unrelated local changes would be included. Explain the actual deployment scope. If it exceeds the user's authorization, prepare an isolated copy containing the authorized changes or clarify the scope before uploading. Never stash, discard, or overwrite someone else's work to make deployment possible.
+- An explicit request to deploy authorizes running the scripts. Reuse authorization already given for the current release; do not ask again without a concrete scope change.
+- Deploy ships the **working directory**, including uncommitted and untracked files, through `rsync --delete`; it does not deploy a Git commit. Each command prints how many uncommitted changes it is shipping. Read `git status --short` first, tell the user which unrelated WIP goes along, and if that exceeds the authorization, deploy from an isolated copy of `HEAD` instead. Never stash, discard, or overwrite someone else's work.
 - Deploying does not require committing or pushing. Do those only when requested or already authorized.
-- Complete required documentation updates for the changes being released. For new migrations, follow the project's local migration and ERD workflow and verify that the deploy script includes the migration.
-- Run `pnpm build`, then `pnpm typecheck` and `pnpm lint` before deployment, unless equivalent checks already passed for the current source. Do not run Next.js build and typecheck concurrently: build rewrites `.next/types` and can cause false TS6053 failures.
-- Fix failures introduced by the release. Report unrelated existing failures or warnings accurately; do not claim a clean lint run when warnings remain.
+- Finish required documentation for the change. New migration: add the file name at the END of `deploy/migrations.list` and to `apps/api/test/global-setup.ts`, run `pnpm docs:erd`, keep the file idempotent. Never add `psql` lines to `scripts/deploy.sh` (it is now only a wrapper around `deploy/all.sh`).
+- Run `pnpm typecheck`, `pnpm lint`, and `pnpm build` for the parts you changed, unless equivalent checks already passed for the current source. Do not run Next.js build and typecheck concurrently (false TS6053 failures). Fix failures the release introduced; report unrelated warnings accurately.
 
 ## Execute and monitor
 
-Run one deployment at a time from the repository root:
+Run one command at a time from the repository root. For long runs (web takes 3 to 8 minutes on the 2 GB VPS) send output to a unique temporary log and run in the background, keep the exit status, and inspect the log; a successful `tee` or `tail` is not proof of success.
 
 ```bash
-pnpm run deploy:vps
+pnpm run deploy:web > "$SCRATCH/deploy-web.log" 2>&1; echo "EXIT=$?" >> "$SCRATCH/deploy-web.log"
 ```
 
-This invokes `bash scripts/deploy.sh`. Either command is acceptable. For a long-running tool session, redirect output to a unique temporary log, retain the process/session ID, and inspect the log while waiting. Preserve the deployment command's exit status; a successful `tee` or `tail` is not proof of deployment success.
+Give a short progress note at least once per minute. Never print `.env`, credentials, tokens, or session cookies.
 
-Give concise progress updates at least once per minute. Report the current phase and any actual failure without dumping migration notices or full logs. Never print environment files, credentials, tokens, or session cookies.
+What the scripts guarantee (do not re-implement by hand):
 
-The current script performs:
-
-1. SSH connectivity check to `root@103.195.237.112`.
-2. Working-directory sync into `/var/www/pu-connector`, preserving the configured exclusions such as `.env`, dependencies, build slots, and credential JSON files. Inspect exclusions rather than assuming all secret filenames are covered.
-3. PostgreSQL/Redis startup and SQL migrations, with conditional initial seeding.
-4. Dependency installation, sequential API/Admin builds, and an API module-load smoke check; then a Web build into the inactive `.next-a` or `.next-b` slot.
-5. Web slot switch, restart of `pu-api` and `pu-web`, Nginx configuration validation and reload.
-6. Public HTTP health checks.
-
-Preserve the Web slot mechanism: `.web-slot.env` selects the active build; `.next-cache` is shared; previous static chunks are retained for seven days. Do not build over the live Web slot or delete it. VPS builds are deliberately sequential and use reduced CPU/I/O priority because memory is limited. Local checks matter because the remote Web build sets `NEXT_SKIP_CHECKS=1`.
+- **One deploy at a time.** The VPS lock (`/var/lock/pu-deploy.lock`, tied to the SSH session) makes a second deploy stop with who/when/what holds it. If you see that message, wait; do not delete the lock or start another build. `pnpm run deploy:status` shows whether a deploy is running.
+- **Migrations stop on error.** `deploy:db` runs every file in `deploy/migrations.list` with `ON_ERROR_STOP`; a failing file stops the deploy and leaves API and Web untouched. `MIGRATIONS_STRICT=0` continues past errors; use it only when the error is known to be harmless and the user agreed. Destructive migrations (DROP, DELETE, TRUNCATE) need the user's confirmation first.
+- **API:** builds sequentially, smoke-loads the compiled app module before restart, then waits for `/api/auth/me` to answer 401.
+- **Web blue/green:** builds into the idle `.next-a`/`.next-b` slot, records the old slot in `.web-slot.env.prev`, switches, waits for HTTP 200/3xx, and goes back to the old slot by itself if the new one does not answer. `.next-cache` is shared; old static chunks are kept 7 days. Never build over the live slot.
+- Builds run sequentially at reduced CPU/IO priority because the VPS has little memory.
 
 ## Verify the release
 
-Require both process completion and the expected health results:
+`pnpm run deploy:verify` (also run by `deploy:vps` and `deploy:rollback`) must pass:
 
-| Check | Expected result |
+| Check | Expected |
 | --- | --- |
-| `https://puc.vnhat.dev/` | HTTP 200 |
-| `https://admin-puc.vnhat.dev/` | HTTP 200 |
-| `https://puc.vnhat.dev/api/auth/me` without a session | HTTP 401 |
-| `pu-api`, `pu-web` | Both systemd services active |
-| `nginx -t` | Configuration valid |
+| `https://puc.vnhat.dev/` | 200 |
+| `https://admin-puc.vnhat.dev/` | 200 |
+| `https://docs-puc.vnhat.dev/` | 200 |
+| `https://puc.vnhat.dev/api/auth/me` and the same path on the admin host, no session | 401 |
+| `pu-api`, `pu-web` | active |
+| `nginx -t` | ok |
 
-The script's final success banner checks only the Web status. Inspect Admin and API results independently; do not treat the banner alone as success. If results are missing or unexpected, rerun targeted read-only checks with `curl` and SSH. For a UI release, inspect the affected route in an available authenticated browser session when feasible; distinguish HTTP health from visual verification.
+For a UI release, also open the affected route in an authenticated browser session when feasible, and say whether it was checked visually or only by HTTP status.
 
 ## Failure handling
 
-- Identify the failed phase and inspect bounded logs, for example `journalctl -u pu-web -n 60 --no-pager` or the equivalent for `pu-api` over SSH. Redact sensitive output.
-- Do not repeatedly rerun the entire script without diagnosing the cause. SQL errors can appear even when `psql` exits successfully because the script does not enable `ON_ERROR_STOP`; inspect migration output for errors as well.
-- A Web build failure before the slot switch normally leaves the old Web process serving its build. Migrations and uploaded files may already have changed; do not describe the deployment as fully rolled back.
-- If the new Web slot fails after switching, and rollback is within the authorized recovery scope, restore the **recorded previous slot** in `.web-slot.env`, restart `pu-web`, and verify health. Never guess the previous slot. This restores only the Web build, not API binaries, database changes, Admin files, or Nginx configuration.
-- Stop and report a concrete blocker when recovery requires new credentials, destructive database operations, broader infrastructure changes, or an unresolved authorization decision. Do not restore production data or change secrets as an automatic retry.
+- Find the failed phase in the log, then inspect bounded remote logs, for example `ssh root@103.195.237.112 'journalctl -u pu-web -n 60 --no-pager'` (same for `pu-api`). Redact sensitive output.
+- Do not rerun the same command repeatedly without a diagnosis. A Web build failure before the switch leaves the old Web serving; migrations and uploaded files may already have changed, so do not call it a full rollback.
+- **Lock held / BUSY:** another deploy is running (often another session on the shared worktree). Wait and retry; do not run a manual `next build` on the VPS, because it writes into the same slot and breaks both builds.
+- Web broken after a switch: `pnpm run deploy:rollback` restores the recorded previous slot (web only; it does not undo API, DB, Admin, or Nginx). Never guess the slot.
+- Stop and report a concrete blocker when recovery needs new credentials, a destructive database operation, broader infrastructure changes, or an unresolved authorization decision. Do not restore production data or change secrets as an automatic retry.
 
 ## Completion report
 
-State the deployed URL, health results, and any remaining limitation. Say whether the affected UI was visually checked, and whether Git was committed/pushed if relevant. Do not claim deployment when only a local build passed.
+State which component(s) were deployed, the URLs, the verify results, and any limitation. Say whether the UI was checked visually, and whether Git was committed or pushed. Do not claim deployment when only a local build passed.
 
-Keep this file identical to `.claude/skills/deploy/SKILL.md` whenever updating the workflow.
+Keep this file identical to `.agents/skills/deploy/SKILL.md` whenever updating the workflow.

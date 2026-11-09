@@ -48,7 +48,8 @@ pnpm dev                                     # Web :3000, API :4000/api
 ## Deploy
 
 ```bash
-pnpm run deploy:vps     # build trên VPS, chuyển slot web, kiểm tra sức khỏe
+pnpm run deploy:vps     # cả chuỗi: db, api, admin, docs, nginx, web, kiểm tra
+pnpm run deploy:web     # hoặc :api :db :admin :docs :nginx :verify :status :rollback — xem deploy/README.md
 pnpm run deploy:mac     # build trên Mac rồi đẩy lên VPS
 ```
 

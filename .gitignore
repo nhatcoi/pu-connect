@@ -42,8 +42,12 @@ apps/web/cache
 # Temporary & artifacts
 /index.html
 *.skill
+*.sql.gz
+*.dev.log
+.dev.log
 
 # IDE & tool configs
+.mcp.json
 .claude/*
 !.claude/skills/
 .claude/skills/*

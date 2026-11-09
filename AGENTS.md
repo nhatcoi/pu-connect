@@ -134,10 +134,10 @@ Mọi ô chọn mà danh mục do admin quản lý và người dùng có thể 
 ## 🚦 7. Deploy
 
 > [!IMPORTANT]
-> **Không còn cổng gác `DevOpsVPS-CICD`.** Session nào làm xong thì tự deploy (skill `deploy` / `scripts/deploy.sh`), không gửi qua session khác.
+> **Không còn cổng gác `DevOpsVPS-CICD`.** Session nào làm xong thì tự deploy (skill `deploy`, thư mục `deploy/`), không gửi qua session khác.
 
-1. **Trước khi deploy:** `pnpm typecheck`, `pnpm lint`, build các app đã sửa, docs đã cập nhật (mục 1), migration idempotent và có trong `scripts/deploy.sh`, commit Conventional Commits đã push (chỉ stage hunk của mình).
-2. **Chạy deploy một lần, một session:** kiểm tra VPS rảnh trước (`ssh root@103.195.237.112 'pgrep -af "next build|rsync|turbo"'`); hai deploy đồng thời làm hỏng slot web.
-3. **Verify sau deploy:** web 200, admin 200, `/api/auth/me` 401, `pu-api`/`pu-web` active, `nginx -t`, log không lỗi SQL.
+1. **Trước khi deploy:** `pnpm typecheck`, `pnpm lint`, build các app đã sửa, docs đã cập nhật (mục 1), migration idempotent và có trong `deploy/migrations.list`, commit Conventional Commits đã push (chỉ stage hunk của mình).
+2. **Chọn lệnh theo phần đã sửa** (`pnpm run deploy:web|api|db|admin|docs|nginx`, hoặc `deploy:vps` cho tất cả; bảng ở `deploy/README.md`). Mỗi lệnh tự lấy khóa deploy trên VPS: có deploy khác đang chạy thì báo và dừng, không cần kiểm tra tay. `pnpm run deploy:status` xem trạng thái.
+3. **Verify sau deploy:** `pnpm run deploy:verify` (web 200, admin 200, docs 200, `/api/auth/me` 401, `pu-api`/`pu-web` active, `nginx -t`). Migration lỗi SQL thì deploy tự dừng. Web lỗi: `pnpm run deploy:rollback`.
 4. **Dừng và hỏi user** khi build/typecheck/lint fail, migration phá hủy (DROP/DELETE/TRUNCATE), hoặc có secret trong diff.
-5. **`scripts/deploy.sh` rsync `--delete` cả working tree** (kể cả WIP chưa commit và file untracked của session khác), KHÔNG deploy theo commit. Người deploy phải: (a) đọc `git status` và báo những WIP của session khác sẽ bị kéo theo; (b) nếu chỉ muốn deploy commit thì tạo bản copy sạch từ `HEAD` (`git worktree` / `git archive`) rồi rsync từ đó. Không stash/revert đồ của người khác.
+5. **Deploy rsync `--delete` cả working tree** (kể cả WIP chưa commit và file untracked của session khác), KHÔNG deploy theo commit. Người deploy phải: (a) đọc `git status` và báo những WIP của session khác sẽ bị kéo theo; (b) nếu chỉ muốn deploy commit thì tạo bản copy sạch từ `HEAD` (`git worktree` / `git archive`) rồi rsync từ đó. Không stash/revert đồ của người khác.

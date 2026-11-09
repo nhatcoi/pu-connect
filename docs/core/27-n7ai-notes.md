@@ -6,7 +6,7 @@ Ghi chú soạn bằng Markdown ngay cạnh cuộc trò chuyện: tab **Ghi chú
 
 ## Dữ liệu
 
-Bảng `ai_notes` (migration `ai-notes-upgrade.sql`, có trong `scripts/deploy.sh`, `scripts/deploy-mac-vps.sh` và `test/global-setup.ts`):
+Bảng `ai_notes` (migration `ai-notes-upgrade.sql`, có trong `deploy/migrations.list` và `test/global-setup.ts`):
 
 | Cột | Ghi chú |
 |---|---|

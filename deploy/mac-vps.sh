@@ -9,6 +9,7 @@
 # ==============================================================================
 
 set -e
+cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 # Configuration
 VPS_HOST="root@103.195.237.112"
@@ -90,7 +91,7 @@ rsync -avz --delete \
   --exclude 'tools/fb-group-digest' \
   --exclude 'report' \
   --exclude '*.sql.gz' \
-  --exclude '*.pptx' \
+  --exclude '/*.pptx' \
   --exclude '*.skill' \
   ./ "$VPS_HOST:$VPS_DIR/"
 
@@ -142,57 +143,15 @@ done
 
 # Run idempotent migrations
 echo "Đang kiểm tra và áp dụng cập nhật CSDL (Schema & Upgrades)..."
-for sql_file in \
-  apps/api/src/database/schema.sql \
-  apps/api/src/database/domain1-upgrade.sql \
-  apps/api/src/database/add-communities.sql \
-  apps/api/src/database/chat-upgrade.sql \
-  apps/api/src/database/ai-upgrade.sql \
-  apps/api/src/database/chat-v2-upgrade.sql \
-  apps/api/src/database/chat-study-group-upgrade.sql \
-  apps/api/src/database/chat-push-clear-upgrade.sql \
-  apps/api/src/database/user-blocks-upgrade.sql \
-  apps/api/src/database/presence-upgrade.sql \
-  apps/api/src/database/post-summary-upgrade.sql \
-  apps/api/src/database/personalization-upgrade.sql \
-  apps/api/src/database/post-title-cleanup.sql \
-  apps/api/src/database/preferences-upgrade.sql \
-  apps/api/src/database/comments-edit-upgrade.sql \
-  apps/api/src/database/chat-mention-ai-upgrade.sql \
-  apps/api/src/database/ai-connectors-upgrade.sql \
-  apps/api/src/database/ai-skills-share-upgrade.sql \
-  apps/api/src/database/puai-settings-upgrade.sql \
-  apps/api/src/database/ai-skills-seed.sql \
-  apps/api/src/database/admin-users-upgrade.sql \
-  apps/api/src/database/admin-lists-upgrade.sql \
-  apps/api/src/database/admin-sanctions-upgrade.sql \
-  apps/api/src/database/admin-security-upgrade.sql \
-  apps/api/src/database/profile-views-upgrade.sql \
-  apps/api/src/database/comment-reactions-upgrade.sql \
-  apps/api/src/database/study-tools-upgrade.sql \
-  apps/api/src/database/ai-thread-share-upgrade.sql \
-  apps/api/src/database/ai-folders-upgrade.sql \
-  apps/api/src/database/ai-sources-upgrade.sql \
-  apps/api/src/database/ai-study-connector-upgrade.sql \
-  apps/api/src/database/ai-agent-upgrade.sql \
-  apps/api/src/database/ai-model-upgrade.sql \
-  apps/api/src/database/rag-upgrade.sql \
-  apps/api/src/database/anonymous-upgrade.sql \
-  apps/api/src/database/quiz-upgrade.sql \
-  apps/api/src/database/bot-simulator-upgrade.sql \
-  apps/api/src/database/bot-governance-upgrade.sql \
-  apps/api/src/database/bot-actions-upgrade.sql \
-  apps/api/src/database/bot-soul-upgrade.sql \
-  apps/api/src/database/units-simplify-upgrade.sql \
-  apps/api/src/database/legacy-units-drop-upgrade.sql \
-  apps/api/src/database/ai-models-upgrade.sql \
-  apps/api/src/database/ai-providers-upgrade.sql \
-  apps/api/src/database/ai-llm-upgrade.sql \
-  apps/api/src/database/ai-services-upgrade.sql; do
+# Danh sách migration dùng chung với deploy/ (deploy/migrations.list là nguồn duy nhất)
+while IFS= read -r name; do
+  name="${name%%#*}"; name="${name// /}"
+  [ -z "$name" ] && continue
+  sql_file="apps/api/src/database/$name"
   if [ -f "$sql_file" ]; then
     docker exec -i pu_postgres psql -U pu_user -d pu_connector_db < "$sql_file" 2>/dev/null || true
   fi
-done
+done < deploy/migrations.list
 
 # Bot Simulator
 grep -q '^BOT_PASSWORD=' .env || echo "BOT_PASSWORD=$(openssl rand -hex 12)" >> .env

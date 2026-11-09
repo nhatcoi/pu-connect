@@ -5,7 +5,7 @@
 ```mermaid
 flowchart LR
   user(["🌐 Người dùng"])
-  dev(["💻 Dev máy local<br/>bash scripts/deploy.sh"])
+  dev(["💻 Dev máy local<br/>pnpm run deploy:*"])
 
   subgraph VPS["VPS Debian · 103.195.237.112 · /var/www/pu-connector"]
     direction LR
@@ -48,16 +48,16 @@ flowchart LR
   class r2,google,gmail,tg,cron external
 ```
 
-## Các bước `scripts/deploy.sh`
+## Các bước deploy (`deploy/`, xem `deploy/README.md`)
 
 ```mermaid
 flowchart LR
   s1["1 · Kiểm tra SSH"] --> s2["2 · rsync --delete<br/>(giữ .env, bỏ secret json)"] --> s3["3 · docker compose up postgres redis<br/>+ migrations idempotent"] --> s4["4 · pnpm install<br/>+ turbo build API/packages<br/>+ next build vào slot rảnh .next-a|b"] --> s5["5 · đổi slot (.web-slot.env)<br/>restart pu-api, pu-web · reload nginx"] --> s6["6 · Health check<br/>web 200 · /api/auth/me 401"]
 ```
 
-Migration chạy **mỗi lần deploy** theo thứ tự: `schema.sql` → `domain1-upgrade.sql` → `add-communities.sql` → `add-indexes.sql` → `auth-upgrade.sql` → `messaging-upgrade.sql` → `notifications-upgrade.sql` → `push-upgrade.sql`. ⇒ Mọi file phải **idempotent** và **không bao giờ UPDATE hàng loạt dữ liệu người dùng thật**.
+Migration chạy **mỗi lần `deploy:db`** theo thứ tự trong `deploy/migrations.list`, mỗi file với `ON_ERROR_STOP` (file lỗi thì dừng deploy, API/Web đang chạy giữ nguyên). ⇒ Mọi file phải **idempotent** và **không bao giờ UPDATE hàng loạt dữ liệu người dùng thật**.
 
-**Web blue/green (không lỗi giữa lúc deploy):** trước đây `next build` ghi đè `.next` trong khi `next start` vẫn phục vụ từ đó ⇒ HTML trỏ tới chunk đã bị xóa, trình duyệt báo *"Application error: a client-side exception"* suốt thời gian build. Nay web build vào slot rảnh (`apps/web/.next-a` hoặc `.next-b`, qua `NEXT_DIST_DIR`), server cũ chạy tiếp tới lúc restart; slot đang chạy ghi trong `/var/www/pu-connector/.web-slot.env`, systemd drop-in `pu-web.service.d/slot.conf` nạp file này. Chunk JS bản trước được chép sang slot mới (giữ 7 ngày) ⇒ tab đang mở chuyển trang không gặp ChunkLoadError. Rollback: ghi lại slot cũ vào `.web-slot.env` rồi `systemctl restart pu-web`. Build hỏng (vd. OOM) ⇒ deploy dừng trước bước đổi slot, site vẫn chạy bản cũ.
+**Web blue/green (không lỗi giữa lúc deploy):** trước đây `next build` ghi đè `.next` trong khi `next start` vẫn phục vụ từ đó ⇒ HTML trỏ tới chunk đã bị xóa, trình duyệt báo *"Application error: a client-side exception"* suốt thời gian build. Nay web build vào slot rảnh (`apps/web/.next-a` hoặc `.next-b`, qua `NEXT_DIST_DIR`), server cũ chạy tiếp tới lúc restart; slot đang chạy ghi trong `/var/www/pu-connector/.web-slot.env`, systemd drop-in `pu-web.service.d/slot.conf` nạp file này. Chunk JS bản trước được chép sang slot mới (giữ 7 ngày) ⇒ tab đang mở chuyển trang không gặp ChunkLoadError. Slot trước được ghi vào `.web-slot.env.prev`; web không phản hồi sau khi đổi slot thì tự về slot cũ; rollback tay: `pnpm run deploy:rollback`. Deploy chạy theo từng thành phần (`deploy:db|api|web|admin|docs|nginx`) và có khóa `flock` trên VPS để hai deploy không đè nhau. Build hỏng (vd. OOM) ⇒ deploy dừng trước bước đổi slot, site vẫn chạy bản cũ.
 
 **RAM khi build (VPS 2GB, dùng chung với dịch vụ khác):** build lạnh cần ~2GB ⇒ bị OOM kill và làm cả máy nghẽn. Giảm tải: 2 slot dùng chung cache webpack (`apps/web/.next-cache`, symlink `<slot>/cache`) ⇒ build luôn ấm; `NEXT_SKIP_CHECKS=1` bỏ typecheck/lint trong `next build` (đã chạy trước khi push); `experimental.webpackMemoryOptimizations`; build chạy `nice -n 15 ionice -c3`.
 
