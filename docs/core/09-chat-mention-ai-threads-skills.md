@@ -18,7 +18,7 @@
 | N7AI nhiều thread | Mỗi thread = 1 `conversations` `type='ai'`, `direct_key = NULL` (thread cũ giữ key) | Dùng lại toàn bộ hạ tầng tin nhắn, realtime, push, đính kèm |
 | Danh sách chính | Chỉ hiện **thread AI mới nhất** (InitPlan 1 lần / truy vấn); lịch sử thread ở thanh N7AI | Không làm loãng danh sách DM/nhóm |
 | "Chat mới" | `POST /ai/threads` dùng lại thread rỗng sẵn có | Bấm nhiều lần không sinh rác |
-| Tiêu đề thread | Tự đặt từ câu hỏi đầu (cắt 60 ký tự, trong transaction gửi tin), sửa được | Không tốn lượt/độ trễ LLM; model suy nghĩ ăn hết `max_tokens` nhỏ |
+| Tiêu đề thread | Tên tạm từ câu hỏi đầu (cắt 60 ký tự, trong transaction gửi tin, `title_auto = true`) → sau câu trả lời đầu, `AiTitleService` nhờ LLM đặt tên 3–6 từ theo ngữ cảnh (nền, không tính quota; chào hỏi ⇒ SKIP, thử lại ở lượt sau, tối đa 12 tin đầu); đổi tên tay ⇒ `title_auto = false`, không bị đè | Hiện tên ngay ở sidebar, tên đẹp đến sau; model suy nghĩ ăn hết `max_tokens` nhỏ ⇒ để 1024 |
 | Trí nhớ dài | Tóm tắt cuộn `conversations.ai_summary` + `ai_summary_upto`; gửi LLM = tóm tắt + ≤ 20 tin sau mốc | Thread dài không quên phần đầu, prompt không phình |
 | Skill | Bảng `ai_skills` của từng người (≤ 30), chỉ chủ skill gọi được; list trả payload nhẹ, chi tiết mới có `instructions`. Chia sẻ công khai ⇒ người khác **cài = sao chép** (§8) | Prompt riêng tư mặc định; bản cài độc lập, chủ sửa/xóa không ảnh hưởng người đã cài |
 | Chế độ học | Giữ 6 `AiMode` (thanh chip + `/explain`…) — skill là lớp chỉ dẫn **cộng thêm** | Không phá quiz/flashcard đang render theo `aiMode` |

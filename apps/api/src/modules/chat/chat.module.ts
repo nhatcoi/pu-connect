@@ -45,6 +45,7 @@ import { AiMemoriesService } from './n7ai/ai-memories.service'
 import { AiAdminController, AiSettingsController } from './n7ai/ai-settings.controller'
 import { AiSettingsService } from './n7ai/ai-settings.service'
 import { AiSummaryService } from './n7ai/ai-summary.service'
+import { AiTitleService } from './n7ai/ai-title.service'
 import { AiTasksService } from './n7ai/ai-tasks.service'
 import { AiSkillsController } from './n7ai/ai-skills.controller'
 import { AiSkillsService } from './n7ai/ai-skills.service'
@@ -98,6 +99,7 @@ import { ChatShareService } from './share/chat-share.service'
     AiSkillsService,
     AiSkillDraftService,
     AiSummaryService,
+    AiTitleService,
     AiSettingsService,
     AiMemoriesService,
     AiFeedbackService,

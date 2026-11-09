@@ -70,6 +70,7 @@ export const MIGRATIONS = [
   'community-features-upgrade.sql',
   'api-keys-upgrade.sql',
   'admin-mcp-upgrade.sql',
+  'ai-title-upgrade.sql',
   'news-crawler-upgrade.sql',
   'documents-library-upgrade.sql',
   'document-library-personal-upgrade.sql',

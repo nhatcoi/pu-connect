@@ -32,6 +32,7 @@ import { NoteToolsService } from './agent/note-tools.service'
 import { SkillToolsService } from './agent/skill-tools.service'
 import { ConversationToolsService } from './context/conversation-tools.service'
 import { AI_HISTORY_FLOOR, AiSummaryService } from './ai-summary.service'
+import { AiTitleService } from './ai-title.service'
 import { AiMemoriesService } from './ai-memories.service'
 import { AiSettingsService } from './ai-settings.service'
 import { AiSkillsService } from './ai-skills.service'
@@ -100,6 +101,7 @@ export class N7AiService {
     private readonly refs: ChatRefsService,
     private readonly skills: AiSkillsService,
     private readonly summaries: AiSummaryService,
+    private readonly titles: AiTitleService,
     private readonly settings: AiSettingsService,
     private readonly memories: AiMemoriesService,
     private readonly studyTools: StudyToolsService,
@@ -347,7 +349,10 @@ export class N7AiService {
         attachments
       )
       await this.llm.finishRun(runId, { usage, startedAt: started })
-      if (!inGroup) this.summaries.maybeSummarize(conversationId, botId)
+      if (!inGroup) {
+        this.summaries.maybeSummarize(conversationId, botId)
+        this.titles.maybeTitle(conversationId, botId)
+      }
       return 'done'
     } catch (err) {
       const busy = this.llm.isBusyError(err)

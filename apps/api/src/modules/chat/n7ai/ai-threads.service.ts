@@ -82,7 +82,7 @@ export class AiThreadsService {
   // Đổi tên
   async rename(userId: string, id: string, title: string): Promise<AiThread> {
     const res = await this.core.db.query(
-      `UPDATE conversations SET title = $3 WHERE id = $1 AND type = 'ai' AND created_by = $2
+      `UPDATE conversations SET title = $3, title_auto = false WHERE id = $1 AND type = 'ai' AND created_by = $2
        RETURNING ${THREAD_COLUMNS}`,
       [id, userId, title]
     )

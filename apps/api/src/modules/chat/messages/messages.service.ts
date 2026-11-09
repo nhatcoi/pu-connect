@@ -220,7 +220,7 @@ export class MessagesService {
   private async autoTitle(client: PoolClient, conversationId: string, content: string): Promise<AiThread | null> {
     const title = deriveThreadTitle(content)
     if (!title) return null
-    const res = await client.query(`UPDATE conversations SET title = $2 WHERE id = $1 AND title IS NULL RETURNING ${THREAD_COLUMNS}`, [
+    const res = await client.query(`UPDATE conversations SET title = $2, title_auto = true WHERE id = $1 AND title IS NULL RETURNING ${THREAD_COLUMNS}`, [
       conversationId,
       title
     ])

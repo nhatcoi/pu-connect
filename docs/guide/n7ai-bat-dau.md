@@ -38,7 +38,7 @@ Mặc định 30 lượt mỗi ngày. Chip "X/30 lượt" trên ô soạn cho bi
 
 ## Quản lý hội thoại
 
-- Mỗi cuộc trò chuyện là một thread; tên tự đặt theo câu hỏi đầu, bạn đổi được.
+- Mỗi cuộc trò chuyện là một thread; tên tự đặt theo nội dung sau câu trả lời đầu tiên, bạn đổi được (đổi tay thì không bị tự đặt lại).
 - Gom thread vào **thư mục** theo môn hoặc dự án: kéo thả (máy tính) hoặc menu **Chuyển vào thư mục** (điện thoại).
 - Chia sẻ: tạo liên kết công khai cho cả thread, thu hồi bất kỳ lúc nào.
 - Thu gọn thanh bên: Ctrl hoặc Cmd cộng B.
