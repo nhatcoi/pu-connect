@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useMemo } from 'react'
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { STUDY_HEATMAP_DAYS, type StudyStats } from '@pu/schemas'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useStudyStats } from '@/hooks/use-study-tools'
@@ -16,8 +18,14 @@ const dm = (day: string) => `${day.slice(8, 10)}/${day.slice(5, 7)}`
 // Mức màu lịch nhiệt theo số lượt / ngày
 const level = (n: number) => (n === 0 ? 'bg-muted' : n < 5 ? 'bg-primary/25' : n < 15 ? 'bg-primary/50' : n < 30 ? 'bg-primary/75' : 'bg-primary')
 
+export interface StudyAction {
+  href: string
+  label: string
+  hint: string
+}
+
 // Tiến độ học ở /tools: 3 số chính, lịch học 16 tuần (kiểu GitHub: nhãn tháng / thứ + chú giải), thẻ đến hạn 7 ngày tới
-export function StudyStatsCard() {
+export function StudyStatsCard({ action }: { action?: StudyAction | null }) {
   const { data, isPending } = useStudyStats()
   if (isPending) return <Skeleton className="h-[200px] w-full rounded-2xl" />
   if (!data) return null
@@ -26,9 +34,17 @@ export function StudyStatsCard() {
     <section className="space-y-4 rounded-2xl border border-border/60 bg-card p-4">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tiến độ học</h2>
-        <p className="text-[11px] text-muted-foreground">
-          {data.streak ? 'Chuỗi đang chạy, giữ nhịp nhé' : data.bestStreak ? 'Học hôm nay để bắt đầu chuỗi mới' : 'Học hôm nay để bắt đầu chuỗi'}
-        </p>
+        {action ? (
+          <Link
+            href={action.href}
+            title={action.hint}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            {action.label} <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">{data.streak ? 'Chuỗi đang chạy, giữ nhịp nhé' : 'Học hôm nay để bắt đầu chuỗi'}</p>
+        )}
       </div>
       <div className="grid grid-cols-3 divide-x divide-border/60 rounded-xl bg-muted/40 py-3">
         <Stat value={data.today} label="lượt hôm nay" />

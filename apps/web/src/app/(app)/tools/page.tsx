@@ -2,23 +2,24 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ArrowRight, ChevronRight, Flame, PartyPopper, Wrench } from 'lucide-react'
+import { ChevronRight, Flame, Wrench } from 'lucide-react'
 import type { StudySetSummary } from '@pu/schemas'
 import { Skeleton } from '@/components/ui/skeleton'
 import { N7AiMark } from '@/components/brand/pu-logo'
 import { StudySetRow } from '@/components/tools/study-set-row'
-import { StudyStatsCard } from '@/components/tools/study-stats-card'
+import { StudyStatsCard, type StudyAction } from '@/components/tools/study-stats-card'
 import { TOOLS, toolHref } from '@/components/tools/tool-catalog'
 import { useStudyStats, useToolsOverview } from '@/hooks/use-study-tools'
 import { cn } from '@/lib/utils'
 
 const SECONDS_PER_CARD = 8 // ước lượng thời gian ôn 1 thẻ
 
-// Công cụ học tập: việc cần làm hôm nay (CTA) → loại công cụ → tiến độ → bộ gần đây
+// Công cụ học tập: tiến độ học (kèm việc nên làm ngay) → loại công cụ → bộ gần đây
 export default function ToolsPage() {
   const { data, isPending } = useToolsOverview()
   const { data: stats } = useStudyStats()
   const kinds = new Map(data?.kinds.map((k) => [k.kind, k]))
+  const action = data ? nextAction(data.recent, kinds.get('flashcards')?.due ?? 0) : null
 
   return (
     <>
@@ -40,7 +41,7 @@ export default function ToolsPage() {
       </div>
 
       <div className="px-2 sm:px-0 space-y-6 pb-8">
-        <TodayCard recent={data?.recent ?? []} due={kinds.get('flashcards')?.due ?? 0} loading={isPending} />
+        <StudyStatsCard action={action} />
 
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {TOOLS.map((t) => {
@@ -71,8 +72,6 @@ export default function ToolsPage() {
             )
           })}
         </section>
-
-        <StudyStatsCard />
 
         <section className="space-y-2">
           <h2 className="px-2 sm:px-0 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Gần đây</h2>
@@ -106,71 +105,15 @@ function Metric({ value, label, tone }: { value: number; label: string; tone?: '
   )
 }
 
-// Việc nên làm ngay (Anki "Study now" / Quizlet "Continue"): bộ có nhiều thẻ đến hạn nhất → quiz chưa làm → trạng thái hoàn thành
-function TodayCard({ recent, due, loading }: { recent: StudySetSummary[]; due: number; loading: boolean }) {
-  if (loading) return <Skeleton className="h-[104px] w-full rounded-2xl" />
-  if (!recent.length) return null
-
+// Việc nên làm ngay (Anki "Study now" / Quizlet "Continue"): bộ có nhiều thẻ đến hạn nhất → quiz chưa làm → null
+function nextAction(recent: StudySetSummary[], due: number): StudyAction | null {
   const topDeck = recent.filter((s) => s.kind === 'flashcards' && s.dueCount > 0).sort((a, b) => b.dueCount - a.dueCount)[0]
-  const todoQuiz = recent.find((s) => s.kind === 'quiz' && s.bestScore == null)
-
   if (topDeck) {
     const minutes = Math.max(1, Math.round((due * SECONDS_PER_CARD) / 60))
-    return (
-      <Cta
-        href={toolHref('flashcards', topDeck.id)}
-        eyebrow="Hôm nay"
-        title={`${due} thẻ cần ôn`}
-        hint={`Bắt đầu với "${topDeck.title}" · khoảng ${minutes} phút`}
-        action="Ôn ngay"
-        tone="primary"
-      />
-    )
+    return { href: toolHref('flashcards', topDeck.id), label: `Ôn ${due} thẻ`, hint: `${topDeck.title} · khoảng ${minutes} phút` }
   }
-  if (todoQuiz) {
-    return (
-      <Cta
-        href={toolHref('quiz', todoQuiz.id)}
-        eyebrow="Gợi ý"
-        title={todoQuiz.title}
-        hint={`Quiz ${todoQuiz.itemCount} câu · bạn chưa làm bài này`}
-        action="Làm quiz"
-        tone="primary"
-      />
-    )
-  }
-  return (
-    <div className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card p-4">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-        <PartyPopper className="h-5 w-5" />
-      </span>
-      <div>
-        <p className="text-sm font-semibold">Hôm nay đã xong</p>
-        <p className="text-[11px] text-muted-foreground">Không còn thẻ đến hạn. Nhờ N7AI tạo thêm bộ mới nếu muốn học tiếp.</p>
-      </div>
-    </div>
-  )
-}
-
-function Cta({ href, eyebrow, title, hint, action, tone }: { href: string; eyebrow: string; title: string; hint: string; action: string; tone: 'primary' }) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        'group flex items-center gap-4 rounded-2xl p-4 sm:p-5 transition-opacity hover:opacity-95',
-        tone === 'primary' && 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground'
-      )}
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-medium uppercase tracking-wide opacity-80">{eyebrow}</span>
-        <span className="mt-0.5 block truncate text-xl font-bold leading-tight">{title}</span>
-        <span className="mt-1 block truncate text-xs opacity-85">{hint}</span>
-      </span>
-      <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-background px-4 py-2 text-sm font-semibold text-foreground shadow-sm transition-transform group-hover:translate-x-0.5">
-        {action} <ArrowRight className="h-4 w-4" />
-      </span>
-    </Link>
-  )
+  const todoQuiz = recent.find((s) => s.kind === 'quiz' && s.bestScore == null)
+  return todoQuiz ? { href: toolHref('quiz', todoQuiz.id), label: 'Làm quiz', hint: `${todoQuiz.title} · ${todoQuiz.itemCount} câu` } : null
 }
 
 function EmptyRecent() {
